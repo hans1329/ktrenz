@@ -20,6 +20,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
   const handleProfileClick = () => {
     if (user) setProfileOpen(true);
+    else navigate('/login');
   };
 
   const tabs = [

@@ -95,7 +95,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
               {!collapsed && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
             </button>
           ) : (
-            <Button variant="default" className={cn("w-full rounded-full", collapsed ? "px-2" : "")} disabled>
+          <Button variant="default" className={cn("w-full rounded-full", collapsed ? "px-2" : "")} onClick={() => window.location.href = '/login'}>
               {collapsed ? <TrendingUp className="w-4 h-4" /> : "Sign In"}
             </Button>
           )}
