@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -210,9 +211,11 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 // ── Main Treemap Component ──
 const V3Treemap = () => {
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
+  const isMobile = useIsMobile();
+  const displayCount = isMobile ? 10 : 12;
 
   const { data: items, isLoading } = useQuery({
-    queryKey: ["v3-treemap-data-v2"],
+    queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
       const { data, error } = await supabase.from("v3_scores")
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, spotify_score, buzz_score, twitter_score, scored_at,
@@ -238,7 +241,7 @@ const V3Treemap = () => {
           buzzScore: s.buzz_score || 0, twitterScore: s.twitter_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
         };
-      }).filter((i) => i.slug).sort((a, b) => b.energyScore - a.energyScore).slice(0, 10); // TOP 10 ONLY
+      }).filter((i) => i.slug).sort((a, b) => b.energyScore - a.energyScore).slice(0, displayCount);
     },
     staleTime: 30_000,
   });
@@ -260,7 +263,7 @@ const V3Treemap = () => {
       <div className="pt-4 pb-3">
         <h2 className="text-xl font-black text-foreground">⚡ Energy Map</h2>
         <p className="text-xs text-muted-foreground mt-0.5 pl-7">
-          지금 어디서 폭발하고 있나? · Top 10 · Tap to inspect
+          지금 어디서 폭발하고 있나? · Top {displayCount} · Tap to inspect
         </p>
       </div>
 
