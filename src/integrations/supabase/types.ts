@@ -1872,6 +1872,79 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_collection_log: {
+        Row: {
+          collected_at: string
+          error_message: string | null
+          id: string
+          platform: string
+          records_collected: number | null
+          status: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          collected_at?: string
+          error_message?: string | null
+          id?: string
+          platform: string
+          records_collected?: number | null
+          status?: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          collected_at?: string
+          error_message?: string | null
+          id?: string
+          platform?: string
+          records_collected?: number | null
+          status?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_collection_log_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_data_snapshots: {
+        Row: {
+          collected_at: string
+          id: string
+          metrics: Json
+          platform: string
+          raw_response: Json | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          collected_at?: string
+          id?: string
+          metrics?: Json
+          platform: string
+          raw_response?: Json | null
+          wiki_entry_id: string
+        }
+        Update: {
+          collected_at?: string
+          id?: string
+          metrics?: Json
+          platform?: string
+          raw_response?: Json | null
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_data_snapshots_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_fan_agent_messages: {
         Row: {
           content: string
@@ -1898,6 +1971,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ktrenz_streaming_guides: {
+        Row: {
+          artist_name: string
+          expires_at: string
+          generated_at: string
+          guide_data: Json
+          id: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          artist_name: string
+          expires_at?: string
+          generated_at?: string
+          guide_data?: Json
+          id?: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Update: {
+          artist_name?: string
+          expires_at?: string
+          generated_at?: string
+          guide_data?: Json
+          id?: string
+          user_id?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_streaming_guides_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ktrenz_watched_artists: {
         Row: {
