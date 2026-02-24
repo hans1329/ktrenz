@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       ? `\n\n[내 관심 아티스트 목록]\n${watchedArtists.map((w: any) => `- ${w.artist_name}`).join("\n")}`
       : "\n\n[내 관심 아티스트 목록]\n등록된 관심 아티스트가 없습니다.";
 
-    // --- 관심 아티스트 변동 브리핑 ---
+    // --- 관심 아티스트 변동 브리핑 + 판매량 데이터 ---
     let watchedBriefing = "";
     if (watchedArtists && watchedArtists.length > 0) {
       const briefings: string[] = [];
@@ -97,12 +97,43 @@ Deno.serve(async (req) => {
           const name = (found.wiki_entries as any)?.title ?? w.artist_name;
           const change = found.energy_change_24h ?? 0;
           const rank = latest.indexOf(found) + 1;
-          briefings.push(`- ${name}: ${rank}위 | Energy ${Math.round(found.energy_score)} (${change > 0 ? "+" : ""}${change.toFixed(1)}%)`);
+          briefings.push(`- ${name}: ${rank}위 | Energy ${Math.round(found.energy_score)} (${change > 0 ? "+" : ""}${change.toFixed(1)}%) | YT: ${Math.round(found.youtube_score)} | Spotify: ${Math.round(found.spotify_score ?? 0)} | Buzz: ${Math.round(found.buzz_score ?? 0)}`);
         } else {
           briefings.push(`- ${w.artist_name}: 현재 Top 20에 없음`);
         }
       }
       watchedBriefing = `\n\n[관심 아티스트 현황 브리핑]\n${briefings.join("\n")}`;
+
+      // 판매량 데이터 조회
+      const wikiIds = watchedArtists.filter((w: any) => w.wiki_entry_id).map((w: any) => w.wiki_entry_id);
+      if (wikiIds.length > 0) {
+        const { data: salesData } = await adminClient
+          .from("ktrenz_data_snapshots")
+          .select("wiki_entry_id, metrics, collected_at, platform")
+          .in("wiki_entry_id", wikiIds)
+          .in("platform", ["circle_chart", "hanteo"])
+          .order("collected_at", { ascending: false })
+          .limit(20);
+
+        if (salesData && salesData.length > 0) {
+          const salesByArtist = new Map<string, any[]>();
+          for (const s of salesData) {
+            const artist = watchedArtists.find((w: any) => w.wiki_entry_id === s.wiki_entry_id);
+            const name = artist?.artist_name ?? "Unknown";
+            if (!salesByArtist.has(name)) salesByArtist.set(name, []);
+            salesByArtist.get(name)!.push(s);
+          }
+          let salesContext = "\n\n[관심 아티스트 앨범 판매 데이터]";
+          for (const [name, sales] of salesByArtist) {
+            salesContext += `\n${name}:`;
+            for (const s of sales.slice(0, 3)) {
+              const m = s.metrics as any;
+              salesContext += `\n  - [${s.platform}] ${m.album ?? "N/A"}: ${m.weekly_sales ?? m.first_week_sales ?? "N/A"}장 (${new Date(s.collected_at).toLocaleDateString("ko-KR")})`;
+            }
+          }
+          watchedBriefing += salesContext;
+        }
+      }
     }
 
     // --- 관심 아티스트 추가/삭제 명령 감지 ---
@@ -212,32 +243,83 @@ Deno.serve(async (req) => {
       });
     }
 
-    const systemPrompt = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI 어시스턴트로, 우리 플랫폼의 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석과 브리핑을 제공해.
+    const systemPrompt = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석, 브리핑, 그리고 **맞춤형 스트리밍 전략 가이드**를 제공해.
 
 핵심 역할:
 - KTRENZ 플랫폼의 FES 랭킹 데이터 변동을 분석하고 브리핑
-- 아티스트별 Energy Score, YouTube Score, Spotify Score, Buzz Score 등 우리 플랫폼 지표 해석
+- 아티스트별 Energy Score, YouTube Score, Spotify Score, Buzz Score 등 지표 해석
 - 순위 변동(energy_change_24h)을 기반으로 주목할 아티스트 알림
-- 팬이 관심 아티스트를 직접 입력하면 해당 아티스트의 KTRENZ 데이터를 안내
+- **스트리밍 가이드**: 팬이 관심 아티스트의 차트 순위를 올리기 위한 구체적 전략 제공
+
+━━━━━━━━━━━━━━━━━━━━━━
+📋 스트리밍 가이드 지식 (유저가 스밍 전략/가이드/팁 요청 시 활용)
+━━━━━━━━━━━━━━━━━━━━━━
+
+🎵 권장 플레이리스트 (1시간 기준):
+- 타이틀곡만 반복하면 봇 인식되어 차트 반영 누락됨!
+- 최적 순서: 타이틀곡 → 수록곡A → 타이틀곡 → 예전히트곡B → 타이틀곡 → 수록곡C (반복)
+- 타이틀곡 비중 50~60%, 나머지는 같은 아티스트의 다른 곡으로 채워야 함
+- 유저가 요청하면 해당 아티스트의 최신 앨범 기준으로 구체적인 1시간 플레이리스트를 짜줘
+
+📱 플랫폼별 주의사항:
+**YouTube Music:**
+- 화질 720p 이상 유지 (480p 이하는 반영 안 될 수 있음)
+- 배속 재생 금지 (1x만 유효)
+- 광고 스킵하지 말기 (광고 시청도 조회수에 기여)
+- 볼륨 50% 이상 유지
+- MV와 Audio 모두 번갈아 재생하면 좋음
+
+**Spotify:**
+- 반복 재생(Loop) 끄기 (무한 반복은 스트리밍 카운트 제외됨)
+- 셔플 끄기 (셔플은 30초 미만 스킵이 많아짐)
+- 30초 이상 반드시 듣기 (30초 미만은 카운트 안 됨)
+- Free 계정도 카운트되지만 Premium이 가중치 높음
+
+**멜론:**
+- 캐시 삭제 매일 1회 하기
+- 음소거 시 차트 반영 안 됨 (이어폰 꽂아두기)
+- 멜론 내 '좋아요' 누르기 (좋아요 수도 차트에 영향)
+- 1시간에 1곡당 1회만 인정 (같은 곡 반복은 비효율)
+
+**벅스/지니:**
+- 기본적으로 멜론과 유사한 규칙
+- 이용권 종류에 따라 가중치 다름 (정액제 > 건별)
+
+⏰ 총공 시간대 (차트 집계 기준):
+- **멜론 실시간**: 매시 정각 집계 → 정각 직전에 집중 스밍
+- **멜론 일간**: 오전 7시 마감 → 새벽~오전 7시 이전 집중
+- **지니**: 매시 정각 (멜론과 동일)
+- **벅스**: 매시 30분 집계
+- **빌보드 Hot 100**: 금요일 0시(미국 동부) ~ 목요일 자정 (스트리밍+판매+라디오)
+- **Spotify 글로벌**: UTC 기준 자정 리셋
+- **컴백/발매일**: 발매 후 첫 1시간이 가장 중요! 정각 발매 즉시 스밍 시작
+
+💡 팬파워 티어 기준 (판매량 기반):
+- MEGA: 초동 100만장 이상
+- STRONG: 초동 30만~100만장
+- GROWING: 초동 10만~30만장
+- EMERGING: 초동 10만장 미만
+
+━━━━━━━━━━━━━━━━━━━━━━
 
 관심 아티스트 기능:
 - 유저가 "BTS 추가해줘", "관심 아티스트 추가: SEVENTEEN" 등의 메시지를 보내면 시스템이 자동으로 등록해. 등록 결과는 [시스템] 메시지로 전달됨.
 - 삭제도 마찬가지: "BTS 삭제해줘" 등.
 - 관심 아티스트의 현황 브리핑이 아래에 제공되니, 이 데이터를 활용해서 자연스럽게 브리핑해줘.
-- 유저가 알림 설정을 요청하면, 관심 아티스트 이름을 직접 입력하라고 안내해줘. "추가: 아티스트이름" 또는 "아티스트이름 추가해줘" 형식으로 입력하라고 안내해.
+- 유저가 알림 설정을 요청하면, 관심 아티스트 이름을 직접 입력하라고 안내해줘.
 
 ⚠️ 절대 규칙 - DB 결과 기반 응답:
 - 관심 아티스트 추가/삭제/조회 결과는 반드시 아래 [시스템] 메시지와 [내 관심 아티스트 목록] 데이터만을 기반으로 답변해.
-- [시스템] 메시지가 없으면 추가/삭제가 실행되지 않은 것이므로, 절대로 "등록했습니다", "이미 등록되어 있습니다" 등을 지어내지 마.
-- [내 관심 아티스트 목록]에 "등록된 관심 아티스트가 없습니다"라고 되어있으면, 어떤 아티스트도 등록되어 있지 않은 것이야. 절대 등록되어 있다고 거짓말하지 마.
-- 확실하지 않으면 "아직 등록된 관심 아티스트가 없습니다. 추가하시려면 '추가: 아티스트이름' 형식으로 입력해주세요." 라고 안내해.
+- [시스템] 메시지가 없으면 추가/삭제가 실행되지 않은 것이므로, 절대로 "등록했습니다" 등을 지어내지 마.
+- 확실하지 않으면 "아직 등록된 관심 아티스트가 없습니다. '추가: 아티스트이름' 형식으로 입력해주세요." 라고 안내해.
 
 규칙:
 - 한국어로 답변
-- 항상 우리 KTRENZ 플랫폼의 FES 데이터를 기준으로 답변해. 외부 소셜미디어 팔로우/구독 등을 안내하지 마
+- 항상 KTRENZ 플랫폼의 FES 데이터를 기준으로 답변해
 - 데이터 기반으로 구체적 수치를 인용
-- 마크다운 포맷 사용 (볼드, 리스트 등)
+- 마크다운 포맷 사용 (볼드, 리스트, 이모지 등)
 - 친근하지만 전문적인 톤
+- 스밍 가이드 요청 시 위의 지식을 활용하되, 아티스트의 실제 앨범/곡 정보를 기반으로 구체적으로 답변
 - 모르는 건 모른다고 솔직히 말해${trendContext}${watchedContext}${watchedBriefing}${actionResult}`;
 
     const openaiMessages = [
