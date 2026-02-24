@@ -64,7 +64,7 @@ const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: n
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Zap className="w-3 h-3 text-amber-500" /> Velocity</span>
-          <span className="text-xs font-bold text-foreground">{velocity}</span>
+          <span className="text-xs font-bold text-foreground">{velocity} / {velMax}</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-700" style={{ width: `${Math.min((velocity / velMax) * 100, 100)}%` }} />
@@ -74,7 +74,7 @@ const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: n
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Activity className="w-3 h-3 text-teal-400" /> Intensity</span>
-          <span className="text-xs font-bold text-foreground">{intensity}</span>
+          <span className="text-xs font-bold text-foreground">{intensity} / {intMax}</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-700" style={{ width: `${Math.min((intensity / intMax) * 100, 100)}%` }} />
@@ -102,7 +102,7 @@ const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
     queryKey: ["v3-energy", wikiEntryId],
     queryFn: async () => {
       const [snapshotsRes, baselineRes, scoresRes, latestSnapshotRes] = await Promise.all([
-        supabase.from("v3_energy_snapshots").select("snapshot_at, velocity_score, intensity_score, energy_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: true }).limit(100),
+        supabase.from("v3_energy_snapshots").select("snapshot_at, velocity_score, intensity_score, energy_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(100),
         supabase.from("v3_energy_baselines").select("*").eq("wiki_entry_id", wikiEntryId).maybeSingle(),
         supabase.from("v3_scores").select("energy_score, energy_change_24h, energy_rank").eq("wiki_entry_id", wikiEntryId).order("scored_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("v3_energy_snapshots").select("velocity_score, intensity_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(1).maybeSingle(),
@@ -118,13 +118,13 @@ const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
   const { snapshots, currentScore, latestSnapshot: latestSnap } = data || {};
   if (!snapshots?.length && !currentScore?.energy_score) return null;
 
-  const lastFromHistory = snapshots?.[snapshots.length - 1];
-  const energyScore = lastFromHistory?.energy_score ?? currentScore?.energy_score ?? 100;
-  const velocity = lastFromHistory?.velocity_score ?? latestSnap?.velocity_score ?? 100;
-  const intensity = lastFromHistory?.intensity_score ?? latestSnap?.intensity_score ?? 100;
+  const latestFromHistory = snapshots?.[0];
+  const energyScore = currentScore?.energy_score ?? latestFromHistory?.energy_score ?? 100;
+  const velocity = latestSnap?.velocity_score ?? latestFromHistory?.velocity_score ?? 100;
+  const intensity = latestSnap?.intensity_score ?? latestFromHistory?.intensity_score ?? 100;
   const change24h = currentScore?.energy_change_24h || 0;
 
-  const chartData = (snapshots || []).map((s: any) => ({
+  const chartData = [...(snapshots || [])].reverse().map((s: any) => ({
     time: new Date(s.snapshot_at).toLocaleDateString("en", { month: "short", day: "numeric", hour: "2-digit" }),
     Energy: Number(s.energy_score), Velocity: Number(s.velocity_score), Intensity: Number(s.intensity_score),
   }));

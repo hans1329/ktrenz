@@ -130,8 +130,20 @@ const V3ArtistDetail = () => {
       if (buzzRaw?.data && !buzzRaw.data.success) warnings.push('Buzz error');
       if (musicRaw?.data && !musicRaw.data.success) warnings.push('Music error');
       let fesData = null;
-      try { const { data } = await supabase.functions.invoke('calculate-energy-score', { body: { wikiEntryId: entry.id } }); fesData = data; } catch {}
-      return { youtube: ytData, buzz: buzzData, music: musicData, fes: fesData, warnings };
+      let latestDbFes: { energy_score?: number | null } | null = null;
+      try {
+        const { data } = await supabase.functions.invoke('calculate-energy-score', { body: { wikiEntryId: entry.id } });
+        fesData = data;
+      } catch {}
+      const { data: latestScore } = await supabase
+        .from("v3_scores")
+        .select("energy_score")
+        .eq("wiki_entry_id", entry.id)
+        .order("scored_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      latestDbFes = latestScore;
+      return { youtube: ytData, buzz: buzzData, music: musicData, fes: latestDbFes, fallbackFes: fesData, warnings };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["v3-artist", slug] });
@@ -141,7 +153,8 @@ const V3ArtistDetail = () => {
       if (data.youtube?.youtubeScore != null) parts.push(`YouTube: ${data.youtube.youtubeScore}`);
       if (data.buzz?.buzzScore != null) parts.push(`Buzz: ${data.buzz.buzzScore}`);
       if (data.music?.musicScore != null) parts.push(`Music: ${data.music.musicScore}`);
-      if (data.fes?.results?.[0]) parts.push(`FES: ${data.fes.results[0].energyScore}`);
+      const notificationFes = data.fes?.energy_score ?? data.fallbackFes?.results?.[0]?.energyScore;
+      if (notificationFes != null) parts.push(`FES: ${Math.round(notificationFes)}`);
       const desc = parts.join(' · ') || 'Using cached data';
       if (data.warnings?.length) {
         toast({ title: "Partial Update", description: `${desc}\n⚠️ ${data.warnings.join(', ')}` });
