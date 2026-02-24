@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Home, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing } from "lucide-react";
+import { Bot, Send, ArrowLeft, Home, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   timestamp?: string;
-  guideData?: any[] | null; // inline streaming guide
+  guideData?: any[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -35,14 +35,101 @@ const QUICK_ACTIONS: QuickAction[] = [
   { icon: Bell, label: "알림 설정", prompt: "내 관심 아티스트의 순위 변동 알림을 설정하고 싶어. 관심 있는 아티스트 이름을 직접 입력하면 추가할 수 있게 안내해줘. 현재 랭킹에 없는 아티스트도 추가할 수 있어.", mode: "alert", color: "text-amber-400" },
 ];
 
-// Streaming keywords to detect
 const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁/i;
 
 const GUIDE_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-streaming-guide`;
-
-// ── Streaming helper ───────────────────────────────────
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
 
+// ── Avatar Upload Hook ─────────────────────────────────
+function useAgentAvatar(userId?: string) {
+  const queryClient = useQueryClient();
+
+  const { data: avatarUrl } = useQuery({
+    queryKey: ["ktrenz-agent-avatar", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await (supabase as any)
+        .from("ktrenz_agent_profiles")
+        .select("avatar_url")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return data?.avatar_url ?? null;
+    },
+    enabled: !!userId,
+  });
+
+  const uploadAvatar = useCallback(async (file: File) => {
+    if (!userId) return;
+
+    // Convert to webp using canvas
+    const webpBlob = await convertToWebp(file);
+    const filePath = `${userId}/agent-avatar.webp`;
+
+    // Upload to storage
+    const { error: uploadErr } = await supabase.storage
+      .from("agent-avatars")
+      .upload(filePath, webpBlob, {
+        contentType: "image/webp",
+        upsert: true,
+      });
+
+    if (uploadErr) {
+      toast.error("이미지 업로드 실패: " + uploadErr.message);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("agent-avatars")
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData.publicUrl + `?t=${Date.now()}`;
+
+    // Upsert profile
+    const { error: dbErr } = await (supabase as any)
+      .from("ktrenz_agent_profiles")
+      .upsert(
+        { user_id: userId, avatar_url: publicUrl, updated_at: new Date().toISOString() } as any,
+        { onConflict: "user_id" }
+      );
+
+    if (dbErr) {
+      toast.error("프로필 저장 실패: " + dbErr.message);
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-avatar", userId] });
+    toast.success("에이전트 프로필 이미지가 업데이트되었습니다!");
+  }, [userId, queryClient]);
+
+  return { avatarUrl, uploadAvatar };
+}
+
+async function convertToWebp(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxSize = 256;
+      let w = img.width;
+      let h = img.height;
+      if (w > h) { h = (h / w) * maxSize; w = maxSize; }
+      else { w = (w / h) * maxSize; h = maxSize; }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error("WebP conversion failed")),
+        "image/webp",
+        0.85
+      );
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ── Streaming helper ───────────────────────────────────
 async function streamChat({
   messages,
   token,
@@ -97,7 +184,6 @@ async function streamChat({
     }
   }
 
-  // flush remaining
   if (buffer.trim()) {
     for (let raw of buffer.split("\n")) {
       if (!raw) continue;
@@ -115,6 +201,61 @@ async function streamChat({
   onDone();
 }
 
+// ── Agent Avatar Component ─────────────────────────────
+const AgentAvatar = ({
+  avatarUrl,
+  size = "sm",
+  onUpload,
+}: {
+  avatarUrl: string | null | undefined;
+  size?: "sm" | "lg";
+  onUpload?: (file: File) => void;
+}) => {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const sizeClasses = size === "lg"
+    ? "w-10 h-10 rounded-xl"
+    : "w-7 h-7 rounded-lg";
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => onUpload && fileRef.current?.click()}
+        className={cn(
+          sizeClasses,
+          "relative overflow-hidden shrink-0 flex items-center justify-center",
+          "bg-primary/10 border border-primary/20",
+          onUpload && "cursor-pointer hover:border-primary/40 transition-colors group"
+        )}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
+        ) : (
+          <Bot className={cn("text-primary", size === "lg" ? "w-5 h-5" : "w-3.5 h-3.5")} />
+        )}
+        {onUpload && (
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Camera className="w-3.5 h-3.5 text-white" />
+          </div>
+        )}
+      </button>
+      {onUpload && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUpload(f);
+            e.target.value = "";
+          }}
+        />
+      )}
+    </>
+  );
+};
+
 // ── Component ──────────────────────────────────────────
 interface V3FanAgentProps {
   onBack?: () => void;
@@ -130,6 +271,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [hasStarted, setHasStarted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { avatarUrl, uploadAvatar } = useAgentAvatar(user?.id);
 
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
@@ -167,7 +310,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     enabled: !!user?.id,
   });
 
-  // Sync history into local state on load
   useEffect(() => {
     if (chatHistory && chatHistory.length > 0 && messages.length === 0 && !hasStarted) {
       setMessages(chatHistory);
@@ -175,12 +317,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [chatHistory, messages.length, hasStarted]);
 
-  // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch streaming guide data
   const fetchGuideData = useCallback(async (): Promise<any[] | null> => {
     if (!session?.access_token) return null;
     try {
@@ -215,7 +355,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setMessages(updatedMessages);
 
     let assistantContent = "";
-    // Fetch guide in parallel if streaming-related
     const guidePromise = isStreamingQuery && hasAlertOn ? fetchGuideData() : Promise.resolve(null);
 
     try {
@@ -235,7 +374,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           });
         },
         onDone: async () => {
-          // Attach guide data to the assistant message
           const guideData = await guidePromise;
           if (guideData && guideData.length > 0) {
             setMessages((prev) => {
@@ -276,11 +414,16 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </Button>
           </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <h1 className="text-base font-bold text-foreground">
-            {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : "Fan Agent"}
-          </h1>
+        <div className="flex items-center gap-2.5">
+          <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <h1 className="text-base font-bold text-foreground">
+                {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : "Fan Agent"}
+              </h1>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2 min-w-[72px] justify-end">
           {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
@@ -334,10 +477,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // ── Welcome / Empty state ──
   const renderWelcome = () => (
     <div className="flex flex-col items-center justify-center h-full px-4 py-8">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mb-4 border border-primary/20">
-        <Bot className="w-8 h-8 text-primary" />
-      </div>
-      <h2 className="text-lg font-bold text-foreground mb-1">KTRENZ Fan Agent</h2>
+      <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
+      <h2 className="text-lg font-bold text-foreground mb-1 mt-4">KTRENZ Fan Agent</h2>
       <p className="text-sm text-muted-foreground text-center max-w-[280px] mb-6">
         실시간 트렌드 데이터를 기반으로 스트리밍 전략, 트렌드 분석, 팬 활동을 도와드립니다
       </p>
@@ -369,11 +510,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       {messages.map((msg, i) => (
         <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center mr-2 mt-1 shrink-0">
-              <Bot className="w-3.5 h-3.5 text-primary" />
-            </div>
+            <AgentAvatar avatarUrl={avatarUrl} size="sm" />
           )}
-          <div className={cn("flex flex-col max-w-[85%]", msg.role === "user" ? "items-end" : "items-start")}>
+          <div className={cn("flex flex-col max-w-[85%]", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
             <div
               className={cn(
                 "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
@@ -394,7 +533,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               )}
             </div>
 
-            {/* Inline Streaming Guide Cards */}
             {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
               <V3StreamingGuideCards guides={msg.guideData} />
             )}
@@ -415,7 +553,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     <div className="flex flex-col h-full">
       {renderSubHeader()}
 
-      {/* Chat area */}
       {!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages()}
 
       {/* Input area */}
