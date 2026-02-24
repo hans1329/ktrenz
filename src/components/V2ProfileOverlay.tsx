@@ -119,9 +119,9 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
               {/* Perforation */}
               <div className="relative h-0 flex items-center">
-                <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-background z-10" />
+                <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-card z-10" />
                 <div className="w-full border-t border-dashed border-border/60 mx-4" />
-                <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-background z-10" />
+                <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-card z-10" />
               </div>
 
               {/* Bottom half */}
