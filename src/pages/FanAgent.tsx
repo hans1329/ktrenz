@@ -1,8 +1,44 @@
 import V3FanAgent from "@/components/v3/V3FanAgent";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { LogIn, Loader2 } from "lucide-react";
 
 const FanAgent = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-[100dvh] flex flex-col items-center justify-center bg-background gap-4 px-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold text-foreground">로그인이 필요합니다</h2>
+          <p className="text-sm text-muted-foreground">Fan Agent를 이용하려면 로그인해 주세요.</p>
+        </div>
+        <Button
+          onClick={() => navigate("/login")}
+          className="h-12 px-8 rounded-full gap-2 font-medium"
+        >
+          <LogIn className="w-5 h-5" />
+          로그인
+        </Button>
+        <button
+          onClick={() => navigate(-1)}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
+        >
+          ← 뒤로가기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
