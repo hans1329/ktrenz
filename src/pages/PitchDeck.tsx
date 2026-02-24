@@ -123,7 +123,7 @@ export default function PitchDeck() {
         </div>
 
         <div className="relative max-w-4xl mx-auto text-center z-10">
-          <img src={ktrenzLogo} alt="K-TRENZ" className="h-10 w-auto mx-auto mb-8" />
+          <img src={ktrenzLogo} alt="K-TRENZ" className="h-8 w-auto mx-auto mb-8" />
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.1] tracking-tight mb-6">
             <span className="text-foreground">K-Pop 아티스트의</span>
