@@ -1,0 +1,1 @@
+DELETE FROM public.ktrenz_watched_artists WHERE artist_name = '관심 아티스트';
