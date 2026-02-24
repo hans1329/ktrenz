@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import V3Home from "./pages/V3Home";
 import V3ArtistDetail from "./pages/V3ArtistDetail";
 import FesEngine from "./pages/FesEngine";
+import FanAgent from "./pages/FanAgent";
 import Login from "./pages/Login";
 import KPass from "./pages/KPass";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<V3Home />} />
             <Route path="/artist/:slug" element={<V3ArtistDetail />} />
             <Route path="/fes-engine" element={<FesEngine />} />
+            <Route path="/agent" element={<FanAgent />} />
             <Route path="/login" element={<Login />} />
             <Route path="/k-pass" element={<KPass />} />
             <Route path="*" element={<NotFound />} />
