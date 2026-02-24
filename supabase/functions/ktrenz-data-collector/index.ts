@@ -382,6 +382,54 @@ async function collectForSingleArtist(
     } catch (e) { results.buzz = { error: e.message }; }
   }
 
+  // 4) Hanteo Album Sales (한터차트 초동)
+  if (keys.firecrawl) {
+    try {
+      console.log(`[DataCollector] Scraping Hanteo for ${artistTitle}...`);
+      const hanteoData = await scrapeWithFirecrawl("https://www.hanteochart.com/honors/initial", keys.firecrawl);
+      const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
+      const parsed = parseHanteoInitial(md);
+
+      // 이 아티스트와 매칭되는 앨범만 필터
+      const matchedAlbums: any[] = [];
+      for (const entry of parsed) {
+        const entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+        if (entryWikiId === wikiEntryId) {
+          matchedAlbums.push(entry);
+        }
+      }
+
+      if (matchedAlbums.length > 0) {
+        const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
+        const topAlbum = matchedAlbums.sort((a, b) => b.first_week_sales - a.first_week_sales)[0];
+        const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+        await upsertV3Score(adminClient, wikiEntryId, {
+          album_sales_score: score,
+          album_sales_data: {
+            total_first_week_sales: totalSales, top_album: topAlbum?.album,
+            top_album_sales: topAlbum?.first_week_sales, album_count: matchedAlbums.length,
+            albums: matchedAlbums.slice(0, 5),
+          },
+          album_sales_updated_at: new Date().toISOString(),
+        });
+        for (const entry of matchedAlbums) {
+          await adminClient.from("ktrenz_data_snapshots").insert({
+            wiki_entry_id: wikiEntryId, platform: "hanteo",
+            metrics: { album: entry.album, artist: entry.artist, first_week_sales: entry.first_week_sales, chart_type: "initial_sales" },
+          });
+        }
+        results.hanteo = { albums: matchedAlbums.length, score, totalSales };
+        console.log(`[DataCollector] Hanteo: ${artistTitle} → score=${score}, albums=${matchedAlbums.length}`);
+      } else {
+        results.hanteo = { albums: 0, message: "No matching albums found on chart" };
+        console.log(`[DataCollector] Hanteo: ${artistTitle} → no matching albums`);
+      }
+    } catch (e) {
+      results.hanteo = { error: e.message };
+      console.error(`[DataCollector] Hanteo error for ${artistTitle}:`, e);
+    }
+  }
+
   return results;
 }
 
