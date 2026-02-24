@@ -325,7 +325,7 @@ const V3Treemap = () => {
                   <div className="relative z-10 flex flex-col items-center gap-0.5">
                     <span className="text-xs font-black text-white truncate max-w-full leading-tight drop-shadow-lg">{rect.item.title}</span>
                     <span className="text-base font-black text-white/95 drop-shadow-lg">{Math.round(rect.item.energyScore)}</span>
-                    <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm",
+                    <span className={cn("text-[9px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full backdrop-blur-sm",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
                     )}>
                       {surging ? "🔥" : ""} {sharePct.toFixed(1)}% share
