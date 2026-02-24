@@ -235,7 +235,12 @@ const V3Treemap = () => {
       // Get top N by energy_score
       const topItems = Array.from(latestMap.values())
         .filter((s) => (s.wiki_entries as any)?.slug)
-        .sort((a, b) => (b.energy_score || 0) - (a.energy_score || 0))
+        .sort((a, b) => {
+          // 1차: 변동률 내림차순, 2차: total_score(인기도) 내림차순
+          const changeDiff = (b.energy_change_24h || 0) - (a.energy_change_24h || 0);
+          if (Math.abs(changeDiff) > 0.1) return changeDiff;
+          return (b.total_score || 0) - (a.total_score || 0);
+        })
         .slice(0, displayCount);
 
       // Fetch sparkline from v3_energy_snapshots for these top artists
