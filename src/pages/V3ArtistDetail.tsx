@@ -81,6 +81,21 @@ const V3ArtistDetail = () => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
+  // 크론잡 실행 상태 확인
+  const { data: crawlStatus } = useQuery({
+    queryKey: ["crawl-status"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("system_jobs")
+        .select("status, metadata")
+        .eq("id", "daily-data-crawl")
+        .single();
+      return data;
+    },
+    refetchInterval: 10000,
+  });
+  const isCrawling = crawlStatus?.status === "running";
+
   useEffect(() => { document.documentElement.classList.add("v3-theme"); return () => { document.documentElement.classList.remove("v3-theme"); }; }, []);
 
   const { data: entry, isLoading: entryLoading } = useQuery({
@@ -157,9 +172,11 @@ const V3ArtistDetail = () => {
         <h1 className="flex-1 text-center text-sm font-bold text-foreground truncate">{pageTitle}</h1>
         <div className="flex items-center w-24 justify-end gap-0.5">
           <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
-            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }} disabled={refreshMutation.isPending}>
-            <span className="text-xs font-medium">Data</span>
-            <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary")} />
+            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }}
+            disabled={refreshMutation.isPending || isCrawling}
+            title={isCrawling ? "Global data collection in progress..." : undefined}>
+            <span className="text-xs font-medium">{isCrawling ? "Running" : "Data"}</span>
+            <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
           </Button>
         </div>
       </div>
