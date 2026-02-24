@@ -131,7 +131,9 @@ Deno.serve(async (req) => {
       }
 
       // 이전 메시지가 아티스트 입력을 요청했고, 짧은 텍스트(20자 이하)면 아티스트 이름으로 간주
-      if (!addMatch && wasAskingForArtist && content.length <= 20 && !/삭제|제거|해제|취소|아니/.test(content)) {
+      // 단, 질문/명령어 패턴은 제외
+      const isQuestion = /누구|뭐|무엇|어떤|몇|목록|확인|알려|보여|있어|없어|설정|해제|\?|？/.test(content);
+      if (!addMatch && wasAskingForArtist && content.length <= 20 && !isQuestion && !/삭제|제거|해제|취소|아니/.test(content)) {
         addMatch = [content, content] as unknown as RegExpMatchArray;
         console.log("[FanAgent] Context-based artist add detected:", content);
       }
