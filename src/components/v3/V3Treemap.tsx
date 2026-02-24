@@ -153,7 +153,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1">×</button>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-5">
         {/* Energy Stats */}
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-muted/50 border border-border p-3 text-center">
@@ -176,7 +176,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
         {/* Channel Energy Distribution */}
         {channels.length > 0 && (
-          <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4">
+          <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5" /> Energy Heat Channels
             </p>
