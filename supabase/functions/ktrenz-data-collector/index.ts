@@ -335,7 +335,29 @@ Deno.serve(async (req) => {
     const { source } = await req.json().catch(() => ({ source: "all" }));
     const collectSources = source === "all" ? ["hanteo", "music"] : [source];
 
+    // Get total artist count for progress tracking
+    const { count: totalArtists } = await adminClient
+      .from("wiki_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("schema_type", "artist");
+
+    // Mark job as running
+    await adminClient.from("system_jobs").upsert({
+      id: "daily-data-crawl",
+      status: "running",
+      started_at: new Date().toISOString(),
+      metadata: { processed: 0, total: totalArtists || 0, sources: collectSources },
+    }, { onConflict: "id" });
+
     const results: Record<string, any> = {};
+    let totalProcessed = 0;
+
+    const updateProgress = async (step: string) => {
+      totalProcessed++;
+      await adminClient.from("system_jobs").update({
+        metadata: { processed: totalProcessed, total: totalArtists || 0, current_step: step, sources: collectSources },
+      }).eq("id", "daily-data-crawl");
+    };
 
     // ── 한터차트 초동 수집 ──
     if (collectSources.includes("hanteo")) {
@@ -468,6 +490,7 @@ Deno.serve(async (req) => {
             // v3_scores 업데이트
             await updateV3ScoresWithMusic(adminClient, artist.id, lastfm, deezer);
             musicUpdated++;
+            await updateProgress(`music: ${artist.title}`);
             console.log(`[DataCollector] Music updated: ${artist.title}`);
           } catch (e) {
             console.error(`[DataCollector] Music error for ${artist.title}:`, e);
@@ -486,11 +509,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Mark job as completed
+    await adminClient.from("system_jobs").update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      metadata: { ...results, processed: totalProcessed, total: totalArtists || 0 },
+    }).eq("id", "daily-data-crawl");
+
     return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("[DataCollector] Fatal error:", e);
+    // Try to mark job as failed
+    try {
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await adminClient.from("system_jobs").update({
+        status: "error",
+        completed_at: new Date().toISOString(),
+        metadata: { error: e.message },
+      }).eq("id", "daily-data-crawl");
+    } catch (_) { /* ignore */ }
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
