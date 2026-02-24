@@ -1,0 +1,197 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } =
+      await supabase.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
+    const { messages } = await req.json();
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "messages required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- 실시간 트렌드 데이터 조회 ---
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: trendData } = await adminClient
+      .from("v3_artist_trend_scores")
+      .select(
+        "artist_name, fes_score, fes_rank, fes_change, daily_stream_count, social_buzz_score"
+      )
+      .order("fes_rank", { ascending: true })
+      .limit(20);
+
+    const trendContext = trendData?.length
+      ? `\n\n[실시간 FES 랭킹 Top 20]\n${trendData
+          .map(
+            (a, i) =>
+              `${i + 1}. ${a.artist_name} | FES: ${a.fes_score} (${a.fes_change > 0 ? "+" : ""}${a.fes_change}) | 스트리밍: ${a.daily_stream_count?.toLocaleString() ?? "N/A"} | 소셜버즈: ${a.social_buzz_score ?? "N/A"}`
+          )
+          .join("\n")}`
+      : "";
+
+    // --- 유저 메시지 저장 ---
+    const lastUserMsg = messages[messages.length - 1];
+    if (lastUserMsg?.role === "user") {
+      await adminClient.from("ktrenz_fan_agent_messages").insert({
+        user_id: userId,
+        role: "user",
+        content: lastUserMsg.content,
+      });
+    }
+
+    // --- OpenAI 호출 (스트리밍) ---
+    const systemPrompt = `너는 KTRENZ Fan Agent야. K-Pop 팬들을 위한 전문 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석, 스트리밍 전략, 팬 활동 가이드를 제공해.
+
+규칙:
+- 한국어로 답변
+- 데이터 기반으로 구체적 수치를 인용
+- 마크다운 포맷 사용 (볼드, 리스트 등)
+- 친근하지만 전문적인 톤
+- 모르는 건 모른다고 솔직히 말해${trendContext}`;
+
+    const openaiMessages = [
+      { role: "system", content: systemPrompt },
+      ...messages.slice(-10),
+    ];
+
+    const openaiResp = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: openaiMessages,
+          stream: true,
+          max_tokens: 1024,
+        }),
+      }
+    );
+
+    if (!openaiResp.ok) {
+      const errBody = await openaiResp.text();
+      console.error("OpenAI error:", errBody);
+      return new Response(JSON.stringify({ error: "AI 응답 실패" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- 스트리밍 응답 + assistant 메시지 저장 ---
+    let fullContent = "";
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = openaiResp.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let idx: number;
+          while ((idx = buffer.indexOf("\n")) !== -1) {
+            const line = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 1);
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6);
+            if (jsonStr === "[DONE]") {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              if (fullContent) {
+                await adminClient
+                  .from("ktrenz_fan_agent_messages")
+                  .insert({
+                    user_id: userId,
+                    role: "assistant",
+                    content: fullContent,
+                  });
+              }
+              controller.close();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) fullContent += delta;
+              controller.enqueue(encoder.encode(`data: ${jsonStr}\n\n`));
+            } catch {
+              /* partial chunk */
+            }
+          }
+        }
+        // flush remaining
+        if (fullContent) {
+          await adminClient.from("ktrenz_fan_agent_messages").insert({
+            user_id: userId,
+            role: "assistant",
+            content: fullContent,
+          });
+        }
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+      },
+    });
+  } catch (e) {
+    console.error("Fan agent error:", e);
+    return new Response(
+      JSON.stringify({ error: e.message || "Internal error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});
