@@ -10,7 +10,6 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerClose,
 } from "@/components/ui/drawer";
 
 interface V2ProfileOverlayProps {
@@ -54,17 +53,17 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-background border-border max-h-[85vh]">
-        <DrawerHeader className="pb-2">
+      <DrawerContent className="bg-background border-border max-h-[80vh] mx-auto md:max-w-md">
+        <DrawerHeader className="pb-1">
           <DrawerTitle className="sr-only">Profile</DrawerTitle>
         </DrawerHeader>
 
         <div className="px-5 pb-6 space-y-5">
-          {/* Profile info */}
+          {/* Profile */}
           <div className="flex items-center gap-3">
-            <Avatar className="w-14 h-14 border-2 border-border">
+            <Avatar className="w-12 h-12 border-2 border-border">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+              <AvatarFallback className="bg-primary/10 text-primary text-base font-semibold">
                 {profile?.username?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
@@ -81,88 +80,84 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           {/* K-Pass Ticket */}
           <button
             onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
-            className="w-full group"
+            className="w-full group text-left"
           >
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-              {/* Ticket top section */}
+            <div className="relative rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+              {/* Top half */}
               <div
-                className="relative px-5 py-4"
-                style={{
-                  background: `linear-gradient(135deg, ${tierColor}18, ${tierColor}08)`,
-                }}
+                className="relative px-4 py-3.5 overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${tierColor}20, ${tierColor}06)` }}
               >
-                {/* Decorative circles */}
+                {/* Background glow */}
                 <div
-                  className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10"
+                  className="absolute -right-4 -top-4 w-20 h-20 rounded-full blur-xl opacity-20"
                   style={{ background: tierColor }}
                 />
-                <div
-                  className="absolute right-8 bottom-0 w-12 h-12 rounded-full opacity-5"
-                  style={{ background: tierColor }}
-                />
-
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{tierIcon}</span>
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                      style={{ background: `${tierColor}15` }}
+                    >
+                      {tierIcon}
+                    </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                      <p
+                        className="text-[10px] font-semibold uppercase tracking-[0.15em]"
+                        style={{ color: tierColor }}
+                      >
                         K-Pass
                       </p>
-                      <p className="text-lg font-bold text-foreground">
+                      <p className="text-base font-bold text-foreground leading-tight">
                         {tierName}
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
 
-              {/* Ticket perforation line */}
-              <div className="relative flex items-center">
-                <div
-                  className="absolute -left-3 w-6 h-6 rounded-full bg-background"
-                />
-                <div className="flex-1 border-t border-dashed border-border mx-4" />
-                <div
-                  className="absolute -right-3 w-6 h-6 rounded-full bg-background"
-                />
+              {/* Perforation */}
+              <div className="relative h-0 flex items-center">
+                <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-background z-10" />
+                <div className="w-full border-t border-dashed border-border/60 mx-4" />
+                <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-background z-10" />
               </div>
 
-              {/* Ticket bottom section */}
-              <div className="px-5 py-3 flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Upgrade for premium features
+              {/* Bottom half */}
+              <div className="px-4 py-2.5 flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground">
+                  View plans & upgrade →
                 </p>
-                <div
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border"
                   style={{
                     color: tierColor,
-                    background: `${tierColor}15`,
+                    borderColor: `${tierColor}30`,
+                    background: `${tierColor}08`,
                   }}
                 >
-                  ACTIVE
-                </div>
+                  Active
+                </span>
               </div>
             </div>
           </button>
 
-          {/* Actions */}
-          <div className="space-y-1">
+          {/* Menu items */}
+          <div className="space-y-0.5 pt-1">
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
-              onClick={() => { onOpenChange(false); }}
+              onClick={() => onOpenChange(false)}
             >
-              <Settings className="w-4 h-4" />
-              <span className="text-sm">Settings</span>
+              <Settings className="w-4 h-4" /> <span className="text-sm">Settings</span>
             </Button>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-destructive hover:text-destructive"
               onClick={signOut}
             >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Sign Out</span>
+              <LogOut className="w-4 h-4" /> <span className="text-sm">Sign Out</span>
             </Button>
           </div>
         </div>
