@@ -241,9 +241,16 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               if (!hasAlertOn) {
                 handleSend("알림을 받으려면 어떤 아티스트를 추적해야 하나요? 방법을 알려주세요.");
+              } else if (user?.id) {
+                await supabase
+                  .from("ktrenz_watched_artists" as any)
+                  .delete()
+                  .eq("user_id", user.id);
+                queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
+                toast.success("알림이 해제되었습니다");
               }
             }}
             className={cn(
