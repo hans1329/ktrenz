@@ -352,7 +352,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       // Fallback: query v3_scores directly
       const { data: scores, error: scErr } = await supabase
         .from("v3_scores" as any)
-        .select("wiki_entry_id, total_score, energy_score, energy_change_24h, energy_rank, youtube_score, spotify_score, buzz_score, scored_at")
+        .select("wiki_entry_id, total_score, energy_score, energy_change_24h, energy_rank, youtube_score, buzz_score, scored_at")
         .order("scored_at", { ascending: false })
         .limit(200);
 
@@ -388,7 +388,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           energy_score: s.energy_score ?? 0,
           energy_change_24h: s.energy_change_24h ?? 0,
           youtube_score: s.youtube_score ?? 0,
-          spotify_score: s.spotify_score ?? 0,
           buzz_score: s.buzz_score ?? 0,
         };
       });

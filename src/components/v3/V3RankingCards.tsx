@@ -9,7 +9,6 @@ export interface RankingEntry {
   energy_score: number;
   energy_change_24h: number;
   youtube_score: number;
-  spotify_score: number;
   buzz_score: number;
 }
 

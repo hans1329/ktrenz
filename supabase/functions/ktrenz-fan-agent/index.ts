@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     // --- 실시간 트렌드 데이터 조회 ---
     const { data: trendData } = await adminClient
       .from("v3_scores")
-      .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, spotify_score, buzz_score, twitter_score, scored_at, wiki_entries:wiki_entry_id(title)")
+      .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, twitter_score, scored_at, wiki_entries:wiki_entry_id(title)")
       .order("scored_at", { ascending: false });
 
     const latestMap = new Map<string, any>();
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
           const name = (found.wiki_entries as any)?.title ?? w.artist_name;
           const change = found.energy_change_24h ?? 0;
           const rank = latest.indexOf(found) + 1;
-          briefings.push(`- ${name}: ${rank}위 | Energy ${Math.round(found.energy_score)} (${change > 0 ? "+" : ""}${change.toFixed(1)}%) | YT: ${Math.round(found.youtube_score)} | Spotify: ${Math.round(found.spotify_score ?? 0)} | Buzz: ${Math.round(found.buzz_score ?? 0)}`);
+          briefings.push(`- ${name}: ${rank}위 | Energy ${Math.round(found.energy_score)} (${change > 0 ? "+" : ""}${change.toFixed(1)}%) | YT: ${Math.round(found.youtube_score)} | Buzz: ${Math.round(found.buzz_score ?? 0)}`);
         } else {
           briefings.push(`- ${w.artist_name}: 현재 Top 20에 없음`);
         }
@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
 
 핵심 역할:
 - KTRENZ 플랫폼의 FES 랭킹 데이터 변동을 분석하고 브리핑
-- 아티스트별 Energy Score, YouTube Score, Spotify Score, Buzz Score 등 지표 해석
+- 아티스트별 Energy Score, YouTube Score, Buzz Score, Music Score 등 지표 해석
 - 순위 변동(energy_change_24h)을 기반으로 주목할 아티스트 알림
 - **스트리밍 가이드**: 팬이 관심 아티스트의 차트 순위를 올리기 위한 구체적 전략 제공
 
