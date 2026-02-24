@@ -49,7 +49,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
   const tierName = kpassInfo?.name || "Free";
   const tierIcon = kpassInfo?.icon || "🎵";
-  const tierColor = kpassInfo?.color || "#94a3b8";
+  const tierColor = "#0ABAB5";
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
