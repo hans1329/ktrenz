@@ -233,7 +233,7 @@ const V3ArtistDetail = () => {
     return (
       <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 pb-24 space-y-3">
         <div className="flex items-center gap-3">
-          <Avatar className="w-14 h-14 ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+          <Avatar className="w-14 h-14">
             <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} />
             <AvatarFallback className="bg-muted text-lg font-bold">{entry.title?.[0]}</AvatarFallback>
           </Avatar>
