@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_data_snapshots ALTER COLUMN wiki_entry_id DROP NOT NULL;
