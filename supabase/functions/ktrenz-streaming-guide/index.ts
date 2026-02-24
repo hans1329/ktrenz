@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         // FES 점수 + 음악 데이터
         const { data: fes } = await adminClient
           .from("v3_scores")
-          .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, spotify_score, energy_rank, music_score, music_data, album_sales_score, album_sales_data")
+          .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, energy_rank, music_score, music_data, album_sales_score, album_sales_data")
           .eq("wiki_entry_id", wa.wiki_entry_id)
           .order("scored_at", { ascending: false })
           .limit(1)
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       const contextParts = [
         `아티스트: ${wa.artist_name}`,
         fesData
-          ? `FES 데이터: Energy ${Math.round(fesData.energy_score)} (24h변동: ${fesData.energy_change_24h?.toFixed(1)}%), 순위 ${fesData.energy_rank ?? "N/A"}, Total ${Math.round(fesData.total_score)}, YouTube ${Math.round(fesData.youtube_score)}, Buzz ${Math.round(fesData.buzz_score ?? 0)}, Spotify ${Math.round(fesData.spotify_score ?? 0)}, Music ${Math.round(fesData.music_score ?? 0)}, AlbumSales ${Math.round(fesData.album_sales_score ?? 0)}`
+          ? `FES 데이터: Energy ${Math.round(fesData.energy_score)} (24h변동: ${fesData.energy_change_24h?.toFixed(1)}%), 순위 ${fesData.energy_rank ?? "N/A"}, Total ${Math.round(fesData.total_score)}, YouTube ${Math.round(fesData.youtube_score)}, Buzz ${Math.round(fesData.buzz_score ?? 0)}, Music ${Math.round(fesData.music_score ?? 0)}, AlbumSales ${Math.round(fesData.album_sales_score ?? 0)}`
           : "FES 데이터: 없음",
         musicData
           ? `음악 플랫폼 데이터: Last.fm 재생수 ${musicData.lastfm?.playcount?.toLocaleString() ?? "N/A"}, 리스너 ${musicData.lastfm?.listeners?.toLocaleString() ?? "N/A"}, Deezer 팬 ${musicData.deezer?.fans?.toLocaleString() ?? "N/A"}`

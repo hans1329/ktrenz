@@ -12,7 +12,7 @@ import BoxParticles from "@/components/v3/BoxParticles";
 interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
   energyScore: number; energyChange24h: number; totalScore: number;
-  youtubeScore: number; spotifyScore: number; buzzScore: number; twitterScore: number;
+  youtubeScore: number; buzzScore: number; twitterScore: number;
   sparkline: number[]; trendLabel: TrendLabel;
 }
 
@@ -120,12 +120,11 @@ function ChannelBar({ icon, label, value, total, color }: { icon: React.ReactNod
 // ── Inspector Panel (enhanced) ──
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
   const navigate = useNavigate();
-  const total = (item.youtubeScore || 0) + (item.spotifyScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0);
+  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0);
   const surging = isSurging(item.energyChange24h);
 
   const channels = [
     { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)" },
-    { icon: <Music className="w-3.5 h-3.5" />, label: "Spotify", value: item.spotifyScore, color: "hsl(141, 73%, 42%)" },
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)" },
     { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)" },
   ].filter(c => c.value > 0);
@@ -218,7 +217,7 @@ const V3Treemap = () => {
     queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
       const { data, error } = await supabase.from("v3_scores")
-        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, spotify_score, buzz_score, twitter_score, scored_at,
+        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, twitter_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("scored_at", { ascending: false });
       if (error) throw error;
@@ -237,7 +236,7 @@ const V3Treemap = () => {
           id: s.wiki_entry_id, slug: entry?.slug || "", title: entry?.title || "Unknown",
           imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
           energyScore: s.energy_score || 0, energyChange24h: change, totalScore: s.total_score || 0,
-          youtubeScore: s.youtube_score || 0, spotifyScore: s.spotify_score || 0,
+          youtubeScore: s.youtube_score || 0,
           buzzScore: s.buzz_score || 0, twitterScore: s.twitter_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
         };
