@@ -355,23 +355,9 @@ async function collectForSingleArtist(
     }
   } catch (e) { results.music = { error: e.message }; }
 
-  // 3) Buzz (crawl-x-mentions 호출)
-  if (keys.firecrawl) {
-    try {
-      const hashtags = artistMeta?.hashtags || [];
-      const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/crawl-x-mentions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-        },
-        body: JSON.stringify({ artistName: artistTitle, wikiEntryId, hashtags }),
-      });
-      const buzzResult = await buzzResp.json();
-      results.buzz = { score: buzzResult.buzzScore, mentions: buzzResult.mentionCount };
-      console.log(`[DataCollector] Buzz: ${artistTitle} → ${buzzResult.buzzScore}`);
-    } catch (e) { results.buzz = { error: e.message }; }
-  }
+  // 3) Buzz — 개별 호출에서는 SKIP (일일 크론에서만 처리)
+  // Firecrawl rate limit 보호를 위해 buzz는 batch cron 전용
+  results.buzz = { skipped: true, reason: "Buzz runs only via daily cron" };
 
   // 4) Hanteo Album Sales (한터차트 초동)
   if (keys.firecrawl) {
@@ -381,7 +367,6 @@ async function collectForSingleArtist(
       const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
       const parsed = parseHanteoInitial(md);
 
-      // 이 아티스트와 매칭되는 앨범만 필터
       const matchedAlbums: any[] = [];
       for (const entry of parsed) {
         const entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
@@ -392,11 +377,8 @@ async function collectForSingleArtist(
 
       if (matchedAlbums.length > 0) {
         const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
-        const topAlbum = matchedAlbums.sort((a, b) => b.first_week_sales - a.first_week_sales)[0];
         const score = Math.round(Math.sqrt(totalSales / 10) * 10);
-        await upsertV3Score(adminClient, wikiEntryId, {
-          album_sales_score: score,
-        });
+        await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
         for (const entry of matchedAlbums) {
           await adminClient.from("ktrenz_data_snapshots").insert({
             wiki_entry_id: wikiEntryId, platform: "hanteo",
@@ -407,12 +389,29 @@ async function collectForSingleArtist(
         console.log(`[DataCollector] Hanteo: ${artistTitle} → score=${score}, albums=${matchedAlbums.length}`);
       } else {
         results.hanteo = { albums: 0, message: "No matching albums found on chart" };
-        console.log(`[DataCollector] Hanteo: ${artistTitle} → no matching albums`);
       }
     } catch (e) {
       results.hanteo = { error: e.message };
       console.error(`[DataCollector] Hanteo error for ${artistTitle}:`, e);
     }
+  }
+
+  // 5) Energy Score 계산 (개별 호출 시 바로 반영)
+  try {
+    console.log(`[DataCollector] Calculating energy score for ${artistTitle}...`);
+    const energyResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/calculate-energy-score`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+      },
+      body: JSON.stringify({ wikiEntryId }),
+    });
+    const energyResult = await energyResp.json();
+    results.energy = energyResult?.results?.[0] || { success: energyResp.ok };
+    console.log(`[DataCollector] Energy: ${artistTitle} → ${results.energy.energyScore || "N/A"}`);
+  } catch (e) {
+    results.energy = { error: e.message };
   }
 
   return results;
