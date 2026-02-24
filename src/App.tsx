@@ -10,6 +10,7 @@ import FesEngine from "./pages/FesEngine";
 import FanAgent from "./pages/FanAgent";
 import Login from "./pages/Login";
 import KPass from "./pages/KPass";
+import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/agent" element={<FanAgent />} />
             <Route path="/login" element={<Login />} />
             <Route path="/k-pass" element={<KPass />} />
+            <Route path="/pitchdeck" element={<PitchDeck />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
