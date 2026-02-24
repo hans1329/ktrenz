@@ -185,6 +185,19 @@ const V3ArtistDetail = () => {
   const liveMusic = liveData?.music;
   const musicData = liveMusic?.success ? liveMusic : (cachedMusic ? { musicScore: cachedMusic.music_score || 0, lastfm: cachedMusic.lastfm, musicbrainz: cachedMusic.musicbrainz, deezer: cachedMusic.deezer, fetchedAt: cachedMusic.music_updated_at } : null);
 
+  // v3_scores_v2에서 최신 music_score 가져오기
+  const { data: v2MusicScore } = useQuery({
+    queryKey: ["v2-music-score", entry?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("v3_scores_v2" as any).select("music_score").eq("wiki_entry_id", entry!.id).order("scored_at", { ascending: false }).limit(1).maybeSingle();
+      return (data as any)?.music_score ?? null;
+    },
+    enabled: !!entry?.id,
+    staleTime: 60_000,
+  });
+  // v3_scores_v2 값이 있으면 우선 사용
+  const effectiveMusicScore = v2MusicScore != null ? v2MusicScore : (musicData?.musicScore || 0);
+
   const pageTitle = entry?.title || "Artist";
 
   const MobileHeader = () => (
@@ -212,7 +225,7 @@ const V3ArtistDetail = () => {
     if (entryLoading) return <div className="max-w-2xl mx-auto px-4 py-6 space-y-4"><Skeleton className="h-32 w-full rounded-2xl" /><div className="grid grid-cols-2 gap-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div></div>;
     if (!entry) return <div className="max-w-2xl mx-auto px-4 py-16 text-center"><p className="text-muted-foreground">Artist not found</p><Link to="/" className="text-primary mt-2 inline-block">← Back to Rankings</Link></div>;
 
-    const ytScore = ytData?.youtubeScore || 0; const bzScore = buzzData?.buzzScore || 0; const msScore = musicData?.musicScore || 0;
+    const ytScore = ytData?.youtubeScore || 0; const bzScore = buzzData?.buzzScore || 0; const msScore = effectiveMusicScore;
     let ytWeight = 0.6, bzWeight = 0.2, msWeight = 0.2;
     if (bzScore > 0 && ytScore > 0) { const ratio = bzScore / ytScore; if (ratio > 0.5) { bzWeight = Math.min(0.35, 0.2 + ratio * 0.15); ytWeight = 1 - bzWeight - msWeight; } }
     const totalTrendScore = Math.round(ytScore * ytWeight + bzScore * bzWeight + msScore * msWeight);
@@ -239,8 +252,8 @@ const V3ArtistDetail = () => {
               </div>
               <div className="text-right space-y-1">
                 {ytData && <div className="flex items-center gap-1.5 justify-end"><Youtube className="w-3 h-3 text-destructive" /><span className="text-xs font-semibold text-foreground">{(ytData.youtubeScore || 0).toLocaleString()}</span></div>}
-                {buzzData && <div className="flex items-center gap-1.5 justify-end"><Zap className="w-3 h-3 text-amber-500" /><span className="text-xs font-semibold text-foreground">{(buzzData.buzzScore || 0).toLocaleString()}</span></div>}
-                {musicData && <div className="flex items-center gap-1.5 justify-end"><Music className="w-3 h-3 text-primary" /><span className="text-xs font-semibold text-foreground">{(musicData.musicScore || 0).toLocaleString()}</span></div>}
+                {buzzData && <div className="flex items-center gap-1.5 justify-end"><MessageSquare className="w-3 h-3 text-amber-500" /><span className="text-xs font-semibold text-foreground">{(buzzData.buzzScore || 0).toLocaleString()}</span></div>}
+                {(effectiveMusicScore > 0 || musicData) && <div className="flex items-center gap-1.5 justify-end"><Music className="w-3 h-3 text-primary" /><span className="text-xs font-semibold text-foreground">{effectiveMusicScore.toLocaleString()}</span></div>}
               </div>
             </div>
           </Card>
