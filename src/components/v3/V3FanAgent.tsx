@@ -126,10 +126,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     queryKey: ["ktrenz-watched-artists", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
-        .from("ktrenz_watched_artists" as any)
+      const { data, error } = await supabase
+        .from("ktrenz_watched_artists")
         .select("id, artist_name")
         .eq("user_id", user.id);
+      if (error) console.error("Watched artists fetch error:", error);
       return data ?? [];
     },
     enabled: !!user?.id,
@@ -246,7 +247,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 handleSend("알림을 받으려면 어떤 아티스트를 추적해야 하나요? 방법을 알려주세요.");
               } else if (user?.id) {
                 await supabase
-                  .from("ktrenz_watched_artists" as any)
+                  .from("ktrenz_watched_artists")
                   .delete()
                   .eq("user_id", user.id);
                 queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
