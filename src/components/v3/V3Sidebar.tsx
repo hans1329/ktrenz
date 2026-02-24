@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { Link, useNavigate } from "react-router-dom";
 import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
             {collapsed ? (
               <img src="https://auth.k-trendz.com/storage/v1/object/public/brand_assets/logo_m.png" alt="KTRENDZ" className="h-8 w-8 rounded-full object-cover" />
             ) : (
-              <img src="https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/brand_assets/logo_l.webp" alt="KTRENDZ" className="h-7 w-auto" />
+              <img src={ktrenzLogo} alt="K-TRENZ" className="h-7 w-auto" />
             )}
           </Link>
         </SidebarHeader>
