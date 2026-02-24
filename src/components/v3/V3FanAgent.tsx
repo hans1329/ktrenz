@@ -286,8 +286,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             className={cn(
               "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
               msg.role === "user"
-                ? "bg-primary text-primary-foreground rounded-br-md"
-                : "bg-card border border-border/50 text-foreground rounded-bl-md"
+                ? "bg-primary/20 text-foreground rounded-br-md"
+                : "bg-card/60 border border-border/30 text-muted-foreground rounded-bl-md"
             )}
           >
             {msg.role === "assistant" ? (
