@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import KPass from "./pages/KPass";
 import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
+import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAUpdatePrompt />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<V3Home />} />
