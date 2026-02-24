@@ -4562,7 +4562,6 @@ export type Database = {
           spotify_score: number | null
           tiktok_score: number | null
           total_score: number | null
-          twitter_score: number | null
           wiki_entry_id: string
           youtube_score: number | null
         }
@@ -4586,7 +4585,6 @@ export type Database = {
           spotify_score?: number | null
           tiktok_score?: number | null
           total_score?: number | null
-          twitter_score?: number | null
           wiki_entry_id: string
           youtube_score?: number | null
         }
@@ -4610,7 +4608,6 @@ export type Database = {
           spotify_score?: number | null
           tiktok_score?: number | null
           total_score?: number | null
-          twitter_score?: number | null
           wiki_entry_id?: string
           youtube_score?: number | null
         }

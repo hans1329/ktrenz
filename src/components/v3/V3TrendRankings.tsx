@@ -169,10 +169,10 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
                   <span className="text-[10px] text-muted-foreground">{Math.round(item.youtube_score)}</span>
                 </div>
               )}
-              {item.twitter_score > 0 && (
+              {item.buzz_score > 0 && (
                 <div className="flex items-center gap-0.5">
                   <PlatformIcon platform="twitter" />
-                  <span className="text-[10px] text-muted-foreground">{Math.round(item.twitter_score)}</span>
+                  <span className="text-[10px] text-muted-foreground">{Math.round(item.buzz_score)}</span>
                 </div>
               )}
             </div>
@@ -268,7 +268,7 @@ const V3TrendRankings = () => {
 
       const { data: allScores, error } = await supabase
         .from("v3_scores")
-        .select(`wiki_entry_id, youtube_score, spotify_score, twitter_score, tiktok_score, total_score, energy_score, energy_change_24h, scored_at,
+        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, schema_type)`)
         .order("scored_at", { ascending: false });
 

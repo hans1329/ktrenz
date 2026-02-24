@@ -220,7 +220,7 @@ const V3Treemap = () => {
     queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
       const { data, error } = await supabase.from("v3_scores")
-        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, twitter_score, album_sales_score, music_score, scored_at,
+        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("scored_at", { ascending: false });
       if (error) throw error;
@@ -240,7 +240,7 @@ const V3Treemap = () => {
           imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
           energyScore: s.energy_score || 0, energyChange24h: change, totalScore: s.total_score || 0,
           youtubeScore: s.youtube_score || 0,
-          buzzScore: s.buzz_score || 0, twitterScore: s.twitter_score || 0,
+          buzzScore: s.buzz_score || 0, twitterScore: 0,
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
         };
