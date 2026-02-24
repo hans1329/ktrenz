@@ -225,15 +225,37 @@ const V3Treemap = () => {
         .order("scored_at", { ascending: false });
       if (error) throw error;
       if (!data?.length) return [];
-      const historyMap = new Map<string, number[]>(); const latestMap = new Map<string, any>();
+
+      // Deduplicate: keep latest per artist
+      const latestMap = new Map<string, any>();
       for (const s of data) {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
-        if (!historyMap.has(s.wiki_entry_id)) historyMap.set(s.wiki_entry_id, []);
-        historyMap.get(s.wiki_entry_id)!.push(s.total_score || 0);
       }
-      return Array.from(latestMap.values()).map((s) => {
+
+      // Get top N by energy_score
+      const topItems = Array.from(latestMap.values())
+        .filter((s) => (s.wiki_entries as any)?.slug)
+        .sort((a, b) => (b.energy_score || 0) - (a.energy_score || 0))
+        .slice(0, displayCount);
+
+      // Fetch sparkline from v3_energy_snapshots for these top artists
+      const topIds = topItems.map((s) => s.wiki_entry_id);
+      const { data: snapshots } = await supabase
+        .from("v3_energy_snapshots")
+        .select("wiki_entry_id, energy_score, snapshot_at")
+        .in("wiki_entry_id", topIds)
+        .order("snapshot_at", { ascending: true })
+        .limit(500);
+
+      const sparklineMap = new Map<string, number[]>();
+      for (const snap of snapshots || []) {
+        if (!sparklineMap.has(snap.wiki_entry_id)) sparklineMap.set(snap.wiki_entry_id, []);
+        sparklineMap.get(snap.wiki_entry_id)!.push(Number(snap.energy_score) || 0);
+      }
+
+      return topItems.map((s) => {
         const entry = s.wiki_entries as any;
-        const sparkline = (historyMap.get(s.wiki_entry_id) || []).reverse();
+        const sparkline = sparklineMap.get(s.wiki_entry_id) || [];
         const change = s.energy_change_24h || 0;
         return {
           id: s.wiki_entry_id, slug: entry?.slug || "", title: entry?.title || "Unknown",
@@ -244,7 +266,7 @@ const V3Treemap = () => {
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
         };
-      }).filter((i) => i.slug).sort((a, b) => b.energyScore - a.energyScore).slice(0, displayCount);
+      });
     },
     staleTime: 30_000,
   });
