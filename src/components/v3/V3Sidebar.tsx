@@ -37,9 +37,9 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
         <SidebarHeader className={cn("h-[68px] border-b border-border justify-center", collapsed ? "px-2" : "px-4")}>
           <Link to="/" className={cn("flex items-center", collapsed && "justify-center")}>
             {collapsed ? (
-              <img src="https://auth.k-trendz.com/storage/v1/object/public/brand_assets/logo_m.png" alt="KTRENDZ" className="h-8 w-8 rounded-full object-cover" />
+              <img src="https://auth.k-trendz.com/storage/v1/object/public/brand_assets/logo_m.png" alt="KTRENDZ" className="h-8 w-8 rounded-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
             ) : (
-              <img src={ktrenzLogo} alt="K-TRENZ" className="h-5 w-auto" />
+              <img src={ktrenzLogo} alt="K-TRENZ" className="h-5 w-auto" loading="eager" fetchPriority="high" decoding="async" />
             )}
           </Link>
         </SidebarHeader>
