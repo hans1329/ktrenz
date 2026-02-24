@@ -39,7 +39,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
             {collapsed ? (
               <img src="https://auth.k-trendz.com/storage/v1/object/public/brand_assets/logo_m.png" alt="KTRENDZ" className="h-8 w-8 rounded-full object-cover" />
             ) : (
-              <img src={ktrenzLogo} alt="K-TRENZ" className="h-7 w-auto" />
+              <img src={ktrenzLogo} alt="K-TRENZ" className="h-5 w-auto" />
             )}
           </Link>
         </SidebarHeader>
