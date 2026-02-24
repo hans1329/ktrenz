@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogIn, Loader2 } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const FanAgent = () => {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ const FanAgent = () => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-background">
+      <SEO title="Fan Agent – KTrenZ AI K-Pop Assistant" description="Ask KTrenZ Fan Agent anything about K-Pop trends, artist stats, streaming strategies, and real-time rankings." path="/agent" />
       <V3FanAgent onBack={() => navigate(-1)} />
     </div>
   );

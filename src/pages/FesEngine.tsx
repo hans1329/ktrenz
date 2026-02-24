@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import V3Sidebar from "@/components/v3/V3Sidebar";
@@ -197,7 +197,7 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="매 계산 �
 
   if (isMobile) {
     return (
-      <><Helmet><title>스코어링 엔진 - KTRENDZ</title></Helmet>
+      <><SEO title="FES Scoring Engine – KTrenZ" description="How KTrenZ calculates K-Pop energy scores using YouTube views, X buzz mentions, music chart data, and damped EMA baselines." path="/fes-engine" />
         <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center h-14 px-2 max-w-screen-lg mx-auto">
             <div className="flex items-center gap-1 w-20">
@@ -214,7 +214,7 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="매 계산 �
   }
 
   return (
-    <><Helmet><title>스코어링 엔진 - KTRENDZ</title></Helmet>
+    <><SEO title="FES Scoring Engine – KTrenZ" description="How KTrenZ calculates K-Pop energy scores using YouTube views, X buzz mentions, music chart data, and damped EMA baselines." path="/fes-engine" />
       <SidebarProvider defaultOpen={true}>
         <div className="h-screen flex w-full overflow-hidden">
           <V3Sidebar activeTab="rankings" onTabChange={() => navigate('/')} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -341,11 +341,11 @@ const V3ArtistDetail = () => {
   };
 
   if (isMobile) {
-    return (<><Helmet><title>{pageTitle} - KTRENDZ</title></Helmet><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div></>);
+    return (<><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} /><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div></>);
   }
 
   return (
-    <><Helmet><title>{pageTitle} - KTRENDZ</title></Helmet>
+    <><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} />
       <SidebarProvider defaultOpen={true}>
         <div className="h-screen flex w-full overflow-hidden">
           <V3Sidebar activeTab="rankings" onTabChange={() => navigate('/')} />
