@@ -254,7 +254,8 @@ export default function PitchDeck() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          {/* Row 1: Treemap + Legend */}
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
             {/* Treemap preview */}
             <div className="relative bg-card/60 border border-border/50 rounded-2xl p-8 overflow-hidden">
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-[80px]" />
@@ -264,55 +265,24 @@ export default function PitchDeck() {
               <p className="text-muted-foreground text-sm mb-6">
                 상위 아티스트를 면적 비례로 배치. 25% 이상 급증 시 네온 글로우 효과.
               </p>
-              {/* Fake treemap blocks */}
               <div className="grid grid-cols-4 grid-rows-3 gap-1.5 h-40">
-                <div className="col-span-2 row-span-2 rounded-lg bg-red-500/30 border border-red-500/40 flex items-center justify-center text-xs font-bold text-red-300 shadow-[0_0_12px_hsl(0_80%_50%/0.3)]">
-                  BTS
-                </div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-300">
-                  aespa
-                </div>
-                <div className="col-span-1 row-span-2 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-[10px] font-bold text-red-300">
-                  IVE
-                </div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-blue-300">
-                  LE SSE..
-                </div>
-                <div className="col-span-2 row-span-1 rounded-lg bg-green-500/15 border border-green-500/25 flex items-center justify-center text-[10px] font-bold text-green-300">
-                  BLACKPINK
-                </div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-[10px] font-bold text-blue-300">
-                  NCT
-                </div>
-                <div className="col-span-1 row-span-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-300">
-                  SKZ
-                </div>
+                <div className="col-span-2 row-span-2 rounded-lg bg-red-500/30 border border-red-500/40 flex items-center justify-center text-xs font-bold text-red-300 shadow-[0_0_12px_hsl(0_80%_50%/0.3)]">BTS</div>
+                <div className="col-span-1 row-span-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-300">aespa</div>
+                <div className="col-span-1 row-span-2 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center text-[10px] font-bold text-red-300">IVE</div>
+                <div className="col-span-1 row-span-1 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-blue-300">LE SSE..</div>
+                <div className="col-span-2 row-span-1 rounded-lg bg-green-500/15 border border-green-500/25 flex items-center justify-center text-[10px] font-bold text-green-300">BLACKPINK</div>
+                <div className="col-span-1 row-span-1 rounded-lg bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-[10px] font-bold text-blue-300">NCT</div>
+                <div className="col-span-1 row-span-1 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-300">SKZ</div>
               </div>
             </div>
 
-            {/* Legend / Interpretation */}
-            <div className="space-y-5">
+            {/* Legend */}
+            <div className="space-y-5 flex flex-col justify-center">
               {[
-                {
-                  color: "bg-red-500",
-                  label: "급상승 (≥15%)",
-                  desc: "에너지가 빠르게 가속 중. 컴백, 바이럴, 주요 이벤트 감지.",
-                },
-                {
-                  color: "bg-green-500",
-                  label: "안정 유지 (≥0%)",
-                  desc: "꾸준한 팬덤 활동으로 에너지가 견조하게 유지.",
-                },
-                {
-                  color: "bg-blue-500",
-                  label: "하락 추세 (<0%)",
-                  desc: "활동 감소 또는 자연 감쇠. 다음 활동 시 반등 기대.",
-                },
-                {
-                  color: "bg-red-500 shadow-[0_0_12px_hsl(0_80%_50%/0.5)]",
-                  label: "네온 폭발 (≥25%)",
-                  desc: "극단적 급등. 글로우 효과로 즉각적인 시각 경고.",
-                },
+                { color: "bg-red-500", label: "급상승 (≥15%)", desc: "에너지가 빠르게 가속 중. 컴백, 바이럴, 주요 이벤트 감지." },
+                { color: "bg-green-500", label: "안정 유지 (≥0%)", desc: "꾸준한 팬덤 활동으로 에너지가 견조하게 유지." },
+                { color: "bg-blue-500", label: "하락 추세 (<0%)", desc: "활동 감소 또는 자연 감쇠. 다음 활동 시 반등 기대." },
+                { color: "bg-red-500 shadow-[0_0_12px_hsl(0_80%_50%/0.5)]", label: "네온 폭발 (≥25%)", desc: "극단적 급등. 글로우 효과로 즉각적인 시각 경고." },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-4">
                   <div className={`w-4 h-4 rounded-sm mt-1 shrink-0 ${item.color}`} />
@@ -322,6 +292,95 @@ export default function PitchDeck() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Row 2: Ranking List + FES/Momentum Charts */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Ranking List */}
+            <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
+              <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" /> 실시간 랭킹 리스트
+              </h3>
+              <div className="space-y-2.5">
+                {[
+                  { rank: 1, name: "BTS", score: "9,420", change: "+18.3%", up: true },
+                  { rank: 2, name: "aespa", score: "8,150", change: "+5.1%", up: true },
+                  { rank: 3, name: "IVE", score: "7,830", change: "+12.7%", up: true },
+                  { rank: 4, name: "BLACKPINK", score: "6,920", change: "+1.2%", up: true },
+                  { rank: 5, name: "NCT", score: "5,410", change: "-3.4%", up: false },
+                ].map((a) => (
+                  <div key={a.rank} className="flex items-center gap-3 py-1.5">
+                    <span className={`text-xs font-black w-5 text-center ${a.rank <= 3 ? "text-primary" : "text-muted-foreground"}`}>
+                      {a.rank}
+                    </span>
+                    <span className="text-foreground text-sm font-medium flex-1 truncate">{a.name}</span>
+                    <span className="text-muted-foreground text-xs tabular-nums">{a.score}</span>
+                    <span className={`text-xs font-semibold tabular-nums ${a.up ? "text-red-400" : "text-blue-400"}`}>
+                      {a.change}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Momentum (가속도) Chart */}
+            <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
+              <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-primary" /> 가속도 (Momentum)
+              </h3>
+              <p className="text-muted-foreground text-xs mb-4">24h 에너지 변화율 추이</p>
+              {/* Fake sparkline area chart */}
+              <div className="relative h-28">
+                <svg viewBox="0 0 200 80" className="w-full h-full" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="momentumGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(11 100% 46%)" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="hsl(11 100% 46%)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,60 Q20,55 40,50 T80,35 T120,20 T160,30 T200,15" fill="none" stroke="hsl(11 100% 46%)" strokeWidth="2" />
+                  <path d="M0,60 Q20,55 40,50 T80,35 T120,20 T160,30 T200,15 L200,80 L0,80 Z" fill="url(#momentumGrad)" />
+                </svg>
+                {/* Labels */}
+                <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-muted-foreground px-1">
+                  <span>-24h</span><span>-12h</span><span>Now</span>
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <span className="text-primary font-bold text-lg">+18.3%</span>
+                <span className="text-muted-foreground text-xs ml-1">가속 중</span>
+              </div>
+            </div>
+
+            {/* FES Score (밀도) Chart */}
+            <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
+              <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
+                <Flame className="w-4 h-4 text-primary" /> FES 밀도 분포
+              </h3>
+              <p className="text-muted-foreground text-xs mb-4">점수 구간별 아티스트 밀집도</p>
+              {/* Fake bar chart */}
+              <div className="flex items-end gap-2 h-28">
+                {[
+                  { h: "20%", label: "2K", count: 8 },
+                  { h: "35%", label: "4K", count: 15 },
+                  { h: "65%", label: "6K", count: 32 },
+                  { h: "100%", label: "8K", count: 45 },
+                  { h: "80%", label: "9K+", count: 12 },
+                ].map((bar) => (
+                  <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground">{bar.count}</span>
+                    <div
+                      className="w-full rounded-t-md bg-gradient-to-t from-primary/40 to-primary/80 transition-all"
+                      style={{ height: bar.h }}
+                    />
+                    <span className="text-[9px] text-muted-foreground">{bar.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-center">
+                <span className="text-foreground font-bold text-sm">8K~9K 구간 최다 밀집</span>
+              </div>
             </div>
           </div>
         </div>
