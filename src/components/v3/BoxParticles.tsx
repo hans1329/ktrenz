@@ -43,11 +43,11 @@ const BoxParticles = ({
     };
     resize();
 
-    // speed → velocity magnitude (0.2 ~ 2.5)
-    const velBase = 0.2 + speed * 2.3;
-    // density → particle size (1 ~ 4) and opacity (0.15 ~ 0.7)
-    const sizeBase = 1 + density * 3;
-    const opacityBase = 0.15 + density * 0.55;
+    // speed → velocity magnitude (0.1 ~ 1.8)
+    const velBase = 0.1 + speed * 1.7;
+    // density → particle size (0.5 ~ 2) and opacity (0.1 ~ 0.5)
+    const sizeBase = 0.5 + density * 1.5;
+    const opacityBase = 0.1 + density * 0.4;
 
     particlesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * canvas.width,
