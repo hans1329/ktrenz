@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-
-const LOGO_URL = "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/brand_assets/logo_l.webp";
+import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 
 interface SearchResult {
   id: string;
@@ -105,7 +104,13 @@ const V3Header = () => {
         ) : (
           <>
             <Link to="/" className="flex items-center">
-              <img src={LOGO_URL} alt="KTRENDZ" className="h-7 w-auto" />
+              <img
+                src={ktrenzLogo}
+                alt="K-TRENZ"
+                className="h-7 w-auto"
+                fetchPriority="high"
+                decoding="async"
+              />
             </Link>
             <div className="flex items-center gap-2">
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
