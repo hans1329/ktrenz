@@ -355,8 +355,8 @@ export default function PitchDeck() {
             />
             <FeatureCard
               icon={Target}
-              title="팬 참여형 가중치"
-              desc="라이트스틱 레벨이 높을수록 투표 가중치 상승. 팬의 열정이 직접 순위에 반영됩니다."
+              title="AI 개인 비서"
+              desc="에이전트가 관심 아티스트의 실시간 화력 변동과 최적 스트리밍 전략을 자동으로 브리핑합니다."
             />
             <FeatureCard
               icon={Eye}
@@ -378,43 +378,69 @@ export default function PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 5. LIGHTSTICK — 팬의 마술봉 무기 ───── */}
-      <Section id="lightstick">
-        <div className="max-w-4xl mx-auto w-full">
+      {/* ───── 5. 마술봉 무기 = AI 에이전트 ───── */}
+      <Section id="weapon">
+        <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
             <SectionTag>
-              <Wand2 className="w-3.5 h-3.5" /> Lightstick
+              <Wand2 className="w-3.5 h-3.5" /> Magic Wand
             </SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               팬에게 쥐어주는
               <br />
               <span className="text-primary">강력한 마술봉 무기</span>
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-              퀴즈에 정답을 맞힐수록 라이트스틱 레벨이 상승하고,
-              투표 가중치와 특별 권한이 열립니다.
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              AI 에이전트는 단순한 챗봇이 아닙니다.
+              <br />
+              실시간 데이터로 무장한, 팬 전용 <strong className="text-foreground">전략 무기</strong>입니다.
             </p>
           </div>
 
-          {/* Lightstick levels */}
-          <div className="grid grid-cols-5 gap-3 md:gap-5">
+          <div className="grid md:grid-cols-3 gap-5">
             {[
-              { level: 1, name: "Bronze", emoji: "🥉", color: "from-amber-800/30 to-amber-900/20 border-amber-700/30", req: "가입" },
-              { level: 2, name: "Silver", emoji: "🥈", color: "from-gray-400/20 to-gray-500/10 border-gray-400/30", req: "정답 1회" },
-              { level: 3, name: "Gold", emoji: "🥇", color: "from-yellow-500/20 to-amber-500/10 border-yellow-500/30", req: "정답 3회" },
-              { level: 4, name: "Diamond", emoji: "💎", color: "from-cyan-400/20 to-blue-500/10 border-cyan-400/30", req: "정답 7회" },
-              { level: 5, name: "Holo", emoji: "✨", color: "from-purple-400/20 to-pink-500/10 border-purple-400/30", req: "정답 15회" },
-            ].map((l) => (
+              {
+                icon: "🔍",
+                title: "실시간 화력 정찰",
+                desc: "내 아티스트의 FES 점수, 순위, 에너지 변동을 실시간으로 브리핑받습니다.",
+              },
+              {
+                icon: "📋",
+                title: "스트리밍 작전 수립",
+                desc: "AI가 플랫폼별 가중치를 분석해 가장 효율적인 스트리밍 순서와 전략을 제시합니다.",
+              },
+              {
+                icon: "🎯",
+                title: "관심 아티스트 관리",
+                desc: "\"BTS 추가해줘\" 한마디로 워치리스트 등록. 자연어로 모든 관리가 가능합니다.",
+              },
+              {
+                icon: "📊",
+                title: "랭킹 카드 즉시 조회",
+                desc: "퀵 버튼 하나로 실시간 TOP 랭킹을 인라인 카드로 바로 확인합니다.",
+              },
+              {
+                icon: "⚡",
+                title: "트렌드 변동 감지",
+                desc: "급상승·급하락 이벤트를 에이전트가 자동 감지하고 알려줍니다.",
+              },
+              {
+                icon: "🤖",
+                title: "24시간 대기",
+                desc: "언제든 질문하면 즉시 응답. 잠들지 않는 팬 활동 파트너.",
+              },
+            ].map((item, i) => (
               <div
-                key={l.level}
-                className={`bg-gradient-to-b ${l.color} border rounded-2xl p-4 text-center hover:scale-105 transition-transform`}
+                key={i}
+                className={`relative bg-card/60 border rounded-2xl p-6 hover:-translate-y-1 transition-all duration-300 ${
+                  i === 0
+                    ? "border-primary/30 hover:border-primary/50 hover:shadow-[0_0_30px_hsl(11_100%_46%/0.15)]"
+                    : "border-border/50 hover:border-primary/30"
+                }`}
               >
-                <div className="text-3xl md:text-4xl mb-2">{l.emoji}</div>
-                <div className="text-foreground font-bold text-sm">{l.name}</div>
-                <div className="text-muted-foreground text-[10px] md:text-xs mt-1">
-                  Lv.{l.level}
-                </div>
-                <div className="text-primary/80 text-[10px] mt-1 font-medium">{l.req}</div>
+                <div className="text-3xl mb-4">{item.icon}</div>
+                <h3 className="text-foreground font-bold text-lg mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -422,7 +448,7 @@ export default function PitchDeck() {
           <div className="mt-10 text-center">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border text-sm text-muted-foreground">
               <Wand2 className="w-4 h-4 text-primary" />
-              레벨이 높을수록 <strong className="text-foreground">투표 가중치 ×5</strong>까지 증가
+              데이터 + AI = 팬의 <strong className="text-foreground">최강 무기</strong>
             </div>
           </div>
         </div>
@@ -520,7 +546,7 @@ export default function PitchDeck() {
               { icon: Flame, title: "실시간 FES 랭킹", desc: "아티스트별 Fan Energy Score 실시간 순위 및 변동 추적." },
               { icon: BarChart3, title: "에너지 트리맵", desc: "면적 = 에너지, 색상 = 추세. 한 화면에 시장 전체를 파악." },
               { icon: Music, title: "스트리밍 가이드", desc: "AI가 아티스트별 최적 스트리밍 전략을 실시간 생성." },
-              { icon: Wand2, title: "라이트스틱 시스템", desc: "퀴즈 정답 → 레벨 업 → 투표 가중치 상승의 게이미피케이션." },
+              { icon: Wand2, title: "AI 마술봉 무기", desc: "에이전트가 실시간 데이터로 무장해 팬의 덕질 효율을 극대화." },
               { icon: Bot, title: "팬 에이전트 봇", desc: "자연어로 소통하는 AI. 관심 아티스트 브리핑 & 전략 제공." },
               { icon: Users, title: "팬덤 커뮤니티", desc: "위키, 포스트, 챌린지, DM 등 팬 활동을 위한 통합 공간." },
             ].map((f, i) => (
