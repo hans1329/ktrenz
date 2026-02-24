@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink } from "lucide-react";
+import BoxParticles from "@/components/v3/BoxParticles";
 
 // ── Types ──
 interface TreemapItem {
@@ -303,6 +304,13 @@ const V3Treemap = () => {
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
+
+                {isMedium && (
+                  <BoxParticles
+                    count={Math.max(5, Math.round(sharePct * 3))}
+                    color={rect.item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : rect.item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
+                  />
+                )}
 
                 {rect.item.sparkline.length >= 2 && isMedium && (
                   <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}
