@@ -4543,6 +4543,9 @@ export type Database = {
       }
       v3_scores: {
         Row: {
+          album_sales_data: Json | null
+          album_sales_score: number | null
+          album_sales_updated_at: string | null
           buzz_mentions: number | null
           buzz_score: number | null
           buzz_sentiment: string | null
@@ -4561,6 +4564,9 @@ export type Database = {
           youtube_score: number | null
         }
         Insert: {
+          album_sales_data?: Json | null
+          album_sales_score?: number | null
+          album_sales_updated_at?: string | null
           buzz_mentions?: number | null
           buzz_score?: number | null
           buzz_sentiment?: string | null
@@ -4579,6 +4585,9 @@ export type Database = {
           youtube_score?: number | null
         }
         Update: {
+          album_sales_data?: Json | null
+          album_sales_score?: number | null
+          album_sales_updated_at?: string | null
           buzz_mentions?: number | null
           buzz_score?: number | null
           buzz_sentiment?: string | null

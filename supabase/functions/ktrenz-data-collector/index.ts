@@ -6,7 +6,45 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// --- Firecrawl 스크래핑 ---
+// ── 한글↔영문 아티스트명 매핑 ──
+const ARTIST_NAME_MAP: Record<string, string[]> = {
+  "방탄소년단": ["BTS", "방탄소년단"],
+  "세븐틴": ["SEVENTEEN", "세븐틴", "SVT"],
+  "스트레이 키즈": ["Stray Kids", "스트레이키즈", "SKZ"],
+  "엔시티 드림": ["NCT DREAM", "NCT Dream", "엔시티드림"],
+  "엔시티 127": ["NCT 127", "엔시티127"],
+  "엔시티": ["NCT", "엔시티"],
+  "투모로우바이투게더": ["TOMORROW X TOGETHER (TXT)", "TXT", "투바투"],
+  "에스파": ["aespa", "에스파"],
+  "르세라핌": ["LE SSERAFIM", "르세라핌"],
+  "아이브": ["IVE", "아이브"],
+  "뉴진스": ["NewJeans", "뉴진스", "NJZ"],
+  "블랙핑크": ["BLACKPINK", "블랙핑크"],
+  "트와이스": ["TWICE", "트와이스"],
+  "에이티즈": ["ATEEZ", "에이티즈"],
+  "더보이즈": ["The Boyz", "더보이즈"],
+  "엔하이픈": ["ENHYPEN", "엔하이픈"],
+  "정국": ["Jungkook", "정국"],
+  "지민": ["Jimin", "지민"],
+  "베이비몬스터": ["Babymonster", "BABYMONSTER", "베이비몬스터"],
+  "보넥도": ["BOYNEXTDOOR", "보이넥스트도어"],
+  "제로베이스원": ["ZEROBASEONE", "ZB1", "제로베이스원"],
+  "라이즈": ["RIIZE", "라이즈"],
+  "엑소": ["EXO", "엑소"],
+  "레드벨벳": ["Red Velvet", "레드벨벳"],
+  "샤이니": ["SHINee", "샤이니"],
+  "빅뱅": ["BIGBANG", "빅뱅"],
+  "몬스타엑스": ["MONSTA X", "몬스타엑스"],
+  "갓세븐": ["GOT7", "갓세븐"],
+  "아이들": ["(G)I-DLE", "여자아이들", "아이들"],
+  "트레저": ["TREASURE", "트레저"],
+  "피원하모니": ["P1Harmony", "피원하모니"],
+  "사이커스": ["Xikers", "사이커스"],
+  "위너": ["WINNER", "위너"],
+  "아이콘": ["iKON", "아이콘"],
+};
+
+// ── Firecrawl 스크래핑 ──
 async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
   const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
     method: "POST",
@@ -18,7 +56,7 @@ async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
       url,
       formats: ["markdown"],
       onlyMainContent: true,
-      waitFor: 3000,
+      waitFor: 5000,
     }),
   });
   if (!resp.ok) {
@@ -28,66 +66,7 @@ async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
   return resp.json();
 }
 
-// --- Circle Chart 파싱 ---
-function parseCircleChart(markdown: string): Array<{
-  rank: number;
-  album: string;
-  artist: string;
-  sales: number;
-  distributor: string;
-}> {
-  const results: Array<any> = [];
-  // Circle Chart 마크다운에서 Rank/Album/Artist/Sales/Distribution 패턴 매칭
-  // 스크린샷 기준: 숫자(rank), 앨범명, 아티스트명(괄호 포함), 숫자(sales), 배급사
-  const lines = markdown.split("\n").map((l) => l.trim()).filter(Boolean);
-
-  let i = 0;
-  while (i < lines.length) {
-    // 순위 숫자 찾기
-    const rankMatch = lines[i].match(/^(\d{1,3})$/);
-    if (rankMatch) {
-      const rank = parseInt(rankMatch[1]);
-      // 다음 줄들에서 앨범/아티스트/판매량 찾기
-      let album = "";
-      let artist = "";
-      let sales = 0;
-      let distributor = "";
-
-      for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-        // 판매량 (콤마 포함 숫자)
-        const salesMatch = lines[j].match(/^([\d,]+)$/);
-        if (salesMatch && parseInt(salesMatch[1].replace(/,/g, "")) > 100) {
-          sales = parseInt(salesMatch[1].replace(/,/g, ""));
-          continue;
-        }
-        // 아티스트 (한글 괄호 포함)
-        const artistMatch = lines[j].match(/^(.+?)\s*[\(（](.+?)[\)）]$/);
-        if (artistMatch) {
-          artist = lines[j];
-          continue;
-        }
-        // 배급사
-        if (/Music|Entertainment|PLUS|Kakao|Dreamus|Genie|Stone|Warner|Universal|Interpark/i.test(lines[j])) {
-          distributor = lines[j];
-          continue;
-        }
-        // 앨범명 (위 패턴에 안 걸리면)
-        if (!album && !lines[j].startsWith("!") && !lines[j].startsWith("[") && lines[j].length > 1) {
-          album = lines[j];
-        }
-      }
-
-      if (album && sales > 0) {
-        results.push({ rank, album, artist: artist || "Unknown", sales, distributor });
-      }
-    }
-    i++;
-  }
-
-  return results;
-}
-
-// --- 한터차트 초동 데이터 파싱 ---
+// ── 한터차트 초동 데이터 파싱 ──
 function parseHanteoInitial(markdown: string): Array<{
   album: string;
   artist: string;
@@ -97,12 +76,10 @@ function parseHanteoInitial(markdown: string): Array<{
   const lines = markdown.split("\n").map((l) => l.trim()).filter(Boolean);
 
   for (let i = 0; i < lines.length; i++) {
-    // 패턴: 앨범명 -> 판매량(숫자,콤마) -> 아티스트명
     const salesMatch = lines[i].match(/^([\d,]+)$/);
     if (salesMatch) {
       const sales = parseInt(salesMatch[1].replace(/,/g, ""));
       if (sales > 1000) {
-        // 이전 줄 = 앨범명, 다음 줄 = 아티스트명
         const album = i > 0 ? lines[i - 1] : "";
         const artist = i + 1 < lines.length ? lines[i + 1] : "";
         if (album && !album.startsWith("!") && !album.startsWith("[") && artist) {
@@ -119,29 +96,96 @@ function parseHanteoInitial(markdown: string): Array<{
   return results;
 }
 
-// --- 아티스트명 → wiki_entry 매칭 ---
+// ── 아티스트명 → wiki_entry 매칭 (한글 매핑 강화) ──
 async function matchArtistToWikiEntry(
   adminClient: any,
   artistName: string
 ): Promise<string | null> {
-  // 괄호 안의 영문/한글명 추출
-  const names: string[] = [artistName];
-  const bracketMatch = artistName.match(/[\(（](.+?)[\)）]/);
-  if (bracketMatch) {
-    names.push(bracketMatch[1].trim());
-    names.push(artistName.replace(/\s*[\(（].+?[\)）]/, "").trim());
+  // 1) 매핑 테이블에서 영문명 후보 추출
+  const candidates: string[] = [artistName];
+  
+  for (const [korName, aliases] of Object.entries(ARTIST_NAME_MAP)) {
+    if (aliases.some(a => artistName.includes(a)) || artistName.includes(korName)) {
+      candidates.push(...aliases);
+    }
   }
 
-  for (const name of names) {
-    if (!name) continue;
+  // 2) 괄호 안의 이름도 추출
+  const bracketMatch = artistName.match(/[\(（](.+?)[\)）]/);
+  if (bracketMatch) {
+    candidates.push(bracketMatch[1].trim());
+    candidates.push(artistName.replace(/\s*[\(（].+?[\)）]/, "").trim());
+  }
+
+  // 3) 중복 제거 후 검색
+  const unique = [...new Set(candidates.filter(Boolean))];
+  
+  for (const name of unique) {
     const { data } = await adminClient
       .from("wiki_entries")
       .select("id, title")
       .ilike("title", `%${name}%`)
+      .eq("schema_type", "artist")
       .limit(1);
     if (data?.[0]) return data[0].id;
   }
   return null;
+}
+
+// ── 판매량 → 스코어 변환 ──
+function calculateAlbumSalesScore(totalFirstWeekSales: number): number {
+  // sqrt 기반 스코어링: 500만장 → ~2236, 100만장 → ~1000, 10만장 → ~316
+  return Math.round(Math.sqrt(totalFirstWeekSales / 10) * 10);
+}
+
+// ── v3_scores 업데이트 ──
+async function updateV3ScoresWithSales(
+  adminClient: any,
+  wikiEntryId: string,
+  salesData: { album: string; first_week_sales: number }[]
+): Promise<void> {
+  const totalSales = salesData.reduce((sum, d) => sum + d.first_week_sales, 0);
+  const topAlbum = salesData.sort((a, b) => b.first_week_sales - a.first_week_sales)[0];
+  const score = calculateAlbumSalesScore(totalSales);
+
+  // 최신 scored_at 기준으로 1개 행만 가져옴
+  const { data: existing } = await adminClient
+    .from("v3_scores")
+    .select("id, youtube_score, buzz_score, spotify_score, twitter_score")
+    .eq("wiki_entry_id", wikiEntryId)
+    .order("scored_at", { ascending: false })
+    .limit(1);
+
+  const salesPayload = {
+    album_sales_score: score,
+    album_sales_data: {
+      total_first_week_sales: totalSales,
+      top_album: topAlbum?.album,
+      top_album_sales: topAlbum?.first_week_sales,
+      album_count: salesData.length,
+      albums: salesData.slice(0, 5),
+    },
+    album_sales_updated_at: new Date().toISOString(),
+  };
+
+  if (existing?.[0]) {
+    const row = existing[0];
+    const newTotal = (row.youtube_score || 0) + (row.buzz_score || 0) + 
+                     (row.spotify_score || 0) + (row.twitter_score || 0) + score;
+    
+    const { error } = await adminClient.from("v3_scores")
+      .update({ ...salesPayload, total_score: newTotal })
+      .eq("id", row.id);
+    
+    if (error) console.error(`[DataCollector] v3_scores update error for ${wikiEntryId}:`, error);
+    else console.log(`[DataCollector] v3_scores updated: ${wikiEntryId}, albumScore=${score}`);
+  } else {
+    await adminClient.from("v3_scores").insert({
+      wiki_entry_id: wikiEntryId,
+      ...salesPayload,
+      total_score: score,
+    });
+  }
 }
 
 Deno.serve(async (req) => {
@@ -164,60 +208,11 @@ Deno.serve(async (req) => {
     );
 
     const { source } = await req.json().catch(() => ({ source: "all" }));
-    const collectSources = source === "all" ? ["circle_chart", "hanteo"] : [source];
+    const collectSources = source === "all" ? ["hanteo"] : [source];
 
     const results: Record<string, any> = {};
 
-    // --- Circle Chart 수집 ---
-    if (collectSources.includes("circle_chart")) {
-      console.log("[DataCollector] Scraping Circle Chart...");
-      try {
-        const circleData = await scrapeWithFirecrawl(
-          "https://circlechart.kr/page_chart/album.circle",
-          FIRECRAWL_API_KEY
-        );
-        const md = circleData?.data?.markdown || circleData?.markdown || "";
-        const parsed = parseCircleChart(md);
-        console.log(`[DataCollector] Circle Chart parsed ${parsed.length} entries`);
-
-        let saved = 0;
-        for (const entry of parsed) {
-          const wikiEntryId = await matchArtistToWikiEntry(adminClient, entry.artist);
-          await adminClient.from("ktrenz_data_snapshots").insert({
-            wiki_entry_id: wikiEntryId,
-            platform: "circle_chart",
-            metrics: {
-              rank: entry.rank,
-              album: entry.album,
-              artist: entry.artist,
-              weekly_sales: entry.sales,
-              distributor: entry.distributor,
-              chart_type: "weekly_album",
-            },
-            raw_response: wikiEntryId ? undefined : { unmatched_artist: entry.artist },
-          });
-          saved++;
-        }
-
-        await adminClient.from("ktrenz_collection_log").insert({
-          platform: "circle_chart",
-          status: parsed.length > 0 ? "success" : "partial",
-          records_collected: saved,
-        });
-        results.circle_chart = { parsed: parsed.length, saved };
-      } catch (e) {
-        console.error("[DataCollector] Circle Chart error:", e);
-        await adminClient.from("ktrenz_collection_log").insert({
-          platform: "circle_chart",
-          status: "error",
-          error_message: e.message,
-          records_collected: 0,
-        });
-        results.circle_chart = { error: e.message };
-      }
-    }
-
-    // --- 한터차트 초동 수집 ---
+    // ── 한터차트 초동 수집 ──
     if (collectSources.includes("hanteo")) {
       console.log("[DataCollector] Scraping Hanteo Chart...");
       try {
@@ -227,11 +222,23 @@ Deno.serve(async (req) => {
         );
         const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
         const parsed = parseHanteoInitial(md);
-        console.log(`[DataCollector] Hanteo initial parsed ${parsed.length} entries`);
+        console.log(`[DataCollector] Hanteo parsed ${parsed.length} entries`);
 
         let saved = 0;
+        let matched = 0;
+        
+        // 아티스트별로 그룹핑
+        const artistAlbums: Record<string, { wikiEntryId: string | null; albums: any[] }> = {};
+
         for (const entry of parsed) {
           const wikiEntryId = await matchArtistToWikiEntry(adminClient, entry.artist);
+          
+          if (!artistAlbums[entry.artist]) {
+            artistAlbums[entry.artist] = { wikiEntryId, albums: [] };
+          }
+          artistAlbums[entry.artist].albums.push(entry);
+
+          // 스냅샷 저장
           await adminClient.from("ktrenz_data_snapshots").insert({
             wiki_entry_id: wikiEntryId,
             platform: "hanteo",
@@ -244,6 +251,16 @@ Deno.serve(async (req) => {
             raw_response: wikiEntryId ? undefined : { unmatched_artist: entry.artist },
           });
           saved++;
+          if (wikiEntryId) matched++;
+        }
+
+        // v3_scores 업데이트 (매칭된 아티스트만)
+        let scoresUpdated = 0;
+        for (const [artistName, data] of Object.entries(artistAlbums)) {
+          if (data.wikiEntryId) {
+            await updateV3ScoresWithSales(adminClient, data.wikiEntryId, data.albums);
+            scoresUpdated++;
+          }
         }
 
         await adminClient.from("ktrenz_collection_log").insert({
@@ -251,7 +268,9 @@ Deno.serve(async (req) => {
           status: parsed.length > 0 ? "success" : "partial",
           records_collected: saved,
         });
-        results.hanteo = { parsed: parsed.length, saved };
+
+        console.log(`[DataCollector] Hanteo: saved=${saved}, matched=${matched}, scoresUpdated=${scoresUpdated}`);
+        results.hanteo = { parsed: parsed.length, saved, matched, scoresUpdated };
       } catch (e) {
         console.error("[DataCollector] Hanteo error:", e);
         await adminClient.from("ktrenz_collection_log").insert({
