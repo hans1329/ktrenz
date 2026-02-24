@@ -112,6 +112,48 @@ const FesEngine = () => {
         { name: "v3_energy_baselines", desc: "FES 계산용 EMA 기준값", source: "Supabase" },
         { name: "wiki_entries.metadata", desc: "캐시된 원시 데이터", source: "Supabase JSONB" },
       ]} />
+
+      <SectionHeader icon={Activity} title="에너지 맵 (Treemap) 구성 방식" color="bg-emerald-600" />
+      <p className="text-xs text-muted-foreground">홈 화면의 <strong>⚡ Energy Map</strong>은 FES 상위 10위 아티스트를 트리맵으로 시각화합니다.</p>
+
+      <Card className="p-3 bg-card border-border/50 space-y-3">
+        <div>
+          <span className="text-xs font-bold text-foreground">📐 타일 면적 = Fan Energy Score</span>
+          <p className="text-[10px] text-muted-foreground mt-0.5">FES가 높을수록 더 큰 면적을 차지합니다. Squarify 알고리즘을 사용해 정사각형에 가까운 타일을 생성하여 가독성을 극대화합니다.</p>
+        </div>
+        <div>
+          <span className="text-xs font-bold text-foreground">🎨 타일 색상 = 24시간 에너지 변화율</span>
+          <div className="mt-1 space-y-1">
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">빨간색</strong> — 상승 중 (Δ ≥ +5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(145,55%,30%,0.7)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">초록색</strong> — 안정 (Δ -5% ~ +5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(220,55%,35%,0.7)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">파란색</strong> — 하락 중 (Δ ≤ -5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm border border-destructive/50 animate-pulse" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">네온 SURGE</strong> — 급등 (Δ ≥ +25%) 발광 애니메이션</span></div>
+          </div>
+        </div>
+        <div>
+          <span className="text-xs font-bold text-foreground">📈 타일 내 스파크라인</span>
+          <p className="text-[10px] text-muted-foreground mt-0.5">중간 크기 이상의 타일에는 최근 점수 히스토리를 미니 라인차트로 표시하여 모멘텀 방향을 직관적으로 전달합니다.</p>
+        </div>
+        <div>
+          <span className="text-xs font-bold text-foreground">🏷️ 트렌드 라벨 분류</span>
+          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 mt-1 whitespace-pre-wrap">{`🔥 SURGE  — Δ ≥ 30% 또는 가속도 ≥ 40%\n↑ Rising  — Δ ≥ 10%\n→ Stable  — Δ > -5%\n↘ Cooling — Δ > -15%\n↓ Falling — Δ ≤ -15%`}</code>
+        </div>
+      </Card>
+
+      <Card className="p-3 bg-card border-border/50 space-y-2">
+        <span className="text-xs font-bold text-foreground">🔍 인스펙터 패널 (타일 탭 시)</span>
+        <p className="text-[10px] text-muted-foreground">타일을 탭하면 중앙 모달로 해당 아티스트의 상세 에너지 분석이 표시됩니다:</p>
+        <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc pl-4">
+          <li><strong className="text-foreground">FES</strong> — 현재 에너지 점수</li>
+          <li><strong className="text-foreground">24h Δ</strong> — 직전 24시간 변화율</li>
+          <li><strong className="text-foreground">Trend</strong> — 트렌드 라벨 (SURGE / Rising / Stable 등)</li>
+          <li><strong className="text-foreground">Energy Heat Channels</strong> — YouTube, Spotify, Buzz, X 각 채널별 에너지 기여 비율 (프로그레스 바)</li>
+          <li><strong className="text-foreground">Score Momentum</strong> — 점수 히스토리 스파크라인 차트</li>
+        </ul>
+      </Card>
+
+      <FormulaCard title="Squarify 알고리즘 요약" formula={`1. 전체 에너지 합산 → 각 아티스트 면적 비율 계산\n2. Worst Aspect Ratio 최소화하며 행(row) 배치\n3. 가로/세로 중 긴 축을 기준으로 분할 반복\n4. 결과: 정사각형에 가까운 타일 배치 → 가독성 ↑`} description="참고: finviz.com/map, kaito.ai 스타일의 히트맵 레이아웃" />
+
       <p className="text-[10px] text-muted-foreground text-center mt-6">최종 업데이트: 2026년 2월 · KTRENDZ v3 스코어링 엔진</p>
     </div>
   );
