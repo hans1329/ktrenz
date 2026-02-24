@@ -6,6 +6,7 @@ import {
   ChevronDown, Music, Globe, Users
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 
 /* ─────── Section wrapper ─────── */
 const Section = ({
@@ -122,9 +123,8 @@ export default function PitchDeck() {
         </div>
 
         <div className="relative max-w-4xl mx-auto text-center z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
-            <Flame className="w-4 h-4" />
-            K-TRENZ
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8">
+            <img src={ktrenzLogo} alt="K-TRENZ" className="h-5 w-auto" />
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.1] tracking-tight mb-6">
