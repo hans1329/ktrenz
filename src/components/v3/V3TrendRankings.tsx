@@ -17,9 +17,18 @@ const useCrawlStatus = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("system_jobs")
-        .select("status, metadata")
+        .select("status, metadata, started_at")
         .eq("id", "daily-data-crawl")
         .single();
+      if (!data) return data;
+      // If status is "running" but started_at is more than 10 minutes ago, treat as stale/completed
+      if (data.status === "running" && data.started_at) {
+        const startedAt = new Date(data.started_at).getTime();
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+        if (startedAt < tenMinutesAgo) {
+          return { ...data, status: "completed" };
+        }
+      }
       return data;
     },
     refetchInterval: 10000,
