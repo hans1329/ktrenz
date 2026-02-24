@@ -1786,6 +1786,92 @@ export type Database = {
         }
         Relationships: []
       }
+      kpass_subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          started_at: string
+          status: string
+          tier_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          tier_id: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          tier_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpass_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "kpass_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpass_tiers: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          features: Json | null
+          icon: string | null
+          id: number
+          is_active: boolean
+          monthly_price_usd: number
+          name: string
+          name_ko: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          icon?: string | null
+          id?: number
+          is_active?: boolean
+          monthly_price_usd?: number
+          name: string
+          name_ko: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          icon?: string | null
+          id?: number
+          is_active?: boolean
+          monthly_price_usd?: number
+          name?: string
+          name_ko?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       ktrenz_fan_agent_messages: {
         Row: {
           content: string
