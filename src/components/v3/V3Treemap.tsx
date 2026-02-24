@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Flame, Zap, Crown } from "lucide-react";
 
 // ── Types ──
 interface TreemapItem {
@@ -32,18 +32,30 @@ function getTrendLabel(change: number, sparkline: number[]): TrendLabel {
   return "↓ Falling";
 }
 
-// Color: RED=rising, GREEN=stable, BLUE=falling
 function getTileColor(change: number): string {
-  if (change >= 30) return "hsla(0, 85%, 50%, 0.9)";     // HOT RED
-  if (change >= 15) return "hsla(5, 75%, 45%, 0.8)";      // RED
-  if (change >= 5) return "hsla(10, 60%, 40%, 0.7)";      // WARM RED
-  if (change > -5) return "hsla(145, 55%, 30%, 0.7)";     // GREEN stable
-  if (change > -15) return "hsla(220, 55%, 35%, 0.7)";    // BLUE cooling
-  return "hsla(230, 60%, 28%, 0.8)";                       // DEEP BLUE falling
+  if (change >= 30) return "hsla(0, 85%, 50%, 0.9)";
+  if (change >= 15) return "hsla(5, 75%, 45%, 0.8)";
+  if (change >= 5) return "hsla(10, 60%, 40%, 0.7)";
+  if (change > -5) return "hsla(145, 55%, 30%, 0.7)";
+  if (change > -15) return "hsla(220, 55%, 35%, 0.7)";
+  return "hsla(230, 60%, 28%, 0.8)";
 }
 
 function isSurging(change: number): boolean {
   return change >= 25;
+}
+
+function isRising(change: number): boolean {
+  return change >= 10;
+}
+
+// ── Particles overlay for hot tiles ──
+function ParticleOverlay() {
+  return (
+    <div className="energy-particles">
+      <span /><span /><span /><span /><span /><span />
+    </div>
+  );
 }
 
 // ── Sparkline ──
@@ -115,7 +127,62 @@ function ChannelBar({ icon, label, value, total, color }: { icon: React.ReactNod
   );
 }
 
-// ── Inspector Panel (enhanced) ──
+// ── Summary Cards ──
+function SummaryCards({ items }: { items: TreemapItem[] }) {
+  const mvp = items[0];
+  const fastestRise = [...items].sort((a, b) => b.energyChange24h - a.energyChange24h)[0];
+  const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
+
+  const cards = [
+    {
+      label: "Today's MVP",
+      icon: <Crown className="w-3.5 h-3.5 text-yellow-400" />,
+      value: mvp?.title || "—",
+      sub: mvp ? `FES ${Math.round(mvp.energyScore)}` : "",
+      accent: true,
+    },
+    {
+      label: "Fastest Rise",
+      icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" />,
+      value: fastestRise?.title || "—",
+      sub: fastestRise ? `+${fastestRise.energyChange24h.toFixed(1)}%` : "",
+      accent: false,
+    },
+    {
+      label: "Total Energy",
+      icon: <Zap className="w-3.5 h-3.5 text-primary" />,
+      value: totalEnergy.toLocaleString(),
+      sub: `${items.length} artists`,
+      accent: false,
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-2 mb-4">
+      {cards.map((c) => (
+        <div
+          key={c.label}
+          className={cn(
+            "relative overflow-hidden rounded-xl border p-3 transition-all",
+            c.accent
+              ? "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20"
+              : "bg-card/60 border-border/50"
+          )}
+        >
+          {c.accent && <div className="animate-shimmer" />}
+          <div className="flex items-center gap-1 mb-1.5">
+            {c.icon}
+            <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">{c.label}</span>
+          </div>
+          <p className="text-sm font-black text-foreground truncate">{c.value}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{c.sub}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Inspector Panel ──
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
   const navigate = useNavigate();
   const total = (item.youtubeScore || 0) + (item.spotifyScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0);
@@ -135,7 +202,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl my-auto",
         surging ? "border-destructive/50 animate-neon-surge bg-card" : "border-border bg-card"
       )} onClick={e => e.stopPropagation()}>
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           {surging && <span className="text-lg animate-fire-burn">🔥</span>}
@@ -150,7 +216,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Energy Stats */}
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-muted/50 border border-border p-3 text-center">
             <p className="text-[10px] text-muted-foreground mb-1">FES</p>
@@ -170,7 +235,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           </div>
         </div>
 
-        {/* Channel Energy Distribution */}
         {channels.length > 0 && (
           <div className="space-y-2">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
@@ -184,7 +248,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           </div>
         )}
 
-        {/* Sparkline */}
         {item.sparkline.length >= 2 && (
           <div className="rounded-xl bg-muted/30 border border-border p-3">
             <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
@@ -195,7 +258,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           </div>
         )}
 
-        {/* CTA */}
         <button onClick={() => navigate(`/artist/${item.slug}`)}
           className="w-full flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-2.5 rounded-full transition-colors">
           <ExternalLink className="w-3.5 h-3.5" /> View Full Profile
@@ -237,7 +299,7 @@ const V3Treemap = () => {
           buzzScore: s.buzz_score || 0, twitterScore: s.twitter_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
         };
-      }).filter((i) => i.slug).sort((a, b) => b.energyScore - a.energyScore).slice(0, 10); // TOP 10 ONLY
+      }).filter((i) => i.slug).sort((a, b) => b.energyScore - a.energyScore).slice(0, 10);
     },
     staleTime: 30_000,
   });
@@ -253,13 +315,31 @@ const V3Treemap = () => {
 
   return (
     <div className="px-4 pb-4">
-      {/* Header */}
-      <div className="pt-4 pb-3">
-        <h2 className="text-xl font-black text-foreground">⚡ Energy Map</h2>
-        <p className="text-xs text-muted-foreground mt-0.5 pl-7">
-          지금 어디서 폭발하고 있나? · Top 10 · Tap to inspect
-        </p>
+      {/* Premium Header */}
+      <div className="pt-4 pb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                <Flame className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-foreground tracking-tight">Energy Map</h2>
+                <p className="text-[10px] text-muted-foreground">
+                  LIVE · Top 10 · Tap to inspect
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[10px] font-semibold text-muted-foreground">Real-time</span>
+          </div>
+        </div>
       </div>
+
+      {/* Summary Cards */}
+      <SummaryCards items={items} />
 
       {/* Legend */}
       <div className="flex items-center justify-center gap-4 mb-3 text-[10px] text-muted-foreground">
@@ -293,7 +373,9 @@ const V3Treemap = () => {
             const isLarge = width > 18 && height > 15; const isMedium = width > 12 && height > 10;
             const isSelected = selectedItem?.id === rect.item.id;
             const surging = isSurging(rect.item.energyChange24h);
+            const rising = isRising(rect.item.energyChange24h);
             const sharePct = totalEnergy > 0 ? (rect.item.energyScore / totalEnergy * 100) : 0;
+            const showParticles = surging || rising;
 
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
@@ -303,6 +385,9 @@ const V3Treemap = () => {
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
+
+                {/* Particles for rising/surging tiles */}
+                {showParticles && <ParticleOverlay />}
 
                 {rect.item.sparkline.length >= 2 && isMedium && (
                   <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}

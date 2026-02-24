@@ -116,4 +116,53 @@ html, body {
     animation: energy-ripple 2s ease-out infinite;
     pointer-events: none;
   }
+
+  @keyframes particle-float {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { transform: translateY(-40px) translateX(10px) scale(0); opacity: 0; }
+  }
+  @keyframes particle-float-2 {
+    0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0.6; }
+    50% { opacity: 0.9; }
+    100% { transform: translateY(-35px) translateX(-8px) scale(0); opacity: 0; }
+  }
+  @keyframes particle-float-3 {
+    0% { transform: translateY(0) translateX(0) scale(0.6); opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { transform: translateY(-30px) translateX(15px) scale(0); opacity: 0; }
+  }
+  .energy-particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .energy-particles span {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: hsla(30, 100%, 70%, 0.9);
+  }
+  .energy-particles span:nth-child(1) { bottom: 20%; left: 25%; animation: particle-float 2.2s ease-out infinite; }
+  .energy-particles span:nth-child(2) { bottom: 30%; left: 55%; animation: particle-float-2 1.8s ease-out infinite 0.3s; }
+  .energy-particles span:nth-child(3) { bottom: 15%; left: 70%; animation: particle-float-3 2.5s ease-out infinite 0.7s; }
+  .energy-particles span:nth-child(4) { bottom: 40%; left: 40%; animation: particle-float 2s ease-out infinite 1s; }
+  .energy-particles span:nth-child(5) { bottom: 25%; left: 80%; animation: particle-float-2 2.3s ease-out infinite 0.5s; }
+  .energy-particles span:nth-child(6) { bottom: 35%; left: 15%; animation: particle-float-3 1.9s ease-out infinite 1.2s; }
+
+  @keyframes shimmer-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .animate-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, hsla(0, 0%, 100%, 0.06), transparent);
+    animation: shimmer-slide 3s ease-in-out infinite;
+    pointer-events: none;
+  }
 }
