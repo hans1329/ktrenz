@@ -126,7 +126,7 @@ const V3ArtistDetail = () => {
       const buzzData = buzzRaw?.data?.success ? buzzRaw.data : null;
       const musicData = musicRaw?.data?.success ? musicRaw.data : null;
       const warnings: string[] = [];
-      if (ytRaw?.data && !ytRaw.data.success && !ytRaw.data.error?.includes('quota')) warnings.push('YouTube error');
+      if (ytRaw?.data && !ytRaw.data.success && !ytRaw.data.error?.includes('quota') && !ytRaw.data.error?.includes('No YouTube channel')) warnings.push('YouTube error');
       if (buzzRaw?.data && !buzzRaw.data.success) warnings.push('Buzz error');
       if (musicRaw?.data && !musicRaw.data.success) warnings.push('Music error');
       let fesData = null;
