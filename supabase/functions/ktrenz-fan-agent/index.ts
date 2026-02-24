@@ -50,17 +50,27 @@ Deno.serve(async (req) => {
     );
 
     const { data: trendData } = await adminClient
-      .from("v3_trend_scores")
-      .select("wiki_entry_id, total_score, score_change_24h, youtube_score, spotify_score, twitter_score, tiktok_score, wiki_entries(title)")
-      .order("total_score", { ascending: false })
-      .limit(20);
+      .from("v3_scores")
+      .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, spotify_score, buzz_score, twitter_score, scored_at, wiki_entries:wiki_entry_id(title)")
+      .order("scored_at", { ascending: false });
 
-    const trendContext = trendData?.length
-      ? `\n\n[실시간 FES 랭킹 Top 20]\n${trendData
+    // 최신 scored_at 기준으로 wiki_entry_id별 최신 1건만 추출
+    const latestMap = new Map<string, any>();
+    for (const row of trendData ?? []) {
+      if (!latestMap.has(row.wiki_entry_id)) {
+        latestMap.set(row.wiki_entry_id, row);
+      }
+    }
+    const latest = [...latestMap.values()]
+      .sort((a, b) => (b.energy_score ?? 0) - (a.energy_score ?? 0))
+      .slice(0, 20);
+
+    const trendContext = latest.length
+      ? `\n\n[실시간 FES 랭킹 Top 20 - ${new Date().toISOString().slice(0, 16)}]\n${latest
           .map((a: any, i: number) => {
-            const name = a.wiki_entries?.title ?? "Unknown";
-            const change = a.score_change_24h ?? 0;
-            return `${i + 1}. ${name} | FES: ${Math.round(a.total_score)} (${change > 0 ? "+" : ""}${Math.round(change)}) | YT: ${Math.round(a.youtube_score)} | Spotify: ${Math.round(a.spotify_score)} | X: ${Math.round(a.twitter_score)}`;
+            const name = (a.wiki_entries as any)?.title ?? "Unknown";
+            const change = a.energy_change_24h ?? 0;
+            return `${i + 1}. ${name} | Energy: ${Math.round(a.energy_score)} (${change > 0 ? "+" : ""}${change.toFixed(1)}%) | Total: ${Math.round(a.total_score)} | YT: ${Math.round(a.youtube_score)} | Buzz: ${Math.round(a.buzz_score ?? 0)}`;
           })
           .join("\n")}`
       : "";
