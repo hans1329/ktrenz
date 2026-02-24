@@ -1,5 +1,8 @@
 project_id = "jguylowswwgjvotdcsfj"
 
+[functions.calculate-energy-score]
+verify_jwt = false
+
 [functions.ktrenz-data-collector]
 verify_jwt = false
 
