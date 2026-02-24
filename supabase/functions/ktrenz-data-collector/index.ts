@@ -328,7 +328,6 @@ async function collectForSingleArtist(
         const ytScore = calculateYouTubeScore(ytData);
         await upsertV3Score(adminClient, wikiEntryId, {
           youtube_score: ytScore,
-          raw_data: ytData,
         });
         await adminClient.from("ktrenz_data_snapshots").insert({
           wiki_entry_id: wikiEntryId, platform: "youtube",
@@ -348,11 +347,6 @@ async function collectForSingleArtist(
       const musicScore = calculateMusicScore(lastfm, deezer);
       await upsertV3Score(adminClient, wikiEntryId, {
         music_score: musicScore,
-        music_data: {
-          lastfm: lastfm ? { playcount: lastfm.playcount, listeners: lastfm.listeners, top_tracks: lastfm.topTracks?.slice(0, 5) } : null,
-          deezer: deezer ? { fans: deezer.fans, nb_album: deezer.nbAlbum, top_tracks: deezer.topTracks?.slice(0, 5) } : null,
-        },
-        music_updated_at: new Date().toISOString(),
       });
       if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
       if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
@@ -402,12 +396,6 @@ async function collectForSingleArtist(
         const score = Math.round(Math.sqrt(totalSales / 10) * 10);
         await upsertV3Score(adminClient, wikiEntryId, {
           album_sales_score: score,
-          album_sales_data: {
-            total_first_week_sales: totalSales, top_album: topAlbum?.album,
-            top_album_sales: topAlbum?.first_week_sales, album_count: matchedAlbums.length,
-            albums: matchedAlbums.slice(0, 5),
-          },
-          album_sales_updated_at: new Date().toISOString(),
         });
         for (const entry of matchedAlbums) {
           await adminClient.from("ktrenz_data_snapshots").insert({
@@ -450,7 +438,9 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { source = "all", wikiEntryId } = body;
+    const { source = "all", wikiEntryId, batchSize: rawBatchSize, batchOffset: rawBatchOffset } = body;
+    const batchSize = Math.min(100, Math.max(1, Number(rawBatchSize) || 25));
+    const batchOffset = Math.max(0, Number(rawBatchOffset) || 0);
 
     const keys = { youtube: YOUTUBE_API_KEY, firecrawl: FIRECRAWL_API_KEY, lastfm: LASTFM_API_KEY };
 
@@ -480,7 +470,8 @@ Deno.serve(async (req) => {
     // 상위 아티스트 목록 (v3_scores total_score 기준)
     const { data: topScored } = await adminClient
       .from("v3_scores_v2").select("wiki_entry_id")
-      .order("total_score", { ascending: false }).limit(100);
+      .order("total_score", { ascending: false })
+      .range(batchOffset, batchOffset + batchSize - 1);
     const topIds = new Set((topScored || []).map((s: any) => s.wiki_entry_id).filter(Boolean));
 
     const { data: allArtists } = await adminClient
@@ -489,13 +480,13 @@ Deno.serve(async (req) => {
 
     const artists = topIds.size > 0
       ? (allArtists || []).filter((a: any) => topIds.has(a.id))
-      : (allArtists || []).slice(0, 100);
+      : (allArtists || []).slice(batchOffset, batchOffset + batchSize);
 
     const actualTotal = artists.length;
 
     await adminClient.from("system_jobs").upsert({
       id: "daily-data-crawl", status: "running", started_at: new Date().toISOString(),
-      metadata: { processed: 0, total: actualTotal, sources: collectSources },
+      metadata: { processed: 0, total: actualTotal, sources: collectSources, batchSize, batchOffset },
     }, { onConflict: "id" });
 
     const results: Record<string, any> = {};
@@ -511,7 +502,7 @@ Deno.serve(async (req) => {
           const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY);
           if (ytData) {
             const ytScore = calculateYouTubeScore(ytData);
-            await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore, raw_data: ytData });
+            await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore });
             await adminClient.from("ktrenz_data_snapshots").insert({
               wiki_entry_id: artist.id, platform: "youtube",
               metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
@@ -541,9 +532,16 @@ Deno.serve(async (req) => {
 
           let saved = 0, matched = 0;
           const artistAlbums: Record<string, { wikiEntryId: string | null; albums: any[] }> = {};
+          const artistWikiCache = new Map<string, string | null>();
 
           for (const entry of parsed) {
-            const entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+            let entryWikiId: string | null;
+            if (artistWikiCache.has(entry.artist)) {
+              entryWikiId = artistWikiCache.get(entry.artist) ?? null;
+            } else {
+              entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+              artistWikiCache.set(entry.artist, entryWikiId);
+            }
             if (!artistAlbums[entry.artist]) artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
             artistAlbums[entry.artist].albums.push(entry);
             await adminClient.from("ktrenz_data_snapshots").insert({
@@ -563,12 +561,6 @@ Deno.serve(async (req) => {
               const score = Math.round(Math.sqrt(totalSales / 10) * 10);
               await upsertV3Score(adminClient, data.wikiEntryId, {
                 album_sales_score: score,
-                album_sales_data: {
-                  total_first_week_sales: totalSales, top_album: topAlbum?.album,
-                  top_album_sales: topAlbum?.first_week_sales, album_count: data.albums.length,
-                  albums: data.albums.slice(0, 5),
-                },
-                album_sales_updated_at: new Date().toISOString(),
               });
               scoresUpdated++;
             }
@@ -599,11 +591,6 @@ Deno.serve(async (req) => {
           const musicScore = calculateMusicScore(lastfm, deezer);
           await upsertV3Score(adminClient, artist.id, {
             music_score: musicScore,
-            music_data: {
-              lastfm: lastfm ? { playcount: lastfm.playcount, listeners: lastfm.listeners, top_tracks: lastfm.topTracks?.slice(0, 5) } : null,
-              deezer: deezer ? { fans: deezer.fans, nb_album: deezer.nbAlbum, top_tracks: deezer.topTracks?.slice(0, 5) } : null,
-            },
-            music_updated_at: new Date().toISOString(),
           });
           if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
           if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
@@ -618,12 +605,21 @@ Deno.serve(async (req) => {
     if (collectSources.includes("buzz")) {
       console.log("[DataCollector] Triggering buzz collection...");
       try {
-        const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/buzz-cron`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}` },
-          body: JSON.stringify({ time: new Date().toISOString() }),
-        });
-        results.buzz = await buzzResp.json();
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 10000);
+
+        try {
+          const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/buzz-cron`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}` },
+            body: JSON.stringify({ time: new Date().toISOString() }),
+            signal: abortController.signal,
+          });
+          const text = await buzzResp.text();
+          results.buzz = text ? JSON.parse(text) : { success: buzzResp.ok };
+        } finally {
+          clearTimeout(timeoutId);
+        }
       } catch (e) {
         results.buzz = { error: e.message };
       }
@@ -632,7 +628,7 @@ Deno.serve(async (req) => {
     // 완료 기록
     await adminClient.from("system_jobs").update({
       status: "completed", completed_at: new Date().toISOString(),
-      metadata: { ...results, processed: totalProcessed, total: actualTotal },
+      metadata: { ...results, processed: actualTotal, total: actualTotal },
     }).eq("id", "daily-data-crawl");
 
     return new Response(JSON.stringify({ success: true, results }), {
