@@ -31,14 +31,14 @@ interface QuickAction {
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { icon: TrendingUp, label: "실시간 랭킹", prompt: "지금 실시간 트렌드 랭킹 Top 10을 알려줘", mode: "trend", color: "text-blue-400" },
-  { icon: Sparkles, label: "트렌드 분석", prompt: "오늘 가장 주목할만한 트렌드 변화를 분석해줘", mode: "trend", color: "text-purple-400" },
-  { icon: Music2, label: "스트리밍 가이드", prompt: "내 관심 아티스트의 스트리밍 가이드를 만들어줘. 플랫폼별 주의사항, 권장 플레이리스트, 총공 시간대를 포함해줘.", mode: "streaming", color: "text-green-400" },
-  { icon: Bell, label: "알림 설정", prompt: "내 관심 아티스트의 순위 변동 알림을 설정하고 싶어. 관심 있는 아티스트 이름을 직접 입력하면 추가할 수 있게 안내해줘. 현재 랭킹에 없는 아티스트도 추가할 수 있어.", mode: "alert", color: "text-amber-400" },
+  { icon: TrendingUp, label: "Live Rankings", prompt: "Show me the live trend rankings Top 10", mode: "trend", color: "text-blue-400" },
+  { icon: Sparkles, label: "Trend Analysis", prompt: "Analyze today's most notable trend changes", mode: "trend", color: "text-purple-400" },
+  { icon: Music2, label: "Streaming Guide", prompt: "Create a streaming guide for my watched artists. Include platform-specific tips, recommended playlists, and optimal streaming times.", mode: "streaming", color: "text-green-400" },
+  { icon: Bell, label: "Alert Settings", prompt: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name. Artists not in the current rankings can also be added.", mode: "alert", color: "text-amber-400" },
 ];
 
-const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁/i;
-const RANKING_KEYWORDS = /실시간\s*랭킹|랭킹\s*Top|트렌드\s*랭킹|ranking|순위/i;
+const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁|streaming\s*guide|streaming\s*strategy/i;
+const RANKING_KEYWORDS = /실시간\s*랭킹|랭킹\s*Top|트렌드\s*랭킹|ranking|순위|live\s*ranking|top\s*10/i;
 
 const GUIDE_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-streaming-guide`;
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
@@ -77,7 +77,7 @@ function useAgentAvatar(userId?: string) {
       });
 
     if (uploadErr) {
-      toast.error("이미지 업로드 실패: " + uploadErr.message);
+      toast.error("Image upload failed: " + uploadErr.message);
       return;
     }
 
@@ -96,12 +96,12 @@ function useAgentAvatar(userId?: string) {
       );
 
     if (dbErr) {
-      toast.error("프로필 저장 실패: " + dbErr.message);
+      toast.error("Profile save failed: " + dbErr.message);
       return;
     }
 
     queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-avatar", userId] });
-    toast.success("에이전트 프로필 이미지가 업데이트되었습니다!");
+    toast.success("Agent profile image updated!");
   }, [userId, queryClient]);
 
   return { avatarUrl, uploadAvatar };
@@ -155,8 +155,8 @@ async function streamChat({
 
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: "Unknown error" }));
-    if (resp.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
-    if (resp.status === 402) throw new Error("크레딧이 부족합니다.");
+    if (resp.status === 429) throw new Error("Too many requests. Please try again shortly.");
+    if (resp.status === 402) throw new Error("Insufficient credits.");
     throw new Error(err.error || `Error ${resp.status}`);
   }
   if (!resp.body) throw new Error("No response body");
@@ -451,7 +451,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       });
     } catch (e: any) {
       setIsStreaming(false);
-      toast.error(e.message || "메시지 전송에 실패했습니다");
+      toast.error(e.message || "Failed to send message");
       setMessages((prev) => prev.slice(0, -1));
     }
   }, [chatInput, isStreaming, session, messages, user?.id, queryClient, fetchGuideData, fetchRankingData, hasAlertOn]);
@@ -482,14 +482,14 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             type="button"
             onClick={async () => {
               if (!hasAlertOn) {
-                handleSend("알림을 받으려면 어떤 아티스트를 추적해야 하나요? 방법을 알려주세요.");
+                handleSend("How do I set up artist tracking for alerts? Please guide me.");
               } else if (user?.id) {
                 await supabase
                   .from("ktrenz_watched_artists")
                   .delete()
                   .eq("user_id", user.id);
                 queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                toast.success("알림이 해제되었습니다");
+                toast.success("Alerts turned off");
               }
             }}
             className={cn(
@@ -518,8 +518,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
             <Bot className="w-10 h-10 text-primary/40" />
           </div>
-          <p className="text-lg font-semibold text-foreground">로그인이 필요합니다</p>
-          <p className="text-sm text-muted-foreground">Fan Agent를 활성화하려면 로그인해주세요</p>
+          <p className="text-lg font-semibold text-foreground">Sign In Required</p>
+          <p className="text-sm text-muted-foreground">Please sign in to activate Fan Agent</p>
         </div>
       </div>
     );
@@ -531,7 +531,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
       <h2 className="text-lg font-bold text-foreground mb-1 mt-4">KTRENZ Fan Agent</h2>
       <p className="text-sm text-muted-foreground text-center max-w-[280px] mb-6">
-        실시간 트렌드 데이터를 기반으로 스트리밍 전략, 트렌드 분석, 팬 활동을 도와드립니다
+        Helps with streaming strategy, trend analysis, and fan activities based on real-time data
       </p>
 
       <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
@@ -594,7 +594,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
             {msg.timestamp && (
               <span className="text-[10px] text-muted-foreground/40 mt-0.5 px-1">
-                {new Date(msg.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                {new Date(msg.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
               </span>
             )}
           </div>
@@ -636,7 +636,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="아티스트, 트렌드, 스트리밍에 대해 물어보세요..."
+            placeholder="Ask about artists, trends, streaming..."
             className="flex-1 bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
             disabled={isStreaming}
           />

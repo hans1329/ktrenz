@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,10 +71,7 @@ const Login = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Sign In — KTRENDZ</title>
-        <meta name="description" content="Sign in to KTRENDZ to access K-Pop trend data and Fan Agent." />
-      </Helmet>
+      <SEO title="Sign In – KTrenZ" description="Sign in to KTrenZ to access K-Pop trend data and Fan Agent." path="/login" />
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
