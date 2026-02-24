@@ -43,18 +43,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- 실시간 트렌드 데이터 조회 ---
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // --- 실시간 트렌드 데이터 조회 ---
     const { data: trendData } = await adminClient
       .from("v3_scores")
       .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, spotify_score, buzz_score, twitter_score, scored_at, wiki_entries:wiki_entry_id(title)")
       .order("scored_at", { ascending: false });
 
-    // 최신 scored_at 기준으로 wiki_entry_id별 최신 1건만 추출
     const latestMap = new Map<string, any>();
     for (const row of trendData ?? []) {
       if (!latestMap.has(row.wiki_entry_id)) {
@@ -75,9 +74,100 @@ Deno.serve(async (req) => {
           .join("\n")}`
       : "";
 
-    // --- 유저 메시지 저장 ---
+    // --- 관심 아티스트 조회 ---
+    const { data: watchedArtists } = await adminClient
+      .from("ktrenz_watched_artists")
+      .select("artist_name, wiki_entry_id")
+      .eq("user_id", userId);
+
+    const watchedContext = (watchedArtists && watchedArtists.length > 0)
+      ? `\n\n[내 관심 아티스트 목록]\n${watchedArtists.map((w: any) => `- ${w.artist_name}`).join("\n")}`
+      : "\n\n[내 관심 아티스트 목록]\n등록된 관심 아티스트가 없습니다.";
+
+    // --- 관심 아티스트 변동 브리핑 ---
+    let watchedBriefing = "";
+    if (watchedArtists && watchedArtists.length > 0) {
+      const briefings: string[] = [];
+      for (const w of watchedArtists) {
+        const found = latest.find((a: any) => {
+          const name = (a.wiki_entries as any)?.title ?? "";
+          return name.toLowerCase() === w.artist_name.toLowerCase();
+        });
+        if (found) {
+          const name = (found.wiki_entries as any)?.title ?? w.artist_name;
+          const change = found.energy_change_24h ?? 0;
+          const rank = latest.indexOf(found) + 1;
+          briefings.push(`- ${name}: ${rank}위 | Energy ${Math.round(found.energy_score)} (${change > 0 ? "+" : ""}${change.toFixed(1)}%)`);
+        } else {
+          briefings.push(`- ${w.artist_name}: 현재 Top 20에 없음`);
+        }
+      }
+      watchedBriefing = `\n\n[관심 아티스트 현황 브리핑]\n${briefings.join("\n")}`;
+    }
+
+    // --- 관심 아티스트 추가/삭제 명령 감지 ---
     const lastUserMsg = messages[messages.length - 1];
+    let actionResult = "";
+
     if (lastUserMsg?.role === "user") {
+      const content = lastUserMsg.content;
+
+      // 추가 패턴: "관심 아티스트 추가: BTS" / "BTS 추가해줘" 등
+      const addMatch = content.match(/(?:관심\s*(?:아티스트)?\s*(?:에|로|으로)?\s*)?(?:추가|등록|설정)\s*[:：]?\s*(.+)/i)
+        || content.match(/(.+?)\s*(?:를|을)?\s*(?:추가|등록|설정)\s*(?:해|하|할)/i);
+
+      // 삭제 패턴
+      const removeMatch = content.match(/(?:관심\s*(?:아티스트)?\s*(?:에서)?\s*)?(?:삭제|제거|해제)\s*[:：]?\s*(.+)/i)
+        || content.match(/(.+?)\s*(?:를|을)?\s*(?:삭제|제거|해제)\s*(?:해|하|할)/i);
+
+      if (addMatch) {
+        const artistName = addMatch[1].trim().replace(/[.!?]$/, "").trim();
+        if (artistName && artistName.length <= 100) {
+          // wiki_entries에서 매칭 시도
+          const { data: wikiMatch } = await adminClient
+            .from("wiki_entries")
+            .select("id, title")
+            .ilike("title", artistName)
+            .limit(1);
+
+          const wikiId = wikiMatch?.[0]?.id ?? null;
+          const resolvedName = wikiMatch?.[0]?.title ?? artistName;
+
+          const { error: insertErr } = await adminClient
+            .from("ktrenz_watched_artists")
+            .insert({ user_id: userId, artist_name: resolvedName, wiki_entry_id: wikiId });
+
+          if (insertErr) {
+            if (insertErr.code === "23505") {
+              actionResult = `\n\n[시스템] "${resolvedName}"은(는) 이미 관심 아티스트에 등록되어 있습니다.`;
+            } else {
+              console.error("Watch insert error:", insertErr);
+              actionResult = `\n\n[시스템] 관심 아티스트 추가 실패: ${insertErr.message}`;
+            }
+          } else {
+            actionResult = `\n\n[시스템] "${resolvedName}"을(를) 관심 아티스트에 추가했습니다.`;
+          }
+        }
+      } else if (removeMatch) {
+        const artistName = removeMatch[1].trim().replace(/[.!?]$/, "").trim();
+        if (artistName && artistName.length <= 100) {
+          const { error: delErr, count } = await adminClient
+            .from("ktrenz_watched_artists")
+            .delete({ count: "exact" })
+            .eq("user_id", userId)
+            .ilike("artist_name", artistName);
+
+          if (delErr) {
+            actionResult = `\n\n[시스템] 관심 아티스트 삭제 실패: ${delErr.message}`;
+          } else if (count === 0) {
+            actionResult = `\n\n[시스템] "${artistName}"은(는) 관심 아티스트 목록에 없습니다.`;
+          } else {
+            actionResult = `\n\n[시스템] "${artistName}"을(를) 관심 아티스트에서 삭제했습니다.`;
+          }
+        }
+      }
+
+      // 유저 메시지 저장
       await adminClient.from("ktrenz_fan_agent_messages").insert({
         user_id: userId,
         role: "user",
@@ -103,14 +193,19 @@ Deno.serve(async (req) => {
 - 순위 변동(energy_change_24h)을 기반으로 주목할 아티스트 알림
 - 팬이 관심 아티스트를 직접 입력하면 해당 아티스트의 KTRENZ 데이터를 안내
 
+관심 아티스트 기능:
+- 유저가 "BTS 추가해줘", "관심 아티스트 추가: SEVENTEEN" 등의 메시지를 보내면 시스템이 자동으로 등록해. 등록 결과는 [시스템] 메시지로 전달됨.
+- 삭제도 마찬가지: "BTS 삭제해줘" 등.
+- 관심 아티스트의 현황 브리핑이 아래에 제공되니, 이 데이터를 활용해서 자연스럽게 브리핑해줘.
+- 유저가 알림 설정을 요청하면, 관심 아티스트 이름을 직접 입력하라고 안내해줘. 랭킹에 없는 아티스트도 추가 가능.
+
 규칙:
 - 한국어로 답변
 - 항상 우리 KTRENZ 플랫폼의 FES 데이터를 기준으로 답변해. 외부 소셜미디어 팔로우/구독 등을 안내하지 마
 - 데이터 기반으로 구체적 수치를 인용
 - 마크다운 포맷 사용 (볼드, 리스트 등)
 - 친근하지만 전문적인 톤
-- 알림 설정 관련 질문 시, 관심 아티스트 이름을 직접 입력하라고 안내하고, 해당 아티스트의 현재 FES 데이터를 브리핑해줘
-- 모르는 건 모른다고 솔직히 말해${trendContext}`;
+- 모르는 건 모른다고 솔직히 말해${trendContext}${watchedContext}${watchedBriefing}${actionResult}`;
 
     const openaiMessages = [
       { role: "system", content: systemPrompt },
