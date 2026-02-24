@@ -2,9 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Home, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -408,11 +408,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <Link to="/">
-            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9">
-              <Home className="w-4 h-4" />
-            </Button>
-          </Link>
         </div>
         <div className="flex items-center gap-2.5">
           <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
