@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, Crosshair, Power } from "lucide-react";
+import { TrendingUp, Bot, Power } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 
-export type V3Tab = "rankings" | "agent" | "guide";
+export type V3Tab = "rankings" | "agent";
 
 interface V3TabBarProps {
   activeTab: V3Tab;
@@ -25,7 +25,6 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
   const tabs = [
     { id: "rankings" as const, label: "Trendz", icon: TrendingUp },
-    { id: "guide" as const, label: "Guide", icon: Crosshair },
     { id: "profile" as const, label: "Profile", icon: null, isCenter: true },
     { id: "agent" as const, label: "Agent", icon: Bot },
   ];
