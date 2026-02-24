@@ -352,10 +352,10 @@ const V3Treemap = () => {
                 {/* 24h 변동률 뱃지 - 우상단 */}
                 {isMedium && rect.item.energyChange24h !== 0 && (
                   <span className={cn(
-                    "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm drop-shadow-md",
-                    rect.item.energyChange24h >= 15 ? "bg-white/25 text-white" :
-                    rect.item.energyChange24h > 0 ? "bg-white/15 text-green-200" :
-                    "bg-black/30 text-blue-200"
+                    "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
+                    rect.item.energyChange24h >= 15 ? "text-white" :
+                    rect.item.energyChange24h > 0 ? "text-green-200" :
+                    "text-blue-200"
                   )}>
                     {rect.item.energyChange24h > 0 ? "▲" : "▼"}{Math.abs(rect.item.energyChange24h).toFixed(1)}%
                   </span>
