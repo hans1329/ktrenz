@@ -238,7 +238,7 @@ const periodDays: Record<Period, number> = { "1D": 1, "1W": 7, "1M": 30, "3M": 9
 const V3TrendRankings = () => {
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "treemap">("list");
+  const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
   const { data: crawlStatus } = useCrawlStatus();
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
