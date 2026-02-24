@@ -91,10 +91,10 @@ Deno.serve(async (req) => {
       let youtubeData: any = null;
 
       if (wa.wiki_entry_id) {
-        // FES 점수
+        // FES 점수 + 음악 데이터
         const { data: fes } = await adminClient
           .from("v3_scores")
-          .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, spotify_score, energy_rank")
+          .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, spotify_score, energy_rank, music_score, music_data, album_sales_score, album_sales_data")
           .eq("wiki_entry_id", wa.wiki_entry_id)
           .order("scored_at", { ascending: false })
           .limit(1)
@@ -141,14 +141,35 @@ Deno.serve(async (req) => {
         .slice(0, 10);
 
       // --- AI 분석 ---
+      // 인기곡 목록 추출
+      const musicData = fesData?.music_data as any;
+      const lastfmTracks = musicData?.lastfm?.top_tracks ?? [];
+      const deezerTracks = musicData?.deezer?.top_tracks ?? [];
+      const allTracks = [
+        ...lastfmTracks.map((t: any) => t.name),
+        ...deezerTracks.map((t: any) => t.title),
+      ];
+      const uniqueTracks = [...new Set(allTracks)].slice(0, 10);
+
+      const albumSalesData = fesData?.album_sales_data as any;
+
       const contextParts = [
         `아티스트: ${wa.artist_name}`,
         fesData
-          ? `FES 데이터: Energy ${Math.round(fesData.energy_score)} (24h변동: ${fesData.energy_change_24h?.toFixed(1)}%), 순위 ${fesData.energy_rank ?? "N/A"}, Total ${Math.round(fesData.total_score)}, YouTube ${Math.round(fesData.youtube_score)}, Buzz ${Math.round(fesData.buzz_score ?? 0)}, Spotify ${Math.round(fesData.spotify_score ?? 0)}`
+          ? `FES 데이터: Energy ${Math.round(fesData.energy_score)} (24h변동: ${fesData.energy_change_24h?.toFixed(1)}%), 순위 ${fesData.energy_rank ?? "N/A"}, Total ${Math.round(fesData.total_score)}, YouTube ${Math.round(fesData.youtube_score)}, Buzz ${Math.round(fesData.buzz_score ?? 0)}, Spotify ${Math.round(fesData.spotify_score ?? 0)}, Music ${Math.round(fesData.music_score ?? 0)}, AlbumSales ${Math.round(fesData.album_sales_score ?? 0)}`
           : "FES 데이터: 없음",
+        musicData
+          ? `음악 플랫폼 데이터: Last.fm 재생수 ${musicData.lastfm?.playcount?.toLocaleString() ?? "N/A"}, 리스너 ${musicData.lastfm?.listeners?.toLocaleString() ?? "N/A"}, Deezer 팬 ${musicData.deezer?.fans?.toLocaleString() ?? "N/A"}`
+          : "",
+        uniqueTracks.length > 0
+          ? `인기곡 TOP ${uniqueTracks.length} (실제 곡명):\n${uniqueTracks.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
+          : "",
+        albumSalesData
+          ? `초동 판매량: ${albumSalesData.top_album} ${albumSalesData.top_album_sales?.toLocaleString()}장, 총 ${albumSalesData.total_first_week_sales?.toLocaleString()}장 (${albumSalesData.album_count}개 앨범)`
+          : "",
         salesData.length > 0
-          ? `판매량 데이터:\n${salesData.map((s: any) => `- [${s.platform}] ${s.metrics.album}: ${s.metrics.weekly_sales ?? s.metrics.first_week_sales ?? "N/A"}장 (${new Date(s.collected_at).toLocaleDateString()})`).join("\n")}`
-          : "판매량 데이터: 수집 전",
+          ? `판매량 상세:\n${salesData.map((s: any) => `- [${s.platform}] ${s.metrics.album}: ${s.metrics.weekly_sales ?? s.metrics.first_week_sales ?? "N/A"}장 (${new Date(s.collected_at).toLocaleDateString()})`).join("\n")}`
+          : "",
         youtubeData
           ? `YouTube: 구독자 ${youtubeData.subscriberCount?.toLocaleString()}, 총조회수 ${youtubeData.totalViewCount?.toLocaleString()}, 최근 영상 조회수 ${youtubeData.recentTotalViews?.toLocaleString()}`
           : "",
@@ -156,6 +177,8 @@ Deno.serve(async (req) => {
       ].filter(Boolean);
 
       const systemPrompt = `너는 KTRENZ 스트리밍 전략 분석 AI야. 아래 데이터를 분석해서 팬이 이 아티스트를 위해 실행할 수 있는 구체적인 스트리밍/차트 전략을 JSON으로 제공해.
+
+중요: 인기곡 데이터가 제공된 경우, 반드시 실제 곡명을 사용하여 플레이리스트를 생성해. 봇 인식을 회피하기 위해 타이틀곡 → 수록곡 → 타이틀곡 패턴을 사용해.
 
 반드시 아래 JSON 구조로만 응답해 (다른 텍스트 없이):
 {
@@ -176,6 +199,23 @@ Deno.serve(async (req) => {
     "target_rank": 목표순위,
     "energy_gap": 에너지점수차이,
     "key_deficit": "부족한 핵심 지표 설명"
+  },
+  "streaming_playlist": {
+    "description": "이 플레이리스트 전략의 설명 (1문장)",
+    "hourly_pattern": [
+      {"time_slot": "00-10분", "tracks": ["실제곡명1", "실제곡명2"]},
+      {"time_slot": "10-20분", "tracks": ["실제곡명3", "실제곡명4"]},
+      {"time_slot": "20-30분", "tracks": ["실제곡명5"]},
+      {"time_slot": "30-40분", "tracks": ["실제곡명6", "실제곡명7"]},
+      {"time_slot": "40-50분", "tracks": ["실제곡명8"]},
+      {"time_slot": "50-60분", "tracks": ["실제곡명9", "실제곡명10"]}
+    ],
+    "total_public_time": "최적 총공 시간대 (예: 오전 7-9시, 오후 6-8시)",
+    "platform_tips": [
+      {"platform": "YouTube", "tip": "720p 이상, 30% 이상 시청"},
+      {"platform": "Spotify", "tip": "반복/셔플 해제, 30초 이상 재생"},
+      {"platform": "Melon", "tip": "캐시 삭제 후 재생, 이어폰 연결"}
+    ]
   },
   "action_items": [
     "구체적 행동 1",
