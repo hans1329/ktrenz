@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     // --- 실시간 트렌드 데이터 조회 ---
     const { data: trendData } = await adminClient
       .from("v3_scores")
-      .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, twitter_score, scored_at, wiki_entries:wiki_entry_id(title)")
+      .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at, wiki_entries:wiki_entry_id(title)")
       .order("scored_at", { ascending: false });
 
     const latestMap = new Map<string, any>();

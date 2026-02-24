@@ -1,3 +1,7 @@
+// ktrenz-data-collector: 통합 데이터 수집기
+// - YouTube, 한터차트 초동, Last.fm/Deezer 음악, Buzz(X+TikTok+뉴스 등)
+// - source: "all" | "youtube" | "hanteo" | "music" | "buzz"
+// - wikiEntryId: 특정 아티스트만 수집 (선택)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -44,7 +48,114 @@ const ARTIST_NAME_MAP: Record<string, string[]> = {
   "아이콘": ["iKON", "아이콘"],
 };
 
-// ── Firecrawl 스크래핑 ──
+// ══════════════════════════════════════
+// YouTube Data API v3
+// ══════════════════════════════════════
+
+async function fetchYouTubeData(artistName: string, apiKey: string): Promise<{
+  channelId: string;
+  channelTitle: string;
+  subscriberCount: number;
+  totalViewCount: number;
+  totalVideoCount: number;
+  recentVideoCount: number;
+  recentTotalViews: number;
+  recentTotalLikes: number;
+  recentTotalComments: number;
+  topVideos: any[];
+} | null> {
+  try {
+    // 1) 채널 검색
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " official")}&key=${apiKey}&maxResults=1`;
+    const searchResp = await fetch(searchUrl);
+    if (!searchResp.ok) return null;
+    const searchData = await searchResp.json();
+    const channelId = searchData?.items?.[0]?.id?.channelId;
+    if (!channelId) return null;
+
+    // 2) 채널 통계
+    const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
+    const channelResp = await fetch(channelUrl);
+    const channelData = await channelResp.json();
+    const channel = channelData?.items?.[0];
+    if (!channel) return null;
+
+    const stats = channel.statistics;
+    const subscriberCount = parseInt(stats.subscriberCount) || 0;
+    const totalViewCount = parseInt(stats.viewCount) || 0;
+    const totalVideoCount = parseInt(stats.videoCount) || 0;
+
+    // 3) 최근 영상 10개
+    const videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`;
+    const videosResp = await fetch(videosUrl);
+    const videosData = await videosResp.json();
+    const videoIds = (videosData?.items || []).map((v: any) => v.id?.videoId).filter(Boolean);
+
+    let recentTotalViews = 0, recentTotalLikes = 0, recentTotalComments = 0;
+    const topVideos: any[] = [];
+
+    if (videoIds.length > 0) {
+      const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds.join(",")}&key=${apiKey}`;
+      const statsResp = await fetch(statsUrl);
+      const statsData = await statsResp.json();
+      for (const v of statsData?.items || []) {
+        const views = parseInt(v.statistics?.viewCount) || 0;
+        const likes = parseInt(v.statistics?.likeCount) || 0;
+        const comments = parseInt(v.statistics?.commentCount) || 0;
+        recentTotalViews += views;
+        recentTotalLikes += likes;
+        recentTotalComments += comments;
+        topVideos.push({
+          videoId: v.id,
+          title: v.snippet?.title,
+          viewCount: views,
+          likeCount: likes,
+        });
+      }
+      topVideos.sort((a, b) => b.viewCount - a.viewCount);
+    }
+
+    return {
+      channelId,
+      channelTitle: channel.snippet?.title || artistName,
+      subscriberCount,
+      totalViewCount,
+      totalVideoCount,
+      recentVideoCount: videoIds.length,
+      recentTotalViews,
+      recentTotalLikes,
+      recentTotalComments,
+      topVideos: topVideos.slice(0, 5),
+    };
+  } catch (e) {
+    console.error(`[DataCollector] YouTube error for ${artistName}:`, e);
+    return null;
+  }
+}
+
+function calculateYouTubeScore(data: {
+  subscriberCount: number;
+  totalViewCount: number;
+  recentTotalViews: number;
+  recentTotalLikes: number;
+  recentTotalComments: number;
+}): number {
+  // 구독자: log10 스케일 (1억 → 80)
+  const subScore = data.subscriberCount > 0 ? Math.log10(data.subscriberCount) * 10 : 0;
+  // 총조회수: log10 (100억 → 100)
+  const viewScore = data.totalViewCount > 0 ? Math.log10(data.totalViewCount) * 10 : 0;
+  // 최근 활동: sqrt 스케일
+  const recentScore = Math.sqrt(data.recentTotalViews / 1000) * 5 +
+    Math.sqrt(data.recentTotalLikes / 100) * 3 +
+    Math.sqrt(data.recentTotalComments / 100) * 2;
+
+  return Math.round(subScore + viewScore + recentScore);
+}
+
+// ══════════════════════════════════════
+// Hanteo Chart (Firecrawl scraping)
+// ══════════════════════════════════════
+
 async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
   const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
     method: "POST",
@@ -52,12 +163,7 @@ async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      url,
-      formats: ["markdown"],
-      onlyMainContent: true,
-      waitFor: 5000,
-    }),
+    body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true, waitFor: 5000 }),
   });
   if (!resp.ok) {
     const err = await resp.text();
@@ -66,15 +172,9 @@ async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
   return resp.json();
 }
 
-// ── 한터차트 초동 데이터 파싱 ──
-function parseHanteoInitial(markdown: string): Array<{
-  album: string;
-  artist: string;
-  first_week_sales: number;
-}> {
+function parseHanteoInitial(markdown: string): Array<{ album: string; artist: string; first_week_sales: number }> {
   const results: Array<any> = [];
-  const lines = markdown.split("\n").map((l) => l.trim()).filter(Boolean);
-
+  const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
   for (let i = 0; i < lines.length; i++) {
     const salesMatch = lines[i].match(/^([\d,]+)$/);
     if (salesMatch) {
@@ -92,99 +192,15 @@ function parseHanteoInitial(markdown: string): Array<{
       }
     }
   }
-
   return results;
 }
 
-// ── 아티스트명 → wiki_entry 매칭 (한글 매핑 강화) ──
-async function matchArtistToWikiEntry(
-  adminClient: any,
-  artistName: string
-): Promise<string | null> {
-  const candidates: string[] = [artistName];
-  
-  for (const [korName, aliases] of Object.entries(ARTIST_NAME_MAP)) {
-    if (aliases.some(a => artistName.includes(a)) || artistName.includes(korName)) {
-      candidates.push(...aliases);
-    }
-  }
+// ══════════════════════════════════════
+// Last.fm + Deezer (Music)
+// ══════════════════════════════════════
 
-  const bracketMatch = artistName.match(/[\(（](.+?)[\)）]/);
-  if (bracketMatch) {
-    candidates.push(bracketMatch[1].trim());
-    candidates.push(artistName.replace(/\s*[\(（].+?[\)）]/, "").trim());
-  }
-
-  const unique = [...new Set(candidates.filter(Boolean))];
-  
-  for (const name of unique) {
-    const { data } = await adminClient
-      .from("wiki_entries")
-      .select("id, title")
-      .ilike("title", `%${name}%`)
-      .eq("schema_type", "artist")
-      .limit(1);
-    if (data?.[0]) return data[0].id;
-  }
-  return null;
-}
-
-// ── 판매량 → 스코어 변환 ──
-function calculateAlbumSalesScore(totalFirstWeekSales: number): number {
-  return Math.round(Math.sqrt(totalFirstWeekSales / 10) * 10);
-}
-
-// ── v3_scores 업데이트 (판매량) ──
-async function updateV3ScoresWithSales(
-  adminClient: any,
-  wikiEntryId: string,
-  salesData: { album: string; first_week_sales: number }[]
-): Promise<void> {
-  const totalSales = salesData.reduce((sum, d) => sum + d.first_week_sales, 0);
-  const topAlbum = salesData.sort((a, b) => b.first_week_sales - a.first_week_sales)[0];
-  const score = calculateAlbumSalesScore(totalSales);
-
-  const { data: existing } = await adminClient
-    .from("v3_scores")
-    .select("id, youtube_score, buzz_score, spotify_score, twitter_score")
-    .eq("wiki_entry_id", wikiEntryId)
-    .order("scored_at", { ascending: false })
-    .limit(1);
-
-  const salesPayload = {
-    album_sales_score: score,
-    album_sales_data: {
-      total_first_week_sales: totalSales,
-      top_album: topAlbum?.album,
-      top_album_sales: topAlbum?.first_week_sales,
-      album_count: salesData.length,
-      albums: salesData.slice(0, 5),
-    },
-    album_sales_updated_at: new Date().toISOString(),
-  };
-
-  if (existing?.[0]) {
-    const { error } = await adminClient.from("v3_scores")
-      .update(salesPayload)
-      .eq("id", existing[0].id);
-    if (error) console.error(`[DataCollector] v3_scores sales update error for ${wikiEntryId}:`, error);
-    else console.log(`[DataCollector] v3_scores sales updated: ${wikiEntryId}, albumScore=${score}`);
-  } else {
-    await adminClient.from("v3_scores").insert({
-      wiki_entry_id: wikiEntryId,
-      ...salesPayload,
-    });
-  }
-}
-
-// ── Last.fm API ──
-async function fetchLastfmArtist(artistName: string, apiKey: string): Promise<{
-  playcount: number;
-  listeners: number;
-  topTracks: { name: string; playcount: number }[];
-} | null> {
+async function fetchLastfmArtist(artistName: string, apiKey: string) {
   try {
-    // Artist info
     const infoResp = await fetch(
       `https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&format=json`
     );
@@ -192,17 +208,13 @@ async function fetchLastfmArtist(artistName: string, apiKey: string): Promise<{
     const infoData = await infoResp.json();
     const stats = infoData?.artist?.stats;
     if (!stats) return null;
-
-    // Top tracks
     const tracksResp = await fetch(
       `https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&format=json&limit=10`
     );
     const tracksData = await tracksResp.json();
     const topTracks = (tracksData?.toptracks?.track ?? []).map((t: any) => ({
-      name: t.name,
-      playcount: parseInt(t.playcount) || 0,
+      name: t.name, playcount: parseInt(t.playcount) || 0,
     }));
-
     return {
       playcount: parseInt(stats.playcount) || 0,
       listeners: parseInt(stats.listeners) || 0,
@@ -214,109 +226,157 @@ async function fetchLastfmArtist(artistName: string, apiKey: string): Promise<{
   }
 }
 
-// ── Deezer API (no key required) ──
-async function fetchDeezerArtist(artistName: string): Promise<{
-  fans: number;
-  nbAlbum: number;
-  topTracks: { title: string; rank: number }[];
-} | null> {
+async function fetchDeezerArtist(artistName: string) {
   try {
-    const searchResp = await fetch(
-      `https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=1`
-    );
+    const searchResp = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=1`);
     if (!searchResp.ok) return null;
     const searchData = await searchResp.json();
     const artist = searchData?.data?.[0];
     if (!artist) return null;
-
-    // Get artist details
     const detailResp = await fetch(`https://api.deezer.com/artist/${artist.id}`);
     const detail = await detailResp.json();
-
-    // Get top tracks
     const tracksResp = await fetch(`https://api.deezer.com/artist/${artist.id}/top?limit=10`);
     const tracksData = await tracksResp.json();
-    const topTracks = (tracksData?.data ?? []).map((t: any) => ({
-      title: t.title,
-      rank: t.rank || 0,
-    }));
-
-    return {
-      fans: detail?.nb_fan || 0,
-      nbAlbum: detail?.nb_album || 0,
-      topTracks,
-    };
+    const topTracks = (tracksData?.data ?? []).map((t: any) => ({ title: t.title, rank: t.rank || 0 }));
+    return { fans: detail?.nb_fan || 0, nbAlbum: detail?.nb_album || 0, topTracks };
   } catch (e) {
     console.error(`[DataCollector] Deezer error for ${artistName}:`, e);
     return null;
   }
 }
 
-// ── Music Score 계산 ──
-function calculateMusicScore(lastfm: { playcount: number; listeners: number } | null, deezer: { fans: number } | null): number {
+function calculateMusicScore(lastfm: any, deezer: any): number {
   let score = 0;
-
   if (lastfm) {
-    // 재생수: log10 스케일 (1억 → ~80, 10억 → ~90)
     if (lastfm.playcount > 0) score += Math.round(Math.log10(lastfm.playcount) * 10);
-    // 리스너: log10 스케일 (100만 → ~60, 1000만 → ~70)
     if (lastfm.listeners > 0) score += Math.round(Math.log10(lastfm.listeners) * 8);
   }
-
-  if (deezer) {
-    // 팬수: log10 스케일 (100만 → ~48, 1000만 → ~56)
-    if (deezer.fans > 0) score += Math.round(Math.log10(deezer.fans) * 8);
-  }
-
+  if (deezer?.fans > 0) score += Math.round(Math.log10(deezer.fans) * 8);
   return score;
 }
 
-// ── v3_scores 업데이트 (음악) ──
-async function updateV3ScoresWithMusic(
-  adminClient: any,
-  wikiEntryId: string,
-  lastfm: any,
-  deezer: any
-): Promise<void> {
-  const score = calculateMusicScore(lastfm, deezer);
+// ══════════════════════════════════════
+// Artist ↔ wiki_entry 매칭
+// ══════════════════════════════════════
 
-  const musicPayload = {
-    music_score: score,
-    music_data: {
-      lastfm: lastfm ? {
-        playcount: lastfm.playcount,
-        listeners: lastfm.listeners,
-        top_tracks: lastfm.topTracks?.slice(0, 5),
-      } : null,
-      deezer: deezer ? {
-        fans: deezer.fans,
-        nb_album: deezer.nbAlbum,
-        top_tracks: deezer.topTracks?.slice(0, 5),
-      } : null,
-    },
-    music_updated_at: new Date().toISOString(),
-  };
+async function matchArtistToWikiEntry(adminClient: any, artistName: string): Promise<string | null> {
+  const candidates: string[] = [artistName];
+  for (const [korName, aliases] of Object.entries(ARTIST_NAME_MAP)) {
+    if (aliases.some(a => artistName.includes(a)) || artistName.includes(korName)) {
+      candidates.push(...aliases);
+    }
+  }
+  const bracketMatch = artistName.match(/[\(（](.+?)[\)）]/);
+  if (bracketMatch) {
+    candidates.push(bracketMatch[1].trim());
+    candidates.push(artistName.replace(/\s*[\(（].+?[\)）]/, "").trim());
+  }
+  const unique = [...new Set(candidates.filter(Boolean))];
+  for (const name of unique) {
+    const { data } = await adminClient
+      .from("wiki_entries").select("id, title")
+      .ilike("title", `%${name}%`).eq("schema_type", "artist").limit(1);
+    if (data?.[0]) return data[0].id;
+  }
+  return null;
+}
 
+// ══════════════════════════════════════
+// v3_scores 업데이트 헬퍼
+// ══════════════════════════════════════
+
+async function upsertV3Score(adminClient: any, wikiEntryId: string, payload: Record<string, any>) {
   const { data: existing } = await adminClient
-    .from("v3_scores")
-    .select("id")
+    .from("v3_scores").select("id")
     .eq("wiki_entry_id", wikiEntryId)
-    .order("scored_at", { ascending: false })
-    .limit(1);
+    .order("scored_at", { ascending: false }).limit(1);
 
   if (existing?.[0]) {
-    const { error } = await adminClient.from("v3_scores")
-      .update(musicPayload)
-      .eq("id", existing[0].id);
-    if (error) console.error(`[DataCollector] v3_scores music update error for ${wikiEntryId}:`, error);
-    else console.log(`[DataCollector] v3_scores music updated: ${wikiEntryId}, musicScore=${score}`);
+    const { error } = await adminClient.from("v3_scores").update(payload).eq("id", existing[0].id);
+    if (error) console.error(`[DataCollector] v3_scores update error for ${wikiEntryId}:`, error);
   } else {
-    await adminClient.from("v3_scores").insert({
-      wiki_entry_id: wikiEntryId,
-      ...musicPayload,
-    });
+    await adminClient.from("v3_scores").insert({ wiki_entry_id: wikiEntryId, ...payload });
   }
 }
+
+// ══════════════════════════════════════
+// 개별 아티스트 전체 소스 수집
+// ══════════════════════════════════════
+
+async function collectForSingleArtist(
+  adminClient: any,
+  wikiEntryId: string,
+  artistTitle: string,
+  keys: { youtube?: string; firecrawl?: string; lastfm?: string },
+  artistMeta?: any
+) {
+  const results: Record<string, any> = {};
+
+  // 1) YouTube
+  if (keys.youtube) {
+    try {
+      const ytData = await fetchYouTubeData(artistTitle, keys.youtube);
+      if (ytData) {
+        const ytScore = calculateYouTubeScore(ytData);
+        await upsertV3Score(adminClient, wikiEntryId, {
+          youtube_score: ytScore,
+          raw_data: ytData,
+        });
+        await adminClient.from("ktrenz_data_snapshots").insert({
+          wiki_entry_id: wikiEntryId, platform: "youtube",
+          metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
+        });
+        results.youtube = { score: ytScore };
+        console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore}`);
+      }
+    } catch (e) { results.youtube = { error: e.message }; }
+  }
+
+  // 2) Music (Last.fm + Deezer)
+  try {
+    const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm) : null;
+    const deezer = await fetchDeezerArtist(artistTitle);
+    if (lastfm || deezer) {
+      const musicScore = calculateMusicScore(lastfm, deezer);
+      await upsertV3Score(adminClient, wikiEntryId, {
+        music_score: musicScore,
+        music_data: {
+          lastfm: lastfm ? { playcount: lastfm.playcount, listeners: lastfm.listeners, top_tracks: lastfm.topTracks?.slice(0, 5) } : null,
+          deezer: deezer ? { fans: deezer.fans, nb_album: deezer.nbAlbum, top_tracks: deezer.topTracks?.slice(0, 5) } : null,
+        },
+        music_updated_at: new Date().toISOString(),
+      });
+      if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
+      if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
+      results.music = { score: musicScore };
+      console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}`);
+    }
+  } catch (e) { results.music = { error: e.message }; }
+
+  // 3) Buzz (crawl-x-mentions 호출)
+  if (keys.firecrawl) {
+    try {
+      const hashtags = artistMeta?.hashtags || [];
+      const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/crawl-x-mentions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+        },
+        body: JSON.stringify({ artistName: artistTitle, wikiEntryId, hashtags }),
+      });
+      const buzzResult = await buzzResp.json();
+      results.buzz = { score: buzzResult.buzzScore, mentions: buzzResult.mentionCount };
+      console.log(`[DataCollector] Buzz: ${artistTitle} → ${buzzResult.buzzScore}`);
+    } catch (e) { results.buzz = { error: e.message }; }
+  }
+
+  return results;
+}
+
+// ══════════════════════════════════════
+// 메인 핸들러
+// ══════════════════════════════════════
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -324,6 +384,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const YOUTUBE_API_KEY = Deno.env.get("YOUTUBE_API_KEY");
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LASTFM_API_KEY = Deno.env.get("LASTFM_API_KEY");
 
@@ -332,225 +393,190 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { source } = await req.json().catch(() => ({ source: "all" }));
-    const collectSources = source === "all" ? ["hanteo", "music", "buzz"] : [source];
+    const body = await req.json().catch(() => ({}));
+    const { source = "all", wikiEntryId } = body;
 
-    // Get total artist count for progress tracking
+    const keys = { youtube: YOUTUBE_API_KEY, firecrawl: FIRECRAWL_API_KEY, lastfm: LASTFM_API_KEY };
+
+    // ── 개별 아티스트 모드 ──
+    if (wikiEntryId) {
+      const { data: artist } = await adminClient
+        .from("wiki_entries").select("id, title, metadata")
+        .eq("id", wikiEntryId).single();
+
+      if (!artist) {
+        return new Response(JSON.stringify({ error: "Artist not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`[DataCollector] Single artist mode: ${artist.title}`);
+      const results = await collectForSingleArtist(adminClient, artist.id, artist.title, keys, artist.metadata);
+
+      return new Response(JSON.stringify({ success: true, artist: artist.title, results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── 배치 모드 ──
+    const collectSources = source === "all" ? ["youtube", "hanteo", "music", "buzz"] : [source];
+
     const { count: totalArtists } = await adminClient
-      .from("wiki_entries")
-      .select("id", { count: "exact", head: true })
+      .from("wiki_entries").select("id", { count: "exact", head: true })
       .eq("schema_type", "artist");
 
-    // Mark job as running
     await adminClient.from("system_jobs").upsert({
-      id: "daily-data-crawl",
-      status: "running",
-      started_at: new Date().toISOString(),
+      id: "daily-data-crawl", status: "running", started_at: new Date().toISOString(),
       metadata: { processed: 0, total: totalArtists || 0, sources: collectSources },
     }, { onConflict: "id" });
 
     const results: Record<string, any> = {};
     let totalProcessed = 0;
 
-    const updateProgress = async (step: string) => {
-      totalProcessed++;
-      await adminClient.from("system_jobs").update({
-        metadata: { processed: totalProcessed, total: totalArtists || 0, current_step: step, sources: collectSources },
-      }).eq("id", "daily-data-crawl");
-    };
+    // 상위 아티스트 목록 (v3_scores total_score 기준)
+    const { data: topScored } = await adminClient
+      .from("v3_scores").select("wiki_entry_id")
+      .order("total_score", { ascending: false }).limit(100);
+    const topIds = new Set((topScored || []).map((s: any) => s.wiki_entry_id).filter(Boolean));
 
-    // ── 한터차트 초동 수집 ──
+    const { data: allArtists } = await adminClient
+      .from("wiki_entries").select("id, title, metadata")
+      .eq("schema_type", "artist");
+
+    const artists = topIds.size > 0
+      ? (allArtists || []).filter((a: any) => topIds.has(a.id))
+      : (allArtists || []).slice(0, 100);
+
+    // ── YouTube 배치 ──
+    if (collectSources.includes("youtube") && YOUTUBE_API_KEY) {
+      console.log("[DataCollector] Collecting YouTube data...");
+      let ytUpdated = 0, ytErrors = 0;
+      for (const artist of artists) {
+        try {
+          const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY);
+          if (ytData) {
+            const ytScore = calculateYouTubeScore(ytData);
+            await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore, raw_data: ytData });
+            await adminClient.from("ktrenz_data_snapshots").insert({
+              wiki_entry_id: artist.id, platform: "youtube",
+              metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
+            });
+            ytUpdated++;
+          }
+          // YouTube API quota 보호 (4 calls/artist)
+          await new Promise(r => setTimeout(r, 500));
+        } catch (e) { ytErrors++; }
+      }
+      results.youtube = { updated: ytUpdated, errors: ytErrors };
+      console.log(`[DataCollector] YouTube: updated=${ytUpdated}, errors=${ytErrors}`);
+    } else if (collectSources.includes("youtube")) {
+      results.youtube = { error: "YOUTUBE_API_KEY not configured" };
+    }
+
+    // ── 한터차트 초동 ──
     if (collectSources.includes("hanteo")) {
       if (!FIRECRAWL_API_KEY) {
         results.hanteo = { error: "FIRECRAWL_API_KEY not configured" };
       } else {
         console.log("[DataCollector] Scraping Hanteo Chart...");
         try {
-          const hanteoData = await scrapeWithFirecrawl(
-            "https://www.hanteochart.com/honors/initial",
-            FIRECRAWL_API_KEY
-          );
+          const hanteoData = await scrapeWithFirecrawl("https://www.hanteochart.com/honors/initial", FIRECRAWL_API_KEY);
           const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
           const parsed = parseHanteoInitial(md);
-          console.log(`[DataCollector] Hanteo parsed ${parsed.length} entries`);
 
-          let saved = 0;
-          let matched = 0;
-          
+          let saved = 0, matched = 0;
           const artistAlbums: Record<string, { wikiEntryId: string | null; albums: any[] }> = {};
 
           for (const entry of parsed) {
-            const wikiEntryId = await matchArtistToWikiEntry(adminClient, entry.artist);
-            
-            if (!artistAlbums[entry.artist]) {
-              artistAlbums[entry.artist] = { wikiEntryId, albums: [] };
-            }
+            const entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+            if (!artistAlbums[entry.artist]) artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
             artistAlbums[entry.artist].albums.push(entry);
-
             await adminClient.from("ktrenz_data_snapshots").insert({
-              wiki_entry_id: wikiEntryId,
-              platform: "hanteo",
-              metrics: {
-                album: entry.album,
-                artist: entry.artist,
-                first_week_sales: entry.first_week_sales,
-                chart_type: "initial_sales",
-              },
-              raw_response: wikiEntryId ? undefined : { unmatched_artist: entry.artist },
+              wiki_entry_id: entryWikiId, platform: "hanteo",
+              metrics: { album: entry.album, artist: entry.artist, first_week_sales: entry.first_week_sales, chart_type: "initial_sales" },
+              raw_response: entryWikiId ? undefined : { unmatched_artist: entry.artist },
             });
             saved++;
-            if (wikiEntryId) matched++;
+            if (entryWikiId) matched++;
           }
 
           let scoresUpdated = 0;
           for (const [, data] of Object.entries(artistAlbums)) {
             if (data.wikiEntryId) {
-              await updateV3ScoresWithSales(adminClient, data.wikiEntryId, data.albums);
+              const totalSales = data.albums.reduce((sum: number, d: any) => sum + d.first_week_sales, 0);
+              const topAlbum = data.albums.sort((a: any, b: any) => b.first_week_sales - a.first_week_sales)[0];
+              const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+              await upsertV3Score(adminClient, data.wikiEntryId, {
+                album_sales_score: score,
+                album_sales_data: {
+                  total_first_week_sales: totalSales, top_album: topAlbum?.album,
+                  top_album_sales: topAlbum?.first_week_sales, album_count: data.albums.length,
+                  albums: data.albums.slice(0, 5),
+                },
+                album_sales_updated_at: new Date().toISOString(),
+              });
               scoresUpdated++;
             }
           }
 
           await adminClient.from("ktrenz_collection_log").insert({
-            platform: "hanteo",
-            status: parsed.length > 0 ? "success" : "partial",
-            records_collected: saved,
+            platform: "hanteo", status: parsed.length > 0 ? "success" : "partial", records_collected: saved,
           });
-
-          console.log(`[DataCollector] Hanteo: saved=${saved}, matched=${matched}, scoresUpdated=${scoresUpdated}`);
           results.hanteo = { parsed: parsed.length, saved, matched, scoresUpdated };
         } catch (e) {
           console.error("[DataCollector] Hanteo error:", e);
-          await adminClient.from("ktrenz_collection_log").insert({
-            platform: "hanteo",
-            status: "error",
-            error_message: e.message,
-            records_collected: 0,
-          });
+          await adminClient.from("ktrenz_collection_log").insert({ platform: "hanteo", status: "error", error_message: e.message, records_collected: 0 });
           results.hanteo = { error: e.message };
         }
       }
     }
 
-    // ── Last.fm + Deezer 음악 데이터 수집 ──
+    // ── Music (Last.fm + Deezer) 배치 ──
     if (collectSources.includes("music")) {
-      console.log("[DataCollector] Collecting music data (Last.fm + Deezer)...");
+      console.log("[DataCollector] Collecting music data...");
+      let musicUpdated = 0, musicErrors = 0;
+      for (const artist of artists) {
+        try {
+          const lastfm = LASTFM_API_KEY ? await fetchLastfmArtist(artist.title, LASTFM_API_KEY) : null;
+          const deezer = await fetchDeezerArtist(artist.title);
+          if (!lastfm && !deezer) continue;
 
-      if (!LASTFM_API_KEY) {
-        console.warn("[DataCollector] LASTFM_API_KEY not set, skipping Last.fm");
+          const musicScore = calculateMusicScore(lastfm, deezer);
+          await upsertV3Score(adminClient, artist.id, {
+            music_score: musicScore,
+            music_data: {
+              lastfm: lastfm ? { playcount: lastfm.playcount, listeners: lastfm.listeners, top_tracks: lastfm.topTracks?.slice(0, 5) } : null,
+              deezer: deezer ? { fans: deezer.fans, nb_album: deezer.nbAlbum, top_tracks: deezer.topTracks?.slice(0, 5) } : null,
+            },
+            music_updated_at: new Date().toISOString(),
+          });
+          if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
+          if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
+          musicUpdated++;
+        } catch (e) { musicErrors++; }
       }
-
-      // 모든 아티스트 가져오기
-      // 상위 100개 아티스트만 (v3_scores 기준 total_score 높은 순)
-      const { data: topScored } = await adminClient
-        .from("v3_scores")
-        .select("wiki_entry_id")
-        .order("total_score", { ascending: false })
-        .limit(100);
-
-      const topIds = new Set((topScored || []).map((s: any) => s.wiki_entry_id).filter(Boolean));
-
-      const { data: allArtists } = await adminClient
-        .from("wiki_entries")
-        .select("id, title")
-        .eq("schema_type", "artist");
-
-      // Filter to top 100 scored artists, fallback to first 100 if no scores yet
-      const artists = topIds.size > 0
-        ? (allArtists || []).filter((a: any) => topIds.has(a.id))
-        : (allArtists || []).slice(0, 100);
-
-      if (!artists.length) {
-        results.music = { error: "No artists found" };
-      } else {
-        let musicUpdated = 0;
-        let musicErrors = 0;
-
-        for (const artist of artists) {
-          try {
-            const lastfm = LASTFM_API_KEY
-              ? await fetchLastfmArtist(artist.title, LASTFM_API_KEY)
-              : null;
-            const deezer = await fetchDeezerArtist(artist.title);
-
-            if (!lastfm && !deezer) {
-              console.log(`[DataCollector] No music data for ${artist.title}`);
-              continue;
-            }
-
-            // 스냅샷 저장
-            if (lastfm) {
-              await adminClient.from("ktrenz_data_snapshots").insert({
-                wiki_entry_id: artist.id,
-                platform: "lastfm",
-                metrics: {
-                  playcount: lastfm.playcount,
-                  listeners: lastfm.listeners,
-                  top_tracks: lastfm.topTracks?.slice(0, 5),
-                },
-              });
-            }
-            if (deezer) {
-              await adminClient.from("ktrenz_data_snapshots").insert({
-                wiki_entry_id: artist.id,
-                platform: "deezer",
-                metrics: {
-                  fans: deezer.fans,
-                  nb_album: deezer.nbAlbum,
-                  top_tracks: deezer.topTracks?.slice(0, 5),
-                },
-              });
-            }
-
-            // v3_scores 업데이트
-            await updateV3ScoresWithMusic(adminClient, artist.id, lastfm, deezer);
-            musicUpdated++;
-            await updateProgress(`music: ${artist.title}`);
-            console.log(`[DataCollector] Music updated: ${artist.title}`);
-          } catch (e) {
-            console.error(`[DataCollector] Music error for ${artist.title}:`, e);
-            musicErrors++;
-          }
-        }
-
-        await adminClient.from("ktrenz_collection_log").insert({
-          platform: "music",
-          status: musicUpdated > 0 ? "success" : "partial",
-          records_collected: musicUpdated,
-        });
-
-        console.log(`[DataCollector] Music: updated=${musicUpdated}, errors=${musicErrors}`);
-        results.music = { total: artists.length, updated: musicUpdated, errors: musicErrors };
-      }
+      await adminClient.from("ktrenz_collection_log").insert({ platform: "music", status: musicUpdated > 0 ? "success" : "partial", records_collected: musicUpdated });
+      results.music = { total: artists.length, updated: musicUpdated, errors: musicErrors };
     }
 
-    // ── Buzz (멀티소스) 수집 ──
+    // ── Buzz 배치 (buzz-cron 호출) ──
     if (collectSources.includes("buzz")) {
-      console.log("[DataCollector] Triggering buzz collection via buzz-cron...");
+      console.log("[DataCollector] Triggering buzz collection...");
       try {
-        const buzzResp = await fetch(
-          `${Deno.env.get("SUPABASE_URL")!}/functions/v1/buzz-cron`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-            },
-            body: JSON.stringify({ time: new Date().toISOString() }),
-          }
-        );
-        const buzzResult = await buzzResp.json();
-        console.log("[DataCollector] Buzz result:", JSON.stringify(buzzResult));
-        results.buzz = buzzResult;
+        const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/buzz-cron`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}` },
+          body: JSON.stringify({ time: new Date().toISOString() }),
+        });
+        results.buzz = await buzzResp.json();
       } catch (e) {
-        console.error("[DataCollector] Buzz error:", e);
         results.buzz = { error: e.message };
       }
     }
 
-    // Mark job as completed
+    // 완료 기록
     await adminClient.from("system_jobs").update({
-      status: "completed",
-      completed_at: new Date().toISOString(),
+      status: "completed", completed_at: new Date().toISOString(),
       metadata: { ...results, processed: totalProcessed, total: totalArtists || 0 },
     }).eq("id", "daily-data-crawl");
 
@@ -559,21 +585,12 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[DataCollector] Fatal error:", e);
-    // Try to mark job as failed
     try {
-      const adminClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-      await adminClient.from("system_jobs").update({
-        status: "error",
-        completed_at: new Date().toISOString(),
-        metadata: { error: e.message },
-      }).eq("id", "daily-data-crawl");
-    } catch (_) { /* ignore */ }
+      const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await adminClient.from("system_jobs").update({ status: "error", completed_at: new Date().toISOString(), metadata: { error: e.message } }).eq("id", "daily-data-crawl");
+    } catch (_) {}
     return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
