@@ -1899,6 +1899,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_watched_artists: {
+        Row: {
+          artist_name: string
+          created_at: string
+          id: string
+          user_id: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          artist_name: string
+          created_at?: string
+          id?: string
+          user_id: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          artist_name?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_watched_artists_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       levels: {
         Row: {
           color: string | null
