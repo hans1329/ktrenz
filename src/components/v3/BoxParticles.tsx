@@ -3,6 +3,10 @@ import { useEffect, useRef } from "react";
 interface BoxParticlesProps {
   count?: number;
   color?: string;
+  /** 0~1, higher = faster particles */
+  speed?: number;
+  /** 0~1, higher = larger/brighter particles */
+  density?: number;
 }
 
 interface Particle {
@@ -14,7 +18,12 @@ interface Particle {
   opacity: number;
 }
 
-const BoxParticles = ({ count = 20, color = "hsl(11, 100%, 46%)" }: BoxParticlesProps) => {
+const BoxParticles = ({
+  count = 20,
+  color = "hsl(11, 100%, 46%)",
+  speed = 0.5,
+  density = 0.5,
+}: BoxParticlesProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animRef = useRef<number>(0);
@@ -34,14 +43,19 @@ const BoxParticles = ({ count = 20, color = "hsl(11, 100%, 46%)" }: BoxParticles
     };
     resize();
 
-    // Init particles
+    // speed → velocity magnitude (0.2 ~ 2.5)
+    const velBase = 0.2 + speed * 2.3;
+    // density → particle size (1 ~ 4) and opacity (0.15 ~ 0.7)
+    const sizeBase = 1 + density * 3;
+    const opacityBase = 0.15 + density * 0.55;
+
     particlesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.8,
-      vy: (Math.random() - 0.5) * 0.8,
-      size: Math.random() * 2.5 + 1,
-      opacity: Math.random() * 0.5 + 0.2,
+      vx: (Math.random() - 0.5) * 2 * velBase,
+      vy: (Math.random() - 0.5) * 2 * velBase,
+      size: Math.random() * sizeBase + 0.8,
+      opacity: Math.random() * opacityBase + 0.1,
     }));
 
     const draw = () => {
@@ -68,7 +82,7 @@ const BoxParticles = ({ count = 20, color = "hsl(11, 100%, 46%)" }: BoxParticles
       cancelAnimationFrame(animRef.current);
       ro.disconnect();
     };
-  }, [count, color]);
+  }, [count, color, speed, density]);
 
   return (
     <canvas
