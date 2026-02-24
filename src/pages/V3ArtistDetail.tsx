@@ -101,7 +101,7 @@ const V3ArtistDetail = () => {
       if (!entry) throw new Error("No entry");
       const [ytResult, buzzResult, musicResult] = await Promise.allSettled([
         supabase.functions.invoke('crawl-youtube-trends', { body: { artistName: entry.title, wikiEntryId: entry.id } }),
-        supabase.functions.invoke('crawl-x-mentions', { body: { artistName: entry.title, wikiEntryId: entry.id } }),
+        supabase.functions.invoke('crawl-x-mentions', { body: { artistName: entry.title, wikiEntryId: entry.id, hashtags: [(entry.metadata as any)?.hashtag].filter(Boolean) } }),
         supabase.functions.invoke('crawl-music-data', { body: { artistName: entry.title, wikiEntryId: entry.id } }),
       ]);
       const ytData = ytResult.status === 'fulfilled' ? ytResult.value.data : null;
