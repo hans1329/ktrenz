@@ -154,15 +154,13 @@ Deno.serve(async (req) => {
         || /관심\s*아티스트\s*추가/.test(prevContent)
         || /알림.*설정/.test(prevContent);
 
-      // 추가 패턴: "BTS 추가해줘" / "관심 아티스트 추가: BTS" / "BTS를 추가해줘" 등
+      // 추가 패턴
       let addMatch: RegExpMatchArray | null = null;
       if (isShortCommand) {
         addMatch = content.match(/(?:관심\s*(?:아티스트)?\s*(?:에|로|으로)?\s*)?(?:추가|등록)\s*[:：]\s*(.+)/i)
           || content.match(/^(.+?)\s*(?:를|을)?\s*(?:추가|등록)\s*(?:해줘|해|하자|할게|해주세요)/i);
       }
 
-      // 이전 메시지가 아티스트 입력을 요청했고, 짧은 텍스트(20자 이하)면 아티스트 이름으로 간주
-      // 단, 질문/명령어 패턴은 제외
       const isQuestion = /누구|뭐|무엇|어떤|몇|목록|확인|알려|보여|있어|없어|설정|해제|\?|？/.test(content);
       if (!addMatch && wasAskingForArtist && content.length <= 20 && !isQuestion && !/삭제|제거|해제|취소|아니/.test(content)) {
         addMatch = [content, content] as unknown as RegExpMatchArray;
@@ -181,7 +179,6 @@ Deno.serve(async (req) => {
       if (addMatch) {
         const artistName = addMatch[1].trim().replace(/[.!?]$/, "").trim();
         if (artistName && artistName.length <= 100) {
-          // wiki_entries에서 매칭 시도
           const { data: wikiMatch } = await adminClient
             .from("wiki_entries")
             .select("id, title")
@@ -257,9 +254,28 @@ Deno.serve(async (req) => {
 
 🎵 권장 플레이리스트 (1시간 기준):
 - 타이틀곡만 반복하면 봇 인식되어 차트 반영 누락됨!
-- 최적 순서: 타이틀곡 → 수록곡A → 타이틀곡 → 예전히트곡B → 타이틀곡 → 수록곡C (반복)
-- 타이틀곡 비중 50~60%, 나머지는 같은 아티스트의 다른 곡으로 채워야 함
-- 유저가 요청하면 해당 아티스트의 최신 앨범 기준으로 구체적인 1시간 플레이리스트를 짜줘
+- 최적 순서: 타이틀곡 → 수록곡 → 타이틀곡 → 예전히트곡 → 타이틀곡 → 수록곡 (반복)
+- 타이틀곡 비중 50~60%, 나머지는 같은 아티스트의 다른 곡으로 채움
+
+⚠️ 핵심 규칙: 플레이리스트를 만들 때 **절대로** "수록곡A", "타이틀곡", "예전히트곡B" 같은 placeholder를 쓰지 마!
+반드시 해당 아티스트의 **실제 곡 이름**을 사용해서 구체적인 플레이리스트를 짜줘.
+
+예시 (BTS 컴백 기준):
+1. Dynamite ← 타이틀곡
+2. Life Goes On ← 수록곡
+3. Dynamite ← 타이틀곡
+4. Boy With Luv ← 이전 히트곡
+5. Dynamite ← 타이틀곡
+6. Butter ← 이전 히트곡
+7. Dynamite ← 타이틀곡
+8. Permission to Dance ← 수록곡
+→ 이런 식으로 실제 곡명으로 1시간 분량 (약 15~18곡) 플레이리스트를 만들어줘.
+
+아티스트의 최신 앨범 타이틀곡을 메인으로, 같은 앨범 수록곡과 이전 히트곡을 섞어 짜되:
+- 최신 타이틀곡이 전체의 50~60%
+- 최신 앨범 수록곡 20~30%
+- 이전 히트곡/팬 인기곡 10~20%
+모르는 아티스트의 곡은 솔직히 "해당 아티스트의 디스코그래피를 정확히 모르겠어서, 공식 채널에서 확인 후 알려드릴게요"라고 말해.
 
 📱 플랫폼별 주의사항:
 **YouTube Music:**
@@ -319,7 +335,7 @@ Deno.serve(async (req) => {
 - 데이터 기반으로 구체적 수치를 인용
 - 마크다운 포맷 사용 (볼드, 리스트, 이모지 등)
 - 친근하지만 전문적인 톤
-- 스밍 가이드 요청 시 위의 지식을 활용하되, 아티스트의 실제 앨범/곡 정보를 기반으로 구체적으로 답변
+- **스밍 가이드 요청 시 반드시 해당 아티스트의 실제 곡명을 사용해서 구체적인 플레이리스트를 만들어줘. "수록곡A" 같은 generic placeholder 절대 금지!**
 - 모르는 건 모른다고 솔직히 말해${trendContext}${watchedContext}${watchedBriefing}${actionResult}`;
 
     const openaiMessages = [
