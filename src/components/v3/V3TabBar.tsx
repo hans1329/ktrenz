@@ -64,7 +64,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             const Icon = tab.icon!;
 
             return (
-              <button key={tab.id} onClick={() => onTabChange(tab.id as V3Tab)}
+              <button key={tab.id} onClick={() => tab.id === "agent" ? navigate("/agent") : onTabChange(tab.id as V3Tab)}
                 className={cn("flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
