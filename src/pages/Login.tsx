@@ -8,8 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
-
-const LOGO_URL = "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/brand_assets/logo_l.webp";
+import kTrenzLogo from "@/assets/k-trenz-logo.webp";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -80,7 +79,7 @@ const Login = () => {
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
           <div className="flex flex-col items-center gap-4">
-            <img src={LOGO_URL} alt="KTRENDZ" className="h-10 w-auto" />
+            <img src={kTrenzLogo} alt="KTRENDZ" className="h-10 w-auto" />
             <p className="text-muted-foreground text-sm text-center">
               Real-time K-Pop Trend Rankings
             </p>
