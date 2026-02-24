@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
+import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 
 // ── Types ──────────────────────────────────────────────
 type ChatMessage = {
@@ -16,6 +17,7 @@ type ChatMessage = {
   content: string;
   timestamp?: string;
   guideData?: any[] | null;
+  rankingData?: RankingEntry[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -36,6 +38,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁/i;
+const RANKING_KEYWORDS = /실시간\s*랭킹|랭킹\s*Top|트렌드\s*랭킹|ranking|순위/i;
 
 const GUIDE_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-streaming-guide`;
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
@@ -340,6 +343,60 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [session?.access_token]);
 
+  const fetchRankingData = useCallback(async (): Promise<RankingEntry[] | null> => {
+    try {
+      // Get latest score per artist, ordered by energy_score desc
+      const { data, error } = await supabase
+        .rpc('get_trending_wiki_entries') as any;
+
+      // Fallback: query v3_scores directly
+      const { data: scores, error: scErr } = await supabase
+        .from("v3_scores" as any)
+        .select("wiki_entry_id, total_score, energy_score, energy_change_24h, energy_rank, youtube_score, spotify_score, buzz_score, scored_at")
+        .order("scored_at", { ascending: false })
+        .limit(200);
+
+      if (scErr || !scores) return null;
+
+      // Deduplicate by wiki_entry_id (keep latest)
+      const seen = new Map<string, any>();
+      for (const s of scores as any[]) {
+        if (!seen.has(s.wiki_entry_id)) seen.set(s.wiki_entry_id, s);
+      }
+
+      // Sort by energy_score desc, take top 10
+      const sorted = Array.from(seen.values())
+        .sort((a: any, b: any) => b.energy_score - a.energy_score)
+        .slice(0, 10);
+
+      // Fetch artist names
+      const entryIds = sorted.map((s: any) => s.wiki_entry_id);
+      const { data: entries } = await supabase
+        .from("wiki_entries")
+        .select("id, title, image_url")
+        .in("id", entryIds);
+
+      const entryMap = new Map((entries ?? []).map((e: any) => [e.id, e]));
+
+      return sorted.map((s: any, i: number) => {
+        const entry = entryMap.get(s.wiki_entry_id);
+        return {
+          rank: i + 1,
+          artist_name: entry?.title ?? "Unknown",
+          image_url: entry?.image_url ?? null,
+          total_score: s.total_score ?? 0,
+          energy_score: s.energy_score ?? 0,
+          energy_change_24h: s.energy_change_24h ?? 0,
+          youtube_score: s.youtube_score ?? 0,
+          spotify_score: s.spotify_score ?? 0,
+          buzz_score: s.buzz_score ?? 0,
+        };
+      });
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleSend = useCallback(async (overrideText?: string) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
@@ -349,6 +406,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setHasStarted(true);
 
     const isStreamingQuery = STREAMING_KEYWORDS.test(text);
+    const isRankingQuery = RANKING_KEYWORDS.test(text);
 
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
@@ -356,6 +414,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
     let assistantContent = "";
     const guidePromise = isStreamingQuery && hasAlertOn ? fetchGuideData() : Promise.resolve(null);
+    const rankingPromise = isRankingQuery ? fetchRankingData() : Promise.resolve(null);
 
     try {
       await streamChat({
@@ -374,16 +433,18 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           });
         },
         onDone: async () => {
-          const guideData = await guidePromise;
-          if (guideData && guideData.length > 0) {
-            setMessages((prev) => {
-              const lastIdx = prev.length - 1;
-              if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
-                return prev.map((m, i) => i === lastIdx ? { ...m, guideData } : m);
-              }
-              return prev;
-            });
-          }
+          const [guideData, rankingData] = await Promise.all([guidePromise, rankingPromise]);
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1;
+            if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
+              return prev.map((m, i) => i === lastIdx ? {
+                ...m,
+                ...(guideData && guideData.length > 0 ? { guideData } : {}),
+                ...(rankingData && rankingData.length > 0 ? { rankingData } : {}),
+              } : m);
+            }
+            return prev;
+          });
           setIsStreaming(false);
           queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id] });
           queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
@@ -394,7 +455,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       toast.error(e.message || "메시지 전송에 실패했습니다");
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, fetchGuideData, hasAlertOn]);
+  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, fetchGuideData, fetchRankingData, hasAlertOn]);
 
   const handleQuickAction = (action: QuickAction) => {
     handleSend(action.prompt);
@@ -523,6 +584,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 msg.content
               )}
             </div>
+
+            {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (
+              <V3RankingCards rankings={msg.rankingData} />
+            )}
 
             {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
               <V3StreamingGuideCards guides={msg.guideData} />
