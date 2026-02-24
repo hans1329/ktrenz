@@ -119,23 +119,35 @@ const V3ArtistDetail = () => {
         supabase.functions.invoke('crawl-x-mentions', { body: { artistName: entry.title, wikiEntryId: entry.id, hashtags: [(entry.metadata as any)?.hashtag].filter(Boolean) } }),
         supabase.functions.invoke('crawl-music-data', { body: { artistName: entry.title, wikiEntryId: entry.id } }),
       ]);
-      const ytData = ytResult.status === 'fulfilled' ? ytResult.value.data : null;
-      const buzzData = buzzResult.status === 'fulfilled' ? buzzResult.value.data : null;
-      const musicData = musicResult.status === 'fulfilled' ? musicResult.value.data : null;
+      const ytRaw = ytResult.status === 'fulfilled' ? ytResult.value : null;
+      const buzzRaw = buzzResult.status === 'fulfilled' ? buzzResult.value : null;
+      const musicRaw = musicResult.status === 'fulfilled' ? musicResult.value : null;
+      const ytData = ytRaw?.data?.success ? ytRaw.data : null;
+      const buzzData = buzzRaw?.data?.success ? buzzRaw.data : null;
+      const musicData = musicRaw?.data?.success ? musicRaw.data : null;
+      const warnings: string[] = [];
+      if (ytRaw?.data && !ytRaw.data.success) warnings.push(ytRaw.data.error?.includes('quota') ? 'YouTube quota exceeded' : 'YouTube error');
+      if (buzzRaw?.data && !buzzRaw.data.success) warnings.push('Buzz error');
+      if (musicRaw?.data && !musicRaw.data.success) warnings.push('Music error');
       let fesData = null;
       try { const { data } = await supabase.functions.invoke('calculate-energy-score', { body: { wikiEntryId: entry.id } }); fesData = data; } catch {}
-      return { youtube: ytData, buzz: buzzData, music: musicData, fes: fesData };
+      return { youtube: ytData, buzz: buzzData, music: musicData, fes: fesData, warnings };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["v3-artist", slug] });
       queryClient.invalidateQueries({ queryKey: ["v3-trend-rankings"] });
       queryClient.invalidateQueries({ queryKey: ["v3-energy"] });
       const parts: string[] = [];
-      if (data.youtube?.success) parts.push(`YouTube: ${data.youtube.youtubeScore}`);
-      if (data.buzz?.success) parts.push(`Buzz: ${data.buzz.buzzScore}`);
-      if (data.music?.success) parts.push(`Music: ${data.music.musicScore}`);
+      if (data.youtube?.youtubeScore != null) parts.push(`YouTube: ${data.youtube.youtubeScore}`);
+      if (data.buzz?.buzzScore != null) parts.push(`Buzz: ${data.buzz.buzzScore}`);
+      if (data.music?.musicScore != null) parts.push(`Music: ${data.music.musicScore}`);
       if (data.fes?.results?.[0]) parts.push(`FES: ${data.fes.results[0].energyScore}`);
-      toast({ title: "Data Refreshed", description: parts.join(' · ') || 'Partial data updated' });
+      const desc = parts.join(' · ') || 'Using cached data';
+      if (data.warnings?.length) {
+        toast({ title: "Partial Update", description: `${desc}\n⚠️ ${data.warnings.join(', ')}` });
+      } else {
+        toast({ title: "Data Refreshed", description: desc });
+      }
     },
     onError: (err: any) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
