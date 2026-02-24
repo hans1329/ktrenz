@@ -7,11 +7,12 @@ import V3Header from "@/components/v3/V3Header";
 import V3TabBar, { type V3Tab } from "@/components/v3/V3TabBar";
 import V3TrendRankings from "@/components/v3/V3TrendRankings";
 import V3FanAgent from "@/components/v3/V3FanAgent";
+import V3StreamingGuide from "@/components/v3/V3StreamingGuide";
 
 const V3Home = () => {
   const [activeTab, setActiveTab] = useState<V3Tab>("rankings");
   const isMobile = useIsMobile();
-  const isSubPage = activeTab === "agent";
+  const isSubPage = activeTab === "agent" || activeTab === "guide";
 
   // V3 다크 테마 적용
   useEffect(() => {
@@ -22,6 +23,7 @@ const V3Home = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "rankings": return <V3TrendRankings />;
+      case "guide": return <V3StreamingGuide onBack={() => setActiveTab("rankings")} />;
       case "agent": return <V3FanAgent onBack={() => setActiveTab("rankings")} />;
     }
   };
