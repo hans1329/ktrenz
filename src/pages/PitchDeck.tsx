@@ -650,7 +650,7 @@ export default function PitchDeck() {
           </div>
 
           <p className="text-muted-foreground text-xs mt-16">
-            © 2025 K-TRENZ. Built for K-Pop fans, by fans.
+            © 2026 K-TRENZ. Built for K-Pop fans, by fans.
           </p>
         </div>
       </Section>
