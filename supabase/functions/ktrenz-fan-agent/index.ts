@@ -26,16 +26,14 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } =
-      await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) {
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     const { messages } = await req.json();
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -52,19 +50,18 @@ Deno.serve(async (req) => {
     );
 
     const { data: trendData } = await adminClient
-      .from("v3_artist_trend_scores")
-      .select(
-        "artist_name, fes_score, fes_rank, fes_change, daily_stream_count, social_buzz_score"
-      )
-      .order("fes_rank", { ascending: true })
+      .from("v3_trend_scores")
+      .select("wiki_entry_id, total_score, score_change_24h, youtube_score, spotify_score, twitter_score, tiktok_score, wiki_entries(title)")
+      .order("total_score", { ascending: false })
       .limit(20);
 
     const trendContext = trendData?.length
       ? `\n\n[실시간 FES 랭킹 Top 20]\n${trendData
-          .map(
-            (a, i) =>
-              `${i + 1}. ${a.artist_name} | FES: ${a.fes_score} (${a.fes_change > 0 ? "+" : ""}${a.fes_change}) | 스트리밍: ${a.daily_stream_count?.toLocaleString() ?? "N/A"} | 소셜버즈: ${a.social_buzz_score ?? "N/A"}`
-          )
+          .map((a: any, i: number) => {
+            const name = a.wiki_entries?.title ?? "Unknown";
+            const change = a.score_change_24h ?? 0;
+            return `${i + 1}. ${name} | FES: ${Math.round(a.total_score)} (${change > 0 ? "+" : ""}${Math.round(change)}) | YT: ${Math.round(a.youtube_score)} | Spotify: ${Math.round(a.spotify_score)} | X: ${Math.round(a.twitter_score)}`;
+          })
           .join("\n")}`
       : "";
 
@@ -79,6 +76,15 @@ Deno.serve(async (req) => {
     }
 
     // --- OpenAI 호출 (스트리밍) ---
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "AI not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const systemPrompt = `너는 KTRENZ Fan Agent야. K-Pop 팬들을 위한 전문 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석, 스트리밍 전략, 팬 활동 가이드를 제공해.
 
 규칙:
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
@@ -112,7 +118,13 @@ Deno.serve(async (req) => {
 
     if (!openaiResp.ok) {
       const errBody = await openaiResp.text();
-      console.error("OpenAI error:", errBody);
+      console.error("OpenAI error:", openaiResp.status, errBody);
+      if (openaiResp.status === 429) {
+        return new Response(JSON.stringify({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return new Response(JSON.stringify({ error: "AI 응답 실패" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
