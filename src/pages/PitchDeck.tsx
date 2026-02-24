@@ -137,7 +137,7 @@ export default function PitchDeck() {
           </h1>
 
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            유튜브 · 스포티파이 · 소셜 버즈를 하나의 점수로 융합한
+            유튜브 · X · 틱톡 등 다양한 플랫폼 데이터를 하나의 점수로 융합한
             <br className="hidden md:block" />
             <strong className="text-foreground">Fan Energy Score(FES)</strong>가 실시간으로 아티스트 모멘텀을 측정합니다.
           </p>
@@ -200,7 +200,7 @@ export default function PitchDeck() {
                 icon: Globe,
                 step: "01",
                 title: "수집",
-                desc: "YouTube · Spotify · X · TikTok에서 조회수, 스트리밍, 언급량 자동 수집",
+                desc: "YouTube · X · TikTok 등 다양한 소스에서 조회수, 언급량, 반응 지표를 자동 수집",
               },
               {
                 icon: Layers,
@@ -212,7 +212,7 @@ export default function PitchDeck() {
                 icon: Activity,
                 step: "03",
                 title: "가중 합산",
-                desc: "Energy · Buzz · YouTube · Spotify 4축 가중치로 FES 산출",
+                desc: "Energy · Buzz · YouTube 등 멀티소스 가중치로 FES 산출",
               },
               {
                 icon: TrendingUp,
@@ -349,7 +349,7 @@ export default function PitchDeck() {
             <FeatureCard
               icon={Layers}
               title="멀티소스 융합"
-              desc="유튜브, 스포티파이, X, 틱톡 데이터를 하나의 통합 점수로 합성. 편향 없는 종합 지표."
+              desc="유튜브, X, 틱톡 등 다양한 소스 데이터를 하나의 통합 점수로 합성. 편향 없는 종합 지표."
             />
             <FeatureCard
               icon={Target}
