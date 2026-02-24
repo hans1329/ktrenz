@@ -243,7 +243,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             type="button"
             onClick={() => {
               if (!hasAlertOn) {
-                handleSend("관심 아티스트를 등록하고 싶어. 어떻게 하면 돼?");
+                handleSend("알림을 받으려면 어떤 아티스트를 추적해야 하나요? 방법을 알려주세요.");
               }
             }}
             className={cn(
