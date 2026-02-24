@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
+import BoxParticles from "@/components/v3/BoxParticles";
 
 /* ─────── Section wrapper ─────── */
 const Section = ({
@@ -298,8 +299,9 @@ export default function PitchDeck() {
           {/* Row 2: Ranking List + FES/Momentum Charts */}
           <div className="grid md:grid-cols-3 gap-6">
             {/* Ranking List */}
-            <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
-              <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
+            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
+              <BoxParticles count={40} color="hsl(11, 100%, 46%)" />
+              <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" /> 실시간 변동률
               </h3>
               <div className="space-y-2.5">
@@ -325,8 +327,9 @@ export default function PitchDeck() {
             </div>
 
             {/* Momentum (가속도) Chart */}
-            <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
-              <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
+            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
+              <BoxParticles count={28} color="hsl(11, 100%, 46%)" />
+              <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-primary" /> 가속도 (Momentum)
               </h3>
               <p className="text-muted-foreground text-xs mb-4">24h 에너지 변화율 추이</p>
@@ -354,8 +357,9 @@ export default function PitchDeck() {
             </div>
 
             {/* FES Score (밀도) Chart */}
-            <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
-              <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
+            <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
+              <BoxParticles count={18} color="hsl(11, 100%, 46%)" />
+              <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
                 <Flame className="w-4 h-4 text-primary" /> FES 밀도 분포
               </h3>
               <p className="text-muted-foreground text-xs mb-4">점수 구간별 아티스트 밀집도</p>
