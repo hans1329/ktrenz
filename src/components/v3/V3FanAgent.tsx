@@ -239,7 +239,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         </div>
         <div className="flex items-center gap-2 min-w-[72px] justify-end">
           {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
-          <Switch checked={hasAlertOn} disabled className="scale-75 data-[state=checked]:bg-primary" />
+          <Switch
+            checked={hasAlertOn}
+            className="scale-75 data-[state=checked]:bg-primary"
+            onCheckedChange={(checked) => {
+              if (checked && !hasAlertOn) {
+                handleSend("관심 아티스트를 등록하고 싶어. 어떻게 하면 돼?");
+              }
+            }}
+          />
         </div>
       </div>
     </header>
