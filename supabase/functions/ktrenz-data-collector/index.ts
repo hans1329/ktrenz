@@ -421,18 +421,6 @@ Deno.serve(async (req) => {
     // ── 배치 모드 ──
     const collectSources = source === "all" ? ["youtube", "hanteo", "music", "buzz"] : [source];
 
-    const { count: totalArtists } = await adminClient
-      .from("wiki_entries").select("id", { count: "exact", head: true })
-      .eq("schema_type", "artist");
-
-    await adminClient.from("system_jobs").upsert({
-      id: "daily-data-crawl", status: "running", started_at: new Date().toISOString(),
-      metadata: { processed: 0, total: totalArtists || 0, sources: collectSources },
-    }, { onConflict: "id" });
-
-    const results: Record<string, any> = {};
-    let totalProcessed = 0;
-
     // 상위 아티스트 목록 (v3_scores total_score 기준)
     const { data: topScored } = await adminClient
       .from("v3_scores").select("wiki_entry_id")
@@ -446,6 +434,17 @@ Deno.serve(async (req) => {
     const artists = topIds.size > 0
       ? (allArtists || []).filter((a: any) => topIds.has(a.id))
       : (allArtists || []).slice(0, 100);
+
+    const actualTotal = artists.length;
+
+    await adminClient.from("system_jobs").upsert({
+      id: "daily-data-crawl", status: "running", started_at: new Date().toISOString(),
+      metadata: { processed: 0, total: actualTotal, sources: collectSources },
+    }, { onConflict: "id" });
+
+    const results: Record<string, any> = {};
+    let totalProcessed = 0;
+
 
     // ── YouTube 배치 ──
     if (collectSources.includes("youtube") && YOUTUBE_API_KEY) {
@@ -577,7 +576,7 @@ Deno.serve(async (req) => {
     // 완료 기록
     await adminClient.from("system_jobs").update({
       status: "completed", completed_at: new Date().toISOString(),
-      metadata: { ...results, processed: totalProcessed, total: totalArtists || 0 },
+      metadata: { ...results, processed: totalProcessed, total: actualTotal },
     }).eq("id", "daily-data-crawl");
 
     return new Response(JSON.stringify({ success: true, results }), {
