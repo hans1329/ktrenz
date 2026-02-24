@@ -71,6 +71,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const targetEntryId = body.wikiEntryId as string | undefined;
+    const batchSize = body.batchSize ? Number(body.batchSize) : 50;
+    const batchOffset = body.batchOffset ? Number(body.batchOffset) : 0;
 
     // 대상 엔트리 결정 — v2 테이블 우선, 폴백으로 기존 v3_scores
     let entryIds: string[] = [];
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
         .from("v3_scores_v2")
         .select("wiki_entry_id")
         .order("total_score", { ascending: false })
-        .limit(50);
+        .range(batchOffset, batchOffset + batchSize - 1);
       if (v2Scores?.length) {
         entryIds = v2Scores.map((s: any) => s.wiki_entry_id);
       } else {
@@ -90,7 +92,7 @@ Deno.serve(async (req) => {
           .from("v3_scores")
           .select("wiki_entry_id")
           .order("total_score", { ascending: false })
-          .limit(50);
+          .range(batchOffset, batchOffset + batchSize - 1);
         entryIds = (scores || []).map((s: any) => s.wiki_entry_id);
       }
     }
