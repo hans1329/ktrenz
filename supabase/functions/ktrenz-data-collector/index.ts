@@ -286,16 +286,22 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
 // ══════════════════════════════════════
 
 async function upsertV3Score(adminClient: any, wikiEntryId: string, payload: Record<string, any>) {
+  // 기존 최신 행을 전체 필드 포함하여 조회 (값 보존 위해)
   const { data: existing } = await adminClient
-    .from("v3_scores").select("id")
+    .from("v3_scores")
+    .select("id, youtube_score, buzz_score, music_score, album_sales_score")
     .eq("wiki_entry_id", wikiEntryId)
-    .order("scored_at", { ascending: false }).limit(1);
+    .order("scored_at", { ascending: false })
+    .limit(1);
 
   if (existing?.[0]) {
+    // 기존 행 UPDATE — payload에 포함된 필드만 변경, 나머지 보존
     const { error } = await adminClient.from("v3_scores").update(payload).eq("id", existing[0].id);
     if (error) console.error(`[DataCollector] v3_scores update error for ${wikiEntryId}:`, error);
   } else {
-    await adminClient.from("v3_scores").insert({ wiki_entry_id: wikiEntryId, ...payload });
+    // 신규 아티스트: INSERT
+    const { error } = await adminClient.from("v3_scores").insert({ wiki_entry_id: wikiEntryId, ...payload });
+    if (error) console.error(`[DataCollector] v3_scores insert error for ${wikiEntryId}:`, error);
   }
 }
 
