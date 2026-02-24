@@ -102,12 +102,12 @@ const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
     queryKey: ["v3-energy", wikiEntryId],
     queryFn: async () => {
       const [snapshotsRes, baselineRes, scoresRes, latestSnapshotRes] = await Promise.all([
-        supabase.from("v3_energy_snapshots").select("snapshot_at, velocity_score, intensity_score, energy_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(100),
-        supabase.from("v3_energy_baselines").select("*").eq("wiki_entry_id", wikiEntryId).maybeSingle(),
-        supabase.from("v3_scores").select("energy_score, energy_change_24h, energy_rank").eq("wiki_entry_id", wikiEntryId).order("scored_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("v3_energy_snapshots").select("velocity_score, intensity_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("v3_energy_snapshots_v2" as any).select("snapshot_at, velocity_score, intensity_score, energy_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(100),
+        supabase.from("v3_energy_baselines_v2" as any).select("*").eq("wiki_entry_id", wikiEntryId).maybeSingle(),
+        supabase.from("v3_scores_v2" as any).select("energy_score, energy_change_24h, energy_rank").eq("wiki_entry_id", wikiEntryId).order("scored_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("v3_energy_snapshots_v2" as any).select("velocity_score, intensity_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
-      return { snapshots: snapshotsRes.data || [], baseline: baselineRes.data, currentScore: scoresRes.data, latestSnapshot: latestSnapshotRes.data };
+      return { snapshots: (snapshotsRes.data || []) as any[], baseline: baselineRes.data as any, currentScore: scoresRes.data as any, latestSnapshot: latestSnapshotRes.data as any };
     },
     enabled: !!wikiEntryId,
     staleTime: 60_000,
