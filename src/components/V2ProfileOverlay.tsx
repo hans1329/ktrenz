@@ -82,7 +82,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
             className="w-full group text-left"
           >
-            <div className="relative rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+            <div className="relative rounded-xl overflow-hidden bg-card shadow-sm">
               {/* Top half */}
               <div
                 className="relative px-4 py-3.5 overflow-hidden"
