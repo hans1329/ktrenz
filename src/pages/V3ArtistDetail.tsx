@@ -175,7 +175,7 @@ const V3ArtistDetail = () => {
             onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }}
             disabled={refreshMutation.isPending || isCrawling}
             title={isCrawling ? "Global data collection in progress..." : undefined}>
-            <span className="text-xs font-medium">{isCrawling ? "Running" : "Data"}</span>
+            <span className="text-xs font-medium">{isCrawling ? "Running..." : "Data"}</span>
             <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
           </Button>
         </div>
