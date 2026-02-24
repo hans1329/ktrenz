@@ -162,15 +162,10 @@ Deno.serve(async (req) => {
           baseline = newBaseline;
         }
 
-        // 3) FES 계산
-        let velocity: number, intensity: number, energyScore: number;
-        if (isFirstRun) {
-          velocity = BASE_SCORE; intensity = BASE_SCORE; energyScore = BASE_SCORE;
-        } else {
-          velocity = calculateVelocity(currentMentions6h, baseline?.avg_velocity_7d || 1, currentViews24h, baseline?.avg_velocity_30d || 1);
-          intensity = calculateIntensity(currentYtEngagement, baseline?.avg_intensity_7d || 0.01, currentMentions6h, baseline?.avg_intensity_30d || 1, sentimentScore);
-          energyScore = Math.min(MAX_SCORE * 2, Math.round(velocity * 0.4 + intensity * 0.6));
-        }
+        // 3) FES 계산 — 첫 실행이어도 실제 데이터로 계산
+        const velocity = calculateVelocity(currentMentions6h, baseline?.avg_velocity_7d || 1, currentViews24h, baseline?.avg_velocity_30d || 1);
+        const intensity = calculateIntensity(currentYtEngagement, baseline?.avg_intensity_7d || 0.01, currentMentions6h, baseline?.avg_intensity_30d || 1, sentimentScore);
+        const energyScore = Math.min(MAX_SCORE * 2, Math.round(velocity * 0.4 + intensity * 0.6));
 
         // 4) 24h 변화율 — v2 스냅샷 기준
         const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
