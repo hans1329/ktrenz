@@ -26,7 +26,7 @@ interface QuickAction {
 const QUICK_ACTIONS: QuickAction[] = [
   { icon: TrendingUp, label: "실시간 랭킹", prompt: "지금 실시간 트렌드 랭킹 Top 10을 알려줘", mode: "trend", color: "text-blue-400" },
   { icon: Sparkles, label: "트렌드 분석", prompt: "오늘 가장 주목할만한 트렌드 변화를 분석해줘", mode: "trend", color: "text-purple-400" },
-  { icon: Music2, label: "스트리밍 팁", prompt: "내 아티스트의 스트리밍 전략을 추천해줘", mode: "streaming", color: "text-green-400" },
+  { icon: Music2, label: "스트리밍 가이드", prompt: "내 관심 아티스트의 스트리밍 가이드를 보여줘. 순위 목표 좌표, 플랫폼별 전략, 타이밍 추천, 구체적 액션 플랜을 포함한 종합 대시보드를 만들어줘.", mode: "streaming", color: "text-green-400" },
   { icon: Bell, label: "알림 설정", prompt: "내 관심 아티스트의 순위 변동 알림을 설정하고 싶어. 관심 있는 아티스트 이름을 직접 입력하면 추가할 수 있게 안내해줘. 현재 랭킹에 없는 아티스트도 추가할 수 있어.", mode: "alert", color: "text-amber-400" },
 ];
 
