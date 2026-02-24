@@ -129,10 +129,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   ].filter(c => c.value > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-12 pb-20 overflow-y-auto animate-fade-in" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div className={cn(
-        "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl",
+        "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl my-auto",
         surging ? "border-destructive/50 animate-neon-surge bg-card" : "border-border bg-card"
       )} onClick={e => e.stopPropagation()}>
       {/* Header */}
