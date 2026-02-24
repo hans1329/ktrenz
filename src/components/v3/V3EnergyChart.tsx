@@ -57,7 +57,8 @@ const EnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: numb
 };
 
 const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: number }) => {
-  const maxVal = Math.max(velocity, intensity, 200);
+  const velMax = 250;
+  const intMax = 250;
   return (
     <div className="space-y-3">
       <div>
@@ -66,7 +67,7 @@ const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: n
           <span className="text-xs font-bold text-foreground">{velocity}</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-700" style={{ width: `${Math.min((velocity / maxVal) * 100, 100)}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-700" style={{ width: `${Math.min((velocity / velMax) * 100, 100)}%` }} />
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">Response speed vs average</p>
       </div>
@@ -76,7 +77,7 @@ const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: n
           <span className="text-xs font-bold text-foreground">{intensity}</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-700" style={{ width: `${Math.min((intensity / maxVal) * 100, 100)}%` }} />
+          <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-700" style={{ width: `${Math.min((intensity / intMax) * 100, 100)}%` }} />
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">Engagement depth vs average</p>
       </div>
