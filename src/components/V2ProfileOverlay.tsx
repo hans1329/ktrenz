@@ -86,7 +86,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               {/* Top half */}
               <div
                 className="relative px-4 py-3.5 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${tierColor}20, ${tierColor}06)` }}
+                style={{ background: `linear-gradient(135deg, ${tierColor}35, ${tierColor}15)` }}
               >
                 {/* Background glow */}
                 <div
@@ -125,7 +125,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Bottom half */}
-              <div className="px-4 py-3.5 flex items-center justify-between" style={{ background: `${tierColor}08` }}>
+              <div className="px-4 py-3.5 flex items-center justify-between" style={{ background: `${tierColor}18` }}>
                 <p className="text-xs text-muted-foreground">
                   View plans & upgrade →
                 </p>
