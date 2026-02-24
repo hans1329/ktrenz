@@ -293,11 +293,20 @@ const V3TrendRankings = () => {
         const oldScore = oldScoreMap.get(item.wiki_entry_id);
         let changePercent = 0;
         const currentScore = item.total_score ?? 0;
-        if (oldScore != null && oldScore > 0 && currentScore !== oldScore) changePercent = ((currentScore - oldScore) / oldScore) * 100;
+        if (oldScore != null && oldScore > 0 && currentScore !== oldScore) {
+          changePercent = ((currentScore - oldScore) / oldScore) * 100;
+        } else if (item.energy_change_24h != null && item.energy_change_24h !== 0) {
+          // Fallback: use energy_change_24h when no historical total_score comparison available
+          changePercent = item.energy_change_24h;
+        }
         return { ...item, changePercent };
       });
 
-      ranked.sort((a, b) => b.changePercent - a.changePercent);
+      ranked.sort((a, b) => {
+        const diff = b.changePercent - a.changePercent;
+        if (Math.abs(diff) > 0.01) return diff;
+        return (b.total_score || 0) - (a.total_score || 0);
+      });
       return ranked;
     },
     staleTime: 30_000,
