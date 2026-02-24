@@ -4374,7 +4374,15 @@ export type Database = {
           updated_at?: string
           wiki_entry_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "v3_energy_baselines_v2_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: true
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v3_energy_snapshots: {
         Row: {
@@ -4451,7 +4459,15 @@ export type Database = {
           velocity_score?: number
           wiki_entry_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "v3_energy_snapshots_v2_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v3_lightstick_balances: {
         Row: {
@@ -4724,7 +4740,15 @@ export type Database = {
           wiki_entry_id?: string
           youtube_score?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "v3_scores_v2_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v3_trend_score_history: {
         Row: {
