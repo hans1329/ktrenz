@@ -233,7 +233,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <h1 className="text-base font-bold text-foreground">Fan Agent</h1>
+          <h1 className="text-base font-bold text-foreground">
+            {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : "Fan Agent"}
+          </h1>
         </div>
         <div className="flex items-center gap-2 min-w-[72px] justify-end">
           {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
