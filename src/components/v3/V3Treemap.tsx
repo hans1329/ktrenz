@@ -252,7 +252,7 @@ const V3Treemap = () => {
 
   const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
   const maxEnergy = items.length > 0 ? Math.max(...items.map(i => i.energyScore)) : 1;
-  const maxChange = items.length > 0 ? Math.max(...items.map(i => Math.abs(i.energyChange24h)), 1) : 1;
+  const maxChange = items.length > 0 ? Math.max(...items.map(i => i.energyChange24h), 1) : 1;
 
   return (
     <div className="px-4 pb-4">
@@ -309,8 +309,8 @@ const V3Treemap = () => {
 
                 {isMedium && (
                   <BoxParticles
-                    count={Math.max(5, Math.round(sharePct * 3))}
-                    speed={Math.min(1, Math.abs(rect.item.energyChange24h) / maxChange)}
+                    count={Math.max(3, Math.round(sharePct * 1.5))}
+                    speed={Math.max(0.05, Math.min(1, rect.item.energyChange24h / maxChange))}
                     density={Math.min(1, rect.item.energyScore / maxEnergy)}
                     color={rect.item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : rect.item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
                   />
