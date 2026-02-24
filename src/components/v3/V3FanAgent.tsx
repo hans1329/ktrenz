@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
 // ── Types ──────────────────────────────────────────────
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; timestamp?: string };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
 
@@ -26,7 +26,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { icon: TrendingUp, label: "실시간 랭킹", prompt: "지금 실시간 트렌드 랭킹 Top 10을 알려줘", mode: "trend", color: "text-blue-400" },
   { icon: Sparkles, label: "트렌드 분석", prompt: "오늘 가장 주목할만한 트렌드 변화를 분석해줘", mode: "trend", color: "text-purple-400" },
   { icon: Music2, label: "스트리밍 팁", prompt: "내 아티스트의 스트리밍 전략을 추천해줘", mode: "streaming", color: "text-green-400" },
-  { icon: Bell, label: "알림 설정", prompt: "관심 아티스트의 순위 변동 알림을 설정하고 싶어", mode: "alert", color: "text-amber-400" },
+  { icon: Bell, label: "알림 설정", prompt: "내 관심 아티스트의 순위 변동 알림을 설정하고 싶어. 어떤 아티스트를 추적할지 추천해줘. 현재 랭킹 Top 10 아티스트 리스트를 보여주고, 내가 선택할 수 있게 해줘.", mode: "alert", color: "text-amber-400" },
 ];
 
 // ── Streaming helper ───────────────────────────────────
@@ -135,7 +135,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         console.warn("Chat history load failed:", error.message);
         return [];
       }
-      return (data || []).map((d) => ({ role: d.role as "user" | "assistant", content: d.content }));
+      return (data || []).map((d) => ({ role: d.role as "user" | "assistant", content: d.content, timestamp: d.created_at }));
     },
     enabled: !!user?.id,
   });
@@ -161,7 +161,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setIsStreaming(true);
     setHasStarted(true);
 
-    const userMsg: ChatMessage = { role: "user", content: text };
+    const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
 
@@ -180,7 +180,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 i === prev.length - 1 ? { ...m, content: assistantContent } : m
               );
             }
-            return [...prev, { role: "assistant", content: assistantContent }];
+            return [...prev, { role: "assistant" as const, content: assistantContent, timestamp: new Date().toISOString() }];
           });
         },
         onDone: () => {
@@ -282,23 +282,30 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <Bot className="w-3.5 h-3.5 text-primary" />
             </div>
           )}
-          <div
-            className={cn(
-              "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
-              msg.role === "user"
-                ? "bg-gradient-to-br from-primary/25 to-purple-500/20 text-foreground rounded-br-md"
-                : "bg-card/60 border border-border/30 text-muted-foreground rounded-bl-md"
-            )}
-          >
-            {msg.role === "assistant" ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-                {isStreaming && i === messages.length - 1 && (
-                  <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
-                )}
-              </div>
-            ) : (
-              msg.content
+          <div className={cn("flex flex-col max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
+            <div
+              className={cn(
+                "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
+                msg.role === "user"
+                  ? "bg-gradient-to-br from-primary/25 to-purple-500/20 text-foreground rounded-br-md"
+                  : "bg-card/60 border border-border/30 text-muted-foreground rounded-bl-md"
+              )}
+            >
+              {msg.role === "assistant" ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  {isStreaming && i === messages.length - 1 && (
+                    <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
+                  )}
+                </div>
+              ) : (
+                msg.content
+              )}
+            </div>
+            {msg.timestamp && (
+              <span className="text-[10px] text-muted-foreground/40 mt-0.5 px-1">
+                {new Date(msg.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
             )}
           </div>
         </div>
