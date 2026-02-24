@@ -79,7 +79,7 @@ const Login = () => {
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
           <div className="flex flex-col items-center gap-4">
-            <img src={kTrenzLogo} alt="KTRENDZ" className="h-10 w-auto" />
+            <img src={kTrenzLogo} alt="KTRENDZ" className="h-7 w-auto" />
             <p className="text-muted-foreground text-sm text-center">
               Real-time K-Pop Trend Rankings
             </p>
