@@ -241,14 +241,12 @@ Deno.serve(async (req) => {
         raw_response: { sources: sourceResults.map(s => ({ name: s.name, count: s.count })) },
       });
 
-      // 2) v3_scores 업데이트 (buzz_score만 — total_score는 GENERATED 컬럼이므로 자동 계산)
+      // 2) v3_scores_v2 업데이트 (v2 테이블 사용)
       await sb
-        .from("v3_scores")
+        .from("v3_scores_v2")
         .update({
           buzz_score: buzzScore,
-          buzz_mentions: totalMentions,
-          buzz_sentiment: sentiment.label,
-          buzz_updated_at: new Date().toISOString(),
+          scored_at: new Date().toISOString(),
         })
         .eq("wiki_entry_id", wikiEntryId);
 

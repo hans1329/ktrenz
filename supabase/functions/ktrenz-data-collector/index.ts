@@ -286,27 +286,24 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
 // ══════════════════════════════════════
 
 async function upsertV3Score(adminClient: any, wikiEntryId: string, payload: Record<string, any>) {
-  // wiki_entry_id UNIQUE constraint로 ON CONFLICT UPSERT 사용
-  // 기존 값은 COALESCE로 보존 — payload에 있는 필드만 업데이트
+  // v2 테이블 사용 — 기존 k-trendz.com v3_scores 건드리지 않음
   const { data: existing } = await adminClient
-    .from("v3_scores")
+    .from("v3_scores_v2")
     .select("id, youtube_score, buzz_score, music_score, album_sales_score")
     .eq("wiki_entry_id", wikiEntryId)
     .maybeSingle();
 
   if (existing) {
-    // UPDATE: payload 필드만 변경
     const { error } = await adminClient
-      .from("v3_scores")
+      .from("v3_scores_v2")
       .update(payload)
       .eq("id", existing.id);
-    if (error) console.error(`[DataCollector] v3_scores update error for ${wikiEntryId}:`, error);
+    if (error) console.error(`[DataCollector] v3_scores_v2 update error for ${wikiEntryId}:`, error);
   } else {
-    // INSERT: 새 아티스트
     const { error } = await adminClient
-      .from("v3_scores")
+      .from("v3_scores_v2")
       .insert({ wiki_entry_id: wikiEntryId, ...payload });
-    if (error) console.error(`[DataCollector] v3_scores insert error for ${wikiEntryId}:`, error);
+    if (error) console.error(`[DataCollector] v3_scores_v2 insert error for ${wikiEntryId}:`, error);
   }
 }
 
@@ -482,7 +479,7 @@ Deno.serve(async (req) => {
 
     // 상위 아티스트 목록 (v3_scores total_score 기준)
     const { data: topScored } = await adminClient
-      .from("v3_scores").select("wiki_entry_id")
+      .from("v3_scores_v2").select("wiki_entry_id")
       .order("total_score", { ascending: false }).limit(100);
     const topIds = new Set((topScored || []).map((s: any) => s.wiki_entry_id).filter(Boolean));
 
