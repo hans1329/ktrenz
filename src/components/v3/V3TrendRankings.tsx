@@ -267,24 +267,25 @@ const V3TrendRankings = () => {
       const since = new Date(Date.now() - days * 86400000).toISOString();
 
       const { data: allScores, error } = await supabase
-        .from("v3_scores")
+        .from("v3_scores_v2" as any)
         .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, schema_type)`)
         .order("scored_at", { ascending: false });
 
       if (error) throw error;
       if (!allScores?.length) return [];
+      const typedScores = allScores as any[];
 
       const latestMap = new Map<string, any>();
-      for (const s of allScores) {
+      for (const s of typedScores) {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
       const oldScoreMap = new Map<string, number>();
-      for (const s of allScores) {
+      for (const s of typedScores) {
         if (s.scored_at <= since && !oldScoreMap.has(s.wiki_entry_id)) oldScoreMap.set(s.wiki_entry_id, s.total_score ?? 0);
       }
-      for (const s of [...allScores].reverse()) {
+      for (const s of [...typedScores].reverse()) {
         if (!oldScoreMap.has(s.wiki_entry_id) && s.scored_at >= since) oldScoreMap.set(s.wiki_entry_id, s.total_score ?? 0);
       }
 
@@ -310,12 +311,12 @@ const V3TrendRankings = () => {
     queryFn: async () => {
       const results = await Promise.all(
         top3Ids.map((id) =>
-          supabase.from("v3_energy_snapshots").select("wiki_entry_id, velocity_score, intensity_score")
+          supabase.from("v3_energy_snapshots_v2" as any).select("wiki_entry_id, velocity_score, intensity_score")
             .eq("wiki_entry_id", id).order("snapshot_at", { ascending: false }).limit(1).single()
         )
       );
       const map = new Map<string, { velocity: number; intensity: number }>();
-      results.forEach((r) => {
+      results.forEach((r: any) => {
         if (r.data) map.set(r.data.wiki_entry_id, { velocity: Number(r.data.velocity_score) || 100, intensity: Number(r.data.intensity_score) || 100 });
       });
       return map;

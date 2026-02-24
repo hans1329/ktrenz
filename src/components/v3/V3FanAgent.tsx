@@ -351,7 +351,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       // Fallback: query v3_scores directly
       const { data: scores, error: scErr } = await supabase
-        .from("v3_scores" as any)
+        .from("v3_scores_v2" as any)
         .select("wiki_entry_id, total_score, energy_score, energy_change_24h, energy_rank, youtube_score, buzz_score, scored_at")
         .order("scored_at", { ascending: false })
         .limit(200);

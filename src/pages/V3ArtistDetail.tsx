@@ -136,13 +136,13 @@ const V3ArtistDetail = () => {
         fesData = data;
       } catch {}
       const { data: latestScore } = await supabase
-        .from("v3_scores")
+        .from("v3_scores_v2" as any)
         .select("energy_score")
         .eq("wiki_entry_id", entry.id)
         .order("scored_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      latestDbFes = latestScore;
+      latestDbFes = latestScore as any;
       return { youtube: ytData, buzz: buzzData, music: musicData, fes: latestDbFes, fallbackFes: fesData, warnings };
     },
     onSuccess: (data) => {

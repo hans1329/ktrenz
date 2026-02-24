@@ -4340,6 +4340,42 @@ export type Database = {
           },
         ]
       }
+      v3_energy_baselines_v2: {
+        Row: {
+          avg_energy_30d: number | null
+          avg_energy_7d: number | null
+          avg_intensity_30d: number | null
+          avg_intensity_7d: number | null
+          avg_velocity_30d: number | null
+          avg_velocity_7d: number | null
+          id: string
+          updated_at: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          avg_energy_30d?: number | null
+          avg_energy_7d?: number | null
+          avg_intensity_30d?: number | null
+          avg_intensity_7d?: number | null
+          avg_velocity_30d?: number | null
+          avg_velocity_7d?: number | null
+          id?: string
+          updated_at?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          avg_energy_30d?: number | null
+          avg_energy_7d?: number | null
+          avg_intensity_30d?: number | null
+          avg_intensity_7d?: number | null
+          avg_velocity_30d?: number | null
+          avg_velocity_7d?: number | null
+          id?: string
+          updated_at?: string
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       v3_energy_snapshots: {
         Row: {
           buzz_engagement_rate: number | null
@@ -4389,6 +4425,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v3_energy_snapshots_v2: {
+        Row: {
+          energy_score: number
+          id: string
+          intensity_score: number
+          snapshot_at: string
+          velocity_score: number
+          wiki_entry_id: string
+        }
+        Insert: {
+          energy_score?: number
+          id?: string
+          intensity_score?: number
+          snapshot_at?: string
+          velocity_score?: number
+          wiki_entry_id: string
+        }
+        Update: {
+          energy_score?: number
+          id?: string
+          intensity_score?: number
+          snapshot_at?: string
+          velocity_score?: number
+          wiki_entry_id?: string
+        }
+        Relationships: []
       }
       v3_lightstick_balances: {
         Row: {
@@ -4620,6 +4683,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v3_scores_v2: {
+        Row: {
+          album_sales_score: number | null
+          buzz_score: number | null
+          energy_change_24h: number | null
+          energy_rank: number | null
+          energy_score: number | null
+          id: string
+          music_score: number | null
+          scored_at: string
+          total_score: number | null
+          wiki_entry_id: string
+          youtube_score: number | null
+        }
+        Insert: {
+          album_sales_score?: number | null
+          buzz_score?: number | null
+          energy_change_24h?: number | null
+          energy_rank?: number | null
+          energy_score?: number | null
+          id?: string
+          music_score?: number | null
+          scored_at?: string
+          total_score?: number | null
+          wiki_entry_id: string
+          youtube_score?: number | null
+        }
+        Update: {
+          album_sales_score?: number | null
+          buzz_score?: number | null
+          energy_change_24h?: number | null
+          energy_rank?: number | null
+          energy_score?: number | null
+          id?: string
+          music_score?: number | null
+          scored_at?: string
+          total_score?: number | null
+          wiki_entry_id?: string
+          youtube_score?: number | null
+        }
+        Relationships: []
       }
       v3_trend_score_history: {
         Row: {

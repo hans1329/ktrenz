@@ -219,16 +219,16 @@ const V3Treemap = () => {
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
-      const { data, error } = await supabase.from("v3_scores")
+      const { data, error } = await supabase.from("v3_scores_v2" as any)
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("scored_at", { ascending: false });
       if (error) throw error;
       if (!data?.length) return [];
-
+      const typedData = data as any[];
       // Deduplicate: keep latest per artist
       const latestMap = new Map<string, any>();
-      for (const s of data) {
+      for (const s of typedData) {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
@@ -241,14 +241,14 @@ const V3Treemap = () => {
       // Fetch sparkline from v3_energy_snapshots for these top artists
       const topIds = topItems.map((s) => s.wiki_entry_id);
       const { data: snapshots } = await supabase
-        .from("v3_energy_snapshots")
+        .from("v3_energy_snapshots_v2" as any)
         .select("wiki_entry_id, energy_score, snapshot_at")
         .in("wiki_entry_id", topIds)
         .order("snapshot_at", { ascending: true })
         .limit(500);
 
       const sparklineMap = new Map<string, number[]>();
-      for (const snap of snapshots || []) {
+      for (const snap of (snapshots || []) as any[]) {
         if (!sparklineMap.has(snap.wiki_entry_id)) sparklineMap.set(snap.wiki_entry_id, []);
         sparklineMap.get(snap.wiki_entry_id)!.push(Number(snap.energy_score) || 0);
       }
