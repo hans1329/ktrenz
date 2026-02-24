@@ -125,12 +125,12 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Bottom half */}
-              <div className="px-4 py-2.5 flex items-center justify-between">
-                <p className="text-[11px] text-muted-foreground">
+              <div className="px-4 py-3.5 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
                   View plans & upgrade →
                 </p>
                 <span
-                  className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+                  className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
                   style={{
                     color: tierColor,
                     borderColor: `${tierColor}30`,
