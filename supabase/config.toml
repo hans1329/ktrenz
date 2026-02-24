@@ -1,1 +1,7 @@
 project_id = "jguylowswwgjvotdcsfj"
+
+[functions.ktrenz-data-collector]
+verify_jwt = false
+
+[functions.ktrenz-streaming-guide]
+verify_jwt = false

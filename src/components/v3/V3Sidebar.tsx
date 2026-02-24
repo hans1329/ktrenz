@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight } from "lucide-react";
+import { TrendingUp, Bot, Crosshair, PanelLeftClose, PanelLeftOpen, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -15,6 +15,7 @@ import type { V3Tab } from "@/components/v3/V3TabBar";
 
 const v3NavItems: { id: V3Tab; title: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", title: "Trendz", icon: TrendingUp },
+  { id: "guide", title: "Streaming Guide", icon: Crosshair },
   { id: "agent", title: "Fan Agent", icon: Bot },
 ];
 
