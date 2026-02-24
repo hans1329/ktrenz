@@ -106,12 +106,12 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
 function ChannelBar({ icon, label, value, total, color }: { icon: React.ReactNode; label: string; value: number; total: number; color: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">{icon} {label}</span>
-        <span className="text-[11px] font-bold text-foreground">{pct.toFixed(0)}%</span>
+        <span className="flex items-center gap-2 text-xs font-semibold text-foreground">{icon} {label}</span>
+        <span className="text-xs font-bold text-foreground">{Math.round(value)} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span></span>
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
+      <div className="h-3 rounded-full bg-muted overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
@@ -176,11 +176,11 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
         {/* Channel Energy Distribution */}
         {channels.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Energy Heat Channels
+          <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" /> Energy Heat Channels
             </p>
-            <div className="space-y-2.5">
+            <div className="space-y-3.5">
               {channels.map(ch => (
                 <ChannelBar key={ch.label} icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} />
               ))}
