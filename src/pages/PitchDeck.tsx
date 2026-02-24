@@ -300,7 +300,7 @@ export default function PitchDeck() {
             {/* Ranking List */}
             <div className="bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
               <h3 className="text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" /> 실시간 랭킹 리스트
+                <TrendingUp className="w-4 h-4 text-primary" /> 실시간 변동률
               </h3>
               <div className="space-y-2.5">
                 {[
