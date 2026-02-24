@@ -1,0 +1,2 @@
+[functions.ktrenz-fan-agent]
+verify_jwt = false
