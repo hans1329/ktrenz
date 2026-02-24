@@ -1941,7 +1941,7 @@ export type Database = {
           metrics: Json
           platform: string
           raw_response: Json | null
-          wiki_entry_id: string
+          wiki_entry_id: string | null
         }
         Insert: {
           collected_at?: string
@@ -1949,7 +1949,7 @@ export type Database = {
           metrics?: Json
           platform: string
           raw_response?: Json | null
-          wiki_entry_id: string
+          wiki_entry_id?: string | null
         }
         Update: {
           collected_at?: string
@@ -1957,7 +1957,7 @@ export type Database = {
           metrics?: Json
           platform?: string
           raw_response?: Json | null
-          wiki_entry_id?: string
+          wiki_entry_id?: string | null
         }
         Relationships: [
           {
