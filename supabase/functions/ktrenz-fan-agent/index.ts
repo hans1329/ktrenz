@@ -111,21 +111,25 @@ Deno.serve(async (req) => {
 
     if (lastUserMsg?.role === "user") {
       const content = lastUserMsg.content.trim();
+      console.log("[FanAgent] User message:", content, "length:", content.length);
 
-      // 너무 긴 메시지(30자 초과)는 명령이 아닌 일반 대화로 간주
-      const isShortCommand = content.length <= 30;
+      // 너무 긴 메시지(50자 초과)는 명령이 아닌 일반 대화로 간주
+      const isShortCommand = content.length <= 50;
 
-      // 추가 패턴: "관심 아티스트 추가: BTS" / "BTS 추가해줘" 등 (짧은 메시지만)
-      const addMatch = isShortCommand && (
-        content.match(/(?:관심\s*(?:아티스트)?\s*(?:에|로|으로)?\s*)?(?:추가|등록)\s*[:：]\s*(.+)/i)
-        || content.match(/^(.{1,20}?)\s*(?:를|을)?\s*(?:추가|등록)\s*(?:해|하|할)/i)
-      );
+      // 추가 패턴: "BTS 추가해줘" / "관심 아티스트 추가: BTS" / "BTS를 추가해줘" 등
+      let addMatch: RegExpMatchArray | null = null;
+      if (isShortCommand) {
+        addMatch = content.match(/(?:관심\s*(?:아티스트)?\s*(?:에|로|으로)?\s*)?(?:추가|등록)\s*[:：]\s*(.+)/i)
+          || content.match(/^(.+?)\s*(?:를|을)?\s*(?:추가|등록)\s*(?:해줘|해|하자|할게|해주세요)/i);
+      }
+      console.log("[FanAgent] addMatch:", addMatch ? addMatch[1] : "none");
 
-      // 삭제 패턴 (짧은 메시지만)
-      const removeMatch = isShortCommand && (
-        content.match(/(?:관심\s*(?:아티스트)?\s*(?:에서)?\s*)?(?:삭제|제거|해제)\s*[:：]\s*(.+)/i)
-        || content.match(/^(.{1,20}?)\s*(?:를|을)?\s*(?:삭제|제거|해제)\s*(?:해|하|할)/i)
-      );
+      // 삭제 패턴
+      let removeMatch: RegExpMatchArray | null = null;
+      if (isShortCommand) {
+        removeMatch = content.match(/(?:관심\s*(?:아티스트)?\s*(?:에서)?\s*)?(?:삭제|제거|해제)\s*[:：]\s*(.+)/i)
+          || content.match(/^(.+?)\s*(?:를|을)?\s*(?:삭제|제거|해제)\s*(?:해줘|해|하자|할게|해주세요)/i);
+      }
 
       if (addMatch) {
         const artistName = addMatch[1].trim().replace(/[.!?]$/, "").trim();
