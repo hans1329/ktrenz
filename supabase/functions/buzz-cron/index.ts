@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     // 상위 아티스트만 (v3_scores 기준, 최신 scored_at)
     // DISTINCT ON으로 아티스트당 최신 1행만
     const { data: topScores } = await sb
-      .from("v3_scores")
+      .from("v3_scores_v2")
       .select("wiki_entry_id, total_score")
       .order("total_score", { ascending: false })
       .limit(200);
