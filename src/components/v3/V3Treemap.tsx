@@ -312,7 +312,7 @@ const V3Treemap = () => {
                     count={Math.max(3, Math.round(sharePct * 1.5))}
                     speed={Math.max(0.05, Math.min(1, rect.item.energyChange24h / maxChange))}
                     density={Math.min(1, rect.item.energyScore / maxEnergy)}
-                    color={rect.item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : rect.item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
+                    color="hsl(0, 0%, 100%)"
                   />
                 )}
 
