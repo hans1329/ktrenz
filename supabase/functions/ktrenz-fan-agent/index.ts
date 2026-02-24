@@ -116,12 +116,26 @@ Deno.serve(async (req) => {
       // 너무 긴 메시지(50자 초과)는 명령이 아닌 일반 대화로 간주
       const isShortCommand = content.length <= 50;
 
+      // 이전 assistant 메시지가 알림/추가를 안내했는지 확인
+      const prevAssistantMsg = [...messages].reverse().find((m: any) => m.role === "assistant");
+      const prevContent = prevAssistantMsg?.content ?? "";
+      const wasAskingForArtist = /아티스트\s*(이름|명)?\s*(을|를)?\s*(입력|알려|말씀|추가)/.test(prevContent)
+        || /관심\s*아티스트\s*추가/.test(prevContent)
+        || /알림.*설정/.test(prevContent);
+
       // 추가 패턴: "BTS 추가해줘" / "관심 아티스트 추가: BTS" / "BTS를 추가해줘" 등
       let addMatch: RegExpMatchArray | null = null;
       if (isShortCommand) {
         addMatch = content.match(/(?:관심\s*(?:아티스트)?\s*(?:에|로|으로)?\s*)?(?:추가|등록)\s*[:：]\s*(.+)/i)
           || content.match(/^(.+?)\s*(?:를|을)?\s*(?:추가|등록)\s*(?:해줘|해|하자|할게|해주세요)/i);
       }
+
+      // 이전 메시지가 아티스트 입력을 요청했고, 짧은 텍스트(20자 이하)면 아티스트 이름으로 간주
+      if (!addMatch && wasAskingForArtist && content.length <= 20 && !/삭제|제거|해제|취소|아니/.test(content)) {
+        addMatch = [content, content] as unknown as RegExpMatchArray;
+        console.log("[FanAgent] Context-based artist add detected:", content);
+      }
+
       console.log("[FanAgent] addMatch:", addMatch ? addMatch[1] : "none");
 
       // 삭제 패턴
