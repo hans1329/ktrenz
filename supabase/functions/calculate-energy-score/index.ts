@@ -101,9 +101,40 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json().catch(() => ({}));
+    const resetBaselines = body.resetBaselines === true;
     const targetEntryId = body.wikiEntryId as string | undefined;
     const batchSize = body.batchSize ? Number(body.batchSize) : 50;
     const batchOffset = body.batchOffset ? Number(body.batchOffset) : 0;
+
+    // ── 베이스라인 리셋 모드 ──
+    if (resetBaselines) {
+      const { data: allBaselines } = await sb
+        .from("v3_energy_baselines_v2")
+        .select("wiki_entry_id");
+      
+      let resetCount = 0;
+      for (const row of (allBaselines || [])) {
+        const eid = row.wiki_entry_id;
+        const snapData = await getLatestSnapshots(sb, eid);
+        const sentMul = 0.7 + (snapData.sentimentScore / 100) * 0.6;
+        const qualityMentions = snapData.totalMentions * sentMul;
+
+        await sb.from("v3_energy_baselines_v2").update({
+          avg_velocity_7d: Math.max(snapData.totalMentions, 1),
+          avg_velocity_30d: Math.max(snapData.recentTotalViews, 1),
+          avg_intensity_7d: Math.max(snapData.buzzScore, 1),
+          avg_intensity_30d: Math.max(qualityMentions, 1),
+          avg_energy_7d: 100,
+          avg_energy_30d: 100,
+          updated_at: new Date().toISOString(),
+        }).eq("wiki_entry_id", eid);
+        resetCount++;
+      }
+
+      console.log(`[calculate-energy-score] Reset ${resetCount} baselines`);
+      return new Response(JSON.stringify({ success: true, message: `Reset ${resetCount} baselines` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // 대상 엔트리 결정
     let entryIds: string[] = [];
