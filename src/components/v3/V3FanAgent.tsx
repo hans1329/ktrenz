@@ -203,7 +203,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // ── Sub-header ──
   const renderSubHeader = () => (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between h-14 px-4 max-w-screen-lg mx-auto">
         <div className="flex items-center gap-1 min-w-[72px]">
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
@@ -308,7 +308,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] pt-[calc(3.5rem+env(safe-area-inset-top,0px))]">
+    <div className="flex flex-col h-full">
       {renderSubHeader()}
 
       {/* Chat area */}
