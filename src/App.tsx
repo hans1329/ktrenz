@@ -8,6 +8,7 @@ import V3Home from "./pages/V3Home";
 import V3ArtistDetail from "./pages/V3ArtistDetail";
 import FesEngine from "./pages/FesEngine";
 import Login from "./pages/Login";
+import KPass from "./pages/KPass";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/artist/:slug" element={<V3ArtistDetail />} />
             <Route path="/fes-engine" element={<FesEngine />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/k-pass" element={<KPass />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
