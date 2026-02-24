@@ -1,0 +1,1 @@
+DELETE FROM public.ktrenz_watched_artists WHERE id = 'ae049e3a-dcb4-4ff0-a9bc-7ba1f09723fa';
