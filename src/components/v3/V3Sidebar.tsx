@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +25,7 @@ interface V3SidebarProps {
 
 const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
   const { state, toggleSidebar } = useSidebar();
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const collapsed = state === "collapsed";
   const [profileOpen, setProfileOpen] = useState(false);
@@ -52,7 +53,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton asChild>
-                        <button onClick={() => onTabChange(item.id)}
+                        <button onClick={() => item.id === "agent" ? navigate("/agent") : onTabChange(item.id)}
                           className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all w-full",
                             collapsed && "justify-center px-0",
                             active ? "bg-muted text-foreground font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
