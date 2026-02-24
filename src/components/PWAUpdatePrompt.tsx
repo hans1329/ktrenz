@@ -43,11 +43,11 @@ export function PWAUpdatePrompt() {
   useEffect(() => {
     if (!waitingWorker) return;
 
-    toast("새로운 버전이 있습니다", {
-      description: "최신 업데이트를 적용하려면 새로고침하세요.",
+    toast("New version available", {
+      description: "Refresh to apply the latest update.",
       duration: Infinity,
       action: {
-        label: "새로고침",
+        label: "Refresh",
         onClick: () => {
           waitingWorker.postMessage({ type: "SKIP_WAITING" });
         },

@@ -111,7 +111,6 @@ export default function PitchDeck() {
 
       {/* ───── 1. HERO ───── */}
       <Section className="overflow-hidden">
-        {/* bg glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/8 rounded-full blur-[160px]" />
           <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-[120px]" />
@@ -121,20 +120,19 @@ export default function PitchDeck() {
           <img src={ktrenzLogo} alt="K-TRENZ" className="h-8 w-auto mx-auto mb-8" />
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.1] tracking-tight mb-6">
-            <span className="text-foreground">K-Pop 아티스트의</span>
+            <span className="text-foreground">The Only Place to See</span>
             <br />
             <span className="bg-gradient-to-r from-primary via-orange-400 to-amber-400 bg-clip-text text-transparent">
-              실시간 화력
+              K-Pop Firepower
             </span>
-            <span className="text-foreground">을</span>
             <br />
-            <span className="text-foreground">볼 수 있는 유일한 곳</span>
+            <span className="text-foreground">Live</span>
           </h1>
 
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            유튜브 · X · 틱톡 및 음반/음원 관련 다양한 플랫폼 데이터를 하나의 점수로 융합한
+            Fusing YouTube · X · TikTok and music platform data into a single score —
             <br className="hidden md:block" />
-            <strong className="text-foreground">Fan Energy Score(FES)</strong>가 실시간으로 아티스트 모멘텀을 측정합니다.
+            <strong className="text-foreground">Fan Energy Score (FES)</strong> measures artist momentum in real time.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-16">
@@ -142,22 +140,21 @@ export default function PitchDeck() {
               onClick={() => navigate("/")}
               className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:brightness-110 transition-all shadow-[0_0_20px_hsl(11_100%_46%/0.3)]"
             >
-              라이브 랭킹 보기
+              View Live Rankings
             </button>
             <button
               onClick={() => navigate("/agent")}
               className="px-8 py-3.5 rounded-xl bg-secondary text-secondary-foreground font-bold text-base hover:bg-secondary/80 transition-all border border-border"
             >
-              AI 에이전트 체험
+              Try AI Agent
             </button>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
             {[
-              { label: "추적 아티스트", value: 200, suffix: "+" },
-              { label: "데이터 포인트/일", value: 50000, suffix: "+" },
-              { label: "실시간 갱신", value: 24, suffix: "h" },
+              { label: "Tracked Artists", value: 200, suffix: "+" },
+              { label: "Data Points/Day", value: 50000, suffix: "+" },
+              { label: "Live Updates", value: 24, suffix: "h" },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <div className="text-2xl md:text-3xl font-black text-primary">
@@ -183,37 +180,36 @@ export default function PitchDeck() {
               FES — <span className="text-primary">Fan Energy Score</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              멀티 플랫폼 데이터를 실시간으로 수집하고, 독자적인 가중치 알고리즘으로
-              하나의 에너지 점수로 합성합니다.
+              Collecting multi-platform data in real time and synthesizing it into
+              a single energy score with our proprietary weighted algorithm.
             </p>
           </div>
 
-          {/* Pipeline */}
           <div className="grid md:grid-cols-4 gap-4">
             {[
               {
                 icon: Globe,
                 step: "01",
-                title: "수집",
-                desc: "YouTube · X · TikTok 등 다양한 소스에서 조회수, 언급량, 반응 지표를 자동 수집",
+                title: "Collect",
+                desc: "Automatically collect views, mentions, and engagement metrics from YouTube · X · TikTok and more.",
               },
               {
                 icon: Layers,
                 step: "02",
-                title: "정규화",
-                desc: "플랫폼별 스케일 차이를 정규화하여 동일 기준선으로 변환",
+                title: "Normalize",
+                desc: "Normalize platform-specific scale differences to a common baseline.",
               },
               {
                 icon: Activity,
                 step: "03",
-                title: "가중 합산",
-                desc: "Energy · Buzz · YouTube 등 멀티소스 가중치로 FES 산출",
+                title: "Weight & Sum",
+                desc: "Calculate FES using multi-source weights across Energy, Buzz, and YouTube.",
               },
               {
                 icon: TrendingUp,
                 step: "04",
-                title: "모멘텀 계산",
-                desc: "24h / 7d 변화율로 가속도(Momentum)와 추세 방향 판별",
+                title: "Momentum",
+                desc: "Determine acceleration and trend direction from 24h / 7d change rates.",
               },
             ].map((item, i) => (
               <div
@@ -232,7 +228,7 @@ export default function PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 3. VISUALIZATION — 가속도 & 밀도 ───── */}
+      {/* ───── 3. VISUALIZATION ───── */}
       <Section id="viz">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
@@ -240,25 +236,24 @@ export default function PitchDeck() {
               <Eye className="w-3.5 h-3.5" /> Visualization
             </SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              <span className="text-primary">가속도</span>와{" "}
-              <span className="text-primary">밀도</span>로 읽는 화력
+              Read Firepower through{" "}
+              <span className="text-primary">Velocity</span> &{" "}
+              <span className="text-primary">Density</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              숫자 나열이 아닌, 한눈에 체감되는 에너지 맵.
-              면적은 에너지량, 색상은 추세, 네온은 폭발을 뜻합니다.
+              Not just numbers — an energy map you can feel at a glance.
+              Area = energy, color = trend, neon = explosion.
             </p>
           </div>
 
-          {/* Row 1: Treemap + Legend */}
           <div className="grid md:grid-cols-2 gap-8 mb-8">
-            {/* Treemap preview */}
             <div className="relative bg-card/60 border border-border/50 rounded-2xl p-8 overflow-hidden">
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-[80px]" />
               <h3 className="text-foreground font-bold text-xl mb-3 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-primary" /> 에너지 트리맵
+                <BarChart3 className="w-5 h-5 text-primary" /> Energy Treemap
               </h3>
               <p className="text-muted-foreground text-sm mb-6">
-                상위 아티스트를 면적 비례로 배치. 25% 이상 급증 시 네온 글로우 효과.
+                Top artists placed by area proportion. Neon glow on ≥25% surge.
               </p>
               <div className="grid grid-cols-4 grid-rows-3 gap-1.5 h-40">
                 <div className="col-span-2 row-span-2 rounded-lg bg-red-500/30 border border-red-500/40 flex items-center justify-center text-xs font-bold text-red-300 shadow-[0_0_12px_hsl(0_80%_50%/0.3)]">BTS</div>
@@ -271,13 +266,12 @@ export default function PitchDeck() {
               </div>
             </div>
 
-            {/* Legend */}
             <div className="space-y-5 flex flex-col justify-center">
               {[
-                { color: "bg-red-500", label: "급상승 (≥15%)", desc: "에너지가 빠르게 가속 중. 컴백, 바이럴, 주요 이벤트 감지." },
-                { color: "bg-green-500", label: "안정 유지 (≥0%)", desc: "꾸준한 팬덤 활동으로 에너지가 견조하게 유지." },
-                { color: "bg-blue-500", label: "하락 추세 (<0%)", desc: "활동 감소 또는 자연 감쇠. 다음 활동 시 반등 기대." },
-                { color: "bg-red-500 shadow-[0_0_12px_hsl(0_80%_50%/0.5)]", label: "네온 폭발 (≥25%)", desc: "극단적 급등. 글로우 효과로 즉각적인 시각 경고." },
+                { color: "bg-red-500", label: "Surging (≥15%)", desc: "Energy accelerating fast. Comeback, viral, or major event detected." },
+                { color: "bg-green-500", label: "Stable (≥0%)", desc: "Steady fandom activity keeping energy solidly maintained." },
+                { color: "bg-blue-500", label: "Declining (<0%)", desc: "Activity decrease or natural decay. Rebound expected on next activity." },
+                { color: "bg-red-500 shadow-[0_0_12px_hsl(0_80%_50%/0.5)]", label: "Neon Burst (≥25%)", desc: "Extreme surge. Glow effect provides immediate visual alert." },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-4">
                   <div className={`w-4 h-4 rounded-sm mt-1 shrink-0 ${item.color}`} />
@@ -290,13 +284,11 @@ export default function PitchDeck() {
             </div>
           </div>
 
-          {/* Row 2: Ranking List + FES/Momentum Charts */}
           <div className="grid md:grid-cols-3 gap-6">
-            {/* Ranking List */}
             <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
               <BoxParticles count={40} color="hsl(11, 100%, 46%)" />
               <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" /> 실시간 변동률
+                <TrendingUp className="w-4 h-4 text-primary" /> Live Change Rate
               </h3>
               <div className="space-y-2.5">
                 {[
@@ -320,14 +312,12 @@ export default function PitchDeck() {
               </div>
             </div>
 
-            {/* Momentum (가속도) Chart */}
             <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
               <BoxParticles count={28} color="hsl(11, 100%, 46%)" />
               <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-primary" /> 가속도 (Momentum)
+                <Activity className="w-4 h-4 text-primary" /> Momentum
               </h3>
-              <p className="text-muted-foreground text-xs mb-4">24h 에너지 변화율 추이</p>
-              {/* Fake sparkline area chart */}
+              <p className="text-muted-foreground text-xs mb-4">24h energy change rate trend</p>
               <div className="relative h-28">
                 <svg viewBox="0 0 200 80" className="w-full h-full" preserveAspectRatio="none">
                   <defs>
@@ -339,25 +329,22 @@ export default function PitchDeck() {
                   <path d="M0,60 Q20,55 40,50 T80,35 T120,20 T160,30 T200,15" fill="none" stroke="hsl(11 100% 46%)" strokeWidth="2" />
                   <path d="M0,60 Q20,55 40,50 T80,35 T120,20 T160,30 T200,15 L200,80 L0,80 Z" fill="url(#momentumGrad)" />
                 </svg>
-                {/* Labels */}
                 <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] text-muted-foreground px-1">
                   <span>-24h</span><span>-12h</span><span>Now</span>
                 </div>
               </div>
               <div className="mt-3 text-center">
                 <span className="text-primary font-bold text-lg">+18.3%</span>
-                <span className="text-muted-foreground text-xs ml-1">가속 중</span>
+                <span className="text-muted-foreground text-xs ml-1">Accelerating</span>
               </div>
             </div>
 
-            {/* FES Score (밀도) Chart */}
             <div className="relative bg-card/60 border border-border/50 rounded-2xl p-6 overflow-hidden">
               <BoxParticles count={18} color="hsl(11, 100%, 46%)" />
               <h3 className="relative z-10 text-foreground font-bold text-sm mb-4 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-primary" /> FES 밀도 분포
+                <Flame className="w-4 h-4 text-primary" /> FES Density
               </h3>
-              <p className="text-muted-foreground text-xs mb-4">점수 구간별 아티스트 밀집도</p>
-              {/* Fake bar chart */}
+              <p className="text-muted-foreground text-xs mb-4">Artist density by score range</p>
               <div className="flex items-end gap-2 h-28">
                 {[
                   { h: "20%", label: "2K", count: 8 },
@@ -377,14 +364,14 @@ export default function PitchDeck() {
                 ))}
               </div>
               <div className="mt-3 text-center">
-                <span className="text-foreground font-bold text-sm">8K~9K 구간 최다 밀집</span>
+                <span className="text-foreground font-bold text-sm">8K–9K range most dense</span>
               </div>
             </div>
           </div>
         </div>
       </Section>
 
-      {/* ───── 4. MERITS — 왜 K-TRENZ인가 ───── */}
+      {/* ───── 4. MERITS ───── */}
       <Section id="merits">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
@@ -392,48 +379,48 @@ export default function PitchDeck() {
               <Sparkles className="w-3.5 h-3.5" /> Why K-TRENZ
             </SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              기존 차트와는 <span className="text-primary">차원이 다릅니다</span>
+              A <span className="text-primary">whole new dimension</span> beyond charts
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-5">
             <FeatureCard
               icon={Zap}
-              title="실시간 모멘텀"
-              desc="주간/월간 집계가 아닌, 실시간으로 변하는 에너지 흐름을 초 단위로 추적합니다."
+              title="Real-Time Momentum"
+              desc="Not weekly or monthly aggregates — we track energy flow in real time, second by second."
               accent
             />
             <FeatureCard
               icon={Layers}
-              title="멀티소스 융합"
-              desc="유튜브, X, 틱톡 등 다양한 소스 데이터를 하나의 통합 점수로 합성. 편향 없는 종합 지표."
+              title="Multi-Source Fusion"
+              desc="YouTube, X, TikTok and more fused into a single unbiased composite score."
             />
             <FeatureCard
               icon={Target}
-              title="AI 개인 비서"
-              desc="에이전트가 관심 아티스트의 실시간 화력 변동과 최적 스트리밍 전략을 자동으로 브리핑합니다."
+              title="AI Personal Assistant"
+              desc="An agent that auto-briefs you on your artist's live firepower changes and optimal streaming strategy."
             />
             <FeatureCard
               icon={Eye}
-              title="직관적 시각화"
-              desc="트리맵, 스파크라인, 에너지 차트로 복잡한 데이터를 한눈에 읽을 수 있습니다."
+              title="Intuitive Visualization"
+              desc="Treemaps, sparklines, and energy charts let you read complex data at a glance."
             />
             <FeatureCard
               icon={Shield}
-              title="투명한 데이터"
-              desc="모든 점수 산출 기준과 변동 내역이 공개. 팬덤 간 공정한 경쟁의 장."
+              title="Transparent Data"
+              desc="All scoring criteria and change history are public. A fair playing field for fandoms."
               accent
             />
             <FeatureCard
               icon={Radio}
-              title="스트리밍 전략"
-              desc="AI가 아티스트별 최적 스트리밍 전략을 실시간 생성. 팬 활동의 효율을 극대화."
+              title="Streaming Strategy"
+              desc="AI generates optimal streaming strategies per artist in real time. Maximize fan activity efficiency."
             />
           </div>
         </div>
       </Section>
 
-      {/* ───── 5. 마술봉 무기 = AI 에이전트 ───── */}
+      {/* ───── 5. AI WEAPON ───── */}
       <Section id="weapon">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
@@ -441,14 +428,14 @@ export default function PitchDeck() {
               <Wand2 className="w-3.5 h-3.5" /> Magic Wand
             </SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              팬에게 쥐어주는
+              A Powerful
               <br />
-              <span className="text-primary">강력한 마술봉 무기</span>
+              <span className="text-primary">Magic Wand</span> for Fans
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              AI 에이전트는 단순한 챗봇이 아닙니다.
+              The AI agent is not just a chatbot.
               <br />
-              실시간 데이터로 무장한, 팬 전용 <strong className="text-foreground">전략 무기</strong>입니다.
+              It's a fan-exclusive <strong className="text-foreground">strategic weapon</strong> armed with real-time data.
             </p>
           </div>
 
@@ -456,33 +443,33 @@ export default function PitchDeck() {
             {[
               {
                 icon: "🔍",
-                title: "실시간 화력 정찰",
-                desc: "내 아티스트의 FES 점수, 순위, 에너지 변동을 실시간으로 브리핑받습니다.",
+                title: "Live Firepower Recon",
+                desc: "Get real-time briefings on your artist's FES score, ranking, and energy changes.",
               },
               {
                 icon: "📋",
-                title: "스트리밍 작전 수립",
-                desc: "AI가 플랫폼별 가중치를 분석해 가장 효율적인 스트리밍 순서와 전략을 제시합니다.",
+                title: "Streaming Battle Plan",
+                desc: "AI analyzes platform weights to suggest the most efficient streaming order and strategy.",
               },
               {
                 icon: "🎯",
-                title: "관심 아티스트 관리",
-                desc: "\"BTS 추가해줘\" 한마디로 워치리스트 등록. 자연어로 모든 관리가 가능합니다.",
+                title: "Watchlist Management",
+                desc: "\"Add BTS\" — one sentence to register. Manage everything with natural language.",
               },
               {
                 icon: "📊",
-                title: "랭킹 카드 즉시 조회",
-                desc: "퀵 버튼 하나로 실시간 TOP 랭킹을 인라인 카드로 바로 확인합니다.",
+                title: "Instant Ranking Cards",
+                desc: "One quick button to view live TOP rankings as inline cards.",
               },
               {
                 icon: "⚡",
-                title: "트렌드 변동 감지",
-                desc: "급상승·급하락 이벤트를 에이전트가 자동 감지하고 알려줍니다.",
+                title: "Trend Change Detection",
+                desc: "The agent auto-detects surges and drops and alerts you immediately.",
               },
               {
                 icon: "🤖",
-                title: "24시간 대기",
-                desc: "언제든 질문하면 즉시 응답. 잠들지 않는 팬 활동 파트너.",
+                title: "24/7 Standby",
+                desc: "Ask anytime, get instant responses. A fan activity partner that never sleeps.",
               },
             ].map((item, i) => (
               <div
@@ -503,7 +490,7 @@ export default function PitchDeck() {
           <div className="mt-10 text-center">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border text-sm text-muted-foreground">
               <Wand2 className="w-4 h-4 text-primary" />
-              데이터 + AI = 팬의 <strong className="text-foreground">최강 무기</strong>
+              Data + AI = The Fan's <strong className="text-foreground">Ultimate Weapon</strong>
             </div>
           </div>
         </div>
@@ -518,20 +505,20 @@ export default function PitchDeck() {
                 <Bot className="w-3.5 h-3.5" /> Fan Agent
               </SectionTag>
               <h2 className="text-3xl md:text-5xl font-black mb-6">
-                AI <span className="text-primary">에이전트</span>가
+                An AI <span className="text-primary">Agent</span>
                 <br />
-                당신의 덕질을 돕습니다
+                to Power Your Fandom
               </h2>
               <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                관심 아티스트를 등록하면, 실시간 브리핑 · 순위 변동 알림 ·
-                스트리밍 전략까지 AI가 챙겨드립니다.
+                Register your favorite artists and let AI handle real-time briefings,
+                ranking change alerts, and streaming strategies.
               </p>
               <ul className="space-y-4">
                 {[
-                  "자연어로 아티스트 등록 & 관리",
-                  "FES 기반 실시간 트렌드 브리핑",
-                  "맞춤형 스트리밍 최적화 가이드",
-                  "퀵 버튼으로 즉시 랭킹 카드 조회",
+                  "Register & manage artists with natural language",
+                  "FES-based real-time trend briefings",
+                  "Personalized streaming optimization guide",
+                  "Instant ranking cards via quick buttons",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-foreground">
                     <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
@@ -543,7 +530,6 @@ export default function PitchDeck() {
               </ul>
             </div>
 
-            {/* Chat mock */}
             <div className="bg-card/80 border border-border/50 rounded-2xl p-5 space-y-3 shadow-[0_0_40px_hsl(11_100%_46%/0.06)]">
               <div className="flex items-center gap-2 pb-3 border-b border-border/40 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -553,15 +539,15 @@ export default function PitchDeck() {
                 <span className="ml-auto w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               </div>
               {[
-                { role: "user", text: "BTS 실시간 화력 어때?" },
+                { role: "user", text: "How's BTS doing right now?" },
                 {
                   role: "agent",
-                  text: "🔥 BTS 현재 FES 9,420 — Energy +18.3% 급상승 중입니다! 스포티파이 스트리밍이 컴백 효과로 폭발하고 있어요.",
+                  text: "🔥 BTS current FES 9,420 — Energy +18.3% surging! Spotify streaming is exploding with comeback effect.",
                 },
-                { role: "user", text: "스트리밍 전략 짜줘" },
+                { role: "user", text: "Plan a streaming strategy" },
                 {
                   role: "agent",
-                  text: "📋 Dynamite → Butter → Spring Day 순서로 3회 반복 스트리밍을 추천드립니다. 현재 스포티파이 가중치가 높아 효율 극대화됩니다.",
+                  text: "📋 I recommend streaming Dynamite → Butter → Spring Day in 3 rotations. Spotify weight is currently highest for maximum efficiency.",
                 },
               ].map((msg, i) => (
                 <div
@@ -592,18 +578,18 @@ export default function PitchDeck() {
               <Sparkles className="w-3.5 h-3.5" /> Key Features
             </SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              주요 <span className="text-primary">기능</span>
+              Key <span className="text-primary">Features</span>
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: Flame, title: "실시간 FES 랭킹", desc: "아티스트별 Fan Energy Score 실시간 순위 및 변동 추적." },
-              { icon: BarChart3, title: "에너지 트리맵", desc: "면적 = 에너지, 색상 = 추세. 한 화면에 시장 전체를 파악." },
-              { icon: Music, title: "스트리밍 가이드", desc: "AI가 아티스트별 최적 스트리밍 전략을 실시간 생성." },
-              { icon: Wand2, title: "AI 마술봉 무기", desc: "에이전트가 실시간 데이터로 무장해 팬의 덕질 효율을 극대화." },
-              { icon: Bot, title: "팬 에이전트 봇", desc: "자연어로 소통하는 AI. 관심 아티스트 브리핑 & 전략 제공." },
-              { icon: Users, title: "팬덤 커뮤니티", desc: "위키, 포스트, 챌린지, DM 등 팬 활동을 위한 통합 공간." },
+              { icon: Flame, title: "Live FES Rankings", desc: "Real-time Fan Energy Score rankings and change tracking per artist." },
+              { icon: BarChart3, title: "Energy Treemap", desc: "Area = energy, color = trend. See the entire market in one screen." },
+              { icon: Music, title: "Streaming Guide", desc: "AI generates optimal streaming strategies per artist in real time." },
+              { icon: Wand2, title: "AI Magic Wand", desc: "Agent armed with real-time data to maximize your fan activity efficiency." },
+              { icon: Bot, title: "Fan Agent Bot", desc: "AI that communicates in natural language. Artist briefings & strategy delivery." },
+              { icon: Users, title: "Fandom Community", desc: "Wiki, posts, challenges, DMs — an integrated space for fan activities." },
             ].map((f, i) => (
               <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} accent={i === 0} />
             ))}
@@ -611,7 +597,7 @@ export default function PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 8. CTA — 실시간 화력 결과 ───── */}
+      {/* ───── 8. CTA ───── */}
       <Section id="cta">
         <div className="relative max-w-3xl mx-auto text-center z-10">
           <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -620,14 +606,14 @@ export default function PitchDeck() {
 
           <div className="text-6xl mb-6">🔥</div>
           <h2 className="text-3xl md:text-5xl font-black mb-6">
-            지금 바로
+            Check the
             <br />
-            <span className="text-primary">실시간 화력</span>을 확인하세요
+            <span className="text-primary">Live Firepower</span> Right Now
           </h2>
           <p className="text-muted-foreground text-lg mb-10 max-w-lg mx-auto">
-            K-Pop 팬이라면 놓칠 수 없는 에너지 대시보드.
+            The energy dashboard no K-Pop fan can miss.
             <br />
-            당신의 아티스트가 지금 어디에 있는지 확인하세요.
+            See where your artist stands right now.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
@@ -635,7 +621,7 @@ export default function PitchDeck() {
               onClick={() => navigate("/")}
               className="group px-10 py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg hover:brightness-110 transition-all shadow-[0_0_30px_hsl(11_100%_46%/0.35)] flex items-center gap-2"
             >
-              라이브 대시보드
+              Live Dashboard
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
@@ -643,7 +629,7 @@ export default function PitchDeck() {
               className="px-10 py-4 rounded-xl bg-card text-foreground font-bold text-lg hover:bg-secondary transition-all border border-border flex items-center gap-2"
             >
               <Bot className="w-5 h-5" />
-              에이전트 시작
+              Start Agent
             </button>
           </div>
 

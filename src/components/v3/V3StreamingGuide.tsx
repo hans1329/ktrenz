@@ -16,9 +16,9 @@ const GUIDE_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-
 
 const MomentumBadge = ({ momentum }: { momentum: string }) => {
   const config = {
-    rising: { icon: TrendingUp, label: "상승세", className: "bg-green-500/10 text-green-400 border-green-500/20" },
-    stable: { icon: Minus, label: "유지", className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
-    declining: { icon: TrendingDown, label: "하락세", className: "bg-red-500/10 text-red-400 border-red-500/20" },
+    rising: { icon: TrendingUp, label: "Rising", className: "bg-green-500/10 text-green-400 border-green-500/20" },
+    stable: { icon: Minus, label: "Stable", className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
+    declining: { icon: TrendingDown, label: "Declining", className: "bg-red-500/10 text-red-400 border-red-500/20" },
   }[momentum] ?? { icon: Minus, label: momentum, className: "bg-muted text-muted-foreground border-border" };
 
   const Icon = config.icon;
@@ -89,9 +89,9 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
           .eq("user_id", user.id);
       }
       await refetch();
-      toast.success("가이드가 갱신되었습니다");
+      toast.success("Guide refreshed");
     } catch {
-      toast.error("가이드 갱신 실패");
+      toast.error("Failed to refresh guide");
     } finally {
       setIsRefreshing(false);
     }
@@ -133,8 +133,8 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
         {renderHeader()}
         <div className="px-4 py-12 text-center space-y-4">
           <Crosshair className="w-12 h-12 mx-auto text-primary/30" />
-          <p className="text-lg font-semibold text-foreground">로그인이 필요합니다</p>
-          <p className="text-sm text-muted-foreground">맞춤형 스트리밍 가이드를 받으려면 로그인해주세요</p>
+          <p className="text-lg font-semibold text-foreground">Sign In Required</p>
+          <p className="text-sm text-muted-foreground">Please sign in to receive personalized streaming guides</p>
         </div>
       </div>
     );
@@ -148,7 +148,7 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-3">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-            <p className="text-sm text-muted-foreground">데이터 분석 중...</p>
+            <p className="text-sm text-muted-foreground">Analyzing data...</p>
           </div>
         </div>
       </div>
@@ -162,12 +162,12 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
         {renderHeader()}
         <div className="px-4 py-12 text-center space-y-4">
           <Crosshair className="w-12 h-12 mx-auto text-primary/30" />
-          <p className="text-lg font-semibold text-foreground">관심 아티스트를 등록해주세요</p>
+          <p className="text-lg font-semibold text-foreground">Register Your Artists</p>
           <p className="text-sm text-muted-foreground">
-            Fan Agent에서 아티스트를 등록하면<br />맞춤형 스트리밍 전략을 제공합니다
+            Add artists in Fan Agent<br />to get personalized streaming strategies
           </p>
           <Button variant="outline" className="rounded-full" onClick={() => onBack ? onBack() : navigate("/agent")}>
-            Fan Agent로 이동
+            Go to Fan Agent
           </Button>
         </div>
       </div>
@@ -202,7 +202,7 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
                     {g.gap_analysis?.target_rank && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Target className="w-3 h-3" />
-                        목표 #{g.gap_analysis.target_rank}
+                        Target #{g.gap_analysis.target_rank}
                       </div>
                     )}
                   </div>
@@ -217,7 +217,7 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
                 <div className="p-4 border-b border-border/30">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <BarChart3 className="w-3 h-3" />
-                    플랫폼별 전략
+                    Platform Strategy
                   </h3>
                   <div className="space-y-2">
                     {g.platform_focus.map((pf: any, i: number) => (
@@ -241,14 +241,14 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
                 <div className="p-4 border-b border-border/30">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Music2 className="w-3 h-3" />
-                    앨범 판매 분석
+                    Album Sales Analysis
                   </h3>
                   <div className="bg-muted/30 rounded-xl p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-foreground">{g.sales_analysis.latest_album}</span>
                       {g.sales_analysis.first_week_sales > 0 && (
                         <span className="text-sm font-bold text-primary">
-                          {g.sales_analysis.first_week_sales.toLocaleString()}장
+                          {g.sales_analysis.first_week_sales.toLocaleString()} copies
                         </span>
                       )}
                     </div>
@@ -264,12 +264,12 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
                 <div className="p-4 border-b border-border/30">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Target className="w-3 h-3" />
-                    갭 분석
+                    Gap Analysis
                   </h3>
                   <div className="bg-muted/30 rounded-xl p-3">
                     {g.gap_analysis.energy_gap != null && (
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">Energy 격차</span>
+                        <span className="text-xs text-muted-foreground">Energy Gap</span>
                         <span className="text-sm font-bold text-foreground">{Math.round(g.gap_analysis.energy_gap)}</span>
                       </div>
                     )}
@@ -283,7 +283,7 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
                 <div className="p-4 border-b border-border/30">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Crosshair className="w-3 h-3" />
-                    실행 좌표
+                    Action Items
                   </h3>
                   <div className="space-y-1.5">
                     {g.action_items.map((item: string, i: number) => (

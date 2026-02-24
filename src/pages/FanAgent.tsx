@@ -21,21 +21,21 @@ const FanAgent = () => {
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center bg-background gap-4 px-4">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-foreground">로그인이 필요합니다</h2>
-          <p className="text-sm text-muted-foreground">Fan Agent를 이용하려면 로그인해 주세요.</p>
+          <h2 className="text-xl font-bold text-foreground">Sign In Required</h2>
+          <p className="text-sm text-muted-foreground">Please sign in to use Fan Agent.</p>
         </div>
         <Button
           onClick={() => navigate("/login")}
           className="h-12 px-8 rounded-full gap-2 font-medium"
         >
           <LogIn className="w-5 h-5" />
-          로그인
+          Sign In
         </Button>
         <button
           onClick={() => navigate(-1)}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
         >
-          ← 뒤로가기
+          ← Go Back
         </button>
       </div>
     );

@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 
 const MomentumBadge = ({ momentum }: { momentum: string }) => {
   const config = {
-    rising: { icon: TrendingUp, label: "상승세", className: "bg-green-500/10 text-green-400 border-green-500/20" },
-    stable: { icon: Minus, label: "유지", className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
-    declining: { icon: TrendingDown, label: "하락세", className: "bg-red-500/10 text-red-400 border-red-500/20" },
+    rising: { icon: TrendingUp, label: "Rising", className: "bg-green-500/10 text-green-400 border-green-500/20" },
+    stable: { icon: Minus, label: "Stable", className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
+    declining: { icon: TrendingDown, label: "Declining", className: "bg-red-500/10 text-red-400 border-red-500/20" },
   }[momentum] ?? { icon: Minus, label: momentum, className: "bg-muted text-muted-foreground border-border" };
   const Icon = config.icon;
   return (
@@ -70,7 +70,7 @@ const V3StreamingGuideCards = ({ guides }: StreamingGuideCardsProps) => {
                 {g.gap_analysis?.target_rank && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Target className="w-3 h-3" />
-                    목표 #{g.gap_analysis.target_rank}
+                    Target #{g.gap_analysis.target_rank}
                   </div>
                 )}
               </div>
@@ -82,7 +82,7 @@ const V3StreamingGuideCards = ({ guides }: StreamingGuideCardsProps) => {
               <div className="p-3 border-b border-border/30">
                 <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <BarChart3 className="w-3 h-3" />
-                  플랫폼별 전략
+                  Platform Strategy
                 </h4>
                 <div className="space-y-1.5">
                   {g.platform_focus.map((pf: any, i: number) => (
@@ -106,13 +106,13 @@ const V3StreamingGuideCards = ({ guides }: StreamingGuideCardsProps) => {
               <div className="p-3 border-b border-border/30">
                 <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <Music2 className="w-3 h-3" />
-                  앨범 판매 분석
+                  Album Sales Analysis
                 </h4>
                 <div className="bg-muted/30 rounded-lg p-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-foreground">{g.sales_analysis.latest_album}</span>
                     {g.sales_analysis.first_week_sales > 0 && (
-                      <span className="text-xs font-bold text-primary">{g.sales_analysis.first_week_sales.toLocaleString()}장</span>
+                      <span className="text-xs font-bold text-primary">{g.sales_analysis.first_week_sales.toLocaleString()} copies</span>
                     )}
                   </div>
                   {g.sales_analysis.assessment && <p className="text-[11px] text-muted-foreground mt-1">{g.sales_analysis.assessment}</p>}
@@ -125,12 +125,12 @@ const V3StreamingGuideCards = ({ guides }: StreamingGuideCardsProps) => {
               <div className="p-3 border-b border-border/30">
                 <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <Target className="w-3 h-3" />
-                  갭 분석
+                  Gap Analysis
                 </h4>
                 <div className="bg-muted/30 rounded-lg p-2.5">
                   {g.gap_analysis.energy_gap != null && (
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-muted-foreground">Energy 격차</span>
+                      <span className="text-[11px] text-muted-foreground">Energy Gap</span>
                       <span className="text-xs font-bold text-foreground">{Math.round(g.gap_analysis.energy_gap)}</span>
                     </div>
                   )}
@@ -144,7 +144,7 @@ const V3StreamingGuideCards = ({ guides }: StreamingGuideCardsProps) => {
               <div className="p-3 border-b border-border/30">
                 <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <Crosshair className="w-3 h-3" />
-                  실행 좌표
+                  Action Items
                 </h4>
                 <div className="space-y-1">
                   {g.action_items.map((item: string, i: number) => (
