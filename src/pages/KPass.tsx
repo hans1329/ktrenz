@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -66,10 +66,8 @@ const KPassPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>K-Pass — KTRENDZ</title>
-        <meta name="description" content="Choose your K-Pass tier for premium K-Pop trend data access." />
-      </Helmet>
+       <SEO title="K-Pass Membership – KTrenZ" description="Unlock premium K-Pop trend data with K-Pass. Get deeper analytics, priority alerts, and ad-free experience." path="/k-pass" />
+      
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">

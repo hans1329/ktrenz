@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import V3Sidebar from "@/components/v3/V3Sidebar";
@@ -29,10 +29,11 @@ const V3Home = () => {
   if (isMobile) {
     return (
       <>
-        <Helmet>
-          <title>KTRENDZ - Live K-Pop Trend Rankings</title>
-          <meta name="description" content="Real-time K-Pop trend rankings powered by YouTube, X, and music data" />
-        </Helmet>
+        <SEO
+          title="KTrenZ – Live K-Pop Trend Rankings"
+          description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X (Twitter), and music charts. Updated every hour."
+          path="/"
+        />
         {!isSubPage && <V3Header />}
         <div className="pb-20 pt-14">
           {renderContent()}
@@ -44,10 +45,11 @@ const V3Home = () => {
 
   return (
     <>
-      <Helmet>
-        <title>KTRENDZ - Live K-Pop Trend Rankings</title>
-        <meta name="description" content="Real-time K-Pop trend rankings powered by YouTube, X, and music data" />
-      </Helmet>
+        <SEO
+          title="KTrenZ – Live K-Pop Trend Rankings"
+          description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X (Twitter), and music charts. Updated every hour."
+          path="/"
+        />
       <SidebarProvider defaultOpen={true}>
         <div className="h-screen flex w-full overflow-hidden">
           <V3Sidebar activeTab={activeTab} onTabChange={setActiveTab} />

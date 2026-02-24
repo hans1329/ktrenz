@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet-async";
+import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import {
   Flame, Activity, BarChart3, Zap, Wand2, Bot, Sparkles,
@@ -107,13 +107,7 @@ export default function PitchDeck() {
 
   return (
     <div className="bg-background text-foreground overflow-x-hidden">
-      <Helmet>
-        <title>K-TRENZ — The Only Place to See K-Pop Firepower Live</title>
-        <meta
-          name="description"
-          content="K-TRENZ: Real-time K-Pop artist momentum engine powered by FES data, fan lightsticks, and AI agent."
-        />
-      </Helmet>
+      <SEO title="KTrenZ – The Only Place to See K-Pop Firepower Live" description="KTrenZ is the real-time K-Pop trend platform tracking 100+ artists across YouTube, X, and music charts with AI-powered FES energy scores." path="/pitchdeck" />
 
       {/* ───── 1. HERO ───── */}
       <Section className="overflow-hidden">
