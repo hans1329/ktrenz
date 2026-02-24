@@ -38,7 +38,7 @@ function getTileColor(change: number): string {
   if (change >= 30) return "hsla(0, 85%, 50%, 0.9)";     // HOT RED
   if (change >= 15) return "hsla(5, 75%, 45%, 0.8)";      // RED
   if (change >= 5) return "hsla(10, 60%, 40%, 0.7)";      // WARM RED
-  if (change > -5) return "hsla(174, 60%, 45%, 0.75)";     // Tiffany Blue stable
+  if (change > -5) return "hsla(160, 50%, 40%, 0.75)";     // Mint stable
   if (change > -15) return "hsla(220, 55%, 35%, 0.7)";    // BLUE cooling
   return "hsla(230, 60%, 28%, 0.8)";                       // DEEP BLUE falling
 }
@@ -271,7 +271,7 @@ const V3Treemap = () => {
           <span className="font-semibold">Rising</span>
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "hsla(174, 60%, 45%, 0.75)" }} />
+          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "hsla(160, 50%, 40%, 0.75)" }} />
           <span className="font-semibold">Stable</span>
         </span>
         <span className="flex items-center gap-1">
