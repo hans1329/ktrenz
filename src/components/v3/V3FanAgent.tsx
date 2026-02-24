@@ -3,15 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Bot, Send, ArrowLeft, Home, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
 
 // ── Types ──────────────────────────────────────────────
-type ChatMessage = { role: "user" | "assistant"; content: string; timestamp?: string };
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  timestamp?: string;
+  guideData?: any[] | null; // inline streaming guide
+};
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
 
@@ -29,6 +34,11 @@ const QUICK_ACTIONS: QuickAction[] = [
   { icon: Music2, label: "스트리밍 가이드", prompt: "내 관심 아티스트의 스트리밍 가이드를 만들어줘. 플랫폼별 주의사항, 권장 플레이리스트, 총공 시간대를 포함해줘.", mode: "streaming", color: "text-green-400" },
   { icon: Bell, label: "알림 설정", prompt: "내 관심 아티스트의 순위 변동 알림을 설정하고 싶어. 관심 있는 아티스트 이름을 직접 입력하면 추가할 수 있게 안내해줘. 현재 랭킹에 없는 아티스트도 추가할 수 있어.", mode: "alert", color: "text-amber-400" },
 ];
+
+// Streaming keywords to detect
+const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁/i;
+
+const GUIDE_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-streaming-guide`;
 
 // ── Streaming helper ───────────────────────────────────
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
@@ -170,6 +180,26 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Fetch streaming guide data
+  const fetchGuideData = useCallback(async (): Promise<any[] | null> => {
+    if (!session?.access_token) return null;
+    try {
+      const resp = await fetch(GUIDE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({}),
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data?.guides ?? null;
+    } catch {
+      return null;
+    }
+  }, [session?.access_token]);
+
   const handleSend = useCallback(async (overrideText?: string) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
@@ -178,11 +208,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setIsStreaming(true);
     setHasStarted(true);
 
+    const isStreamingQuery = STREAMING_KEYWORDS.test(text);
+
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
 
     let assistantContent = "";
+    // Fetch guide in parallel if streaming-related
+    const guidePromise = isStreamingQuery && hasAlertOn ? fetchGuideData() : Promise.resolve(null);
 
     try {
       await streamChat({
@@ -200,7 +234,18 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             return [...prev, { role: "assistant" as const, content: assistantContent, timestamp: new Date().toISOString() }];
           });
         },
-        onDone: () => {
+        onDone: async () => {
+          // Attach guide data to the assistant message
+          const guideData = await guidePromise;
+          if (guideData && guideData.length > 0) {
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
+                return prev.map((m, i) => i === lastIdx ? { ...m, guideData } : m);
+              }
+              return prev;
+            });
+          }
           setIsStreaming(false);
           queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id] });
           queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
@@ -209,10 +254,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     } catch (e: any) {
       setIsStreaming(false);
       toast.error(e.message || "메시지 전송에 실패했습니다");
-      // Remove the failed user message
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, queryClient]);
+  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, fetchGuideData, hasAlertOn]);
 
   const handleQuickAction = (action: QuickAction) => {
     handleSend(action.prompt);
@@ -329,7 +373,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <Bot className="w-3.5 h-3.5 text-primary" />
             </div>
           )}
-          <div className={cn("flex flex-col max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
+          <div className={cn("flex flex-col max-w-[85%]", msg.role === "user" ? "items-end" : "items-start")}>
             <div
               className={cn(
                 "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
@@ -349,6 +393,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 msg.content
               )}
             </div>
+
+            {/* Inline Streaming Guide Cards */}
+            {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
+              <V3StreamingGuideCards guides={msg.guideData} />
+            )}
+
             {msg.timestamp && (
               <span className="text-[10px] text-muted-foreground/40 mt-0.5 px-1">
                 {new Date(msg.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
