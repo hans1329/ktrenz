@@ -231,7 +231,7 @@ const V3ArtistDetail = () => {
     const totalTrendScore = Math.round(ytScore * ytWeight + bzScore * bzWeight + msScore * msWeight);
 
     return (
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 pb-24 space-y-3">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 pb-24 space-y-3 overflow-x-hidden">
         <div className="flex items-center gap-3">
           <Avatar className="w-14 h-14">
             <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} />
@@ -341,7 +341,7 @@ const V3ArtistDetail = () => {
   };
 
   if (isMobile) {
-    return (<><Helmet><title>{pageTitle} - KTRENDZ</title></Helmet><MobileHeader /><div className="pt-14"><PageContent /></div></>);
+    return (<><Helmet><title>{pageTitle} - KTRENDZ</title></Helmet><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div></>);
   }
 
   return (
