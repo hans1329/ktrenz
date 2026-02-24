@@ -440,12 +440,26 @@ Deno.serve(async (req) => {
       }
 
       // 모든 아티스트 가져오기
-      const { data: artists } = await adminClient
+      // 상위 100개 아티스트만 (v3_scores 기준 total_score 높은 순)
+      const { data: topScored } = await adminClient
+        .from("v3_scores")
+        .select("wiki_entry_id")
+        .order("total_score", { ascending: false })
+        .limit(100);
+
+      const topIds = new Set((topScored || []).map((s: any) => s.wiki_entry_id).filter(Boolean));
+
+      const { data: allArtists } = await adminClient
         .from("wiki_entries")
         .select("id, title")
         .eq("schema_type", "artist");
 
-      if (!artists?.length) {
+      // Filter to top 100 scored artists, fallback to first 100 if no scores yet
+      const artists = topIds.size > 0
+        ? (allArtists || []).filter((a: any) => topIds.has(a.id))
+        : (allArtists || []).slice(0, 100);
+
+      if (!artists.length) {
         results.music = { error: "No artists found" };
       } else {
         let musicUpdated = 0;
