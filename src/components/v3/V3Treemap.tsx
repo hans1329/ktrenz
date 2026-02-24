@@ -280,7 +280,28 @@ const V3Treemap = () => {
   const rects = useMemo(() => { if (!items?.length) return []; return squarify(items, 0, 0, containerWidth, containerHeight); }, [items]);
   const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
 
-  if (isLoading) return <div className="px-4 py-6"><Skeleton className="w-full h-[460px] rounded-2xl" /></div>;
+  if (isLoading) return (
+    <div className="px-4 pb-4">
+      <div className="pt-4 pb-3">
+        <Skeleton className="h-7 w-40 mb-1" />
+        <Skeleton className="h-4 w-64 ml-7" />
+      </div>
+      <div className="flex items-center justify-center gap-4 mb-3">
+        {[1,2,3,4].map(i => <Skeleton key={i} className="h-4 w-14 rounded-sm" />)}
+      </div>
+      <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
+        <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 gap-[2px] p-[2px]">
+          {[...Array(10)].map((_, i) => (
+            <Skeleton key={i} className={cn(
+              "rounded-lg",
+              i === 0 && "col-span-2 row-span-2",
+              i === 1 && "row-span-2",
+            )} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
   if (!items?.length) return <div className="px-4 py-16 text-center"><p className="text-sm text-muted-foreground">No energy data available yet.</p></div>;
 
   const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
