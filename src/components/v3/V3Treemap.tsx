@@ -129,10 +129,12 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   ].filter(c => c.value > 0);
 
   return (
-    <div className={cn(
-      "mt-3 rounded-2xl border overflow-hidden animate-fade-in",
-      surging ? "border-destructive/50 animate-neon-surge bg-card" : "border-border bg-card"
-    )}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className={cn(
+        "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl",
+        surging ? "border-destructive/50 animate-neon-surge bg-card" : "border-border bg-card"
+      )} onClick={e => e.stopPropagation()}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
@@ -198,6 +200,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           className="w-full flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-2.5 rounded-full transition-colors">
           <ExternalLink className="w-3.5 h-3.5" /> View Full Profile
         </button>
+      </div>
       </div>
     </div>
   );
