@@ -141,13 +141,22 @@ Deno.serve(async (req) => {
     if (targetEntryId) {
       entryIds = [targetEntryId];
     } else {
+      // RPC 없이 중복 제거: 전체 가져온 후 JS에서 distinct + slice
       const { data: v2Scores } = await sb
         .from("v3_scores_v2")
-        .select("wiki_entry_id")
+        .select("wiki_entry_id, total_score")
         .order("total_score", { ascending: false })
-        .range(batchOffset, batchOffset + batchSize - 1);
+        .limit(1000);
       if (v2Scores?.length) {
-        entryIds = v2Scores.map((s: any) => s.wiki_entry_id);
+        const seen = new Set<string>();
+        const unique: string[] = [];
+        for (const s of v2Scores) {
+          if (!seen.has(s.wiki_entry_id)) {
+            seen.add(s.wiki_entry_id);
+            unique.push(s.wiki_entry_id);
+          }
+        }
+        entryIds = unique.slice(batchOffset, batchOffset + batchSize);
       } else {
         const { data: scores } = await sb
           .from("v3_scores")
