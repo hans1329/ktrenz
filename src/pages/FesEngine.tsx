@@ -77,40 +77,85 @@ const FesEngine = () => {
       <SectionHeader icon={Music} title="뮤직 스코어" color="bg-purple-600" />
       <FormulaCard title="공식" formula={`MusicScore = lastfmListeners + lastfmPlays + deezerFans + mbAlbums + mbSingles`} />
 
-      <SectionHeader icon={Flame} title="팬 에너지 스코어 (FES)" color="bg-red-600" />
-      <p className="text-xs text-muted-foreground">아티스트의 <strong>현재 모멘텀</strong>을 과거 기준값 대비 측정합니다. 100점 = 평상시 상태.</p>
-      <FormulaCard title="핵심 공식" formula="FES = Velocity × 0.40 + Intensity × 0.60" />
+      <SectionHeader icon={Flame} title="팬 에너지 스코어 (FES) v2" color="bg-red-600" />
+      <p className="text-xs text-muted-foreground">아티스트의 <strong>현재 모멘텀</strong>을 과거 기준값 대비 측정합니다. <Badge variant="outline" className="text-[9px] ml-1">기준값 100 · 최대 250</Badge></p>
 
-      <Card className="p-3 bg-card border-border/50 space-y-3">
+      <Card className="p-3 bg-primary/5 border-primary/20">
+        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">v2 핵심 변경사항</p>
+        <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
+          <li><strong className="text-foreground">데이터 소스:</strong> <code className="text-primary">ktrenz_data_snapshots</code> 테이블에서 YouTube/Buzz 원시 데이터를 직접 참조</li>
+          <li><strong className="text-foreground">Damped Scoring:</strong> ratio ≤ 1이면 선형(ratio × 100), ratio &gt; 1이면 log₂ 감쇄 — 폭주 방지</li>
+          <li><strong className="text-foreground">EMA 베이스라인:</strong> α=0.15(7일), α=0.05(30일) 지수이동평균으로 기준값을 점진적으로 갱신</li>
+          <li><strong className="text-foreground">캡:</strong> 개별 컴포넌트 최대 250점, 최종 FES 최대 500점(250×2)</li>
+        </ul>
+      </Card>
+
+      <FormulaCard title="핵심 공식" formula="FES = Velocity × 0.40 + Intensity × 0.60" description="기준값 100 = 평상시 상태. 100 이상이면 평균보다 활발함을 의미." />
+
+      <Card className="p-3 bg-card border-border/50 space-y-4">
         <div>
-          <div className="flex items-center gap-1.5 mb-1"><Zap className="w-3 h-3 text-amber-500" /><span className="text-xs font-bold text-foreground">속도 Velocity (40%)</span></div>
-          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Velocity = buzzVelocity × 0.60 + ytVelocity × 0.40\n\nbuzzVelocity = (mentions_6h / avg_mentions_6h) × 100\nytVelocity   = (views_24h / avg_views_24h) × 100`}</code>
+          <div className="flex items-center gap-1.5 mb-1"><Zap className="w-3.5 h-3.5 text-amber-500" /><span className="text-xs font-bold text-foreground">속도 Velocity (40%)</span></div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">멘션 증가속도(60%) + 조회수 증가속도(40%)</p>
+          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Velocity = buzzVelocity × 0.60 + ytVelocity × 0.40
+
+buzzVelocity = damped(mentions / avg_mentions_7d)
+ytVelocity   = damped(recentViews / avg_views_30d)`}</code>
         </div>
         <div>
-          <div className="flex items-center gap-1.5 mb-1"><Activity className="w-3 h-3 text-blue-500" /><span className="text-xs font-bold text-foreground">강도 Intensity (60%)</span></div>
-          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Intensity = ytIntensity × 0.50 + buzzIntensity × 0.50\n\nytIntensity   = (engagement_rate / avg_engagement) × 100\nbuzzIntensity = (sentiment_score / avg_sentiment) × 100`}</code>
+          <div className="flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5 text-blue-500" /><span className="text-xs font-bold text-foreground">강도 Intensity (60%)</span></div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">버즈 스코어 강도(50%) + 감성 가중 멘션(50%)</p>
+          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Intensity = engIntensity × 0.50 + buzzIntensity × 0.50
+
+engIntensity  = damped(buzz_score / avg_buzz_7d)
+buzzIntensity = damped(qualityMentions / avg_mentions_30d)
+
+qualityMentions = mentions × sentimentMultiplier
+sentimentMultiplier = 0.7 + (sentimentScore / 100) × 0.6`}</code>
         </div>
       </Card>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💤</span><p className="text-xs font-bold text-foreground mt-1">&lt; 100</p><p className="text-[10px] text-muted-foreground">저조</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">⚡</span><p className="text-xs font-bold text-foreground mt-1">150 – 300</p><p className="text-[10px] text-muted-foreground">활발</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">300+</p><p className="text-[10px] text-muted-foreground">폭발적</p></Card>
-      </div>
+      <FormulaCard title="Damped Score 함수" formula={`damped(ratio):
+  ratio ≤ 0  → 0
+  ratio ≤ 1  → ratio × 100  (선형)
+  ratio > 1  → 100 + log₂(ratio) × 60  (로그 감쇄)
+  최대 250점`} description="ratio가 1(=평균)을 넘으면 로그 스케일로 점수 증가를 억제하여, 단일 이벤트에 의한 과도한 점수 상승을 방지합니다." />
 
-      <SectionHeader icon={Server} title="API 및 데이터 소스" color="bg-slate-600" />
-      <div className="space-y-2">
-        <ApiCard method="POST" endpoint="crawl-youtube-trends" description="YouTube 채널 통계 + 최근 200개 영상 데이터를 가져와 점수를 계산합니다." params={["artistName", "wikiEntryId"]} />
-        <ApiCard method="POST" endpoint="crawl-x-mentions" description="X/웹 멘션을 검색하고 버즈 + 감성을 계산합니다." params={["artistName", "wikiEntryId"]} />
-        <ApiCard method="POST" endpoint="crawl-music-data" description="Last.fm, MusicBrainz, Deezer 데이터를 수집합니다." params={["artistName", "wikiEntryId"]} />
-        <ApiCard method="POST" endpoint="calculate-energy-score" description="캐시된 데이터 vs 베이스라인으로 FES를 계산합니다." params={["wikiEntryId?"]} />
+      <FormulaCard title="EMA 베이스라인 갱신" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
+avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="매 계산 시 현재 값을 지수이동평균으로 반영하여 기준값을 점진적으로 조정합니다. 급변하는 트렌드도 자연스럽게 수용합니다." />
+
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💤</span><p className="text-xs font-bold text-foreground mt-1">&lt; 100</p><p className="text-[10px] text-muted-foreground">저조</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💫</span><p className="text-xs font-bold text-foreground mt-1">100+</p><p className="text-[10px] text-muted-foreground">보통</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">⚡</span><p className="text-xs font-bold text-foreground mt-1">150+</p><p className="text-[10px] text-muted-foreground">활발</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">300+</p><p className="text-[10px] text-muted-foreground">폭발</p></Card>
       </div>
 
       <VarTable rows={[
-        { name: "v3_scores", desc: "아티스트별 최신 종합 점수", source: "Supabase" },
-        { name: "v3_energy_snapshots", desc: "FES 이력 스냅샷", source: "Supabase" },
-        { name: "v3_energy_baselines", desc: "FES 계산용 EMA 기준값", source: "Supabase" },
-        { name: "wiki_entries.metadata", desc: "캐시된 원시 데이터", source: "Supabase JSONB" },
+        { name: "avg_velocity_7d", desc: "멘션 수 EMA (α=0.15)", source: "v3_energy_baselines_v2" },
+        { name: "avg_velocity_30d", desc: "조회수 EMA (α=0.05)", source: "v3_energy_baselines_v2" },
+        { name: "avg_intensity_7d", desc: "버즈 스코어 EMA (α=0.15)", source: "v3_energy_baselines_v2" },
+        { name: "avg_intensity_30d", desc: "감성 가중 멘션 EMA (α=0.05)", source: "v3_energy_baselines_v2" },
+        { name: "total_mentions", desc: "최근 6시간 멘션 수", source: "ktrenz_data_snapshots" },
+        { name: "buzz_score", desc: "가중 버즈 스코어", source: "ktrenz_data_snapshots" },
+        { name: "sentiment_score", desc: "감성 점수 (0~100)", source: "ktrenz_data_snapshots" },
+        { name: "recentTotalViews", desc: "최근 영상 누적 조회수", source: "ktrenz_data_snapshots" },
+      ]} />
+
+      <SectionHeader icon={Server} title="API 및 데이터 소스" color="bg-slate-600" />
+      <div className="space-y-2">
+        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="YouTube + X/Buzz + Music 데이터를 일괄 수집하여 ktrenz_data_snapshots에 저장합니다." params={["— (전체 아티스트 대상)"]} />
+        <ApiCard method="POST" endpoint="calculate-energy-score" description="ktrenz_data_snapshots 데이터 vs EMA 베이스라인으로 FES를 계산합니다." params={["wikiEntryId?", "batchSize?", "batchOffset?", "resetBaselines?"]} />
+        <ApiCard method="POST" endpoint="crawl-youtube-trends" description="YouTube 채널 통계 + 최근 200개 영상 데이터를 가져와 점수를 계산합니다." params={["artistName", "wikiEntryId"]} />
+        <ApiCard method="POST" endpoint="crawl-x-mentions" description="X/웹 멘션을 검색하고 버즈 + 감성을 계산합니다." params={["artistName", "wikiEntryId"]} />
+        <ApiCard method="POST" endpoint="crawl-music-data" description="Last.fm, MusicBrainz, Deezer 데이터를 수집합니다." params={["artistName", "wikiEntryId"]} />
+      </div>
+
+      <VarTable rows={[
+        { name: "v3_scores_v2", desc: "아티스트별 최신 종합 점수 + FES", source: "Supabase" },
+        { name: "v3_energy_snapshots_v2", desc: "FES 이력 스냅샷 (velocity, intensity, energy)", source: "Supabase" },
+        { name: "v3_energy_baselines_v2", desc: "FES 계산용 EMA 기준값", source: "Supabase" },
+        { name: "ktrenz_data_snapshots", desc: "플랫폼별 원시 수집 데이터", source: "Supabase" },
+        { name: "wiki_entries.metadata", desc: "캐시된 원시 데이터 (YouTube/Buzz/Music)", source: "Supabase JSONB" },
       ]} />
 
       <SectionHeader icon={Activity} title="에너지 맵 (Treemap) 구성 방식" color="bg-emerald-600" />
@@ -125,10 +170,14 @@ const FesEngine = () => {
           <span className="text-xs font-bold text-foreground">🎨 타일 색상 = 24시간 에너지 변화율</span>
           <div className="mt-1 space-y-1">
             <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">빨간색</strong> — 상승 중 (Δ ≥ +5%)</span></div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(145,55%,30%,0.7)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">초록색</strong> — 안정 (Δ -5% ~ +5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(160,50%,40%,0.75)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">민트</strong> — 안정 (Δ -5% ~ +5%)</span></div>
             <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(220,55%,35%,0.7)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">파란색</strong> — 하락 중 (Δ ≤ -5%)</span></div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm border border-destructive/50 animate-pulse" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">네온 SURGE</strong> — 급등 (Δ ≥ +25%) 발광 애니메이션</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm border border-destructive/50 animate-pulse" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">네온 SURGE</strong> — 급등 (Δ ≥ +25%) 발광 + 리플 애니메이션</span></div>
           </div>
+        </div>
+        <div>
+          <span className="text-xs font-bold text-foreground">✨ 파티클 효과</span>
+          <p className="text-[10px] text-muted-foreground mt-0.5">각 타일에 동적 화이트 파티클이 적용됩니다. 파티클 속도는 에너지 변동률에, 밀도는 에너지 점유 비율에 비례합니다.</p>
         </div>
         <div>
           <span className="text-xs font-bold text-foreground">📈 타일 내 스파크라인</span>
@@ -140,21 +189,9 @@ const FesEngine = () => {
         </div>
       </Card>
 
-      <Card className="p-3 bg-card border-border/50 space-y-2">
-        <span className="text-xs font-bold text-foreground">🔍 인스펙터 패널 (타일 탭 시)</span>
-        <p className="text-[10px] text-muted-foreground">타일을 탭하면 중앙 모달로 해당 아티스트의 상세 에너지 분석이 표시됩니다:</p>
-        <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc pl-4">
-          <li><strong className="text-foreground">FES</strong> — 현재 에너지 점수</li>
-          <li><strong className="text-foreground">24h Δ</strong> — 직전 24시간 변화율</li>
-          <li><strong className="text-foreground">Trend</strong> — 트렌드 라벨 (SURGE / Rising / Stable 등)</li>
-          <li><strong className="text-foreground">Energy Heat Channels</strong> — YouTube, Spotify, Buzz, X 각 채널별 에너지 기여 비율 (프로그레스 바)</li>
-          <li><strong className="text-foreground">Score Momentum</strong> — 점수 히스토리 스파크라인 차트</li>
-        </ul>
-      </Card>
-
       <FormulaCard title="Squarify 알고리즘 요약" formula={`1. 전체 에너지 합산 → 각 아티스트 면적 비율 계산\n2. Worst Aspect Ratio 최소화하며 행(row) 배치\n3. 가로/세로 중 긴 축을 기준으로 분할 반복\n4. 결과: 정사각형에 가까운 타일 배치 → 가독성 ↑`} description="참고: finviz.com/map, kaito.ai 스타일의 히트맵 레이아웃" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">최종 업데이트: 2026년 2월 · KTRENDZ v3 스코어링 엔진</p>
+      <p className="text-[10px] text-muted-foreground text-center mt-6">최종 업데이트: 2026년 2월 24일 · KTRENDZ FES Engine v2</p>
     </div>
   );
 
