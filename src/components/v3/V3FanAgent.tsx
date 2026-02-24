@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Home, Sparkles, TrendingUp, Music2, Bell, Loader2 } from "lucide-react";
+import { Bot, Send, ArrowLeft, Home, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -120,7 +121,22 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load chat history from DB
+  // Check if user has watched artists (alert ON)
+  const { data: watchedArtists } = useQuery({
+    queryKey: ["ktrenz-watched-artists", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_watched_artists" as any)
+        .select("id, artist_name")
+        .eq("user_id", user.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
+
   const { data: chatHistory } = useQuery({
     queryKey: ["ktrenz-agent-chat", user?.id],
     queryFn: async () => {
@@ -219,7 +235,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <h1 className="text-base font-bold text-foreground">Fan Agent</h1>
         </div>
-        <div className="min-w-[72px]" />
+        <div className="flex items-center gap-2 min-w-[72px] justify-end">
+          {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
+          <Switch checked={hasAlertOn} disabled className="scale-75 data-[state=checked]:bg-primary" />
+        </div>
       </div>
     </header>
   );
