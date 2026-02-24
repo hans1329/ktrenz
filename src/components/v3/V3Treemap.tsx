@@ -13,6 +13,7 @@ interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
   energyScore: number; energyChange24h: number; totalScore: number;
   youtubeScore: number; buzzScore: number; twitterScore: number;
+  albumSalesScore: number; musicScore: number;
   sparkline: number[]; trendLabel: TrendLabel;
 }
 
@@ -120,13 +121,15 @@ function ChannelBar({ icon, label, value, total, color }: { icon: React.ReactNod
 // ── Inspector Panel (enhanced) ──
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
   const navigate = useNavigate();
-  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0);
+  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
   const surging = isSurging(item.energyChange24h);
 
   const channels = [
     { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)" },
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)" },
     { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)" },
+    { icon: <Music className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)" },
+    { icon: <Music className="w-3.5 h-3.5" />, label: "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)" },
   ].filter(c => c.value > 0);
 
   return (
@@ -217,7 +220,7 @@ const V3Treemap = () => {
     queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
       const { data, error } = await supabase.from("v3_scores")
-        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, twitter_score, scored_at,
+        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, twitter_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("scored_at", { ascending: false });
       if (error) throw error;
@@ -238,6 +241,7 @@ const V3Treemap = () => {
           energyScore: s.energy_score || 0, energyChange24h: change, totalScore: s.total_score || 0,
           youtubeScore: s.youtube_score || 0,
           buzzScore: s.buzz_score || 0, twitterScore: s.twitter_score || 0,
+          albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
         };
       }).filter((i) => i.slug).sort((a, b) => b.energyScore - a.energyScore).slice(0, displayCount);
