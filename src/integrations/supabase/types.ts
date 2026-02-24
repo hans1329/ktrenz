@@ -4554,6 +4554,9 @@ export type Database = {
           energy_rank: number | null
           energy_score: number | null
           id: string
+          music_data: Json | null
+          music_score: number | null
+          music_updated_at: string | null
           raw_data: Json | null
           scored_at: string
           spotify_score: number | null
@@ -4575,6 +4578,9 @@ export type Database = {
           energy_rank?: number | null
           energy_score?: number | null
           id?: string
+          music_data?: Json | null
+          music_score?: number | null
+          music_updated_at?: string | null
           raw_data?: Json | null
           scored_at?: string
           spotify_score?: number | null
@@ -4596,6 +4602,9 @@ export type Database = {
           energy_rank?: number | null
           energy_score?: number | null
           id?: string
+          music_data?: Json | null
+          music_score?: number | null
+          music_updated_at?: string | null
           raw_data?: Json | null
           scored_at?: string
           spotify_score?: number | null
