@@ -119,9 +119,9 @@ const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
   if (!snapshots?.length && !currentScore?.energy_score) return null;
 
   const lastFromHistory = snapshots?.[snapshots.length - 1];
-  const energyScore = lastFromHistory?.energy_score || currentScore?.energy_score || 100;
-  const velocity = lastFromHistory?.velocity_score || latestSnap?.velocity_score || 100;
-  const intensity = lastFromHistory?.intensity_score || latestSnap?.intensity_score || 100;
+  const energyScore = lastFromHistory?.energy_score ?? currentScore?.energy_score ?? 100;
+  const velocity = lastFromHistory?.velocity_score ?? latestSnap?.velocity_score ?? 100;
+  const intensity = lastFromHistory?.intensity_score ?? latestSnap?.intensity_score ?? 100;
   const change24h = currentScore?.energy_change_24h || 0;
 
   const chartData = (snapshots || []).map((s: any) => ({
