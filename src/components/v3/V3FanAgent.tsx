@@ -214,7 +214,7 @@ const AgentAvatar = ({
   const fileRef = useRef<HTMLInputElement>(null);
   const sizeClasses = size === "lg"
     ? "w-10 h-10 rounded-xl"
-    : "w-7 h-7 rounded-lg";
+    : "w-9 h-9 rounded-xl";
 
   return (
     <>
