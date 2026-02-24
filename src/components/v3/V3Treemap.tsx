@@ -278,6 +278,9 @@ const V3Treemap = () => {
         </span>
       </div>
 
+      {/* Inspector */}
+      {selectedItem && <InspectorPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
+
       {/* Treemap */}
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
         <div className="absolute inset-0">
@@ -328,9 +331,6 @@ const V3Treemap = () => {
           })}
         </div>
       </div>
-
-      {/* Inspector */}
-      {selectedItem && <InspectorPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
     </div>
   );
 };
