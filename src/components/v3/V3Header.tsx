@@ -107,7 +107,7 @@ const V3Header = () => {
               <img
                 src={ktrenzLogo}
                 alt="K-TRENZ"
-                className="h-7 w-auto"
+                className="h-5 sm:h-7 w-auto"
                 fetchPriority="high"
                 decoding="async"
               />
