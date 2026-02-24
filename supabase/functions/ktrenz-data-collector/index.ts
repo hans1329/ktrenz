@@ -170,11 +170,9 @@ async function updateV3ScoresWithSales(
 
   if (existing?.[0]) {
     const row = existing[0];
-    const newTotal = (row.youtube_score || 0) + (row.buzz_score || 0) + 
-                     (row.spotify_score || 0) + (row.twitter_score || 0) + score;
     
     const { error } = await adminClient.from("v3_scores")
-      .update({ ...salesPayload, total_score: newTotal })
+      .update(salesPayload)
       .eq("id", row.id);
     
     if (error) console.error(`[DataCollector] v3_scores update error for ${wikiEntryId}:`, error);
@@ -183,7 +181,6 @@ async function updateV3ScoresWithSales(
     await adminClient.from("v3_scores").insert({
       wiki_entry_id: wikiEntryId,
       ...salesPayload,
-      total_score: score,
     });
   }
 }
