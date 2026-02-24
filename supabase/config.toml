@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.crawl-x-mentions]
 verify_jwt = false
+
+[functions.buzz-cron]
+verify_jwt = false

@@ -1,5 +1,5 @@
-// Multi-source buzz 크롤링: X, 뉴스, Reddit, YouTube, 네이버
-// Firecrawl search API로 5개 소스에서 멘션을 수집하여 버즈 스코어 계산
+// Multi-source buzz 크롤링: X, 뉴스, Reddit, YouTube, 네이버, TikTok
+// Firecrawl search API로 6개 소스에서 멘션을 수집하여 버즈 스코어 계산
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -11,9 +11,9 @@ const corsHeaders = {
 // ── Source definitions ──
 interface SourceConfig {
   name: string;
-  weight: number; // 소스별 가중치
+  weight: number;
   buildQuery: (artistName: string, hashtags?: string[]) => string;
-  tbs: string; // time filter
+  tbs: string;
   limit: number;
 }
 
@@ -26,14 +26,14 @@ const SOURCES: SourceConfig[] = [
       if (hashtags?.length) parts.push(hashtags.map(h => `#${h}`).join(" OR "));
       return parts.join(" OR ");
     },
-    tbs: "qdr:d", // 24시간
+    tbs: "qdr:d",
     limit: 30,
   },
   {
     name: "news",
-    weight: 2.0, // 뉴스는 높은 가중치
-    buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com`,
-    tbs: "qdr:w", // 1주일
+    weight: 2.0,
+    buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com -site:tiktok.com`,
+    tbs: "qdr:w",
     limit: 30,
   },
   {
@@ -54,6 +54,17 @@ const SOURCES: SourceConfig[] = [
     name: "naver",
     weight: 1.3,
     buildQuery: (name) => `"${name}" site:naver.com OR site:theqoo.net OR site:instiz.net OR site:pann.nate.com`,
+    tbs: "qdr:w",
+    limit: 20,
+  },
+  {
+    name: "tiktok",
+    weight: 1.4,
+    buildQuery: (name, hashtags) => {
+      const parts = [`"${name}" site:tiktok.com`];
+      if (hashtags?.length) parts.push(hashtags.map(h => `#${h}`).join(" OR "));
+      return parts.join(" OR ");
+    },
     tbs: "qdr:w",
     limit: 20,
   },
@@ -88,31 +99,21 @@ function analyzeSentiment(texts: string[]): { score: number; label: string } {
   return { score: 50, label: "neutral" };
 }
 
-// ── Buzz score calculation (redesigned) ──
+// ── Buzz score calculation ──
 function calculateBuzzScore(
   sourceResults: { name: string; weight: number; count: number; texts: string[] }[],
   overallSentiment: { score: number; label: string }
 ): number {
-  // 각 소스별 가중 멘션 수 합산
   let weightedMentions = 0;
-  let totalRaw = 0;
   for (const src of sourceResults) {
     weightedMentions += src.count * src.weight;
-    totalRaw += src.count;
   }
 
-  // 선형 기반 스코어 (로그 대신 sqrt로 편차 확대)
-  // sqrt(150 weighted mentions) * 100 ≈ 1224
-  // sqrt(20 weighted mentions) * 100 ≈ 447
-  // 편차가 훨씬 더 크게 나옴
   const baseScore = Math.round(Math.sqrt(weightedMentions) * 100);
-
-  // 감성 보정 (최대 ±300)
   const sentimentBonus = Math.round((overallSentiment.score - 50) * 6);
 
-  // 소스 다양성 보너스 (2개 이상 소스에서 멘션 있으면 보너스)
   const activeSources = sourceResults.filter(s => s.count > 0).length;
-  const diversityBonus = activeSources >= 4 ? 200 : activeSources >= 3 ? 100 : activeSources >= 2 ? 50 : 0;
+  const diversityBonus = activeSources >= 5 ? 250 : activeSources >= 4 ? 200 : activeSources >= 3 ? 100 : activeSources >= 2 ? 50 : 0;
 
   return Math.max(0, baseScore + sentimentBonus + diversityBonus);
 }
@@ -201,16 +202,17 @@ Deno.serve(async (req) => {
     const totalMentions = sourceResults.reduce((s, r) => s + r.count, 0);
     const buzzScore = calculateBuzzScore(sourceResults, sentiment);
 
-    // 소스별 요약 로그
+    // TikTok 멘션 수 추출
+    const tiktokResult = sourceResults.find(s => s.name === "tiktok");
+    const tiktokMentions = tiktokResult?.count ?? 0;
+
     const sourceLog = sourceResults.map(s => `${s.name}=${s.count}`).join(", ");
     console.log(`[crawl-x-mentions] ${artistName}: total=${totalMentions} (${sourceLog}), sentiment=${sentiment.label}(${sentiment.score}), buzzScore=${buzzScore}`);
 
-    // top mentions 합산 (소스별 상위 3개씩 → 전체 상위 10개)
     const allTopMentions = sourceResults
       .flatMap(s => s.topMentions)
       .slice(0, 10);
 
-    // 소스별 breakdown
     const sourceBreakdown = sourceResults.map(s => ({
       source: s.name,
       mentions: s.count,
@@ -224,13 +226,14 @@ Deno.serve(async (req) => {
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const sb = createClient(supabaseUrl, supabaseKey);
 
-      // 1) ktrenz_data_snapshots에 스냅샷 저장 (데이터 엔진 연결)
+      // 1) ktrenz_data_snapshots에 스냅샷 저장
       await sb.from("ktrenz_data_snapshots").insert({
         wiki_entry_id: wikiEntryId,
         platform: "buzz_multi",
         metrics: {
           buzz_score: buzzScore,
           total_mentions: totalMentions,
+          tiktok_mentions: tiktokMentions,
           sentiment_score: sentiment.score,
           sentiment_label: sentiment.label,
           source_breakdown: sourceBreakdown,
@@ -238,7 +241,7 @@ Deno.serve(async (req) => {
         raw_response: { sources: sourceResults.map(s => ({ name: s.name, count: s.count })) },
       });
 
-      // 2) v3_scores 업데이트
+      // 2) v3_scores 업데이트 (buzz_score만 — total_score는 GENERATED 컬럼이므로 자동 계산)
       await sb
         .from("v3_scores")
         .update({
@@ -260,6 +263,7 @@ Deno.serve(async (req) => {
         const metadata = (entry.metadata as any) || {};
         metadata.buzz_stats = {
           mention_count: totalMentions,
+          tiktok_mentions: tiktokMentions,
           sentiment_score: sentiment.score,
           sentiment_label: sentiment.label,
           buzz_score: buzzScore,
@@ -270,29 +274,7 @@ Deno.serve(async (req) => {
         await sb.from("wiki_entries").update({ metadata }).eq("id", wikiEntryId);
       }
 
-      // 4) total_score 동적 가중치 재계산
-      const { data: scores } = await sb
-        .from("v3_scores")
-        .select("youtube_score, buzz_score, spotify_score")
-        .eq("wiki_entry_id", wikiEntryId)
-        .single();
-
-      if (scores) {
-        const yt = scores.youtube_score || 0;
-        const bz = scores.buzz_score || 0;
-        const ms = scores.spotify_score || 0;
-
-        let ytWeight = 0.6, bzWeight = 0.25, msWeight = 0.15;
-        if (bz > 0 && yt > 0) {
-          const ratio = bz / yt;
-          if (ratio > 0.3) {
-            bzWeight = Math.min(0.4, 0.25 + ratio * 0.15);
-            ytWeight = 1 - bzWeight - msWeight;
-          }
-        }
-        const totalScore = Math.round(yt * ytWeight + bz * bzWeight + ms * msWeight);
-        await sb.from("v3_scores").update({ total_score: totalScore }).eq("wiki_entry_id", wikiEntryId);
-      }
+      // NOTE: total_score는 GENERATED 컬럼 — buzz_score 업데이트 시 자동으로 재계산됨
     }
 
     return new Response(
@@ -301,6 +283,7 @@ Deno.serve(async (req) => {
         artistName,
         buzzScore,
         mentionCount: totalMentions,
+        tiktokMentions,
         sentiment,
         sourceBreakdown,
         topMentions: allTopMentions,

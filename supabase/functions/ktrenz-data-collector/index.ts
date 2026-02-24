@@ -333,7 +333,7 @@ Deno.serve(async (req) => {
     );
 
     const { source } = await req.json().catch(() => ({ source: "all" }));
-    const collectSources = source === "all" ? ["hanteo", "music"] : [source];
+    const collectSources = source === "all" ? ["hanteo", "music", "buzz"] : [source];
 
     // Get total artist count for progress tracking
     const { count: totalArtists } = await adminClient
@@ -520,6 +520,30 @@ Deno.serve(async (req) => {
 
         console.log(`[DataCollector] Music: updated=${musicUpdated}, errors=${musicErrors}`);
         results.music = { total: artists.length, updated: musicUpdated, errors: musicErrors };
+      }
+    }
+
+    // ── Buzz (멀티소스) 수집 ──
+    if (collectSources.includes("buzz")) {
+      console.log("[DataCollector] Triggering buzz collection via buzz-cron...");
+      try {
+        const buzzResp = await fetch(
+          `${Deno.env.get("SUPABASE_URL")!}/functions/v1/buzz-cron`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({ time: new Date().toISOString() }),
+          }
+        );
+        const buzzResult = await buzzResp.json();
+        console.log("[DataCollector] Buzz result:", JSON.stringify(buzzResult));
+        results.buzz = buzzResult;
+      } catch (e) {
+        console.error("[DataCollector] Buzz error:", e);
+        results.buzz = { error: e.message };
       }
     }
 
