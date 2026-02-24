@@ -1,0 +1,1 @@
+DELETE FROM ktrenz_watched_artists WHERE artist_name = '내 관심 아티스트가 누구지';
