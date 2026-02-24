@@ -137,7 +137,7 @@ export default function PitchDeck() {
           </h1>
 
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            유튜브 · X · 틱톡 등 다양한 플랫폼 데이터를 하나의 점수로 융합한
+            유튜브 · X · 틱톡 및 음반/음원 관련 다양한 플랫폼 데이터를 하나의 점수로 융합한
             <br className="hidden md:block" />
             <strong className="text-foreground">Fan Energy Score(FES)</strong>가 실시간으로 아티스트 모멘텀을 측정합니다.
           </p>
