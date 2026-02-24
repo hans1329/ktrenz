@@ -96,7 +96,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-muted/50"
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-muted/25"
                     >
                       <span className="text-foreground">{tierIcon}</span>
                     </div>
