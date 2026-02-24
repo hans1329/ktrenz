@@ -51,9 +51,10 @@ const BoxParticles = ({ count = 20, color = "hsl(11, 100%, 46%)" }: BoxParticles
         p.y += p.vy;
         if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.globalAlpha = p.opacity;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = color.replace(")", ` / ${p.opacity})`).replace("hsl(", "hsl(");
+        ctx.fillStyle = color;
         ctx.fill();
       }
       animRef.current = requestAnimationFrame(draw);
