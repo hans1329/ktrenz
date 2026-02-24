@@ -201,8 +201,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         },
         onDone: () => {
           setIsStreaming(false);
-          // Invalidate to refetch persisted history
           queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id] });
+          queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
         },
       });
     } catch (e: any) {
