@@ -158,7 +158,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                 </Avatar>
               </button>
             ) : (
-              <Button variant="default" size="sm" className="rounded-full" onClick={() => window.location.href = '/login'}>
+              <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground" onClick={() => window.location.href = '/login'}>
                 Sign In
               </Button>
             )}
