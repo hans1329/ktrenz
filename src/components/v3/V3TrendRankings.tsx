@@ -248,6 +248,7 @@ const periodDays: Record<Period, number> = { "1D": 1, "1W": 7, "1M": 30, "3M": 9
 
 const V3TrendRankings = () => {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
@@ -368,6 +369,75 @@ const V3TrendRankings = () => {
   const rest = rankings.slice(3);
   const maxScore = rankings[0]?.total_score || 1;
 
+  if (!isMobile) {
+    // PC: Treemap + List side by side
+    return (
+      <div className="pb-4">
+        <div className="px-4 pt-4 pb-4">
+          <div className="flex items-center justify-between pt-4 pb-2">
+            <div>
+              <h2 className="text-xl font-black text-foreground">
+                <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
+              </h2>
+              {isCrawling ? (
+                <p className="text-[10px] text-primary font-medium mt-0.5 pl-7 animate-pulse">
+                  {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
+              )}
+            </div>
+            <div className="relative" ref={periodRef}>
+              <button onClick={() => setPeriodOpen(!periodOpen)}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground shadow-sm">
+                {period}
+                <ChevronRight className={cn("w-3 h-3 transition-transform", periodOpen && "rotate-90")} />
+              </button>
+              {periodOpen && (
+                <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden min-w-[80px]">
+                  {(["1D", "1W", "1M", "3M"] as Period[]).map((p) => (
+                    <button key={p} onClick={() => { setPeriod(p); setPeriodOpen(false); }}
+                      className={cn("block w-full px-4 py-2 text-xs font-semibold text-left transition-colors",
+                        period === p ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted")}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-6 px-4">
+          <div className="flex-1 min-w-0">
+            <V3Treemap />
+          </div>
+          <div className="w-[380px] shrink-0 space-y-3 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
+            {top3.map((item, idx) => (
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} />
+            ))}
+            {rest.length > 0 && (
+              <>
+                <div className="my-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">{t("rankings.fullRankings")}</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} />)}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        <ArtistListingRequestDialog />
+      </div>
+    );
+  }
+
+  // Mobile: toggle view mode
   return (
     <div className="pb-4">
       <div className="px-4 pt-4 pb-4">

@@ -52,7 +52,7 @@ const V3Home = () => {
       <div className="h-screen flex flex-col overflow-hidden">
         <V3DesktopHeader activeTab={activeTab} onTabChange={setActiveTab} />
         <main className="flex-1 overflow-auto">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>
         </main>
