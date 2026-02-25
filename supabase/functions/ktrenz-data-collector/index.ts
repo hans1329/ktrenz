@@ -466,20 +466,30 @@ Deno.serve(async (req) => {
     // ── 배치 모드 ──
     const collectSources = source === "all" ? ["youtube", "hanteo", "music", "buzz"] : [source];
 
-    // 상위 아티스트 목록 (v3_scores total_score 기준)
-    const { data: topScored } = await adminClient
-      .from("v3_scores_v2").select("wiki_entry_id")
-      .order("total_score", { ascending: false })
-      .range(batchOffset, batchOffset + batchSize - 1);
-    const topIds = new Set((topScored || []).map((s: any) => s.wiki_entry_id).filter(Boolean));
+    // 1군(tier=1) 아티스트만 수집 대상
+    const { data: tier1Entries } = await adminClient
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id")
+      .eq("tier", 1);
+    const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean));
+
+    if (tier1Ids.size === 0) {
+      console.log("[DataCollector] No tier 1 artists found, skipping batch.");
+      await adminClient.from("system_jobs").upsert({
+        id: "daily-data-crawl", status: "completed", completed_at: new Date().toISOString(),
+        metadata: { message: "No tier 1 artists" },
+      }, { onConflict: "id" });
+      return new Response(JSON.stringify({ success: true, message: "No tier 1 artists" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: allArtists } = await adminClient
       .from("wiki_entries").select("id, title, metadata")
-      .eq("schema_type", "artist");
+      .eq("schema_type", "artist")
+      .in("id", [...tier1Ids]);
 
-    const artists = topIds.size > 0
-      ? (allArtists || []).filter((a: any) => topIds.has(a.id))
-      : (allArtists || []).slice(batchOffset, batchOffset + batchSize);
+    const artists = (allArtists || []).slice(batchOffset, batchOffset + batchSize);
 
     const actualTotal = artists.length;
 
