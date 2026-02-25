@@ -146,37 +146,37 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         surging ? "border-destructive/50 animate-neon-surge bg-card" : "border-border bg-card"
       )} onClick={e => e.stopPropagation()}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          {surging && <span className="text-lg animate-fire-burn">🔥</span>}
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
               {surging ? "Energy Surging" : "Fan Energy Inspector"}
             </p>
-            <p className="text-sm font-black text-foreground">{item.title}</p>
+            <p className="text-sm font-black text-foreground truncate">{item.title}</p>
           </div>
         </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1">×</button>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 shrink-0 ml-2">×</button>
       </div>
 
-      <div className="p-4 space-y-5">
+      <div className="p-4 space-y-5 overflow-hidden">
         {/* Energy Stats */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center">
+          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
             <p className="text-[10px] text-muted-foreground mb-1">FES</p>
-            <p className="text-xl font-black text-foreground">{Math.round(item.energyScore)}</p>
+            <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
           </div>
-          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center">
+          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
             <p className="text-[10px] text-muted-foreground mb-1">24h Δ</p>
-            <p className={cn("text-xl font-black",
+            <p className={cn("text-lg font-black truncate",
               item.energyChange24h >= 15 ? "text-destructive" : item.energyChange24h >= 0 ? "text-green-500" : "text-blue-400"
             )}>
               {item.energyChange24h > 0 ? "+" : ""}{item.energyChange24h.toFixed(1)}%
             </p>
           </div>
-          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center">
+          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
             <p className="text-[10px] text-muted-foreground mb-1">Trend</p>
-            <p className="text-sm font-black text-foreground">{item.trendLabel}</p>
+            <p className="text-xs font-black text-foreground truncate">{item.trendLabel}</p>
           </div>
         </div>
 
@@ -202,8 +202,8 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
               <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
             </div>
-            <div className="relative h-16">
-              <MiniSparkline data={item.sparkline} width={320} height={64}
+            <div className="relative h-16 overflow-hidden">
+              <MiniSparkline data={item.sparkline} width={280} height={64}
                 color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
                 ema7d={item.ema7d} ema30d={item.ema30d} />
             </div>
