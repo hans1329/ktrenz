@@ -408,11 +408,11 @@ const V3TrendRankings = () => {
           </div>
         </div>
 
-        <div className="flex gap-6 px-4">
-          <div className="flex-1 min-w-0">
+        <div className="flex gap-6 px-4 items-start">
+          <div className="w-[420px] shrink-0">
             <V3Treemap />
           </div>
-          <div className="w-[380px] shrink-0 space-y-3 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
+          <div className="flex-1 min-w-0 space-y-3">
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} />
             ))}
