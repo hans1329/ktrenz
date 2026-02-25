@@ -73,15 +73,12 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: total_score 기반 + 변동률 보정 (변동이 클수록 크게)
-  const tileSize = (i: TreemapItem) => {
-    const base = Math.max(i.totalScore, 100);
-    const changeBoost = 1 + Math.max(i.energyChange24h, -50) / 100; // -50%→0.5x, 0%→1x, +50%→1.5x
-    return base * Math.max(changeBoost, 0.3);
-  };
-  const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
+  // 타일 크기: 변동률(절대값) 순위 비례 — 1위가 가장 크고 N위가 가장 작음
+  const n = items.length;
+  const tileSize = (_i: TreemapItem, idx: number) => n - idx + 1;
+  const totalValue = items.reduce((s, _i, idx) => s + tileSize(_i, idx), 0);
   const totalArea = w * h;
-  const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
+  const areas = items.map((_i, idx) => (tileSize(_i, idx) / totalValue) * totalArea);
   const rects: Rect[] = [];
   let cx = x, cy = y, cw = w, ch = h, idx = 0;
   while (idx < items.length) {
@@ -300,9 +297,14 @@ const V3Treemap = () => {
     staleTime: 30_000,
   });
 
+  // 변동률 절대값 내림차순 정렬 후 squarify (순위 기반 크기)
+  const sortedItems = useMemo(() => {
+    if (!items?.length) return [];
+    return [...items].sort((a, b) => Math.abs(b.energyChange24h) - Math.abs(a.energyChange24h));
+  }, [items]);
   const containerWidth = isMobile ? 360 : 700;
   const containerHeight = isMobile ? 620 : 560;
-  const rects = useMemo(() => { if (!items?.length) return []; return squarify(items, 0, 0, containerWidth, containerHeight); }, [items, containerWidth, containerHeight]);
+  const rects = useMemo(() => { if (!sortedItems.length) return []; return squarify(sortedItems, 0, 0, containerWidth, containerHeight); }, [sortedItems, containerWidth, containerHeight]);
   const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
 
   if (isLoading) return (
