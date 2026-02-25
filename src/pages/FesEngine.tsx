@@ -145,9 +145,9 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Each calculat
       <div className="space-y-2">
         <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Batch-collects YouTube + X/Buzz + Music data and stores in ktrenz_data_snapshots." params={["— (all artists)"]} />
         <ApiCard method="POST" endpoint="calculate-energy-score" description="Calculates FES using ktrenz_data_snapshots data vs EMA baselines." params={["wikiEntryId?", "batchSize?", "batchOffset?", "resetBaselines?"]} />
-        <ApiCard method="POST" endpoint="crawl-youtube-trends" description="Fetches YouTube channel stats + recent 200 video data to calculate scores." params={["artistName", "wikiEntryId"]} />
+        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Fetches YouTube channel stats + recent video data. Use source='youtube'." params={["source: 'youtube'", "wikiEntryId"]} />
         <ApiCard method="POST" endpoint="crawl-x-mentions" description="Searches X/web mentions and calculates buzz + sentiment." params={["artistName", "wikiEntryId"]} />
-        <ApiCard method="POST" endpoint="crawl-music-data" description="Collects Last.fm, MusicBrainz, Deezer data." params={["artistName", "wikiEntryId"]} />
+        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Collects Last.fm, Deezer data. Use source='music'." params={["source: 'music'", "wikiEntryId"]} />
       </div>
 
       <VarTable rows={[

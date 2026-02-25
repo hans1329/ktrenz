@@ -115,9 +115,9 @@ const V3ArtistDetail = () => {
     mutationFn: async () => {
       if (!entry) throw new Error("No entry");
       const [ytResult, buzzResult, musicResult] = await Promise.allSettled([
-        supabase.functions.invoke('crawl-youtube-trends', { body: { artistName: entry.title, wikiEntryId: entry.id } }),
+        supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'youtube', wikiEntryId: entry.id } }),
         supabase.functions.invoke('crawl-x-mentions', { body: { artistName: entry.title, wikiEntryId: entry.id, hashtags: [(entry.metadata as any)?.hashtag].filter(Boolean) } }),
-        supabase.functions.invoke('crawl-music-data', { body: { artistName: entry.title, wikiEntryId: entry.id } }),
+        supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'music', wikiEntryId: entry.id } }),
       ]);
       const ytRaw = ytResult.status === 'fulfilled' ? ytResult.value : null;
       const buzzRaw = buzzResult.status === 'fulfilled' ? buzzResult.value : null;
