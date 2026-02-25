@@ -214,7 +214,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 const V3Treemap = () => {
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
   const isMobile = useIsMobile();
-  const displayCount = isMobile ? 10 : 12;
+  const displayCount = isMobile ? 10 : 16;
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
@@ -277,8 +277,9 @@ const V3Treemap = () => {
     staleTime: 30_000,
   });
 
-  const containerWidth = 360; const containerHeight = 460;
-  const rects = useMemo(() => { if (!items?.length) return []; return squarify(items, 0, 0, containerWidth, containerHeight); }, [items]);
+  const containerWidth = isMobile ? 360 : 700;
+  const containerHeight = isMobile ? 460 : 560;
+  const rects = useMemo(() => { if (!items?.length) return []; return squarify(items, 0, 0, containerWidth, containerHeight); }, [items, containerWidth, containerHeight]);
   const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
 
   if (isLoading) return (
