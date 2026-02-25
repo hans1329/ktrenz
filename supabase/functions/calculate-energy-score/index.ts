@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       .from("v3_scores_v2")
       .select("wiki_entry_id, total_score")
       .order("total_score", { ascending: false })
-      .limit(200);
+      .limit(60);
 
     let allEntryIds: string[] = [];
     if (v2Scores?.length) {
