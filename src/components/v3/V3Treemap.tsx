@@ -73,8 +73,8 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: 변동률 절대값의 제곱에 비례 (크기 차이 극대화)
-  const tileSize = (i: TreemapItem) => Math.pow(Math.max(Math.abs(i.energyChange24h), 0.5), 1.5);
+  // 타일 크기: 변동률 절대값에 선형 비례 (최소 크기 보장으로 극단적 차이 방지)
+  const tileSize = (i: TreemapItem) => Math.max(Math.abs(i.energyChange24h), 3);
   const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
   const totalArea = w * h;
   const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
@@ -373,7 +373,7 @@ const V3Treemap = () => {
           {rects.map((rect) => {
             const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
             const width = (rect.w / containerWidth) * 100; const height = (rect.h / containerHeight) * 100;
-            const isLarge = width > 18 && height > 15; const isMedium = width > 12 && height > 10;
+            const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8; const isSmall = !isLarge && !isMedium;
             const isSelected = selectedItem?.id === rect.item.id;
             const surging = isSurging(rect.item.energyChange24h);
             const sharePct = totalEnergy > 0 ? (rect.item.energyScore / totalEnergy * 100) : 0;
@@ -430,9 +430,10 @@ const V3Treemap = () => {
                     <span className="text-[11px] font-black text-white/90 drop-shadow-md">{Math.round(rect.item.energyScore)}</span>
                   </div>
                 ) : (
-                  <span className="relative z-10 text-[9px] font-bold text-white/70 truncate max-w-full drop-shadow-md">
-                    {rect.item.title.length > 6 ? rect.item.title.slice(0, 5) + "…" : rect.item.title}
-                  </span>
+                  <div className="relative z-10 flex flex-col items-center overflow-hidden w-full">
+                    <span className="text-[7px] font-bold text-white/80 truncate max-w-full leading-tight drop-shadow-md">{rect.item.title}</span>
+                    <span className="text-[8px] font-black text-white/70 drop-shadow-md">{Math.round(rect.item.energyScore)}</span>
+                  </div>
                 )}
               </button>
             );
