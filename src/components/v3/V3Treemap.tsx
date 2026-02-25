@@ -301,7 +301,7 @@ const V3Treemap = () => {
   });
 
   const containerWidth = isMobile ? 360 : 700;
-  const containerHeight = isMobile ? 460 : 560;
+  const containerHeight = isMobile ? 540 : 560;
   const rects = useMemo(() => { if (!items?.length) return []; return squarify(items, 0, 0, containerWidth, containerHeight); }, [items, containerWidth, containerHeight]);
   const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
 
