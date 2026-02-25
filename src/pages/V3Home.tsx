@@ -49,9 +49,9 @@ const V3Home = () => {
         description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X (Twitter), and music charts. Updated every hour."
         path="/"
       />
-      <div className="h-screen flex flex-col overflow-hidden">
+      <div className="min-h-screen flex flex-col">
         <V3DesktopHeader activeTab={activeTab} onTabChange={setActiveTab} />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>

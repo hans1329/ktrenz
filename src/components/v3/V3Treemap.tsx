@@ -301,8 +301,8 @@ const V3Treemap = () => {
     if (!items?.length) return [];
     return [...items].sort((a, b) => b.energyScore - a.energyScore);
   }, [items]);
-  const containerWidth = isMobile ? 360 : 700;
-  const containerHeight = isMobile ? 620 : 560;
+  const containerWidth = isMobile ? 360 : 420;
+  const containerHeight = isMobile ? 620 : 520;
   const rects = useMemo(() => { if (!sortedItems.length) return []; return squarify(sortedItems, 0, 0, containerWidth, containerHeight); }, [sortedItems, containerWidth, containerHeight]);
   const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
 
