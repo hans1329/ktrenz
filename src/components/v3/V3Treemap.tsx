@@ -15,6 +15,7 @@ interface TreemapItem {
   youtubeScore: number; buzzScore: number; twitterScore: number;
   albumSalesScore: number; musicScore: number;
   sparkline: number[]; trendLabel: TrendLabel;
+  ema7d: number | null; ema30d: number | null;
 }
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
@@ -50,15 +51,18 @@ function isSurging(change: number): boolean {
 }
 
 // ── Sparkline ──
-function MiniSparkline({ data, width, height, color = "rgba(255,255,255,0.5)" }: { data: number[]; width: number; height: number; color?: string }) {
+function MiniSparkline({ data, width, height, color = "rgba(255,255,255,0.5)", ema7d, ema30d }: { data: number[]; width: number; height: number; color?: string; ema7d?: number | null; ema30d?: number | null }) {
   if (data.length < 2) return null;
-  const min = Math.min(...data); const max = Math.max(...data); const range = max - min || 1; const padding = 2;
+  const min = Math.min(...data, ema7d ?? Infinity, ema30d ?? Infinity); const max = Math.max(...data, ema7d ?? -Infinity, ema30d ?? -Infinity); const range = max - min || 1; const padding = 2;
   const points = data.map((v, i) => { const x = (i / (data.length - 1)) * width; const y = height - padding - ((v - min) / range) * (height - padding * 2); return `${x},${y}`; }).join(" ");
   const areaPoints = `0,${height} ${points} ${width},${height}`;
+  const emaY = (val: number) => height - padding - ((val - min) / range) * (height - padding * 2);
   return (
     <svg width={width} height={height} className="absolute bottom-0 left-0 opacity-50 pointer-events-none">
       <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0.05" /></linearGradient></defs>
       <polygon points={areaPoints} fill="url(#sparkFill)" /><polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
+      {ema7d != null && <line x1={0} y1={emaY(ema7d)} x2={width} y2={emaY(ema7d)} stroke="hsl(0, 80%, 65%)" strokeWidth="1" strokeDasharray="3,2" opacity="0.8" />}
+      {ema30d != null && <line x1={0} y1={emaY(ema30d)} x2={width} y2={emaY(ema30d)} stroke="hsl(210, 80%, 65%)" strokeWidth="1" strokeDasharray="5,3" opacity="0.7" />}
     </svg>
   );
 }
@@ -192,9 +196,14 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         {item.sparkline.length >= 2 && (
           <div className="rounded-xl bg-muted/30 border border-border p-3">
             <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
+              <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
+            </div>
             <div className="relative h-16">
               <MiniSparkline data={item.sparkline} width={320} height={64}
-                color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"} />
+                color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
+                ema7d={item.ema7d} ema30d={item.ema30d} />
             </div>
           </div>
         )}
@@ -244,14 +253,20 @@ const V3Treemap = () => {
         })
         .slice(0, displayCount);
 
-      // Fetch sparkline from v3_energy_snapshots for these top artists
+      // Fetch sparkline and baselines for these top artists
       const topIds = topItems.map((s) => s.wiki_entry_id);
-      const { data: snapshots } = await supabase
-        .from("v3_energy_snapshots_v2" as any)
-        .select("wiki_entry_id, energy_score, snapshot_at")
-        .in("wiki_entry_id", topIds)
-        .order("snapshot_at", { ascending: true })
-        .limit(500);
+      const [{ data: snapshots }, { data: baselines }] = await Promise.all([
+        supabase
+          .from("v3_energy_snapshots_v2" as any)
+          .select("wiki_entry_id, energy_score, snapshot_at")
+          .in("wiki_entry_id", topIds)
+          .order("snapshot_at", { ascending: true })
+          .limit(500),
+        supabase
+          .from("v3_energy_baselines_v2" as any)
+          .select("wiki_entry_id, avg_energy_7d, avg_energy_30d")
+          .in("wiki_entry_id", topIds),
+      ]);
 
       const sparklineMap = new Map<string, number[]>();
       for (const snap of (snapshots || []) as any[]) {
@@ -259,10 +274,16 @@ const V3Treemap = () => {
         sparklineMap.get(snap.wiki_entry_id)!.push(Number(snap.energy_score) || 0);
       }
 
+      const baselineMap = new Map<string, { ema7d: number | null; ema30d: number | null }>();
+      for (const b of (baselines || []) as any[]) {
+        baselineMap.set(b.wiki_entry_id, { ema7d: b.avg_energy_7d, ema30d: b.avg_energy_30d });
+      }
+
       return topItems.map((s) => {
         const entry = s.wiki_entries as any;
         const sparkline = sparklineMap.get(s.wiki_entry_id) || [];
         const change = s.energy_change_24h || 0;
+        const bl = baselineMap.get(s.wiki_entry_id);
         return {
           id: s.wiki_entry_id, slug: entry?.slug || "", title: entry?.title || "Unknown",
           imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
@@ -271,6 +292,7 @@ const V3Treemap = () => {
           buzzScore: s.buzz_score || 0, twitterScore: 0,
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
+          ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
         };
       });
     },
@@ -374,7 +396,8 @@ const V3Treemap = () => {
 
                 {rect.item.sparkline.length >= 2 && isMedium && (
                   <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}
-                    color={rect.item.energyChange24h >= 0 ? "rgba(255,255,255,0.45)" : "rgba(150,180,255,0.45)"} />
+                    color={rect.item.energyChange24h >= 0 ? "rgba(255,255,255,0.45)" : "rgba(150,180,255,0.45)"}
+                    ema7d={rect.item.ema7d} ema30d={rect.item.ema30d} />
                 )}
 
                 {/* 24h 변동률 뱃지 - 우상단 */}
