@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, Bot, Power } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
@@ -16,6 +17,7 @@ interface V3TabBarProps {
 const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
 
   const handleProfileClick = () => {
@@ -24,9 +26,9 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   };
 
   const tabs = [
-    { id: "rankings" as const, label: "Trendz", icon: TrendingUp },
-    { id: "profile" as const, label: "Profile", icon: null, isCenter: true },
-    { id: "agent" as const, label: "Agent", icon: Bot },
+    { id: "rankings" as const, labelKey: "nav.trendz", icon: TrendingUp },
+    { id: "profile" as const, labelKey: "nav.profile", icon: null, isCenter: true },
+    { id: "agent" as const, labelKey: "nav.agent", icon: Bot },
   ];
 
   return (
@@ -68,7 +70,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
                 className={cn("flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
-                <span className={cn("text-[8px] font-medium transition-all", isActive && "font-semibold")}>{tab.label}</span>
+                <span className={cn("text-[8px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
               </button>
             );
           })}

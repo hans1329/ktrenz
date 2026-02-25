@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogIn, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 
 const FanAgent = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -21,21 +23,21 @@ const FanAgent = () => {
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center bg-background gap-4 px-4">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold text-foreground">Sign In Required</h2>
-          <p className="text-sm text-muted-foreground">Please sign in to use Fan Agent.</p>
+          <h2 className="text-xl font-bold text-foreground">{t("agent.signInRequired")}</h2>
+          <p className="text-sm text-muted-foreground">{t("agent.signInDesc")}</p>
         </div>
         <Button
           onClick={() => navigate("/login")}
           className="h-12 px-8 rounded-full gap-2 font-medium"
         >
           <LogIn className="w-5 h-5" />
-          Sign In
+          {t("common.signIn")}
         </Button>
         <button
           onClick={() => navigate(-1)}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-2"
         >
-          ← Go Back
+          {t("agent.goBack")}
         </button>
       </div>
     );

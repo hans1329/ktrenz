@@ -8,11 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 import kTrenzLogo from "@/assets/k-trenz-logo.webp";
 
 const Login = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<"select" | "email-login" | "email-signup">("select");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,14 +74,15 @@ const Login = () => {
 
   return (
     <>
-      <SEO title="Sign In – KTrenZ" description="Sign in to KTrenZ to access K-Pop trend data and Fan Agent." path="/login" />
+      <SEO title={t("login.title")} description="Sign in to KTrenZ to access K-Pop trend data and Fan Agent." path="/login" />
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
+        <div className="absolute top-4 right-4"><LanguageSwitcher /></div>
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
           <div className="flex flex-col items-center gap-4">
             <img src={kTrenzLogo} alt="KTRENDZ" className="h-7 w-auto" />
             <p className="text-muted-foreground text-sm text-center">
-              Real-time K-Pop Trend Rankings
+              {t("login.subtitle")}
             </p>
           </div>
 
@@ -101,7 +105,7 @@ const Login = () => {
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
                 )}
-                Continue with Google
+                {t("login.google")}
               </Button>
 
               {/* Email */}
@@ -111,7 +115,7 @@ const Login = () => {
                 variant="outline"
               >
                 <Mail className="w-5 h-5" />
-                Continue with Email
+                {t("login.email")}
               </Button>
             </div>
           )}
@@ -123,11 +127,11 @@ const Login = () => {
                 onClick={() => setMode("select")}
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {t("common.back")}
               </button>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("login.emailLabel")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -139,7 +143,7 @@ const Login = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -154,22 +158,22 @@ const Login = () => {
 
               <Button type="submit" disabled={loading} className="w-full h-12 rounded-full font-medium">
                 {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {mode === "email-login" ? "Sign In" : "Create Account"}
+                {mode === "email-login" ? t("common.signIn") : t("login.createAccount")}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
                 {mode === "email-login" ? (
                   <>
-                    Don't have an account?{" "}
+                    {t("login.noAccount")}{" "}
                     <button type="button" onClick={() => setMode("email-signup")} className="text-primary hover:underline">
-                      Sign up
+                      {t("login.signUp")}
                     </button>
                   </>
                 ) : (
                   <>
-                    Already have an account?{" "}
+                    {t("login.hasAccount")}{" "}
                     <button type="button" onClick={() => setMode("email-login")} className="text-primary hover:underline">
-                      Sign in
+                      {t("common.signIn")}
                     </button>
                   </>
                 )}
@@ -183,7 +187,7 @@ const Login = () => {
               onClick={() => navigate("/")}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              ← Back to Rankings
+              {t("login.backToRankings")}
             </button>
           </div>
         </div>

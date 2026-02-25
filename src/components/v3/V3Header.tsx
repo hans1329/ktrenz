@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SearchResult {
   id: string;
@@ -17,6 +19,7 @@ interface SearchResult {
 
 const V3Header = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -73,7 +76,7 @@ const V3Header = () => {
           <div ref={searchContainerRef} className="flex-1 flex items-center gap-2 relative">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input ref={inputRef} type="text" placeholder="Search artists, groups..."
+              <Input ref={inputRef} type="text" placeholder={t("search.placeholder")}
                 value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-4 h-10 bg-muted/50 border-0 rounded-full focus-visible:ring-1 focus-visible:ring-primary" />
               {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />}
@@ -96,7 +99,7 @@ const V3Header = () => {
                     </div>
                   </button>
                 )) : (
-                  <div className="p-4 text-center text-sm text-muted-foreground">No results found</div>
+                  <div className="p-4 text-center text-sm text-muted-foreground">{t("search.noResults")}</div>
                 )}
               </div>
             )}
@@ -112,10 +115,11 @@ const V3Header = () => {
                 decoding="async"
               />
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
               </button>
+              <LanguageSwitcher />
             </div>
           </>
         )}

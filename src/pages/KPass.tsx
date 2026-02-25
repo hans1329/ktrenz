@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowLeft, Loader2, Crown } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
 interface KPassTier {
@@ -21,6 +23,7 @@ interface KPassTier {
 const KPassPage = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
 
   const { data: tiers = [] } = useQuery({
     queryKey: ["kpass-tiers"],
@@ -75,8 +78,8 @@ const KPassPage = () => {
             <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="flex-1 text-center font-bold text-lg">K-Pass</h1>
-            <div className="w-9" />
+            <h1 className="flex-1 text-center font-bold text-lg">{t("kpass.title")}</h1>
+            <LanguageSwitcher />
           </div>
         </header>
 
@@ -84,7 +87,7 @@ const KPassPage = () => {
           {/* Current status */}
           {currentSub && (
             <div className="text-center text-sm text-muted-foreground mb-2">
-              Current plan: <span className="text-foreground font-semibold">
+              {t("kpass.currentPlan")} <span className="text-foreground font-semibold">
                 {tiers.find(t => t.id === currentSub.tier_id)?.icon}{" "}
                 {tiers.find(t => t.id === currentSub.tier_id)?.name}
               </span>
@@ -106,7 +109,7 @@ const KPassPage = () => {
               >
                 {isActive && (
                   <div className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                    CURRENT
+                    {t("common.current")}
                   </div>
                 )}
                 <div className="flex items-center justify-between">
@@ -119,11 +122,11 @@ const KPassPage = () => {
                   </div>
                   <div className="text-right">
                     {tier.monthly_price_usd === 0 ? (
-                      <p className="font-bold text-foreground">Free</p>
+                      <p className="font-bold text-foreground">{t("common.free")}</p>
                     ) : (
                       <>
                         <p className="font-bold text-foreground">${tier.monthly_price_usd}</p>
-                        <p className="text-[10px] text-muted-foreground">/month</p>
+                        <p className="text-[10px] text-muted-foreground">{t("kpass.perMonth")}</p>
                       </>
                     )}
                   </div>
@@ -135,12 +138,12 @@ const KPassPage = () => {
                     variant={tier.id >= 4 ? "default" : "outline"}
                     disabled
                   >
-                    Coming Soon
+                    {t("common.comingSoon")}
                   </Button>
                 )}
                 {isActive && (
                   <div className="flex items-center justify-center gap-1.5 mt-4 text-sm text-primary font-medium">
-                    <Check className="w-4 h-4" /> Active
+                    <Check className="w-4 h-4" /> {t("common.active")}
                   </div>
                 )}
               </div>
@@ -148,7 +151,7 @@ const KPassPage = () => {
           })}
 
           <p className="text-center text-xs text-muted-foreground pt-2">
-            Premium tiers coming soon. Stay tuned!
+            {t("kpass.premiumSoon")}
           </p>
         </div>
       </div>
