@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Zap, Activity, Crown, Medal, Youtube, Twitter, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
 import V3Treemap from "@/components/v3/V3Treemap";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -58,11 +59,12 @@ const ChangeIndicator = ({ change }: { change: number }) => {
   return <span className="text-xs text-muted-foreground font-medium">—</span>;
 };
 
-const getEnergyLevel = (score: number) => {
-  if (score >= 300) return { icon: "🔥", label: "Explosive", color: "text-red-500", bg: "bg-red-500/10" };
-  if (score >= 150) return { icon: "⚡", label: "Active", color: "text-amber-500", bg: "bg-amber-500/10" };
-  if (score >= 100) return { icon: "💫", label: "Normal", color: "text-blue-400", bg: "bg-blue-400/10" };
-  return { icon: "💤", label: "Low", color: "text-muted-foreground", bg: "bg-muted" };
+const getEnergyLevel = (score: number, t?: (k: string) => string) => {
+  const tr = t || ((k: string) => k);
+  if (score >= 300) return { icon: "🔥", label: tr("energy.explosive"), color: "text-red-500", bg: "bg-red-500/10" };
+  if (score >= 150) return { icon: "⚡", label: tr("energy.active"), color: "text-amber-500", bg: "bg-amber-500/10" };
+  if (score >= 100) return { icon: "💫", label: tr("energy.normal"), color: "text-blue-400", bg: "bg-blue-400/10" };
+  return { icon: "💤", label: tr("energy.low"), color: "text-muted-foreground", bg: "bg-muted" };
 };
 
 const MiniEnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: number }) => {
@@ -245,6 +247,7 @@ type Period = "1D" | "1W" | "1M" | "3M";
 const periodDays: Record<Period, number> = { "1D": 1, "1W": 7, "1M": 30, "3M": 90 };
 
 const V3TrendRankings = () => {
+  const { t } = useLanguage();
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
@@ -347,8 +350,8 @@ const V3TrendRankings = () => {
         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-orange-400/20 flex items-center justify-center">
           <TrendingUp className="w-10 h-10 text-primary/40" />
         </div>
-        <h3 className="text-lg font-bold text-foreground mb-2">Coming Soon</h3>
-        <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">Real-time trend scores will appear here.</p>
+        <h3 className="text-lg font-bold text-foreground mb-2">{t("rankings.comingSoon")}</h3>
+        <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">{t("rankings.comingSoonDesc")}</p>
       </div>
     );
   }
@@ -363,14 +366,14 @@ const V3TrendRankings = () => {
         <div className="flex items-center justify-between pt-4 pb-2">
           <div>
             <h2 className="text-xl font-black text-foreground">
-              <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> Live Rankings
+              <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
             </h2>
             {isCrawling ? (
               <p className="text-[10px] text-primary font-medium mt-0.5 pl-7 animate-pulse">
-                Updating {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} artists...
+                {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground mt-0.5 pl-7">Multi-platform trend scores</p>
+              <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -425,7 +428,7 @@ const V3TrendRankings = () => {
               <div className="px-4 mb-3">
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-border" />
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">Full Rankings</span>
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">{t("rankings.fullRankings")}</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
               </div>

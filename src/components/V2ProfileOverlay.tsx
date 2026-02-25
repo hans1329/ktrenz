@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, ChevronRight, Settings } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Drawer,
   DrawerContent,
@@ -20,6 +21,7 @@ interface V2ProfileOverlayProps {
 const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { data: kpassInfo } = useQuery({
     queryKey: ["kpass-current", user?.id],
@@ -150,14 +152,14 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
               onClick={() => onOpenChange(false)}
             >
-              <Settings className="w-4 h-4" /> <span className="text-sm">Settings</span>
+              <Settings className="w-4 h-4" /> <span className="text-sm">{t("common.settings")}</span>
             </Button>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-destructive hover:text-destructive"
               onClick={signOut}
             >
-              <LogOut className="w-4 h-4" /> <span className="text-sm">Sign Out</span>
+              <LogOut className="w-4 h-4" /> <span className="text-sm">{t("common.signOut")}</span>
             </Button>
           </div>
         </div>

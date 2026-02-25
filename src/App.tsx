@@ -13,12 +13,14 @@ import KPass from "./pages/KPass";
 import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -36,6 +38,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   </HelmetProvider>
 );

@@ -8,9 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Plus, Youtube, Instagram, Music, Twitter } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ArtistListingRequestDialog = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ artist_name: "", youtube_url: "", instagram_url: "", tiktok_url: "", x_url: "", note: "" });
@@ -36,9 +38,9 @@ const ArtistListingRequestDialog = () => {
   if (!user) {
     return (
       <div className="text-center py-6">
-        <p className="text-xs text-muted-foreground mb-2">Can't find your favorite artist?</p>
+        <p className="text-xs text-muted-foreground mb-2">{t("listing.cantFind")}</p>
         <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => toast.info("Please log in first.")}>
-          <Plus className="w-3.5 h-3.5 mr-1" /> Request Listing
+          <Plus className="w-3.5 h-3.5 mr-1" /> {t("listing.request")}
         </Button>
       </div>
     );
@@ -46,34 +48,34 @@ const ArtistListingRequestDialog = () => {
 
   return (
     <div className="text-center py-6">
-      <p className="text-xs text-muted-foreground mb-2">Can't find your favorite artist?</p>
+      <p className="text-xs text-muted-foreground mb-2">{t("listing.cantFind")}</p>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="rounded-full text-xs border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground">
-            <Plus className="w-3.5 h-3.5 mr-1" /> Request Listing
+            <Plus className="w-3.5 h-3.5 mr-1" /> {t("listing.request")}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="text-lg">Request Artist Listing</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-lg">{t("listing.title")}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label htmlFor="artist_name" className="text-xs font-semibold">Official Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="artist_name" className="text-xs font-semibold">{t("listing.officialName")} <span className="text-red-500">*</span></Label>
               <Input id="artist_name" placeholder="e.g. BLACKPINK, BTS" value={form.artist_name}
                 onChange={(e) => setForm({ ...form, artist_name: e.target.value })} maxLength={100} />
             </div>
             <div className="space-y-3">
-              <Label className="text-xs font-semibold">Official Social Links</Label>
+              <Label className="text-xs font-semibold">{t("listing.socialLinks")}</Label>
               <div className="flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500 shrink-0" /><Input placeholder="YouTube channel URL" value={form.youtube_url} onChange={(e) => setForm({ ...form, youtube_url: e.target.value })} maxLength={500} className="text-sm" /></div>
               <div className="flex items-center gap-2"><Instagram className="w-4 h-4 text-pink-500 shrink-0" /><Input placeholder="Instagram profile URL" value={form.instagram_url} onChange={(e) => setForm({ ...form, instagram_url: e.target.value })} maxLength={500} className="text-sm" /></div>
               <div className="flex items-center gap-2"><Music className="w-4 h-4 text-foreground shrink-0" /><Input placeholder="TikTok profile URL" value={form.tiktok_url} onChange={(e) => setForm({ ...form, tiktok_url: e.target.value })} maxLength={500} className="text-sm" /></div>
               <div className="flex items-center gap-2"><Twitter className="w-4 h-4 text-blue-400 shrink-0" /><Input placeholder="X (Twitter) profile URL" value={form.x_url} onChange={(e) => setForm({ ...form, x_url: e.target.value })} maxLength={500} className="text-sm" /></div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="note" className="text-xs font-semibold">Additional Note</Label>
+              <Label htmlFor="note" className="text-xs font-semibold">{t("listing.note")}</Label>
               <Textarea id="note" placeholder="Any additional info" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} maxLength={500} rows={2} className="text-sm" />
             </div>
             <Button onClick={handleSubmit} disabled={loading || !form.artist_name.trim()} className="w-full rounded-full">
-              {loading ? "Submitting..." : "Submit Request"}
+              {loading ? t("listing.submitting") : t("listing.submitRequest")}
             </Button>
           </div>
         </DialogContent>

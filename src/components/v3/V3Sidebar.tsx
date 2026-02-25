@@ -2,6 +2,8 @@ import { useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { Link, useNavigate } from "react-router-dom";
 import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -14,9 +16,9 @@ import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
-const v3NavItems: { id: V3Tab; title: string; icon: typeof TrendingUp }[] = [
-  { id: "rankings", title: "Trendz", icon: TrendingUp },
-  { id: "agent", title: "Fan Agent", icon: Bot },
+const v3NavItems: { id: V3Tab; titleKey: string; icon: typeof TrendingUp }[] = [
+  { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
+  { id: "agent", titleKey: "nav.fanAgent", icon: Bot },
 ];
 
 interface V3SidebarProps {
@@ -28,6 +30,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
   const { state, toggleSidebar } = useSidebar();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const collapsed = state === "collapsed";
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -59,7 +62,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
                             collapsed && "justify-center px-0",
                             active ? "bg-muted text-foreground font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
                           <Icon className="w-5 h-5 shrink-0" />
-                          {!collapsed && <span>{item.title}</span>}
+                          {!collapsed && <span>{t(item.titleKey)}</span>}
                         </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -70,12 +73,13 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
           </SidebarGroup>
         </SidebarContent>
 
-        <div className="px-3 pt-2">
+        <div className="px-3 pt-2 space-y-1">
           <button onClick={() => toggleSidebar()}
             className={cn("flex items-center gap-3 px-3 py-2 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full", collapsed && "justify-center")}>
             {collapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}
-            {!collapsed && <span className="text-sm">Collapse</span>}
+            {!collapsed && <span className="text-sm">{t("nav.collapse")}</span>}
           </button>
+          {!collapsed && <LanguageSwitcher className="px-1" />}
         </div>
 
         <SidebarFooter className="p-3 border-t border-border">
