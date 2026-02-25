@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import V3Home from "./pages/V3Home";
 import V3ArtistDetail from "./pages/V3ArtistDetail";
+import V3Rankings from "./pages/V3Rankings";
 import FesEngine from "./pages/FesEngine";
 import FanAgent from "./pages/FanAgent";
 import Login from "./pages/Login";
@@ -29,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<V3Home />} />
             <Route path="/artist/:slug" element={<V3ArtistDetail />} />
+            <Route path="/rankings" element={<V3Rankings />} />
             <Route path="/fes-engine" element={<FesEngine />} />
             <Route path="/agent" element={<FanAgent />} />
             <Route path="/login" element={<Login />} />

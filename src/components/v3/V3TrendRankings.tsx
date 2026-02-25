@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -420,20 +420,10 @@ const V3TrendRankings = () => {
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} />
             ))}
-            {rest.length > 0 && (
-              <>
-                <div className="my-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-px flex-1 bg-border" />
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">{t("rankings.fullRankings")}</span>
-                    <div className="h-px flex-1 bg-border" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} />)}
-                </div>
-              </>
-            )}
+            <Link to="/rankings"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-muted/50 hover:bg-muted text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+              {t("rankings.fullRankings")} <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
         <ArtistListingRequestDialog />
