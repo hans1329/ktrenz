@@ -1,8 +1,7 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import V3Sidebar from "@/components/v3/V3Sidebar";
+import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar, { type V3Tab } from "@/components/v3/V3TabBar";
 import V3TrendRankings from "@/components/v3/V3TrendRankings";
@@ -45,23 +44,19 @@ const V3Home = () => {
 
   return (
     <>
-        <SEO
-          title="KTrenZ – Live K-Pop Trend Rankings"
-          description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X (Twitter), and music charts. Updated every hour."
-          path="/"
-        />
-      <SidebarProvider defaultOpen={true}>
-        <div className="h-screen flex w-full overflow-hidden">
-          <V3Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <main className="flex-1 overflow-auto">
-              <div className="max-w-3xl mx-auto">
-                {renderContent()}
-              </div>
-            </main>
+      <SEO
+        title="KTrenZ – Live K-Pop Trend Rankings"
+        description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X (Twitter), and music charts. Updated every hour."
+        path="/"
+      />
+      <div className="h-screen flex flex-col overflow-hidden">
+        <V3DesktopHeader activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-3xl mx-auto">
+            {renderContent()}
           </div>
-        </div>
-      </SidebarProvider>
+        </main>
+      </div>
     </>
   );
 };
