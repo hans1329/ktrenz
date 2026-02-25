@@ -22,17 +22,23 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // 상위 아티스트 (total_score DESC)
+    // 1군(tier=1) 아티스트만 대상
+    const { data: tier1Entries } = await sb
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id")
+      .eq("tier", 1);
+    const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean));
+
     const { data: topScores } = await sb
       .from("v3_scores_v2")
       .select("wiki_entry_id, total_score")
       .order("total_score", { ascending: false })
       .limit(200);
 
-    // 중복 제거 후 batchOffset~batchOffset+batchSize 슬라이스
+    // tier 1 필터 + 중복 제거 후 슬라이스
     const seenIds = new Set<string>();
     const uniqueScores = (topScores || []).filter((s: any) => {
-      if (!s.wiki_entry_id || seenIds.has(s.wiki_entry_id)) return false;
+      if (!s.wiki_entry_id || seenIds.has(s.wiki_entry_id) || !tier1Ids.has(s.wiki_entry_id)) return false;
       seenIds.add(s.wiki_entry_id);
       return true;
     });

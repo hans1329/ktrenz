@@ -4296,6 +4296,41 @@ export type Database = {
           },
         ]
       }
+      v3_artist_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          is_manual_override: boolean
+          tier: number
+          updated_at: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_manual_override?: boolean
+          tier?: number
+          updated_at?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_manual_override?: boolean
+          tier?: number
+          updated_at?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v3_artist_tiers_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: true
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v3_energy_baselines: {
         Row: {
           avg_energy_30d: number | null

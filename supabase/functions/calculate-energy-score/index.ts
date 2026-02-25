@@ -122,18 +122,24 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── 1) 모든 대상 엔트리 수집 ──
+    // ── 1) 1군(tier=1) 아티스트만 에너지 스코어 계산 ──
+    const { data: tier1Entries } = await sb
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id")
+      .eq("tier", 1);
+    const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean));
+
     const { data: v2Scores } = await sb
       .from("v3_scores_v2")
       .select("wiki_entry_id, total_score")
       .order("total_score", { ascending: false })
-      .limit(60);
+      .limit(100);
 
     let allEntryIds: string[] = [];
     if (v2Scores?.length) {
       const seen = new Set<string>();
       for (const s of v2Scores) {
-        if (!seen.has(s.wiki_entry_id)) {
+        if (!seen.has(s.wiki_entry_id) && tier1Ids.has(s.wiki_entry_id)) {
           seen.add(s.wiki_entry_id);
           allEntryIds.push(s.wiki_entry_id);
         }
