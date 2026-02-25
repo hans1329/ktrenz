@@ -66,33 +66,35 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
     <>
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">
-          {/* Left: Logo + Nav */}
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center shrink-0">
+          {/* Left: Logo */}
+          <div className="flex items-center shrink-0">
+            <Link to="/" className="flex items-center">
               <img src={ktrenzLogo} alt="K-TRENZ" className="h-5 w-auto" loading="eager" fetchPriority="high" decoding="async" />
             </Link>
-            <nav className="flex items-center gap-1">
-              {navItems.map((item) => {
-                const active = activeTab === item.id;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => item.id === "agent" ? navigate("/agent") : onTabChange(item.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{t(item.titleKey)}</span>
-                  </button>
-                );
-              })}
-            </nav>
           </div>
+
+          {/* Center: Tab buttons */}
+          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-muted/50 rounded-full p-1">
+            {navItems.map((item) => {
+              const active = activeTab === item.id;
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => item.id === "agent" ? navigate("/agent") : onTabChange(item.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{t(item.titleKey)}</span>
+                </button>
+              );
+            })}
+          </nav>
 
           {/* Right: Search + Lang + Profile */}
           <div className="flex items-center gap-3">
