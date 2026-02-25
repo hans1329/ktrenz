@@ -73,9 +73,15 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  const totalValue = items.reduce((s, i) => s + Math.max(i.energyScore, 10), 0);
+  // 타일 크기: total_score 기반 + 변동률 보정 (변동이 클수록 크게)
+  const tileSize = (i: TreemapItem) => {
+    const base = Math.max(i.totalScore, 100);
+    const changeBoost = 1 + Math.max(i.energyChange24h, -50) / 100; // -50%→0.5x, 0%→1x, +50%→1.5x
+    return base * Math.max(changeBoost, 0.3);
+  };
+  const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
   const totalArea = w * h;
-  const areas = items.map(i => (Math.max(i.energyScore, 10) / totalValue) * totalArea);
+  const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
   const rects: Rect[] = [];
   let cx = x, cy = y, cw = w, ch = h, idx = 0;
   while (idx < items.length) {
@@ -242,15 +248,10 @@ const V3Treemap = () => {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
-      // Get top N by energy_score
+      // 인기도(total_score) 상위 N개 선정
       const topItems = Array.from(latestMap.values())
         .filter((s) => (s.wiki_entries as any)?.slug)
-        .sort((a, b) => {
-          // 1차: 변동률 내림차순, 2차: total_score(인기도) 내림차순
-          const changeDiff = (b.energy_change_24h || 0) - (a.energy_change_24h || 0);
-          if (Math.abs(changeDiff) > 0.1) return changeDiff;
-          return (b.total_score || 0) - (a.total_score || 0);
-        })
+        .sort((a, b) => (b.total_score || 0) - (a.total_score || 0))
         .slice(0, displayCount);
 
       // Fetch sparkline and baselines for these top artists
