@@ -73,8 +73,8 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: 변동률 절대값에 정비례 (최소 크기 보장)
-  const tileSize = (i: TreemapItem) => Math.max(Math.abs(i.energyChange24h), 0.5);
+  // 타일 크기: 변동률 절대값의 제곱에 비례 (크기 차이 극대화)
+  const tileSize = (i: TreemapItem) => Math.pow(Math.max(Math.abs(i.energyChange24h), 0.5), 1.5);
   const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
   const totalArea = w * h;
   const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
