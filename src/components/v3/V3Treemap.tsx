@@ -338,7 +338,7 @@ const V3Treemap = () => {
     <div className="px-4 pb-4">
       {/* Header */}
       <div className="pt-4 pb-3">
-        <h2 className="text-xl font-black text-foreground">⚡ Energy Map</h2>
+        <h2 className="text-xl font-black text-muted-foreground">⚡ Energy Map</h2>
         <p className="text-xs text-muted-foreground mt-0.5 pl-7">
           지금 어디서 폭발하고 있나? · Top {displayCount} · Tap to inspect
         </p>

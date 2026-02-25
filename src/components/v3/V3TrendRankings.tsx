@@ -414,7 +414,7 @@ const V3TrendRankings = () => {
           </div>
           <div className="w-[40%] min-w-0 space-y-3">
             <div className="pt-4 pb-3">
-              <h2 className="text-xl font-black text-foreground">🏆 Trend Rankings</h2>
+              <h2 className="text-xl font-black text-muted-foreground">🏆 Trend Rankings</h2>
               <p className="text-xs text-muted-foreground mt-0.5 pl-7">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
             </div>
             {top3.map((item, idx) => (
