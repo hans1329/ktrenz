@@ -214,7 +214,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 const V3Treemap = () => {
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
   const isMobile = useIsMobile();
-  const displayCount = isMobile ? 10 : 16;
+  const displayCount = isMobile ? 15 : 16;
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
