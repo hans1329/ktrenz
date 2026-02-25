@@ -222,7 +222,7 @@ const V3Treemap = () => {
       const { data, error } = await supabase.from("v3_scores_v2" as any)
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
-        .order("energy_score", { ascending: false })
+        .order("total_score", { ascending: false })
         .limit(30);
       if (error) throw error;
       if (!data?.length) return [];
