@@ -7,7 +7,7 @@ import V3Sidebar from "@/components/v3/V3Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server } from "lucide-react";
+import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SectionHeader = ({ icon: Icon, title, color }: { icon: any; title: string; color: string }) => (
@@ -60,8 +60,19 @@ const FesEngine = () => {
       </Card>
 
       <SectionHeader icon={TrendingUp} title="Total Trend Score" color="bg-primary" />
-      <p className="text-xs text-muted-foreground">The main score displayed on each artist's detail page.</p>
-      <FormulaCard title="Base Weights" formula="TotalTrendScore = YouTube × 0.60 + Buzz × 0.20 + Music × 0.20" description="When Buzz/YouTube ratio exceeds 0.5, Buzz weight auto-increases up to 0.35." />
+      <p className="text-xs text-muted-foreground">The main ranking score. Each sub-score is <strong>normalized to 0–100</strong> then weighted (max 10,000).</p>
+      <FormulaCard title="Normalized Weighted Sum" formula={`TotalTrendScore =
+  min(ytScore / 310, 100) × 30   ← YouTube 30%
++ min(buzzScore / 15, 100) × 25  ← Buzz 25%
++ min(albumScore / 40, 100) × 25 ← Album Sales 25%
++ min(musicScore / 2, 100) × 20  ← Music 20%`} description="Each component is capped at 100 after dividing by its normalization constant. The final score is a GENERATED column in DB, auto-recalculated on any sub-score update." />
+
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Youtube className="w-4 h-4 mx-auto text-destructive" /><p className="text-xs font-bold text-foreground mt-1">30%</p><p className="text-[9px] text-muted-foreground">YouTube</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Zap className="w-4 h-4 mx-auto text-amber-500" /><p className="text-xs font-bold text-foreground mt-1">25%</p><p className="text-[9px] text-muted-foreground">Buzz</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><BarChart3 className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">25%</p><p className="text-[9px] text-muted-foreground">Album Sales</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">20%</p><p className="text-[9px] text-muted-foreground">Music</p></Card>
+      </div>
 
       <SectionHeader icon={Youtube} title="YouTube Score" color="bg-destructive" />
       <FormulaCard title="Formula" formula={`YouTubeScore = subScore + totalViewScore + recentViewScore + recentEngagement + volumeScore\n\nsubScore       = subscribers / 1,000,000 × 100\ntotalViewScore = totalViews / 100,000,000 × 50\nrecentViewScore= avgRecentViews / 1,000,000 × 30\nrecentEngagement = (likes + comments) / 100,000 × 20\nvolumeScore    = min(50, totalVideos / 100 × 10)`} />
@@ -69,13 +80,39 @@ const FesEngine = () => {
         { name: "subscriberCount", desc: "Channel subscriber count", source: "YouTube Data API v3" },
         { name: "totalViewCount", desc: "Channel total view count", source: "YouTube Data API v3" },
         { name: "avgRecentViews", desc: "Average views of recent videos", source: "YouTube Data API v3" },
+        { name: "musicVideoViews", desc: "Total views of Music category (ID=10) videos", source: "YouTube Data API v3" },
+        { name: "musicVideoCount", desc: "Number of Music category videos", source: "YouTube Data API v3" },
+      ]} />
+
+      <SectionHeader icon={Headphones} title="YouTube Music (Topic Channel)" color="bg-rose-600" />
+      <p className="text-xs text-muted-foreground">Official audio/streaming data from auto-generated <strong>"Artist - Topic"</strong> channels on YouTube.</p>
+      <FormulaCard title="Data Collection" formula={`1. Initial: search "Artist - Topic" → save channel ID (100 units, once)
+2. After:  playlistItems + channels API only (3 units/call)
+3. ID stored in v3_artist_tiers.youtube_topic_channel_id`} description="Topic channel ID is auto-saved after first search, so subsequent calls skip the expensive search API." />
+      <FormulaCard title="Contribution to Music Score" formula={`topicViewScore = log10(topicTotalViews + 1) × 10
+topicSubScore  = log10(topicSubscribers + 1) × 8
+mvViewScore    = log10(musicVideoViews + 1) × 12`} description="Topic channel views/subs and MV-specific views are weighted via log10 into the overall music_score." />
+      <VarTable rows={[
+        { name: "topicTotalViews", desc: "Topic channel total views (streaming count)", source: "YouTube Data API v3" },
+        { name: "topicSubscribers", desc: "Topic channel subscriber count", source: "YouTube Data API v3" },
+        { name: "topMusicTracks", desc: "Recent audio tracks (up to 5)", source: "YouTube Data API v3" },
       ]} />
 
       <SectionHeader icon={Zap} title="X (Twitter) Buzz Score" color="bg-amber-500" />
       <FormulaCard title="Formula" formula={`BuzzScore = mentionScore + sentimentBonus\n\nmentionScore   = min(800, log10(mentionCount) × 200)\nsentimentBonus = (sentimentScore − 50) × 4`} />
+      <Card className="p-3 bg-card border-border/50">
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">Source Weights</p>
+        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`News: 2.0 | X/Twitter: 1.5 | TikTok: 1.4
+Naver: 1.3 | Reddit: 1.2 | YouTube: 1.0`}</code>
+      </Card>
+
+      <SectionHeader icon={BarChart3} title="Album Sales Score" color="bg-emerald-600" />
+      <p className="text-xs text-muted-foreground">Album/physical sales data sourced from <strong>Hanteo Chart</strong>.</p>
 
       <SectionHeader icon={Music} title="Music Score" color="bg-purple-600" />
-      <FormulaCard title="Formula" formula={`MusicScore = lastfmListeners + lastfmPlays + deezerFans + mbAlbums + mbSingles`} />
+      <FormulaCard title="Formula" formula={`MusicScore = lastfmListeners + lastfmPlays + deezerFans
+           + mbAlbums + mbSingles
+           + topicViewScore + topicSubScore + mvViewScore`} description="Combines Last.fm, Deezer, MusicBrainz data with YouTube Music Topic channel and MV category metrics." />
 
       <SectionHeader icon={Flame} title="Fan Energy Score (FES) v2" color="bg-red-600" />
       <p className="text-xs text-muted-foreground">Measures an artist's <strong>current momentum</strong> relative to historical baselines. <Badge variant="outline" className="text-[9px] ml-1">Baseline 100 · Max 250</Badge></p>
@@ -191,7 +228,7 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Each calculat
 
       <FormulaCard title="Squarify Algorithm Summary" formula={`1. Sum total energy → calculate area ratio per artist\n2. Place rows minimizing Worst Aspect Ratio\n3. Split along longer axis repeatedly\n4. Result: near-square tile layout → readability ↑`} description="Reference: finviz.com/map, kaito.ai style heatmap layout" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Feb 24, 2026 · KTRENDZ FES Engine v2</p>
+      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Feb 26, 2026 · KTRENDZ FES Engine v2</p>
     </div>
   );
 
