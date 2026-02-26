@@ -71,14 +71,14 @@ const V3Rankings = () => {
         changePercent: item.energy_change_24h || 0,
       }));
 
-      // 에너지 맵과 동일한 변동성 기반 정렬: 급등 → 안정 → 급락
-      ranked.sort((a, b) => b.changePercent - a.changePercent);
+      // 에너지 맵과 동일한 변동성 기반 정렬: energy_change_24h 기준
+      ranked.sort((a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0));
       const top5 = ranked.slice(0, 5);
       const bottom5 = ranked.slice(-5).reverse();
       const selectedIds = new Set([...top5, ...bottom5].map(r => r.wiki_entry_id));
       const middle = ranked
         .filter(r => !selectedIds.has(r.wiki_entry_id))
-        .sort((a, b) => Math.abs(a.changePercent) - Math.abs(b.changePercent));
+        .sort((a, b) => Math.abs(a.energy_change_24h || 0) - Math.abs(b.energy_change_24h || 0));
       return [...top5, ...middle, ...bottom5];
     },
     staleTime: 30_000,
