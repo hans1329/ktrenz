@@ -6490,6 +6490,10 @@ export type Database = {
         Args: { entry_id_param: string; vote_delta: number }
         Returns: undefined
       }
+      increment_ktrenz_login_count: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       increment_post_view_count: {
         Args: { post_id_param: string }
         Returns: undefined
