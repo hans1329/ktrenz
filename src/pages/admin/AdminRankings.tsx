@@ -28,6 +28,7 @@ interface CollectionStatus {
   music?: string;
   lastfm?: string;
   deezer?: string;
+  hanteo?: string;
 }
 
 interface ArtistTier {
@@ -215,7 +216,7 @@ const AdminRankings = () => {
 
 
   const triggerSingleCollection = async (source: string, wikiEntryId: string, artistName: string) => {
-    const sourceLabel = source === 'youtube' ? 'YouTube' : source === 'buzz' ? 'Buzz' : 'Music';
+    const sourceLabel = source === 'youtube' ? 'YouTube' : source === 'buzz' ? 'Buzz' : source === 'hanteo' ? 'Album' : 'Music';
     if (!confirm(`${artistName}의 ${sourceLabel} 데이터를 재수집하시겠습니까?`)) return;
     const key = `${wikiEntryId}-${source}`;
     setRecollecting(key);
@@ -234,7 +235,7 @@ const AdminRankings = () => {
   };
 
   const CollectionBadge = ({ label, dateStr, wikiEntryId, artistName }: { label: string; dateStr?: string | null; wikiEntryId: string; artistName: string }) => {
-    const sourceMap: Record<string, string> = { 'YT': 'youtube', 'Buzz': 'buzz', 'Music': 'music' };
+    const sourceMap: Record<string, string> = { 'YT': 'youtube', 'Buzz': 'buzz', 'Music': 'music', 'Album': 'hanteo' };
     const source = sourceMap[label] || label;
     const key = `${wikiEntryId}-${source}`;
     const isRunning = recollecting === key;
@@ -282,6 +283,7 @@ const AdminRankings = () => {
     const badges = [
       { label: 'YT', dateStr: collection.youtube },
       { label: 'Buzz', dateStr: collection.buzz_multi },
+      { label: 'Album', dateStr: collection.hanteo },
       { label: 'Music', dateStr: collection.lastfm || collection.deezer },
     ];
     const issues = badges.filter(b => !b.dateStr || getHoursAgo(b.dateStr) > STALE_HOURS);
@@ -375,10 +377,11 @@ const AdminRankings = () => {
   const staleCount = tier1.filter(a => {
     const c = a.collection;
     const musicDate = c.lastfm || c.deezer;
-    return !c.youtube || !c.buzz_multi || !musicDate ||
+    return !c.youtube || !c.buzz_multi || !musicDate || !c.hanteo ||
       getHoursAgo(c.youtube!) > STALE_HOURS ||
       getHoursAgo(c.buzz_multi!) > STALE_HOURS ||
-      getHoursAgo(musicDate!) > STALE_HOURS;
+      getHoursAgo(musicDate!) > STALE_HOURS ||
+      getHoursAgo(c.hanteo!) > STALE_HOURS;
   }).length;
 
   return (
@@ -395,7 +398,7 @@ const AdminRankings = () => {
               수집 지연 {staleCount}개
             </Badge>
           )}
-          {['all', 'youtube', 'music', 'buzz'].map((src) => (
+          {['all', 'youtube', 'hanteo', 'music', 'buzz'].map((src) => (
             <Button
               key={src}
               variant={src === 'all' ? 'default' : 'outline'}
