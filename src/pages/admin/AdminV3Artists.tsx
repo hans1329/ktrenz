@@ -93,15 +93,34 @@ const AdminV3Artists = () => {
     enabled: addDialogOpen && addSearch.length >= 2,
   });
 
+  // @handle → UC channel ID 변환
+  const resolveYoutubeChannelId = async (input: string): Promise<string> => {
+    const trimmed = input.trim();
+    if (!trimmed || trimmed.startsWith('UC')) return trimmed;
+    // @handle 형식이면 YouTube API로 변환
+    const handle = trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
+    const { data, error } = await supabase.functions.invoke('fill-youtube-channels', {
+      body: { resolveHandle: handle },
+    });
+    if (error || !data?.channelId) {
+      throw new Error(`핸들 "${handle}" → Channel ID 변환 실패`);
+    }
+    return data.channelId;
+  };
+
   const updateMutation = useMutation({
     mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
+      let ytChannelId = payload.youtube_channel_id;
+      if (ytChannelId && !ytChannelId.startsWith('UC')) {
+        ytChannelId = await resolveYoutubeChannelId(ytChannelId);
+      }
       const { error } = await supabase
         .from('v3_artist_tiers')
         .update({
           display_name: payload.display_name || null,
           name_ko: payload.name_ko || null,
           image_url: payload.image_url || null,
-          youtube_channel_id: payload.youtube_channel_id || null,
+          youtube_channel_id: ytChannelId || null,
           lastfm_artist_name: payload.lastfm_artist_name || null,
           deezer_artist_id: payload.deezer_artist_id || null,
         } as any)
@@ -374,7 +393,7 @@ const AdminV3Artists = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[11px]">YouTube Channel ID</Label>
-                  <Input value={editYoutubeChannelId} onChange={(e) => setEditYoutubeChannelId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
+                  <Input value={editYoutubeChannelId} onChange={(e) => setEditYoutubeChannelId(e.target.value)} placeholder="UC... 또는 @handle" className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px]">Last.fm Artist Name</Label>

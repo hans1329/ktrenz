@@ -67,12 +67,42 @@ async function findChannelViaFirecrawl(
   return null;
 }
 
+async function resolveHandleToChannelId(
+  ytApiKey: string,
+  handle: string
+): Promise<string | null> {
+  const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle;
+  const url = `https://www.googleapis.com/youtube/v3/channels?forHandle=${cleanHandle}&part=id&key=${ytApiKey}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.items?.[0]?.id || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+
+    // 핸들 → Channel ID 변환 모드
+    if (body.resolveHandle) {
+      const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
+      if (!ytApiKey) {
+        return new Response(
+          JSON.stringify({ error: "YOUTUBE_API_KEY not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const channelId = await resolveHandleToChannelId(ytApiKey, body.resolveHandle);
+      return new Response(
+        JSON.stringify({ handle: body.resolveHandle, channelId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     if (!firecrawlKey) {
       return new Response(
@@ -85,7 +115,6 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    const body = await req.json().catch(() => ({}));
     const dryRun = body.dryRun ?? true;
     const tierFilter = body.tier;
     const limitCount = body.limit || 10; // Firecrawl rate limit 고려
