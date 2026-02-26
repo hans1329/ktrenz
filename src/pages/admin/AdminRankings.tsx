@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X } from 'lucide-react';
+import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -58,7 +58,7 @@ function formatAgo(dateStr: string): string {
 
 const AdminRankings = () => {
   const queryClient = useQueryClient();
-
+  const [runningSource, setRunningSource] = useState<string | null>(null);
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-artist-tiers'],
     queryFn: async () => {
@@ -139,6 +139,22 @@ const AdminRankings = () => {
     },
     onError: (err: any) => toast.error('해제 실패: ' + err.message),
   });
+
+  const triggerCollection = async (source: string) => {
+    setRunningSource(source);
+    try {
+      const { data, error } = await supabase.functions.invoke('ktrenz-data-collector', {
+        body: { source },
+      });
+      if (error) throw error;
+      toast.success(`${source} 수집 완료`, { description: JSON.stringify(data).slice(0, 100) });
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+    } catch (err: any) {
+      toast.error(`${source} 수집 실패: ${err.message}`);
+    } finally {
+      setRunningSource(null);
+    }
+  };
 
   // Energy detail dialog
   const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
@@ -327,17 +343,38 @@ const AdminRankings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Artist Rankings</h1>
           <p className="text-sm text-muted-foreground mt-1">데이터 엔진에 연결된 아티스트 티어 및 스코어 관리</p>
         </div>
-        {staleCount > 0 && (
-          <Badge variant="outline" className="border-yellow-500/50 text-yellow-600 gap-1">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            수집 지연 {staleCount}개
-          </Badge>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {staleCount > 0 && (
+            <Badge variant="outline" className="border-yellow-500/50 text-yellow-600 gap-1">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              수집 지연 {staleCount}개
+            </Badge>
+          )}
+          {['all', 'youtube', 'music', 'buzz'].map((src) => (
+            <Button
+              key={src}
+              variant={src === 'all' ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              disabled={!!runningSource}
+              onClick={() => triggerCollection(src)}
+            >
+              {runningSource === src ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : src === 'all' ? (
+                <Play className="w-3.5 h-3.5" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              {src === 'all' ? '전체 수집' : src.charAt(0).toUpperCase() + src.slice(1)}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <Tabs defaultValue="tier1">
