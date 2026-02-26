@@ -74,8 +74,8 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: energy_change_24h 절대값 비례 (변동성이 클수록 큰 타일)
-  const tileSize = (i: TreemapItem) => Math.max(Math.abs(i.energyChange24h), 1);
+  // 타일 크기: energy_change_24h 절대값의 로그 스케일 (극단적 편중 방지)
+  const tileSize = (i: TreemapItem) => Math.log1p(Math.abs(i.energyChange24h));
   const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
   const totalArea = w * h;
   const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
@@ -360,6 +360,7 @@ const V3Treemap = () => {
   if (!items?.length) return <div className="px-4 py-16 text-center"><p className="text-sm text-muted-foreground">No energy data available yet.</p></div>;
 
   const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
+  const totalAbsChange = items.reduce((s, i) => s + Math.abs(i.energyChange24h), 0);
   const maxIntensity = Math.max(...items.map(i => i.intensity), 1);
   const maxAbsChange = Math.max(...items.map(i => Math.abs(i.energyChange24h)), 1);
 
@@ -405,7 +406,7 @@ const V3Treemap = () => {
             const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8; const isSmall = !isLarge && !isMedium;
             const isSelected = selectedItem?.id === rect.item.id;
             const surging = isSurging(rect.item.energyChange24h);
-            const sharePct = totalEnergy > 0 ? (rect.item.energyScore / totalEnergy * 100) : 0;
+            const sharePct = totalAbsChange > 0 ? (Math.abs(rect.item.energyChange24h) / totalAbsChange * 100) : 0;
 
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
