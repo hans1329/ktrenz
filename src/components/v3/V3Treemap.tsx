@@ -326,10 +326,12 @@ const V3Treemap = () => {
     staleTime: 30_000,
   });
 
-  // FES(energyScore) 내림차순 정렬 후 squarify (FES 높은 순 = 큰 타일)
+  // 변동성(energy_change_24h) 기준 랭킹 순서 유지하여 squarify (1위=가장 큰 타일)
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
-    return [...items].sort((a, b) => b.energyScore - a.energyScore);
+    // items는 이미 energy_change_24h 기준 정렬됨 (top5 → middle5 → bottom5)
+    // 1위(변동성 최고)에게 가장 큰 부스트가 적용되도록 원래 순서 유지
+    return [...items];
   }, [items]);
   const containerWidth = isMobile ? 360 : 420;
   const containerHeight = isMobile ? 620 : 520;
