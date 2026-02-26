@@ -143,7 +143,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div className={cn(
         "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl my-auto",
-        surging ? "border-destructive/50 animate-neon-surge bg-card" : "border-border bg-card"
+        surging ? "border-destructive/50 bg-card" : "border-border bg-card"
       )} onClick={e => e.stopPropagation()}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
@@ -374,7 +374,7 @@ const V3Treemap = () => {
           <span className="font-semibold">Falling</span>
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm border border-destructive/50 animate-neon-surge" style={{ background: "hsla(0, 85%, 50%, 0.9)" }} />
+          <span className="inline-block w-3 h-3 rounded-sm border border-destructive/50" style={{ background: "hsla(0, 85%, 50%, 0.9)" }} />
           <span className="font-semibold">SURGE</span>
         </span>
       </div>
@@ -397,7 +397,7 @@ const V3Treemap = () => {
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
                   "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5",
-                  surging ? "overflow-visible z-10 animate-neon-surge animate-energy-ripple" : "overflow-hidden",
+                  surging ? "overflow-visible z-10 animate-energy-ripple" : "overflow-hidden",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
