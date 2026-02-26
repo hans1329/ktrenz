@@ -279,7 +279,18 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
     candidates.push(artistName.replace(/\s*[\(（].+?[\)）]/, "").trim());
   }
   const unique = [...new Set(candidates.filter(Boolean))];
+  
+  // 1차: exact match 우선 (title이 정확히 일치하는 엔트리)
   for (const name of unique) {
+    const { data } = await adminClient
+      .from("wiki_entries").select("id, title")
+      .eq("title", name).eq("schema_type", "artist").limit(1);
+    if (data?.[0]) return data[0].id;
+  }
+  
+  // 2차: partial match (ILIKE) — 단, 짧은 이름(3자 이하)은 exact match only
+  for (const name of unique) {
+    if (name.length <= 3) continue; // "BTS" 등 짧은 이름은 partial match 스킵 (오매칭 방지)
     const { data } = await adminClient
       .from("wiki_entries").select("id, title")
       .ilike("title", `%${name}%`).eq("schema_type", "artist").limit(1);
