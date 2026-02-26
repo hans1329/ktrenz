@@ -23,9 +23,6 @@ interface V3Artist {
   youtube_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
-  x_handle: string | null;
-  instagram_handle: string | null;
-  tiktok_handle: string | null;
   // from wiki_entries join
   wiki_title: string;
   wiki_image: string | null;
@@ -47,9 +44,6 @@ const AdminV3Artists = () => {
   const [editYoutubeChannelId, setEditYoutubeChannelId] = useState('');
   const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
   const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
-  const [editXHandle, setEditXHandle] = useState('');
-  const [editInstagramHandle, setEditInstagramHandle] = useState('');
-  const [editTiktokHandle, setEditTiktokHandle] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,7 +52,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, lastfm_artist_name, deezer_artist_id, x_handle, instagram_handle, tiktok_handle, wiki_entries!inner(title, image_url, schema_type)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -73,9 +67,6 @@ const AdminV3Artists = () => {
         youtube_channel_id: row.youtube_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
-        x_handle: row.x_handle,
-        instagram_handle: row.instagram_handle,
-        tiktok_handle: row.tiktok_handle,
         wiki_title: row.wiki_entries.title,
         wiki_image: row.wiki_entries.image_url,
         wiki_schema_type: row.wiki_entries.schema_type,
@@ -103,7 +94,7 @@ const AdminV3Artists = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string; x_handle: string; instagram_handle: string; tiktok_handle: string }) => {
+    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
       const { error } = await supabase
         .from('v3_artist_tiers')
         .update({
@@ -113,9 +104,6 @@ const AdminV3Artists = () => {
           youtube_channel_id: payload.youtube_channel_id || null,
           lastfm_artist_name: payload.lastfm_artist_name || null,
           deezer_artist_id: payload.deezer_artist_id || null,
-          x_handle: payload.x_handle || null,
-          instagram_handle: payload.instagram_handle || null,
-          tiktok_handle: payload.tiktok_handle || null,
         } as any)
         .eq('id', payload.id);
       if (error) throw error;
@@ -165,9 +153,6 @@ const AdminV3Artists = () => {
     setEditYoutubeChannelId(artist.youtube_channel_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
     setEditDeezerArtistId(artist.deezer_artist_id || '');
-    setEditXHandle(artist.x_handle || '');
-    setEditInstagramHandle(artist.instagram_handle || '');
-    setEditTiktokHandle(artist.tiktok_handle || '');
   };
 
   const filtered = search
@@ -253,10 +238,7 @@ const AdminV3Artists = () => {
                         {a.youtube_channel_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">YT</Badge>}
                         {a.lastfm_artist_name && <Badge variant="secondary" className="text-[9px] px-1 py-0">LF</Badge>}
                         {a.deezer_artist_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">DZ</Badge>}
-                        {a.x_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">X</Badge>}
-                        {a.instagram_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">IG</Badge>}
-                        {a.tiktok_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">TT</Badge>}
-                        {!a.youtube_channel_id && !a.lastfm_artist_name && !a.x_handle && (
+                        {!a.youtube_channel_id && !a.lastfm_artist_name && !a.deezer_artist_id && (
                           <span className="text-[10px] text-muted-foreground">—</span>
                         )}
                       </div>
@@ -412,18 +394,8 @@ const AdminV3Artists = () => {
                   <Label className="text-[11px]">Deezer Artist ID</Label>
                   <Input value={editDeezerArtistId} onChange={(e) => setEditDeezerArtistId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px]">X (Twitter)</Label>
-                  <Input value={editXHandle} onChange={(e) => setEditXHandle(e.target.value)} placeholder="@handle" className="h-8 text-xs" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px]">Instagram</Label>
-                  <Input value={editInstagramHandle} onChange={(e) => setEditInstagramHandle(e.target.value)} placeholder="@handle" className="h-8 text-xs" />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <Label className="text-[11px]">TikTok</Label>
-                  <Input value={editTiktokHandle} onChange={(e) => setEditTiktokHandle(e.target.value)} placeholder="@handle" className="h-8 text-xs" />
-                </div>
+
+
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -440,9 +412,6 @@ const AdminV3Artists = () => {
                     youtube_channel_id: editYoutubeChannelId,
                     lastfm_artist_name: editLastfmArtistName,
                     deezer_artist_id: editDeezerArtistId,
-                    x_handle: editXHandle,
-                    instagram_handle: editInstagramHandle,
-                    tiktok_handle: editTiktokHandle,
                   });
                 }}
               >
