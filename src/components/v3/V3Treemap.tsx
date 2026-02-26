@@ -19,6 +19,8 @@ interface TreemapItem {
   velocity: number; intensity: number;
   metadata?: any;
   youtubeChannelId?: string | null;
+  latestYoutubeVideoId?: string | null;
+  latestYoutubeVideoTitle?: string | null;
 }
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
@@ -154,7 +156,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   const musicHref = `https://open.spotify.com/search/${musicSearchQuery}`;
 
   const channels = [
-    { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
+    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Music className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)" },
@@ -303,7 +305,7 @@ const V3Treemap = () => {
           .in("wiki_entry_id", topIds),
         supabase
           .from("v3_artist_tiers" as any)
-          .select("wiki_entry_id, youtube_channel_id")
+          .select("wiki_entry_id, youtube_channel_id, latest_youtube_video_id, latest_youtube_video_title")
           .in("wiki_entry_id", topIds)
           .not("youtube_channel_id", "is", null),
       ]);
@@ -325,9 +327,13 @@ const V3Treemap = () => {
         baselineMap.set(b.wiki_entry_id, { ema7d: b.avg_energy_7d, ema30d: b.avg_energy_30d });
       }
 
-      const ytChannelMap = new Map<string, string>();
+      const ytChannelMap = new Map<string, { channelId: string; videoId?: string; videoTitle?: string }>();
       for (const t of (tierData || []) as any[]) {
-        if (t.youtube_channel_id) ytChannelMap.set(t.wiki_entry_id, t.youtube_channel_id);
+        if (t.youtube_channel_id) ytChannelMap.set(t.wiki_entry_id, {
+          channelId: t.youtube_channel_id,
+          videoId: t.latest_youtube_video_id || undefined,
+          videoTitle: t.latest_youtube_video_title || undefined,
+        });
       }
 
       return topItems.map((s) => {
@@ -347,7 +353,9 @@ const V3Treemap = () => {
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
           velocity: vi?.velocity ?? 0, intensity: vi?.intensity ?? 0,
           metadata: entry?.metadata || null,
-          youtubeChannelId: ytChannelMap.get(s.wiki_entry_id) || null,
+          youtubeChannelId: ytChannelMap.get(s.wiki_entry_id)?.channelId || null,
+          latestYoutubeVideoId: ytChannelMap.get(s.wiki_entry_id)?.videoId || null,
+          latestYoutubeVideoTitle: ytChannelMap.get(s.wiki_entry_id)?.videoTitle || null,
         };
       });
     },
