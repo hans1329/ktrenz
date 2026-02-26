@@ -4462,6 +4462,7 @@ export type Database = {
           wiki_entry_id: string
           x_handle: string | null
           youtube_channel_id: string | null
+          youtube_topic_channel_id: string | null
         }
         Insert: {
           created_at?: string
@@ -4479,6 +4480,7 @@ export type Database = {
           wiki_entry_id: string
           x_handle?: string | null
           youtube_channel_id?: string | null
+          youtube_topic_channel_id?: string | null
         }
         Update: {
           created_at?: string
@@ -4496,6 +4498,7 @@ export type Database = {
           wiki_entry_id?: string
           x_handle?: string | null
           youtube_channel_id?: string | null
+          youtube_topic_channel_id?: string | null
         }
         Relationships: [
           {
