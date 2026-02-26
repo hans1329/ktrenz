@@ -261,17 +261,16 @@ const AdminRankings = () => {
         .gte('collected_at', todayStart.toISOString());
       if (error) throw error;
       const collections = count ?? 0;
-      // 각 수집당 약 101 유닛 (channels.list 1 + search/videos 100)
-      // 고정 ID 없는 경우 추가 100 (channel search) → 보수적으로 201로 계산
-      // 고정 ID 있는 아티스트 비율 추정: v3_artist_tiers에 youtube_channel_id가 있는 비율
+      // 최적화 후: playlistItems(1) + channels.list(1) + videos.list(1) = 3 units (고정 ID)
+      // 고정 ID 없는 경우: search(100) + 위 3 = 103 units
       const { count: fixedCount } = await supabase
         .from('v3_artist_tiers' as any)
         .select('wiki_entry_id', { count: 'exact', head: true })
         .not('youtube_channel_id', 'is', null);
       const totalArtists = artists.length || 1;
       const fixedRatio = (fixedCount ?? 0) / totalArtists;
-      // 고정 ID: 101 units, 검색: 201 units → 가중 평균
-      const avgUnitsPerCollection = Math.round(101 * fixedRatio + 201 * (1 - fixedRatio));
+      // 고정 ID: 3 units, 검색: 103 units → 가중 평균
+      const avgUnitsPerCollection = Math.round(3 * fixedRatio + 103 * (1 - fixedRatio));
       const estimatedQuota = collections * avgUnitsPerCollection;
       return { collections, estimatedQuota, dailyLimit: 10000 };
     },

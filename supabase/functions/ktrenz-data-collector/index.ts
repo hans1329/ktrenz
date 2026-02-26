@@ -99,11 +99,13 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
     const totalViewCount = parseInt(stats.viewCount) || 0;
     const totalVideoCount = parseInt(stats.videoCount) || 0;
 
-    // 3) 최근 영상 10개
-    const videosUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`;
-    const videosResp = await fetch(videosUrl);
-    const videosData = await videosResp.json();
-    const videoIds = (videosData?.items || []).map((v: any) => v.id?.videoId).filter(Boolean);
+    // 3) 최근 영상 10개 — playlistItems API 사용 (1 unit vs search 100 units)
+    // Channel ID의 "UC" 접두사를 "UU"로 바꾸면 uploads playlist ID
+    const uploadsPlaylistId = "UU" + channelId.slice(2);
+    const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=10&key=${apiKey}`;
+    const playlistResp = await fetch(playlistUrl);
+    const playlistData = await playlistResp.json();
+    const videoIds = (playlistData?.items || []).map((v: any) => v.contentDetails?.videoId).filter(Boolean);
 
     let recentTotalViews = 0, recentTotalLikes = 0, recentTotalComments = 0;
     const topVideos: any[] = [];
