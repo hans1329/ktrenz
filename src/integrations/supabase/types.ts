@@ -1996,6 +1996,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_point_settings: {
+        Row: {
+          description: string | null
+          id: string
+          is_enabled: boolean
+          points: number
+          reward_name: string
+          reward_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          points?: number
+          reward_name: string
+          reward_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          points?: number
+          reward_name?: string
+          reward_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ktrenz_point_transactions: {
         Row: {
           amount: number
