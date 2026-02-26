@@ -4418,7 +4418,6 @@ export type Database = {
           is_manual_override: boolean
           lastfm_artist_name: string | null
           name_ko: string | null
-          spotify_artist_id: string | null
           tier: number
           tiktok_handle: string | null
           updated_at: string
@@ -4436,7 +4435,6 @@ export type Database = {
           is_manual_override?: boolean
           lastfm_artist_name?: string | null
           name_ko?: string | null
-          spotify_artist_id?: string | null
           tier?: number
           tiktok_handle?: string | null
           updated_at?: string
@@ -4454,7 +4452,6 @@ export type Database = {
           is_manual_override?: boolean
           lastfm_artist_name?: string | null
           name_ko?: string | null
-          spotify_artist_id?: string | null
           tier?: number
           tiktok_handle?: string | null
           updated_at?: string
