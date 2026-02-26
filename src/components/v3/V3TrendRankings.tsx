@@ -314,12 +314,15 @@ const V3TrendRankings = () => {
         return { ...item, changePercent };
       });
 
-      ranked.sort((a, b) => {
-        const diff = b.changePercent - a.changePercent;
-        if (Math.abs(diff) > 0.01) return diff;
-        return (b.total_score || 0) - (a.total_score || 0);
-      });
-      return ranked;
+      // 에너지 맵과 동일한 변동성 기반 정렬: 급등 → 안정 → 급락
+      ranked.sort((a, b) => b.changePercent - a.changePercent);
+      const top5 = ranked.slice(0, 5);
+      const bottom5 = ranked.slice(-5).reverse();
+      const selectedIds = new Set([...top5, ...bottom5].map(r => r.wiki_entry_id));
+      const middle = ranked
+        .filter(r => !selectedIds.has(r.wiki_entry_id))
+        .sort((a, b) => Math.abs(a.changePercent) - Math.abs(b.changePercent));
+      return [...top5, ...middle, ...bottom5];
     },
     staleTime: 30_000,
   });
