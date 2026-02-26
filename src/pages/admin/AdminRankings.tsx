@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
+import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 interface ScoreData {
@@ -136,6 +138,40 @@ const AdminRankings = () => {
     onError: (err: any) => toast.error('해제 실패: ' + err.message),
   });
 
+  // Energy detail dialog
+  const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
+
+  const { data: energySnapshots = [], isLoading: snapshotsLoading } = useQuery({
+    queryKey: ['energy-snapshots', detailArtist?.wiki_entry_id],
+    queryFn: async () => {
+      if (!detailArtist) return [];
+      const { data, error } = await supabase
+        .from('v3_energy_snapshots_v2')
+        .select('velocity_score, intensity_score, energy_score, snapshot_at')
+        .eq('wiki_entry_id', detailArtist.wiki_entry_id)
+        .order('snapshot_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!detailArtist,
+  });
+
+  const { data: energyBaseline } = useQuery({
+    queryKey: ['energy-baseline', detailArtist?.wiki_entry_id],
+    queryFn: async () => {
+      if (!detailArtist) return null;
+      const { data, error } = await supabase
+        .from('v3_energy_baselines_v2')
+        .select('avg_velocity_7d, avg_velocity_30d, avg_intensity_7d, avg_intensity_30d, avg_energy_7d, avg_energy_30d')
+        .eq('wiki_entry_id', detailArtist.wiki_entry_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!detailArtist,
+  });
+
   const tier1 = artists.filter(a => a.tier === 1).sort((a, b) => (b.scores?.total_score ?? 0) - (a.scores?.total_score ?? 0));
   const tier2 = artists.filter(a => a.tier === 2).sort((a, b) => b.trending_score - a.trending_score);
 
@@ -143,11 +179,18 @@ const AdminRankings = () => {
     return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  const ChangeIndicator = ({ value }: { value: number | null | undefined }) => {
+  const ChangeIndicator = ({ value, artist }: { value: number | null | undefined; artist: ArtistTier }) => {
     if (value == null) return <span className="text-muted-foreground">—</span>;
-    if (value >= 10) return <span className="text-emerald-500 flex items-center gap-0.5 text-xs font-medium"><TrendingUp className="w-3 h-3" />+{value.toFixed(1)}%</span>;
-    if (value > -5) return <span className="text-muted-foreground flex items-center gap-0.5 text-xs"><Minus className="w-3 h-3" />{value.toFixed(1)}%</span>;
-    return <span className="text-red-500 flex items-center gap-0.5 text-xs font-medium"><TrendingDown className="w-3 h-3" />{value.toFixed(1)}%</span>;
+    const inner = value >= 10
+      ? <span className="text-emerald-500 flex items-center gap-0.5 text-xs font-medium"><TrendingUp className="w-3 h-3" />+{value.toFixed(1)}%</span>
+      : value > -5
+        ? <span className="text-muted-foreground flex items-center gap-0.5 text-xs"><Minus className="w-3 h-3" />{value.toFixed(1)}%</span>
+        : <span className="text-red-500 flex items-center gap-0.5 text-xs font-medium"><TrendingDown className="w-3 h-3" />{value.toFixed(1)}%</span>;
+    return (
+      <button className="hover:underline cursor-pointer" onClick={() => setDetailArtist(artist)}>
+        {inner}
+      </button>
+    );
   };
 
   const CollectionBadge = ({ label, dateStr }: { label: string; dateStr?: string }) => {
@@ -226,7 +269,7 @@ const AdminRankings = () => {
               </TableCell>
               <TableCell className="text-right font-mono text-sm font-semibold">{a.scores?.total_score?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-sm">{a.scores?.energy_score?.toLocaleString() ?? '—'}</TableCell>
-              <TableCell className="text-center"><ChangeIndicator value={a.scores?.energy_change_24h} /></TableCell>
+              <TableCell className="text-center"><ChangeIndicator value={a.scores?.energy_change_24h} artist={a} /></TableCell>
               <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.youtube_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.buzz_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.album_sales_score?.toLocaleString() ?? '—'}</TableCell>
@@ -314,6 +357,111 @@ const AdminRankings = () => {
           <RankTable items={tier2} tierNum={2} />
         </TabsContent>
       </Tabs>
+
+      {/* Energy Detail Dialog */}
+      <Dialog open={!!detailArtist} onOpenChange={(open) => !open && setDetailArtist(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {detailArtist?.image_url && (
+                <Avatar className="w-6 h-6 rounded-md">
+                  <AvatarImage src={detailArtist.image_url} className="object-cover" />
+                  <AvatarFallback className="rounded-md text-[9px]">{detailArtist?.title.slice(0, 2)}</AvatarFallback>
+                </Avatar>
+              )}
+              {detailArtist?.title} — Energy 변동 분석
+            </DialogTitle>
+          </DialogHeader>
+
+          {snapshotsLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <div className="space-y-4">
+              {/* Current vs 24h ago comparison */}
+              {energySnapshots.length >= 2 && (() => {
+                const latest = energySnapshots[0];
+                const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                const prev = energySnapshots.find(s => new Date(s.snapshot_at) <= cutoff) || energySnapshots[energySnapshots.length - 1];
+                const velDiff = (latest.velocity_score ?? 0) - (prev.velocity_score ?? 0);
+                const intDiff = (latest.intensity_score ?? 0) - (prev.intensity_score ?? 0);
+                const enDiff = (latest.energy_score ?? 0) - (prev.energy_score ?? 0);
+
+                const DiffRow = ({ label, current, diff, desc }: { label: string; current: number; diff: number; desc: string }) => (
+                  <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-[11px] text-muted-foreground">{desc}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono text-sm">{current}</p>
+                      <p className={`text-xs font-medium ${diff > 0 ? 'text-emerald-500' : diff < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                        {diff > 0 ? '▲' : diff < 0 ? '▼' : '—'} {Math.abs(diff).toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      최근 vs ~{Math.round(getHoursAgo(prev.snapshot_at))}시간 전
+                    </p>
+                    <DiffRow label="Velocity" current={latest.velocity_score} diff={velDiff} desc="Buzz 멘션 60% + YouTube 조회 40%" />
+                    <DiffRow label="Intensity" current={latest.intensity_score} diff={intDiff} desc="참여도 50% + 감성 가중 멘션 50%" />
+                    <DiffRow label="Energy Score" current={latest.energy_score} diff={enDiff} desc="종합 에너지 (백분위 매핑)" />
+                  </div>
+                );
+              })()}
+
+              {/* EMA Baselines */}
+              {energyBaseline && (
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-2">EMA 베이스라인</p>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">구분</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">7일 EMA</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">30일 EMA</p>
+                    </div>
+                    {[
+                      { label: 'Velocity', v7: energyBaseline.avg_velocity_7d, v30: energyBaseline.avg_velocity_30d },
+                      { label: 'Intensity', v7: energyBaseline.avg_intensity_7d, v30: energyBaseline.avg_intensity_30d },
+                      { label: 'Energy', v7: energyBaseline.avg_energy_7d, v30: energyBaseline.avg_energy_30d },
+                    ].map(row => (
+                      <div key={row.label} className="contents">
+                        <p className="text-xs font-medium text-left">{row.label}</p>
+                        <p className="font-mono text-xs">{Number(row.v7 ?? 0).toFixed(1)}</p>
+                        <p className="font-mono text-xs">{Number(row.v30 ?? 0).toFixed(1)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent snapshots timeline */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">최근 스냅샷</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {energySnapshots.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border/30 last:border-0">
+                      <span className="text-muted-foreground">{formatAgo(s.snapshot_at)}</span>
+                      <div className="flex gap-3 font-mono">
+                        <span>V:{s.velocity_score}</span>
+                        <span>I:{s.intensity_score}</span>
+                        <span className="font-medium">E:{s.energy_score}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
