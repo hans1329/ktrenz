@@ -119,7 +119,7 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
 function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   const content = (
-    <div className={cn("space-y-1.5 p-2.5 rounded-xl border border-transparent transition-all", href && "hover:border-border hover:bg-muted/50 cursor-pointer active:scale-[0.98]")}>
+    <div className={cn("space-y-1.5 p-2.5 rounded-xl border border-border bg-muted/40 transition-all", href && "hover:border-primary/40 hover:bg-muted/70 cursor-pointer active:scale-[0.98]")}>
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-xs font-semibold text-foreground">{icon} {label}</span>
         <div className="flex items-center gap-1.5">
@@ -201,7 +201,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5" /> Energy Heat Channels
             </p>
-            <div className="space-y-3.5">
+            <div className="space-y-2">
               {channels.map(ch => (
                 <ChannelBar key={ch.label} icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
               ))}
