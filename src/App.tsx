@@ -18,6 +18,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminEntries from "./pages/admin/AdminEntries";
+import AdminRankings from "./pages/admin/AdminRankings";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="rankings" element={<AdminRankings />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="entries" element={<AdminEntries />} />
             </Route>
