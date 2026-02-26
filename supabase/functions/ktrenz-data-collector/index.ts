@@ -52,7 +52,7 @@ const ARTIST_NAME_MAP: Record<string, string[]> = {
 // YouTube Data API v3
 // ══════════════════════════════════════
 
-async function fetchYouTubeData(artistName: string, apiKey: string): Promise<{
+async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannelId?: string | null): Promise<{
   channelId: string;
   channelTitle: string;
   subscriberCount: number;
@@ -65,16 +65,23 @@ async function fetchYouTubeData(artistName: string, apiKey: string): Promise<{
   topVideos: any[];
 } | null> {
   try {
-    // 1) 채널 검색
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " official")}&key=${apiKey}&maxResults=1`;
-    const searchResp = await fetch(searchUrl);
-    if (!searchResp.ok) {
-      const errText = await searchResp.text();
-      console.error(`[DataCollector] YouTube search API failed for ${artistName}: ${searchResp.status} - ${errText}`);
-      return null;
+    let channelId = fixedChannelId || null;
+
+    // 고정 ID가 없으면 검색으로 찾기
+    if (!channelId) {
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " official")}&key=${apiKey}&maxResults=1`;
+      const searchResp = await fetch(searchUrl);
+      if (!searchResp.ok) {
+        const errText = await searchResp.text();
+        console.error(`[DataCollector] YouTube search API failed for ${artistName}: ${searchResp.status} - ${errText}`);
+        return null;
+      }
+      const searchData = await searchResp.json();
+      channelId = searchData?.items?.[0]?.id?.channelId;
+    } else {
+      console.log(`[DataCollector] YouTube: Using fixed channel ID ${channelId} for ${artistName}`);
     }
-    const searchData = await searchResp.json();
-    const channelId = searchData?.items?.[0]?.id?.channelId;
+
     if (!channelId) {
       console.warn(`[DataCollector] YouTube: No channel found for "${artistName}"`);
       return null;
@@ -206,17 +213,19 @@ function parseHanteoInitial(markdown: string): Array<{ album: string; artist: st
 // Last.fm + Deezer (Music)
 // ══════════════════════════════════════
 
-async function fetchLastfmArtist(artistName: string, apiKey: string) {
+async function fetchLastfmArtist(artistName: string, apiKey: string, fixedName?: string | null) {
+  const searchName = fixedName || artistName;
+  if (fixedName) console.log(`[DataCollector] Last.fm: Using fixed name "${fixedName}" for ${artistName}`);
   try {
     const infoResp = await fetch(
-      `https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&format=json`
+      `https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(searchName)}&api_key=${apiKey}&format=json`
     );
     if (!infoResp.ok) return null;
     const infoData = await infoResp.json();
     const stats = infoData?.artist?.stats;
     if (!stats) return null;
     const tracksResp = await fetch(
-      `https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&format=json&limit=10`
+      `https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist=${encodeURIComponent(searchName)}&api_key=${apiKey}&format=json&limit=10`
     );
     const tracksData = await tracksResp.json();
     const topTracks = (tracksData?.toptracks?.track ?? []).map((t: any) => ({
@@ -233,16 +242,26 @@ async function fetchLastfmArtist(artistName: string, apiKey: string) {
   }
 }
 
-async function fetchDeezerArtist(artistName: string) {
+async function fetchDeezerArtist(artistName: string, fixedId?: string | null) {
   try {
-    const searchResp = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=1`);
-    if (!searchResp.ok) return null;
-    const searchData = await searchResp.json();
-    const artist = searchData?.data?.[0];
-    if (!artist) return null;
-    const detailResp = await fetch(`https://api.deezer.com/artist/${artist.id}`);
+    let artistId: string | number;
+
+    if (fixedId) {
+      artistId = fixedId;
+      console.log(`[DataCollector] Deezer: Using fixed ID ${fixedId} for ${artistName}`);
+    } else {
+      const searchResp = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(artistName)}&limit=1`);
+      if (!searchResp.ok) return null;
+      const searchData = await searchResp.json();
+      const artist = searchData?.data?.[0];
+      if (!artist) return null;
+      artistId = artist.id;
+    }
+
+    const detailResp = await fetch(`https://api.deezer.com/artist/${artistId}`);
     const detail = await detailResp.json();
-    const tracksResp = await fetch(`https://api.deezer.com/artist/${artist.id}/top?limit=10`);
+    if (detail.error) return null;
+    const tracksResp = await fetch(`https://api.deezer.com/artist/${artistId}/top?limit=10`);
     const tracksData = await tracksResp.json();
     const topTracks = (tracksData?.data ?? []).map((t: any) => ({ title: t.title, rank: t.rank || 0 }));
     return { fans: detail?.nb_fan || 0, nbAlbum: detail?.nb_album || 0, topTracks };
@@ -335,7 +354,8 @@ async function collectForSingleArtist(
   artistTitle: string,
   keys: { youtube?: string; firecrawl?: string; lastfm?: string },
   artistMeta?: any,
-  source?: string // 특정 소스만 수집 (없으면 전체)
+  source?: string, // 특정 소스만 수집 (없으면 전체)
+  endpoints?: { youtube_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null } | null,
 ) {
   const results: Record<string, any> = {};
 
@@ -344,7 +364,7 @@ async function collectForSingleArtist(
   // 1) YouTube
   if ((collectAll || source === "youtube") && keys.youtube) {
     try {
-      const ytData = await fetchYouTubeData(artistTitle, keys.youtube);
+      const ytData = await fetchYouTubeData(artistTitle, keys.youtube, endpoints?.youtube_channel_id);
       if (ytData) {
         const ytScore = calculateYouTubeScore(ytData);
         await upsertV3Score(adminClient, wikiEntryId, {
@@ -354,8 +374,8 @@ async function collectForSingleArtist(
           wiki_entry_id: wikiEntryId, platform: "youtube",
           metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
         });
-        results.youtube = { score: ytScore };
-        console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore}`);
+        results.youtube = { score: ytScore, usedFixedId: !!endpoints?.youtube_channel_id };
+        console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore}${endpoints?.youtube_channel_id ? ' (fixed ID)' : ''}`);
       } else {
         results.youtube = { error: "YouTube API returned no data (check API key quota or channel search)" };
         console.warn(`[DataCollector] YouTube: ${artistTitle} → no data returned`);
@@ -369,8 +389,8 @@ async function collectForSingleArtist(
   // 2) Music (Last.fm + Deezer)
   if (collectAll || source === "music") {
     try {
-      const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm) : null;
-      const deezer = await fetchDeezerArtist(artistTitle);
+      const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm, endpoints?.lastfm_artist_name) : null;
+      const deezer = await fetchDeezerArtist(artistTitle, endpoints?.deezer_artist_id);
       if (lastfm || deezer) {
         const musicScore = calculateMusicScore(lastfm, deezer);
         await upsertV3Score(adminClient, wikiEntryId, {
@@ -494,8 +514,15 @@ Deno.serve(async (req) => {
         });
       }
 
+      // 고정 엔드포인트 가져오기
+      const { data: tierData } = await adminClient
+        .from("v3_artist_tiers")
+        .select("youtube_channel_id, lastfm_artist_name, deezer_artist_id")
+        .eq("wiki_entry_id", wikiEntryId)
+        .maybeSingle();
+
       console.log(`[DataCollector] Single artist mode: ${artist.title}, source: ${source}`);
-      const results = await collectForSingleArtist(adminClient, artist.id, artist.title, keys, artist.metadata, source);
+      const results = await collectForSingleArtist(adminClient, artist.id, artist.title, keys, artist.metadata, source, tierData);
 
       return new Response(JSON.stringify({ success: true, artist: artist.title, results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -508,9 +535,13 @@ Deno.serve(async (req) => {
     // 1군(tier=1) 아티스트만 수집 대상
     const { data: tier1Entries } = await adminClient
       .from("v3_artist_tiers")
-      .select("wiki_entry_id")
+      .select("wiki_entry_id, youtube_channel_id, lastfm_artist_name, deezer_artist_id")
       .eq("tier", 1);
-    const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean));
+    const tier1Map = new Map<string, { youtube_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null }>();
+    for (const t of (tier1Entries || [])) {
+      if (t.wiki_entry_id) tier1Map.set(t.wiki_entry_id, { youtube_channel_id: t.youtube_channel_id, lastfm_artist_name: t.lastfm_artist_name, deezer_artist_id: t.deezer_artist_id });
+    }
+    const tier1Ids = new Set(tier1Map.keys());
 
     if (tier1Ids.size === 0) {
       console.log("[DataCollector] No tier 1 artists found, skipping batch.");
@@ -547,7 +578,8 @@ Deno.serve(async (req) => {
       let ytUpdated = 0, ytErrors = 0;
       for (const artist of artists) {
         try {
-          const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY);
+          const endpoints = tier1Map.get(artist.id);
+          const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY, endpoints?.youtube_channel_id);
           if (ytData) {
             const ytScore = calculateYouTubeScore(ytData);
             await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore });
@@ -632,8 +664,9 @@ Deno.serve(async (req) => {
       let musicUpdated = 0, musicErrors = 0;
       for (const artist of artists) {
         try {
-          const lastfm = LASTFM_API_KEY ? await fetchLastfmArtist(artist.title, LASTFM_API_KEY) : null;
-          const deezer = await fetchDeezerArtist(artist.title);
+          const endpoints = tier1Map.get(artist.id);
+          const lastfm = LASTFM_API_KEY ? await fetchLastfmArtist(artist.title, LASTFM_API_KEY, endpoints?.lastfm_artist_name) : null;
+          const deezer = await fetchDeezerArtist(artist.title, endpoints?.deezer_artist_id);
           if (!lastfm && !deezer) continue;
 
           const musicScore = calculateMusicScore(lastfm, deezer);
