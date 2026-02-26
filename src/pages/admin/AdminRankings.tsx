@@ -145,9 +145,10 @@ const AdminRankings = () => {
 
   const triggerCollection = async (source: string) => {
     setRunningSource(source);
+    const backendSource = source === 'album' ? 'hanteo' : source;
     try {
       const { data, error } = await supabase.functions.invoke('ktrenz-data-collector', {
-        body: { source },
+        body: { source: backendSource },
       });
       if (error) throw error;
       toast.success(`${source} 수집 완료`, { description: JSON.stringify(data).slice(0, 100) });
@@ -412,7 +413,7 @@ const AdminRankings = () => {
               수집 지연 {staleCount}개
             </Badge>
           )}
-          {['all', 'youtube', 'hanteo', 'music', 'buzz'].map((src) => (
+          {['all', 'youtube', 'album', 'music', 'buzz'].map((src) => (
             <Button
               key={src}
               variant={src === 'all' ? 'default' : 'outline'}
@@ -428,7 +429,7 @@ const AdminRankings = () => {
               ) : (
                 <RefreshCw className="w-3.5 h-3.5" />
               )}
-              {src === 'all' ? '전체 수집' : src.charAt(0).toUpperCase() + src.slice(1)}
+              {src === 'all' ? '전체 수집' : src === 'album' ? 'Album' : src.charAt(0).toUpperCase() + src.slice(1)}
             </Button>
           ))}
         </div>
