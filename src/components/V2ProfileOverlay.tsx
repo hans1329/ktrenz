@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, ChevronRight, Settings } from "lucide-react";
+import { LogOut, ChevronRight, Settings, Coins } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Drawer,
@@ -19,7 +19,7 @@ interface V2ProfileOverlayProps {
 }
 
 const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, kPoints } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -79,6 +79,28 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
+          {/* K-Points Card */}
+          <div className="rounded-xl bg-card border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                    K-Points
+                  </p>
+                  <p className="text-lg font-bold text-foreground leading-tight">
+                    {kPoints.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                매일 로그인 +10
+              </span>
+            </div>
+          </div>
+
           {/* K-Pass Ticket */}
           <button
             onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
@@ -90,7 +112,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 className="relative px-4 py-3.5 overflow-hidden"
                 style={{ background: `linear-gradient(135deg, ${tierColor}35, ${tierColor}15)` }}
               >
-                {/* Background glow */}
                 <div
                   className="absolute -right-4 -top-4 w-20 h-20 rounded-full blur-xl opacity-20"
                   style={{ background: tierColor }}

@@ -46,6 +46,22 @@ export const useAuth = () => {
     staleTime: 1000 * 60 * 5,
   });
 
+  // KTrenZ 전용 K-Points 조회
+  const { data: kPoints = 0 } = useQuery({
+    queryKey: ['ktrenz-points', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { data } = await supabase
+        .from('ktrenz_user_points')
+        .select('points')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data?.points ?? 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2,
+  });
+
   useEffect(() => {
     let mounted = true;
 
@@ -69,7 +85,7 @@ export const useAuth = () => {
       setSession(session ?? null);
       setUser(session?.user ?? null);
 
-      // KTrenZ 로그인 이력 기록
+      // KTrenZ 로그인 이력 기록 + 일일 로그인 보상
       if (session?.user?.id && _event === 'SIGNED_IN') {
         const uid = session.user.id;
         supabase
@@ -81,6 +97,14 @@ export const useAuth = () => {
           .then(() => {
             supabase.rpc('increment_ktrenz_login_count' as any, { _user_id: uid });
           });
+
+        // 일일 로그인 K-Points 보상
+        supabase.rpc('ktrenz_daily_login_reward' as any, { _user_id: uid }).then(({ data }) => {
+          if (data && data > 0) {
+            // 포인트 캐시 갱신
+            queryClient.invalidateQueries({ queryKey: ['ktrenz-points', uid] });
+          }
+        });
       }
     });
 
@@ -95,5 +119,5 @@ export const useAuth = () => {
     window.location.href = '/';
   };
 
-  return { user, session, profile, loading, signOut, isAdmin: false, isModerator: false };
+  return { user, session, profile, loading, signOut, kPoints, isAdmin: false, isModerator: false };
 };

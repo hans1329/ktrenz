@@ -6507,6 +6507,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
       pin_post: { Args: { post_id_param: string }; Returns: boolean }
       pin_wiki_entry: {
         Args: { wiki_entry_id_param: string }
