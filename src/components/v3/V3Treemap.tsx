@@ -419,9 +419,9 @@ const V3Treemap = () => {
 
                 {isMedium && (
                   <BoxParticles
-                    count={Math.max(3, Math.round((rect.item.intensity / maxIntensity) * 25))}
-                    speed={Math.max(0.05, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
-                    density={Math.min(1, rect.item.intensity / maxIntensity)}
+                    count={rect.item.id === topChangeId ? 60 : Math.max(3, Math.round((rect.item.intensity / maxIntensity) * 25))}
+                    speed={rect.item.id === topChangeId ? 1 : Math.max(0.05, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
+                    density={rect.item.id === topChangeId ? 1.5 : Math.min(1, rect.item.intensity / maxIntensity)}
                     color="hsl(0, 0%, 100%)"
                   />
                 )}
