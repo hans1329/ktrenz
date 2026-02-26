@@ -1,6 +1,6 @@
-// Fan Energy Score (FES) v3 — 상대 랭킹 기반 엔진
-// 자기 자신 대비 비교(baseline ratio)가 아닌, 전체 아티스트 간 percentile 기반 점수
-// 데이터가 비슷해도 아티스트 간 차이로 점수가 차별화됨
+// Fan Energy Score (FES) v4 — 변동률 직접 반영 엔진
+// 어제 대비 변동률이 클수록 에너지 점수가 높아지도록 설계
+// energy_change_24h와 energy_score의 일관성 확보
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,34 +10,14 @@ const corsHeaders = {
 };
 
 const MAX_SCORE = 250;
-const BASE_SCORE = 100;
 
 /**
- * Percentile-based score: 순위 기반으로 0~250 점수 부여
- * 1등 = 250, 꼴찌 = 20, 중간 = 100
+ * Percentile-based score: 순위 기반으로 20~250 점수 부여
  */
 function percentileScore(rank: number, total: number): number {
-  if (total <= 1) return BASE_SCORE;
-  // percentile: 1.0 (1등) ~ 0.0 (꼴찌)
+  if (total <= 1) return 100;
   const pct = 1 - (rank - 1) / (total - 1);
-  // 선형 매핑: 0% → 20, 50% → 100, 100% → 250
-  const score = 20 + pct * (MAX_SCORE - 20);
-  return Math.round(score);
-}
-
-/**
- * 변화율 기반 보너스: 이전 대비 변화가 클수록 추가 점수
- * ratio > 1이면 보너스, < 1이면 감점
- */
-function changeBonus(current: number, baseline: number): number {
-  if (baseline <= 0) return current > 0 ? 15 : 0;
-  const ratio = current / baseline;
-  if (ratio <= 0.5) return -20;
-  if (ratio <= 0.8) return -10;
-  if (ratio <= 1.2) return 0;
-  if (ratio <= 1.5) return 10;
-  if (ratio <= 2.0) return 20;
-  return 30; // 2x 이상 급등
+  return Math.round(20 + pct * (MAX_SCORE - 20));
 }
 
 /** ktrenz_data_snapshots에서 최신 데이터를 가져오는 헬퍼 */
@@ -90,21 +70,19 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const resetBaselines = body.resetBaselines === true;
 
-    // ── 베이스라인 리셋 모드 (병렬 처리) ──
+    // ── 베이스라인 리셋 모드 ──
     if (resetBaselines) {
       const { data: allBaselines } = await sb
         .from("v3_energy_baselines_v2")
         .select("wiki_entry_id");
       
       const eids = (allBaselines || []).map((r: any) => r.wiki_entry_id);
-      console.log(`[FES-v3] Resetting ${eids.length} baselines...`);
+      console.log(`[FES-v4] Resetting ${eids.length} baselines...`);
 
-      // 모든 스냅샷을 병렬로 가져오기
       const snapResults = await Promise.all(
         eids.map((eid: string) => getLatestSnapshots(sb, eid).then(snap => ({ eid, snap })))
       );
 
-      // 모든 업데이트를 병렬로 실행
       await Promise.all(
         snapResults.map(({ eid, snap }) => {
           const sentMul = 0.7 + (snap.sentimentScore / 100) * 0.6;
@@ -121,7 +99,7 @@ Deno.serve(async (req) => {
         })
       );
 
-      console.log(`[FES-v3] Reset ${eids.length} baselines`);
+      console.log(`[FES-v4] Reset ${eids.length} baselines`);
       return new Response(JSON.stringify({ success: true, message: `Reset ${eids.length} baselines` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -139,19 +117,16 @@ Deno.serve(async (req) => {
       .order("total_score", { ascending: false })
       .limit(100);
 
-    let allEntryIds: string[] = [];
+    let entryIds: string[] = [];
     if (v2Scores?.length) {
       const seen = new Set<string>();
       for (const s of v2Scores) {
         if (!seen.has(s.wiki_entry_id) && tier1Ids.has(s.wiki_entry_id)) {
           seen.add(s.wiki_entry_id);
-          allEntryIds.push(s.wiki_entry_id);
+          entryIds.push(s.wiki_entry_id);
         }
       }
     }
-
-    // Tier 1 전체를 대상으로 계산 (슬라이싱 없음)
-    const entryIds = allEntryIds;
 
     if (!entryIds.length) {
       return new Response(JSON.stringify({ success: true, message: "No entries to process" }),
@@ -159,7 +134,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 2) 모든 아티스트 데이터 병렬 수집 ──
-    console.log(`[FES-v3] Fetching data for ${entryIds.length} artists...`);
+    console.log(`[FES-v4] Fetching data for ${entryIds.length} artists...`);
     const snapResults = await Promise.all(
       entryIds.map(entryId => getLatestSnapshots(sb, entryId).then(snap => ({ entryId, snap })))
     );
@@ -174,11 +149,11 @@ Deno.serve(async (req) => {
         qualityMentions: snap.totalMentions * sentMul,
       };
     });
-    console.log(`[FES-v3] Data collected for ${allArtists.length} artists`);
 
-    // ── 3) 각 메트릭별 랭킹 계산 (내림차순, 높을수록 1등) ──
     const total = allArtists.length;
+    console.log(`[FES-v4] Data collected for ${total} artists`);
 
+    // ── 3) 절대 지표 랭킹 (Velocity + Intensity) ──
     function rankBy(arr: ArtistData[], key: keyof ArtistData): Map<string, number> {
       const sorted = [...arr].sort((a, b) => (b[key] as number) - (a[key] as number));
       const rankMap = new Map<string, number>();
@@ -191,44 +166,22 @@ Deno.serve(async (req) => {
     const buzzScoreRank = rankBy(allArtists, "buzzScore");
     const qualityMentionsRank = rankBy(allArtists, "qualityMentions");
 
-    // ── 3.5) 변화율 기반 ChangeScore 계산을 위한 베이스라인 일괄 조회 ──
-    const { data: allBaselines } = await sb
-      .from("v3_energy_baselines_v2")
-      .select("*")
-      .in("wiki_entry_id", entryIds);
-    const baselineMap = new Map<string, any>();
-    for (const b of (allBaselines || [])) {
-      baselineMap.set(b.wiki_entry_id, b);
-    }
-
-    // 각 아티스트의 변화율(change ratio) 계산
-    const changeRatios: { entryId: string; ratio: number }[] = [];
+    // 각 아티스트의 absolute_score 계산 (순수 지표 순위 기반)
+    const absoluteScores = new Map<string, number>();
     for (const artist of allArtists) {
-      const baseline = baselineMap.get(artist.entryId);
-      if (baseline) {
-        const mentionRatio = (baseline.avg_velocity_7d || 1) > 0
-          ? artist.totalMentions / (baseline.avg_velocity_7d || 1) : 1;
-        const viewRatio = (baseline.avg_velocity_30d || 1) > 0
-          ? artist.recentTotalViews / (baseline.avg_velocity_30d || 1) : 1;
-        const buzzRatio = (baseline.avg_intensity_7d || 1) > 0
-          ? artist.buzzScore / (baseline.avg_intensity_7d || 1) : 1;
-        // 가중 평균 변화율
-        const avgRatio = mentionRatio * 0.4 + viewRatio * 0.3 + buzzRatio * 0.3;
-        changeRatios.push({ entryId: artist.entryId, ratio: avgRatio });
-      } else {
-        changeRatios.push({ entryId: artist.entryId, ratio: 1.0 }); // 베이스라인 없으면 중립
-      }
+      const mentionPct = percentileScore(mentionsRank.get(artist.entryId)!, total);
+      const viewPct = percentileScore(viewsRank.get(artist.entryId)!, total);
+      const velocity = Math.round(mentionPct * 0.6 + viewPct * 0.4);
+
+      const buzzPct = percentileScore(buzzScoreRank.get(artist.entryId)!, total);
+      const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
+      const intensity = Math.round(buzzPct * 0.5 + qualPct * 0.5);
+
+      const absScore = Math.round(velocity * 0.5 + intensity * 0.5);
+      absoluteScores.set(artist.entryId, absScore);
     }
 
-    // 변화율 percentile 랭킹
-    const sortedByChange = [...changeRatios].sort((a, b) => b.ratio - a.ratio);
-    const changeRankMap = new Map<string, number>();
-    sortedByChange.forEach((item, idx) => changeRankMap.set(item.entryId, idx + 1));
-
-    // ── 4) 각 아티스트 FES 계산 (변화율 중심 공식) ──
-    const results: any[] = [];
-
-    // 모든 아티스트의 24h 이전 스냅샷을 병렬 조회
+    // ── 4) 어제 스냅샷 대비 변동률 계산 (momentum) ──
     const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
     const prevSnapshotResults = await Promise.all(
       allArtists.map(artist =>
@@ -242,10 +195,43 @@ Deno.serve(async (req) => {
           .then((r: any) => ({ entryId: artist.entryId, data: r.data }))
       )
     );
-    const prevSnapshotMap = new Map<string, any>();
-    for (const r of prevSnapshotResults) prevSnapshotMap.set(r.entryId, r.data);
+    const prevSnapshotMap = new Map<string, number>();
+    for (const r of prevSnapshotResults) {
+      if (r.data?.energy_score) prevSnapshotMap.set(r.entryId, Number(r.data.energy_score));
+    }
 
-    // 기존 v2 scores를 병렬 조회
+    // 변동률 = (absolute_score - yesterday_energy_score) / yesterday_energy_score
+    // 어제 스냅샷이 없는 경우: momentum을 median(중앙값)으로 설정하여 중립 처리
+    const momentumValues: { entryId: string; momentum: number; hasPrev: boolean }[] = [];
+    for (const artist of allArtists) {
+      const absScore = absoluteScores.get(artist.entryId)!;
+      const prevScore = prevSnapshotMap.get(artist.entryId);
+      if (prevScore && prevScore > 0) {
+        const momentum = ((absScore - prevScore) / prevScore) * 100;
+        momentumValues.push({ entryId: artist.entryId, momentum, hasPrev: true });
+      } else {
+        // 어제 데이터 없음 — 나중에 중앙값으로 채움
+        momentumValues.push({ entryId: artist.entryId, momentum: 0, hasPrev: false });
+      }
+    }
+
+    // 어제 스냅샷이 있는 아티스트들의 중앙값 계산
+    const withPrev = momentumValues.filter(v => v.hasPrev).map(v => v.momentum).sort((a, b) => a - b);
+    const medianMomentum = withPrev.length > 0 
+      ? withPrev[Math.floor(withPrev.length / 2)] 
+      : 0;
+    // 스냅샷 없는 아티스트에 중앙값 할당
+    for (const v of momentumValues) {
+      if (!v.hasPrev) v.momentum = medianMomentum;
+    }
+
+    // 변동률 percentile 랭킹 (높을수록 1등)
+    const sortedMomentum = [...momentumValues].sort((a, b) => b.momentum - a.momentum);
+    const momentumRankMap = new Map<string, number>();
+    sortedMomentum.forEach((item, idx) => momentumRankMap.set(item.entryId, idx + 1));
+
+    // ── 5) 최종 energy_score = absolute * 0.3 + momentum_percentile * 0.7 ──
+    // 기존 v2 scores 일괄 조회
     const existingScoreResults = await Promise.all(
       allArtists.map(artist =>
         sb.from("v3_scores_v2")
@@ -260,11 +246,28 @@ Deno.serve(async (req) => {
     const existingScoreMap = new Map<string, any>();
     for (const r of existingScoreResults) existingScoreMap.set(r.entryId, r.data);
 
-    console.log(`[FES-v3] Pre-fetched prev snapshots & existing scores`);
+    // 베이스라인 일괄 조회
+    const { data: allBaselines } = await sb
+      .from("v3_energy_baselines_v2")
+      .select("*")
+      .in("wiki_entry_id", entryIds);
+    const baselineMap = new Map<string, any>();
+    for (const b of (allBaselines || [])) baselineMap.set(b.wiki_entry_id, b);
 
-    // 각 아티스트 점수 계산 (CPU only, no DB calls)
+    console.log(`[FES-v4] Computing final scores...`);
+    const results: any[] = [];
+
     for (const artist of allArtists) {
       try {
+        const absScore = absoluteScores.get(artist.entryId)!;
+        const momRank = momentumRankMap.get(artist.entryId)!;
+        const momPctScore = percentileScore(momRank, total);
+
+        // 최종 점수: 절대값 30% + 모멘텀 70%
+        let energyScore = Math.round(absScore * 0.3 + momPctScore * 0.7);
+        energyScore = Math.max(10, Math.min(MAX_SCORE, energyScore));
+
+        // velocity와 intensity는 기존 방식 유지 (스냅샷 저장용)
         const mentionPct = percentileScore(mentionsRank.get(artist.entryId)!, total);
         const viewPct = percentileScore(viewsRank.get(artist.entryId)!, total);
         const velocity = Math.round(mentionPct * 0.6 + viewPct * 0.4);
@@ -273,41 +276,29 @@ Deno.serve(async (req) => {
         const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
         const intensity = Math.round(buzzPct * 0.5 + qualPct * 0.5);
 
-        const changePct = percentileScore(changeRankMap.get(artist.entryId)!, total);
-
-        const baseline = baselineMap.get(artist.entryId);
-        let bonus = 0;
-        if (baseline) {
-          const mentionChange = changeBonus(artist.totalMentions, baseline.avg_velocity_7d || 1);
-          const viewChange = changeBonus(artist.recentTotalViews, baseline.avg_velocity_30d || 1);
-          const buzzChange = changeBonus(artist.buzzScore, baseline.avg_intensity_7d || 1);
-          bonus = Math.round((mentionChange * 0.4 + viewChange * 0.3 + buzzChange * 0.3));
-          bonus = Math.max(-40, Math.min(40, bonus));
-        }
-
-        let energyScore = Math.round(velocity * 0.2 + intensity * 0.2 + changePct * 0.6) + bonus;
-        energyScore = Math.max(10, Math.min(MAX_SCORE, energyScore));
-
-        const prevSnapshot = prevSnapshotMap.get(artist.entryId);
+        // energy_change_24h 계산
+        const prevScore = prevSnapshotMap.get(artist.entryId);
         let change24h = 0;
-        if (prevSnapshot && Number(prevSnapshot.energy_score) > 0) {
-          change24h = ((energyScore - Number(prevSnapshot.energy_score)) / Number(prevSnapshot.energy_score)) * 100;
+        if (prevScore && prevScore > 0) {
+          change24h = ((energyScore - prevScore) / prevScore) * 100;
         }
 
         results.push({
           wikiEntryId: artist.entryId,
-          velocity, intensity, energyScore, bonus,
+          velocity, intensity, energyScore,
+          momentumScore: momPctScore,
+          absoluteScore: absScore,
           change24h: Math.round(change24h * 10) / 10,
           existingScore: existingScoreMap.get(artist.entryId),
-          baseline,
+          baseline: baselineMap.get(artist.entryId),
         });
       } catch (e) {
-        console.error(`[FES-v3] Error calculating ${artist.entryId}:`, e);
+        console.error(`[FES-v4] Error calculating ${artist.entryId}:`, e);
       }
     }
 
-    // 모든 DB 쓰기를 병렬로 실행
-    console.log(`[FES-v3] Writing ${results.length} results...`);
+    // ── 6) 모든 DB 쓰기를 병렬로 실행 ──
+    console.log(`[FES-v4] Writing ${results.length} results...`);
     const writeOps: Promise<any>[] = [];
     for (const r of results) {
       // 스냅샷 저장
@@ -336,13 +327,12 @@ Deno.serve(async (req) => {
 
       // 베이스라인 EMA 갱신
       if (r.baseline) {
-        const artist = allArtists.find(a => a.entryId === r.wikiEntryId)!;
         const a7 = 0.15, a30 = 0.05;
         writeOps.push(sb.from("v3_energy_baselines_v2").update({
-          avg_velocity_7d: Math.round(((r.baseline.avg_velocity_7d || 1) * (1 - a7) + artist.totalMentions * a7) * 100) / 100,
-          avg_velocity_30d: Math.round(((r.baseline.avg_velocity_30d || 1) * (1 - a30) + artist.recentTotalViews * a30) * 100) / 100,
-          avg_intensity_7d: Math.round(((r.baseline.avg_intensity_7d || 1) * (1 - a7) + artist.buzzScore * a7) * 100) / 100,
-          avg_intensity_30d: Math.round(((r.baseline.avg_intensity_30d || 1) * (1 - a30) + artist.qualityMentions * a30) * 100) / 100,
+          avg_velocity_7d: Math.round(((r.baseline.avg_velocity_7d || 1) * (1 - a7) + allArtists.find(a => a.entryId === r.wikiEntryId)!.totalMentions * a7) * 100) / 100,
+          avg_velocity_30d: Math.round(((r.baseline.avg_velocity_30d || 1) * (1 - a30) + allArtists.find(a => a.entryId === r.wikiEntryId)!.recentTotalViews * a30) * 100) / 100,
+          avg_intensity_7d: Math.round(((r.baseline.avg_intensity_7d || 1) * (1 - a7) + allArtists.find(a => a.entryId === r.wikiEntryId)!.buzzScore * a7) * 100) / 100,
+          avg_intensity_30d: Math.round(((r.baseline.avg_intensity_30d || 1) * (1 - a30) + allArtists.find(a => a.entryId === r.wikiEntryId)!.qualityMentions * a30) * 100) / 100,
           avg_energy_7d: Math.round(((r.baseline.avg_energy_7d || 100) * (1 - a7) + r.energyScore * a7) * 100) / 100,
           avg_energy_30d: Math.round(((r.baseline.avg_energy_30d || 100) * (1 - a30) + r.energyScore * a30) * 100) / 100,
           updated_at: new Date().toISOString(),
@@ -350,9 +340,9 @@ Deno.serve(async (req) => {
       }
     }
     await Promise.all(writeOps);
-    console.log(`[FES-v3] All writes completed`);
+    console.log(`[FES-v4] All writes completed`);
 
-    // ── 5) energy_rank 일괄 업데이트 (한번에) ──
+    // ── 7) energy_rank 일괄 업데이트 ──
     const { data: allV2Scores } = await sb
       .from("v3_scores_v2")
       .select("id, wiki_entry_id, energy_score, total_score, buzz_score")
@@ -365,9 +355,8 @@ Deno.serve(async (req) => {
       await Promise.all(updates);
     }
 
-    // ── 6) 마일스톤 자동 감지 ──
+    // ── 8) 마일스톤 자동 감지 ──
     try {
-      // total_score 기준 랭킹 (tier1만)
       const totalScoreRanked = [...(allV2Scores || [])]
         .filter((s: any) => tier1Ids.has(s.wiki_entry_id))
         .sort((a: any, b: any) => (b.total_score || 0) - (a.total_score || 0));
@@ -378,8 +367,6 @@ Deno.serve(async (req) => {
       for (let i = 0; i < totalScoreRanked.length; i++) {
         const s = totalScoreRanked[i];
         const rank = i + 1;
-
-        // Top 1 랭킹
         if (rank === 1) {
           milestoneInserts.push({
             wiki_entry_id: s.wiki_entry_id,
@@ -389,7 +376,6 @@ Deno.serve(async (req) => {
             metadata: { rank: 1 },
           });
         }
-        // Top 3 랭킹
         if (rank <= 3) {
           milestoneInserts.push({
             wiki_entry_id: s.wiki_entry_id,
@@ -401,7 +387,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Tier 1 진입 감지 — 현재 tier1이지만 어제는 아니었던 경우
+      // Tier 1 진입 감지
       const { data: yesterdayTiers } = await sb
         .from("v3_artist_milestones")
         .select("wiki_entry_id")
@@ -411,7 +397,6 @@ Deno.serve(async (req) => {
 
       for (const eid of tier1Ids) {
         if (!recentTier1Set.has(eid)) {
-          // 첫 Tier 1 기록 or 7일 이내 기록 없음 → 신규 진입으로 기록
           const { data: anyPrev } = await sb
             .from("v3_artist_milestones")
             .select("id")
@@ -432,7 +417,6 @@ Deno.serve(async (req) => {
 
       // 최고 에너지 / 최고 버즈 감지
       for (const s of (allV2Scores || []).filter((x: any) => tier1Ids.has(x.wiki_entry_id))) {
-        // 최고 에너지
         if (s.energy_score > 0) {
           const { data: prevMax } = await sb
             .from("v3_artist_milestones")
@@ -451,7 +435,6 @@ Deno.serve(async (req) => {
             });
           }
         }
-        // 최고 버즈
         if (s.buzz_score > 0) {
           const { data: prevMaxBuzz } = await sb
             .from("v3_artist_milestones")
@@ -472,24 +455,23 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 일괄 upsert (UNIQUE 제약조건으로 중복 방지)
       if (milestoneInserts.length > 0) {
         const { error: msErr } = await sb
           .from("v3_artist_milestones")
           .upsert(milestoneInserts, { onConflict: "wiki_entry_id,milestone_type,milestone_date" });
-        if (msErr) console.warn("[FES-v3] Milestone insert warning:", msErr.message);
-        else console.log(`[FES-v3] Recorded ${milestoneInserts.length} milestones`);
+        if (msErr) console.warn("[FES-v4] Milestone insert warning:", msErr.message);
+        else console.log(`[FES-v4] Recorded ${milestoneInserts.length} milestones`);
       }
     } catch (msError) {
-      console.warn("[FES-v3] Milestone detection error (non-fatal):", msError);
+      console.warn("[FES-v4] Milestone detection error (non-fatal):", msError);
     }
 
-    console.log(`[FES-v3] Processed ${results.length} entries (percentile-based)`);
+    console.log(`[FES-v4] Processed ${results.length} entries`);
 
     return new Response(JSON.stringify({ success: true, processed: results.length, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error("[FES-v3] Error:", error);
+    console.error("[FES-v4] Error:", error);
     return new Response(JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
