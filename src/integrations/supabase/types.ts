@@ -2061,6 +2061,30 @@ export type Database = {
           },
         ]
       }
+      ktrenz_user_logins: {
+        Row: {
+          first_login_at: string
+          id: string
+          last_login_at: string
+          login_count: number
+          user_id: string
+        }
+        Insert: {
+          first_login_at?: string
+          id?: string
+          last_login_at?: string
+          login_count?: number
+          user_id: string
+        }
+        Update: {
+          first_login_at?: string
+          id?: string
+          last_login_at?: string
+          login_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_user_points: {
         Row: {
           created_at: string

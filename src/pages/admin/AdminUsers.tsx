@@ -7,35 +7,41 @@ import { Loader2 } from 'lucide-react';
 
 interface KtrenzUser {
   user_id: string;
-  agent_avatar: string | null;
-  agent_created_at: string;
   username: string | null;
   display_name: string | null;
   profile_avatar: string | null;
+  agent_avatar: string | null;
   points: number;
   lifetime_points: number;
+  first_login_at: string;
+  last_login_at: string;
+  login_count: number;
 }
 
 const AdminUsers = () => {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-ktrenz-users'],
     queryFn: async () => {
-      // ktrenz_agent_profiles 기준으로 유저 조회
-      const { data: agents, error: agentErr } = await supabase
-        .from('ktrenz_agent_profiles')
-        .select('user_id, avatar_url, created_at')
-        .order('created_at', { ascending: false });
-      if (agentErr) throw agentErr;
-      if (!agents || agents.length === 0) return [];
+      // ktrenz_user_logins 기준으로 유저 조회
+      const { data: logins, error: loginErr } = await supabase
+        .from('ktrenz_user_logins')
+        .select('user_id, first_login_at, last_login_at, login_count')
+        .order('last_login_at', { ascending: false });
+      if (loginErr) throw loginErr;
+      if (!logins || logins.length === 0) return [];
 
-      const userIds = agents.map(a => a.user_id);
+      const userIds = logins.map(l => l.user_id);
 
-      // profiles & ktrenz_user_points 병렬 조회
-      const [profilesRes, pointsRes] = await Promise.all([
+      // profiles, agent_profiles, ktrenz_user_points 병렬 조회
+      const [profilesRes, agentsRes, pointsRes] = await Promise.all([
         supabase
           .from('profiles')
           .select('id, username, display_name, avatar_url')
           .in('id', userIds),
+        supabase
+          .from('ktrenz_agent_profiles')
+          .select('user_id, avatar_url')
+          .in('user_id', userIds),
         supabase
           .from('ktrenz_user_points')
           .select('user_id, points, lifetime_points')
@@ -43,20 +49,24 @@ const AdminUsers = () => {
       ]);
 
       const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+      const agentMap = new Map((agentsRes.data || []).map(a => [a.user_id, a]));
       const pointsMap = new Map((pointsRes.data || []).map(p => [p.user_id, p]));
 
-      return agents.map((a): KtrenzUser => {
-        const profile = profileMap.get(a.user_id);
-        const pts = pointsMap.get(a.user_id);
+      return logins.map((l): KtrenzUser => {
+        const profile = profileMap.get(l.user_id);
+        const agent = agentMap.get(l.user_id);
+        const pts = pointsMap.get(l.user_id);
         return {
-          user_id: a.user_id,
-          agent_avatar: a.avatar_url,
-          agent_created_at: a.created_at,
+          user_id: l.user_id,
           username: profile?.username ?? null,
           display_name: profile?.display_name ?? null,
           profile_avatar: profile?.avatar_url ?? null,
+          agent_avatar: agent?.avatar_url ?? null,
           points: pts?.points ?? 0,
           lifetime_points: pts?.lifetime_points ?? 0,
+          first_login_at: l.first_login_at,
+          last_login_at: l.last_login_at,
+          login_count: l.login_count,
         };
       });
     },
@@ -71,7 +81,7 @@ const AdminUsers = () => {
       <div>
         <h1 className="text-2xl font-bold">KTrenZ Users</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          KTrenZ 에이전트 등록 유저만 표시 · 총 {users.length}명
+          KTrenZ 로그인 이력 유저 · 총 {users.length}명
         </p>
       </div>
       <div className="border rounded-lg overflow-hidden">
@@ -81,8 +91,8 @@ const AdminUsers = () => {
               <TableHead>User</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead className="text-right">K-Points</TableHead>
-              <TableHead className="text-right">누적</TableHead>
-              <TableHead>가입일</TableHead>
+              <TableHead className="text-right">로그인</TableHead>
+              <TableHead>최근 접속</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -109,8 +119,8 @@ const AdminUsers = () => {
                   )}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">{u.points.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.lifetime_points.toLocaleString()}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{new Date(u.agent_created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.login_count}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{new Date(u.last_login_at).toLocaleDateString()}</TableCell>
               </TableRow>
             ))}
             {users.length === 0 && (
