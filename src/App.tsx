@@ -10,6 +10,7 @@ import V3Rankings from "./pages/V3Rankings";
 import FesEngine from "./pages/FesEngine";
 import FanAgent from "./pages/FanAgent";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import KPass from "./pages/KPass";
 import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/fes-engine" element={<FesEngine />} />
             <Route path="/agent" element={<FanAgent />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/k-pass" element={<KPass />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
             <Route path="/admin/login" element={<AdminLogin />} />

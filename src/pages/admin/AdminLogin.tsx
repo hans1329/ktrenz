@@ -27,7 +27,7 @@ const AdminLogin = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || 'Login failed');
@@ -92,6 +92,22 @@ const AdminLogin = () => {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={async () => {
+                const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                });
+                if (error) {
+                  toast.error(error.message || 'Reset email failed');
+                  return;
+                }
+                toast.success('비밀번호 재설정 메일을 보냈습니다.');
+              }}
+            >
+              비밀번호를 잊으셨나요?
+            </button>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               로그인

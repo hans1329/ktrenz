@@ -40,7 +40,7 @@ const Login = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     }
@@ -155,6 +155,26 @@ const Login = () => {
                   className="h-12 rounded-xl"
                 />
               </div>
+
+              {mode === "email-login" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    supabase.auth.resetPasswordForEmail(email.trim(), {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    }).then(({ error }) => {
+                      if (error) {
+                        toast({ title: "재설정 메일 전송 실패", description: error.message, variant: "destructive" });
+                        return;
+                      }
+                      toast({ title: "재설정 메일을 보냈습니다", description: "메일함에서 링크를 확인해주세요." });
+                    });
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  비밀번호를 잊으셨나요?
+                </button>
+              )}
 
               <Button type="submit" disabled={loading} className="w-full h-12 rounded-full font-medium">
                 {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
