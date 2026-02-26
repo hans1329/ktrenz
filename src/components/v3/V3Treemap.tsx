@@ -385,7 +385,7 @@ const V3Treemap = () => {
       {/* Treemap */}
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
         <div className="absolute inset-0">
-          {rects.map((rect) => {
+          {rects.map((rect, idx) => {
             const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
             const width = (rect.w / containerWidth) * 100; const height = (rect.h / containerHeight) * 100;
             const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8; const isSmall = !isLarge && !isMedium;
@@ -396,8 +396,8 @@ const V3Treemap = () => {
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
-                  "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5",
-                  surging ? "overflow-visible z-10 animate-energy-ripple" : "overflow-hidden",
+                  "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5 overflow-hidden",
+                  idx === 0 ? "z-10 shadow-[0_0_18px_4px_hsla(11,100%,46%,0.45)]" : "",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
