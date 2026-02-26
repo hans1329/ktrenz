@@ -63,11 +63,12 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
   recentTotalLikes: number;
   recentTotalComments: number;
   topVideos: any[];
+  musicVideoViews: number;
+  musicVideoCount: number;
 } | null> {
   try {
     let channelId = fixedChannelId || null;
 
-    // 고정 ID가 없으면 검색으로 찾기
     if (!channelId) {
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " official")}&key=${apiKey}&maxResults=1`;
       const searchResp = await fetch(searchUrl);
@@ -87,7 +88,6 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
       return null;
     }
 
-    // 2) 채널 통계
     const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
     const channelResp = await fetch(channelUrl);
     const channelData = await channelResp.json();
@@ -99,8 +99,6 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
     const totalViewCount = parseInt(stats.viewCount) || 0;
     const totalVideoCount = parseInt(stats.videoCount) || 0;
 
-    // 3) 최근 영상 10개 — playlistItems API 사용 (1 unit vs search 100 units)
-    // Channel ID의 "UC" 접두사를 "UU"로 바꾸면 uploads playlist ID
     const uploadsPlaylistId = "UU" + channelId.slice(2);
     const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=10&key=${apiKey}`;
     const playlistResp = await fetch(playlistUrl);
@@ -108,6 +106,7 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
     const videoIds = (playlistData?.items || []).map((v: any) => v.contentDetails?.videoId).filter(Boolean);
 
     let recentTotalViews = 0, recentTotalLikes = 0, recentTotalComments = 0;
+    let musicVideoViews = 0, musicVideoCount = 0;
     const topVideos: any[] = [];
 
     if (videoIds.length > 0) {
@@ -118,14 +117,21 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
         const views = parseInt(v.statistics?.viewCount) || 0;
         const likes = parseInt(v.statistics?.likeCount) || 0;
         const comments = parseInt(v.statistics?.commentCount) || 0;
+        const categoryId = v.snippet?.categoryId;
         recentTotalViews += views;
         recentTotalLikes += likes;
         recentTotalComments += comments;
+        // categoryId "10" = Music
+        if (categoryId === "10") {
+          musicVideoViews += views;
+          musicVideoCount++;
+        }
         topVideos.push({
           videoId: v.id,
           title: v.snippet?.title,
           viewCount: views,
           likeCount: likes,
+          categoryId,
         });
       }
       topVideos.sort((a, b) => b.viewCount - a.viewCount);
@@ -134,17 +140,78 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
     return {
       channelId,
       channelTitle: channel.snippet?.title || artistName,
-      subscriberCount,
-      totalViewCount,
-      totalVideoCount,
+      subscriberCount, totalViewCount, totalVideoCount,
       recentVideoCount: videoIds.length,
-      recentTotalViews,
-      recentTotalLikes,
-      recentTotalComments,
+      recentTotalViews, recentTotalLikes, recentTotalComments,
       topVideos: topVideos.slice(0, 5),
+      musicVideoViews, musicVideoCount,
     };
   } catch (e) {
     console.error(`[DataCollector] YouTube error for ${artistName}:`, e);
+    return null;
+  }
+}
+
+// YouTube Music Topic 채널 데이터 수집
+async function fetchYouTubeTopicData(artistName: string, apiKey: string, fixedTopicChannelId?: string | null): Promise<{
+  topicChannelId: string;
+  topicTotalViews: number;
+  topicSubscribers: number;
+  topMusicTracks: any[];
+} | null> {
+  try {
+    let topicChannelId = fixedTopicChannelId || null;
+
+    // Topic 채널 ID가 없으면 검색 (100 units — 최초 1회만, 이후 저장)
+    if (!topicChannelId) {
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " - Topic")}&key=${apiKey}&maxResults=3`;
+      const searchResp = await fetch(searchUrl);
+      if (!searchResp.ok) return null;
+      const searchData = await searchResp.json();
+      const topicItem = (searchData?.items || []).find((item: any) =>
+        item.snippet?.title?.includes("- Topic") || item.snippet?.title?.includes("– Topic")
+      );
+      topicChannelId = topicItem?.id?.channelId;
+      if (!topicChannelId) {
+        console.log(`[DataCollector] YouTube Topic: No topic channel found for "${artistName}"`);
+        return null;
+      }
+      console.log(`[DataCollector] YouTube Topic: Found topic channel ${topicChannelId} for ${artistName}`);
+    } else {
+      console.log(`[DataCollector] YouTube Topic: Using fixed topic ID ${topicChannelId} for ${artistName}`);
+    }
+
+    // 채널 통계 (1 unit)
+    const chUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${topicChannelId}&key=${apiKey}`;
+    const chResp = await fetch(chUrl);
+    const chData = await chResp.json();
+    const ch = chData?.items?.[0];
+    if (!ch) return null;
+
+    const topicTotalViews = parseInt(ch.statistics?.viewCount) || 0;
+    const topicSubscribers = parseInt(ch.statistics?.subscriberCount) || 0;
+
+    // 최근 음원 (2 units: playlistItems + videos)
+    const uploadsId = "UU" + topicChannelId.slice(2);
+    const plUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=10&key=${apiKey}`;
+    const plResp = await fetch(plUrl);
+    const plData = await plResp.json();
+    const vIds = (plData?.items || []).map((v: any) => v.contentDetails?.videoId).filter(Boolean);
+
+    const topMusicTracks: any[] = [];
+    if (vIds.length > 0) {
+      const vUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${vIds.join(",")}&key=${apiKey}`;
+      const vResp = await fetch(vUrl);
+      const vData = await vResp.json();
+      for (const v of vData?.items || []) {
+        topMusicTracks.push({ title: v.snippet?.title, viewCount: parseInt(v.statistics?.viewCount) || 0 });
+      }
+      topMusicTracks.sort((a, b) => b.viewCount - a.viewCount);
+    }
+
+    return { topicChannelId, topicTotalViews, topicSubscribers, topMusicTracks: topMusicTracks.slice(0, 5) };
+  } catch (e) {
+    console.error(`[DataCollector] YouTube Topic error for ${artistName}:`, e);
     return null;
   }
 }
@@ -273,13 +340,24 @@ async function fetchDeezerArtist(artistName: string, fixedId?: string | null) {
   }
 }
 
-function calculateMusicScore(lastfm: any, deezer: any): number {
+function calculateMusicScore(lastfm: any, deezer: any, ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null, ytMusicVideos?: { musicVideoViews?: number; musicVideoCount?: number } | null): number {
   let score = 0;
   if (lastfm) {
     if (lastfm.playcount > 0) score += Math.round(Math.log10(lastfm.playcount) * 10);
     if (lastfm.listeners > 0) score += Math.round(Math.log10(lastfm.listeners) * 8);
   }
   if (deezer?.fans > 0) score += Math.round(Math.log10(deezer.fans) * 8);
+  // YouTube Music Topic 채널 조회수 반영
+  if (ytMusic?.topicTotalViews && ytMusic.topicTotalViews > 0) {
+    score += Math.round(Math.log10(ytMusic.topicTotalViews) * 8);
+  }
+  if (ytMusic?.topicSubscribers && ytMusic.topicSubscribers > 0) {
+    score += Math.round(Math.log10(ytMusic.topicSubscribers) * 5);
+  }
+  // 공식 채널의 Music 카테고리 영상 조회수 반영
+  if (ytMusicVideos?.musicVideoViews && ytMusicVideos.musicVideoViews > 0) {
+    score += Math.round(Math.log10(ytMusicVideos.musicVideoViews) * 6);
+  }
   return score;
 }
 
@@ -357,7 +435,7 @@ async function collectForSingleArtist(
   keys: { youtube?: string; firecrawl?: string; lastfm?: string },
   artistMeta?: any,
   source?: string, // 특정 소스만 수집 (없으면 전체)
-  endpoints?: { youtube_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null } | null,
+  endpoints?: { youtube_channel_id?: string | null; youtube_topic_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null } | null,
 ) {
   const results: Record<string, any> = {};
 
@@ -374,10 +452,41 @@ async function collectForSingleArtist(
         });
         await adminClient.from("ktrenz_data_snapshots").insert({
           wiki_entry_id: wikiEntryId, platform: "youtube",
-          metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
+          metrics: {
+            subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount,
+            recentTotalViews: ytData.recentTotalViews,
+            musicVideoViews: ytData.musicVideoViews, musicVideoCount: ytData.musicVideoCount,
+          },
         });
-        results.youtube = { score: ytScore, usedFixedId: !!endpoints?.youtube_channel_id };
-        console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore}${endpoints?.youtube_channel_id ? ' (fixed ID)' : ''}`);
+        results.youtube = { score: ytScore, usedFixedId: !!endpoints?.youtube_channel_id, musicVideoViews: ytData.musicVideoViews, musicVideoCount: ytData.musicVideoCount };
+        console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore} (MV: ${ytData.musicVideoCount}개, ${ytData.musicVideoViews.toLocaleString()} views)${endpoints?.youtube_channel_id ? ' (fixed ID)' : ''}`);
+
+        // YouTube Music Topic 채널 데이터 수집
+        const topicData = await fetchYouTubeTopicData(artistTitle, keys.youtube, endpoints?.youtube_topic_channel_id);
+        if (topicData) {
+          // Topic 채널 ID를 자동 저장 (최초 검색 시)
+          if (!endpoints?.youtube_topic_channel_id && topicData.topicChannelId) {
+            await adminClient.from("v3_artist_tiers")
+              .update({ youtube_topic_channel_id: topicData.topicChannelId })
+              .eq("wiki_entry_id", wikiEntryId);
+            console.log(`[DataCollector] YouTube Topic: Auto-saved topic channel ID ${topicData.topicChannelId} for ${artistTitle}`);
+          }
+          await adminClient.from("ktrenz_data_snapshots").insert({
+            wiki_entry_id: wikiEntryId, platform: "youtube_music",
+            metrics: {
+              topicTotalViews: topicData.topicTotalViews,
+              topicSubscribers: topicData.topicSubscribers,
+              topTracks: topicData.topMusicTracks,
+            },
+          });
+          results.youtube_music = {
+            topicTotalViews: topicData.topicTotalViews,
+            topicSubscribers: topicData.topicSubscribers,
+            tracksCount: topicData.topMusicTracks.length,
+            usedFixedTopicId: !!endpoints?.youtube_topic_channel_id,
+          };
+          console.log(`[DataCollector] YouTube Music: ${artistTitle} → ${topicData.topicTotalViews.toLocaleString()} total views, ${topicData.topicSubscribers.toLocaleString()} subs`);
+        }
       } else {
         results.youtube = { error: "YouTube API returned no data (check API key quota or channel search)" };
         console.warn(`[DataCollector] YouTube: ${artistTitle} → no data returned`);
@@ -388,20 +497,29 @@ async function collectForSingleArtist(
     }
   }
 
-  // 2) Music (Last.fm + Deezer)
+  // 2) Music (Last.fm + Deezer + YouTube Music data)
   if (collectAll || source === "music") {
     try {
       const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm, endpoints?.lastfm_artist_name) : null;
       const deezer = await fetchDeezerArtist(artistTitle, endpoints?.deezer_artist_id);
-      if (lastfm || deezer) {
-        const musicScore = calculateMusicScore(lastfm, deezer);
+      // YouTube Music 데이터: results에서 가져오기 (youtube 수집이 먼저 실행됨)
+      const ytMusicData = results.youtube_music ? {
+        topicTotalViews: results.youtube_music.topicTotalViews,
+        topicSubscribers: results.youtube_music.topicSubscribers,
+      } : null;
+      const ytMvData = results.youtube ? {
+        musicVideoViews: results.youtube.musicVideoViews || 0,
+        musicVideoCount: results.youtube.musicVideoCount || 0,
+      } : null;
+      if (lastfm || deezer || ytMusicData || ytMvData) {
+        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData);
         await upsertV3Score(adminClient, wikiEntryId, {
           music_score: musicScore,
         });
         if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
         if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
-        results.music = { score: musicScore };
-        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}`);
+        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData };
+        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}`);
       }
     } catch (e) { results.music = { error: (e as any).message }; }
   }
@@ -519,7 +637,7 @@ Deno.serve(async (req) => {
       // 고정 엔드포인트 가져오기
       const { data: tierData } = await adminClient
         .from("v3_artist_tiers")
-        .select("youtube_channel_id, lastfm_artist_name, deezer_artist_id")
+        .select("youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id")
         .eq("wiki_entry_id", wikiEntryId)
         .maybeSingle();
 
@@ -537,11 +655,11 @@ Deno.serve(async (req) => {
     // 1군(tier=1) 아티스트만 수집 대상
     const { data: tier1Entries } = await adminClient
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, youtube_channel_id, lastfm_artist_name, deezer_artist_id")
+      .select("wiki_entry_id, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id")
       .eq("tier", 1);
-    const tier1Map = new Map<string, { youtube_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null }>();
+    const tier1Map = new Map<string, { youtube_channel_id?: string | null; youtube_topic_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null }>();
     for (const t of (tier1Entries || [])) {
-      if (t.wiki_entry_id) tier1Map.set(t.wiki_entry_id, { youtube_channel_id: t.youtube_channel_id, lastfm_artist_name: t.lastfm_artist_name, deezer_artist_id: t.deezer_artist_id });
+      if (t.wiki_entry_id) tier1Map.set(t.wiki_entry_id, { youtube_channel_id: t.youtube_channel_id, youtube_topic_channel_id: t.youtube_topic_channel_id, lastfm_artist_name: t.lastfm_artist_name, deezer_artist_id: t.deezer_artist_id });
     }
     const tier1Ids = new Set(tier1Map.keys());
 
