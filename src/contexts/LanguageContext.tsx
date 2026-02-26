@@ -14,7 +14,7 @@ const getStoredLanguage = (): Language => {
     const stored = localStorage.getItem("ktrenz-lang");
     if (stored && ["en", "ko", "ja", "zh"].includes(stored)) return stored as Language;
   } catch {}
-  return "en";
+  return "ko";
 };
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
