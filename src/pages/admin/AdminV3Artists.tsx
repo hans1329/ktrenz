@@ -347,11 +347,29 @@ const AdminV3Artists = () => {
                       if (!file || !editArtist) return;
                       setUploading(true);
                       try {
-                        const ext = file.name.split('.').pop();
-                        const filePath = `v3-artists/${editArtist.wiki_entry_id}.${ext}`;
+                        // Convert to WebP
+                        const webpBlob = await new Promise<Blob>((resolve, reject) => {
+                          const img = new Image();
+                          img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext('2d');
+                            if (!ctx) return reject(new Error('Canvas not supported'));
+                            ctx.drawImage(img, 0, 0);
+                            canvas.toBlob(
+                              (blob) => blob ? resolve(blob) : reject(new Error('WebP conversion failed')),
+                              'image/webp',
+                              0.85
+                            );
+                          };
+                          img.onerror = () => reject(new Error('Image load failed'));
+                          img.src = URL.createObjectURL(file);
+                        });
+                        const filePath = `v3-artists/${editArtist.wiki_entry_id}.webp`;
                         const { error: uploadError } = await supabase.storage
                           .from('wiki-images')
-                          .upload(filePath, file, { upsert: true });
+                          .upload(filePath, webpBlob, { upsert: true, contentType: 'image/webp' });
                         if (uploadError) throw uploadError;
                         const { data: { publicUrl } } = supabase.storage
                           .from('wiki-images')
