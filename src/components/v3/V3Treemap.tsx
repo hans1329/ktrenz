@@ -329,6 +329,11 @@ const V3Treemap = () => {
   const containerHeight = isMobile ? 620 : 520;
   const rects = useMemo(() => { if (!sortedItems.length) return []; return squarify(sortedItems, 0, 0, containerWidth, containerHeight); }, [sortedItems, containerWidth, containerHeight]);
   const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
+  // energy_change_24h 최대인 아티스트 ID (글로우 대상)
+  const topChangeId = useMemo(() => {
+    if (!items?.length) return null;
+    return items.reduce((best, cur) => (cur.energyChange24h > best.energyChange24h ? cur : best), items[0]).id;
+  }, [items]);
 
   if (isLoading) return (
     <div className="px-4 pb-4">
@@ -406,7 +411,7 @@ const V3Treemap = () => {
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
                   "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5 overflow-hidden",
-                  idx === 0 ? "z-10 shadow-[inset_0_0_24px_8px_hsla(25,100%,55%,0.6),0_0_16px_4px_hsla(11,100%,46%,0.4)] border-2 border-orange-400/60" : "",
+                  rect.item.id === topChangeId ? "z-10 shadow-[inset_0_0_24px_8px_hsla(25,100%,55%,0.6),0_0_16px_4px_hsla(11,100%,46%,0.4)] border-2 border-orange-400/60" : "",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
