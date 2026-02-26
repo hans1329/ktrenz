@@ -80,7 +80,7 @@ const AdminUsers = () => {
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Agent</TableHead>
-              <TableHead className="text-right">Points</TableHead>
+              <TableHead className="text-right">K-Points</TableHead>
               <TableHead className="text-right">누적</TableHead>
               <TableHead>가입일</TableHead>
             </TableRow>
