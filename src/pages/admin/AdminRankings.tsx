@@ -5,10 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 interface ScoreData {
@@ -62,6 +63,9 @@ const AdminRankings = () => {
   const [runningSource, setRunningSource] = useState<string | null>(null);
   const [recollecting, setRecollecting] = useState<string | null>(null);
   const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTier, setSelectedTier] = useState<1 | 2>(1);
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-artist-tiers'],
     queryFn: async () => {
@@ -191,6 +195,54 @@ const AdminRankings = () => {
       return data;
     },
     enabled: !!detailArtist,
+  });
+
+  // Search wiki_entries not yet in v3_artist_tiers
+  const { data: searchResults = [], isLoading: searchLoading } = useQuery({
+    queryKey: ['artist-search', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      const existingIds = artists.map(a => a.wiki_entry_id);
+      const { data, error } = await supabase
+        .from('wiki_entries')
+        .select('id, title, slug, image_url, schema_type, trending_score')
+        .ilike('title', `%${searchQuery}%`)
+        .not('id', 'in', `(${existingIds.join(',')})`)
+        .order('trending_score', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: addDialogOpen && searchQuery.length >= 2,
+  });
+
+  const addArtistMutation = useMutation({
+    mutationFn: async ({ wiki_entry_id, tier }: { wiki_entry_id: string; tier: number }) => {
+      const { error } = await supabase
+        .from('v3_artist_tiers')
+        .insert({ wiki_entry_id, tier, is_manual_override: true });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      toast.success('아티스트가 등록되었습니다');
+    },
+    onError: (err: any) => toast.error('등록 실패: ' + err.message),
+  });
+
+  const removeArtistMutation = useMutation({
+    mutationFn: async ({ wiki_entry_id }: { wiki_entry_id: string }) => {
+      const { error } = await supabase
+        .from('v3_artist_tiers')
+        .delete()
+        .eq('wiki_entry_id', wiki_entry_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      toast.success('아티스트가 제거되었습니다');
+    },
+    onError: (err: any) => toast.error('제거 실패: ' + err.message),
   });
 
   const tier1 = artists.filter(a => a.tier === 1).sort((a, b) => (b.scores?.total_score ?? 0) - (a.scores?.total_score ?? 0));
@@ -376,11 +428,26 @@ const AdminRankings = () => {
                   T{tierNum === 1 ? 2 : 1}
                 </Button>
               </TableCell>
+              <TableCell className="text-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  disabled={removeArtistMutation.isPending}
+                  onClick={() => {
+                    if (confirm(`${a.title}을(를) 티어에서 제거하시겠습니까?`)) {
+                      removeArtistMutation.mutate({ wiki_entry_id: a.wiki_entry_id });
+                    }
+                  }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={12} className="text-center text-muted-foreground py-8">No artists in this tier</TableCell>
+              <TableCell colSpan={13} className="text-center text-muted-foreground py-8">No artists in this tier</TableCell>
             </TableRow>
           )}
         </TableBody>
@@ -432,6 +499,15 @@ const AdminRankings = () => {
               {src === 'all' ? '전체 수집' : src === 'album' ? 'Album' : src.charAt(0).toUpperCase() + src.slice(1)}
             </Button>
           ))}
+          <Button
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            variant="outline"
+            onClick={() => setAddDialogOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            아티스트 등록
+          </Button>
         </div>
       </div>
 
@@ -456,7 +532,79 @@ const AdminRankings = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Energy Detail Dialog */}
+      {/* Add Artist Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) setSearchQuery(''); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>아티스트 등록</DialogTitle>
+            <DialogDescription>wiki_entries에서 아티스트를 검색하여 v3 티어에 등록합니다.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="아티스트 이름 검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={selectedTier === 1 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedTier(1)}
+                  className="h-9 text-xs"
+                >
+                  Tier 1
+                </Button>
+                <Button
+                  variant={selectedTier === 2 ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedTier(2)}
+                  className="h-9 text-xs"
+                >
+                  Tier 2
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-1">
+              {searchLoading && <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>}
+              {!searchLoading && searchQuery.length >= 2 && searchResults.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">검색 결과 없음</p>
+              )}
+              {searchResults.map((entry: any) => (
+                <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-8 h-8 rounded-lg">
+                      <AvatarImage src={entry.image_url || undefined} className="object-cover" />
+                      <AvatarFallback className="rounded-lg text-[10px]">{entry.title.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{entry.title}</p>
+                      <p className="text-[11px] text-muted-foreground">{entry.schema_type} · score {entry.trending_score?.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    disabled={addArtistMutation.isPending}
+                    onClick={() => addArtistMutation.mutate({ wiki_entry_id: entry.id, tier: selectedTier })}
+                  >
+                    <Plus className="w-3 h-3" />
+                    T{selectedTier} 등록
+                  </Button>
+                </div>
+              ))}
+              {searchQuery.length < 2 && (
+                <p className="text-sm text-muted-foreground text-center py-4">2글자 이상 입력하세요</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!detailArtist} onOpenChange={(open) => !open && setDetailArtist(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
