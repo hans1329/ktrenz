@@ -1,10 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Crown, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Crown, Star, ArrowUpDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 interface ArtistTier {
   tier: number;
@@ -18,6 +20,8 @@ interface ArtistTier {
 }
 
 const AdminRankings = () => {
+  const queryClient = useQueryClient();
+
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-artist-tiers'],
     queryFn: async () => {
@@ -46,6 +50,40 @@ const AdminRankings = () => {
     },
   });
 
+  const toggleTierMutation = useMutation({
+    mutationFn: async ({ wiki_entry_id, newTier }: { wiki_entry_id: string; newTier: number }) => {
+      const { error } = await supabase
+        .from('v3_artist_tiers')
+        .update({ tier: newTier, is_manual_override: true })
+        .eq('wiki_entry_id', wiki_entry_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      toast.success('티어가 변경되었습니다');
+    },
+    onError: (err: any) => {
+      toast.error('변경 실패: ' + err.message);
+    },
+  });
+
+  const removeOverrideMutation = useMutation({
+    mutationFn: async ({ wiki_entry_id }: { wiki_entry_id: string }) => {
+      const { error } = await supabase
+        .from('v3_artist_tiers')
+        .update({ is_manual_override: false })
+        .eq('wiki_entry_id', wiki_entry_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      toast.success('오버라이드가 해제되었습니다');
+    },
+    onError: (err: any) => {
+      toast.error('해제 실패: ' + err.message);
+    },
+  });
+
   const tier1 = artists.filter(a => a.tier === 1).sort((a, b) => b.trending_score - a.trending_score);
   const tier2 = artists.filter(a => a.tier === 2).sort((a, b) => b.trending_score - a.trending_score);
 
@@ -63,6 +101,7 @@ const AdminRankings = () => {
             <TableHead>Type</TableHead>
             <TableHead className="text-right">Trend Score</TableHead>
             <TableHead className="text-center">Override</TableHead>
+            <TableHead className="text-center w-24">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -83,13 +122,39 @@ const AdminRankings = () => {
               </TableCell>
               <TableCell className="text-right font-mono text-sm">{a.trending_score.toLocaleString()}</TableCell>
               <TableCell className="text-center">
-                {a.is_manual_override && <Badge variant="secondary" className="text-xs">Manual</Badge>}
+                {a.is_manual_override ? (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs cursor-pointer hover:bg-destructive/20 transition-colors"
+                    onClick={() => removeOverrideMutation.mutate({ wiki_entry_id: a.wiki_entry_id })}
+                    title="클릭하면 오버라이드 해제"
+                  >
+                    Manual ✕
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Auto</span>
+                )}
+              </TableCell>
+              <TableCell className="text-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  disabled={toggleTierMutation.isPending}
+                  onClick={() => toggleTierMutation.mutate({
+                    wiki_entry_id: a.wiki_entry_id,
+                    newTier: tierNum === 1 ? 2 : 1,
+                  })}
+                >
+                  <ArrowUpDown className="w-3 h-3" />
+                  → Tier {tierNum === 1 ? 2 : 1}
+                </Button>
               </TableCell>
             </TableRow>
           ))}
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No artists in this tier</TableCell>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No artists in this tier</TableCell>
             </TableRow>
           )}
         </TableBody>
