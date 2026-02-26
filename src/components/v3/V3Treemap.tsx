@@ -234,7 +234,7 @@ const V3Treemap = () => {
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("total_score", { ascending: false })
-        .limit(30);
+        .limit(60);
       if (error) throw error;
       if (!data?.length) return [];
       const typedData = data as any[];
@@ -244,11 +244,26 @@ const V3Treemap = () => {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
-      // 인기도(total_score) 상위 N개 선정
-      const topItems = Array.from(latestMap.values())
-        .filter((s) => (s.wiki_entries as any)?.slug)
-        .sort((a, b) => (b.total_score || 0) - (a.total_score || 0))
-        .slice(0, displayCount);
+      // 변동폭 기반 선정: 상위5(급등) + 하위5(급락) + 중간5(안정)
+      const allCandidates = Array.from(latestMap.values())
+        .filter((s) => (s.wiki_entries as any)?.slug);
+      
+      // energy_change_24h 기준 정렬
+      const sortedByChange = [...allCandidates].sort(
+        (a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0)
+      );
+      
+      const top5 = sortedByChange.slice(0, 5); // 가장 많이 오른 5개
+      const bottom5 = sortedByChange.slice(-5).reverse(); // 가장 많이 떨어진 5개
+      
+      // 중간: 0%에 가장 가까운 5개 (이미 선택된 제외)
+      const selectedIds = new Set([...top5, ...bottom5].map(s => s.wiki_entry_id));
+      const middle5 = [...allCandidates]
+        .filter(s => !selectedIds.has(s.wiki_entry_id))
+        .sort((a, b) => Math.abs(a.energy_change_24h || 0) - Math.abs(b.energy_change_24h || 0))
+        .slice(0, 5);
+      
+      const topItems = [...top5, ...middle5, ...bottom5];
 
       // Fetch sparkline and baselines for these top artists
       const topIds = topItems.map((s) => s.wiki_entry_id);
