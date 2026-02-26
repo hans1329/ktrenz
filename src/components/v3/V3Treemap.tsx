@@ -78,13 +78,14 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: FES 기반 + 상위 3개 부스트
-  const tileSize = (i: TreemapItem, idx: number) => {
-    const base = Math.log1p(Math.max(i.energyScore, 1));
-    if (idx === 0) return base * 2.2;   // 1위: 2.2배
-    if (idx === 1) return base * 1.7;   // 2위: 1.7배
-    if (idx === 2) return base * 1.4;   // 3위: 1.4배
-    return base;
+  // 타일 크기: 순위 기반 고정 가중치 (에너지 스코어 차이가 작아도 크기 차이 보장)
+  const tileSize = (_i: TreemapItem, idx: number) => {
+    if (idx === 0) return 5.0;   // 1위: 가장 큼
+    if (idx === 1) return 3.5;   // 2위
+    if (idx === 2) return 2.8;   // 3위
+    if (idx < 5) return 2.0;     // 4~5위
+    if (idx < 10) return 1.3;    // 6~10위
+    return 1.0;                  // 11위~
   };
   const totalValue = items.reduce((s, i, idx) => s + tileSize(i, idx), 0);
   const totalArea = w * h;
