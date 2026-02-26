@@ -16,6 +16,7 @@ interface TreemapItem {
   albumSalesScore: number; musicScore: number;
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
+  velocity: number; intensity: number;
 }
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
@@ -270,7 +271,7 @@ const V3Treemap = () => {
       const [{ data: snapshots }, { data: baselines }] = await Promise.all([
         supabase
           .from("v3_energy_snapshots_v2" as any)
-          .select("wiki_entry_id, energy_score, snapshot_at")
+          .select("wiki_entry_id, energy_score, velocity_score, intensity_score, snapshot_at")
           .in("wiki_entry_id", topIds)
           .order("snapshot_at", { ascending: true })
           .limit(500),
@@ -281,9 +282,15 @@ const V3Treemap = () => {
       ]);
 
       const sparklineMap = new Map<string, number[]>();
+      const latestVelInt = new Map<string, { velocity: number; intensity: number }>();
       for (const snap of (snapshots || []) as any[]) {
         if (!sparklineMap.has(snap.wiki_entry_id)) sparklineMap.set(snap.wiki_entry_id, []);
         sparklineMap.get(snap.wiki_entry_id)!.push(Number(snap.energy_score) || 0);
+        // Keep the latest snapshot's velocity/intensity (snapshots ordered ascending, so last wins)
+        latestVelInt.set(snap.wiki_entry_id, {
+          velocity: Number(snap.velocity_score) || 0,
+          intensity: Number(snap.intensity_score) || 0,
+        });
       }
 
       const baselineMap = new Map<string, { ema7d: number | null; ema30d: number | null }>();
@@ -296,6 +303,7 @@ const V3Treemap = () => {
         const sparkline = sparklineMap.get(s.wiki_entry_id) || [];
         const change = s.energy_change_24h || 0;
         const bl = baselineMap.get(s.wiki_entry_id);
+        const vi = latestVelInt.get(s.wiki_entry_id);
         return {
           id: s.wiki_entry_id, slug: entry?.slug || "", title: entry?.title || "Unknown",
           imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
@@ -305,6 +313,7 @@ const V3Treemap = () => {
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
+          velocity: vi?.velocity ?? 0, intensity: vi?.intensity ?? 0,
         };
       });
     },
@@ -346,8 +355,8 @@ const V3Treemap = () => {
   if (!items?.length) return <div className="px-4 py-16 text-center"><p className="text-sm text-muted-foreground">No energy data available yet.</p></div>;
 
   const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
-  const maxEnergy = items.length > 0 ? Math.max(...items.map(i => i.energyScore)) : 1;
-  const maxChange = items.length > 0 ? Math.max(...items.map(i => i.energyChange24h), 1) : 1;
+  const maxVelocity = Math.max(...items.map(i => i.velocity), 1);
+  const maxIntensity = Math.max(...items.map(i => i.intensity), 1);
 
   return (
     <div className="px-4 pb-4">
@@ -404,9 +413,9 @@ const V3Treemap = () => {
 
                 {isMedium && (
                   <BoxParticles
-                    count={Math.max(3, Math.round(sharePct * 1.5))}
-                    speed={Math.max(0.05, Math.min(1, rect.item.energyChange24h / maxChange))}
-                    density={Math.min(1, rect.item.energyScore / maxEnergy)}
+                    count={Math.max(3, Math.round((rect.item.intensity / maxIntensity) * 25))}
+                    speed={Math.max(0.05, Math.min(1, rect.item.velocity / maxVelocity))}
+                    density={Math.min(1, rect.item.intensity / maxIntensity)}
                     color="hsl(0, 0%, 100%)"
                   />
                 )}
