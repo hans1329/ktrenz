@@ -158,20 +158,23 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── 2) 모든 아티스트 데이터 한번에 수집 ──
-    const allArtists: ArtistData[] = [];
-    for (const entryId of entryIds) {
-      const snap = await getLatestSnapshots(sb, entryId);
+    // ── 2) 모든 아티스트 데이터 병렬 수집 ──
+    console.log(`[FES-v3] Fetching data for ${entryIds.length} artists...`);
+    const snapResults = await Promise.all(
+      entryIds.map(entryId => getLatestSnapshots(sb, entryId).then(snap => ({ entryId, snap })))
+    );
+    const allArtists: ArtistData[] = snapResults.map(({ entryId, snap }) => {
       const sentMul = 0.7 + (snap.sentimentScore / 100) * 0.6;
-      allArtists.push({
+      return {
         entryId,
         totalMentions: snap.totalMentions,
         sentimentScore: snap.sentimentScore,
         buzzScore: snap.buzzScore,
         recentTotalViews: snap.recentTotalViews,
         qualityMentions: snap.totalMentions * sentMul,
-      });
-    }
+      };
+    });
+    console.log(`[FES-v3] Data collected for ${allArtists.length} artists`);
 
     // ── 3) 각 메트릭별 랭킹 계산 (내림차순, 높을수록 1등) ──
     const total = allArtists.length;
@@ -225,22 +228,53 @@ Deno.serve(async (req) => {
     // ── 4) 각 아티스트 FES 계산 (변화율 중심 공식) ──
     const results: any[] = [];
 
+    // 모든 아티스트의 24h 이전 스냅샷을 병렬 조회
+    const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+    const prevSnapshotResults = await Promise.all(
+      allArtists.map(artist =>
+        sb.from("v3_energy_snapshots_v2")
+          .select("energy_score")
+          .eq("wiki_entry_id", artist.entryId)
+          .lt("snapshot_at", todayStart.toISOString())
+          .order("snapshot_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then((r: any) => ({ entryId: artist.entryId, data: r.data }))
+      )
+    );
+    const prevSnapshotMap = new Map<string, any>();
+    for (const r of prevSnapshotResults) prevSnapshotMap.set(r.entryId, r.data);
+
+    // 기존 v2 scores를 병렬 조회
+    const existingScoreResults = await Promise.all(
+      allArtists.map(artist =>
+        sb.from("v3_scores_v2")
+          .select("id, youtube_score, buzz_score, total_score")
+          .eq("wiki_entry_id", artist.entryId)
+          .order("scored_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then((r: any) => ({ entryId: artist.entryId, data: r.data }))
+      )
+    );
+    const existingScoreMap = new Map<string, any>();
+    for (const r of existingScoreResults) existingScoreMap.set(r.entryId, r.data);
+
+    console.log(`[FES-v3] Pre-fetched prev snapshots & existing scores`);
+
+    // 각 아티스트 점수 계산 (CPU only, no DB calls)
     for (const artist of allArtists) {
       try {
-        // Velocity: 멘션 랭킹(60%) + 조회수 랭킹(40%)
         const mentionPct = percentileScore(mentionsRank.get(artist.entryId)!, total);
         const viewPct = percentileScore(viewsRank.get(artist.entryId)!, total);
         const velocity = Math.round(mentionPct * 0.6 + viewPct * 0.4);
 
-        // Intensity: 버즈스코어 랭킹(50%) + 퀄리티멘션 랭킹(50%)
         const buzzPct = percentileScore(buzzScoreRank.get(artist.entryId)!, total);
         const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
         const intensity = Math.round(buzzPct * 0.5 + qualPct * 0.5);
 
-        // ChangeScore: 변화율 percentile (60% 가중치)
         const changePct = percentileScore(changeRankMap.get(artist.entryId)!, total);
 
-        // 베이스라인 대비 추가 보너스 (±40)
         const baseline = baselineMap.get(artist.entryId);
         let bonus = 0;
         if (baseline) {
@@ -248,103 +282,75 @@ Deno.serve(async (req) => {
           const viewChange = changeBonus(artist.recentTotalViews, baseline.avg_velocity_30d || 1);
           const buzzChange = changeBonus(artist.buzzScore, baseline.avg_intensity_7d || 1);
           bonus = Math.round((mentionChange * 0.4 + viewChange * 0.3 + buzzChange * 0.3));
-          // 보너스 범위 확대: ±40
           bonus = Math.max(-40, Math.min(40, bonus));
         }
 
-        // Energy = Velocity(20%) + Intensity(20%) + ChangeScore(60%) + 변화 보너스
         let energyScore = Math.round(velocity * 0.2 + intensity * 0.2 + changePct * 0.6) + bonus;
         energyScore = Math.max(10, Math.min(MAX_SCORE, energyScore));
 
-        // 24h 변화율
-        const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
-        const { data: prevSnapshot } = await sb
-          .from("v3_energy_snapshots_v2")
-          .select("energy_score")
-          .eq("wiki_entry_id", artist.entryId)
-          .lt("snapshot_at", todayStart.toISOString())
-          .order("snapshot_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
+        const prevSnapshot = prevSnapshotMap.get(artist.entryId);
         let change24h = 0;
         if (prevSnapshot && Number(prevSnapshot.energy_score) > 0) {
           change24h = ((energyScore - Number(prevSnapshot.energy_score)) / Number(prevSnapshot.energy_score)) * 100;
-        }
-
-        // 스냅샷 저장
-        await sb.from("v3_energy_snapshots_v2").insert({
-          wiki_entry_id: artist.entryId,
-          velocity_score: velocity,
-          intensity_score: intensity,
-          energy_score: energyScore,
-        });
-
-        // v2 scores upsert
-        const { data: existingV2Score } = await sb
-          .from("v3_scores_v2")
-          .select("id, youtube_score, buzz_score, total_score")
-          .eq("wiki_entry_id", artist.entryId)
-          .order("scored_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (existingV2Score) {
-          await sb.from("v3_scores_v2").update({
-            energy_score: energyScore,
-            energy_change_24h: Math.round(change24h * 10) / 10,
-            scored_at: new Date().toISOString(),
-          }).eq("id", existingV2Score.id);
-        } else {
-          await sb.from("v3_scores_v2").insert({
-            wiki_entry_id: artist.entryId,
-            energy_score: energyScore,
-            energy_change_24h: Math.round(change24h * 10) / 10,
-            youtube_score: 0,
-            buzz_score: 0,
-            total_score: 0,
-          });
-        }
-
-        // 베이스라인 EMA 갱신
-        if (baseline) {
-          const a7 = 0.15, a30 = 0.05;
-          await sb.from("v3_energy_baselines_v2").update({
-            avg_velocity_7d: Math.round(((baseline.avg_velocity_7d || 1) * (1 - a7) + artist.totalMentions * a7) * 100) / 100,
-            avg_velocity_30d: Math.round(((baseline.avg_velocity_30d || 1) * (1 - a30) + artist.recentTotalViews * a30) * 100) / 100,
-            avg_intensity_7d: Math.round(((baseline.avg_intensity_7d || 1) * (1 - a7) + artist.buzzScore * a7) * 100) / 100,
-            avg_intensity_30d: Math.round(((baseline.avg_intensity_30d || 1) * (1 - a30) + artist.qualityMentions * a30) * 100) / 100,
-            avg_energy_7d: Math.round(((baseline.avg_energy_7d || 100) * (1 - a7) + energyScore * a7) * 100) / 100,
-            avg_energy_30d: Math.round(((baseline.avg_energy_30d || 100) * (1 - a30) + energyScore * a30) * 100) / 100,
-            updated_at: new Date().toISOString(),
-          }).eq("wiki_entry_id", artist.entryId);
-        } else {
-          await sb.from("v3_energy_baselines_v2").insert({
-            wiki_entry_id: artist.entryId,
-            avg_velocity_7d: Math.max(artist.totalMentions, 1),
-            avg_velocity_30d: Math.max(artist.recentTotalViews, 1),
-            avg_intensity_7d: Math.max(artist.buzzScore, 1),
-            avg_intensity_30d: Math.max(artist.qualityMentions, 1),
-            avg_energy_7d: energyScore,
-            avg_energy_30d: energyScore,
-          });
         }
 
         results.push({
           wikiEntryId: artist.entryId,
           velocity, intensity, energyScore, bonus,
           change24h: Math.round(change24h * 10) / 10,
-          ranks: {
-            mentions: mentionsRank.get(artist.entryId),
-            views: viewsRank.get(artist.entryId),
-            buzz: buzzScoreRank.get(artist.entryId),
-            quality: qualityMentionsRank.get(artist.entryId),
-          },
+          existingScore: existingScoreMap.get(artist.entryId),
+          baseline,
         });
       } catch (e) {
-        console.error(`[FES-v3] Error for ${artist.entryId}:`, e);
+        console.error(`[FES-v3] Error calculating ${artist.entryId}:`, e);
       }
     }
+
+    // 모든 DB 쓰기를 병렬로 실행
+    console.log(`[FES-v3] Writing ${results.length} results...`);
+    const writeOps: Promise<any>[] = [];
+    for (const r of results) {
+      // 스냅샷 저장
+      writeOps.push(sb.from("v3_energy_snapshots_v2").insert({
+        wiki_entry_id: r.wikiEntryId,
+        velocity_score: r.velocity,
+        intensity_score: r.intensity,
+        energy_score: r.energyScore,
+      }));
+
+      // v2 scores upsert
+      if (r.existingScore) {
+        writeOps.push(sb.from("v3_scores_v2").update({
+          energy_score: r.energyScore,
+          energy_change_24h: r.change24h,
+          scored_at: new Date().toISOString(),
+        }).eq("id", r.existingScore.id));
+      } else {
+        writeOps.push(sb.from("v3_scores_v2").insert({
+          wiki_entry_id: r.wikiEntryId,
+          energy_score: r.energyScore,
+          energy_change_24h: r.change24h,
+          youtube_score: 0, buzz_score: 0, total_score: 0,
+        }));
+      }
+
+      // 베이스라인 EMA 갱신
+      if (r.baseline) {
+        const artist = allArtists.find(a => a.entryId === r.wikiEntryId)!;
+        const a7 = 0.15, a30 = 0.05;
+        writeOps.push(sb.from("v3_energy_baselines_v2").update({
+          avg_velocity_7d: Math.round(((r.baseline.avg_velocity_7d || 1) * (1 - a7) + artist.totalMentions * a7) * 100) / 100,
+          avg_velocity_30d: Math.round(((r.baseline.avg_velocity_30d || 1) * (1 - a30) + artist.recentTotalViews * a30) * 100) / 100,
+          avg_intensity_7d: Math.round(((r.baseline.avg_intensity_7d || 1) * (1 - a7) + artist.buzzScore * a7) * 100) / 100,
+          avg_intensity_30d: Math.round(((r.baseline.avg_intensity_30d || 1) * (1 - a30) + artist.qualityMentions * a30) * 100) / 100,
+          avg_energy_7d: Math.round(((r.baseline.avg_energy_7d || 100) * (1 - a7) + r.energyScore * a7) * 100) / 100,
+          avg_energy_30d: Math.round(((r.baseline.avg_energy_30d || 100) * (1 - a30) + r.energyScore * a30) * 100) / 100,
+          updated_at: new Date().toISOString(),
+        }).eq("wiki_entry_id", r.wikiEntryId));
+      }
+    }
+    await Promise.all(writeOps);
+    console.log(`[FES-v3] All writes completed`);
 
     // ── 5) energy_rank 일괄 업데이트 (한번에) ──
     const { data: allV2Scores } = await sb
