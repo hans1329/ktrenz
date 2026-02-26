@@ -74,8 +74,8 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: energy_change_24h 절대값의 로그 스케일 (극단적 편중 방지)
-  const tileSize = (i: TreemapItem) => Math.log1p(Math.abs(i.energyChange24h));
+  // 타일 크기: FES(energyScore) 기반 로그 스케일
+  const tileSize = (i: TreemapItem) => Math.log1p(Math.max(i.energyScore, 1));
   const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
   const totalArea = w * h;
   const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
@@ -320,10 +320,10 @@ const V3Treemap = () => {
     staleTime: 30_000,
   });
 
-  // energy_change_24h 절대값 내림차순 정렬 후 squarify (변동성 큰 순)
+  // FES(energyScore) 내림차순 정렬 후 squarify (FES 높은 순 = 큰 타일)
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
-    return [...items].sort((a, b) => Math.abs(b.energyChange24h) - Math.abs(a.energyChange24h));
+    return [...items].sort((a, b) => b.energyScore - a.energyScore);
   }, [items]);
   const containerWidth = isMobile ? 360 : 420;
   const containerHeight = isMobile ? 620 : 520;
@@ -417,14 +417,20 @@ const V3Treemap = () => {
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
 
-                {isMedium && (
-                  <BoxParticles
-                    count={rect.item.id === topChangeId ? 60 : Math.max(3, Math.round((rect.item.intensity / maxIntensity) * 25))}
-                    speed={rect.item.id === topChangeId ? 1 : Math.max(0.05, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
-                    density={rect.item.id === topChangeId ? 1.5 : Math.min(1, rect.item.intensity / maxIntensity)}
-                    color="hsl(0, 0%, 100%)"
-                  />
-                )}
+              {isMedium && (() => {
+                  const maxEs = Math.max(...(items || []).map(i => i.energyScore), 1);
+                  const ratio = rect.item.energyScore / maxEs;
+                  const rank = (items || []).filter(i => i.energyScore > rect.item.energyScore).length;
+                  const isTop3 = rank < 3;
+                  return (
+                    <BoxParticles
+                      count={isTop3 ? Math.max(40, Math.round(ratio * 60)) : Math.max(5, Math.round(ratio * 30))}
+                      speed={Math.max(0.1, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
+                      density={isTop3 ? Math.max(0.8, ratio * 1.5) : Math.max(0.3, ratio)}
+                      color="hsl(0, 0%, 100%)"
+                    />
+                  );
+                })()}
 
                 {rect.item.sparkline.length >= 2 && isMedium && (
                   <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}
