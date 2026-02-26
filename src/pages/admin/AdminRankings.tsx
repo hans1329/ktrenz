@@ -26,6 +26,8 @@ interface CollectionStatus {
   youtube?: string;
   buzz_multi?: string;
   music?: string;
+  lastfm?: string;
+  deezer?: string;
 }
 
 interface ArtistTier {
@@ -193,7 +195,7 @@ const AdminRankings = () => {
     );
   };
 
-  const CollectionBadge = ({ label, dateStr }: { label: string; dateStr?: string }) => {
+  const CollectionBadge = ({ label, dateStr }: { label: string; dateStr?: string | null }) => {
     if (!dateStr) {
       return (
         <Tooltip>
@@ -224,7 +226,7 @@ const AdminRankings = () => {
     const badges = [
       { label: 'YT', dateStr: collection.youtube },
       { label: 'Buzz', dateStr: collection.buzz_multi },
-      { label: 'Music', dateStr: collection.music },
+      { label: 'Music', dateStr: collection.lastfm || collection.deezer },
     ];
     const issues = badges.filter(b => !b.dateStr || getHoursAgo(b.dateStr) > STALE_HOURS);
     if (issues.length === 0) return <span className="text-xs text-emerald-500">✓</span>;
@@ -316,10 +318,11 @@ const AdminRankings = () => {
   // 수집 이상 아티스트 수 카운트
   const staleCount = tier1.filter(a => {
     const c = a.collection;
-    return !c.youtube || !c.buzz_multi || !c.music ||
+    const musicDate = c.lastfm || c.deezer;
+    return !c.youtube || !c.buzz_multi || !musicDate ||
       getHoursAgo(c.youtube!) > STALE_HOURS ||
       getHoursAgo(c.buzz_multi!) > STALE_HOURS ||
-      getHoursAgo(c.music!) > STALE_HOURS;
+      getHoursAgo(musicDate!) > STALE_HOURS;
   }).length;
 
   return (
