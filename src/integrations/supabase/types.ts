@@ -4410,24 +4410,33 @@ export type Database = {
       v3_artist_tiers: {
         Row: {
           created_at: string
+          display_name: string | null
           id: string
+          image_url: string | null
           is_manual_override: boolean
+          name_ko: string | null
           tier: number
           updated_at: string
           wiki_entry_id: string
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           id?: string
+          image_url?: string | null
           is_manual_override?: boolean
+          name_ko?: string | null
           tier?: number
           updated_at?: string
           wiki_entry_id: string
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           id?: string
+          image_url?: string | null
           is_manual_override?: boolean
+          name_ko?: string | null
           tier?: number
           updated_at?: string
           wiki_entry_id?: string
