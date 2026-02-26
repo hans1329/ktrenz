@@ -68,10 +68,17 @@ async function fetchYouTubeData(artistName: string, apiKey: string): Promise<{
     // 1) 채널 검색
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " official")}&key=${apiKey}&maxResults=1`;
     const searchResp = await fetch(searchUrl);
-    if (!searchResp.ok) return null;
+    if (!searchResp.ok) {
+      const errText = await searchResp.text();
+      console.error(`[DataCollector] YouTube search API failed for ${artistName}: ${searchResp.status} - ${errText}`);
+      return null;
+    }
     const searchData = await searchResp.json();
     const channelId = searchData?.items?.[0]?.id?.channelId;
-    if (!channelId) return null;
+    if (!channelId) {
+      console.warn(`[DataCollector] YouTube: No channel found for "${artistName}"`);
+      return null;
+    }
 
     // 2) 채널 통계
     const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
@@ -335,8 +342,14 @@ async function collectForSingleArtist(
         });
         results.youtube = { score: ytScore };
         console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore}`);
+      } else {
+        results.youtube = { error: "YouTube API returned no data (check API key quota or channel search)" };
+        console.warn(`[DataCollector] YouTube: ${artistTitle} → no data returned`);
       }
-    } catch (e) { results.youtube = { error: e.message }; }
+    } catch (e) {
+      results.youtube = { error: e.message };
+      console.error(`[DataCollector] YouTube catch error for ${artistTitle}:`, e.message);
+    }
   }
 
   // 2) Music (Last.fm + Deezer)
