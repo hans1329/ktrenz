@@ -20,6 +20,13 @@ interface V3Artist {
   image_url: string | null;
   is_manual_override: boolean;
   updated_at: string;
+  youtube_channel_id: string | null;
+  spotify_artist_id: string | null;
+  lastfm_artist_name: string | null;
+  deezer_artist_id: string | null;
+  x_handle: string | null;
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
   // from wiki_entries join
   wiki_title: string;
   wiki_image: string | null;
@@ -38,6 +45,13 @@ const AdminV3Artists = () => {
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editNameKo, setEditNameKo] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
+  const [editYoutubeChannelId, setEditYoutubeChannelId] = useState('');
+  const [editSpotifyArtistId, setEditSpotifyArtistId] = useState('');
+  const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
+  const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
+  const [editXHandle, setEditXHandle] = useState('');
+  const [editInstagramHandle, setEditInstagramHandle] = useState('');
+  const [editTiktokHandle, setEditTiktokHandle] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +60,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, wiki_entries!inner(title, image_url, schema_type)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, spotify_artist_id, lastfm_artist_name, deezer_artist_id, x_handle, instagram_handle, tiktok_handle, wiki_entries!inner(title, image_url, schema_type)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -58,6 +72,13 @@ const AdminV3Artists = () => {
         image_url: row.image_url,
         is_manual_override: row.is_manual_override,
         updated_at: row.updated_at,
+        youtube_channel_id: row.youtube_channel_id,
+        spotify_artist_id: row.spotify_artist_id,
+        lastfm_artist_name: row.lastfm_artist_name,
+        deezer_artist_id: row.deezer_artist_id,
+        x_handle: row.x_handle,
+        instagram_handle: row.instagram_handle,
+        tiktok_handle: row.tiktok_handle,
         wiki_title: row.wiki_entries.title,
         wiki_image: row.wiki_entries.image_url,
         wiki_schema_type: row.wiki_entries.schema_type,
@@ -85,15 +106,22 @@ const AdminV3Artists = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, display_name, name_ko, image_url }: { id: string; display_name: string; name_ko: string; image_url: string }) => {
+    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; spotify_artist_id: string; lastfm_artist_name: string; deezer_artist_id: string; x_handle: string; instagram_handle: string; tiktok_handle: string }) => {
       const { error } = await supabase
         .from('v3_artist_tiers')
         .update({
-          display_name: display_name || null,
-          name_ko: name_ko || null,
-          image_url: image_url || null,
+          display_name: payload.display_name || null,
+          name_ko: payload.name_ko || null,
+          image_url: payload.image_url || null,
+          youtube_channel_id: payload.youtube_channel_id || null,
+          spotify_artist_id: payload.spotify_artist_id || null,
+          lastfm_artist_name: payload.lastfm_artist_name || null,
+          deezer_artist_id: payload.deezer_artist_id || null,
+          x_handle: payload.x_handle || null,
+          instagram_handle: payload.instagram_handle || null,
+          tiktok_handle: payload.tiktok_handle || null,
         } as any)
-        .eq('id', id);
+        .eq('id', payload.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -138,6 +166,13 @@ const AdminV3Artists = () => {
     setEditDisplayName(artist.display_name || artist.wiki_title || '');
     setEditNameKo(artist.name_ko || '');
     setEditImageUrl(artist.image_url || artist.wiki_image || '');
+    setEditYoutubeChannelId(artist.youtube_channel_id || '');
+    setEditSpotifyArtistId(artist.spotify_artist_id || '');
+    setEditLastfmArtistName(artist.lastfm_artist_name || '');
+    setEditDeezerArtistId(artist.deezer_artist_id || '');
+    setEditXHandle(artist.x_handle || '');
+    setEditInstagramHandle(artist.instagram_handle || '');
+    setEditTiktokHandle(artist.tiktok_handle || '');
   };
 
   const filtered = search
@@ -197,6 +232,7 @@ const AdminV3Artists = () => {
                   <TableHead>한글명 (name_ko)</TableHead>
                   <TableHead>원본 (wiki)</TableHead>
                   <TableHead className="text-center">타입</TableHead>
+                  <TableHead className="text-center">엔드포인트</TableHead>
                   <TableHead className="text-center">Tier</TableHead>
                   <TableHead className="text-center w-24">관리</TableHead>
                 </TableRow>
@@ -216,6 +252,20 @@ const AdminV3Artists = () => {
                     <TableCell className="text-xs text-muted-foreground">{a.wiki_title}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-[10px] capitalize">{a.wiki_schema_type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
+                        {a.youtube_channel_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">YT</Badge>}
+                        {a.spotify_artist_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">SP</Badge>}
+                        {a.lastfm_artist_name && <Badge variant="secondary" className="text-[9px] px-1 py-0">LF</Badge>}
+                        {a.deezer_artist_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">DZ</Badge>}
+                        {a.x_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">X</Badge>}
+                        {a.instagram_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">IG</Badge>}
+                        {a.tiktok_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">TT</Badge>}
+                        {!a.youtube_channel_id && !a.spotify_artist_id && !a.lastfm_artist_name && !a.x_handle && (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={a.tier === 1 ? 'default' : 'secondary'} className="text-xs">T{a.tier}</Badge>
@@ -244,7 +294,7 @@ const AdminV3Artists = () => {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-6">해당 티어에 아티스트 없음</TableCell>
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-6">해당 티어에 아티스트 없음</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -255,7 +305,7 @@ const AdminV3Artists = () => {
 
       {/* Edit Dialog */}
       <Dialog open={!!editArtist} onOpenChange={(open) => !open && setEditArtist(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>아티스트 정보 수정</DialogTitle>
             <DialogDescription>표시 이름, 한글명, 이미지를 수정합니다.</DialogDescription>
@@ -331,6 +381,40 @@ const AdminV3Artists = () => {
                 </div>
               </div>
             </div>
+            {/* Endpoints */}
+            <div className="border-t pt-3 mt-1">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">크롤링 엔드포인트</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px]">YouTube Channel ID</Label>
+                  <Input value={editYoutubeChannelId} onChange={(e) => setEditYoutubeChannelId(e.target.value)} placeholder="UC..." className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Spotify Artist ID</Label>
+                  <Input value={editSpotifyArtistId} onChange={(e) => setEditSpotifyArtistId(e.target.value)} placeholder="0abc..." className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Last.fm Artist Name</Label>
+                  <Input value={editLastfmArtistName} onChange={(e) => setEditLastfmArtistName(e.target.value)} placeholder="Artist name" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Deezer Artist ID</Label>
+                  <Input value={editDeezerArtistId} onChange={(e) => setEditDeezerArtistId(e.target.value)} placeholder="12345" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">X (Twitter)</Label>
+                  <Input value={editXHandle} onChange={(e) => setEditXHandle(e.target.value)} placeholder="handle" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Instagram</Label>
+                  <Input value={editInstagramHandle} onChange={(e) => setEditInstagramHandle(e.target.value)} placeholder="handle" className="h-8 text-xs" />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-[11px]">TikTok</Label>
+                  <Input value={editTiktokHandle} onChange={(e) => setEditTiktokHandle(e.target.value)} placeholder="handle" className="h-8 text-xs" />
+                </div>
+              </div>
+            </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditArtist(null)}>취소</Button>
               <Button
@@ -342,6 +426,13 @@ const AdminV3Artists = () => {
                     display_name: editDisplayName,
                     name_ko: editNameKo,
                     image_url: editImageUrl,
+                    youtube_channel_id: editYoutubeChannelId,
+                    spotify_artist_id: editSpotifyArtistId,
+                    lastfm_artist_name: editLastfmArtistName,
+                    deezer_artist_id: editDeezerArtistId,
+                    x_handle: editXHandle,
+                    instagram_handle: editInstagramHandle,
+                    tiktok_handle: editTiktokHandle,
                   });
                 }}
               >

@@ -4410,36 +4410,57 @@ export type Database = {
       v3_artist_tiers: {
         Row: {
           created_at: string
+          deezer_artist_id: string | null
           display_name: string | null
           id: string
           image_url: string | null
+          instagram_handle: string | null
           is_manual_override: boolean
+          lastfm_artist_name: string | null
           name_ko: string | null
+          spotify_artist_id: string | null
           tier: number
+          tiktok_handle: string | null
           updated_at: string
           wiki_entry_id: string
+          x_handle: string | null
+          youtube_channel_id: string | null
         }
         Insert: {
           created_at?: string
+          deezer_artist_id?: string | null
           display_name?: string | null
           id?: string
           image_url?: string | null
+          instagram_handle?: string | null
           is_manual_override?: boolean
+          lastfm_artist_name?: string | null
           name_ko?: string | null
+          spotify_artist_id?: string | null
           tier?: number
+          tiktok_handle?: string | null
           updated_at?: string
           wiki_entry_id: string
+          x_handle?: string | null
+          youtube_channel_id?: string | null
         }
         Update: {
           created_at?: string
+          deezer_artist_id?: string | null
           display_name?: string | null
           id?: string
           image_url?: string | null
+          instagram_handle?: string | null
           is_manual_override?: boolean
+          lastfm_artist_name?: string | null
           name_ko?: string | null
+          spotify_artist_id?: string | null
           tier?: number
+          tiktok_handle?: string | null
           updated_at?: string
           wiki_entry_id?: string
+          x_handle?: string | null
+          youtube_channel_id?: string | null
         }
         Relationships: [
           {
