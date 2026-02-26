@@ -463,7 +463,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // ── Sub-header ──
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
-      <div className="flex items-center justify-between h-14 px-4 max-w-screen-lg mx-auto">
+      <div className="flex items-center justify-between h-14 px-4">
         <div className="flex items-center gap-1 min-w-[72px]">
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
@@ -611,7 +611,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       {!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages()}
 
       {/* Input area */}
-      <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30">
+      <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
         {hasStarted && messages.length > 0 && !isStreaming && (
           <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
             {QUICK_ACTIONS.map((action) => {
