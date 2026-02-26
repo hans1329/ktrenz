@@ -114,68 +114,70 @@ Naver: 1.3 | Reddit: 1.2 | YouTube: 1.0`}</code>
            + mbAlbums + mbSingles
            + topicViewScore + topicSubScore + mvViewScore`} description="Combines Last.fm, Deezer, MusicBrainz data with YouTube Music Topic channel and MV category metrics." />
 
-      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v2" color="bg-red-600" />
-      <p className="text-xs text-muted-foreground">Measures an artist's <strong>current momentum</strong> relative to historical baselines. <Badge variant="outline" className="text-[9px] ml-1">Baseline 100 · Max 250</Badge></p>
+      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v4" color="bg-red-600" />
+      <p className="text-xs text-muted-foreground">Measures an artist's <strong>current momentum</strong> — how much they changed vs yesterday. <Badge variant="outline" className="text-[9px] ml-1">Min 10 · Max 250</Badge></p>
 
       <Card className="p-3 bg-primary/5 border-primary/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">v2 Key Changes</p>
+        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">v4 Key Changes</p>
         <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
-          <li><strong className="text-foreground">Data Source:</strong> Reads raw YouTube/Buzz data directly from <code className="text-primary">ktrenz_data_snapshots</code> table</li>
-          <li><strong className="text-foreground">Damped Scoring:</strong> ratio ≤ 1 → linear (ratio × 100), ratio &gt; 1 → log₂ decay — prevents spikes</li>
-          <li><strong className="text-foreground">EMA Baselines:</strong> α=0.15 (7-day), α=0.05 (30-day) exponential moving averages gradually update baselines</li>
-          <li><strong className="text-foreground">Cap:</strong> Individual component max 250, final FES max 500 (250×2)</li>
+          <li><strong className="text-foreground">Momentum-Driven:</strong> 24h 변동률(momentum)이 점수의 70%를 결정 — 변동이 클수록 높은 점수</li>
+          <li><strong className="text-foreground">Percentile Ranking:</strong> 모든 지표를 절대값 대신 아티스트 간 상대 순위(percentile)로 변환</li>
+          <li><strong className="text-foreground">Absolute Baseline (30%):</strong> 언급량, 조회수, 버즈 등 원시 지표의 순위 기반 점수</li>
+          <li><strong className="text-foreground">Momentum (70%):</strong> 어제 energy_score 대비 오늘 absolute_score의 변동률 순위</li>
+          <li><strong className="text-foreground">Neutral Fallback:</strong> 어제 스냅샷이 없는 아티스트는 중앙값(median) momentum 할당</li>
         </ul>
       </Card>
 
-      <FormulaCard title="Core Formula" formula="FES = Velocity × 0.40 + Intensity × 0.60" description="Baseline 100 = normal state. Above 100 means more active than average." />
+      <FormulaCard title="Core Formula (v4)" formula={`FES = absolute_score × 0.30 + momentum_percentile × 0.70
+
+absolute_score = velocity × 0.50 + intensity × 0.50
+velocity       = mentionRank_pct × 0.60 + viewRank_pct × 0.40
+intensity      = buzzScoreRank_pct × 0.50 + qualityMentionRank_pct × 0.50
+
+momentum = (absolute_score − yesterday_energy) / yesterday_energy × 100
+momentum_percentile = percentileScore(momentum_rank, total_artists)`} description="어제 대비 변동률이 높을수록 momentum_percentile이 높아지고, 최종 FES의 70%를 차지합니다." />
 
       <Card className="p-3 bg-card border-border/50 space-y-4">
         <div>
-          <div className="flex items-center gap-1.5 mb-1"><Zap className="w-3.5 h-3.5 text-amber-500" /><span className="text-xs font-bold text-foreground">Velocity (40%)</span></div>
-          <p className="text-[10px] text-muted-foreground mb-1.5">Mention growth rate (60%) + View growth rate (40%)</p>
-          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Velocity = buzzVelocity × 0.60 + ytVelocity × 0.40
+          <div className="flex items-center gap-1.5 mb-1"><Zap className="w-3.5 h-3.5 text-amber-500" /><span className="text-xs font-bold text-foreground">Absolute Score (30%)</span></div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">현재 시점의 원시 지표 순위 기반. 모든 아티스트를 percentile 랭킹으로 비교.</p>
+          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`percentileScore(rank, total) = 20 + (1 - (rank-1)/(total-1)) × 230
 
-buzzVelocity = damped(mentions / avg_mentions_7d)
-ytVelocity   = damped(recentViews / avg_views_30d)`}</code>
+velocity  = pctScore(mentionRank) × 0.6 + pctScore(viewRank) × 0.4
+intensity = pctScore(buzzRank) × 0.5 + pctScore(qualityMentionRank) × 0.5
+absolute  = velocity × 0.5 + intensity × 0.5`}</code>
         </div>
         <div>
-          <div className="flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5 text-blue-500" /><span className="text-xs font-bold text-foreground">Intensity (60%)</span></div>
-          <p className="text-[10px] text-muted-foreground mb-1.5">Buzz score intensity (50%) + Sentiment-weighted mentions (50%)</p>
-          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Intensity = engIntensity × 0.50 + buzzIntensity × 0.50
+          <div className="flex items-center gap-1.5 mb-1"><Activity className="w-3.5 h-3.5 text-blue-500" /><span className="text-xs font-bold text-foreground">Momentum Percentile (70%)</span></div>
+          <p className="text-[10px] text-muted-foreground mb-1.5">어제 에너지 스냅샷 대비 오늘 absolute_score의 변동률을 순위화</p>
+          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`momentum = (absScore - prevDayEnergy) / prevDayEnergy × 100
+momentumRank = rank among all artists by momentum (desc)
+momentumPctScore = percentileScore(momentumRank, total)
 
-engIntensity  = damped(buzz_score / avg_buzz_7d)
-buzzIntensity = damped(qualityMentions / avg_mentions_30d)
-
-qualityMentions = mentions × sentimentMultiplier
-sentimentMultiplier = 0.7 + (sentimentScore / 100) × 0.6`}</code>
+// No previous snapshot → assign median momentum`}</code>
         </div>
       </Card>
 
-      <FormulaCard title="Damped Score Function" formula={`damped(ratio):
-  ratio ≤ 0  → 0
-  ratio ≤ 1  → ratio × 100  (linear)
-  ratio > 1  → 100 + log₂(ratio) × 60  (log decay)
-  Max 250`} description="When ratio exceeds 1 (= average), score increase is suppressed on a log scale to prevent excessive spikes from single events." />
+      <FormulaCard title="energy_change_24h" formula={`change_24h = (final_FES − yesterday_FES) / yesterday_FES × 100`} description="최종 FES와 어제 스냅샷 FES 간의 변동률. UI에 표시되는 ▲/▼ 퍼센트 값입니다." />
 
-      <FormulaCard title="EMA Baseline Update" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
-avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Each calculation reflects current values into exponential moving averages, gradually adjusting baselines. Rapidly changing trends are naturally absorbed." />
+      <FormulaCard title="EMA Baseline Update (unchanged)" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
+avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="베이스라인은 여전히 EMA로 관리되며, 에너지 스냅샷의 장기 추세 추적에 사용됩니다." />
 
       <div className="grid grid-cols-4 gap-2">
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💤</span><p className="text-xs font-bold text-foreground mt-1">&lt; 100</p><p className="text-[10px] text-muted-foreground">Low</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💫</span><p className="text-xs font-bold text-foreground mt-1">100+</p><p className="text-[10px] text-muted-foreground">Normal</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">⚡</span><p className="text-xs font-bold text-foreground mt-1">150+</p><p className="text-[10px] text-muted-foreground">Active</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">300+</p><p className="text-[10px] text-muted-foreground">Explosive</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💤</span><p className="text-xs font-bold text-foreground mt-1">&lt; 80</p><p className="text-[10px] text-muted-foreground">Low</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💫</span><p className="text-xs font-bold text-foreground mt-1">80–150</p><p className="text-[10px] text-muted-foreground">Normal</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">⚡</span><p className="text-xs font-bold text-foreground mt-1">150–200</p><p className="text-[10px] text-muted-foreground">Active</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">200+</p><p className="text-[10px] text-muted-foreground">Explosive</p></Card>
       </div>
 
       <VarTable rows={[
-        { name: "avg_velocity_7d", desc: "Mention count EMA (α=0.15)", source: "v3_energy_baselines_v2" },
-        { name: "avg_velocity_30d", desc: "View count EMA (α=0.05)", source: "v3_energy_baselines_v2" },
-        { name: "avg_intensity_7d", desc: "Buzz score EMA (α=0.15)", source: "v3_energy_baselines_v2" },
-        { name: "avg_intensity_30d", desc: "Sentiment-weighted mention EMA (α=0.05)", source: "v3_energy_baselines_v2" },
-        { name: "total_mentions", desc: "Mentions in last 6 hours", source: "ktrenz_data_snapshots" },
-        { name: "buzz_score", desc: "Weighted buzz score", source: "ktrenz_data_snapshots" },
-        { name: "sentiment_score", desc: "Sentiment score (0–100)", source: "ktrenz_data_snapshots" },
+        { name: "totalMentions", desc: "Buzz mentions in last collection", source: "ktrenz_data_snapshots" },
+        { name: "buzzScore", desc: "Weighted buzz score", source: "ktrenz_data_snapshots" },
         { name: "recentTotalViews", desc: "Recent video total views", source: "ktrenz_data_snapshots" },
+        { name: "qualityMentions", desc: "mentions × sentimentMultiplier", source: "Calculated" },
+        { name: "prevDayEnergy", desc: "Yesterday's latest energy_score snapshot", source: "v3_energy_snapshots_v2" },
+        { name: "avg_energy_7d", desc: "Energy EMA (α=0.15)", source: "v3_energy_baselines_v2" },
+        { name: "avg_energy_30d", desc: "Energy EMA (α=0.05)", source: "v3_energy_baselines_v2" },
       ]} />
 
       <SectionHeader icon={Server} title="API & Data Sources" color="bg-slate-600" />
@@ -228,7 +230,7 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Each calculat
 
       <FormulaCard title="Squarify Algorithm Summary" formula={`1. Sum total energy → calculate area ratio per artist\n2. Place rows minimizing Worst Aspect Ratio\n3. Split along longer axis repeatedly\n4. Result: near-square tile layout → readability ↑`} description="Reference: finviz.com/map, kaito.ai style heatmap layout" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Feb 26, 2026 · KTRENDZ FES Engine v2</p>
+      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Feb 26, 2026 · KTRENDZ FES Engine v4</p>
     </div>
   );
 
