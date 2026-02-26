@@ -87,6 +87,27 @@ const Login = () => {
     setLoading(false);
   };
 
+  const handleMagicLinkLogin = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      toast({ title: "이메일을 입력해주세요.", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: { emailRedirectTo: window.location.origin },
+    });
+
+    if (error) {
+      toast({ title: "로그인 링크 전송 실패", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "로그인 링크를 보냈습니다", description: "메일함에서 링크를 열어 로그인하세요." });
+    }
+    setLoading(false);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -189,23 +210,33 @@ const Login = () => {
               </div>
 
               {mode === "email-login" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    supabase.auth.resetPasswordForEmail(email.trim(), {
-                      redirectTo: `${window.location.origin}/reset-password`,
-                    }).then(({ error }) => {
-                      if (error) {
-                        toast({ title: "재설정 메일 전송 실패", description: error.message, variant: "destructive" });
-                        return;
-                      }
-                      toast({ title: "재설정 메일을 보냈습니다", description: "메일함에서 링크를 확인해주세요." });
-                    });
-                  }}
-                  className="text-xs text-primary hover:underline"
-                >
-                  비밀번호를 잊으셨나요?
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      supabase.auth.resetPasswordForEmail(email.trim(), {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      }).then(({ error }) => {
+                        if (error) {
+                          toast({ title: "재설정 메일 전송 실패", description: error.message, variant: "destructive" });
+                          return;
+                        }
+                        toast({ title: "재설정 메일을 보냈습니다", description: "메일함에서 링크를 확인해주세요." });
+                      });
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    비밀번호를 잊으셨나요?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleMagicLinkLogin}
+                    className="block text-xs text-primary hover:underline"
+                    disabled={loading}
+                  >
+                    비밀번호 없이 로그인 링크 받기
+                  </button>
+                </div>
               )}
 
               <Button type="submit" disabled={loading} className="w-full h-12 rounded-full font-medium">
