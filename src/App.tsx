@@ -13,6 +13,11 @@ import Login from "./pages/Login";
 import KPass from "./pages/KPass";
 import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminEntries from "./pages/admin/AdminEntries";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -36,6 +41,12 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/k-pass" element={<KPass />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="entries" element={<AdminEntries />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
