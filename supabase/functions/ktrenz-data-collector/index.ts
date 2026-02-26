@@ -334,12 +334,15 @@ async function collectForSingleArtist(
   wikiEntryId: string,
   artistTitle: string,
   keys: { youtube?: string; firecrawl?: string; lastfm?: string },
-  artistMeta?: any
+  artistMeta?: any,
+  source?: string // 특정 소스만 수집 (없으면 전체)
 ) {
   const results: Record<string, any> = {};
 
+  const collectAll = !source || source === "all";
+
   // 1) YouTube
-  if (keys.youtube) {
+  if ((collectAll || source === "youtube") && keys.youtube) {
     try {
       const ytData = await fetchYouTubeData(artistTitle, keys.youtube);
       if (ytData) {
@@ -364,27 +367,30 @@ async function collectForSingleArtist(
   }
 
   // 2) Music (Last.fm + Deezer)
-  try {
-    const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm) : null;
-    const deezer = await fetchDeezerArtist(artistTitle);
-    if (lastfm || deezer) {
-      const musicScore = calculateMusicScore(lastfm, deezer);
-      await upsertV3Score(adminClient, wikiEntryId, {
-        music_score: musicScore,
-      });
-      if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
-      if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
-      results.music = { score: musicScore };
-      console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}`);
-    }
-  } catch (e) { results.music = { error: e.message }; }
+  if (collectAll || source === "music") {
+    try {
+      const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm) : null;
+      const deezer = await fetchDeezerArtist(artistTitle);
+      if (lastfm || deezer) {
+        const musicScore = calculateMusicScore(lastfm, deezer);
+        await upsertV3Score(adminClient, wikiEntryId, {
+          music_score: musicScore,
+        });
+        if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
+        if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
+        results.music = { score: musicScore };
+        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}`);
+      }
+    } catch (e) { results.music = { error: (e as any).message }; }
+  }
 
   // 3) Buzz — 개별 호출에서는 SKIP (일일 크론에서만 처리)
-  // Firecrawl rate limit 보호를 위해 buzz는 batch cron 전용
-  results.buzz = { skipped: true, reason: "Buzz runs only via daily cron" };
+  if (collectAll || source === "buzz") {
+    results.buzz = { skipped: true, reason: "Buzz runs only via daily cron" };
+  }
 
   // 4) Hanteo Album Sales (한터차트 초동)
-  if (keys.firecrawl) {
+  if ((collectAll || source === "hanteo") && keys.firecrawl) {
     try {
       console.log(`[DataCollector] Scraping Hanteo for ${artistTitle}...`);
       const hanteoData = await scrapeWithFirecrawl("https://www.hanteochart.com/honors/initial", keys.firecrawl);
@@ -420,9 +426,12 @@ async function collectForSingleArtist(
     }
   }
 
-  // 5) Energy Score 계산 (개별 호출 시 — 수집 실패 시 건너뜀)
+  // 에너지 재계산: 특정 소스만 수집한 경우(hanteo, music 등)에는 스킵
+  const shouldRecalcEnergy = collectAll || source === "youtube";
   const hasYouTubeError = results.youtube?.error;
-  if (hasYouTubeError) {
+  if (!shouldRecalcEnergy) {
+    results.energy = { skipped: true, reason: `Energy recalc skipped for source=${source}` };
+  } else if (hasYouTubeError) {
     results.energy = { skipped: true, reason: "Data collection failed, skipping energy recalculation" };
     console.warn(`[DataCollector] Energy SKIPPED for ${artistTitle} — data collection had errors`);
   } else {
@@ -485,8 +494,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      console.log(`[DataCollector] Single artist mode: ${artist.title}`);
-      const results = await collectForSingleArtist(adminClient, artist.id, artist.title, keys, artist.metadata);
+      console.log(`[DataCollector] Single artist mode: ${artist.title}, source: ${source}`);
+      const results = await collectForSingleArtist(adminClient, artist.id, artist.title, keys, artist.metadata, source);
 
       return new Response(JSON.stringify({ success: true, artist: artist.title, results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
