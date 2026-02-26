@@ -182,7 +182,41 @@ Deno.serve(async (req) => {
     const buzzScoreRank = rankBy(allArtists, "buzzScore");
     const qualityMentionsRank = rankBy(allArtists, "qualityMentions");
 
-    // ── 4) 각 아티스트 FES 계산 ──
+    // ── 3.5) 변화율 기반 ChangeScore 계산을 위한 베이스라인 일괄 조회 ──
+    const { data: allBaselines } = await sb
+      .from("v3_energy_baselines_v2")
+      .select("*")
+      .in("wiki_entry_id", entryIds);
+    const baselineMap = new Map<string, any>();
+    for (const b of (allBaselines || [])) {
+      baselineMap.set(b.wiki_entry_id, b);
+    }
+
+    // 각 아티스트의 변화율(change ratio) 계산
+    const changeRatios: { entryId: string; ratio: number }[] = [];
+    for (const artist of allArtists) {
+      const baseline = baselineMap.get(artist.entryId);
+      if (baseline) {
+        const mentionRatio = (baseline.avg_velocity_7d || 1) > 0
+          ? artist.totalMentions / (baseline.avg_velocity_7d || 1) : 1;
+        const viewRatio = (baseline.avg_velocity_30d || 1) > 0
+          ? artist.recentTotalViews / (baseline.avg_velocity_30d || 1) : 1;
+        const buzzRatio = (baseline.avg_intensity_7d || 1) > 0
+          ? artist.buzzScore / (baseline.avg_intensity_7d || 1) : 1;
+        // 가중 평균 변화율
+        const avgRatio = mentionRatio * 0.4 + viewRatio * 0.3 + buzzRatio * 0.3;
+        changeRatios.push({ entryId: artist.entryId, ratio: avgRatio });
+      } else {
+        changeRatios.push({ entryId: artist.entryId, ratio: 1.0 }); // 베이스라인 없으면 중립
+      }
+    }
+
+    // 변화율 percentile 랭킹
+    const sortedByChange = [...changeRatios].sort((a, b) => b.ratio - a.ratio);
+    const changeRankMap = new Map<string, number>();
+    sortedByChange.forEach((item, idx) => changeRankMap.set(item.entryId, idx + 1));
+
+    // ── 4) 각 아티스트 FES 계산 (변화율 중심 공식) ──
     const results: any[] = [];
 
     for (const artist of allArtists) {
@@ -197,23 +231,23 @@ Deno.serve(async (req) => {
         const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
         const intensity = Math.round(buzzPct * 0.5 + qualPct * 0.5);
 
-        // 베이스라인 대비 변화 보너스
-        let { data: baseline } = await sb
-          .from("v3_energy_baselines_v2")
-          .select("*")
-          .eq("wiki_entry_id", artist.entryId)
-          .maybeSingle();
+        // ChangeScore: 변화율 percentile (60% 가중치)
+        const changePct = percentileScore(changeRankMap.get(artist.entryId)!, total);
 
+        // 베이스라인 대비 추가 보너스 (±40)
+        const baseline = baselineMap.get(artist.entryId);
         let bonus = 0;
         if (baseline) {
           const mentionChange = changeBonus(artist.totalMentions, baseline.avg_velocity_7d || 1);
           const viewChange = changeBonus(artist.recentTotalViews, baseline.avg_velocity_30d || 1);
           const buzzChange = changeBonus(artist.buzzScore, baseline.avg_intensity_7d || 1);
           bonus = Math.round((mentionChange * 0.4 + viewChange * 0.3 + buzzChange * 0.3));
+          // 보너스 범위 확대: ±40
+          bonus = Math.max(-40, Math.min(40, bonus));
         }
 
-        // Energy = Velocity(40%) + Intensity(60%) + 변화 보너스
-        let energyScore = Math.round(velocity * 0.4 + intensity * 0.6) + bonus;
+        // Energy = Velocity(20%) + Intensity(20%) + ChangeScore(60%) + 변화 보너스
+        let energyScore = Math.round(velocity * 0.2 + intensity * 0.2 + changePct * 0.6) + bonus;
         energyScore = Math.max(10, Math.min(MAX_SCORE, energyScore));
 
         // 24h 변화율
