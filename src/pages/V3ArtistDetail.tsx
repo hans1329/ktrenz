@@ -144,7 +144,9 @@ const V3ArtistDetail = () => {
         .limit(1)
         .maybeSingle();
       latestDbFes = latestScore as any;
-      return { youtube: ytData, buzz: buzzData, music: musicData, fes: latestDbFes, fallbackFes: fesData, warnings };
+      const youtubeMusic = ytData?.results?.youtube_music || null;
+      const ytMvInfo = ytData?.results?.youtube || null;
+      return { youtube: ytData, youtubeMusic, ytMvInfo, buzz: buzzData, music: musicData, fes: latestDbFes, fallbackFes: fesData, warnings };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["v3-artist", slug] });
@@ -168,16 +170,26 @@ const V3ArtistDetail = () => {
 
   const liveData = refreshMutation.data;
   const liveYt = liveData?.youtube;
+  const liveYtMusic = liveData?.youtubeMusic; // Topic channel data
+  const liveYtMv = liveData?.ytMvInfo; // MV category data
   const ytData = liveYt ? {
     channel: { ...liveYt.channel, videoCount: liveYt.channel.totalVideoCount ?? liveYt.channel.videoCount ?? 0 },
     summary: liveYt.recentVideos ? { totalRecentViews: liveYt.recentVideos.totalViews || 0, totalRecentLikes: liveYt.recentVideos.totalLikes || 0, totalRecentComments: liveYt.recentVideos.totalComments || 0, engagementRate: liveYt.recentVideos.engagementRate || null, avgViewsPerVideo: liveYt.recentVideos.avgViewsPerVideo || 0 } : null,
     topEngagement: liveYt.topEngagement || [], recentVideos: liveYt.recentVideos, fetchedAt: liveYt.fetchedAt, youtubeScore: liveYt.youtubeScore || 0,
+    musicVideoViews: liveYtMv?.musicVideoViews || 0, musicVideoCount: liveYtMv?.musicVideoCount || 0,
   } : (cachedYt ? {
     channel: { channelId: cachedYt.youtube_channel_id, channelTitle: entry?.title, channelThumbnail: null, subscriberCount: cachedYt.youtube_subscriber_count || 0, totalViewCount: cachedYt.youtube_total_views || 0, videoCount: cachedYt.youtube_total_videos || 0 },
     youtubeScore: cachedYt.youtube_score || 0,
     summary: cachedYt.youtube_recent_stats ? { totalRecentViews: cachedYt.youtube_recent_stats.total_views || 0, totalRecentLikes: cachedYt.youtube_recent_stats.total_likes || 0, totalRecentComments: cachedYt.youtube_recent_stats.total_comments || 0, engagementRate: cachedYt.youtube_recent_stats.engagement_rate || null, avgViewsPerVideo: cachedYt.youtube_recent_stats.avg_views_per_video || 0 } : null,
     topEngagement: cachedYt.youtube_top_videos || [], recentVideos: null as any, fetchedAt: cachedYt.youtube_updated_at,
   } : null);
+
+  // YouTube Music Topic channel data
+  const ytMusicData = liveYtMusic ? {
+    topicTotalViews: liveYtMusic.topicTotalViews || 0,
+    topicSubscribers: liveYtMusic.topicSubscribers || 0,
+    tracksCount: liveYtMusic.tracksCount || 0,
+  } : null;
 
   const liveBuzz = liveData?.buzz;
   const buzzData = liveBuzz?.success ? liveBuzz : (cachedBuzz ? { buzzScore: cachedBuzz.buzz_score || 0, mentionCount: cachedBuzz.mention_count || 0, sentiment: { score: cachedBuzz.sentiment_score || 50, label: cachedBuzz.sentiment_label || 'neutral' }, topMentions: cachedBuzz.top_mentions || [], fetchedAt: cachedBuzz.updated_at } : null);
@@ -296,6 +308,28 @@ const V3ArtistDetail = () => {
                 </div>
               </>
             )}
+            {/* MV Category Metrics */}
+            {(ytData.musicVideoViews > 0 || ytData.musicVideoCount > 0) && (
+              <>
+                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3 text-primary" /> Music Videos</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <MetricCard icon={Play} label="MV Views" value={formatNumber(ytData.musicVideoViews)} subValue={`${ytData.musicVideoCount} music videos`} color="bg-primary" />
+                  <MetricCard icon={Film} label="MV Count" value={String(ytData.musicVideoCount)} subValue="Category: Music" color="bg-primary" />
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* YouTube Music Topic Channel */}
+        {ytMusicData && ytMusicData.topicTotalViews > 0 && (
+          <>
+            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Headphones className="w-3 h-3" /> YouTube Music</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="grid grid-cols-3 gap-2">
+              <MetricCard icon={Headphones} label="Streams" value={formatNumber(ytMusicData.topicTotalViews)} subValue="Topic Channel" color="bg-destructive" />
+              <MetricCard icon={Users} label="Subscribers" value={formatNumber(ytMusicData.topicSubscribers)} subValue="Topic Channel" color="bg-destructive" />
+              <MetricCard icon={Disc3} label="Tracks" value={String(ytMusicData.tracksCount)} subValue="Recent" color="bg-destructive" />
+            </div>
           </>
         )}
 
