@@ -65,7 +65,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   return (
     <>
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="flex items-center justify-between h-16 px-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between h-16 px-6 w-full">
           {/* Left: Logo */}
           <div className="flex items-center shrink-0">
             <Link to="/" className="flex items-center">
