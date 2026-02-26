@@ -40,9 +40,32 @@ const Login = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-    if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const passwordCandidates = Array.from(new Set([
+      password,
+      password.normalize("NFKC"),
+      password.trim(),
+      password.trim().normalize("NFKC"),
+    ])).filter((value) => value.length > 0);
+
+    let lastError: Error | null = null;
+
+    for (const candidate of passwordCandidates) {
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password: candidate });
+      if (!error) {
+        setLoading(false);
+        return;
+      }
+
+      lastError = error;
+      if (!error.message?.toLowerCase().includes("invalid login credentials")) {
+        break;
+      }
+    }
+
+    if (lastError) {
+      toast({ title: "Login failed", description: lastError.message, variant: "destructive" });
     }
     setLoading(false);
   };
