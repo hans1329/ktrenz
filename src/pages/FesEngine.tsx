@@ -158,7 +158,8 @@ momentumPctScore = percentileScore(momentumRank, total)
         </div>
       </Card>
 
-      <FormulaCard title="energy_change_24h" formula={`change_24h = (final_FES − yesterday_FES) / yesterday_FES × 100`} description="최종 FES와 어제 스냅샷 FES 간의 변동률. UI에 표시되는 ▲/▼ 퍼센트 값입니다." />
+      <FormulaCard title="energy_change_24h" formula={`change_24h = momentum
+         = (absolute_score − yesterday_energy) / yesterday_energy × 100`} description="모멘텀 계산에 사용된 동일한 변동률을 그대로 저장. UI의 ▲/▼ 퍼센트와 FES 순위가 항상 일관됩니다." />
 
       <FormulaCard title="EMA Baseline Update (unchanged)" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
 avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="베이스라인은 여전히 EMA로 관리되며, 에너지 스냅샷의 장기 추세 추적에 사용됩니다." />
