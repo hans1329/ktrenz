@@ -17,6 +17,7 @@ interface TreemapItem {
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
   velocity: number; intensity: number;
+  metadata?: any;
 }
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
@@ -145,12 +146,18 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   const surging = isSurging(item.energyChange24h);
 
   const encodedName = encodeURIComponent(item.title);
+  // 최신곡 정보 추출 (spotify top_songs 또는 melon top_songs)
+  const musicCharts = item.metadata?.music_charts;
+  const latestSong = musicCharts?.spotify?.top_songs?.[0]?.title || musicCharts?.melon?.top_songs?.[0]?.title;
+  const musicSearchQuery = latestSong ? encodeURIComponent(`${item.title} ${latestSong}`) : encodedName;
+  const musicHref = `https://open.spotify.com/search/${musicSearchQuery}`;
+
   const channels = [
     { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: `https://www.youtube.com/results?search_query=${encodedName}` },
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Music className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)" },
-    { icon: <Music className="w-3.5 h-3.5" />, label: "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)" },
+    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)", href: musicHref },
   ].filter(c => c.value > 0);
 
   return (
@@ -328,6 +335,7 @@ const V3Treemap = () => {
           sparkline, trendLabel: getTrendLabel(change, sparkline),
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
           velocity: vi?.velocity ?? 0, intensity: vi?.intensity ?? 0,
+          metadata: entry?.metadata || null,
         };
       });
     },
