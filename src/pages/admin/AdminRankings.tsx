@@ -248,6 +248,36 @@ const AdminRankings = () => {
   const tier1 = artists.filter(a => a.tier === 1).sort((a, b) => (b.scores?.total_score ?? 0) - (a.scores?.total_score ?? 0));
   const tier2 = artists.filter(a => a.tier === 2).sort((a, b) => b.trending_score - a.trending_score);
 
+  // 오늘의 YouTube API 토큰 소비량 추적
+  const { data: ytQuota } = useQuery({
+    queryKey: ['yt-quota-today'],
+    queryFn: async () => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { count, error } = await supabase
+        .from('ktrenz_data_snapshots')
+        .select('id', { count: 'exact', head: true })
+        .eq('platform', 'youtube')
+        .gte('collected_at', todayStart.toISOString());
+      if (error) throw error;
+      const collections = count ?? 0;
+      // 각 수집당 약 101 유닛 (channels.list 1 + search/videos 100)
+      // 고정 ID 없는 경우 추가 100 (channel search) → 보수적으로 201로 계산
+      // 고정 ID 있는 아티스트 비율 추정: v3_artist_tiers에 youtube_channel_id가 있는 비율
+      const { count: fixedCount } = await supabase
+        .from('v3_artist_tiers' as any)
+        .select('wiki_entry_id', { count: 'exact', head: true })
+        .not('youtube_channel_id', 'is', null);
+      const totalArtists = artists.length || 1;
+      const fixedRatio = (fixedCount ?? 0) / totalArtists;
+      // 고정 ID: 101 units, 검색: 201 units → 가중 평균
+      const avgUnitsPerCollection = Math.round(101 * fixedRatio + 201 * (1 - fixedRatio));
+      const estimatedQuota = collections * avgUnitsPerCollection;
+      return { collections, estimatedQuota, dailyLimit: 10000 };
+    },
+    staleTime: 60_000,
+  });
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
@@ -474,6 +504,28 @@ const AdminRankings = () => {
           <p className="text-sm text-muted-foreground mt-1">데이터 엔진에 연결된 아티스트 티어 및 스코어 관리</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {ytQuota && (
+            <Tooltip>
+              <TooltipTrigger>
+                <Badge
+                  variant="outline"
+                  className={`gap-1 text-xs ${
+                    ytQuota.estimatedQuota > ytQuota.dailyLimit * 0.8
+                      ? 'border-destructive/50 text-destructive'
+                      : ytQuota.estimatedQuota > ytQuota.dailyLimit * 0.5
+                        ? 'border-yellow-500/50 text-yellow-600'
+                        : 'border-emerald-500/50 text-emerald-600'
+                  }`}
+                >
+                  ▶ YT {ytQuota.estimatedQuota.toLocaleString()} / {ytQuota.dailyLimit.toLocaleString()}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>오늘 YouTube API 쿼터 (추정)</p>
+                <p className="text-xs text-muted-foreground">수집 {ytQuota.collections}회 × ~{Math.round(ytQuota.estimatedQuota / (ytQuota.collections || 1))} units</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           {staleCount > 0 && (
             <Badge variant="outline" className="border-yellow-500/50 text-yellow-600 gap-1">
               <AlertTriangle className="w-3.5 h-3.5" />
