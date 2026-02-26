@@ -18,6 +18,7 @@ interface TreemapItem {
   ema7d: number | null; ema30d: number | null;
   velocity: number; intensity: number;
   metadata?: any;
+  youtubeChannelId?: string | null;
 }
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
@@ -153,7 +154,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   const musicHref = `https://open.spotify.com/search/${musicSearchQuery}`;
 
   const channels = [
-    { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: `https://www.youtube.com/results?search_query=${encodedName}` },
+    { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Music className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)" },
@@ -289,7 +290,7 @@ const V3Treemap = () => {
 
       // Fetch sparkline and baselines for these top artists
       const topIds = topItems.map((s) => s.wiki_entry_id);
-      const [{ data: snapshots }, { data: baselines }] = await Promise.all([
+      const [{ data: snapshots }, { data: baselines }, { data: tierData }] = await Promise.all([
         supabase
           .from("v3_energy_snapshots_v2" as any)
           .select("wiki_entry_id, energy_score, velocity_score, intensity_score, snapshot_at")
@@ -300,6 +301,11 @@ const V3Treemap = () => {
           .from("v3_energy_baselines_v2" as any)
           .select("wiki_entry_id, avg_energy_7d, avg_energy_30d")
           .in("wiki_entry_id", topIds),
+        supabase
+          .from("v3_artist_tiers" as any)
+          .select("wiki_entry_id, youtube_channel_id")
+          .in("wiki_entry_id", topIds)
+          .not("youtube_channel_id", "is", null),
       ]);
 
       const sparklineMap = new Map<string, number[]>();
@@ -319,6 +325,11 @@ const V3Treemap = () => {
         baselineMap.set(b.wiki_entry_id, { ema7d: b.avg_energy_7d, ema30d: b.avg_energy_30d });
       }
 
+      const ytChannelMap = new Map<string, string>();
+      for (const t of (tierData || []) as any[]) {
+        if (t.youtube_channel_id) ytChannelMap.set(t.wiki_entry_id, t.youtube_channel_id);
+      }
+
       return topItems.map((s) => {
         const entry = s.wiki_entries as any;
         const sparkline = sparklineMap.get(s.wiki_entry_id) || [];
@@ -336,6 +347,7 @@ const V3Treemap = () => {
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
           velocity: vi?.velocity ?? 0, intensity: vi?.intensity ?? 0,
           metadata: entry?.metadata || null,
+          youtubeChannelId: ytChannelMap.get(s.wiki_entry_id) || null,
         };
       });
     },
