@@ -434,7 +434,7 @@ const V3Treemap = () => {
                     <BoxParticles
                       count={isTop3 ? Math.max(40, Math.round(ratio * 60)) : Math.max(5, Math.round(ratio * 30))}
                       speed={Math.max(0.1, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
-                      density={isTop3 ? Math.max(0.8, ratio * 1.5) : Math.max(0.3, ratio)}
+                      density={0.5}
                       color="hsl(0, 0%, 100%)"
                     />
                   );
