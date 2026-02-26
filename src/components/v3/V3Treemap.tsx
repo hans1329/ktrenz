@@ -466,12 +466,13 @@ const V3Treemap = () => {
                   const ratio = rect.item.energyScore / maxEs;
                   const rank = (items || []).filter(i => i.energyScore > rect.item.energyScore).length;
                   const isTop3 = rank < 3;
+                  const isTop1 = rect.item.id === topChangeId;
                   return (
                     <BoxParticles
-                      count={isTop3 ? Math.max(40, Math.round(ratio * 60)) : Math.max(5, Math.round(ratio * 30))}
-                      speed={Math.max(0.1, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
-                      density={0.5}
-                      color="hsl(0, 0%, 100%)"
+                      count={isTop1 ? 80 : isTop3 ? Math.max(40, Math.round(ratio * 60)) : Math.max(5, Math.round(ratio * 30))}
+                      speed={isTop1 ? 0.7 : Math.max(0.1, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
+                      density={isTop1 ? 1.0 : 0.5}
+                      color={isTop1 ? "hsl(35, 100%, 70%)" : "hsl(0, 0%, 100%)"}
                     />
                   );
                 })()}
