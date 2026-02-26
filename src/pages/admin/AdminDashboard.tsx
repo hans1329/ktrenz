@@ -7,15 +7,21 @@ const AdminDashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const [usersRes, entriesRes, postsRes] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      const [usersRes, entriesRes, botUsersRes] = await Promise.all([
+        supabase.from('ktrenz_user_logins' as any).select('id', { count: 'exact', head: true }),
         supabase.from('wiki_entries').select('id', { count: 'exact', head: true }),
-        supabase.from('posts').select('id', { count: 'exact', head: true }),
+        supabase.from('ktrenz_fan_agent_messages' as any).select('user_id', { count: 'exact', head: true }),
       ]);
+      // 봇 사용자 수: 고유 user_id 수를 위해 distinct 쿼리
+      const { data: distinctBotUsers } = await supabase
+        .from('ktrenz_fan_agent_messages' as any)
+        .select('user_id')
+        .limit(1000);
+      const uniqueBotUsers = new Set((distinctBotUsers || []).map((r: any) => r.user_id)).size;
       return {
         users: usersRes.count ?? 0,
         entries: entriesRes.count ?? 0,
-        posts: postsRes.count ?? 0,
+        botUsers: uniqueBotUsers,
       };
     },
     staleTime: 1000 * 60 * 5,
@@ -24,7 +30,7 @@ const AdminDashboard = () => {
   const statCards = [
     { label: '총 유저', value: stats?.users ?? '-', icon: Users, color: 'text-blue-500' },
     { label: 'Wiki 엔트리', value: stats?.entries ?? '-', icon: FileText, color: 'text-green-500' },
-    { label: '게시글', value: stats?.posts ?? '-', icon: MessageSquare, color: 'text-purple-500' },
+    { label: '봇 사용자', value: stats?.botUsers ?? '-', icon: MessageSquare, color: 'text-purple-500' },
   ];
 
   return (
