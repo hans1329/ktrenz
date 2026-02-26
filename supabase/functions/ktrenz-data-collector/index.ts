@@ -137,6 +137,11 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
       topVideos.sort((a, b) => b.viewCount - a.viewCount);
     }
 
+    // latestVideo = 가장 최근 업로드 (playlistItems 순서 기준 첫 번째)
+    const videoTitleMap = new Map(topVideos.map((v: any) => [v.videoId, v.title]));
+    const latestVideoId = videoIds[0] || null;
+    const latestVideo = latestVideoId ? { videoId: latestVideoId, title: videoTitleMap.get(latestVideoId) || "" } : null;
+
     return {
       channelId,
       channelTitle: channel.snippet?.title || artistName,
@@ -145,6 +150,7 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
       recentTotalViews, recentTotalLikes, recentTotalComments,
       topVideos: topVideos.slice(0, 5),
       musicVideoViews, musicVideoCount,
+      latestVideo,
     };
   } catch (e) {
     console.error(`[DataCollector] YouTube error for ${artistName}:`, e);
@@ -459,6 +465,17 @@ async function collectForSingleArtist(
         results.youtube = { score: ytScore, usedFixedId: !!endpoints?.youtube_channel_id, musicVideoViews: ytData.musicVideoViews, musicVideoCount: ytData.musicVideoCount };
         console.log(`[DataCollector] YouTube: ${artistTitle} → ${ytScore} (MV: ${ytData.musicVideoCount}개, ${ytData.musicVideoViews.toLocaleString()} views)${endpoints?.youtube_channel_id ? ' (fixed ID)' : ''}`);
 
+        // 최신 영상 ID 저장
+        if (ytData.latestVideo?.videoId) {
+          await adminClient.from("v3_artist_tiers")
+            .update({
+              latest_youtube_video_id: ytData.latestVideo.videoId,
+              latest_youtube_video_title: ytData.latestVideo.title,
+              latest_youtube_updated_at: new Date().toISOString(),
+            } as any)
+            .eq("wiki_entry_id", wikiEntryId);
+        }
+
         // YouTube Music Topic 채널 데이터 수집
         const topicData = await fetchYouTubeTopicData(artistTitle, keys.youtube, endpoints?.youtube_topic_channel_id);
         if (topicData) {
@@ -705,6 +722,16 @@ Deno.serve(async (req) => {
               wiki_entry_id: artist.id, platform: "youtube",
               metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
             });
+            // 최신 영상 ID 저장
+            if (ytData.latestVideo?.videoId) {
+              await adminClient.from("v3_artist_tiers")
+                .update({
+                  latest_youtube_video_id: ytData.latestVideo.videoId,
+                  latest_youtube_video_title: ytData.latestVideo.title,
+                  latest_youtube_updated_at: new Date().toISOString(),
+                } as any)
+                .eq("wiki_entry_id", artist.id);
+            }
             ytUpdated++;
           }
           // YouTube API quota 보호 (4 calls/artist)

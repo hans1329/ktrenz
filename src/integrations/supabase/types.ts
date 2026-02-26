@@ -4455,6 +4455,9 @@ export type Database = {
           instagram_handle: string | null
           is_manual_override: boolean
           lastfm_artist_name: string | null
+          latest_youtube_updated_at: string | null
+          latest_youtube_video_id: string | null
+          latest_youtube_video_title: string | null
           name_ko: string | null
           tier: number
           tiktok_handle: string | null
@@ -4473,6 +4476,9 @@ export type Database = {
           instagram_handle?: string | null
           is_manual_override?: boolean
           lastfm_artist_name?: string | null
+          latest_youtube_updated_at?: string | null
+          latest_youtube_video_id?: string | null
+          latest_youtube_video_title?: string | null
           name_ko?: string | null
           tier?: number
           tiktok_handle?: string | null
@@ -4491,6 +4497,9 @@ export type Database = {
           instagram_handle?: string | null
           is_manual_override?: boolean
           lastfm_artist_name?: string | null
+          latest_youtube_updated_at?: string | null
+          latest_youtube_video_id?: string | null
+          latest_youtube_video_title?: string | null
           name_ko?: string | null
           tier?: number
           tiktok_handle?: string | null
