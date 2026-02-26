@@ -122,20 +122,20 @@ Naver: 1.3 | Reddit: 1.2 | YouTube: 1.0`}</code>
         <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
           <li><strong className="text-foreground">Momentum-Driven:</strong> 24h 변동률(momentum)이 점수의 70%를 결정 — 변동이 클수록 높은 점수</li>
           <li><strong className="text-foreground">Percentile Ranking:</strong> 모든 지표를 절대값 대신 아티스트 간 상대 순위(percentile)로 변환</li>
-          <li><strong className="text-foreground">Absolute Baseline (30%):</strong> 언급량, 조회수, 버즈 등 원시 지표의 순위 기반 점수</li>
-          <li><strong className="text-foreground">Momentum (70%):</strong> 어제 energy_score 대비 오늘 absolute_score의 변동률 순위</li>
+          <li><strong className="text-foreground">Absolute Baseline (10%):</strong> 언급량, 조회수, 버즈 등 원시 지표의 순위 기반 점수</li>
+          <li><strong className="text-foreground">Momentum (90%):</strong> 어제 energy_score 대비 오늘 absolute_score의 변동률 순위</li>
           <li><strong className="text-foreground">Neutral Fallback:</strong> 어제 스냅샷이 없는 아티스트는 중앙값(median) momentum 할당</li>
         </ul>
       </Card>
 
-      <FormulaCard title="Core Formula (v4)" formula={`FES = absolute_score × 0.30 + momentum_percentile × 0.70
+      <FormulaCard title="Core Formula (v4)" formula={`FES = absolute_score × 0.10 + momentum_percentile × 0.90
 
 absolute_score = velocity × 0.50 + intensity × 0.50
 velocity       = mentionRank_pct × 0.60 + viewRank_pct × 0.40
 intensity      = buzzScoreRank_pct × 0.50 + qualityMentionRank_pct × 0.50
 
 momentum = (absolute_score − yesterday_energy) / yesterday_energy × 100
-momentum_percentile = percentileScore(momentum_rank, total_artists)`} description="어제 대비 변동률이 높을수록 momentum_percentile이 높아지고, 최종 FES의 70%를 차지합니다." />
+momentum_percentile = percentileScore(momentum_rank, total_artists)`} description="어제 대비 변동률이 높을수록 momentum_percentile이 높아지고, 최종 FES의 90%를 차지합니다." />
 
       <Card className="p-3 bg-card border-border/50 space-y-4">
         <div>

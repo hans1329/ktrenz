@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
     const momentumRankMap = new Map<string, number>();
     sortedMomentum.forEach((item, idx) => momentumRankMap.set(item.entryId, idx + 1));
 
-    // ── 5) 최종 energy_score = absolute * 0.3 + momentum_percentile * 0.7 ──
+    // ── 5) 최종 energy_score = absolute * 0.1 + momentum_percentile * 0.9 ──
     // 기존 v2 scores 일괄 조회
     const existingScoreResults = await Promise.all(
       allArtists.map(artist =>
@@ -263,8 +263,8 @@ Deno.serve(async (req) => {
         const momRank = momentumRankMap.get(artist.entryId)!;
         const momPctScore = percentileScore(momRank, total);
 
-        // 최종 점수: 절대값 30% + 모멘텀 70%
-        let energyScore = Math.round(absScore * 0.3 + momPctScore * 0.7);
+        // 최종 점수: 절대값 10% + 모멘텀 90%
+        let energyScore = Math.round(absScore * 0.1 + momPctScore * 0.9);
         energyScore = Math.max(10, Math.min(MAX_SCORE, energyScore));
 
         // velocity와 intensity는 기존 방식 유지 (스냅샷 저장용)
