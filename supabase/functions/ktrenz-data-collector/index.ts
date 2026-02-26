@@ -409,22 +409,28 @@ async function collectForSingleArtist(
     }
   }
 
-  // 5) Energy Score 계산 (개별 호출 시 바로 반영)
-  try {
-    console.log(`[DataCollector] Calculating energy score for ${artistTitle}...`);
-    const energyResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/calculate-energy-score`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-      },
-      body: JSON.stringify({ wikiEntryId }),
-    });
-    const energyResult = await energyResp.json();
-    results.energy = energyResult?.results?.[0] || { success: energyResp.ok };
-    console.log(`[DataCollector] Energy: ${artistTitle} → ${results.energy.energyScore || "N/A"}`);
-  } catch (e) {
-    results.energy = { error: e.message };
+  // 5) Energy Score 계산 (개별 호출 시 — 수집 실패 시 건너뜀)
+  const hasYouTubeError = results.youtube?.error;
+  if (hasYouTubeError) {
+    results.energy = { skipped: true, reason: "Data collection failed, skipping energy recalculation" };
+    console.warn(`[DataCollector] Energy SKIPPED for ${artistTitle} — data collection had errors`);
+  } else {
+    try {
+      console.log(`[DataCollector] Calculating energy score for ${artistTitle}...`);
+      const energyResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/calculate-energy-score`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+        },
+        body: JSON.stringify({}),
+      });
+      const energyResult = await energyResp.json();
+      results.energy = energyResult?.results?.find((r: any) => r.wikiEntryId === wikiEntryId) || { success: energyResp.ok, processed: energyResult?.processed };
+      console.log(`[DataCollector] Energy: ${artistTitle} → ${results.energy.energyScore || "N/A"}`);
+    } catch (e) {
+      results.energy = { error: e.message };
+    }
   }
 
   return results;

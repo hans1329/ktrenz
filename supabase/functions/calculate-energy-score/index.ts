@@ -89,8 +89,6 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const resetBaselines = body.resetBaselines === true;
-    const batchSize = body.batchSize ? Number(body.batchSize) : 30;
-    const batchOffset = body.batchOffset ? Number(body.batchOffset) : 0;
 
     // ── 베이스라인 리셋 모드 (기존 호환) ──
     if (resetBaselines) {
@@ -146,8 +144,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 배치 슬라이싱
-    const entryIds = allEntryIds.slice(batchOffset, batchOffset + batchSize);
+    // Tier 1 전체를 대상으로 계산 (슬라이싱 없음)
+    const entryIds = allEntryIds;
 
     if (!entryIds.length) {
       return new Response(JSON.stringify({ success: true, message: "No entries to process" }),
