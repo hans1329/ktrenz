@@ -295,6 +295,20 @@ const AdminRankings = () => {
     );
   };
 
+  const ScoreCell = ({ value, source, wikiEntryId, artistName }: { value?: number | null; source: string; wikiEntryId: string; artistName: string }) => {
+    const key = `${wikiEntryId}-${source}`;
+    const isRunning = recollecting === key;
+    return (
+      <button
+        className="text-right font-mono text-xs text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors w-full disabled:opacity-50"
+        disabled={isRunning}
+        onClick={() => triggerSingleCollection(source, wikiEntryId, artistName)}
+      >
+        {isRunning ? <Loader2 className="w-3 h-3 animate-spin inline" /> : (value?.toLocaleString() ?? '—')}
+      </button>
+    );
+  };
+
   const RankTable = ({ items, tierNum }: { items: ArtistTier[]; tierNum: number }) => (
     <div className="border rounded-lg overflow-x-auto">
       <Table>
@@ -330,10 +344,10 @@ const AdminRankings = () => {
               <TableCell className="text-right font-mono text-sm font-semibold">{a.scores?.total_score?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-sm">{a.scores?.energy_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-center"><ChangeIndicator value={a.scores?.energy_change_24h} artist={a} /></TableCell>
-              <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.youtube_score?.toLocaleString() ?? '—'}</TableCell>
-              <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.buzz_score?.toLocaleString() ?? '—'}</TableCell>
-              <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.album_sales_score?.toLocaleString() ?? '—'}</TableCell>
-              <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.music_score?.toLocaleString() ?? '—'}</TableCell>
+              <TableCell><ScoreCell value={a.scores?.youtube_score} source="youtube" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
+              <TableCell><ScoreCell value={a.scores?.buzz_score} source="buzz" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
+              <TableCell><ScoreCell value={a.scores?.album_sales_score} source="hanteo" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
+              <TableCell><ScoreCell value={a.scores?.music_score} source="music" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
               <TableCell className="text-center"><DataStatus collection={a.collection} wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
               <TableCell className="text-center">
                 {a.is_manual_override ? (
