@@ -70,18 +70,16 @@ export const useAuth = () => {
       setUser(session?.user ?? null);
 
       // KTrenZ 로그인 이력 기록
-      if (session?.user?.id && (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED')) {
+      if (session?.user?.id && _event === 'SIGNED_IN') {
+        const uid = session.user.id;
         supabase
           .from('ktrenz_user_logins')
           .upsert(
-            { user_id: session.user.id, last_login_at: new Date().toISOString(), login_count: 1 },
-            { onConflict: 'user_id' }
+            { user_id: uid, last_login_at: new Date().toISOString(), login_count: 1 },
+            { onConflict: 'user_id', ignoreDuplicates: false }
           )
-          .then(({ error }) => {
-            if (!error) {
-              // increment login_count
-              supabase.rpc('increment_ktrenz_login_count' as any, { _user_id: session.user.id }).then(() => {});
-            }
+          .then(() => {
+            supabase.rpc('increment_ktrenz_login_count' as any, { _user_id: uid });
           });
       }
     });
