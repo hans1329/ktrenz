@@ -381,8 +381,8 @@ const V3Treemap = () => {
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
-                  "absolute border transition-all duration-200 overflow-hidden flex flex-col items-center justify-center p-1.5",
-                  surging && "animate-neon-surge animate-energy-ripple",
+                  "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5",
+                  surging ? "overflow-visible z-10 animate-neon-surge animate-energy-ripple" : "overflow-hidden",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
