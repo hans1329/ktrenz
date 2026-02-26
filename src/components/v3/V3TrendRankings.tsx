@@ -137,7 +137,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
   if (!entry) return null;
 
   const rankStyles = {
-    1: { icon: <Crown className="w-5 h-5 text-yellow-400" />, border: "border-yellow-400/30", glow: "shadow-[0_0_20px_hsl(45_100%_50%/0.15)]", gradient: "from-yellow-400/10 via-transparent to-transparent", size: "w-16 h-16", label: "1ST", labelColor: "text-yellow-400" },
+    1: { icon: <Crown className="w-5 h-5 text-yellow-400" />, border: "border-yellow-400/30", glow: "shadow-[0_0_20px_hsl(45_100%_50%/0.15)]", gradient: "", size: "w-16 h-16", label: "1ST", labelColor: "text-yellow-400" },
     2: { icon: <Medal className="w-4 h-4 text-slate-300" />, border: "border-slate-300/20", glow: "shadow-[0_0_15px_hsl(210_10%_70%/0.1)]", gradient: "from-slate-300/8 via-transparent to-transparent", size: "w-14 h-14", label: "2ND", labelColor: "text-slate-300" },
     3: { icon: <Medal className="w-4 h-4 text-amber-600" />, border: "border-amber-600/20", glow: "shadow-[0_0_15px_hsl(30_80%_40%/0.1)]", gradient: "from-amber-600/8 via-transparent to-transparent", size: "w-14 h-14", label: "3RD", labelColor: "text-amber-600" },
   }[rank] || { icon: null, border: "", glow: "", gradient: "", size: "w-12 h-12", label: "", labelColor: "" };
