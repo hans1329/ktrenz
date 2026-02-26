@@ -74,8 +74,8 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: 에너지 점수(share) 비례
-  const tileSize = (i: TreemapItem) => Math.max(i.energyScore, 1);
+  // 타일 크기: energy_change_24h 절대값 비례 (변동성이 클수록 큰 타일)
+  const tileSize = (i: TreemapItem) => Math.max(Math.abs(i.energyChange24h), 1);
   const totalValue = items.reduce((s, i) => s + tileSize(i), 0);
   const totalArea = w * h;
   const areas = items.map(i => (tileSize(i) / totalValue) * totalArea);
@@ -320,10 +320,10 @@ const V3Treemap = () => {
     staleTime: 30_000,
   });
 
-  // 에너지 점수(share) 내림차순 정렬 후 squarify
+  // energy_change_24h 절대값 내림차순 정렬 후 squarify (변동성 큰 순)
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
-    return [...items].sort((a, b) => b.energyScore - a.energyScore);
+    return [...items].sort((a, b) => Math.abs(b.energyChange24h) - Math.abs(a.energyChange24h));
   }, [items]);
   const containerWidth = isMobile ? 360 : 420;
   const containerHeight = isMobile ? 620 : 520;
