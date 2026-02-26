@@ -25,7 +25,7 @@ import AdminPoints from "./pages/admin/AdminPoints";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({});
 
 const App = () => (
   <HelmetProvider>
