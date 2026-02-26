@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const { source = "all", wikiEntryId, batchSize: rawBatchSize, batchOffset: rawBatchOffset } = body;
-    const batchSize = Math.min(100, Math.max(1, Number(rawBatchSize) || 25));
+    const batchSize = Math.min(200, Math.max(1, Number(rawBatchSize) || 100));
     const batchOffset = Math.max(0, Number(rawBatchOffset) || 0);
 
     const keys = { youtube: YOUTUBE_API_KEY, firecrawl: FIRECRAWL_API_KEY, lastfm: LASTFM_API_KEY };
