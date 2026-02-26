@@ -115,20 +115,27 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
   return worst;
 }
 
-// ── Channel Bar ──
-function ChannelBar({ icon, label, value, total, color }: { icon: React.ReactNode; label: string; value: number; total: number; color: string }) {
+// ── Channel Bar (Button) ──
+function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
-  return (
-    <div className="space-y-1.5">
+  const content = (
+    <div className={cn("space-y-1.5 p-2.5 rounded-xl border border-transparent transition-all", href && "hover:border-border hover:bg-muted/50 cursor-pointer active:scale-[0.98]")}>
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-xs font-semibold text-foreground">{icon} {label}</span>
-        <span className="text-xs font-bold text-foreground">{Math.round(value)} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span></span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-foreground">{Math.round(value)} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span></span>
+          {href && <ExternalLink className="w-3 h-3 text-muted-foreground" />}
+        </div>
       </div>
       <div className="h-3 rounded-full bg-muted overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
   );
+  if (href) {
+    return <a href={href} target="_blank" rel="noopener noreferrer">{content}</a>;
+  }
+  return content;
 }
 
 // ── Inspector Panel (enhanced) ──
@@ -137,10 +144,11 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
   const surging = isSurging(item.energyChange24h);
 
+  const encodedName = encodeURIComponent(item.title);
   const channels = [
-    { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)" },
-    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)" },
-    { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)" },
+    { icon: <Youtube className="w-3.5 h-3.5" />, label: "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: `https://www.youtube.com/results?search_query=${encodedName}` },
+    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
+    { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Music className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)" },
     { icon: <Music className="w-3.5 h-3.5" />, label: "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)" },
   ].filter(c => c.value > 0);
@@ -195,7 +203,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             </p>
             <div className="space-y-3.5">
               {channels.map(ch => (
-                <ChannelBar key={ch.label} icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} />
+                <ChannelBar key={ch.label} icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
               ))}
             </div>
           </div>
