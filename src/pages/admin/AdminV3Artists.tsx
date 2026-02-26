@@ -401,35 +401,38 @@ const AdminV3Artists = () => {
             </div>
             {/* Endpoints */}
             <div className="border-t pt-3 mt-1">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">크롤링 엔드포인트</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">크롤링 엔드포인트</p>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                비어있으면 <span className="font-medium text-foreground">"{editArtist?.wiki_title}"</span> 이름으로 검색합니다. 고정 ID 입력 시 해당 값을 우선 사용합니다.
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[11px]">YouTube Channel ID</Label>
-                  <Input value={editYoutubeChannelId} onChange={(e) => setEditYoutubeChannelId(e.target.value)} placeholder="UC..." className="h-8 text-xs" />
+                  <Input value={editYoutubeChannelId} onChange={(e) => setEditYoutubeChannelId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px]">Spotify Artist ID</Label>
-                  <Input value={editSpotifyArtistId} onChange={(e) => setEditSpotifyArtistId(e.target.value)} placeholder="0abc..." className="h-8 text-xs" />
+                  <Input value={editSpotifyArtistId} onChange={(e) => setEditSpotifyArtistId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px]">Last.fm Artist Name</Label>
-                  <Input value={editLastfmArtistName} onChange={(e) => setEditLastfmArtistName(e.target.value)} placeholder="Artist name" className="h-8 text-xs" />
+                  <Input value={editLastfmArtistName} onChange={(e) => setEditLastfmArtistName(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px]">Deezer Artist ID</Label>
-                  <Input value={editDeezerArtistId} onChange={(e) => setEditDeezerArtistId(e.target.value)} placeholder="12345" className="h-8 text-xs" />
+                  <Input value={editDeezerArtistId} onChange={(e) => setEditDeezerArtistId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px]">X (Twitter)</Label>
-                  <Input value={editXHandle} onChange={(e) => setEditXHandle(e.target.value)} placeholder="handle" className="h-8 text-xs" />
+                  <Input value={editXHandle} onChange={(e) => setEditXHandle(e.target.value)} placeholder="@handle" className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px]">Instagram</Label>
-                  <Input value={editInstagramHandle} onChange={(e) => setEditInstagramHandle(e.target.value)} placeholder="handle" className="h-8 text-xs" />
+                  <Input value={editInstagramHandle} onChange={(e) => setEditInstagramHandle(e.target.value)} placeholder="@handle" className="h-8 text-xs" />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label className="text-[11px]">TikTok</Label>
-                  <Input value={editTiktokHandle} onChange={(e) => setEditTiktokHandle(e.target.value)} placeholder="handle" className="h-8 text-xs" />
+                  <Input value={editTiktokHandle} onChange={(e) => setEditTiktokHandle(e.target.value)} placeholder="@handle" className="h-8 text-xs" />
                 </div>
               </div>
             </div>
