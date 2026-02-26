@@ -40,9 +40,7 @@ const Login = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const trimmedEmail = email.trim().toLowerCase();
-    console.log('[LOGIN DEBUG] email:', JSON.stringify(trimmedEmail), 'len:', trimmedEmail.length, 'pwd len:', password.length, 'pwd chars:', [...password].map(c => c.charCodeAt(0)));
-    const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
     }
