@@ -31,7 +31,7 @@ const translations: Record<string, Record<Language, string>> = {
   "search.noResults": { en: "No results found", ko: "결과 없음", ja: "結果なし", zh: "未找到结果" },
 
   // ── Rankings ──
-  "rankings.live": { en: "🔥 Live Firepower", ko: "🔥 실시간 화력", ja: "🔥 リアルタイム火力", zh: "🔥 实时火力" },
+  "rankings.live": { en: "🔥 Live Rankings", ko: "🔥 실시간 랭킹", ja: "🔥 リアルタイムランキング", zh: "🔥 实时排名" },
   "rankings.subtitle": { en: "Multi-platform trend scores", ko: "멀티 플랫폼 트렌드 점수", ja: "マルチプラットフォームトレンドスコア", zh: "多平台趋势评分" },
   "rankings.updating": { en: "Updating", ko: "업데이트 중", ja: "更新中", zh: "更新中" },
   "rankings.artists": { en: "artists", ko: "아티스트", ja: "アーティスト", zh: "位艺人" },
