@@ -222,17 +222,15 @@ function calculateYouTubeScore(data: {
   recentTotalViews: number;
   recentTotalLikes: number;
   recentTotalComments: number;
+  videoCount?: number;
 }): number {
-  // 구독자: log10 스케일 (1억 → 80)
-  const subScore = data.subscriberCount > 0 ? Math.log10(data.subscriberCount) * 10 : 0;
-  // 총조회수: log10 (100억 → 100)
-  const viewScore = data.totalViewCount > 0 ? Math.log10(data.totalViewCount) * 10 : 0;
-  // 최근 활동: sqrt 스케일
-  const recentScore = Math.sqrt(data.recentTotalViews / 1000) * 5 +
-    Math.sqrt(data.recentTotalLikes / 100) * 3 +
-    Math.sqrt(data.recentTotalComments / 100) * 2;
+  const subScore = (data.subscriberCount / 1_000_000) * 100;
+  const totalViewScore = (data.totalViewCount / 100_000_000) * 50;
+  const recentViewScore = (data.recentTotalViews / 1_000_000) * 30;
+  const recentEngagement = ((data.recentTotalLikes + data.recentTotalComments) / 100_000) * 20;
+  const volumeScore = Math.min(50, ((data.videoCount ?? 0) / 100) * 10);
 
-  return Math.round(subScore + viewScore + recentScore);
+  return Math.round(subScore + totalViewScore + recentViewScore + recentEngagement + volumeScore);
 }
 
 // ══════════════════════════════════════
@@ -349,14 +347,14 @@ function calculateMusicScore(lastfm: any, deezer: any, ytMusic?: { topicTotalVie
   if (deezer?.fans > 0) score += Math.round(Math.log10(deezer.fans) * 8);
   // YouTube Music Topic 채널 조회수 반영
   if (ytMusic?.topicTotalViews && ytMusic.topicTotalViews > 0) {
-    score += Math.round(Math.log10(ytMusic.topicTotalViews) * 8);
+    score += Math.round(Math.log10(ytMusic.topicTotalViews + 1) * 10);
   }
   if (ytMusic?.topicSubscribers && ytMusic.topicSubscribers > 0) {
-    score += Math.round(Math.log10(ytMusic.topicSubscribers) * 5);
+    score += Math.round(Math.log10(ytMusic.topicSubscribers + 1) * 8);
   }
   // 공식 채널의 Music 카테고리 영상 조회수 반영
   if (ytMusicVideos?.musicVideoViews && ytMusicVideos.musicVideoViews > 0) {
-    score += Math.round(Math.log10(ytMusicVideos.musicVideoViews) * 6);
+    score += Math.round(Math.log10(ytMusicVideos.musicVideoViews + 1) * 12);
   }
   return score;
 }
