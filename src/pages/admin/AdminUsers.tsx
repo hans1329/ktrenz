@@ -16,13 +16,13 @@ interface KtrenzUser {
   first_login_at: string;
   last_login_at: string;
   login_count: number;
+  agent_msg_count: number;
 }
 
 const AdminUsers = () => {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-ktrenz-users'],
     queryFn: async () => {
-      // ktrenz_user_logins 기준으로 유저 조회
       const { data: logins, error: loginErr } = await supabase
         .from('ktrenz_user_logins')
         .select('user_id, first_login_at, last_login_at, login_count')
@@ -32,25 +32,21 @@ const AdminUsers = () => {
 
       const userIds = logins.map(l => l.user_id);
 
-      // profiles, agent_profiles, ktrenz_user_points 병렬 조회
-      const [profilesRes, agentsRes, pointsRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url')
-          .in('id', userIds),
-        supabase
-          .from('ktrenz_agent_profiles')
-          .select('user_id, avatar_url')
-          .in('user_id', userIds),
-        supabase
-          .from('ktrenz_user_points')
-          .select('user_id, points, lifetime_points')
-          .in('user_id', userIds),
+      const [profilesRes, agentsRes, pointsRes, msgRes] = await Promise.all([
+        supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds),
+        supabase.from('ktrenz_agent_profiles').select('user_id, avatar_url').in('user_id', userIds),
+        supabase.from('ktrenz_user_points').select('user_id, points, lifetime_points').in('user_id', userIds),
+        supabase.from('ktrenz_fan_agent_messages').select('user_id').in('user_id', userIds),
       ]);
 
       const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
       const agentMap = new Map((agentsRes.data || []).map(a => [a.user_id, a]));
       const pointsMap = new Map((pointsRes.data || []).map(p => [p.user_id, p]));
+
+      const msgCountMap = new Map<string, number>();
+      (msgRes.data || []).forEach(m => {
+        msgCountMap.set(m.user_id, (msgCountMap.get(m.user_id) || 0) + 1);
+      });
 
       return logins.map((l): KtrenzUser => {
         const profile = profileMap.get(l.user_id);
@@ -67,6 +63,7 @@ const AdminUsers = () => {
           first_login_at: l.first_login_at,
           last_login_at: l.last_login_at,
           login_count: l.login_count,
+          agent_msg_count: msgCountMap.get(l.user_id) || 0,
         };
       });
     },
@@ -91,6 +88,7 @@ const AdminUsers = () => {
               <TableHead>User</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead className="text-right">K-Points</TableHead>
+              <TableHead className="text-right">채팅</TableHead>
               <TableHead className="text-right">로그인</TableHead>
               <TableHead>최근 접속</TableHead>
             </TableRow>
@@ -119,13 +117,14 @@ const AdminUsers = () => {
                   )}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">{u.points.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.agent_msg_count}</TableCell>
                 <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.login_count}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">{new Date(u.last_login_at).toLocaleDateString()}</TableCell>
               </TableRow>
             ))}
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">등록된 KTrenZ 유저가 없습니다</TableCell>
               </TableRow>
             )}
           </TableBody>
