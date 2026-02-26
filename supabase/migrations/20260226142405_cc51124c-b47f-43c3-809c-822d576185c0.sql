@@ -1,0 +1,1 @@
+ALTER TABLE public.v3_artist_tiers DROP COLUMN IF EXISTS spotify_artist_id;
