@@ -27,8 +27,29 @@ const AdminLogin = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-      if (error) throw error;
+      const normalizedEmail = email.trim().toLowerCase();
+      const passwordCandidates = Array.from(new Set([
+        password,
+        password.normalize('NFKC'),
+        password.trim(),
+        password.trim().normalize('NFKC'),
+      ])).filter((value) => value.length > 0);
+
+      let lastError: Error | null = null;
+
+      for (const candidate of passwordCandidates) {
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password: candidate });
+        if (!error) {
+          return;
+        }
+
+        lastError = error;
+        if (!error.message?.toLowerCase().includes('invalid login credentials')) {
+          break;
+        }
+      }
+
+      if (lastError) throw lastError;
     } catch (err: any) {
       toast.error(err.message || 'Login failed');
     } finally {
