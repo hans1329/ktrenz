@@ -1,4 +1,4 @@
-// 일회성 유틸리티: YouTube Data API로 아티스트명 검색 → 공식 채널 ID 자동 매칭
+// YouTube Channel ID 자동 매칭: Firecrawl search로 YouTube 채널 URL에서 ID 추출
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -11,54 +11,60 @@ interface ChannelResult {
   id: string;
   display_name: string;
   channelId: string | null;
-  channelTitle: string | null;
-  subscriberCount: string | null;
+  matchedUrl: string | null;
   error?: string;
 }
 
-async function searchYouTubeChannel(
+// YouTube channel URL에서 channel ID 추출
+function extractChannelId(url: string): string | null {
+  // /channel/UCxxxxxx 패턴
+  const channelMatch = url.match(/youtube\.com\/channel\/(UC[\w-]+)/);
+  if (channelMatch) return channelMatch[1];
+  return null;
+}
+
+async function findChannelViaFirecrawl(
   apiKey: string,
   artistName: string
-): Promise<{ channelId: string; title: string; subscriberCount: string } | null> {
-  // 1) Search for the channel
-  const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(
-    artistName + " official"
-  )}&maxResults=5&key=${apiKey}`;
+): Promise<{ channelId: string; url: string } | null> {
+  const query = `"${artistName}" official youtube channel site:youtube.com/channel`;
 
-  const searchRes = await fetch(searchUrl);
-  if (!searchRes.ok) {
-    const err = await searchRes.text();
-    throw new Error(`YouTube search failed: ${err}`);
+  const response = await fetch("https://api.firecrawl.dev/v1/search", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query, limit: 10, scrapeOptions: { formats: ["markdown"] } }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Firecrawl search failed: ${err}`);
   }
-  const searchData = await searchRes.json();
-  const items = searchData.items || [];
-  if (items.length === 0) return null;
 
-  // 2) Get channel details for all candidates to pick the best one
-  const candidateIds = items.map((i: any) => i.snippet.channelId).join(",");
-  const detailUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${candidateIds}&key=${apiKey}`;
-  const detailRes = await fetch(detailUrl);
-  if (!detailRes.ok) return { channelId: items[0].snippet.channelId, title: items[0].snippet.title, subscriberCount: "?" };
+  const data = await response.json();
+  const results = data.data || [];
 
-  const detailData = await detailRes.json();
-  const channels = detailData.items || [];
-
-  // Pick the channel with highest subscriber count (most likely official)
-  let best = channels[0];
-  let bestSubs = parseInt(best?.statistics?.subscriberCount || "0");
-  for (const ch of channels) {
-    const subs = parseInt(ch.statistics?.subscriberCount || "0");
-    if (subs > bestSubs) {
-      best = ch;
-      bestSubs = subs;
+  // YouTube channel URL에서 UC... ID 추출
+  for (const r of results) {
+    const url = r.url || "";
+    const channelId = extractChannelId(url);
+    if (channelId) {
+      return { channelId, url };
     }
   }
 
-  return {
-    channelId: best.id,
-    title: best.snippet.title,
-    subscriberCount: best.statistics?.subscriberCount || "0",
-  };
+  // URL에서 못 찾으면 결과 텍스트에서 시도
+  for (const r of results) {
+    const text = (r.markdown || r.description || "") + " " + (r.url || "");
+    const match = text.match(/UC[\w-]{20,}/);
+    if (match) {
+      return { channelId: match[0], url: r.url || "" };
+    }
+  }
+
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -67,10 +73,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("YOUTUBE_API_KEY");
-    if (!apiKey) {
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    if (!firecrawlKey) {
       return new Response(
-        JSON.stringify({ error: "YOUTUBE_API_KEY not configured" }),
+        JSON.stringify({ error: "FIRECRAWL_API_KEY not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -79,16 +85,17 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // Parse options
     const body = await req.json().catch(() => ({}));
-    const dryRun = body.dryRun ?? true; // default: dry run (don't update DB)
-    const tierFilter = body.tier; // optional: only process specific tier
+    const dryRun = body.dryRun ?? true;
+    const tierFilter = body.tier;
+    const limitCount = body.limit || 10; // Firecrawl rate limit 고려
 
-    // Get artists without youtube_channel_id
     let query = sb
       .from("v3_artist_tiers")
-      .select("id, display_name, youtube_channel_id, wiki_entry_id, wiki_entries!inner(title)")
-      .is("youtube_channel_id", null);
+      .select("id, display_name, youtube_channel_id, wiki_entries!inner(title)")
+      .is("youtube_channel_id", null)
+      .order("tier", { ascending: true })
+      .limit(limitCount);
 
     if (tierFilter) {
       query = query.eq("tier", tierFilter);
@@ -103,7 +110,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[fill-youtube-channels] Processing ${artists.length} artists (dryRun=${dryRun})`);
+    console.log(`[fill-youtube-channels] Processing ${artists.length} artists via Firecrawl (dryRun=${dryRun})`);
 
     const results: ChannelResult[] = [];
     let updated = 0;
@@ -111,22 +118,20 @@ Deno.serve(async (req) => {
     for (const artist of artists as any[]) {
       const name = artist.display_name || artist.wiki_entries?.title || "";
       if (!name) {
-        results.push({ id: artist.id, display_name: name, channelId: null, channelTitle: null, subscriberCount: null, error: "No name" });
+        results.push({ id: artist.id, display_name: name, channelId: null, matchedUrl: null, error: "No name" });
         continue;
       }
 
       try {
-        // Rate limit: small delay between requests
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 100)); // rate limit
 
-        const result = await searchYouTubeChannel(apiKey, name);
+        const result = await findChannelViaFirecrawl(firecrawlKey, name);
         if (result) {
           results.push({
             id: artist.id,
             display_name: name,
             channelId: result.channelId,
-            channelTitle: result.title,
-            subscriberCount: result.subscriberCount,
+            matchedUrl: result.url,
           });
 
           if (!dryRun) {
@@ -137,24 +142,19 @@ Deno.serve(async (req) => {
             updated++;
           }
 
-          console.log(`  ✓ ${name} → ${result.channelId} (${result.title}, ${Number(result.subscriberCount).toLocaleString()} subs)`);
+          console.log(`  ✓ ${name} → ${result.channelId} (${result.url})`);
         } else {
-          results.push({ id: artist.id, display_name: name, channelId: null, channelTitle: null, subscriberCount: null, error: "No channel found" });
+          results.push({ id: artist.id, display_name: name, channelId: null, matchedUrl: null, error: "No channel found" });
           console.log(`  ✗ ${name} → not found`);
         }
       } catch (e) {
-        results.push({ id: artist.id, display_name: name, channelId: null, channelTitle: null, subscriberCount: null, error: e.message });
+        results.push({ id: artist.id, display_name: name, channelId: null, matchedUrl: null, error: e.message });
         console.error(`  ✗ ${name} → error: ${e.message}`);
       }
     }
 
     return new Response(
-      JSON.stringify({
-        dryRun,
-        totalProcessed: artists.length,
-        updated,
-        results,
-      }),
+      JSON.stringify({ dryRun, totalProcessed: artists.length, updated, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
