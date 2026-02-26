@@ -212,7 +212,7 @@ const AdminV3Artists = () => {
                   <TableHead>한글명 (name_ko)</TableHead>
                   <TableHead>원본 (wiki)</TableHead>
                   <TableHead className="text-center">타입</TableHead>
-                  <TableHead className="text-center">엔드포인트</TableHead>
+                  
                   <TableHead className="text-center">Tier</TableHead>
                   <TableHead className="text-center w-24">관리</TableHead>
                 </TableRow>
@@ -232,16 +232,6 @@ const AdminV3Artists = () => {
                     <TableCell className="text-xs text-muted-foreground">{a.wiki_title}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="text-[10px] capitalize">{a.wiki_schema_type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
-                        {a.youtube_channel_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">YT</Badge>}
-                        {a.lastfm_artist_name && <Badge variant="secondary" className="text-[9px] px-1 py-0">LF</Badge>}
-                        {a.deezer_artist_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">DZ</Badge>}
-                        {!a.youtube_channel_id && !a.lastfm_artist_name && !a.deezer_artist_id && (
-                          <span className="text-[10px] text-muted-foreground">—</span>
-                        )}
-                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={a.tier === 1 ? 'default' : 'secondary'} className="text-xs">T{a.tier}</Badge>
@@ -270,7 +260,7 @@ const AdminV3Artists = () => {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-6">해당 티어에 아티스트 없음</TableCell>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-6">해당 티어에 아티스트 없음</TableCell>
                   </TableRow>
                 )}
               </TableBody>
