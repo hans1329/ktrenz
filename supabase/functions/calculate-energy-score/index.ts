@@ -276,12 +276,9 @@ Deno.serve(async (req) => {
         const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
         const intensity = Math.round(buzzPct * 0.5 + qualPct * 0.5);
 
-        // energy_change_24h 계산
-        const prevScore = prevSnapshotMap.get(artist.entryId);
-        let change24h = 0;
-        if (prevScore && prevScore > 0) {
-          change24h = ((energyScore - prevScore) / prevScore) * 100;
-        }
+        // energy_change_24h = 모멘텀 계산에 사용된 동일한 변동률 사용 (일관성 확보)
+        const momEntry = momentumValues.find(v => v.entryId === artist.entryId);
+        const change24h = momEntry ? momEntry.momentum : 0;
 
         results.push({
           wikiEntryId: artist.entryId,
