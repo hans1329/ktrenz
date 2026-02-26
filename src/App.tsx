@@ -19,6 +19,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminEntries from "./pages/admin/AdminEntries";
+import AdminV3Artists from "./pages/admin/AdminV3Artists";
 import AdminRankings from "./pages/admin/AdminRankings";
 import AdminPoints from "./pages/admin/AdminPoints";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="points" element={<AdminPoints />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="entries" element={<AdminEntries />} />
+              <Route path="v3-artists" element={<AdminV3Artists />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
