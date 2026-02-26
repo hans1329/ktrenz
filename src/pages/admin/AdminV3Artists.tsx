@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Loader2, Pencil, Search, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Search, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface V3Artist {
@@ -38,6 +38,8 @@ const AdminV3Artists = () => {
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editNameKo, setEditNameKo] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-v3-artists'],
@@ -278,8 +280,56 @@ const AdminV3Artists = () => {
               <Input id="name_ko" value={editNameKo} onChange={(e) => setEditNameKo(e.target.value)} placeholder="한글 이름" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="image_url">이미지 URL</Label>
-              <Input id="image_url" value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} placeholder="https://..." />
+              <Label>프로필 이미지</Label>
+              <div className="flex items-center gap-3">
+                <Avatar className="w-16 h-16 rounded-lg border border-border">
+                  <AvatarImage src={editImageUrl || undefined} className="object-cover" />
+                  <AvatarFallback className="rounded-lg text-sm">{editDisplayName.slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-1.5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !editArtist) return;
+                      setUploading(true);
+                      try {
+                        const ext = file.name.split('.').pop();
+                        const filePath = `v3-artists/${editArtist.wiki_entry_id}.${ext}`;
+                        const { error: uploadError } = await supabase.storage
+                          .from('wiki-images')
+                          .upload(filePath, file, { upsert: true });
+                        if (uploadError) throw uploadError;
+                        const { data: { publicUrl } } = supabase.storage
+                          .from('wiki-images')
+                          .getPublicUrl(filePath);
+                        setEditImageUrl(publicUrl + '?t=' + Date.now());
+                        toast.success('이미지 업로드 완료');
+                      } catch (err: any) {
+                        toast.error('업로드 실패: ' + err.message);
+                      } finally {
+                        setUploading(false);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    이미지 변경
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">Supabase Storage에 업로드됩니다</p>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditArtist(null)}>취소</Button>
