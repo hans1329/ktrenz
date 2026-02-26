@@ -4407,6 +4407,44 @@ export type Database = {
           },
         ]
       }
+      v3_artist_milestones: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          milestone_date: string
+          milestone_type: string
+          value: number | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          milestone_date?: string
+          milestone_type: string
+          value?: number | null
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          milestone_date?: string
+          milestone_type?: string
+          value?: number | null
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "v3_artist_milestones_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v3_artist_tiers: {
         Row: {
           created_at: string

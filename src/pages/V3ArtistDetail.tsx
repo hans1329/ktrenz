@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Home, Youtube, Eye, ThumbsUp, MessageSquare, Film, Users, TrendingUp, ExternalLink, Play, Hash, Smile, Zap, Music, Disc3, Headphones } from "lucide-react";
 import V3EnergyChart from "@/components/v3/V3EnergyChart";
+import V3ArtistMilestones from "@/components/v3/V3ArtistMilestones";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -336,6 +337,8 @@ const V3ArtistDetail = () => {
             )}
           </>
         )}
+
+        {entry?.id && <V3ArtistMilestones wikiEntryId={entry.id} />}
       </div>
     );
   };

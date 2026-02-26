@@ -309,15 +309,133 @@ Deno.serve(async (req) => {
     // ── 5) energy_rank 일괄 업데이트 (한번에) ──
     const { data: allV2Scores } = await sb
       .from("v3_scores_v2")
-      .select("id, energy_score")
+      .select("id, wiki_entry_id, energy_score, total_score, buzz_score")
       .order("energy_score", { ascending: false });
 
     if (allV2Scores) {
-      // 배치로 처리 (1-by-1 대신)
       const updates = allV2Scores.map((s: any, i: number) => 
         sb.from("v3_scores_v2").update({ energy_rank: i + 1 }).eq("id", s.id)
       );
       await Promise.all(updates);
+    }
+
+    // ── 6) 마일스톤 자동 감지 ──
+    try {
+      // total_score 기준 랭킹 (tier1만)
+      const totalScoreRanked = [...(allV2Scores || [])]
+        .filter((s: any) => tier1Ids.has(s.wiki_entry_id))
+        .sort((a: any, b: any) => (b.total_score || 0) - (a.total_score || 0));
+      
+      const today = new Date().toISOString().slice(0, 10);
+      const milestoneInserts: any[] = [];
+
+      for (let i = 0; i < totalScoreRanked.length; i++) {
+        const s = totalScoreRanked[i];
+        const rank = i + 1;
+
+        // Top 1 랭킹
+        if (rank === 1) {
+          milestoneInserts.push({
+            wiki_entry_id: s.wiki_entry_id,
+            milestone_type: "top1_ranking",
+            milestone_date: today,
+            value: s.total_score || 0,
+            metadata: { rank: 1 },
+          });
+        }
+        // Top 3 랭킹
+        if (rank <= 3) {
+          milestoneInserts.push({
+            wiki_entry_id: s.wiki_entry_id,
+            milestone_type: "top3_ranking",
+            milestone_date: today,
+            value: rank,
+            metadata: { total_score: s.total_score || 0 },
+          });
+        }
+      }
+
+      // Tier 1 진입 감지 — 현재 tier1이지만 어제는 아니었던 경우
+      const { data: yesterdayTiers } = await sb
+        .from("v3_artist_milestones")
+        .select("wiki_entry_id")
+        .eq("milestone_type", "tier1_entry")
+        .gte("milestone_date", new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10));
+      const recentTier1Set = new Set((yesterdayTiers || []).map((t: any) => t.wiki_entry_id));
+
+      for (const eid of tier1Ids) {
+        if (!recentTier1Set.has(eid)) {
+          // 첫 Tier 1 기록 or 7일 이내 기록 없음 → 신규 진입으로 기록
+          const { data: anyPrev } = await sb
+            .from("v3_artist_milestones")
+            .select("id")
+            .eq("wiki_entry_id", eid)
+            .eq("milestone_type", "tier1_entry")
+            .limit(1)
+            .maybeSingle();
+          if (!anyPrev) {
+            milestoneInserts.push({
+              wiki_entry_id: eid,
+              milestone_type: "tier1_entry",
+              milestone_date: today,
+              value: null,
+            });
+          }
+        }
+      }
+
+      // 최고 에너지 / 최고 버즈 감지
+      for (const s of (allV2Scores || []).filter((x: any) => tier1Ids.has(x.wiki_entry_id))) {
+        // 최고 에너지
+        if (s.energy_score > 0) {
+          const { data: prevMax } = await sb
+            .from("v3_artist_milestones")
+            .select("value")
+            .eq("wiki_entry_id", s.wiki_entry_id)
+            .eq("milestone_type", "highest_energy")
+            .order("value", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (!prevMax || s.energy_score > Number(prevMax.value)) {
+            milestoneInserts.push({
+              wiki_entry_id: s.wiki_entry_id,
+              milestone_type: "highest_energy",
+              milestone_date: today,
+              value: s.energy_score,
+            });
+          }
+        }
+        // 최고 버즈
+        if (s.buzz_score > 0) {
+          const { data: prevMaxBuzz } = await sb
+            .from("v3_artist_milestones")
+            .select("value")
+            .eq("wiki_entry_id", s.wiki_entry_id)
+            .eq("milestone_type", "highest_buzz")
+            .order("value", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (!prevMaxBuzz || s.buzz_score > Number(prevMaxBuzz.value)) {
+            milestoneInserts.push({
+              wiki_entry_id: s.wiki_entry_id,
+              milestone_type: "highest_buzz",
+              milestone_date: today,
+              value: s.buzz_score,
+            });
+          }
+        }
+      }
+
+      // 일괄 upsert (UNIQUE 제약조건으로 중복 방지)
+      if (milestoneInserts.length > 0) {
+        const { error: msErr } = await sb
+          .from("v3_artist_milestones")
+          .upsert(milestoneInserts, { onConflict: "wiki_entry_id,milestone_type,milestone_date" });
+        if (msErr) console.warn("[FES-v3] Milestone insert warning:", msErr.message);
+        else console.log(`[FES-v3] Recorded ${milestoneInserts.length} milestones`);
+      }
+    } catch (msError) {
+      console.warn("[FES-v3] Milestone detection error (non-fatal):", msError);
     }
 
     console.log(`[FES-v3] Processed ${results.length} entries (percentile-based)`);
