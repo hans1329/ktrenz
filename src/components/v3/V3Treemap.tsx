@@ -355,8 +355,8 @@ const V3Treemap = () => {
   if (!items?.length) return <div className="px-4 py-16 text-center"><p className="text-sm text-muted-foreground">No energy data available yet.</p></div>;
 
   const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
-  const maxVelocity = Math.max(...items.map(i => i.velocity), 1);
   const maxIntensity = Math.max(...items.map(i => i.intensity), 1);
+  const maxAbsChange = Math.max(...items.map(i => Math.abs(i.energyChange24h)), 1);
 
   return (
     <div className="px-4 pb-4">
@@ -406,7 +406,7 @@ const V3Treemap = () => {
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
                   "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5 overflow-hidden",
-                  idx === 0 ? "z-10 shadow-[inset_0_0_20px_6px_hsla(11,100%,46%,0.5)]" : "",
+                  idx === 0 ? "z-10 shadow-[inset_0_0_24px_8px_hsla(25,100%,55%,0.6),0_0_16px_4px_hsla(11,100%,46%,0.4)] border-2 border-orange-400/60" : "",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
@@ -414,7 +414,7 @@ const V3Treemap = () => {
                 {isMedium && (
                   <BoxParticles
                     count={Math.max(3, Math.round((rect.item.intensity / maxIntensity) * 25))}
-                    speed={Math.max(0.05, Math.min(1, rect.item.velocity / maxVelocity))}
+                    speed={Math.max(0.05, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
                     density={Math.min(1, rect.item.intensity / maxIntensity)}
                     color="hsl(0, 0%, 100%)"
                   />
