@@ -59,6 +59,8 @@ function formatAgo(dateStr: string): string {
 const AdminRankings = () => {
   const queryClient = useQueryClient();
   const [runningSource, setRunningSource] = useState<string | null>(null);
+  const [recollecting, setRecollecting] = useState<string | null>(null);
+  const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-artist-tiers'],
     queryFn: async () => {
@@ -156,8 +158,7 @@ const AdminRankings = () => {
     }
   };
 
-  // Energy detail dialog
-  const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
+   // Energy detail dialog (state moved to top)
 
   const { data: energySnapshots = [], isLoading: snapshotsLoading } = useQuery({
     queryKey: ['energy-snapshots', detailArtist?.wiki_entry_id],
@@ -211,16 +212,51 @@ const AdminRankings = () => {
     );
   };
 
-  const CollectionBadge = ({ label, dateStr }: { label: string; dateStr?: string | null }) => {
+
+
+  const triggerSingleCollection = async (source: string, wikiEntryId: string, artistName: string) => {
+    const sourceLabel = source === 'youtube' ? 'YouTube' : source === 'buzz' ? 'Buzz' : 'Music';
+    if (!confirm(`${artistName}의 ${sourceLabel} 데이터를 재수집하시겠습니까?`)) return;
+    const key = `${wikiEntryId}-${source}`;
+    setRecollecting(key);
+    try {
+      const { data, error } = await supabase.functions.invoke('ktrenz-data-collector', {
+        body: { source, wikiEntryId },
+      });
+      if (error) throw error;
+      toast.success(`${artistName} ${sourceLabel} 수집 완료`);
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+    } catch (err: any) {
+      toast.error(`수집 실패: ${err.message}`);
+    } finally {
+      setRecollecting(null);
+    }
+  };
+
+  const CollectionBadge = ({ label, dateStr, wikiEntryId, artistName }: { label: string; dateStr?: string | null; wikiEntryId: string; artistName: string }) => {
+    const sourceMap: Record<string, string> = { 'YT': 'youtube', 'Buzz': 'buzz', 'Music': 'music' };
+    const source = sourceMap[label] || label;
+    const key = `${wikiEntryId}-${source}`;
+    const isRunning = recollecting === key;
+
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      triggerSingleCollection(source, wikiEntryId, artistName);
+    };
+
     if (!dateStr) {
       return (
         <Tooltip>
           <TooltipTrigger>
-            <Badge variant="destructive" className="text-[10px] px-1 py-0 gap-0.5">
-              <AlertTriangle className="w-2.5 h-2.5" />{label}
+            <Badge
+              variant="destructive"
+              className="text-[10px] px-1 py-0 gap-0.5 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleClick}
+            >
+              {isRunning ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <AlertTriangle className="w-2.5 h-2.5" />}{label}
             </Badge>
           </TooltipTrigger>
-          <TooltipContent><p>{label} 데이터 수집 기록 없음</p></TooltipContent>
+          <TooltipContent><p>{label} 수집 기록 없음 · 클릭하여 재수집</p></TooltipContent>
         </Tooltip>
       );
     }
@@ -229,16 +265,20 @@ const AdminRankings = () => {
     return (
       <Tooltip>
         <TooltipTrigger>
-          <Badge variant="outline" className="text-[10px] px-1 py-0 gap-0.5 border-yellow-500/50 text-yellow-600">
-            <AlertTriangle className="w-2.5 h-2.5" />{label}
+          <Badge
+            variant="outline"
+            className="text-[10px] px-1 py-0 gap-0.5 border-yellow-500/50 text-yellow-600 cursor-pointer hover:bg-yellow-500/10 transition-colors"
+            onClick={handleClick}
+          >
+            {isRunning ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <AlertTriangle className="w-2.5 h-2.5" />}{label}
           </Badge>
         </TooltipTrigger>
-        <TooltipContent><p>{label} 마지막 수집: {formatAgo(dateStr)}</p></TooltipContent>
+        <TooltipContent><p>{label} 마지막: {formatAgo(dateStr)} · 클릭하여 재수집</p></TooltipContent>
       </Tooltip>
     );
   };
 
-  const DataStatus = ({ collection }: { collection: CollectionStatus }) => {
+  const DataStatus = ({ collection, wikiEntryId, artistName }: { collection: CollectionStatus; wikiEntryId: string; artistName: string }) => {
     const badges = [
       { label: 'YT', dateStr: collection.youtube },
       { label: 'Buzz', dateStr: collection.buzz_multi },
@@ -248,7 +288,7 @@ const AdminRankings = () => {
     if (issues.length === 0) return <span className="text-xs text-emerald-500">✓</span>;
     return (
       <div className="flex gap-0.5 flex-wrap justify-center">
-        {issues.map(b => <CollectionBadge key={b.label} label={b.label} dateStr={b.dateStr} />)}
+        {issues.map(b => <CollectionBadge key={b.label} label={b.label} dateStr={b.dateStr} wikiEntryId={wikiEntryId} artistName={artistName} />)}
       </div>
     );
   };
@@ -292,7 +332,7 @@ const AdminRankings = () => {
               <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.buzz_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.album_sales_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-xs text-muted-foreground">{a.scores?.music_score?.toLocaleString() ?? '—'}</TableCell>
-              <TableCell className="text-center"><DataStatus collection={a.collection} /></TableCell>
+              <TableCell className="text-center"><DataStatus collection={a.collection} wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
               <TableCell className="text-center">
                 {a.is_manual_override ? (
                   <Badge
