@@ -20,7 +20,7 @@ const translations: Record<string, Record<Language, string>> = {
   "common.current": { en: "CURRENT", ko: "현재", ja: "現在", zh: "当前" },
 
   // ── Navigation / Tabs ──
-  "nav.trendz": { en: "K-Trenz", ko: "K 트렌즈", ja: "K トレンズ", zh: "K 趋势" },
+  "nav.trendz": { en: "K-Trenz", ko: "K·트렌즈", ja: "K·トレンズ", zh: "K·趋势" },
   "nav.agent": { en: "Agent", ko: "에이전트", ja: "エージェント", zh: "助手" },
   "nav.fanAgent": { en: "Fan Agent", ko: "팬 에이전트", ja: "ファンエージェント", zh: "粉丝助手" },
   "nav.collapse": { en: "Collapse", ko: "접기", ja: "折りたたむ", zh: "折叠" },
