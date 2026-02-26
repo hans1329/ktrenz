@@ -71,6 +71,28 @@ const AdminLogin = () => {
     }
   };
 
+  const handleMagicLinkLogin = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      toast.error('이메일을 입력해주세요.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: { emailRedirectTo: window.location.origin + '/admin' },
+      });
+      if (error) throw error;
+      toast.success('로그인 링크를 보냈습니다. 메일함에서 링크를 열어주세요.');
+    } catch (err: any) {
+      toast.error(err.message || '로그인 링크 전송 실패');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -113,22 +135,32 @@ const AdminLogin = () => {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} required />
             </div>
-            <button
-              type="button"
-              className="text-xs text-primary hover:underline"
-              onClick={async () => {
-                const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-                  redirectTo: `${window.location.origin}/reset-password`,
-                });
-                if (error) {
-                  toast.error(error.message || 'Reset email failed');
-                  return;
-                }
-                toast.success('비밀번호 재설정 메일을 보냈습니다.');
-              }}
-            >
-              비밀번호를 잊으셨나요?
-            </button>
+            <div className="space-y-2">
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline"
+                onClick={async () => {
+                  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  if (error) {
+                    toast.error(error.message || 'Reset email failed');
+                    return;
+                  }
+                  toast.success('비밀번호 재설정 메일을 보냈습니다.');
+                }}
+              >
+                비밀번호를 잊으셨나요?
+              </button>
+              <button
+                type="button"
+                className="block text-xs text-primary hover:underline"
+                onClick={handleMagicLinkLogin}
+                disabled={submitting}
+              >
+                비밀번호 없이 로그인 링크 받기
+              </button>
+            </div>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               로그인
