@@ -21,7 +21,6 @@ interface V3Artist {
   is_manual_override: boolean;
   updated_at: string;
   youtube_channel_id: string | null;
-  spotify_artist_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
   x_handle: string | null;
@@ -46,7 +45,6 @@ const AdminV3Artists = () => {
   const [editNameKo, setEditNameKo] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
   const [editYoutubeChannelId, setEditYoutubeChannelId] = useState('');
-  const [editSpotifyArtistId, setEditSpotifyArtistId] = useState('');
   const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
   const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
   const [editXHandle, setEditXHandle] = useState('');
@@ -60,7 +58,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, spotify_artist_id, lastfm_artist_name, deezer_artist_id, x_handle, instagram_handle, tiktok_handle, wiki_entries!inner(title, image_url, schema_type)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, lastfm_artist_name, deezer_artist_id, x_handle, instagram_handle, tiktok_handle, wiki_entries!inner(title, image_url, schema_type)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -73,7 +71,6 @@ const AdminV3Artists = () => {
         is_manual_override: row.is_manual_override,
         updated_at: row.updated_at,
         youtube_channel_id: row.youtube_channel_id,
-        spotify_artist_id: row.spotify_artist_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
         x_handle: row.x_handle,
@@ -106,7 +103,7 @@ const AdminV3Artists = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; spotify_artist_id: string; lastfm_artist_name: string; deezer_artist_id: string; x_handle: string; instagram_handle: string; tiktok_handle: string }) => {
+    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string; x_handle: string; instagram_handle: string; tiktok_handle: string }) => {
       const { error } = await supabase
         .from('v3_artist_tiers')
         .update({
@@ -114,7 +111,6 @@ const AdminV3Artists = () => {
           name_ko: payload.name_ko || null,
           image_url: payload.image_url || null,
           youtube_channel_id: payload.youtube_channel_id || null,
-          spotify_artist_id: payload.spotify_artist_id || null,
           lastfm_artist_name: payload.lastfm_artist_name || null,
           deezer_artist_id: payload.deezer_artist_id || null,
           x_handle: payload.x_handle || null,
@@ -167,7 +163,6 @@ const AdminV3Artists = () => {
     setEditNameKo(artist.name_ko || '');
     setEditImageUrl(artist.image_url || artist.wiki_image || '');
     setEditYoutubeChannelId(artist.youtube_channel_id || '');
-    setEditSpotifyArtistId(artist.spotify_artist_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
     setEditDeezerArtistId(artist.deezer_artist_id || '');
     setEditXHandle(artist.x_handle || '');
@@ -256,13 +251,12 @@ const AdminV3Artists = () => {
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-0.5 flex-wrap">
                         {a.youtube_channel_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">YT</Badge>}
-                        {a.spotify_artist_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">SP</Badge>}
                         {a.lastfm_artist_name && <Badge variant="secondary" className="text-[9px] px-1 py-0">LF</Badge>}
                         {a.deezer_artist_id && <Badge variant="secondary" className="text-[9px] px-1 py-0">DZ</Badge>}
                         {a.x_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">X</Badge>}
                         {a.instagram_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">IG</Badge>}
                         {a.tiktok_handle && <Badge variant="secondary" className="text-[9px] px-1 py-0">TT</Badge>}
-                        {!a.youtube_channel_id && !a.spotify_artist_id && !a.lastfm_artist_name && !a.x_handle && (
+                        {!a.youtube_channel_id && !a.lastfm_artist_name && !a.x_handle && (
                           <span className="text-[10px] text-muted-foreground">—</span>
                         )}
                       </div>
@@ -411,10 +405,6 @@ const AdminV3Artists = () => {
                   <Input value={editYoutubeChannelId} onChange={(e) => setEditYoutubeChannelId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">Spotify Artist ID</Label>
-                  <Input value={editSpotifyArtistId} onChange={(e) => setEditSpotifyArtistId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
-                </div>
-                <div className="space-y-1">
                   <Label className="text-[11px]">Last.fm Artist Name</Label>
                   <Input value={editLastfmArtistName} onChange={(e) => setEditLastfmArtistName(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
@@ -448,7 +438,6 @@ const AdminV3Artists = () => {
                     name_ko: editNameKo,
                     image_url: editImageUrl,
                     youtube_channel_id: editYoutubeChannelId,
-                    spotify_artist_id: editSpotifyArtistId,
                     lastfm_artist_name: editLastfmArtistName,
                     deezer_artist_id: editDeezerArtistId,
                     x_handle: editXHandle,
