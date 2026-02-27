@@ -4,8 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import SEO from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import V3Sidebar from "@/components/v3/V3Sidebar";
+import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -383,24 +382,21 @@ const V3ArtistDetail = () => {
 
   return (
     <><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} />
-      <SidebarProvider defaultOpen={true}>
-        <div className="h-screen flex w-full overflow-hidden">
-          <V3Sidebar activeTab="rankings" onTabChange={() => navigate('/')} />
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <header className="h-[68px] border-b border-border/50 bg-background/60 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 gap-3">
-              <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
-              <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
-              <h1 className="flex-1 text-center font-bold text-lg text-foreground">{pageTitle}</h1>
-              <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
-                onClick={() => { document.querySelector('main.flex-1.overflow-auto')?.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }} disabled={refreshMutation.isPending}>
-                <span className="text-xs font-medium">Data</span>
-                <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary")} />
-              </Button>
-            </header>
-            <main className="flex-1 overflow-auto"><PageContent /></main>
-          </div>
-        </div>
-      </SidebarProvider>
+      <div className="min-h-screen flex flex-col">
+        <V3DesktopHeader activeTab="rankings" onTabChange={() => navigate('/')} />
+        <header className="h-[52px] border-b border-border/50 bg-background/60 backdrop-blur-xl sticky top-16 z-40 flex items-center px-4 gap-3 max-w-4xl mx-auto w-full">
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
+          <h1 className="flex-1 text-center font-bold text-lg text-foreground">{pageTitle}</h1>
+          <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
+            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }} disabled={refreshMutation.isPending || isCrawling}
+            title={isCrawling ? "Global data collection in progress..." : undefined}>
+            <span className="text-xs font-medium">{isCrawling ? "Running..." : "Data"}</span>
+            <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
+          </Button>
+        </header>
+        <main className="flex-1 overflow-auto"><PageContent /></main>
+      </div>
     </>
   );
 };
