@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
               actionResult = `\n\n[시스템] 관심 아티스트 추가 실패: ${insertErr.message}`;
             }
           } else {
-            actionResult = `\n\n[시스템] "${resolvedName}"을(를) 관심 아티스트에 추가했습니다.`;
+            actionResult = `\n\n[시스템] "${resolvedName}"을(를) 관심 아티스트에 추가했습니다.\n[지시] 등록 환영 메시지만 전달해. 예: "${resolvedName}" 등록 완료! 앞으로 순위 변동, 화제성, 신곡 소식 등을 실시간으로 알려드릴게요. 스밍 가이드, 플레이리스트, 플랫폼별 팁 등 상세 정보는 절대 포함하지 마.`;
           }
         }
       } else if (removeMatch) {
