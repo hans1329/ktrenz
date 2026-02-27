@@ -4967,7 +4967,7 @@ export type Database = {
           {
             foreignKeyName: "v3_scores_v2_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "wiki_entries"
             referencedColumns: ["id"]
           },

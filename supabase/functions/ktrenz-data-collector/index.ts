@@ -423,8 +423,8 @@ async function upsertV3Score(adminClient: any, wikiEntryId: string, payload: Rec
   } else {
     const { error } = await adminClient
       .from("v3_scores_v2")
-      .insert({ wiki_entry_id: wikiEntryId, ...payload });
-    if (error) console.error(`[DataCollector] v3_scores_v2 insert error for ${wikiEntryId}:`, error);
+      .upsert({ wiki_entry_id: wikiEntryId, ...payload }, { onConflict: "wiki_entry_id", ignoreDuplicates: false });
+    if (error) console.error(`[DataCollector] v3_scores_v2 upsert error for ${wikiEntryId}:`, error);
   }
 }
 
