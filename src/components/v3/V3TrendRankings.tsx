@@ -293,29 +293,14 @@ const V3TrendRankings = () => {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
-      const oldScoreMap = new Map<string, number>();
-      for (const s of typedScores) {
-        if (s.scored_at <= since && !oldScoreMap.has(s.wiki_entry_id)) oldScoreMap.set(s.wiki_entry_id, s.total_score ?? 0);
-      }
-      for (const s of [...typedScores].reverse()) {
-        if (!oldScoreMap.has(s.wiki_entry_id) && s.scored_at >= since) oldScoreMap.set(s.wiki_entry_id, s.total_score ?? 0);
-      }
-
       const ranked = Array.from(latestMap.values()).map((item) => {
-        // 에너지맵과 동일하게 energy_change_24h를 changePercent로 사용
         const changePercent = item.energy_change_24h ?? 0;
         return { ...item, changePercent };
       });
 
-      // 에너지 맵과 동일한 변동성 기반 정렬: energy_change_24h 기준
-      ranked.sort((a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0));
-      const top5 = ranked.slice(0, 5);
-      const bottom5 = ranked.slice(-5).reverse();
-      const selectedIds = new Set([...top5, ...bottom5].map(r => r.wiki_entry_id));
-      const middle = ranked
-        .filter(r => !selectedIds.has(r.wiki_entry_id))
-        .sort((a, b) => Math.abs(a.energy_change_24h || 0) - Math.abs(b.energy_change_24h || 0));
-      return [...top5, ...middle, ...bottom5];
+      // 리스트뷰: 상승률(24h 변동률) 내림차순 정렬
+      ranked.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+      return ranked;
     },
     staleTime: 30_000,
   });
