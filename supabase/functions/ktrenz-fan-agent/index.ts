@@ -35,8 +35,11 @@ Deno.serve(async (req) => {
     }
     const userId = user.id;
 
-    const { messages } = await req.json();
-    if (!Array.isArray(messages) || messages.length === 0) {
+    const body = await req.json();
+    const { messages, mode } = body;
+    const isBriefingMode = mode === "briefing";
+
+    if (!isBriefingMode && (!Array.isArray(messages) || messages.length === 0)) {
       return new Response(JSON.stringify({ error: "messages required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -227,6 +230,99 @@ Deno.serve(async (req) => {
         user_id: userId,
         role: "user",
         content: lastUserMsg.content,
+      });
+    }
+
+    // --- 브리핑 모드: 구조화된 데이터 + AI 요약 반환 ---
+    if (isBriefingMode && watchedArtists && watchedArtists.length > 0) {
+      const briefingArtists: any[] = [];
+      for (const w of watchedArtists) {
+        const found = latest.find((a: any) => {
+          const name = (a.wiki_entries as any)?.title ?? "";
+          return name.toLowerCase() === w.artist_name.toLowerCase();
+        });
+        if (!found) continue;
+        const name = (found.wiki_entries as any)?.title ?? w.artist_name;
+        const rank = latest.indexOf(found) + 1;
+
+        let latestVideoTitle: string | null = null;
+        let topMention: string | null = null;
+        let imageUrl: string | null = null;
+
+        if (w.wiki_entry_id) {
+          const [tierRes, buzzRes, entryRes] = await Promise.all([
+            adminClient.from("v3_artist_tiers").select("latest_video_title").eq("wiki_entry_id", w.wiki_entry_id).maybeSingle(),
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", w.wiki_entry_id).eq("platform", "buzz_multi").order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+            adminClient.from("wiki_entries").select("image_url").eq("id", w.wiki_entry_id).maybeSingle(),
+          ]);
+          latestVideoTitle = (tierRes.data as any)?.latest_video_title ?? null;
+          const buzzMetrics = (buzzRes.data?.metrics as any) || {};
+          if (Array.isArray(buzzMetrics.top_mentions) && buzzMetrics.top_mentions.length > 0) {
+            topMention = buzzMetrics.top_mentions[0].title || buzzMetrics.top_mentions[0].description || null;
+          }
+          imageUrl = (entryRes.data as any)?.image_url ?? null;
+        }
+
+        briefingArtists.push({
+          artist_name: name, image_url: imageUrl, rank,
+          energy_score: found.energy_score ?? 0,
+          energy_change_24h: found.energy_change_24h ?? 0,
+          youtube_score: found.youtube_score ?? 0,
+          buzz_score: found.buzz_score ?? 0,
+          total_score: found.total_score ?? 0,
+          latest_video_title: latestVideoTitle,
+          top_mention: topMention,
+        });
+      }
+
+      // 경쟁 아티스트: 관심 아티스트 주변 순위 ±2
+      const watchedRanks = briefingArtists.map((a: any) => a.rank);
+      const minRank = Math.max(1, Math.min(...watchedRanks) - 2);
+      const maxRank = Math.min(latest.length, Math.max(...watchedRanks) + 2);
+      const watchedNames = new Set(briefingArtists.map((a: any) => a.artist_name.toLowerCase()));
+      const competitors: any[] = [];
+      for (let i = minRank - 1; i < maxRank && i < latest.length; i++) {
+        const a = latest[i];
+        const name = (a.wiki_entries as any)?.title ?? "Unknown";
+        if (watchedNames.has(name.toLowerCase())) continue;
+        competitors.push({
+          artist_name: name, rank: i + 1,
+          energy_score: a.energy_score ?? 0,
+          energy_change_24h: a.energy_change_24h ?? 0,
+          total_score: a.total_score ?? 0,
+        });
+      }
+
+      const briefingData = { watched_artists: briefingArtists, competitors: competitors.slice(0, 5) };
+
+      // AI 요약 생성 (non-streaming)
+      const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
+      let summary: string | null = null;
+      if (OPENAI_KEY) {
+        try {
+          const briefingPrompt = `너는 KTRENZ Fan Agent야. 주인님의 관심 아티스트 데이터를 분석해서 짧고 임팩트 있는 오늘의 브리핑을 작성해.
+말투: "주인님"이라 부르고, 관심 아티스트를 "주인님의 최애"로 표현. 친근하고 귀여운 톤.
+데이터: ${JSON.stringify(briefingData)}
+규칙:
+- 3~5문장 이내로 핵심만 (카드에 이미 상세 수치가 있으므로 숫자 나열 X)
+- 가장 주목할 변화/이슈 1개를 강조
+- 경쟁 아티스트와의 비교 인사이트 포함
+- 이모지 적극 활용, 마크다운 포맷`;
+
+          const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
+            body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "user", content: briefingPrompt }], max_tokens: 300 }),
+          });
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            summary = aiData.choices?.[0]?.message?.content ?? null;
+          }
+        } catch (e) { console.error("[Briefing] AI error:", e); }
+      }
+
+      return new Response(JSON.stringify({ briefing: briefingData, summary }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
