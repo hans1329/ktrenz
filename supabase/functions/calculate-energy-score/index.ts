@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     for (const artist of allArtists) {
       const mentionPct = percentileScore(mentionsRank.get(artist.entryId)!, total);
       const viewPct = percentileScore(viewsRank.get(artist.entryId)!, total);
-      const velocity = Math.round(mentionPct * 0.6 + viewPct * 0.4);
+      const velocity = Math.round(mentionPct * 0.3 + viewPct * 0.7);
 
       const buzzPct = percentileScore(buzzScoreRank.get(artist.entryId)!, total);
       const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
         // velocity와 intensity는 기존 방식 유지 (스냅샷 저장용)
         const mentionPct = percentileScore(mentionsRank.get(artist.entryId)!, total);
         const viewPct = percentileScore(viewsRank.get(artist.entryId)!, total);
-        const velocity = Math.round(mentionPct * 0.6 + viewPct * 0.4);
+        const velocity = Math.round(mentionPct * 0.3 + viewPct * 0.7);
 
         const buzzPct = percentileScore(buzzScoreRank.get(artist.entryId)!, total);
         const qualPct = percentileScore(qualityMentionsRank.get(artist.entryId)!, total);
