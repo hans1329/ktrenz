@@ -149,6 +149,31 @@ async function firecrawlSearch(
   }
 }
 
+// 일반 단어와 겹치는 그룹명에 컨텍스트 키워드를 추가하여 노이즈 방지
+const AMBIGUOUS_NAMES: Record<string, string> = {
+  "H.O.T": "kpop idol group",
+  "H.O.T.": "kpop idol group",
+  "HOT": "kpop idol group SM",
+  "Winner": "kpop YG",
+  "WINNER": "kpop YG",
+  "Treasure": "kpop YG",
+  "TREASURE": "kpop YG",
+  "Red Velvet": "kpop SM",
+  "Day6": "kpop JYP band",
+  "DAY6": "kpop JYP band",
+  "KISS OF LIFE": "kpop girl group",
+  "VIVIZ": "kpop girl group",
+  "CLASS:y": "kpop girl group",
+};
+
+function getSearchName(artistName: string): { searchName: string; contextKeyword: string } {
+  const ctx = AMBIGUOUS_NAMES[artistName];
+  if (ctx) {
+    return { searchName: artistName, contextKeyword: ctx };
+  }
+  return { searchName: artistName, contextKeyword: "" };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -171,11 +196,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[crawl-x-mentions] Multi-source crawl for: ${artistName}`);
+    const { contextKeyword } = getSearchName(artistName);
+    console.log(`[crawl-x-mentions] Multi-source crawl for: ${artistName}${contextKeyword ? ` (context: ${contextKeyword})` : ""}`);
 
     // 모든 소스 병렬 검색
     const sourcePromises = SOURCES.map(async (src) => {
-      const query = src.buildQuery(artistName, hashtags);
+      let query = src.buildQuery(artistName, hashtags);
+      // 노이즈 방지: 모호한 이름에는 컨텍스트 키워드 추가
+      if (contextKeyword) {
+        query = `${query} ${contextKeyword}`;
+      }
       const results = await firecrawlSearch(apiKey, query, src.limit, src.tbs);
       const texts = results
         .map((r: any) => (r.markdown || r.description || r.title || ""))
