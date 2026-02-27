@@ -306,7 +306,7 @@ Deno.serve(async (req) => {
         energy_score: r.energyScore,
       }));
 
-      // v2 scores upsert
+      // v2 scores upsert — 기존 데이터 보존하면서 에너지만 업데이트
       if (r.existingScore) {
         writeOps.push(sb.from("v3_scores_v2").update({
           energy_score: r.energyScore,
@@ -314,12 +314,12 @@ Deno.serve(async (req) => {
           scored_at: new Date().toISOString(),
         }).eq("id", r.existingScore.id));
       } else {
-        writeOps.push(sb.from("v3_scores_v2").insert({
+        writeOps.push(sb.from("v3_scores_v2").upsert({
           wiki_entry_id: r.wikiEntryId,
           energy_score: r.energyScore,
           energy_change_24h: r.change24h,
           youtube_score: 0, buzz_score: 0, total_score: 0,
-        }));
+        }, { onConflict: "wiki_entry_id", ignoreDuplicates: false }));
       }
 
       // 베이스라인 EMA 갱신
