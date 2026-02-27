@@ -302,15 +302,8 @@ const V3TrendRankings = () => {
       }
 
       const ranked = Array.from(latestMap.values()).map((item) => {
-        const oldScore = oldScoreMap.get(item.wiki_entry_id);
-        let changePercent = 0;
-        const currentScore = item.total_score ?? 0;
-        if (oldScore != null && oldScore > 0 && currentScore !== oldScore) {
-          changePercent = ((currentScore - oldScore) / oldScore) * 100;
-        } else if (item.energy_change_24h != null && item.energy_change_24h !== 0) {
-          // Fallback: use energy_change_24h when no historical total_score comparison available
-          changePercent = item.energy_change_24h;
-        }
+        // 에너지맵과 동일하게 energy_change_24h를 changePercent로 사용
+        const changePercent = item.energy_change_24h ?? 0;
         return { ...item, changePercent };
       });
 
