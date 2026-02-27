@@ -474,12 +474,14 @@ async function collectForSingleArtist(
     try {
       const ytData = await fetchYouTubeData(artistTitle, keys.youtube, endpoints?.youtube_channel_id);
       if (ytData) {
-        // 이전 스냅샷에서 recentTotalViews 가져오기 (모멘텀 계산용)
+        // 24시간 전 스냅샷에서 recentTotalViews 가져오기 (일간 모멘텀 계산용)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data: prevSnapshot } = await adminClient
           .from("ktrenz_data_snapshots")
           .select("metrics")
           .eq("wiki_entry_id", wikiEntryId)
           .eq("platform", "youtube")
+          .lte("collected_at", oneDayAgo)
           .order("collected_at", { ascending: false })
           .limit(1)
           .maybeSingle();
