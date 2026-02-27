@@ -1,6 +1,6 @@
-// Fan Energy Score (FES) v4 — 변동률 직접 반영 엔진
-// 어제 대비 변동률이 클수록 에너지 점수가 높아지도록 설계
-// energy_change_24h와 energy_score의 일관성 확보
+// Fan Energy Score (FES) v4 Hybrid — 절대값 40% + 모멘텀 60%
+// 지속적으로 높은 관심을 받는 아티스트도 높은 점수 유지
+// 급상승 아티스트는 모멘텀으로 빠르게 반영
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
     const momentumRankMap = new Map<string, number>();
     sortedMomentum.forEach((item, idx) => momentumRankMap.set(item.entryId, idx + 1));
 
-    // ── 5) 최종 energy_score = absolute * 0.1 + momentum_percentile * 0.9 ──
+    // ── 5) 최종 energy_score = absolute * 0.4 + momentum_percentile * 0.6 ──
     // 기존 v2 scores 일괄 조회
     const existingScoreResults = await Promise.all(
       allArtists.map(artist =>
@@ -263,8 +263,8 @@ Deno.serve(async (req) => {
         const momRank = momentumRankMap.get(artist.entryId)!;
         const momPctScore = percentileScore(momRank, total);
 
-        // 최종 점수: 절대값 10% + 모멘텀 90%
-        let energyScore = Math.round(absScore * 0.1 + momPctScore * 0.9);
+        // 최종 점수: 절대값 40% + 모멘텀 60%
+        let energyScore = Math.round(absScore * 0.4 + momPctScore * 0.6);
         energyScore = Math.max(10, Math.min(MAX_SCORE, energyScore));
 
         // velocity와 intensity는 기존 방식 유지 (스냅샷 저장용)
