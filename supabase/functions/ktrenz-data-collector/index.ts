@@ -241,6 +241,7 @@ function calculateYouTubeScore(data: {
   recentTotalLikes: number;
   recentTotalComments: number;
   videoCount?: number;
+  previousRecentTotalViews?: number; // 이전 스냅샷의 recentTotalViews
 }): number {
   const subScore = (data.subscriberCount / 1_000_000) * 100;
   const totalViewScore = (data.totalViewCount / 100_000_000) * 50;
@@ -248,7 +249,18 @@ function calculateYouTubeScore(data: {
   const recentEngagement = ((data.recentTotalLikes + data.recentTotalComments) / 100_000) * 20;
   const volumeScore = Math.min(50, ((data.videoCount ?? 0) / 100) * 10);
 
-  return Math.round(subScore + totalViewScore + recentViewScore + recentEngagement + volumeScore);
+  // MV 조회수 일간 증가율 모멘텀 보너스 (최대 500점)
+  let momentumBonus = 0;
+  if (data.previousRecentTotalViews && data.previousRecentTotalViews > 0 && data.recentTotalViews > data.previousRecentTotalViews) {
+    const growthRate = (data.recentTotalViews - data.previousRecentTotalViews) / data.previousRecentTotalViews;
+    // 10% 증가 = 100점, 50% = 500점 (캡)
+    momentumBonus = Math.min(500, Math.round(growthRate * 1000));
+    if (momentumBonus > 0) {
+      console.log(`[DataCollector] YouTube Momentum: +${(growthRate * 100).toFixed(1)}% → bonus ${momentumBonus}pts`);
+    }
+  }
+
+  return Math.round(subScore + totalViewScore + recentViewScore + recentEngagement + volumeScore + momentumBonus);
 }
 
 // ══════════════════════════════════════
@@ -462,7 +474,18 @@ async function collectForSingleArtist(
     try {
       const ytData = await fetchYouTubeData(artistTitle, keys.youtube, endpoints?.youtube_channel_id);
       if (ytData) {
-        const ytScore = calculateYouTubeScore(ytData);
+        // 이전 스냅샷에서 recentTotalViews 가져오기 (모멘텀 계산용)
+        const { data: prevSnapshot } = await adminClient
+          .from("ktrenz_data_snapshots")
+          .select("metrics")
+          .eq("wiki_entry_id", wikiEntryId)
+          .eq("platform", "youtube")
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const previousRecentTotalViews = prevSnapshot?.metrics?.recentTotalViews ?? 0;
+
+        const ytScore = calculateYouTubeScore({ ...ytData, previousRecentTotalViews });
         await upsertV3Score(adminClient, wikiEntryId, {
           youtube_score: ytScore,
         });
