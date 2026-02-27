@@ -159,7 +159,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
         <div className="flex items-center gap-3">
           <Avatar className={cn(rankStyles.size, "ring-2 ring-offset-2 ring-offset-card",
             rank === 1 ? "ring-yellow-400/50" : rank === 2 ? "ring-slate-300/30" : "ring-amber-600/30")}>
-            <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} />
+            <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
             <AvatarFallback className="bg-muted text-lg font-bold">{entry.title?.[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -212,7 +212,7 @@ const RankingRow = ({ item, rank, maxScore }: { item: any; rank: number; maxScor
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 hover:bg-card transition-colors active:scale-[0.98]">
         <span className="w-6 text-center text-sm font-bold text-muted-foreground">{rank}</span>
         <Avatar className="w-10 h-10 shrink-0">
-          <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} />
+          <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
           <AvatarFallback className="bg-muted text-sm font-medium">{entry.title?.[0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
