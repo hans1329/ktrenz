@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
     const prevSnapshotResults = await Promise.all(
       allArtists.map(artist =>
         sb.from("v3_energy_snapshots_v2")
-          .select("energy_score")
+          .select("energy_score, velocity_score, intensity_score")
           .eq("wiki_entry_id", artist.entryId)
           .lt("snapshot_at", todayStart.toISOString())
           .order("snapshot_at", { ascending: false })
@@ -195,19 +195,40 @@ Deno.serve(async (req) => {
           .then((r: any) => ({ entryId: artist.entryId, data: r.data }))
       )
     );
-    const prevSnapshotMap = new Map<string, number>();
+
+    type PrevSnapshotBaseline = {
+      prevEnergy: number | null;
+      prevAbsolute: number | null;
+    };
+
+    const prevSnapshotMap = new Map<string, PrevSnapshotBaseline>();
     for (const r of prevSnapshotResults) {
-      if (r.data?.energy_score) prevSnapshotMap.set(r.entryId, Number(r.data.energy_score));
+      const data = r.data;
+      if (!data) continue;
+
+      const prevEnergy = data.energy_score != null ? Number(data.energy_score) : null;
+      let prevAbsolute: number | null = null;
+
+      if (data.velocity_score != null && data.intensity_score != null) {
+        prevAbsolute = Math.round((Number(data.velocity_score) + Number(data.intensity_score)) / 2);
+      } else if (prevEnergy != null && prevEnergy > 0) {
+        // 과거 스냅샷에 velocity/intensity가 없는 경우 하위 호환
+        prevAbsolute = prevEnergy;
+      }
+
+      prevSnapshotMap.set(r.entryId, { prevEnergy, prevAbsolute });
     }
 
-    // 변동률 = (absolute_score - yesterday_energy_score) / yesterday_energy_score
+    // 변동률 = (today_absolute_score - yesterday_absolute_score) / yesterday_absolute_score
     // 어제 스냅샷이 없는 경우: momentum을 median(중앙값)으로 설정하여 중립 처리
     const momentumValues: { entryId: string; momentum: number; hasPrev: boolean }[] = [];
     for (const artist of allArtists) {
       const absScore = absoluteScores.get(artist.entryId)!;
-      const prevScore = prevSnapshotMap.get(artist.entryId);
-      if (prevScore && prevScore > 0) {
-        const momentum = ((absScore - prevScore) / prevScore) * 100;
+      const prevBaseline = prevSnapshotMap.get(artist.entryId);
+      const prevAbsScore = prevBaseline?.prevAbsolute ?? null;
+
+      if (prevAbsScore != null && prevAbsScore > 0) {
+        const momentum = ((absScore - prevAbsScore) / prevAbsScore) * 100;
         momentumValues.push({ entryId: artist.entryId, momentum, hasPrev: true });
       } else {
         // 어제 데이터 없음 — 나중에 중앙값으로 채움
