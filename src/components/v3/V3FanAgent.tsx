@@ -500,8 +500,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setIsStreaming(true);
     setHasStarted(true);
 
-    const isStreamingQuery = STREAMING_KEYWORDS.test(text);
-    const isRankingQuery = RANKING_KEYWORDS.test(text);
+    // 아티스트 이름만 입력한 경우(짧은 텍스트, 등록 맥락)는 스밍가이드 fetch 안 함
+    const isShortArtistInput = text.length <= 20 && !STREAMING_KEYWORDS.test(text) && !RANKING_KEYWORDS.test(text);
+    const isStreamingQuery = !isShortArtistInput && STREAMING_KEYWORDS.test(text);
+    const isRankingQuery = !isShortArtistInput && RANKING_KEYWORDS.test(text);
 
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
