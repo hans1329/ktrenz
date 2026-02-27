@@ -6,6 +6,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export type V3Tab = "rankings" | "agent";
 
@@ -19,6 +21,21 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // 관심 아티스트 유무 체크 → 없으면 알림 뱃지 표시
+  const { data: watchedArtists } = useQuery({
+    queryKey: ["ktrenz-watched-artists", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_watched_artists")
+        .select("id")
+        .eq("user_id", user.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+  const showAgentBadge = user && (watchedArtists?.length ?? 0) === 0;
 
   const handleProfileClick = () => {
     if (user) setProfileOpen(true);
@@ -67,10 +84,13 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
             return (
               <button key={tab.id} onClick={() => (tab.id === "agent" ? navigate("/agent") : onTabChange(tab.id as V3Tab))}
-                className={cn("flex flex-col items-center justify-center gap-1 transition-all duration-200",
+                className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
                 <span className={cn("text-[8px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
+                {tab.id === "agent" && showAgentBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse" />
+                )}
               </button>
             );
           })}
