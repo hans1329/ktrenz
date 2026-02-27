@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
+import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
 
 // ── Types ──────────────────────────────────────────────
 type ChatMessage = {
@@ -18,6 +19,7 @@ type ChatMessage = {
   timestamp?: string;
   guideData?: any[] | null;
   rankingData?: RankingEntry[] | null;
+  briefingData?: BriefingData | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -276,6 +278,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { avatarUrl, uploadAvatar } = useAgentAvatar(user?.id);
+  const [briefingTriggered, setBriefingTriggered] = useState(false);
 
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
@@ -284,7 +287,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("ktrenz_watched_artists")
-        .select("id, artist_name")
+        .select("id, artist_name, wiki_entry_id")
         .eq("user_id", user.id);
       if (error) console.error("Watched artists fetch error:", error);
       return data ?? [];
@@ -323,6 +326,77 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // --- 자동 브리핑 트리거 ---
+  const fetchBriefing = useCallback(async () => {
+    if (!session?.access_token || !hasAlertOn) return;
+
+    // 오늘 이미 브리핑했는지 localStorage 체크
+    const briefingKey = `ktrenz-briefing-${user?.id}`;
+    const lastBriefing = localStorage.getItem(briefingKey);
+    const today = new Date().toISOString().slice(0, 10);
+    if (lastBriefing === today) return;
+
+    // 관심 아티스트의 변동률 확인
+    const wikiIds = (watchedArtists ?? [])
+      .map((w: any) => w.wiki_entry_id)
+      .filter(Boolean);
+
+    if (wikiIds.length === 0) return;
+
+    const { data: scores } = await supabase
+      .from("v3_scores_v2" as any)
+      .select("wiki_entry_id, energy_change_24h")
+      .in("wiki_entry_id", wikiIds);
+
+    const hasSignificantChange = (scores as any[] ?? []).some(
+      (s: any) => Math.abs(s.energy_change_24h ?? 0) >= 5
+    );
+
+    if (!hasSignificantChange) {
+      // 변동 없어도 하루에 한번은 기록
+      localStorage.setItem(briefingKey, today);
+      return;
+    }
+
+    // 브리핑 요청
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ mode: "briefing" }),
+      });
+
+      if (!resp.ok) return;
+      const data = await resp.json();
+
+      if (data.briefing) {
+        const briefingMsg: ChatMessage = {
+          role: "assistant",
+          content: data.summary || "📊 오늘의 브리핑이에요, 주인님!",
+          timestamp: new Date().toISOString(),
+          briefingData: data.briefing,
+        };
+        setMessages((prev) => [briefingMsg, ...prev]);
+        setHasStarted(true);
+        localStorage.setItem(briefingKey, today);
+      }
+    } catch (e) {
+      console.error("Briefing fetch error:", e);
+    }
+  }, [session?.access_token, hasAlertOn, watchedArtists, user?.id]);
+
+  useEffect(() => {
+    if (hasAlertOn && session?.access_token && !briefingTriggered && !isStreaming) {
+      setBriefingTriggered(true);
+      // 약간의 딜레이 후 브리핑 (채팅 히스토리 로드 후)
+      const timer = setTimeout(() => fetchBriefing(), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasAlertOn, session?.access_token, briefingTriggered, isStreaming, fetchBriefing]);
 
   const fetchGuideData = useCallback(async (): Promise<any[] | null> => {
     if (!session?.access_token) return null;
@@ -583,6 +657,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 msg.content
               )}
             </div>
+
+            {msg.role === "assistant" && msg.briefingData && (
+              <V3BriefingCard data={msg.briefingData} />
+            )}
 
             {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (
               <V3RankingCards rankings={msg.rankingData} />
