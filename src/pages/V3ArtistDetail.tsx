@@ -173,7 +173,7 @@ const V3ArtistDetail = () => {
   const liveYtMusic = liveData?.youtubeMusic; // Topic channel data
   const liveYtMv = liveData?.ytMvInfo; // MV category data
   const ytData = liveYt ? {
-    channel: { ...liveYt.channel, videoCount: liveYt.channel.totalVideoCount ?? liveYt.channel.videoCount ?? 0 },
+    channel: { ...(liveYt.channel || {}), videoCount: liveYt.channel?.totalVideoCount ?? liveYt.channel?.videoCount ?? 0 },
     summary: liveYt.recentVideos ? { totalRecentViews: liveYt.recentVideos.totalViews || 0, totalRecentLikes: liveYt.recentVideos.totalLikes || 0, totalRecentComments: liveYt.recentVideos.totalComments || 0, engagementRate: liveYt.recentVideos.engagementRate || null, avgViewsPerVideo: liveYt.recentVideos.avgViewsPerVideo || 0 } : null,
     topEngagement: liveYt.topEngagement || [], recentVideos: liveYt.recentVideos, fetchedAt: liveYt.fetchedAt, youtubeScore: liveYt.youtubeScore || 0,
     musicVideoViews: liveYtMv?.musicVideoViews || 0, musicVideoCount: liveYtMv?.musicVideoCount || 0,
