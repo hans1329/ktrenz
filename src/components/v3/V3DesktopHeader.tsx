@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
@@ -40,6 +41,21 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // 관심 아티스트 유무 체크
+  const { data: watchedArtists } = useQuery({
+    queryKey: ["ktrenz-watched-artists", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_watched_artists")
+        .select("id")
+        .eq("user_id", user.id);
+      return data ?? [];
+    },
+    enabled: !!user?.id,
+  });
+  const showAgentBadge = user && (watchedArtists?.length ?? 0) === 0;
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -83,7 +99,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                   key={item.id}
                   onClick={() => item.id === "agent" ? navigate("/agent") : onTabChange(item.id)}
                   className={cn(
-                    "flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all",
+                    "relative flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all",
                     active
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -91,6 +107,9 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                 >
                   <Icon className="w-4 h-4" />
                   <span>{t(item.titleKey)}</span>
+                  {item.id === "agent" && showAgentBadge && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse" />
+                  )}
                 </button>
               );
             })}

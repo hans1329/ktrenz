@@ -389,6 +389,30 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [session?.access_token, hasAlertOn, watchedArtists, user?.id]);
 
+  // --- 관심 아티스트 없을 때 자동 첫 메시지 ---
+  const [welcomeSent, setWelcomeSent] = useState(false);
+  useEffect(() => {
+    if (
+      user?.id &&
+      watchedArtists !== undefined &&
+      !hasAlertOn &&
+      !welcomeSent &&
+      messages.length === 0 &&
+      !isStreaming &&
+      chatHistory !== undefined &&
+      (chatHistory?.length ?? 0) === 0
+    ) {
+      setWelcomeSent(true);
+      const welcomeMsg: ChatMessage = {
+        role: "assistant",
+        content: "안녕하세요, 주인님! 🎵\n\n아직 관심 아티스트가 등록되지 않았어요.\n**당신의 최애 아티스트는 누구인가요?** 💜\n\n아티스트 이름을 알려주시면 실시간 트렌드 알림과 맞춤 분석을 시작할게요!",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages([welcomeMsg]);
+      setHasStarted(true);
+    }
+  }, [user?.id, watchedArtists, hasAlertOn, welcomeSent, messages.length, isStreaming, chatHistory]);
+
   useEffect(() => {
     if (hasAlertOn && session?.access_token && !briefingTriggered && !isStreaming) {
       setBriefingTriggered(true);
