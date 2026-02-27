@@ -90,9 +90,17 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
 
     const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
     const channelResp = await fetch(channelUrl);
+    if (!channelResp.ok) {
+      const errText = await channelResp.text();
+      console.error(`[DataCollector] YouTube channels API failed for ${artistName}: ${channelResp.status} - ${errText}`);
+      return null;
+    }
     const channelData = await channelResp.json();
     const channel = channelData?.items?.[0];
-    if (!channel) return null;
+    if (!channel) {
+      console.warn(`[DataCollector] YouTube channels API returned no items for ${artistName} (channelId: ${channelId})`);
+      return null;
+    }
 
     const stats = channel.statistics;
     const subscriberCount = parseInt(stats.subscriberCount) || 0;
@@ -102,7 +110,11 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
     const uploadsPlaylistId = "UU" + channelId.slice(2);
     const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=10&key=${apiKey}`;
     const playlistResp = await fetch(playlistUrl);
-    const playlistData = await playlistResp.json();
+    if (!playlistResp.ok) {
+      const errText = await playlistResp.text();
+      console.error(`[DataCollector] YouTube playlistItems API failed for ${artistName}: ${playlistResp.status} - ${errText}`);
+    }
+    const playlistData = playlistResp.ok ? await playlistResp.json() : { items: [] };
     const videoIds = (playlistData?.items || []).map((v: any) => v.contentDetails?.videoId).filter(Boolean);
 
     let recentTotalViews = 0, recentTotalLikes = 0, recentTotalComments = 0;
