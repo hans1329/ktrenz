@@ -268,7 +268,53 @@ const V3TrendRankings = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // 수집 상태 추적
+  const [collectionStatus, setCollectionStatus] = useState<Record<string, { status: string; runId?: string; startedAt?: number }>>({});
+
+  const pollCollectionStatus = (source: string, runId: string) => {
+    const startedAt = Date.now();
+    setCollectionStatus(prev => ({ ...prev, [source]: { status: "running", runId, startedAt } }));
+    
+    const interval = setInterval(async () => {
+      try {
+        const elapsed = Math.round((Date.now() - startedAt) / 1000);
+        // ktrenz_collection_log에서 최근 수집 결과 확인
+        const moduleMap: Record<string, string> = { youtube: "youtube", buzz: "x_mentions", album: "hanteo", music: "lastfm" };
+        const platform = moduleMap[source] || source;
+        const { data: logData } = await supabase
+          .from("ktrenz_collection_log" as any)
+          .select("status, records_collected, collected_at")
+          .eq("platform", platform)
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle() as { data: any };
+
+        if (logData && new Date(logData.collected_at).getTime() > startedAt) {
+          clearInterval(interval);
+          const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
+          if (logData.status === "success") {
+            toast.success(`${label} 수집 완료: ${logData.records_collected || 0}건 (${elapsed}초)`);
+          } else {
+            toast.error(`${label} 수집 실패`);
+          }
+          setCollectionStatus(prev => ({ ...prev, [source]: { status: logData.status === "success" ? "done" : "error" } }));
+          setTimeout(() => setCollectionStatus(prev => { const n = { ...prev }; delete n[source]; return n; }), 5000);
+        } else if (elapsed > 180) {
+          clearInterval(interval);
+          setCollectionStatus(prev => ({ ...prev, [source]: { status: "timeout" } }));
+          toast.error(`${source} 수집 타임아웃 (3분 초과)`);
+          setTimeout(() => setCollectionStatus(prev => { const n = { ...prev }; delete n[source]; return n; }), 5000);
+        } else {
+          setCollectionStatus(prev => ({ ...prev, [source]: { status: "running", runId, startedAt } }));
+        }
+      } catch { /* ignore polling errors */ }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  };
+
   const triggerTier1Collection = async (source: string) => {
+    if (collectionStatus[source]?.status === "running") return;
     const moduleMap: Record<string, string> = { album: "hanteo" };
     const mod = moduleMap[source] || source;
     const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
@@ -278,7 +324,9 @@ const V3TrendRankings = () => {
         body: { module: mod, triggerSource: "admin-front" },
       });
       if (error) throw error;
-      toast.success(`${label} Tier1 전체 수집 시작됨`);
+      toast(`${label} 수집 시작됨, 진행상황을 추적합니다...`);
+      const runId = data?.runId || "unknown";
+      pollCollectionStatus(source, runId);
     } catch (err: any) {
       toast.error(`${label} 수집 실패: ${err.message}`);
     } finally {
@@ -293,20 +341,47 @@ const V3TrendRankings = () => {
     { key: "music", label: "MU", icon: <Music className="w-3 h-3" /> },
   ];
 
-  const AdminCollectButtons = () => (
-    <div className="flex items-center gap-1">
-      {ADMIN_COLLECT_BUTTONS.map(btn => (
-        <button key={btn.key} onClick={() => triggerTier1Collection(btn.key)}
-          disabled={!!collectingModule}
-          className={cn("flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors",
-            collectingModule === btn.key ? "bg-primary/20 text-primary border-primary/30" : "bg-muted text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30",
-            !!collectingModule && collectingModule !== btn.key && "opacity-50")}>
-          {collectingModule === btn.key ? <Loader2 className="w-3 h-3 animate-spin" /> : btn.icon}
-          {btn.label}
-        </button>
-      ))}
-    </div>
-  );
+  const getElapsed = (startedAt?: number) => {
+    if (!startedAt) return "";
+    return `${Math.round((Date.now() - startedAt) / 1000)}s`;
+  };
+
+  const AdminCollectButtons = () => {
+    const [, setTick] = useState(0);
+    useEffect(() => {
+      const hasRunning = Object.values(collectionStatus).some(s => s.status === "running");
+      if (!hasRunning) return;
+      const t = setInterval(() => setTick(v => v + 1), 1000);
+      return () => clearInterval(t);
+    }, [collectionStatus]);
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {ADMIN_COLLECT_BUTTONS.map(btn => {
+          const cs = collectionStatus[btn.key];
+          const isRunning = cs?.status === "running";
+          const isDone = cs?.status === "done";
+          const isError = cs?.status === "error" || cs?.status === "timeout";
+          return (
+            <button key={btn.key} onClick={() => triggerTier1Collection(btn.key)}
+              disabled={isRunning || collectingModule === btn.key}
+              className={cn("flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors",
+                isRunning ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30 animate-pulse" :
+                isDone ? "bg-green-500/20 text-green-400 border-green-500/30" :
+                isError ? "bg-red-500/20 text-red-400 border-red-500/30" :
+                collectingModule === btn.key ? "bg-primary/20 text-primary border-primary/30" :
+                "bg-muted text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30")}>
+              {(isRunning || collectingModule === btn.key) ? <Loader2 className="w-3 h-3 animate-spin" /> : 
+               isDone ? <span className="text-[10px]">✓</span> :
+               isError ? <span className="text-[10px]">✗</span> : btn.icon}
+              {btn.label}
+              {isRunning && cs.startedAt && <span className="ml-0.5 text-[9px] opacity-70">{getElapsed(cs.startedAt)}</span>}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["v3-trend-rankings", period],

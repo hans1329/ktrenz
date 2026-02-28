@@ -24,36 +24,33 @@ const DELAY_AFTER: Record<Module, number> = {
 // ── 모듈 실행기 ──
 
 async function runYouTube(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Running YouTube module...");
-  const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+  console.log("[data-engine] Running YouTube module (fire-and-forget)...");
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
     body: JSON.stringify({ source: "youtube" }),
-  });
-  const text = await resp.text();
-  try { return JSON.parse(text); } catch { return { raw: text.slice(0, 200) }; }
+  }).catch((e) => console.warn("[data-engine] YouTube fire error:", e.message));
+  return { status: "launched", module: "youtube" };
 }
 
 async function runMusic(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Running Music module...");
-  const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+  console.log("[data-engine] Running Music module (fire-and-forget)...");
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
     body: JSON.stringify({ source: "music" }),
-  });
-  const text = await resp.text();
-  try { return JSON.parse(text); } catch { return { raw: text.slice(0, 200) }; }
+  }).catch((e) => console.warn("[data-engine] Music fire error:", e.message));
+  return { status: "launched", module: "music" };
 }
 
 async function runHanteo(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Running Hanteo module...");
-  const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+  console.log("[data-engine] Running Hanteo module (fire-and-forget)...");
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
     body: JSON.stringify({ source: "hanteo" }),
-  });
-  const text = await resp.text();
-  try { return JSON.parse(text); } catch { return { raw: text.slice(0, 200) }; }
+  }).catch((e) => console.warn("[data-engine] Hanteo fire error:", e.message));
+  return { status: "launched", module: "hanteo" };
 }
 
 async function runBuzz(supabaseUrl: string, serviceKey: string): Promise<any> {
