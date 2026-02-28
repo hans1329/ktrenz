@@ -114,37 +114,33 @@ const AdminDataHealth = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {lastfmMissing > 0 && (
-            <Button
-              size="sm"
-              className="h-9 gap-1.5"
-              disabled={bulkFillLastfm.isPending}
-              onClick={() => {
-                if (confirm(`Last.fm 누락 ${lastfmMissing}명에 display_name을 자동 채우시겠습니까?`)) {
-                  bulkFillLastfm.mutate();
-                }
-              }}
-            >
-              {bulkFillLastfm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-              Last.fm 일괄 채우기
-            </Button>
-          )}
-          {deezerMissing > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 gap-1.5"
-              disabled={bulkFillDeezer.isPending}
-              onClick={() => {
-                if (confirm(`Deezer 누락 ${deezerMissing}명의 ID를 API로 자동 검색하시겠습니까?`)) {
-                  bulkFillDeezer.mutate();
-                }
-              }}
-            >
-              {bulkFillDeezer.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music className="w-4 h-4" />}
-              Deezer 일괄 채우기
-            </Button>
-          )}
+          <Button
+            size="sm"
+            className="h-9 gap-1.5"
+            disabled={bulkFillLastfm.isPending || lastfmMissing === 0}
+            onClick={() => {
+              if (confirm(`Last.fm 누락 ${lastfmMissing}명에 display_name을 자동 채우시겠습니까?`)) {
+                bulkFillLastfm.mutate();
+              }
+            }}
+          >
+            {bulkFillLastfm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            Last.fm 일괄 채우기 {lastfmMissing > 0 && `(${lastfmMissing})`}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 gap-1.5"
+            disabled={bulkFillDeezer.isPending || deezerMissing === 0}
+            onClick={() => {
+              if (confirm(`Deezer 누락 ${deezerMissing}명의 ID를 API로 자동 검색하시겠습니까?`)) {
+                bulkFillDeezer.mutate();
+              }
+            }}
+          >
+            {bulkFillDeezer.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music className="w-4 h-4" />}
+            Deezer 일괄 채우기 {deezerMissing > 0 && `(${deezerMissing})`}
+          </Button>
         </div>
       </div>
 
