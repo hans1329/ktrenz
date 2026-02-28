@@ -95,53 +95,74 @@ Deno.serve(async (req) => {
     const baselineMap = new Map<string, any>();
     for (const b of (allBaselines || [])) baselineMap.set(b.wiki_entry_id, b);
 
-    // ── 4) 각 아티스트별 카테고리 변동률 & 에너지 스코어 계산 ──
-    const results: any[] = [];
+    // ── 4) 퍼센타일 기반 에너지 스코어 계산 ──
+    // 4a) 각 카테고리별 raw 값 수집
+    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; prev: any; current: any }[] = [];
     for (const eid of entryIds) {
-      try {
-        const current = scoreMap.get(eid)!;
-        const prev = prevMap.get(eid);
+      const current = scoreMap.get(eid)!;
+      const prev = prevMap.get(eid);
+      rawData.push({
+        eid,
+        yt: Number(current.youtube_score) || 0,
+        buzz: Number(current.buzz_score) || 0,
+        album: Number(current.album_sales_score) || 0,
+        music: Number(current.music_score) || 0,
+        prev,
+        current,
+      });
+    }
 
-        const ytCurrent = Number(current.youtube_score) || 0;
-        const buzzCurrent = Number(current.buzz_score) || 0;
-        const albumCurrent = Number(current.album_sales_score) || 0;
-        const musicCurrent = Number(current.music_score) || 0;
+    // 4b) 퍼센타일 함수: 정렬 후 각 값의 순위를 0~1로 변환
+    function toPercentiles(values: number[]): number[] {
+      const sorted = [...values].sort((a, b) => a - b);
+      return values.map(v => {
+        const rank = sorted.filter(s => s < v).length;
+        const ties = sorted.filter(s => s === v).length;
+        return (rank + (ties - 1) / 2) / Math.max(sorted.length - 1, 1);
+      });
+    }
+
+    const ytPcts = toPercentiles(rawData.map(d => d.yt));
+    const buzzPcts = toPercentiles(rawData.map(d => d.buzz));
+    const albumPcts = toPercentiles(rawData.map(d => d.album));
+    const musicPcts = toPercentiles(rawData.map(d => d.music));
+
+    // 4c) 결과 생성
+    const results: any[] = [];
+    for (let i = 0; i < rawData.length; i++) {
+      try {
+        const r = rawData[i];
+        const prev = r.prev;
 
         const ytPrev = prev ? Number(prev.youtube_score) || 0 : 0;
         const buzzPrev = prev ? Number(prev.buzz_score) || 0 : 0;
         const albumPrev = prev ? Number(prev.album_score) || 0 : 0;
         const musicPrev = prev ? Number(prev.music_score) || 0 : 0;
 
-        // Per-category 24h change rates
-        const ytChange = pctChange(ytCurrent, ytPrev);
-        const buzzChange = pctChange(buzzCurrent, buzzPrev);
-        const albumChange = pctChange(albumCurrent, albumPrev);
-        const musicChange = pctChange(musicCurrent, musicPrev);
+        const ytChange = pctChange(r.yt, ytPrev);
+        const buzzChange = pctChange(r.buzz, buzzPrev);
+        const albumChange = pctChange(r.album, albumPrev);
+        const musicChange = pctChange(r.music, musicPrev);
 
-        // Weighted overall change
         const overallChange = ytChange * WEIGHTS.youtube + buzzChange * WEIGHTS.buzz +
           musicChange * WEIGHTS.music + albumChange * WEIGHTS.album;
 
-        // Energy score: weighted sum of category scores (absolute level)
-        const energyScore = clamp(
-          Math.round(
-            ytCurrent * WEIGHTS.youtube + buzzCurrent * WEIGHTS.buzz +
-            musicCurrent * WEIGHTS.music + albumCurrent * WEIGHTS.album
-          ), 10, MAX_SCORE
-        );
+        // 퍼센타일 가중합 → 10~250 범위
+        const weightedPct = ytPcts[i] * WEIGHTS.youtube + buzzPcts[i] * WEIGHTS.buzz +
+          albumPcts[i] * WEIGHTS.album + musicPcts[i] * WEIGHTS.music;
+        const energyScore = clamp(Math.round(10 + weightedPct * (MAX_SCORE - 10)), 10, MAX_SCORE);
 
-        // Per-category velocity (momentum from change rate) & intensity (absolute level)
         const ytVelocity = changeToScore(ytChange);
-        const ytIntensity = clamp(ytCurrent, 0, MAX_SCORE);
+        const ytIntensity = clamp(Math.round(ytPcts[i] * MAX_SCORE), 0, MAX_SCORE);
         const buzzVelocity = changeToScore(buzzChange);
-        const buzzIntensity = clamp(buzzCurrent, 0, MAX_SCORE);
+        const buzzIntensity = clamp(Math.round(buzzPcts[i] * MAX_SCORE), 0, MAX_SCORE);
         const albumVelocity = changeToScore(albumChange);
-        const albumIntensity = clamp(albumCurrent, 0, MAX_SCORE);
+        const albumIntensity = clamp(Math.round(albumPcts[i] * MAX_SCORE), 0, MAX_SCORE);
         const musicVelocity = changeToScore(musicChange);
-        const musicIntensity = clamp(musicCurrent, 0, MAX_SCORE);
+        const musicIntensity = clamp(Math.round(musicPcts[i] * MAX_SCORE), 0, MAX_SCORE);
 
         results.push({
-          eid, energyScore,
+          eid: r.eid, energyScore,
           ytVelocity, ytIntensity, buzzVelocity, buzzIntensity,
           albumVelocity, albumIntensity, musicVelocity, musicIntensity,
           change24h: Math.round(overallChange * 10) / 10,
@@ -149,12 +170,12 @@ Deno.serve(async (req) => {
           buzzChange: Math.round(buzzChange * 10) / 10,
           albumChange: Math.round(albumChange * 10) / 10,
           musicChange: Math.round(musicChange * 10) / 10,
-          ytCurrent, buzzCurrent, albumCurrent, musicCurrent,
-          scoreId: current.id,
-          baseline: baselineMap.get(eid),
+          ytCurrent: r.yt, buzzCurrent: r.buzz, albumCurrent: r.album, musicCurrent: r.music,
+          scoreId: r.current.id,
+          baseline: baselineMap.get(r.eid),
         });
       } catch (e) {
-        console.error(`[FES-v5] Error for ${eid}:`, e);
+        console.error(`[FES-v5] Error for ${rawData[i].eid}:`, e);
       }
     }
 
