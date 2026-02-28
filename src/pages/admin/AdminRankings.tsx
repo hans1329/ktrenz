@@ -690,8 +690,14 @@ const AdminRankings = () => {
               {/* Current vs 24h ago comparison */}
               {energySnapshots.length >= 2 && (() => {
                 const latest = energySnapshots[0];
+                // 어제(24h 전) 기준 스냅샷 — 없으면 표시하지 않음
                 const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                const prev = energySnapshots.find(s => new Date(s.snapshot_at) <= cutoff) || energySnapshots[energySnapshots.length - 1];
+                const prev = energySnapshots.find(s => new Date(s.snapshot_at) <= cutoff);
+                if (!prev) return (
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">24시간 이전 스냅샷이 없어 비교 불가</p>
+                  </div>
+                );
                 const avgVelLatest = ((latest.youtube_velocity ?? 0) + (latest.buzz_velocity ?? 0) + (latest.album_velocity ?? 0) + (latest.music_velocity ?? 0)) / 4;
                 const avgVelPrev = ((prev.youtube_velocity ?? 0) + (prev.buzz_velocity ?? 0) + (prev.album_velocity ?? 0) + (prev.music_velocity ?? 0)) / 4;
                 const avgIntLatest = ((latest.youtube_intensity ?? 0) + (latest.buzz_intensity ?? 0) + (latest.album_intensity ?? 0) + (latest.music_intensity ?? 0)) / 4;
@@ -718,7 +724,7 @@ const AdminRankings = () => {
                 return (
                   <div className="bg-muted/30 rounded-lg p-3">
                     <p className="text-xs text-muted-foreground mb-2">
-                      최근 vs ~{Math.round(getHoursAgo(prev.snapshot_at))}시간 전
+                      최근 vs 어제 (~{Math.round(getHoursAgo(prev.snapshot_at))}h 전 스냅샷)
                     </p>
                     <DiffRow label="Avg Velocity" current={Math.round(avgVelLatest)} diff={velDiff} desc="카테고리별 변화 속도 평균" />
                     <DiffRow label="Avg Intensity" current={Math.round(avgIntLatest)} diff={intDiff} desc="카테고리별 절대 수준 평균" />
