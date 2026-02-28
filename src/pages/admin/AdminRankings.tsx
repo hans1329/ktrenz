@@ -141,7 +141,7 @@ const AdminRankings = () => {
       return data as any;
     },
     enabled: !!pipelineRunId,
-    refetchInterval: pipelineRunId ? 5000 : false,
+    refetchInterval: pipelineRunId ? 3000 : false,
   });
 
   // Auto-clear pipeline tracking when done
@@ -153,12 +153,8 @@ const AdminRankings = () => {
       } else {
         toast.error(`파이프라인 실패: ${pipelineRun.error_message || 'Unknown error'}`);
       }
-      // Keep showing for 3 seconds then clear
-      setTimeout(() => {
-        setPipelineRunId(null);
-        setPipelineStartTime(null);
-        setRunningSource(null);
-      }, 3000);
+      setRunningSource(null);
+      // 배너는 수동으로 닫을 때까지 유지
     }
   }, [pipelineRun?.status]);
 
@@ -628,51 +624,97 @@ const AdminRankings = () => {
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Loader2 className={`w-4 h-4 ${pipelineRun.status === 'completed' ? 'text-emerald-500' : pipelineRun.status === 'failed' ? 'text-destructive' : 'animate-spin text-primary'}`} />
+              {pipelineRun.status === 'completed' ? (
+                <span className="text-emerald-500 text-lg">✅</span>
+              ) : pipelineRun.status === 'failed' ? (
+                <span className="text-destructive text-lg">❌</span>
+              ) : (
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              )}
               <span className="text-sm font-semibold">
-                {pipelineRun.status === 'completed' ? '✅ 파이프라인 완료' : pipelineRun.status === 'failed' ? '❌ 파이프라인 실패' : '파이프라인 실행 중'}
+                {pipelineRun.status === 'completed' ? '파이프라인 완료' : pipelineRun.status === 'failed' ? '파이프라인 실패' : `실행 중: ${pipelineRun.current_module?.toUpperCase() || '...'}`}
               </span>
-              {pipelineStartTime && pipelineRun.status === 'running' && (
+              {pipelineStartTime && (
                 <span className="text-xs text-muted-foreground">
                   ({elapsed}s 경과)
                 </span>
               )}
             </div>
-            {(pipelineRun.status === 'completed' || pipelineRun.status === 'failed') && (
-              <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setPipelineRunId(null); setPipelineStartTime(null); setRunningSource(null); }}>
-                <X className="w-3 h-3" />
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setPipelineRunId(null); setPipelineStartTime(null); setRunningSource(null); }}>
+              <X className="w-3 h-3" />
+            </Button>
           </div>
+
           {/* Module progress steps */}
           {pipelineRun.modules_requested && (
-            <div className="flex items-center gap-1 flex-wrap">
+            <div className="space-y-1.5">
               {(pipelineRun.modules_requested as string[]).map((mod: string, i: number) => {
                 const isCurrent = pipelineRun.current_module === mod;
                 const results = pipelineRun.results as Record<string, any> | null;
                 const isDone = results && mod in results;
                 const isFailed = pipelineRun.status === 'failed' && isCurrent;
+                const isPending = !isDone && !isCurrent;
+                const modResult = results?.[mod];
+
+                const moduleLabel: Record<string, string> = {
+                  youtube: 'YouTube 데이터',
+                  music: 'Music (Last.fm / Deezer)',
+                  hanteo: 'Album (한터차트)',
+                  buzz: 'Buzz (소셜 멘션)',
+                  energy: 'Energy Score 계산',
+                };
+
+                const getResultSummary = (mod: string, result: any): string => {
+                  if (!result) return '';
+                  if (result.error) return `오류: ${result.error}`;
+                  if (mod === 'youtube') return result.status === 'launched' ? '수집 시작됨' : JSON.stringify(result).slice(0, 60);
+                  if (mod === 'music') return result.status === 'launched' ? '수집 시작됨' : JSON.stringify(result).slice(0, 60);
+                  if (mod === 'hanteo') return result.status === 'launched' ? '수집 시작됨' : JSON.stringify(result).slice(0, 60);
+                  if (mod === 'buzz') return `${result.launched || 0}개 배치 × ${result.batchSize || 5} 아티스트`;
+                  if (mod === 'energy') {
+                    const scored = result.scored ?? result.processed ?? result.count;
+                    if (scored != null) return `${scored}명 스코어 갱신`;
+                    return JSON.stringify(result).slice(0, 60);
+                  }
+                  return JSON.stringify(result).slice(0, 60);
+                };
+
                 return (
-                  <div key={mod} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-muted-foreground text-xs">→</span>}
-                    <Badge
-                      variant={isDone ? 'default' : isCurrent ? 'secondary' : 'outline'}
-                      className={`text-[10px] px-2 py-0.5 ${
-                        isDone ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' :
-                        isFailed ? 'bg-destructive/20 text-destructive border-destructive/30' :
-                        isCurrent ? 'bg-primary/20 text-primary border-primary/30 animate-pulse' :
-                        'text-muted-foreground'
-                      }`}
-                    >
-                      {isDone ? '✓ ' : isCurrent ? '● ' : ''}{mod}
-                    </Badge>
+                  <div
+                    key={mod}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+                      isDone ? 'bg-emerald-500/10 border-emerald-500/20' :
+                      isFailed ? 'bg-destructive/10 border-destructive/20' :
+                      isCurrent ? 'bg-primary/10 border-primary/30' :
+                      'bg-card/30 border-border/30 opacity-50'
+                    }`}
+                  >
+                    <div className="w-5 text-center shrink-0">
+                      {isDone ? <span className="text-emerald-500 text-sm">✓</span> :
+                       isFailed ? <span className="text-destructive text-sm">✕</span> :
+                       isCurrent ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> :
+                       <span className="text-[11px] text-muted-foreground">{i + 1}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-semibold ${isDone ? 'text-emerald-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {moduleLabel[mod] || mod}
+                      </p>
+                      {(isDone || isFailed) && modResult && (
+                        <p className={`text-[10px] mt-0.5 truncate ${isFailed ? 'text-destructive' : 'text-muted-foreground'}`}>
+                          {getResultSummary(mod, modResult)}
+                        </p>
+                      )}
+                      {isCurrent && pipelineRun.status === 'running' && (
+                        <p className="text-[10px] text-primary/70 mt-0.5 animate-pulse">처리 중...</p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
           {pipelineRun.error_message && (
-            <p className="text-xs text-destructive">{pipelineRun.error_message}</p>
+            <p className="text-xs text-destructive mt-1">{pipelineRun.error_message}</p>
           )}
         </div>
       )}
