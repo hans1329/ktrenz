@@ -1,16 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronUp, ChevronDown, Flame, ArrowLeft, Crown, Medal, Zap, Activity } from "lucide-react";
+import { ChevronUp, ChevronDown, Flame, ArrowLeft, Crown, Medal, Youtube, Twitter, Music, Disc3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import V3Header from "@/components/v3/V3Header";
 import { useIsMobile } from "@/hooks/use-mobile";
+import type { EnergyCategory } from "@/components/v3/V3Treemap";
 
 const ChangeIndicator = ({ change }: { change: number }) => {
   if (change > 0) return (
@@ -33,9 +34,18 @@ const RankIcon = ({ rank }: { rank: number }) => {
   return <span className="w-6 text-center text-sm font-bold text-muted-foreground">{rank}</span>;
 };
 
+const CATEGORY_CHIPS: { key: EnergyCategory; label: string; icon: React.ReactNode }[] = [
+  { key: "all", label: "All", icon: <Flame className="w-3 h-3" /> },
+  { key: "youtube", label: "YouTube", icon: <Youtube className="w-3 h-3" /> },
+  { key: "buzz", label: "Buzz", icon: <Twitter className="w-3 h-3" /> },
+  { key: "album", label: "Album", icon: <Disc3 className="w-3 h-3" /> },
+  { key: "music", label: "Music", icon: <Music className="w-3 h-3" /> },
+];
+
 const V3Rankings = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const [category, setCategory] = useState<EnergyCategory>("all");
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
@@ -53,7 +63,8 @@ const V3Rankings = () => {
 
       const { data: allScores, error } = await supabase
         .from("v3_scores_v2" as any)
-        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, scored_at,
+        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, schema_type)`)
         .order("scored_at", { ascending: false });
 
@@ -66,25 +77,39 @@ const V3Rankings = () => {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
-      const ranked = Array.from(latestMap.values()).map((item) => ({
+      return Array.from(latestMap.values()).map((item) => ({
         ...item,
         changePercent: item.energy_change_24h || 0,
       }));
-
-      // 에너지 맵과 동일한 변동성 기반 정렬: energy_change_24h 기준
-      ranked.sort((a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0));
-      const top5 = ranked.slice(0, 5);
-      const bottom5 = ranked.slice(-5).reverse();
-      const selectedIds = new Set([...top5, ...bottom5].map(r => r.wiki_entry_id));
-      const middle = ranked
-        .filter(r => !selectedIds.has(r.wiki_entry_id))
-        .sort((a, b) => Math.abs(a.energy_change_24h || 0) - Math.abs(b.energy_change_24h || 0));
-      return [...top5, ...middle, ...bottom5];
     },
     staleTime: 30_000,
   });
 
-  const maxScore = rankings?.[0]?.total_score || 1;
+  const getCatChange = (item: any, cat: EnergyCategory) => {
+    switch (cat) {
+      case "youtube": return item.youtube_change_24h ?? 0;
+      case "buzz": return item.buzz_change_24h ?? 0;
+      case "album": return item.album_change_24h ?? 0;
+      case "music": return item.music_change_24h ?? 0;
+      default: return item.energy_change_24h ?? 0;
+    }
+  };
+
+  const sortedRankings = useMemo(() => {
+    if (!rankings?.length) return [];
+    const sorted = [...rankings]
+      .map(item => ({ ...item, changePercent: getCatChange(item, category) }))
+      .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+    const top5 = sorted.slice(0, 5);
+    const bottom5 = sorted.slice(-5).reverse();
+    const selectedIds = new Set([...top5, ...bottom5].map(r => r.wiki_entry_id));
+    const middle = sorted
+      .filter(r => !selectedIds.has(r.wiki_entry_id))
+      .sort((a, b) => Math.abs(a.changePercent || 0) - Math.abs(b.changePercent || 0));
+    return [...top5, ...middle, ...bottom5];
+  }, [rankings, category]);
+
+  const maxScore = sortedRankings?.[0]?.total_score || 1;
 
   return (
     <>
@@ -101,13 +126,23 @@ const V3Rankings = () => {
           </div>
         </div>
 
+        <div className="flex gap-1.5 pb-3 overflow-x-auto scrollbar-hide">
+          {CATEGORY_CHIPS.map(chip => (
+            <button key={chip.key} onClick={() => setCategory(chip.key)}
+              className={cn("flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border",
+                category === chip.key ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted")}>
+              {chip.icon}{chip.label}
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
           </div>
         ) : (
           <div className="space-y-2">
-            {rankings?.map((item, idx) => {
+            {sortedRankings?.map((item, idx) => {
               const entry = item.wiki_entries as any;
               if (!entry) return null;
               const rank = idx + 1;
