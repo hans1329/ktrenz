@@ -144,6 +144,48 @@ const AdminRankings = () => {
     refetchInterval: pipelineRunId ? 3000 : false,
   });
 
+  // Live collection stats polling - counts snapshots created since pipeline start
+  const { data: liveStats } = useQuery({
+    queryKey: ['pipeline-live-stats', pipelineStartTime],
+    queryFn: async () => {
+      if (!pipelineStartTime) return null;
+      const since = new Date(pipelineStartTime).toISOString();
+      const { data, error } = await supabase
+        .from('ktrenz_data_snapshots')
+        .select('platform, wiki_entry_id, metrics')
+        .gte('collected_at', since);
+      if (error) throw error;
+
+      // Count unique artists per platform
+      const platformCounts: Record<string, number> = {};
+      const buzzSources: Record<string, number> = {};
+      const seenPerPlatform: Record<string, Set<string>> = {};
+
+      (data || []).forEach((s: any) => {
+        const p = s.platform;
+        const wid = s.wiki_entry_id || 'unknown';
+        if (!seenPerPlatform[p]) seenPerPlatform[p] = new Set();
+        if (!seenPerPlatform[p].has(wid)) {
+          seenPerPlatform[p].add(wid);
+          platformCounts[p] = (platformCounts[p] || 0) + 1;
+        }
+
+        // Extract buzz source breakdown
+        if (p === 'buzz_multi' && s.metrics?.source_breakdown) {
+          (s.metrics.source_breakdown as any[]).forEach((src: any) => {
+            if (src.mentions > 0) {
+              buzzSources[src.source] = (buzzSources[src.source] || 0) + src.mentions;
+            }
+          });
+        }
+      });
+
+      return { platformCounts, buzzSources, totalSnapshots: data?.length || 0 };
+    },
+    enabled: !!pipelineStartTime && !!pipelineRunId,
+    refetchInterval: pipelineRunId ? 3000 : false,
+  });
+
   // Auto-clear pipeline tracking when done
   useEffect(() => {
     if (pipelineRun && (pipelineRun.status === 'completed' || pipelineRun.status === 'failed')) {
@@ -655,7 +697,6 @@ const AdminRankings = () => {
                 const results = pipelineRun.results as Record<string, any> | null;
                 const isDone = results && mod in results;
                 const isFailed = pipelineRun.status === 'failed' && isCurrent;
-                const isPending = !isDone && !isCurrent;
                 const modResult = results?.[mod];
 
                 const moduleLabel: Record<string, string> = {
@@ -666,20 +707,39 @@ const AdminRankings = () => {
                   energy: 'Energy Score 계산',
                 };
 
-                const getResultSummary = (mod: string, result: any): string => {
-                  if (!result) return '';
-                  if (result.error) return `오류: ${result.error}`;
-                  if (mod === 'youtube') return result.status === 'launched' ? '수집 시작됨' : JSON.stringify(result).slice(0, 60);
-                  if (mod === 'music') return result.status === 'launched' ? '수집 시작됨' : JSON.stringify(result).slice(0, 60);
-                  if (mod === 'hanteo') return result.status === 'launched' ? '수집 시작됨' : JSON.stringify(result).slice(0, 60);
-                  if (mod === 'buzz') return `${result.launched || 0}개 배치 × ${result.batchSize || 5} 아티스트`;
-                  if (mod === 'energy') {
-                    const scored = result.scored ?? result.processed ?? result.count;
-                    if (scored != null) return `${scored}명 스코어 갱신`;
-                    return JSON.stringify(result).slice(0, 60);
+                // Live stat mapping: module → snapshot platform(s)
+                const getLiveCount = (mod: string): string => {
+                  if (!liveStats?.platformCounts) return '';
+                  const pc = liveStats.platformCounts;
+                  if (mod === 'youtube') return pc['youtube'] ? `${pc['youtube']}개 아티스트 수집됨` : '';
+                  if (mod === 'music') {
+                    const lf = pc['lastfm'] || 0;
+                    const dz = pc['deezer'] || 0;
+                    if (lf || dz) return `Last.fm ${lf} · Deezer ${dz} 수집됨`;
+                    return '';
                   }
-                  return JSON.stringify(result).slice(0, 60);
+                  if (mod === 'hanteo') return pc['hanteo'] ? `${pc['hanteo']}개 아티스트 수집됨` : '';
+                  if (mod === 'buzz') return pc['buzz_multi'] ? `${pc['buzz_multi']}개 아티스트 수집됨` : '';
+                  if (mod === 'energy') return '';
+                  return '';
                 };
+
+                // Buzz source breakdown
+                const getBuzzSourceDetail = (): string => {
+                  if (mod !== 'buzz' || !liveStats?.buzzSources) return '';
+                  const bs = liveStats.buzzSources;
+                  const sourceLabels: Record<string, string> = {
+                    x_twitter: 'X', news: 'News', reddit: 'Reddit',
+                    youtube: 'YT', naver: 'Naver', tiktok: 'TikTok',
+                  };
+                  const parts = Object.entries(bs)
+                    .filter(([, v]) => v > 0)
+                    .map(([k, v]) => `${sourceLabels[k] || k} ${v}`);
+                  return parts.length > 0 ? parts.join(' · ') : '';
+                };
+
+                const liveCount = getLiveCount(mod);
+                const buzzDetail = getBuzzSourceDetail();
 
                 return (
                   <div
@@ -701,12 +761,19 @@ const AdminRankings = () => {
                       <p className={`text-xs font-semibold ${isDone ? 'text-emerald-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
                         {moduleLabel[mod] || mod}
                       </p>
-                      {(isDone || isFailed) && modResult && (
-                        <p className={`text-[10px] mt-0.5 truncate ${isFailed ? 'text-destructive' : 'text-muted-foreground'}`}>
-                          {getResultSummary(mod, modResult)}
+                      {/* Live stats: show real-time counts while running or done */}
+                      {liveCount && (
+                        <p className="text-[10px] mt-0.5 text-muted-foreground">
+                          📊 {liveCount}
                         </p>
                       )}
-                      {isCurrent && pipelineRun.status === 'running' && (
+                      {/* Buzz source detail */}
+                      {buzzDetail && (
+                        <p className="text-[10px] mt-0.5 text-muted-foreground">
+                          🔍 {buzzDetail}
+                        </p>
+                      )}
+                      {isCurrent && pipelineRun.status === 'running' && !liveCount && (
                         <p className="text-[10px] text-primary/70 mt-0.5 animate-pulse">처리 중...</p>
                       )}
                     </div>
