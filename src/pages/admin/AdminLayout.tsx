@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,7 @@ const navItems = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   { label: 'Rankings', path: '/admin/rankings', icon: Trophy },
   { label: 'V3 Artists', path: '/admin/v3-artists', icon: Music },
+  { label: 'Data Health', path: '/admin/data-health', icon: HeartPulse },
   { label: 'K-Points', path: '/admin/points', icon: Coins },
   { label: 'Users', path: '/admin/users', icon: Users },
   { label: 'Wiki Entries', path: '/admin/entries', icon: FileText },
