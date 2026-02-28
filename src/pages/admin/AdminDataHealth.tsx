@@ -1,11 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Loader2, AlertTriangle, ExternalLink, Wand2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface ArtistHealth {
   id: string;
@@ -22,6 +24,8 @@ interface ArtistHealth {
 }
 
 const AdminDataHealth = () => {
+  const queryClient = useQueryClient();
+
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-data-health'],
     queryFn: async () => {
@@ -46,6 +50,28 @@ const AdminDataHealth = () => {
     },
   });
 
+  const bulkFillLastfm = useMutation({
+    mutationFn: async () => {
+      const targets = artists.filter(a => !a.lastfm_artist_name && a.display_name);
+      if (targets.length === 0) throw new Error('채울 대상이 없습니다');
+      
+      let filled = 0;
+      for (const a of targets) {
+        const { error } = await supabase
+          .from('v3_artist_tiers')
+          .update({ lastfm_artist_name: a.display_name } as any)
+          .eq('id', a.id);
+        if (!error) filled++;
+      }
+      return filled;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-data-health'] });
+      toast.success(`${count}명의 Last.fm 아티스트명이 채워졌습니다`);
+    },
+    onError: (err: any) => toast.error('실패: ' + err.message),
+  });
+
   const missing = artists.filter(a =>
     !a.youtube_channel_id || !a.lastfm_artist_name || !a.deezer_artist_id
   );
@@ -64,11 +90,28 @@ const AdminDataHealth = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">데이터 헬스 체크</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          엔드포인트 ID가 누락된 아티스트를 확인하고 수정합니다.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">데이터 헬스 체크</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            엔드포인트 ID가 누락된 아티스트를 확인하고 수정합니다.
+          </p>
+        </div>
+        {lastfmMissing > 0 && (
+          <Button
+            size="sm"
+            className="h-9 gap-1.5"
+            disabled={bulkFillLastfm.isPending}
+            onClick={() => {
+              if (confirm(`Last.fm 누락 ${lastfmMissing}명에 display_name을 자동 채우시겠습니까?`)) {
+                bulkFillLastfm.mutate();
+              }
+            }}
+          >
+            {bulkFillLastfm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            Last.fm 일괄 채우기
+          </Button>
+        )}
       </div>
 
       {/* Summary Cards */}
