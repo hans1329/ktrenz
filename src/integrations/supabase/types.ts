@@ -4961,42 +4961,54 @@ export type Database = {
       }
       v3_scores_v2: {
         Row: {
+          album_change_24h: number | null
           album_sales_score: number | null
+          buzz_change_24h: number | null
           buzz_score: number | null
           energy_change_24h: number | null
           energy_rank: number | null
           energy_score: number | null
           id: string
+          music_change_24h: number | null
           music_score: number | null
           scored_at: string
           total_score: number | null
           wiki_entry_id: string
+          youtube_change_24h: number | null
           youtube_score: number | null
         }
         Insert: {
+          album_change_24h?: number | null
           album_sales_score?: number | null
+          buzz_change_24h?: number | null
           buzz_score?: number | null
           energy_change_24h?: number | null
           energy_rank?: number | null
           energy_score?: number | null
           id?: string
+          music_change_24h?: number | null
           music_score?: number | null
           scored_at?: string
           total_score?: number | null
           wiki_entry_id: string
+          youtube_change_24h?: number | null
           youtube_score?: number | null
         }
         Update: {
+          album_change_24h?: number | null
           album_sales_score?: number | null
+          buzz_change_24h?: number | null
           buzz_score?: number | null
           energy_change_24h?: number | null
           energy_rank?: number | null
           energy_score?: number | null
           id?: string
+          music_change_24h?: number | null
           music_score?: number | null
           scored_at?: string
           total_score?: number | null
           wiki_entry_id?: string
+          youtube_change_24h?: number | null
           youtube_score?: number | null
         }
         Relationships: [
