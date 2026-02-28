@@ -52,7 +52,12 @@ const ARTIST_NAME_MAP: Record<string, string[]> = {
 // YouTube Data API v3
 // ══════════════════════════════════════
 
-async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannelId?: string | null): Promise<{
+async function fetchYouTubeData(
+  artistName: string,
+  apiKey: string,
+  fixedChannelId?: string | null,
+  allowSearch = false,
+): Promise<{
   channelId: string;
   channelTitle: string;
   subscriberCount: number;
@@ -70,6 +75,10 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
     let channelId = fixedChannelId || null;
 
     if (!channelId) {
+      if (!allowSearch) {
+        console.warn(`[DataCollector] YouTube: Skip search for "${artistName}" (missing fixed channel ID)`);
+        return null;
+      }
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " official")}&key=${apiKey}&maxResults=1`;
       const searchResp = await fetch(searchUrl);
       if (!searchResp.ok) {
@@ -171,7 +180,12 @@ async function fetchYouTubeData(artistName: string, apiKey: string, fixedChannel
 }
 
 // YouTube Music Topic 채널 데이터 수집
-async function fetchYouTubeTopicData(artistName: string, apiKey: string, fixedTopicChannelId?: string | null): Promise<{
+async function fetchYouTubeTopicData(
+  artistName: string,
+  apiKey: string,
+  fixedTopicChannelId?: string | null,
+  allowSearch = false,
+): Promise<{
   topicChannelId: string;
   topicTotalViews: number;
   topicSubscribers: number;
@@ -180,8 +194,12 @@ async function fetchYouTubeTopicData(artistName: string, apiKey: string, fixedTo
   try {
     let topicChannelId = fixedTopicChannelId || null;
 
-    // Topic 채널 ID가 없으면 검색 (100 units — 최초 1회만, 이후 저장)
+    // Topic 채널 ID가 없으면 스킵(유닛 보호). 필요 시 allowSearch=true로만 검색 허용
     if (!topicChannelId) {
+      if (!allowSearch) {
+        console.log(`[DataCollector] YouTube Topic: Skip search for "${artistName}" (missing fixed topic ID)`);
+        return null;
+      }
       const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(artistName + " - Topic")}&key=${apiKey}&maxResults=3`;
       const searchResp = await fetch(searchUrl);
       if (!searchResp.ok) return null;
@@ -472,8 +490,12 @@ async function collectForSingleArtist(
   // 1) YouTube
   if ((collectAll || source === "youtube") && keys.youtube) {
     try {
-      const ytData = await fetchYouTubeData(artistTitle, keys.youtube, endpoints?.youtube_channel_id);
-      if (ytData) {
+      if (!endpoints?.youtube_channel_id) {
+        results.youtube = { skipped: true, reason: "youtube_channel_id missing" };
+        console.warn(`[DataCollector] YouTube: ${artistTitle} skipped (missing youtube_channel_id)`);
+      } else {
+        const ytData = await fetchYouTubeData(artistTitle, keys.youtube, endpoints.youtube_channel_id, false);
+        if (ytData) {
         // 24시간 전 스냅샷에서 recentTotalViews 가져오기 (일간 모멘텀 계산용)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data: prevSnapshot } = await adminClient
@@ -513,35 +535,33 @@ async function collectForSingleArtist(
             .eq("wiki_entry_id", wikiEntryId);
         }
 
-        // YouTube Music Topic 채널 데이터 수집
-        const topicData = await fetchYouTubeTopicData(artistTitle, keys.youtube, endpoints?.youtube_topic_channel_id);
-        if (topicData) {
-          // Topic 채널 ID를 자동 저장 (최초 검색 시)
-          if (!endpoints?.youtube_topic_channel_id && topicData.topicChannelId) {
-            await adminClient.from("v3_artist_tiers")
-              .update({ youtube_topic_channel_id: topicData.topicChannelId })
-              .eq("wiki_entry_id", wikiEntryId);
-            console.log(`[DataCollector] YouTube Topic: Auto-saved topic channel ID ${topicData.topicChannelId} for ${artistTitle}`);
-          }
-          await adminClient.from("ktrenz_data_snapshots").insert({
-            wiki_entry_id: wikiEntryId, platform: "youtube_music",
-            metrics: {
+        // YouTube Music Topic 채널 데이터 수집 (고정 ID가 있을 때만)
+        if (endpoints?.youtube_topic_channel_id) {
+          const topicData = await fetchYouTubeTopicData(artistTitle, keys.youtube, endpoints.youtube_topic_channel_id, false);
+          if (topicData) {
+            await adminClient.from("ktrenz_data_snapshots").insert({
+              wiki_entry_id: wikiEntryId, platform: "youtube_music",
+              metrics: {
+                topicTotalViews: topicData.topicTotalViews,
+                topicSubscribers: topicData.topicSubscribers,
+                topTracks: topicData.topMusicTracks,
+              },
+            });
+            results.youtube_music = {
               topicTotalViews: topicData.topicTotalViews,
               topicSubscribers: topicData.topicSubscribers,
-              topTracks: topicData.topMusicTracks,
-            },
-          });
-          results.youtube_music = {
-            topicTotalViews: topicData.topicTotalViews,
-            topicSubscribers: topicData.topicSubscribers,
-            tracksCount: topicData.topMusicTracks.length,
-            usedFixedTopicId: !!endpoints?.youtube_topic_channel_id,
-          };
-          console.log(`[DataCollector] YouTube Music: ${artistTitle} → ${topicData.topicTotalViews.toLocaleString()} total views, ${topicData.topicSubscribers.toLocaleString()} subs`);
+              tracksCount: topicData.topMusicTracks.length,
+              usedFixedTopicId: true,
+            };
+            console.log(`[DataCollector] YouTube Music: ${artistTitle} → ${topicData.topicTotalViews.toLocaleString()} total views, ${topicData.topicSubscribers.toLocaleString()} subs`);
+          }
+        } else {
+          results.youtube_music = { skipped: true, reason: "youtube_topic_channel_id missing" };
         }
-      } else {
-        results.youtube = { error: "YouTube API returned no data (check API key quota or channel search)" };
-        console.warn(`[DataCollector] YouTube: ${artistTitle} → no data returned`);
+        } else {
+          results.youtube = { error: "YouTube API returned no data (check API key quota or channel search)" };
+          console.warn(`[DataCollector] YouTube: ${artistTitle} → no data returned`);
+        }
       }
     } catch (e) {
       results.youtube = { error: e.message };
@@ -752,11 +772,15 @@ Deno.serve(async (req) => {
     // ── YouTube 배치 ──
     if (collectSources.includes("youtube") && YOUTUBE_API_KEY) {
       console.log("[DataCollector] Collecting YouTube data...");
-      let ytUpdated = 0, ytErrors = 0;
+      let ytUpdated = 0, ytErrors = 0, ytSkippedMissingChannel = 0;
       for (const artist of artists) {
         try {
           const endpoints = tier1Map.get(artist.id);
-          const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY, endpoints?.youtube_channel_id);
+          if (!endpoints?.youtube_channel_id) {
+            ytSkippedMissingChannel++;
+            continue;
+          }
+          const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY, endpoints.youtube_channel_id, false);
           if (ytData) {
             const ytScore = calculateYouTubeScore(ytData);
             await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore });
@@ -776,12 +800,12 @@ Deno.serve(async (req) => {
             }
             ytUpdated++;
           }
-          // YouTube API quota 보호 (4 calls/artist)
+          // YouTube API quota 보호 (고정 ID 기준 약 3 calls/artist)
           await new Promise(r => setTimeout(r, 500));
         } catch (e) { ytErrors++; }
       }
-      results.youtube = { updated: ytUpdated, errors: ytErrors };
-      console.log(`[DataCollector] YouTube: updated=${ytUpdated}, errors=${ytErrors}`);
+      results.youtube = { updated: ytUpdated, errors: ytErrors, skippedMissingChannel: ytSkippedMissingChannel };
+      console.log(`[DataCollector] YouTube: updated=${ytUpdated}, errors=${ytErrors}, skippedMissingChannel=${ytSkippedMissingChannel}`);
     } else if (collectSources.includes("youtube")) {
       results.youtube = { error: "YOUTUBE_API_KEY not configured" };
     }
