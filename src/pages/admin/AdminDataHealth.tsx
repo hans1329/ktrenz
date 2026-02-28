@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ExternalLink, Wand2 } from 'lucide-react';
+import { Loader2, AlertTriangle, ExternalLink, Wand2, Music } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -72,6 +72,22 @@ const AdminDataHealth = () => {
     onError: (err: any) => toast.error('실패: ' + err.message),
   });
 
+  const bulkFillDeezer = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fill-deezer-ids');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-data-health'] });
+      toast.success(`${data.filled}/${data.total}명의 Deezer ID가 채워졌습니다`);
+      if (data.errors?.length > 0) {
+        toast.info(`${data.errors.length}건 실패: ${data.errors.slice(0, 3).join(', ')}`);
+      }
+    },
+    onError: (err: any) => toast.error('실패: ' + err.message),
+  });
+
   const missing = artists.filter(a =>
     !a.youtube_channel_id || !a.lastfm_artist_name || !a.deezer_artist_id
   );
@@ -97,21 +113,39 @@ const AdminDataHealth = () => {
             엔드포인트 ID가 누락된 아티스트를 확인하고 수정합니다.
           </p>
         </div>
-        {lastfmMissing > 0 && (
-          <Button
-            size="sm"
-            className="h-9 gap-1.5"
-            disabled={bulkFillLastfm.isPending}
-            onClick={() => {
-              if (confirm(`Last.fm 누락 ${lastfmMissing}명에 display_name을 자동 채우시겠습니까?`)) {
-                bulkFillLastfm.mutate();
-              }
-            }}
-          >
-            {bulkFillLastfm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            Last.fm 일괄 채우기
-          </Button>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          {lastfmMissing > 0 && (
+            <Button
+              size="sm"
+              className="h-9 gap-1.5"
+              disabled={bulkFillLastfm.isPending}
+              onClick={() => {
+                if (confirm(`Last.fm 누락 ${lastfmMissing}명에 display_name을 자동 채우시겠습니까?`)) {
+                  bulkFillLastfm.mutate();
+                }
+              }}
+            >
+              {bulkFillLastfm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+              Last.fm 일괄 채우기
+            </Button>
+          )}
+          {deezerMissing > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5"
+              disabled={bulkFillDeezer.isPending}
+              onClick={() => {
+                if (confirm(`Deezer 누락 ${deezerMissing}명의 ID를 API로 자동 검색하시겠습니까?`)) {
+                  bulkFillDeezer.mutate();
+                }
+              }}
+            >
+              {bulkFillDeezer.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music className="w-4 h-4" />}
+              Deezer 일괄 채우기
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
