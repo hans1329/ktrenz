@@ -210,7 +210,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         </div>
 
         <div className="p-4 space-y-5 overflow-hidden">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
               <p className="text-[10px] text-muted-foreground mb-1">FES</p>
               <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
@@ -222,10 +222,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               )}>
                 {item.energyChange24h > 0 ? "+" : ""}{item.energyChange24h.toFixed(1)}%
               </p>
-            </div>
-            <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-              <p className="text-[10px] text-muted-foreground mb-1">Trend</p>
-              <p className="text-xs font-black text-foreground truncate">{item.trendLabel}</p>
             </div>
           </div>
 
@@ -468,21 +464,6 @@ const V3Treemap = () => {
         })}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mb-3 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "hsla(0, 85%, 50%, 0.9)" }} />
-          <span className="font-semibold">Rising</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "hsla(160, 50%, 40%, 0.75)" }} />
-          <span className="font-semibold">Stable</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "hsla(220, 55%, 35%, 0.7)" }} />
-          <span className="font-semibold">Falling</span>
-        </span>
-      </div>
 
       {/* Inspector */}
       {selectedItem && <InspectorPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
