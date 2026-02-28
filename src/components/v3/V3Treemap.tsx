@@ -19,7 +19,6 @@ interface TreemapItem {
   youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number;
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
-  velocity: number; intensity: number;
   metadata?: any;
   youtubeChannelId?: string | null;
   latestYoutubeVideoId?: string | null;
@@ -319,7 +318,7 @@ const V3Treemap = () => {
 
       const [{ data: snapshots }, { data: baselines }, { data: tierData }] = await Promise.all([
         supabase.from("v3_energy_snapshots_v2" as any)
-          .select("wiki_entry_id, energy_score, velocity_score, intensity_score, snapshot_at")
+          .select("wiki_entry_id, energy_score, snapshot_at")
           .in("wiki_entry_id", topIds)
           .order("snapshot_at", { ascending: true })
           .limit(500),
@@ -333,14 +332,9 @@ const V3Treemap = () => {
       ]);
 
       const sparklineMap = new Map<string, number[]>();
-      const latestVelInt = new Map<string, { velocity: number; intensity: number }>();
       for (const snap of (snapshots || []) as any[]) {
         if (!sparklineMap.has(snap.wiki_entry_id)) sparklineMap.set(snap.wiki_entry_id, []);
         sparklineMap.get(snap.wiki_entry_id)!.push(Number(snap.energy_score) || 0);
-        latestVelInt.set(snap.wiki_entry_id, {
-          velocity: Number(snap.velocity_score) || 0,
-          intensity: Number(snap.intensity_score) || 0,
-        });
       }
 
       const baselineMap = new Map<string, { ema7d: number | null; ema30d: number | null }>();
@@ -362,7 +356,6 @@ const V3Treemap = () => {
         const sparkline = sparklineMap.get(s.wiki_entry_id) || [];
         const change = s.energy_change_24h || 0;
         const bl = baselineMap.get(s.wiki_entry_id);
-        const vi = latestVelInt.get(s.wiki_entry_id);
         return {
           id: s.wiki_entry_id, slug: entry?.slug || "", title: entry?.title || "Unknown",
           imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
@@ -375,7 +368,6 @@ const V3Treemap = () => {
           musicChange24h: s.music_change_24h || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
-          velocity: vi?.velocity ?? 0, intensity: vi?.intensity ?? 0,
           metadata: entry?.metadata || null,
           youtubeChannelId: ytChannelMap.get(s.wiki_entry_id)?.channelId || null,
           latestYoutubeVideoId: ytChannelMap.get(s.wiki_entry_id)?.videoId || null,

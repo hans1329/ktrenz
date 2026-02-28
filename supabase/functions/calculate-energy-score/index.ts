@@ -130,13 +130,20 @@ Deno.serve(async (req) => {
           ), 10, MAX_SCORE
         );
 
-        // Velocity = weighted change-to-score (momentum)
-        const velocity = changeToScore(overallChange);
-        // Intensity = absolute energy level
-        const intensity = energyScore;
+        // Per-category velocity (momentum from change rate) & intensity (absolute level)
+        const ytVelocity = changeToScore(ytChange);
+        const ytIntensity = clamp(ytCurrent, 0, MAX_SCORE);
+        const buzzVelocity = changeToScore(buzzChange);
+        const buzzIntensity = clamp(buzzCurrent, 0, MAX_SCORE);
+        const albumVelocity = changeToScore(albumChange);
+        const albumIntensity = clamp(albumCurrent, 0, MAX_SCORE);
+        const musicVelocity = changeToScore(musicChange);
+        const musicIntensity = clamp(musicCurrent, 0, MAX_SCORE);
 
         results.push({
-          eid, energyScore, velocity, intensity,
+          eid, energyScore,
+          ytVelocity, ytIntensity, buzzVelocity, buzzIntensity,
+          albumVelocity, albumIntensity, musicVelocity, musicIntensity,
           change24h: Math.round(overallChange * 10) / 10,
           ytChange: Math.round(ytChange * 10) / 10,
           buzzChange: Math.round(buzzChange * 10) / 10,
@@ -159,13 +166,19 @@ Deno.serve(async (req) => {
       // Snapshot with per-category scores
       writeOps.push(sb.from("v3_energy_snapshots_v2").insert({
         wiki_entry_id: r.eid,
-        velocity_score: r.velocity,
-        intensity_score: r.intensity,
         energy_score: r.energyScore,
         youtube_score: r.ytCurrent,
         buzz_score: r.buzzCurrent,
         album_score: r.albumCurrent,
         music_score: r.musicCurrent,
+        youtube_velocity: r.ytVelocity,
+        youtube_intensity: r.ytIntensity,
+        buzz_velocity: r.buzzVelocity,
+        buzz_intensity: r.buzzIntensity,
+        album_velocity: r.albumVelocity,
+        album_intensity: r.albumIntensity,
+        music_velocity: r.musicVelocity,
+        music_intensity: r.musicIntensity,
       }));
 
       // v3_scores_v2 update

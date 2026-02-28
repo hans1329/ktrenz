@@ -185,7 +185,7 @@ const AdminRankings = () => {
       if (!detailArtist) return [];
       const { data, error } = await supabase
         .from('v3_energy_snapshots_v2')
-        .select('velocity_score, intensity_score, energy_score, snapshot_at')
+        .select('youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity, energy_score, snapshot_at')
         .eq('wiki_entry_id', detailArtist.wiki_entry_id)
         .order('snapshot_at', { ascending: false })
         .limit(10);
@@ -692,8 +692,12 @@ const AdminRankings = () => {
                 const latest = energySnapshots[0];
                 const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 const prev = energySnapshots.find(s => new Date(s.snapshot_at) <= cutoff) || energySnapshots[energySnapshots.length - 1];
-                const velDiff = (latest.velocity_score ?? 0) - (prev.velocity_score ?? 0);
-                const intDiff = (latest.intensity_score ?? 0) - (prev.intensity_score ?? 0);
+                const avgVelLatest = ((latest.youtube_velocity ?? 0) + (latest.buzz_velocity ?? 0) + (latest.album_velocity ?? 0) + (latest.music_velocity ?? 0)) / 4;
+                const avgVelPrev = ((prev.youtube_velocity ?? 0) + (prev.buzz_velocity ?? 0) + (prev.album_velocity ?? 0) + (prev.music_velocity ?? 0)) / 4;
+                const avgIntLatest = ((latest.youtube_intensity ?? 0) + (latest.buzz_intensity ?? 0) + (latest.album_intensity ?? 0) + (latest.music_intensity ?? 0)) / 4;
+                const avgIntPrev = ((prev.youtube_intensity ?? 0) + (prev.buzz_intensity ?? 0) + (prev.album_intensity ?? 0) + (prev.music_intensity ?? 0)) / 4;
+                const velDiff = avgVelLatest - avgVelPrev;
+                const intDiff = avgIntLatest - avgIntPrev;
                 const enDiff = (latest.energy_score ?? 0) - (prev.energy_score ?? 0);
 
                 const DiffRow = ({ label, current, diff, desc }: { label: string; current: number; diff: number; desc: string }) => (
@@ -716,9 +720,9 @@ const AdminRankings = () => {
                     <p className="text-xs text-muted-foreground mb-2">
                       최근 vs ~{Math.round(getHoursAgo(prev.snapshot_at))}시간 전
                     </p>
-                    <DiffRow label="Velocity" current={latest.velocity_score} diff={velDiff} desc="Buzz 멘션 60% + YouTube 조회 40%" />
-                    <DiffRow label="Intensity" current={latest.intensity_score} diff={intDiff} desc="참여도 50% + 감성 가중 멘션 50%" />
-                    <DiffRow label="Energy Score" current={latest.energy_score} diff={enDiff} desc="종합 에너지 (백분위 매핑)" />
+                    <DiffRow label="Avg Velocity" current={Math.round(avgVelLatest)} diff={velDiff} desc="카테고리별 변화 속도 평균" />
+                    <DiffRow label="Avg Intensity" current={Math.round(avgIntLatest)} diff={intDiff} desc="카테고리별 절대 수준 평균" />
+                    <DiffRow label="Energy Score" current={latest.energy_score} diff={enDiff} desc="종합 에너지 (가중 합산)" />
                   </div>
                 );
               })()}
@@ -760,8 +764,8 @@ const AdminRankings = () => {
                     <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border/30 last:border-0">
                       <span className="text-muted-foreground">{formatAgo(s.snapshot_at)}</span>
                       <div className="flex gap-3 font-mono">
-                        <span>V:{s.velocity_score}</span>
-                        <span>I:{s.intensity_score}</span>
+                        <span>YT-V:{s.youtube_velocity}</span>
+                        <span>BZ-V:{s.buzz_velocity}</span>
                         <span className="font-medium">E:{s.energy_score}</span>
                       </div>
                     </div>

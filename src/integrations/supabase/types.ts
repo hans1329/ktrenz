@@ -4695,40 +4695,58 @@ export type Database = {
       }
       v3_energy_snapshots_v2: {
         Row: {
+          album_intensity: number | null
           album_score: number | null
+          album_velocity: number | null
+          buzz_intensity: number | null
           buzz_score: number | null
+          buzz_velocity: number | null
           energy_score: number
           id: string
-          intensity_score: number
+          music_intensity: number | null
           music_score: number | null
+          music_velocity: number | null
           snapshot_at: string
-          velocity_score: number
           wiki_entry_id: string
+          youtube_intensity: number | null
           youtube_score: number | null
+          youtube_velocity: number | null
         }
         Insert: {
+          album_intensity?: number | null
           album_score?: number | null
+          album_velocity?: number | null
+          buzz_intensity?: number | null
           buzz_score?: number | null
+          buzz_velocity?: number | null
           energy_score?: number
           id?: string
-          intensity_score?: number
+          music_intensity?: number | null
           music_score?: number | null
+          music_velocity?: number | null
           snapshot_at?: string
-          velocity_score?: number
           wiki_entry_id: string
+          youtube_intensity?: number | null
           youtube_score?: number | null
+          youtube_velocity?: number | null
         }
         Update: {
+          album_intensity?: number | null
           album_score?: number | null
+          album_velocity?: number | null
+          buzz_intensity?: number | null
           buzz_score?: number | null
+          buzz_velocity?: number | null
           energy_score?: number
           id?: string
-          intensity_score?: number
+          music_intensity?: number | null
           music_score?: number | null
+          music_velocity?: number | null
           snapshot_at?: string
-          velocity_score?: number
           wiki_entry_id?: string
+          youtube_intensity?: number | null
           youtube_score?: number | null
+          youtube_velocity?: number | null
         }
         Relationships: [
           {
