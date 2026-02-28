@@ -620,11 +620,13 @@ const AdminRankings = () => {
       </div>
 
       {/* Pipeline Progress Banner */}
-      {pipelineRunId && pipelineRun && (
+      {pipelineRunId && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {pipelineRun.status === 'completed' ? (
+              {!pipelineRun ? (
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              ) : pipelineRun.status === 'completed' ? (
                 <span className="text-emerald-500 text-lg">✅</span>
               ) : pipelineRun.status === 'failed' ? (
                 <span className="text-destructive text-lg">❌</span>
@@ -632,7 +634,7 @@ const AdminRankings = () => {
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
               )}
               <span className="text-sm font-semibold">
-                {pipelineRun.status === 'completed' ? '파이프라인 완료' : pipelineRun.status === 'failed' ? '파이프라인 실패' : `실행 중: ${pipelineRun.current_module?.toUpperCase() || '...'}`}
+                {!pipelineRun ? '파이프라인 시작 중...' : pipelineRun.status === 'completed' ? '파이프라인 완료' : pipelineRun.status === 'failed' ? '파이프라인 실패' : `실행 중: ${pipelineRun.current_module?.toUpperCase() || '...'}`}
               </span>
               {pipelineStartTime && (
                 <span className="text-xs text-muted-foreground">
@@ -646,7 +648,7 @@ const AdminRankings = () => {
           </div>
 
           {/* Module progress steps */}
-          {pipelineRun.modules_requested && (
+          {pipelineRun?.modules_requested ? (
             <div className="space-y-1.5">
               {(pipelineRun.modules_requested as string[]).map((mod: string, i: number) => {
                 const isCurrent = pipelineRun.current_module === mod;
@@ -712,8 +714,10 @@ const AdminRankings = () => {
                 );
               })}
             </div>
+          ) : (
+            <div className="px-3 py-2 text-xs text-muted-foreground animate-pulse">모듈 정보 로딩 중...</div>
           )}
-          {pipelineRun.error_message && (
+          {pipelineRun?.error_message && (
             <p className="text-xs text-destructive mt-1">{pipelineRun.error_message}</p>
           )}
         </div>
