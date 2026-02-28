@@ -315,13 +315,33 @@ const V3TrendRankings = () => {
 
   const triggerTier1Collection = async (source: string) => {
     if (collectionStatus[source]?.status === "running") return;
-    const moduleMap: Record<string, string> = { album: "hanteo" };
-    const mod = moduleMap[source] || source;
-    const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
+
+    const moduleMap = {
+      youtube: "youtube",
+      buzz: "buzz",
+      album: "hanteo",
+      music: "music",
+    } as const;
+
+    const labelMap = {
+      youtube: "YouTube",
+      buzz: "Buzz",
+      album: "Album",
+      music: "Music",
+    } as const;
+
+    const mappedModule = moduleMap[source as keyof typeof moduleMap];
+    const label = labelMap[source as keyof typeof labelMap];
+
+    if (!mappedModule || !label) {
+      toast.error("알 수 없는 수집 모듈입니다.");
+      return;
+    }
+
     setCollectingModule(source);
     try {
       const { data, error } = await supabase.functions.invoke("data-engine", {
-        body: { module: mod, triggerSource: "admin-front" },
+        body: { module: mappedModule, triggerSource: "admin-front" },
       });
       if (error) throw error;
       toast(`${label} 수집 시작됨, 진행상황을 추적합니다...`);
@@ -424,7 +444,11 @@ const V3TrendRankings = () => {
 
   const sortedRankings = useMemo(() => {
     if (!rankings?.length) return [];
-    return [...rankings]
+    const base = energyCategory === "all"
+      ? rankings.filter((item: any) => Number(item.youtube_score ?? 0) > 0)
+      : rankings;
+
+    return [...base]
       .map(item => ({ ...item, changePercent: getCatChange(item, energyCategory) }))
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
   }, [rankings, energyCategory]);

@@ -23,33 +23,38 @@ const DELAY_AFTER: Record<Module, number> = {
 
 // ── 모듈 실행기 ──
 
-async function runYouTube(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Running YouTube module (fire-and-forget)...");
-  fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+function launchCollector(
+  supabaseUrl: string,
+  serviceKey: string,
+  source: "youtube" | "music" | "hanteo",
+) {
+  const reqPromise = fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-    body: JSON.stringify({ source: "youtube" }),
-  }).catch((e) => console.warn("[data-engine] YouTube fire error:", e.message));
+    body: JSON.stringify({ source }),
+  }).catch((e) => console.warn(`[data-engine] ${source} fire error:`, e.message));
+
+  const edgeRuntime = (globalThis as any).EdgeRuntime;
+  if (edgeRuntime?.waitUntil) {
+    edgeRuntime.waitUntil(reqPromise);
+  }
+}
+
+async function runYouTube(supabaseUrl: string, serviceKey: string): Promise<any> {
+  console.log("[data-engine] Running YouTube module (fire-and-forget)...");
+  launchCollector(supabaseUrl, serviceKey, "youtube");
   return { status: "launched", module: "youtube" };
 }
 
 async function runMusic(supabaseUrl: string, serviceKey: string): Promise<any> {
   console.log("[data-engine] Running Music module (fire-and-forget)...");
-  fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-    body: JSON.stringify({ source: "music" }),
-  }).catch((e) => console.warn("[data-engine] Music fire error:", e.message));
+  launchCollector(supabaseUrl, serviceKey, "music");
   return { status: "launched", module: "music" };
 }
 
 async function runHanteo(supabaseUrl: string, serviceKey: string): Promise<any> {
   console.log("[data-engine] Running Hanteo module (fire-and-forget)...");
-  fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-    body: JSON.stringify({ source: "hanteo" }),
-  }).catch((e) => console.warn("[data-engine] Hanteo fire error:", e.message));
+  launchCollector(supabaseUrl, serviceKey, "hanteo");
   return { status: "launched", module: "hanteo" };
 }
 

@@ -386,7 +386,12 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   // Sort and layout by selected category
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
-    return [...items].sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
+
+    const base = category === "all"
+      ? items.filter((item) => Number(item.youtubeScore ?? 0) > 0)
+      : items;
+
+    return [...base].sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
   }, [items, category]);
 
   const containerWidth = isMobile ? 360 : 420;
