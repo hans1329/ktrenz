@@ -4,12 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music } from "lucide-react";
+import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
 import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { toast } from "sonner";
 
 // 크론잡 실행 상태 확인 훅
 const useCrawlStatus = () => {
@@ -248,10 +250,12 @@ const periodDays: Record<Period, number> = { "1D": 1, "1W": 7, "1M": 30, "3M": 9
 const V3TrendRankings = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const { isAdmin } = useAdminAuth();
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
   const [energyCategory, setEnergyCategory] = useState<EnergyCategory>("all");
+  const [collectingModule, setCollectingModule] = useState<string | null>(null);
   const { data: crawlStatus } = useCrawlStatus();
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
@@ -263,6 +267,46 @@ const V3TrendRankings = () => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const triggerTier1Collection = async (source: string) => {
+    const moduleMap: Record<string, string> = { album: "hanteo" };
+    const mod = moduleMap[source] || source;
+    const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
+    setCollectingModule(source);
+    try {
+      const { data, error } = await supabase.functions.invoke("data-engine", {
+        body: { module: mod, triggerSource: "admin-front" },
+      });
+      if (error) throw error;
+      toast.success(`${label} Tier1 전체 수집 시작됨`);
+    } catch (err: any) {
+      toast.error(`${label} 수집 실패: ${err.message}`);
+    } finally {
+      setCollectingModule(null);
+    }
+  };
+
+  const ADMIN_COLLECT_BUTTONS = [
+    { key: "youtube", label: "YT", icon: <Youtube className="w-3 h-3" /> },
+    { key: "buzz", label: "BZ", icon: <Twitter className="w-3 h-3" /> },
+    { key: "album", label: "AL", icon: <Disc3 className="w-3 h-3" /> },
+    { key: "music", label: "MU", icon: <Music className="w-3 h-3" /> },
+  ];
+
+  const AdminCollectButtons = () => (
+    <div className="flex items-center gap-1">
+      {ADMIN_COLLECT_BUTTONS.map(btn => (
+        <button key={btn.key} onClick={() => triggerTier1Collection(btn.key)}
+          disabled={!!collectingModule}
+          className={cn("flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-bold border transition-colors",
+            collectingModule === btn.key ? "bg-primary/20 text-primary border-primary/30" : "bg-muted text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30",
+            !!collectingModule && collectingModule !== btn.key && "opacity-50")}>
+          {collectingModule === btn.key ? <Loader2 className="w-3 h-3 animate-spin" /> : btn.icon}
+          {btn.label}
+        </button>
+      ))}
+    </div>
+  );
 
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["v3-trend-rankings", period],
@@ -381,6 +425,7 @@ const V3TrendRankings = () => {
               ) : (
                 <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
               )}
+              {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
             </div>
             <div className="relative" ref={periodRef}>
               <button onClick={() => setPeriodOpen(!periodOpen)}
@@ -442,6 +487,7 @@ const V3TrendRankings = () => {
             ) : (
               <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
             )}
+            {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center rounded-full bg-muted p-0.5">
