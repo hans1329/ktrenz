@@ -278,31 +278,28 @@ const V3TrendRankings = () => {
     const interval = setInterval(async () => {
       try {
         const elapsed = Math.round((Date.now() - startedAt) / 1000);
-        // ktrenz_collection_log에서 최근 수집 결과 확인
-        const moduleMap: Record<string, string> = { youtube: "youtube", buzz: "x_mentions", album: "hanteo", music: "lastfm" };
-        const platform = moduleMap[source] || source;
-        const { data: logData } = await supabase
-          .from("ktrenz_collection_log" as any)
-          .select("status, records_collected, collected_at")
-          .eq("platform", platform)
+        const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
+
+        // ktrenz_data_snapshots에서 최근 스냅샷 확인 (모든 모듈 공통)
+        const snapshotPlatformMap: Record<string, string> = { youtube: "youtube", buzz: "buzz_multi", album: "hanteo", music: "lastfm" };
+        const snapshotPlatform = snapshotPlatformMap[source] || source;
+        const { data: snapData } = await supabase
+          .from("ktrenz_data_snapshots" as any)
+          .select("collected_at")
+          .eq("platform", snapshotPlatform)
           .order("collected_at", { ascending: false })
           .limit(1)
           .maybeSingle() as { data: any };
 
-        if (logData && new Date(logData.collected_at).getTime() > startedAt) {
+        if (snapData && new Date(snapData.collected_at).getTime() > startedAt) {
           clearInterval(interval);
-          const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
-          if (logData.status === "success") {
-            toast.success(`${label} 수집 완료: ${logData.records_collected || 0}건 (${elapsed}초)`);
-          } else {
-            toast.error(`${label} 수집 실패`);
-          }
-          setCollectionStatus(prev => ({ ...prev, [source]: { status: logData.status === "success" ? "done" : "error" } }));
+          toast.success(`${label} 수집 완료 (${elapsed}초)`);
+          setCollectionStatus(prev => ({ ...prev, [source]: { status: "done" } }));
           setTimeout(() => setCollectionStatus(prev => { const n = { ...prev }; delete n[source]; return n; }), 5000);
-        } else if (elapsed > 180) {
+        } else if (elapsed > 300) {
           clearInterval(interval);
           setCollectionStatus(prev => ({ ...prev, [source]: { status: "timeout" } }));
-          toast.error(`${source} 수집 타임아웃 (3분 초과)`);
+          toast.error(`${label} 수집 타임아웃 (5분 초과)`);
           setTimeout(() => setCollectionStatus(prev => { const n = { ...prev }; delete n[source]; return n; }), 5000);
         } else {
           setCollectionStatus(prev => ({ ...prev, [source]: { status: "running", runId, startedAt } }));
