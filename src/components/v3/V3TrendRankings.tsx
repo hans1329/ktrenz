@@ -146,6 +146,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
   }[rank] || { icon: null, border: "", glow: "", gradient: "", size: "w-12 h-12", label: "", labelColor: "" };
 
   const hasEnergy = item.energy_score > 0;
+  const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
 
   return (
     <Link to={`/artist/${entry.slug}`} className="block">
@@ -181,10 +182,10 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-lg font-black text-primary">{Math.round(item.total_score || 0)}</p>
+            <p className="text-lg font-black text-primary">{Math.round(displayScore)}</p>
             <div className="mt-1 w-16 h-1.5 rounded-full bg-muted overflow-hidden ml-auto">
               <div className="h-full rounded-full bg-gradient-to-r from-primary to-orange-400 transition-all"
-                style={{ width: `${maxScore > 0 ? ((item.total_score || 0) / maxScore) * 100 : 0}%` }} />
+                style={{ width: `${maxScore > 0 ? (displayScore / maxScore) * 100 : 0}%` }} />
             </div>
           </div>
         </div>
@@ -206,7 +207,8 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
 const RankingRow = ({ item, rank, maxScore }: { item: any; rank: number; maxScore: number }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
-  const scorePercent = ((item.total_score || 0) / maxScore) * 100;
+  const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
+  const scorePercent = maxScore > 0 ? (displayScore / maxScore) * 100 : 0;
 
   return (
     <Link to={`/artist/${entry.slug}`}>
@@ -231,7 +233,7 @@ const RankingRow = ({ item, rank, maxScore }: { item: any; rank: number; maxScor
           </div>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-sm font-bold text-foreground">{Math.round(item.total_score || 0)}</p>
+          <p className="text-sm font-bold text-foreground">{Math.round(displayScore)}</p>
           <ChangeIndicator change={item.changePercent ?? 0} />
           {item.energy_score > 0 && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end mt-0.5">
@@ -439,6 +441,16 @@ const V3TrendRankings = () => {
     }
   };
 
+  const getCatScore = (item: any, cat: EnergyCategory) => {
+    switch (cat) {
+      case "youtube": return Number(item.youtube_score ?? 0);
+      case "buzz": return Number(item.buzz_score ?? 0);
+      case "album": return Number(item.album_sales_score ?? 0);
+      case "music": return Number(item.music_score ?? 0);
+      default: return Number(item.total_score ?? 0);
+    }
+  };
+
   const sortedRankings = useMemo(() => {
     if (!rankings?.length) return [];
     const base = energyCategory === "all"
@@ -446,7 +458,11 @@ const V3TrendRankings = () => {
       : rankings;
 
     return [...base]
-      .map(item => ({ ...item, changePercent: getCatChange(item, energyCategory) }))
+      .map(item => ({
+        ...item,
+        changePercent: getCatChange(item, energyCategory),
+        displayScore: getCatScore(item, energyCategory),
+      }))
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
   }, [rankings, energyCategory]);
 
@@ -502,7 +518,7 @@ const V3TrendRankings = () => {
 
   const top3 = sortedRankings.slice(0, 3);
   const rest = sortedRankings.slice(3);
-  const maxScore = sortedRankings[0]?.total_score || 1;
+  const maxScore = Math.max(...sortedRankings.map((item: any) => Number(item.displayScore ?? 0)), 1);
 
   if (!isMobile) {
     // PC: Treemap + List side by side

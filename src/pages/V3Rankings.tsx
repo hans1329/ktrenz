@@ -95,6 +95,16 @@ const V3Rankings = () => {
     }
   };
 
+  const getCatScore = (item: any, cat: EnergyCategory) => {
+    switch (cat) {
+      case "youtube": return Number(item.youtube_score ?? 0);
+      case "buzz": return Number(item.buzz_score ?? 0);
+      case "album": return Number(item.album_sales_score ?? 0);
+      case "music": return Number(item.music_score ?? 0);
+      default: return Number(item.total_score ?? 0);
+    }
+  };
+
   const sortedRankings = useMemo(() => {
     if (!rankings?.length) return [];
 
@@ -103,7 +113,11 @@ const V3Rankings = () => {
       : rankings;
 
     const sorted = [...base]
-      .map(item => ({ ...item, changePercent: getCatChange(item, category) }))
+      .map(item => ({
+        ...item,
+        changePercent: getCatChange(item, category),
+        displayScore: getCatScore(item, category),
+      }))
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
     const top5 = sorted.slice(0, 5);
     const bottom5 = sorted.slice(-5).reverse();
@@ -114,7 +128,7 @@ const V3Rankings = () => {
     return [...top5, ...middle, ...bottom5];
   }, [rankings, category]);
 
-  const maxScore = sortedRankings?.[0]?.total_score || 1;
+  const maxScore = Math.max(...sortedRankings.map((item: any) => Number(item.displayScore ?? 0)), 1);
 
   return (
     <>
@@ -151,7 +165,7 @@ const V3Rankings = () => {
               const entry = item.wiki_entries as any;
               if (!entry) return null;
               const rank = idx + 1;
-              const scorePercent = ((item.total_score || 0) / maxScore) * 100;
+              const scorePercent = maxScore > 0 ? (Number(item.displayScore ?? 0) / maxScore) * 100 : 0;
 
               return (
                 <Link key={item.wiki_entry_id} to={`/artist/${entry.slug}`}>
@@ -177,7 +191,7 @@ const V3Rankings = () => {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className={cn("font-bold text-foreground", rank <= 3 ? "text-base" : "text-sm")}>{Math.round(item.total_score || 0)}</p>
+                      <p className={cn("font-bold text-foreground", rank <= 3 ? "text-base" : "text-sm")}>{Math.round(Number(item.displayScore ?? 0))}</p>
                       <ChangeIndicator change={item.changePercent ?? 0} />
                       {item.energy_score > 0 && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end mt-0.5">
