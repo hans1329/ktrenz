@@ -5,15 +5,18 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3 } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 
 // ── Types ──
+type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music";
+
 interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
   energyScore: number; energyChange24h: number; totalScore: number;
   youtubeScore: number; buzzScore: number; twitterScore: number;
   albumSalesScore: number; musicScore: number;
+  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number;
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
   velocity: number; intensity: number;
@@ -41,19 +44,47 @@ function getTrendLabel(change: number, sparkline: number[]): TrendLabel {
   return "↓ Falling";
 }
 
-// Color: RED=rising, GREEN=stable, BLUE=falling
 function getTileColor(change: number): string {
-  if (change >= 30) return "hsla(0, 85%, 50%, 0.9)";     // HOT RED
-  if (change >= 15) return "hsla(5, 75%, 45%, 0.8)";      // RED
-  if (change >= 5) return "hsla(10, 60%, 40%, 0.7)";      // WARM RED
-  if (change > -5) return "hsla(160, 50%, 40%, 0.75)";     // Mint stable
-  if (change > -15) return "hsla(220, 55%, 35%, 0.7)";    // BLUE cooling
-  return "hsla(230, 60%, 28%, 0.8)";                       // DEEP BLUE falling
+  if (change >= 30) return "hsla(0, 85%, 50%, 0.9)";
+  if (change >= 15) return "hsla(5, 75%, 45%, 0.8)";
+  if (change >= 5) return "hsla(10, 60%, 40%, 0.7)";
+  if (change > -5) return "hsla(160, 50%, 40%, 0.75)";
+  if (change > -15) return "hsla(220, 55%, 35%, 0.7)";
+  return "hsla(230, 60%, 28%, 0.8)";
 }
 
 function isSurging(change: number): boolean {
   return change >= 25;
 }
+
+// ── Category helpers ──
+function getCategoryScore(item: TreemapItem, category: EnergyCategory): number {
+  switch (category) {
+    case "youtube": return item.youtubeScore;
+    case "buzz": return item.buzzScore;
+    case "album": return item.albumSalesScore;
+    case "music": return item.musicScore;
+    default: return item.energyScore;
+  }
+}
+
+function getCategoryChange(item: TreemapItem, category: EnergyCategory): number {
+  switch (category) {
+    case "youtube": return item.youtubeChange24h;
+    case "buzz": return item.buzzChange24h;
+    case "album": return item.albumChange24h;
+    case "music": return item.musicChange24h;
+    default: return item.energyChange24h;
+  }
+}
+
+const CATEGORY_CONFIG: Record<EnergyCategory, { label: string; icon: React.ReactNode; color: string }> = {
+  all: { label: "전체", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(var(--primary))" },
+  youtube: { label: "YouTube", icon: <Youtube className="w-3 h-3" />, color: "hsl(0, 70%, 50%)" },
+  buzz: { label: "Buzz", icon: <MessageCircle className="w-3 h-3" />, color: "hsl(280, 60%, 55%)" },
+  album: { label: "Album", icon: <Disc3 className="w-3 h-3" />, color: "hsl(35, 80%, 50%)" },
+  music: { label: "Music", icon: <Music className="w-3 h-3" />, color: "hsl(145, 60%, 45%)" },
+};
 
 // ── Sparkline ──
 function MiniSparkline({ data, width, height, color = "rgba(255,255,255,0.5)", ema7d, ema30d }: { data: number[]; width: number; height: number; color?: string; ema7d?: number | null; ema30d?: number | null }) {
@@ -75,15 +106,15 @@ function MiniSparkline({ data, width, height, color = "rgba(255,255,255,0.5)", e
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; }
 
-function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number): Rect[] {
+function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number, category: EnergyCategory): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
-  // 타일 크기: FES 기반 + 상위 3개 부스트
   const tileSize = (i: TreemapItem, idx: number) => {
-    const base = Math.log1p(Math.max(i.energyScore, 1));
-    if (idx === 0) return base * 2.2;   // 1위: 2.2배
-    if (idx === 1) return base * 1.7;   // 2위: 1.7배
-    if (idx === 2) return base * 1.4;   // 3위: 1.4배
+    const score = getCategoryScore(i, category);
+    const base = Math.log1p(Math.max(score, 1));
+    if (idx === 0) return base * 2.2;
+    if (idx === 1) return base * 1.7;
+    if (idx === 2) return base * 1.4;
     return base;
   };
   const totalValue = items.reduce((s, i, idx) => s + tileSize(i, idx), 0);
@@ -119,7 +150,7 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
   return worst;
 }
 
-// ── Channel Bar (Button) ──
+// ── Channel Bar ──
 function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   const content = (
@@ -136,31 +167,26 @@ function ChannelBar({ icon, label, value, total, color, href }: { icon: React.Re
       </div>
     </div>
   );
-  if (href) {
-    return <a href={href} target="_blank" rel="noopener noreferrer">{content}</a>;
-  }
+  if (href) return <a href={href} target="_blank" rel="noopener noreferrer">{content}</a>;
   return content;
 }
 
-// ── Inspector Panel (enhanced) ──
+// ── Inspector Panel ──
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
   const navigate = useNavigate();
   const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
   const surging = isSurging(item.energyChange24h);
 
   const encodedName = encodeURIComponent(item.title);
-  // 최신곡 정보 추출 (spotify top_songs 또는 melon top_songs)
   const musicCharts = item.metadata?.music_charts;
   const latestSong = musicCharts?.spotify?.top_songs?.[0]?.title || musicCharts?.melon?.top_songs?.[0]?.title;
   const musicSearchQuery = latestSong ? encodeURIComponent(`${item.title} ${latestSong}`) : encodedName;
-  const musicHref = `https://open.spotify.com/search/${musicSearchQuery}`;
 
   const channels = [
-    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
-    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
-    { icon: <Twitter className="w-3.5 h-3.5" />, label: "X", value: item.twitterScore, color: "hsl(203, 89%, 53%)", href: `https://x.com/search?q=${encodedName}&src=typed_query` },
-    { icon: <Music className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)" },
-    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)", href: musicHref },
+    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", change: item.youtubeChange24h, href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
+    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
+    { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)", change: item.albumChange24h },
+    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
   ].filter(c => c.value > 0);
 
   return (
@@ -170,77 +196,82 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl my-auto",
         surging ? "border-destructive/50 bg-card" : "border-border bg-card"
       )} onClick={e => e.stopPropagation()}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-              {surging ? "Energy Surging" : "Fan Energy Inspector"}
-            </p>
-            <p className="text-sm font-black text-foreground truncate">{item.title}</p>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
+                {surging ? "Energy Surging" : "Fan Energy Inspector"}
+              </p>
+              <p className="text-sm font-black text-foreground truncate">{item.title}</p>
+            </div>
           </div>
-        </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 shrink-0 ml-2">×</button>
-      </div>
-
-      <div className="p-4 space-y-5 overflow-hidden">
-        {/* Energy Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-            <p className="text-[10px] text-muted-foreground mb-1">FES</p>
-            <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
-          </div>
-          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-            <p className="text-[10px] text-muted-foreground mb-1">24h Δ</p>
-            <p className={cn("text-lg font-black truncate",
-              item.energyChange24h >= 15 ? "text-destructive" : item.energyChange24h >= 0 ? "text-green-500" : "text-blue-400"
-            )}>
-              {item.energyChange24h > 0 ? "+" : ""}{item.energyChange24h.toFixed(1)}%
-            </p>
-          </div>
-          <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-            <p className="text-[10px] text-muted-foreground mb-1">Trend</p>
-            <p className="text-xs font-black text-foreground truncate">{item.trendLabel}</p>
-          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 shrink-0 ml-2">×</button>
         </div>
 
-        {/* Channel Energy Distribution */}
-        {channels.length > 0 && (
-          <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" /> Energy Heat Channels
-            </p>
-            <div className="space-y-2">
-              {channels.map(ch => (
-                <ChannelBar key={ch.label} icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
-              ))}
+        <div className="p-4 space-y-5 overflow-hidden">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
+              <p className="text-[10px] text-muted-foreground mb-1">FES</p>
+              <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
+            </div>
+            <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
+              <p className="text-[10px] text-muted-foreground mb-1">24h Δ</p>
+              <p className={cn("text-lg font-black truncate",
+                item.energyChange24h >= 15 ? "text-destructive" : item.energyChange24h >= 0 ? "text-green-500" : "text-blue-400"
+              )}>
+                {item.energyChange24h > 0 ? "+" : ""}{item.energyChange24h.toFixed(1)}%
+              </p>
+            </div>
+            <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
+              <p className="text-[10px] text-muted-foreground mb-1">Trend</p>
+              <p className="text-xs font-black text-foreground truncate">{item.trendLabel}</p>
             </div>
           </div>
-        )}
 
-        {/* Sparkline */}
-        {item.sparkline.length >= 2 && (
-          <div className="rounded-xl bg-muted/30 border border-border p-3">
-            <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
-              <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
+          {/* Per-category changes */}
+          {channels.length > 0 && (
+            <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5" /> Category Changes (24h)
+              </p>
+              <div className="space-y-2">
+                {channels.map(ch => (
+                  <div key={ch.label}>
+                    <ChannelBar icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
+                    <div className="flex justify-end mt-0.5 mr-1">
+                      <span className={cn("text-[10px] font-bold",
+                        ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
+                      )}>
+                        {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="relative h-16 overflow-hidden">
-              <MiniSparkline data={item.sparkline} width={280} height={64}
-                color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
-                ema7d={item.ema7d} ema30d={item.ema30d} />
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* CTA */}
-        <button onClick={() => navigate(`/artist/${item.slug}`)}
-          className="w-full flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-2.5 rounded-full transition-colors">
-          <ExternalLink className="w-3.5 h-3.5" /> View Full Profile
-        </button>
-      </div>
+          {item.sparkline.length >= 2 && (
+            <div className="rounded-xl bg-muted/30 border border-border p-3">
+              <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
+              <div className="flex items-center gap-3 mb-1">
+                <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
+                <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
+              </div>
+              <div className="relative h-16 overflow-hidden">
+                <MiniSparkline data={item.sparkline} width={280} height={64}
+                  color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
+                  ema7d={item.ema7d} ema30d={item.ema30d} />
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => navigate(`/artist/${item.slug}`)}
+            className="w-full flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-2.5 rounded-full transition-colors">
+            <ExternalLink className="w-3.5 h-3.5" /> View Full Profile
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -249,6 +280,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 // ── Main Treemap Component ──
 const V3Treemap = () => {
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
+  const [category, setCategory] = useState<EnergyCategory>("all");
   const isMobile = useIsMobile();
   const displayCount = isMobile ? 15 : 16;
 
@@ -256,32 +288,30 @@ const V3Treemap = () => {
     queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
       const { data, error } = await supabase.from("v3_scores_v2" as any)
-        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at,
+        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
+          youtube_score, buzz_score, album_sales_score, music_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h,
+          scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("total_score", { ascending: false })
         .limit(60);
       if (error) throw error;
       if (!data?.length) return [];
       const typedData = data as any[];
-      // Deduplicate: keep latest per artist
       const latestMap = new Map<string, any>();
       for (const s of typedData) {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
-      // 변동폭 기반 선정: 상위5(급등) + 하위5(급락) + 중간5(안정)
       const allCandidates = Array.from(latestMap.values())
         .filter((s) => (s.wiki_entries as any)?.slug);
       
-      // energy_change_24h 기준 정렬
       const sortedByChange = [...allCandidates].sort(
         (a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0)
       );
       
-      const top5 = sortedByChange.slice(0, 5); // 가장 많이 오른 5개
-      const bottom5 = sortedByChange.slice(-5).reverse(); // 가장 많이 떨어진 5개
-      
-      // 중간: 0%에 가장 가까운 5개 (이미 선택된 제외)
+      const top5 = sortedByChange.slice(0, 5);
+      const bottom5 = sortedByChange.slice(-5).reverse();
       const selectedIds = new Set([...top5, ...bottom5].map(s => s.wiki_entry_id));
       const middle5 = [...allCandidates]
         .filter(s => !selectedIds.has(s.wiki_entry_id))
@@ -289,22 +319,18 @@ const V3Treemap = () => {
         .slice(0, 5);
       
       const topItems = [...top5, ...middle5, ...bottom5];
-
-      // Fetch sparkline and baselines for these top artists
       const topIds = topItems.map((s) => s.wiki_entry_id);
+
       const [{ data: snapshots }, { data: baselines }, { data: tierData }] = await Promise.all([
-        supabase
-          .from("v3_energy_snapshots_v2" as any)
+        supabase.from("v3_energy_snapshots_v2" as any)
           .select("wiki_entry_id, energy_score, velocity_score, intensity_score, snapshot_at")
           .in("wiki_entry_id", topIds)
           .order("snapshot_at", { ascending: true })
           .limit(500),
-        supabase
-          .from("v3_energy_baselines_v2" as any)
+        supabase.from("v3_energy_baselines_v2" as any)
           .select("wiki_entry_id, avg_energy_7d, avg_energy_30d")
           .in("wiki_entry_id", topIds),
-        supabase
-          .from("v3_artist_tiers" as any)
+        supabase.from("v3_artist_tiers" as any)
           .select("wiki_entry_id, youtube_channel_id, latest_youtube_video_id, latest_youtube_video_title")
           .in("wiki_entry_id", topIds)
           .not("youtube_channel_id", "is", null),
@@ -315,7 +341,6 @@ const V3Treemap = () => {
       for (const snap of (snapshots || []) as any[]) {
         if (!sparklineMap.has(snap.wiki_entry_id)) sparklineMap.set(snap.wiki_entry_id, []);
         sparklineMap.get(snap.wiki_entry_id)!.push(Number(snap.energy_score) || 0);
-        // Keep the latest snapshot's velocity/intensity (snapshots ordered ascending, so last wins)
         latestVelInt.set(snap.wiki_entry_id, {
           velocity: Number(snap.velocity_score) || 0,
           intensity: Number(snap.intensity_score) || 0,
@@ -346,9 +371,12 @@ const V3Treemap = () => {
           id: s.wiki_entry_id, slug: entry?.slug || "", title: entry?.title || "Unknown",
           imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
           energyScore: s.energy_score || 0, energyChange24h: change, totalScore: s.total_score || 0,
-          youtubeScore: s.youtube_score || 0,
-          buzzScore: s.buzz_score || 0, twitterScore: 0,
+          youtubeScore: s.youtube_score || 0, buzzScore: s.buzz_score || 0, twitterScore: 0,
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
+          youtubeChange24h: s.youtube_change_24h || 0,
+          buzzChange24h: s.buzz_change_24h || 0,
+          albumChange24h: s.album_change_24h || 0,
+          musicChange24h: s.music_change_24h || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
           velocity: vi?.velocity ?? 0, intensity: vi?.intensity ?? 0,
@@ -362,22 +390,27 @@ const V3Treemap = () => {
     staleTime: 30_000,
   });
 
-  // 변동성(energy_change_24h) 기준 랭킹 순서 유지하여 squarify (1위=가장 큰 타일)
+  // Sort and layout by selected category
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
-    // items는 이미 energy_change_24h 기준 정렬됨 (top5 → middle5 → bottom5)
-    // 1위(변동성 최고)에게 가장 큰 부스트가 적용되도록 원래 순서 유지
-    return [...items];
-  }, [items]);
+    return [...items].sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
+  }, [items, category]);
+
   const containerWidth = isMobile ? 360 : 420;
   const containerHeight = isMobile ? 620 : 520;
-  const rects = useMemo(() => { if (!sortedItems.length) return []; return squarify(sortedItems, 0, 0, containerWidth, containerHeight); }, [sortedItems, containerWidth, containerHeight]);
-  const handleTileClick = useCallback((item: TreemapItem) => { setSelectedItem(prev => prev?.id === item.id ? null : item); }, []);
-  // energy_change_24h 최대인 아티스트 ID (글로우 대상)
+  const rects = useMemo(() => {
+    if (!sortedItems.length) return [];
+    return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category);
+  }, [sortedItems, containerWidth, containerHeight, category]);
+
+  const handleTileClick = useCallback((item: TreemapItem) => {
+    setSelectedItem(prev => prev?.id === item.id ? null : item);
+  }, []);
+
   const topChangeId = useMemo(() => {
-    if (!items?.length) return null;
-    return items.reduce((best, cur) => (cur.energyChange24h > best.energyChange24h ? cur : best), items[0]).id;
-  }, [items]);
+    if (!sortedItems.length) return null;
+    return sortedItems[0]?.id || null;
+  }, [sortedItems]);
 
   if (isLoading) return (
     <div className="px-4 pb-4">
@@ -386,27 +419,21 @@ const V3Treemap = () => {
         <Skeleton className="h-4 w-64 ml-7" />
       </div>
       <div className="flex items-center justify-center gap-4 mb-3">
-        {[1,2,3,4].map(i => <Skeleton key={i} className="h-4 w-14 rounded-sm" />)}
+        {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-7 w-14 rounded-full" />)}
       </div>
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
         <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 gap-[2px] p-[2px]">
           {[...Array(10)].map((_, i) => (
-            <Skeleton key={i} className={cn(
-              "rounded-lg",
-              i === 0 && "col-span-2 row-span-2",
-              i === 1 && "row-span-2",
-            )} />
+            <Skeleton key={i} className={cn("rounded-lg", i === 0 && "col-span-2 row-span-2", i === 1 && "row-span-2")} />
           ))}
         </div>
       </div>
     </div>
   );
+
   if (!items?.length) return <div className="px-4 py-16 text-center"><p className="text-sm text-muted-foreground">No energy data available yet.</p></div>;
 
-  const totalEnergy = items.reduce((s, i) => s + i.energyScore, 0);
-  const totalAbsChange = items.reduce((s, i) => s + Math.abs(i.energyChange24h), 0);
-  const maxIntensity = Math.max(...items.map(i => i.intensity), 1);
-  const maxAbsChange = Math.max(...items.map(i => Math.abs(i.energyChange24h)), 1);
+  const maxAbsChange = Math.max(...sortedItems.map(i => Math.abs(getCategoryChange(i, category))), 1);
 
   return (
     <div className="px-4 pb-4">
@@ -414,8 +441,31 @@ const V3Treemap = () => {
       <div className="pt-4 pb-3">
         <h2 className="text-xl font-black text-muted-foreground">⚡ Energy Map</h2>
         <p className="text-xs text-muted-foreground mt-0.5 pl-7">
-          지금 어디서 폭발하고 있나? · Top {displayCount} · Tap to inspect
+          카테고리별 24h 변동률 · Top {displayCount} · Tap to inspect
         </p>
+      </div>
+
+      {/* Category Filter Chips */}
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+        {(Object.keys(CATEGORY_CONFIG) as EnergyCategory[]).map((cat) => {
+          const config = CATEGORY_CONFIG[cat];
+          const isActive = category === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all border",
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {config.icon}
+              {config.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Legend */}
@@ -432,10 +482,6 @@ const V3Treemap = () => {
           <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "hsla(220, 55%, 35%, 0.7)" }} />
           <span className="font-semibold">Falling</span>
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm border border-destructive/50" style={{ background: "hsla(0, 85%, 50%, 0.9)" }} />
-          <span className="font-semibold">SURGE</span>
-        </span>
       </div>
 
       {/* Inspector */}
@@ -444,13 +490,14 @@ const V3Treemap = () => {
       {/* Treemap */}
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
         <div className="absolute inset-0">
-          {rects.map((rect, idx) => {
+          {rects.map((rect) => {
             const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
             const width = (rect.w / containerWidth) * 100; const height = (rect.h / containerHeight) * 100;
-            const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8; const isSmall = !isLarge && !isMedium;
+            const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8;
             const isSelected = selectedItem?.id === rect.item.id;
-            const surging = isSurging(rect.item.energyChange24h);
-            const sharePct = totalAbsChange > 0 ? (Math.abs(rect.item.energyChange24h) / totalAbsChange * 100) : 0;
+            const catChange = getCategoryChange(rect.item, category);
+            const catScore = getCategoryScore(rect.item, category);
+            const surging = isSurging(catChange);
 
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
@@ -459,18 +506,15 @@ const V3Treemap = () => {
                   rect.item.id === topChangeId ? "z-10 shadow-[inset_0_0_24px_8px_hsla(25,100%,55%,0.6),0_0_16px_4px_hsla(11,100%,46%,0.4)] border-2 border-orange-400/60" : "",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
-                style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(rect.item.energyChange24h) }}>
+                style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(catChange) }}>
 
-              {isMedium && (() => {
-                  const maxEs = Math.max(...(items || []).map(i => i.energyScore), 1);
-                  const ratio = rect.item.energyScore / maxEs;
-                  const rank = (items || []).filter(i => i.energyScore > rect.item.energyScore).length;
-                  const isTop3 = rank < 3;
+                {isMedium && (() => {
                   const isTop1 = rect.item.id === topChangeId;
+                  const absChange = Math.abs(catChange);
                   return (
                     <BoxParticles
-                      count={isTop1 ? 80 : isTop3 ? Math.max(40, Math.round(ratio * 60)) : Math.max(5, Math.round(ratio * 30))}
-                      speed={isTop1 ? 0.7 : Math.max(0.1, Math.min(1, Math.abs(rect.item.energyChange24h) / maxAbsChange))}
+                      count={isTop1 ? 80 : Math.max(5, Math.round((absChange / maxAbsChange) * 40))}
+                      speed={isTop1 ? 0.7 : Math.max(0.1, Math.min(1, absChange / maxAbsChange))}
                       density={isTop1 ? 1.0 : 0.5}
                       color={isTop1 ? "hsl(35, 100%, 70%)" : "hsl(0, 0%, 100%)"}
                     />
@@ -479,41 +523,39 @@ const V3Treemap = () => {
 
                 {rect.item.sparkline.length >= 2 && isMedium && (
                   <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}
-                    color={rect.item.energyChange24h >= 0 ? "rgba(255,255,255,0.45)" : "rgba(150,180,255,0.45)"}
+                    color={catChange >= 0 ? "rgba(255,255,255,0.45)" : "rgba(150,180,255,0.45)"}
                     ema7d={rect.item.ema7d} ema30d={rect.item.ema30d} />
                 )}
 
-                {/* 24h 변동률 뱃지 - 우상단 */}
-                {isMedium && rect.item.energyChange24h !== 0 && (
+                {/* Category change badge */}
+                {isMedium && catChange !== 0 && (
                   <span className={cn(
                     "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
-                    rect.item.energyChange24h >= 15 ? "text-white" :
-                    rect.item.energyChange24h > 0 ? "text-green-200" :
-                    "text-blue-200"
+                    catChange >= 15 ? "text-white" : catChange > 0 ? "text-green-200" : "text-blue-200"
                   )}>
-                    {rect.item.energyChange24h > 0 ? "▲" : "▼"}{Math.abs(rect.item.energyChange24h).toFixed(1)}%
+                    {catChange > 0 ? "▲" : "▼"}{Math.abs(catChange).toFixed(1)}%
                   </span>
                 )}
 
                 {isLarge ? (
                   <div className="relative z-10 flex flex-col items-center gap-0.5">
                     <span className="text-xs md:text-base font-black text-white truncate max-w-full leading-tight drop-shadow-lg">{rect.item.title}</span>
-                    <span className="text-base md:text-xl font-black text-white/95 drop-shadow-lg">{Math.round(rect.item.energyScore)}</span>
+                    <span className="text-base md:text-xl font-black text-white/95 drop-shadow-lg">{Math.round(catScore)}</span>
                     <span className={cn("text-[9px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full backdrop-blur-sm",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
                     )}>
-                      {surging ? "🔥" : ""} {sharePct.toFixed(1)}% share
+                      {surging ? "🔥 " : ""}{catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
                     </span>
                   </div>
                 ) : isMedium ? (
                   <div className="relative z-10 flex flex-col items-center">
                     <span className="text-[10px] font-bold text-white truncate max-w-full leading-tight drop-shadow-md">{rect.item.title}</span>
-                    <span className="text-[11px] font-black text-white/90 drop-shadow-md">{Math.round(rect.item.energyScore)}</span>
+                    <span className="text-[11px] font-black text-white/90 drop-shadow-md">{Math.round(catScore)}</span>
                   </div>
                 ) : (
                   <div className="relative z-10 flex flex-col items-center overflow-hidden w-full">
                     <span className="text-[7px] font-bold text-white/80 truncate max-w-full leading-tight drop-shadow-md">{rect.item.title}</span>
-                    <span className="text-[8px] font-black text-white/70 drop-shadow-md">{Math.round(rect.item.energyScore)}</span>
+                    <span className="text-[8px] font-black text-white/70 drop-shadow-md">{Math.round(catScore)}</span>
                   </div>
                 )}
               </button>
