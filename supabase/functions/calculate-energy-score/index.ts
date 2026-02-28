@@ -68,23 +68,49 @@ Deno.serve(async (req) => {
 
     console.log(`[FES-v5] Processing ${entryIds.length} artists...`);
 
-    // ── 2) 24시간 전 스냅샷 가져오기 (각 아티스트별 가장 가까운 것) ──
+    // ── 2) 스냅샷 기준값 가져오기 (24h 기본 + 최근 fallback) ──
     const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const cutoff1h = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
+    const nowIso = new Date().toISOString();
+
     const prevSnapResults = await Promise.all(
-      entryIds.map(eid =>
-        sb.from("v3_energy_snapshots_v2")
-          .select("youtube_score, buzz_score, album_score, music_score")
+      entryIds.map(async (eid) => {
+        const { data } = await sb.from("v3_energy_snapshots_v2")
+          .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
           .eq("wiki_entry_id", eid)
-          .lt("snapshot_at", cutoff24h)
+          .lt("snapshot_at", nowIso)
           .order("snapshot_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then((r: any) => ({ eid, data: r.data }))
-      )
+          .limit(60);
+        return { eid, snaps: data || [] };
+      })
     );
+
+    const pickPrevSnapshot = (snaps: any[], olderThanIso: string) => {
+      const target = snaps.filter(
+        (s: any) => new Date(s.snapshot_at).getTime() < new Date(olderThanIso).getTime()
+      );
+      if (!target.length) return null;
+
+      const pick = (key: string) => {
+        const found = target.find((s: any) => Number(s?.[key]) > 0);
+        return found ? Number(found[key]) : 0;
+      };
+
+      return {
+        youtube_score: pick("youtube_score"),
+        buzz_score: pick("buzz_score"),
+        album_score: pick("album_score"),
+        music_score: pick("music_score"),
+      };
+    };
+
     const prevMap = new Map<string, any>();
+    const recentPrevMap = new Map<string, any>();
     for (const r of prevSnapResults) {
-      if (r.data) prevMap.set(r.eid, r.data);
+      const prev24 = pickPrevSnapshot(r.snaps, cutoff24h);
+      const prevRecent = pickPrevSnapshot(r.snaps, cutoff1h);
+      if (prev24) prevMap.set(r.eid, prev24);
+      if (prevRecent) recentPrevMap.set(r.eid, prevRecent);
     }
 
     // ── 3) 베이스라인 일괄 조회 ──
@@ -97,10 +123,11 @@ Deno.serve(async (req) => {
 
     // ── 4) 퍼센타일 기반 에너지 스코어 계산 ──
     // 4a) 각 카테고리별 raw 값 수집
-    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; prev: any; current: any }[] = [];
+    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; prev: any; prevRecent: any; current: any }[] = [];
     for (const eid of entryIds) {
       const current = scoreMap.get(eid)!;
       const prev = prevMap.get(eid);
+      const prevRecent = recentPrevMap.get(eid);
       rawData.push({
         eid,
         yt: Number(current.youtube_score) || 0,
@@ -108,6 +135,7 @@ Deno.serve(async (req) => {
         album: Number(current.album_sales_score) || 0,
         music: Number(current.music_score) || 0,
         prev,
+        prevRecent,
         current,
       });
     }
@@ -139,10 +167,27 @@ Deno.serve(async (req) => {
         const albumPrev = prev ? Number(prev.album_score) || 0 : 0;
         const musicPrev = prev ? Number(prev.music_score) || 0 : 0;
 
-        const ytChange = pctChange(r.yt, ytPrev);
-        const buzzChange = pctChange(r.buzz, buzzPrev);
-        const albumChange = pctChange(r.album, albumPrev);
-        const musicChange = pctChange(r.music, musicPrev);
+        let ytChange = pctChange(r.yt, ytPrev);
+        let buzzChange = pctChange(r.buzz, buzzPrev);
+        let albumChange = pctChange(r.album, albumPrev);
+        let musicChange = pctChange(r.music, musicPrev);
+
+        // 24h 비교가 전부 0이면, 최근(최소 1시간 이전) non-zero 스냅샷으로 fallback
+        if (ytChange === 0 && buzzChange === 0 && albumChange === 0 && musicChange === 0 && r.prevRecent) {
+          const p = r.prevRecent;
+          const ytPrevRecent = Number(p.youtube_score) || 0;
+          const buzzPrevRecent = Number(p.buzz_score) || 0;
+          const albumPrevRecent = Number(p.album_score) || 0;
+          const musicPrevRecent = Number(p.music_score) || 0;
+
+          const hasRecentNonZero = [ytPrevRecent, buzzPrevRecent, albumPrevRecent, musicPrevRecent].some(v => v > 0);
+          if (hasRecentNonZero) {
+            ytChange = pctChange(r.yt, ytPrevRecent);
+            buzzChange = pctChange(r.buzz, buzzPrevRecent);
+            albumChange = pctChange(r.album, albumPrevRecent);
+            musicChange = pctChange(r.music, musicPrevRecent);
+          }
+        }
 
         const overallChange = ytChange * WEIGHTS.youtube + buzzChange * WEIGHTS.buzz +
           musicChange * WEIGHTS.music + albumChange * WEIGHTS.album;
