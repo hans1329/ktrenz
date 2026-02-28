@@ -265,13 +265,21 @@ const AdminRankings = () => {
   const { data: ytQuota } = useQuery({
     queryKey: ['yt-quota-today'],
     queryFn: async () => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // YouTube API 쿼터는 PST 자정(UTC 08:00)에 리셋됨
+      const now = new Date();
+      const pstOffset = -8; // PST = UTC-8
+      const utcHours = now.getUTCHours();
+      const pstResetUTC = new Date(now);
+      pstResetUTC.setUTCHours(8, 0, 0, 0); // PST 자정 = UTC 08:00
+      // 현재 시각이 UTC 08:00 이전이면 전날 리셋 시점 사용
+      if (utcHours < 8) {
+        pstResetUTC.setUTCDate(pstResetUTC.getUTCDate() - 1);
+      }
       const { count, error } = await supabase
         .from('ktrenz_data_snapshots')
         .select('id', { count: 'exact', head: true })
         .eq('platform', 'youtube')
-        .gte('collected_at', todayStart.toISOString());
+        .gte('collected_at', pstResetUTC.toISOString());
       if (error) throw error;
       const collections = count ?? 0;
       // 최적화 후: playlistItems(1) + channels.list(1) + videos.list(1) = 3 units (고정 ID)
