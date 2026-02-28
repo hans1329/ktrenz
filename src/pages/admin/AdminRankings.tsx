@@ -149,13 +149,26 @@ const AdminRankings = () => {
 
   const triggerCollection = async (source: string) => {
     setRunningSource(source);
-    const backendSource = source === 'album' ? 'hanteo' : source;
     try {
-      const { data, error } = await supabase.functions.invoke('ktrenz-data-collector', {
-        body: { source: backendSource },
-      });
-      if (error) throw error;
-      toast.success(`${source} 수집 완료`, { description: JSON.stringify(data).slice(0, 100) });
+      if (source === 'all') {
+        // 전체 수집: data-engine 오케스트레이터 사용
+        const { data, error } = await supabase.functions.invoke('data-engine', {
+          body: { module: 'all', triggerSource: 'admin' },
+        });
+        if (error) throw error;
+        toast.success('전체 파이프라인 시작됨', {
+          description: `Run ID: ${data?.runId?.slice(0, 8)}… — YouTube → Music → Album → Buzz → Energy 순서로 실행됩니다`,
+        });
+      } else {
+        // 개별 모듈: data-engine 개별 모듈 호출
+        const moduleMap: Record<string, string> = { album: 'hanteo' };
+        const mod = moduleMap[source] || source;
+        const { data, error } = await supabase.functions.invoke('data-engine', {
+          body: { module: mod },
+        });
+        if (error) throw error;
+        toast.success(`${source} 수집 완료`, { description: JSON.stringify(data?.result).slice(0, 100) });
+      }
       queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
     } catch (err: any) {
       toast.error(`${source} 수집 실패: ${err.message}`);
