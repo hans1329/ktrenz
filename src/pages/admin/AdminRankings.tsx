@@ -318,12 +318,9 @@ const AdminRankings = () => {
     queryFn: async () => {
       // YouTube API 쿼터는 PST 자정(UTC 08:00)에 리셋됨
       const now = new Date();
-      const pstOffset = -8; // PST = UTC-8
-      const utcHours = now.getUTCHours();
       const pstResetUTC = new Date(now);
-      pstResetUTC.setUTCHours(8, 0, 0, 0); // PST 자정 = UTC 08:00
-      // 현재 시각이 UTC 08:00 이전이면 전날 리셋 시점 사용
-      if (utcHours < 8) {
+      pstResetUTC.setUTCHours(8, 0, 0, 0);
+      if (now.getUTCHours() < 8) {
         pstResetUTC.setUTCDate(pstResetUTC.getUTCDate() - 1);
       }
       const { count, error } = await supabase
@@ -333,17 +330,9 @@ const AdminRankings = () => {
         .gte('collected_at', pstResetUTC.toISOString());
       if (error) throw error;
       const collections = count ?? 0;
-      // 최적화 후: playlistItems(1) + channels.list(1) + videos.list(1) = 3 units (고정 ID)
-      // 고정 ID 없는 경우: search(100) + 위 3 = 103 units
-      const { count: fixedCount } = await supabase
-        .from('v3_artist_tiers' as any)
-        .select('wiki_entry_id', { count: 'exact', head: true })
-        .not('youtube_channel_id', 'is', null);
-      const totalArtists = artists.length || 1;
-      const fixedRatio = (fixedCount ?? 0) / totalArtists;
-      // 고정 ID: 3 units, 검색: 103 units → 가중 평균
-      const avgUnitsPerCollection = Math.round(3 * fixedRatio + 103 * (1 - fixedRatio));
-      const estimatedQuota = collections * avgUnitsPerCollection;
+      // 최적화 완료: 아티스트당 playlistItems(1) + videos.list(~2) = 3 units 고정
+      const UNITS_PER_COLLECTION = 3;
+      const estimatedQuota = collections * UNITS_PER_COLLECTION;
       return { collections, estimatedQuota, dailyLimit: 10000 };
     },
     staleTime: 60_000,
