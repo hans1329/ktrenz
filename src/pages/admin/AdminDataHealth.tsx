@@ -149,7 +149,7 @@ const AdminDataHealth = () => {
                 className="h-9 gap-1.5"
                 disabled={bulkFillYoutube.isPending || tierYtMissing === 0}
                 onClick={() => {
-                  if (confirm(`Tier ${tier} YouTube 누락 ${tierYtMissing}명을 Firecrawl로 검색하시겠습니까?`)) {
+                  if (confirm(`Tier ${tier} YouTube 누락 ${tierYtMissing}명을 OpenAI+YouTube API로 검색하시겠습니까?`)) {
                     bulkFillYoutube.mutate(tier);
                   }
                 }}
