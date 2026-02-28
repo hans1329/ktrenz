@@ -282,11 +282,18 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   };
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
   const isMobile = useIsMobile();
-  const displayCount = isMobile ? 15 : 16;
+  const displayCount = isMobile ? 20 : 24;
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
     queryFn: async () => {
+      // Tier 1 아티스트만 가져오기
+      const { data: tier1Entries } = await supabase
+        .from("v3_artist_tiers" as any)
+        .select("wiki_entry_id")
+        .eq("tier", 1);
+      const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id));
+
       const { data, error } = await supabase.from("v3_scores_v2" as any)
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
           youtube_score, buzz_score, album_sales_score, music_score,
@@ -294,10 +301,10 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
           scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("total_score", { ascending: false })
-        .limit(60);
+        .limit(100);
       if (error) throw error;
       if (!data?.length) return [];
-      const typedData = data as any[];
+      const typedData = (data as any[]).filter(s => tier1Ids.has(s.wiki_entry_id));
       const latestMap = new Map<string, any>();
       for (const s of typedData) {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
@@ -306,19 +313,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       const allCandidates = Array.from(latestMap.values())
         .filter((s) => (s.wiki_entries as any)?.slug);
       
-      const sortedByChange = [...allCandidates].sort(
+      // Tier 1 전체를 표시 (displayCount 제한)
+      const sorted = [...allCandidates].sort(
         (a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0)
       );
-      
-      const top5 = sortedByChange.slice(0, 5);
-      const bottom5 = sortedByChange.slice(-5).reverse();
-      const selectedIds = new Set([...top5, ...bottom5].map(s => s.wiki_entry_id));
-      const middle5 = [...allCandidates]
-        .filter(s => !selectedIds.has(s.wiki_entry_id))
-        .sort((a, b) => Math.abs(a.energy_change_24h || 0) - Math.abs(b.energy_change_24h || 0))
-        .slice(0, 5);
-      
-      const topItems = [...top5, ...middle5, ...bottom5];
+      const topItems = sorted.slice(0, displayCount);
       const topIds = topItems.map((s) => s.wiki_entry_id);
 
       const [{ data: snapshots }, { data: baselines }, { data: tierData }] = await Promise.all([
