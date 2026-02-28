@@ -9,7 +9,7 @@ import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3
 import BoxParticles from "@/components/v3/BoxParticles";
 
 // ── Types ──
-type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music";
+export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music";
 
 interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
@@ -56,8 +56,8 @@ function isSurging(change: number): boolean {
   return change >= 25;
 }
 
-// ── Category helpers ──
-function getCategoryScore(item: TreemapItem, category: EnergyCategory): number {
+// ── Category helpers (exported for reuse) ──
+export function getCategoryScore(item: TreemapItem, category: EnergyCategory): number {
   switch (category) {
     case "youtube": return item.youtubeScore;
     case "buzz": return item.buzzScore;
@@ -67,7 +67,7 @@ function getCategoryScore(item: TreemapItem, category: EnergyCategory): number {
   }
 }
 
-function getCategoryChange(item: TreemapItem, category: EnergyCategory): number {
+export function getCategoryChange(item: TreemapItem, category: EnergyCategory): number {
   switch (category) {
     case "youtube": return item.youtubeChange24h;
     case "buzz": return item.buzzChange24h;
@@ -273,9 +273,14 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 }
 
 // ── Main Treemap Component ──
-const V3Treemap = () => {
+const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?: EnergyCategory; onCategoryChange?: (cat: EnergyCategory) => void } = {}) => {
+  const [internalCategory, setInternalCategory] = useState<EnergyCategory>("all");
+  const category = externalCategory ?? internalCategory;
+  const handleCategoryChange = (cat: EnergyCategory) => {
+    setInternalCategory(cat);
+    onCategoryChange?.(cat);
+  };
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
-  const [category, setCategory] = useState<EnergyCategory>("all");
   const isMobile = useIsMobile();
   const displayCount = isMobile ? 15 : 16;
 
@@ -441,7 +446,7 @@ const V3Treemap = () => {
           return (
             <button
               key={cat}
-              onClick={() => setCategory(cat)}
+              onClick={() => handleCategoryChange(cat)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all border",
                 isActive
