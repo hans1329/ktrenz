@@ -188,7 +188,7 @@ const AdminRankings = () => {
         .select('youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity, energy_score, snapshot_at')
         .eq('wiki_entry_id', detailArtist.wiki_entry_id)
         .order('snapshot_at', { ascending: false })
-        .limit(10);
+        .limit(50);
       if (error) throw error;
       return data || [];
     },
