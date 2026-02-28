@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ExternalLink, Wand2, Music } from 'lucide-react';
+import { Loader2, AlertTriangle, ExternalLink, Wand2, Music, Youtube } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -25,6 +25,7 @@ interface ArtistHealth {
 
 const AdminDataHealth = () => {
   const queryClient = useQueryClient();
+  const [ytFillTier, setYtFillTier] = useState<number | null>(null);
 
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-data-health'],
@@ -88,6 +89,30 @@ const AdminDataHealth = () => {
     onError: (err: any) => toast.error('실패: ' + err.message),
   });
 
+  const bulkFillYoutube = useMutation({
+    mutationFn: async (tier: number) => {
+      setYtFillTier(tier);
+      const { data, error } = await supabase.functions.invoke('fill-youtube-channels', {
+        body: { tier, dryRun: false, limit: 200 },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      setYtFillTier(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-data-health'] });
+      toast.success(`${data.updated}/${data.totalProcessed}명의 YouTube ID가 채워졌습니다`);
+      const notFound = data.results?.filter((r: any) => !r.channelId)?.length || 0;
+      if (notFound > 0) {
+        toast.info(`${notFound}명은 자동 매칭 실패 — 수동 입력 필요`);
+      }
+    },
+    onError: (err: any) => {
+      setYtFillTier(null);
+      toast.error('실패: ' + err.message);
+    },
+  });
+
   const missing = artists.filter(a =>
     !a.youtube_channel_id || !a.lastfm_artist_name || !a.deezer_artist_id
   );
@@ -114,6 +139,26 @@ const AdminDataHealth = () => {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          {[1, 2].map(tier => {
+            const tierYtMissing = artists.filter(a => a.tier === tier && !a.youtube_channel_id).length;
+            return (
+              <Button
+                key={`yt-tier-${tier}`}
+                size="sm"
+                variant="outline"
+                className="h-9 gap-1.5"
+                disabled={bulkFillYoutube.isPending || tierYtMissing === 0}
+                onClick={() => {
+                  if (confirm(`Tier ${tier} YouTube 누락 ${tierYtMissing}명을 Firecrawl로 검색하시겠습니까?`)) {
+                    bulkFillYoutube.mutate(tier);
+                  }
+                }}
+              >
+                {bulkFillYoutube.isPending && ytFillTier === tier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
+                YT Tier {tier} {tierYtMissing > 0 && `(${tierYtMissing})`}
+              </Button>
+            );
+          })}
           <Button
             size="sm"
             className="h-9 gap-1.5"
@@ -125,7 +170,7 @@ const AdminDataHealth = () => {
             }}
           >
             {bulkFillLastfm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            Last.fm 일괄 채우기 {lastfmMissing > 0 && `(${lastfmMissing})`}
+            Last.fm {lastfmMissing > 0 && `(${lastfmMissing})`}
           </Button>
           <Button
             size="sm"
@@ -139,7 +184,7 @@ const AdminDataHealth = () => {
             }}
           >
             {bulkFillDeezer.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music className="w-4 h-4" />}
-            Deezer 일괄 채우기 {deezerMissing > 0 && `(${deezerMissing})`}
+            Deezer {deezerMissing > 0 && `(${deezerMissing})`}
           </Button>
         </div>
       </div>
