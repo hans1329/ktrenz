@@ -15,9 +15,9 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
 
-/** Calculate % change, safe from divide-by-zero */
-function pctChange(current: number, previous: number): number {
-  if (previous <= 0) return current > 0 ? 100 : 0;
+/** Calculate % change, returns null when no valid comparison possible */
+function pctChange(current: number, previous: number | null): number | null {
+  if (previous == null || previous <= 0) return null;
   return ((current - previous) / previous) * 100;
 }
 
@@ -44,18 +44,29 @@ export function calculateArtistEnergy(
   prev24h: { youtube_score: number; buzz_score: number; album_score: number; music_score: number } | null,
   percentiles: { yt: number; buzz: number; album: number; music: number },
 ) {
-  const ytPrev = prev24h ? Number(prev24h.youtube_score) || 0 : 0;
-  const buzzPrev = prev24h ? Number(prev24h.buzz_score) || 0 : 0;
-  const albumPrev = prev24h ? Number(prev24h.album_score) || 0 : 0;
-  const musicPrev = prev24h ? Number(prev24h.music_score) || 0 : 0;
+  const ytPrev = prev24h ? Number(prev24h.youtube_score) || 0 : null;
+  const buzzPrev = prev24h ? Number(prev24h.buzz_score) || 0 : null;
+  const albumPrev = prev24h ? Number(prev24h.album_score) || 0 : null;
+  const musicPrev = prev24h ? Number(prev24h.music_score) || 0 : null;
 
   const ytChange = pctChange(current.yt, ytPrev);
   const buzzChange = pctChange(current.buzz, buzzPrev);
   const albumChange = pctChange(current.album, albumPrev);
   const musicChange = pctChange(current.music, musicPrev);
 
-  const overallChange = ytChange * WEIGHTS.youtube + buzzChange * WEIGHTS.buzz +
-    musicChange * WEIGHTS.music + albumChange * WEIGHTS.album;
+  // 비교 가능한 항목만으로 가중 변동률 계산
+  let overallChange: number | null = null;
+  if (prev24h) {
+    const parts: { weight: number; change: number }[] = [];
+    if (ytChange != null) parts.push({ weight: WEIGHTS.youtube, change: ytChange });
+    if (buzzChange != null) parts.push({ weight: WEIGHTS.buzz, change: buzzChange });
+    if (musicChange != null) parts.push({ weight: WEIGHTS.music, change: musicChange });
+    if (albumChange != null) parts.push({ weight: WEIGHTS.album, change: albumChange });
+    if (parts.length > 0) {
+      const totalWeight = parts.reduce((s, p) => s + p.weight, 0);
+      overallChange = parts.reduce((s, p) => s + p.change * (p.weight / totalWeight), 0);
+    }
+  }
 
   const weightedPct = percentiles.yt * WEIGHTS.youtube + percentiles.buzz * WEIGHTS.buzz +
     percentiles.album * WEIGHTS.album + percentiles.music * WEIGHTS.music;
@@ -63,19 +74,19 @@ export function calculateArtistEnergy(
 
   return {
     energyScore,
-    ytVelocity: changeToScore(ytChange),
+    ytVelocity: ytChange != null ? changeToScore(ytChange) : null,
     ytIntensity: clamp(Math.round(percentiles.yt * MAX_SCORE), 0, MAX_SCORE),
-    buzzVelocity: changeToScore(buzzChange),
+    buzzVelocity: buzzChange != null ? changeToScore(buzzChange) : null,
     buzzIntensity: clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE),
-    albumVelocity: changeToScore(albumChange),
+    albumVelocity: albumChange != null ? changeToScore(albumChange) : null,
     albumIntensity: clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE),
-    musicVelocity: changeToScore(musicChange),
+    musicVelocity: musicChange != null ? changeToScore(musicChange) : null,
     musicIntensity: clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE),
-    change24h: Math.round(overallChange * 10) / 10,
-    ytChange: Math.round(ytChange * 10) / 10,
-    buzzChange: Math.round(buzzChange * 10) / 10,
-    albumChange: Math.round(albumChange * 10) / 10,
-    musicChange: Math.round(musicChange * 10) / 10,
+    change24h: overallChange != null ? Math.round(overallChange * 10) / 10 : null,
+    ytChange: ytChange != null ? Math.round(ytChange * 10) / 10 : null,
+    buzzChange: buzzChange != null ? Math.round(buzzChange * 10) / 10 : null,
+    albumChange: albumChange != null ? Math.round(albumChange * 10) / 10 : null,
+    musicChange: musicChange != null ? Math.round(musicChange * 10) / 10 : null,
   };
 }
 
