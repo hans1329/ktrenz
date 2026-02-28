@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2 } from 'lucide-react';
+import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -68,6 +69,7 @@ const AdminRankings = () => {
   const [selectedTier, setSelectedTier] = useState<1 | 2>(1);
   const [pipelineRunId, setPipelineRunId] = useState<string | null>(null);
   const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
+  const [resultsExpanded, setResultsExpanded] = useState(false);
   // Elapsed time counter for pipeline
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -669,9 +671,9 @@ const AdminRankings = () => {
               {!pipelineRun ? (
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
               ) : pipelineRun.status === 'completed' ? (
-                <span className="text-emerald-500 text-lg">✅</span>
+                <span className="text-lg">✅</span>
               ) : pipelineRun.status === 'failed' ? (
-                <span className="text-destructive text-lg">❌</span>
+                <span className="text-lg">❌</span>
               ) : (
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
               )}
@@ -707,7 +709,6 @@ const AdminRankings = () => {
                   energy: 'Energy Score 계산',
                 };
 
-                // Live stat mapping: module → snapshot platform(s)
                 const getLiveCount = (mod: string): string => {
                   if (!liveStats?.platformCounts) return '';
                   const pc = liveStats.platformCounts;
@@ -724,7 +725,6 @@ const AdminRankings = () => {
                   return '';
                 };
 
-                // Buzz source breakdown
                 const getBuzzSourceDetail = (): string => {
                   if (mod !== 'buzz' || !liveStats?.buzzSources) return '';
                   const bs = liveStats.buzzSources;
@@ -752,7 +752,7 @@ const AdminRankings = () => {
                     }`}
                   >
                     <div className="w-5 text-center shrink-0">
-                      {isDone ? <span className="text-emerald-500 text-sm">✓</span> :
+                      {isDone ? <span className="text-sm">✓</span> :
                        isFailed ? <span className="text-destructive text-sm">✕</span> :
                        isCurrent ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> :
                        <span className="text-[11px] text-muted-foreground">{i + 1}</span>}
@@ -761,17 +761,11 @@ const AdminRankings = () => {
                       <p className={`text-xs font-semibold ${isDone ? 'text-emerald-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
                         {moduleLabel[mod] || mod}
                       </p>
-                      {/* Live stats: show real-time counts while running or done */}
                       {liveCount && (
-                        <p className="text-[10px] mt-0.5 text-muted-foreground">
-                          📊 {liveCount}
-                        </p>
+                        <p className="text-[10px] mt-0.5 text-muted-foreground">📊 {liveCount}</p>
                       )}
-                      {/* Buzz source detail */}
                       {buzzDetail && (
-                        <p className="text-[10px] mt-0.5 text-muted-foreground">
-                          🔍 {buzzDetail}
-                        </p>
+                        <p className="text-[10px] mt-0.5 text-muted-foreground">🔍 {buzzDetail}</p>
                       )}
                       {isCurrent && pipelineRun.status === 'running' && !liveCount && (
                         <p className="text-[10px] text-primary/70 mt-0.5 animate-pulse">처리 중...</p>
@@ -784,8 +778,118 @@ const AdminRankings = () => {
           ) : (
             <div className="px-3 py-2 text-xs text-muted-foreground animate-pulse">모듈 정보 로딩 중...</div>
           )}
+
           {pipelineRun?.error_message && (
             <p className="text-xs text-destructive mt-1">{pipelineRun.error_message}</p>
+          )}
+
+          {/* Collapsible detailed results after completion */}
+          {pipelineRun?.status === 'completed' && pipelineRun.results && (
+            <Collapsible open={resultsExpanded} onOpenChange={setResultsExpanded}>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline mt-2 w-full">
+                  {resultsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  수집 결과 상세 보기
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                {(() => {
+                  const r = pipelineRun.results as Record<string, any>;
+                  const moduleLabels: Record<string, string> = {
+                    youtube: '📺 YouTube', music: '🎵 Music', hanteo: '💿 Album (Hanteo)',
+                    buzz: '📢 Buzz', energy: '⚡ Energy',
+                  };
+                  return Object.entries(r).map(([mod, result]) => (
+                    <div key={mod} className="rounded-lg border border-border/50 bg-card/50 p-3 space-y-1.5">
+                      <p className="text-xs font-bold">{moduleLabels[mod] || mod}</p>
+                      {/* YouTube result */}
+                      {mod === 'youtube' && (
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <p>상태: <span className="text-foreground font-medium">{result.status || result.module || '—'}</span></p>
+                          {liveStats?.platformCounts?.youtube && <p>수집 아티스트: <span className="text-foreground font-medium">{liveStats.platformCounts.youtube}개</span></p>}
+                        </div>
+                      )}
+                      {/* Music result */}
+                      {mod === 'music' && (
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <p>상태: <span className="text-foreground font-medium">{result.status || result.module || '—'}</span></p>
+                          {liveStats?.platformCounts && (
+                            <>
+                              {liveStats.platformCounts.lastfm && <p>Last.fm: <span className="text-foreground font-medium">{liveStats.platformCounts.lastfm}개 아티스트</span></p>}
+                              {liveStats.platformCounts.deezer && <p>Deezer: <span className="text-foreground font-medium">{liveStats.platformCounts.deezer}개 아티스트</span></p>}
+                              {liveStats.platformCounts.youtube_music && <p>YouTube Music: <span className="text-foreground font-medium">{liveStats.platformCounts.youtube_music}개 아티스트</span></p>}
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {/* Hanteo result */}
+                      {mod === 'hanteo' && (
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <p>상태: <span className="text-foreground font-medium">{result.status || result.module || '—'}</span></p>
+                          {liveStats?.platformCounts?.hanteo && <p>수집 아티스트: <span className="text-foreground font-medium">{liveStats.platformCounts.hanteo}개</span></p>}
+                        </div>
+                      )}
+                      {/* Buzz result */}
+                      {mod === 'buzz' && (
+                        <div className="text-[11px] text-muted-foreground space-y-1">
+                          <p>배치: <span className="text-foreground font-medium">{result.totalBatches || '—'}개</span> · 발행: <span className="text-foreground font-medium">{result.launched || '—'}개</span> · 배치크기: <span className="text-foreground font-medium">{result.batchSize || '—'}</span></p>
+                          {liveStats?.platformCounts?.buzz_multi && <p>수집 아티스트: <span className="text-foreground font-medium">{liveStats.platformCounts.buzz_multi}개</span></p>}
+                          {liveStats?.buzzSources && Object.keys(liveStats.buzzSources).length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {Object.entries(liveStats.buzzSources).map(([source, count]) => {
+                                const labels: Record<string, string> = {
+                                  x_twitter: '𝕏 Twitter', news: '📰 News', reddit: '💬 Reddit',
+                                  youtube: '▶ YouTube', naver: '🇰🇷 Naver', tiktok: '🎵 TikTok',
+                                };
+                                return (
+                                  <span key={source} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-[10px] font-medium">
+                                    {labels[source] || source}: <span className="text-foreground">{(count as number).toLocaleString()}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Energy result */}
+                      {mod === 'energy' && (
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <p>처리: <span className="text-foreground font-medium">{result.processed || '—'}개 아티스트</span></p>
+                          <p>성공: <span className="text-foreground font-medium">{result.success ? '✓' : '—'}</span></p>
+                          {result.sample && Array.isArray(result.sample) && result.sample.length > 0 && (
+                            <div className="mt-1">
+                              <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">샘플 (상위 {result.sample.length}개):</p>
+                              <div className="flex flex-wrap gap-1">
+                                {result.sample.map((s: any, idx: number) => (
+                                  <span key={idx} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">
+                                    ⚡{s.energy || '—'}
+                                    {s.change != null && <span className={s.change > 0 ? 'text-emerald-500' : s.change < 0 ? 'text-destructive' : ''}>({s.change > 0 ? '+' : ''}{s.change}%)</span>}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Fallback for unknown modules */}
+                      {!['youtube', 'music', 'hanteo', 'buzz', 'energy'].includes(mod) && (
+                        <pre className="text-[10px] text-muted-foreground overflow-auto max-h-20">{JSON.stringify(result, null, 2)}</pre>
+                      )}
+                    </div>
+                  ));
+                })()}
+
+                {/* Total snapshots summary */}
+                {liveStats && (
+                  <div className="text-[11px] text-muted-foreground pt-1 border-t border-border/30">
+                    총 스냅샷: <span className="text-foreground font-medium">{liveStats.totalSnapshots}개</span>
+                    {pipelineRun.started_at && pipelineRun.completed_at && (
+                      <> · 소요시간: <span className="text-foreground font-medium">{Math.round((new Date(pipelineRun.completed_at).getTime() - new Date(pipelineRun.started_at).getTime()) / 1000)}초</span></>
+                    )}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       )}
