@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.query-artist-energy]
 verify_jwt = false
+
+[functions.fill-deezer-ids]
+verify_jwt = false
