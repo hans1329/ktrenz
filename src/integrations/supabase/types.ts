@@ -1969,6 +1969,42 @@ export type Database = {
           },
         ]
       }
+      ktrenz_engine_runs: {
+        Row: {
+          completed_at: string | null
+          current_module: string | null
+          error_message: string | null
+          id: string
+          modules_requested: string[] | null
+          results: Json | null
+          started_at: string | null
+          status: string
+          trigger_source: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          current_module?: string | null
+          error_message?: string | null
+          id?: string
+          modules_requested?: string[] | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          trigger_source?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          current_module?: string | null
+          error_message?: string | null
+          id?: string
+          modules_requested?: string[] | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          trigger_source?: string | null
+        }
+        Relationships: []
+      }
       ktrenz_fan_agent_messages: {
         Row: {
           content: string

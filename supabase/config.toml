@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.buzz-cron]
 verify_jwt = false
+
+[functions.data-engine]
+verify_jwt = false

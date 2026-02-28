@@ -668,9 +668,14 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { source = "all", wikiEntryId, batchSize: rawBatchSize, batchOffset: rawBatchOffset } = body;
+    const { source = "all", wikiEntryId, batchSize: rawBatchSize, batchOffset: rawBatchOffset, batchIndex: rawBatchIndex } = body;
     const batchSize = Math.min(200, Math.max(1, Number(rawBatchSize) || 100));
-    const batchOffset = Math.max(0, Number(rawBatchOffset) || 0);
+    // batchIndex(페이지 기반) → batchOffset(절대 오프셋) 자동 변환
+    const batchOffset = rawBatchOffset != null
+      ? Math.max(0, Number(rawBatchOffset))
+      : rawBatchIndex != null
+        ? Math.max(0, Number(rawBatchIndex)) * batchSize
+        : 0;
 
     const keys = { youtube: YOUTUBE_API_KEY, firecrawl: FIRECRAWL_API_KEY, lastfm: LASTFM_API_KEY };
 
