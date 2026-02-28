@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -253,6 +253,7 @@ const V3TrendRankings = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const { isAdmin } = useAdminAuth();
+  const queryClient = useQueryClient();
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
@@ -295,7 +296,21 @@ const V3TrendRankings = () => {
 
         if (snapData && new Date(snapData.collected_at).getTime() > startedAt) {
           clearInterval(interval);
-          toast.success(`${label} 수집 완료 (${elapsed}초)`);
+          toast.success(`${label} 수집 완료 (${elapsed}초), 스코어 재계산 중...`);
+          setCollectionStatus(prev => ({ ...prev, [source]: { status: "scoring", runId, startedAt } }));
+          
+          // 에너지 스코어 재계산 후 UI 갱신
+          try {
+            await supabase.functions.invoke("calculate-energy-score", { body: {} });
+            toast.success("스코어 반영 완료!");
+          } catch (e) {
+            console.error("Energy score recalc error:", e);
+          }
+          
+          // 랭킹·트리맵 데이터 즉시 갱신
+          queryClient.invalidateQueries({ queryKey: ["v3-trend-rankings"] });
+          queryClient.invalidateQueries({ queryKey: ["v3-top3-energy"] });
+          
           setCollectionStatus(prev => ({ ...prev, [source]: { status: "done" } }));
           setTimeout(() => setCollectionStatus(prev => { const n = { ...prev }; delete n[source]; return n; }), 5000);
         } else if (elapsed > 300) {
