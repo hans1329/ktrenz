@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, Li
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
-import V3Treemap from "@/components/v3/V3Treemap";
+import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // 크론잡 실행 상태 확인 훅
@@ -251,6 +251,7 @@ const V3TrendRankings = () => {
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
+  const [energyCategory, setEnergyCategory] = useState<EnergyCategory>("all");
   const { data: crawlStatus } = useCrawlStatus();
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
@@ -268,9 +269,9 @@ const V3TrendRankings = () => {
     queryFn: async () => {
       const { data: allScores, error } = await supabase
         .from("v3_scores_v2" as any)
-        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score, scored_at,
+        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, schema_type)`)
-        // 에너지맵과 동일한 표본군(상위 total_score 아티스트)에서 리스트 계산
         .order("total_score", { ascending: false })
         .limit(60);
 
@@ -283,19 +284,33 @@ const V3TrendRankings = () => {
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
-      const ranked = Array.from(latestMap.values()).map((item) => {
-        const changePercent = item.energy_change_24h ?? 0;
-        return { ...item, changePercent };
-      });
-
-      // 리스트뷰: 상승률(24h 변동률) 내림차순 정렬
-      ranked.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
-      return ranked;
+      return Array.from(latestMap.values()).map((item) => ({
+        ...item,
+        changePercent: item.energy_change_24h ?? 0,
+      }));
     },
     staleTime: 30_000,
   });
 
-  const top3Ids = (rankings || []).slice(0, 3).map((r) => r.wiki_entry_id).filter(Boolean);
+  // 선택된 카테고리에 따라 정렬
+  const getCatChange = (item: any, cat: EnergyCategory) => {
+    switch (cat) {
+      case "youtube": return item.youtube_change_24h ?? 0;
+      case "buzz": return item.buzz_change_24h ?? 0;
+      case "album": return item.album_change_24h ?? 0;
+      case "music": return item.music_change_24h ?? 0;
+      default: return item.energy_change_24h ?? 0;
+    }
+  };
+
+  const sortedRankings = useMemo(() => {
+    if (!rankings?.length) return [];
+    return [...rankings]
+      .map(item => ({ ...item, changePercent: getCatChange(item, energyCategory) }))
+      .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+  }, [rankings, energyCategory]);
+
+  const top3Ids = (sortedRankings || []).slice(0, 3).map((r) => r.wiki_entry_id).filter(Boolean);
   const { data: energySnapshots } = useQuery({
     queryKey: ["v3-top3-energy", top3Ids],
     enabled: top3Ids.length > 0,
@@ -345,9 +360,9 @@ const V3TrendRankings = () => {
     );
   }
 
-  const top3 = rankings.slice(0, 3);
-  const rest = rankings.slice(3);
-  const maxScore = rankings[0]?.total_score || 1;
+  const top3 = sortedRankings.slice(0, 3);
+  const rest = sortedRankings.slice(3);
+  const maxScore = sortedRankings[0]?.total_score || 1;
 
   if (!isMobile) {
     // PC: Treemap + List side by side
@@ -390,7 +405,7 @@ const V3TrendRankings = () => {
 
         <div className="flex gap-6 px-4 items-start">
           <div className="w-[60%] shrink-0">
-            <V3Treemap />
+            <V3Treemap category={energyCategory} onCategoryChange={setEnergyCategory} />
           </div>
           <div className="w-[40%] min-w-0 space-y-3">
             <div className="pt-4 pb-3">
@@ -465,7 +480,7 @@ const V3TrendRankings = () => {
 
       {viewMode === "treemap" ? (
         <>
-          <V3Treemap />
+          <V3Treemap category={energyCategory} onCategoryChange={setEnergyCategory} />
           <ArtistListingRequestDialog />
         </>
       ) : (
