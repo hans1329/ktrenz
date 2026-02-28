@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Zap, Activity, Crown, Medal, Youtube, Twitter, Music } from "lucide-react";
+import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
@@ -100,39 +100,40 @@ const MiniEnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: 
   );
 };
 
-const MiniComponentBars = ({ velocity, intensity }: { velocity: number; intensity: number }) => {
-  const maxVal = Math.max(velocity, intensity, 200);
+const MiniCategoryBars = ({ data }: { data: Record<string, { velocity: number; intensity: number }> }) => {
+  const maxVal = 250;
+  const cats = [
+    { key: "youtube", label: "YT", color: "from-red-500 to-orange-500" },
+    { key: "buzz", label: "BZ", color: "from-purple-500 to-violet-500" },
+    { key: "album", label: "AL", color: "from-amber-500 to-yellow-500" },
+    { key: "music", label: "MU", color: "from-teal-400 to-cyan-500" },
+  ];
   return (
-    <div className="space-y-1.5 w-full">
-      <div>
-        <div className="flex items-center justify-between mb-0.5">
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-foreground">
-            <Zap className="w-2.5 h-2.5 text-amber-500" /> Velocity
-          </span>
-          <span className="text-[10px] font-bold text-foreground">{velocity}</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-700"
-            style={{ width: `${Math.min((velocity / maxVal) * 100, 100)}%` }} />
-        </div>
-      </div>
-      <div>
-        <div className="flex items-center justify-between mb-0.5">
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-foreground">
-            <Activity className="w-2.5 h-2.5 text-teal-400" /> Intensity
-          </span>
-          <span className="text-[10px] font-bold text-foreground">{intensity}</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-700"
-            style={{ width: `${Math.min((intensity / maxVal) * 100, 100)}%` }} />
-        </div>
-      </div>
+    <div className="space-y-1 w-full">
+      {cats.map(cat => {
+        const vi = data[cat.key] || { velocity: 0, intensity: 0 };
+        if (vi.velocity === 0 && vi.intensity === 0) return null;
+        return (
+          <div key={cat.key}>
+            <div className="flex items-center gap-1 mb-0.5">
+              <span className="text-[9px] font-bold text-muted-foreground w-5">{cat.label}</span>
+              <div className="flex-1 flex gap-1">
+                <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden" title={`Velocity: ${Math.round(vi.velocity)}`}>
+                  <div className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", cat.color)} style={{ width: `${Math.min((vi.velocity / maxVal) * 100, 100)}%` }} />
+                </div>
+                <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden opacity-60" title={`Intensity: ${Math.round(vi.intensity)}`}>
+                  <div className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", cat.color)} style={{ width: `${Math.min((vi.intensity / maxVal) * 100, 100)}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
 
-const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: number; maxScore: number; energyData?: { velocity: number; intensity: number } }) => {
+const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }> }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
 
@@ -143,8 +144,6 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
   }[rank] || { icon: null, border: "", glow: "", gradient: "", size: "w-12 h-12", label: "", labelColor: "" };
 
   const hasEnergy = item.energy_score > 0;
-  const velocity = energyData?.velocity ?? 100;
-  const intensity = energyData?.intensity ?? 100;
 
   return (
     <Link to={`/artist/${entry.slug}`} className="block">
@@ -187,12 +186,12 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
             </div>
           </div>
         </div>
-        {hasEnergy && (
+        {hasEnergy && energyData && (
           <div className="mt-3 pt-3 border-t border-border/50">
             <div className="flex items-start gap-4">
               <MiniEnergyGauge score={Math.round(item.energy_score)} />
               <div className="flex-1 pt-1">
-                <MiniComponentBars velocity={Math.round(velocity)} intensity={Math.round(intensity)} />
+                <MiniCategoryBars data={energyData} />
               </div>
             </div>
           </div>
@@ -304,13 +303,22 @@ const V3TrendRankings = () => {
     queryFn: async () => {
       const results = await Promise.all(
         top3Ids.map((id) =>
-          supabase.from("v3_energy_snapshots_v2" as any).select("wiki_entry_id, velocity_score, intensity_score")
+          supabase.from("v3_energy_snapshots_v2" as any)
+            .select("wiki_entry_id, youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity")
             .eq("wiki_entry_id", id).order("snapshot_at", { ascending: false }).limit(1).single()
         )
       );
-      const map = new Map<string, { velocity: number; intensity: number }>();
+      const map = new Map<string, Record<string, { velocity: number; intensity: number }>>();
       results.forEach((r: any) => {
-        if (r.data) map.set(r.data.wiki_entry_id, { velocity: Number(r.data.velocity_score) || 100, intensity: Number(r.data.intensity_score) || 100 });
+        if (r.data) {
+          const d = r.data;
+          map.set(d.wiki_entry_id, {
+            youtube: { velocity: Number(d.youtube_velocity) || 0, intensity: Number(d.youtube_intensity) || 0 },
+            buzz: { velocity: Number(d.buzz_velocity) || 0, intensity: Number(d.buzz_intensity) || 0 },
+            album: { velocity: Number(d.album_velocity) || 0, intensity: Number(d.album_intensity) || 0 },
+            music: { velocity: Number(d.music_velocity) || 0, intensity: Number(d.music_intensity) || 0 },
+          });
+        }
       });
       return map;
     },
