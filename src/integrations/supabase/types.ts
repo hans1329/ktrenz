@@ -4695,28 +4695,40 @@ export type Database = {
       }
       v3_energy_snapshots_v2: {
         Row: {
+          album_score: number | null
+          buzz_score: number | null
           energy_score: number
           id: string
           intensity_score: number
+          music_score: number | null
           snapshot_at: string
           velocity_score: number
           wiki_entry_id: string
+          youtube_score: number | null
         }
         Insert: {
+          album_score?: number | null
+          buzz_score?: number | null
           energy_score?: number
           id?: string
           intensity_score?: number
+          music_score?: number | null
           snapshot_at?: string
           velocity_score?: number
           wiki_entry_id: string
+          youtube_score?: number | null
         }
         Update: {
+          album_score?: number | null
+          buzz_score?: number | null
           energy_score?: number
           id?: string
           intensity_score?: number
+          music_score?: number | null
           snapshot_at?: string
           velocity_score?: number
           wiki_entry_id?: string
+          youtube_score?: number | null
         }
         Relationships: [
           {
