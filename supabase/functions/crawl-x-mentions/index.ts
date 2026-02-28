@@ -180,7 +180,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { artistName, wikiEntryId, hashtags } = await req.json();
+    const body = await req.json();
+    const { artistName, wikiEntryId, hashtags, sources: requestedSources } = body;
     if (!artistName) {
       return new Response(
         JSON.stringify({ success: false, error: "artistName is required" }),
@@ -196,20 +197,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { contextKeyword } = getSearchName(artistName);
-    console.log(`[crawl-x-mentions] Multi-source crawl for: ${artistName}${contextKeyword ? ` (context: ${contextKeyword})` : ""}`);
+    // requestedSources가 지정되면 해당 소스만, 아니면 전체
+    const activeSources = requestedSources?.length
+      ? SOURCES.filter(s => requestedSources.includes(s.name))
+      : SOURCES;
 
-    // 모든 소스 병렬 검색
-    const sourcePromises = SOURCES.map(async (src) => {
+    const { contextKeyword } = getSearchName(artistName);
+    console.log(`[crawl-x-mentions] Multi-source crawl for: ${artistName} (sources: ${activeSources.map(s=>s.name).join(",")})${contextKeyword ? ` (context: ${contextKeyword})` : ""}`);
+
+    // 선택된 소스 병렬 검색
+    const sourcePromises = activeSources.map(async (src) => {
       let query = src.buildQuery(artistName, hashtags);
-      // 노이즈 방지: 모호한 이름에는 컨텍스트 키워드 추가
-      if (contextKeyword) {
-        query = `${query} ${contextKeyword}`;
-      }
+      if (contextKeyword) query = `${query} ${contextKeyword}`;
       const results = await firecrawlSearch(apiKey, query, src.limit, src.tbs);
-      const texts = results
-        .map((r: any) => (r.markdown || r.description || r.title || ""))
-        .filter(Boolean);
+      const texts = results.map((r: any) => (r.markdown || r.description || r.title || "")).filter(Boolean);
       return {
         name: src.name,
         weight: src.weight,

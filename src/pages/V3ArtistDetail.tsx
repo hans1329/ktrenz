@@ -13,8 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Home, Youtube, Eye, ThumbsUp, MessageSquare, Film, Users, TrendingUp, ExternalLink, Play, Hash, Smile, Zap, Music, Disc3, Headphones } from "lucide-react";
 import V3EnergyChart from "@/components/v3/V3EnergyChart";
 import V3ArtistMilestones from "@/components/v3/V3ArtistMilestones";
+import AdminDataSourcePanel from "@/components/v3/AdminDataSourcePanel";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 const RainbowProgress = ({ isComplete }: { isComplete: boolean }) => {
   const [progress, setProgress] = useState(0);
@@ -80,6 +82,7 @@ const V3ArtistDetail = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const { isAdmin } = useAdminAuth();
 
   // 크론잡 실행 상태 확인
   const { data: crawlStatus } = useQuery({
@@ -272,6 +275,10 @@ const V3ArtistDetail = () => {
         )}
 
         {(refreshMutation.isPending || refreshMutation.isSuccess) && <RainbowProgress isComplete={!refreshMutation.isPending} />}
+
+        {/* Admin: 소스별 데이터 패널 */}
+        {isAdmin && entry?.id && <AdminDataSourcePanel wikiEntryId={entry.id} artistTitle={entry.title} />}
+
         {entry?.id && <V3EnergyChart wikiEntryId={entry.id} />}
 
         {!ytData && !buzzData && !refreshMutation.isPending && (
