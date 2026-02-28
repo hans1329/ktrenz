@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.data-engine]
 verify_jwt = false
+
+[functions.query-artist-energy]
+verify_jwt = false
