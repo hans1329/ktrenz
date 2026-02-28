@@ -1,4 +1,4 @@
-// Fan Energy Score (FES) v5 — 카테고리별 24h 변동률 기반
+// Fan Energy Score (FES) v5.1 — 24h 전 전체 호출 스냅샷 기준 비교
 // YouTube 40%, Buzz 25%, Music 20%, Album 15%
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -23,10 +23,60 @@ function pctChange(current: number, previous: number): number {
 
 /** Normalize a change rate into 20~250 score range (sigmoid-like) */
 function changeToScore(change: number): number {
-  // Map: -100% → 20, 0% → 135, +100% → 250
-  const normalized = change / 100; // -1 to +1 range (can exceed)
+  const normalized = change / 100;
   const sigmoid = 1 / (1 + Math.exp(-normalized * 3));
   return Math.round(20 + sigmoid * (MAX_SCORE - 20));
+}
+
+/** 퍼센타일 함수: 정렬 후 각 값의 순위를 0~1로 변환 */
+function toPercentiles(values: number[]): number[] {
+  const sorted = [...values].sort((a, b) => a - b);
+  return values.map(v => {
+    const rank = sorted.filter(s => s < v).length;
+    const ties = sorted.filter(s => s === v).length;
+    return (rank + (ties - 1) / 2) / Math.max(sorted.length - 1, 1);
+  });
+}
+
+/** 단일 아티스트의 Velocity/Intensity/Energy 계산 (공용 함수) */
+export function calculateArtistEnergy(
+  current: { yt: number; buzz: number; album: number; music: number },
+  prev24h: { youtube_score: number; buzz_score: number; album_score: number; music_score: number } | null,
+  percentiles: { yt: number; buzz: number; album: number; music: number },
+) {
+  const ytPrev = prev24h ? Number(prev24h.youtube_score) || 0 : 0;
+  const buzzPrev = prev24h ? Number(prev24h.buzz_score) || 0 : 0;
+  const albumPrev = prev24h ? Number(prev24h.album_score) || 0 : 0;
+  const musicPrev = prev24h ? Number(prev24h.music_score) || 0 : 0;
+
+  const ytChange = pctChange(current.yt, ytPrev);
+  const buzzChange = pctChange(current.buzz, buzzPrev);
+  const albumChange = pctChange(current.album, albumPrev);
+  const musicChange = pctChange(current.music, musicPrev);
+
+  const overallChange = ytChange * WEIGHTS.youtube + buzzChange * WEIGHTS.buzz +
+    musicChange * WEIGHTS.music + albumChange * WEIGHTS.album;
+
+  const weightedPct = percentiles.yt * WEIGHTS.youtube + percentiles.buzz * WEIGHTS.buzz +
+    percentiles.album * WEIGHTS.album + percentiles.music * WEIGHTS.music;
+  const energyScore = clamp(Math.round(10 + weightedPct * (MAX_SCORE - 10)), 10, MAX_SCORE);
+
+  return {
+    energyScore,
+    ytVelocity: changeToScore(ytChange),
+    ytIntensity: clamp(Math.round(percentiles.yt * MAX_SCORE), 0, MAX_SCORE),
+    buzzVelocity: changeToScore(buzzChange),
+    buzzIntensity: clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE),
+    albumVelocity: changeToScore(albumChange),
+    albumIntensity: clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE),
+    musicVelocity: changeToScore(musicChange),
+    musicIntensity: clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE),
+    change24h: Math.round(overallChange * 10) / 10,
+    ytChange: Math.round(ytChange * 10) / 10,
+    buzzChange: Math.round(buzzChange * 10) / 10,
+    albumChange: Math.round(albumChange * 10) / 10,
+    musicChange: Math.round(musicChange * 10) / 10,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -66,51 +116,28 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    console.log(`[FES-v5] Processing ${entryIds.length} artists...`);
+    console.log(`[FES-v5.1] Processing ${entryIds.length} artists...`);
 
-    // ── 2) 스냅샷 기준값 가져오기 (24h 기본 + 최근 fallback) ──
+    // ── 2) 24h 전 "단일 스냅샷" 찾기 ──
+    // 24시간 전 시점 이전에 찍힌 가장 최근의 단일 스냅샷을 사용
     const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const cutoff1h = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
-    const nowIso = new Date().toISOString();
 
     const prevSnapResults = await Promise.all(
       entryIds.map(async (eid) => {
+        // 24h 이전에 기록된 가장 최근 스냅샷 1개만 가져옴
         const { data } = await sb.from("v3_energy_snapshots_v2")
           .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
           .eq("wiki_entry_id", eid)
-          .lt("snapshot_at", nowIso)
+          .lte("snapshot_at", cutoff24h)
           .order("snapshot_at", { ascending: false })
-          .limit(60);
-        return { eid, snaps: data || [] };
+          .limit(1);
+        return { eid, prev: data?.[0] || null };
       })
     );
 
-    const pickPrevSnapshot = (snaps: any[], olderThanIso: string) => {
-      const target = snaps.filter(
-        (s: any) => new Date(s.snapshot_at).getTime() < new Date(olderThanIso).getTime()
-      );
-      if (!target.length) return null;
-
-      const pick = (key: string) => {
-        const found = target.find((s: any) => Number(s?.[key]) > 0);
-        return found ? Number(found[key]) : 0;
-      };
-
-      return {
-        youtube_score: pick("youtube_score"),
-        buzz_score: pick("buzz_score"),
-        album_score: pick("album_score"),
-        music_score: pick("music_score"),
-      };
-    };
-
     const prevMap = new Map<string, any>();
-    const recentPrevMap = new Map<string, any>();
     for (const r of prevSnapResults) {
-      const prev24 = pickPrevSnapshot(r.snaps, cutoff24h);
-      const prevRecent = pickPrevSnapshot(r.snaps, cutoff1h);
-      if (prev24) prevMap.set(r.eid, prev24);
-      if (prevRecent) recentPrevMap.set(r.eid, prevRecent);
+      if (r.prev) prevMap.set(r.eid, r.prev);
     }
 
     // ── 3) 베이스라인 일괄 조회 ──
@@ -122,31 +149,17 @@ Deno.serve(async (req) => {
     for (const b of (allBaselines || [])) baselineMap.set(b.wiki_entry_id, b);
 
     // ── 4) 퍼센타일 기반 에너지 스코어 계산 ──
-    // 4a) 각 카테고리별 raw 값 수집
-    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; prev: any; prevRecent: any; current: any }[] = [];
+    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; prev: any; current: any }[] = [];
     for (const eid of entryIds) {
       const current = scoreMap.get(eid)!;
-      const prev = prevMap.get(eid);
-      const prevRecent = recentPrevMap.get(eid);
       rawData.push({
         eid,
         yt: Number(current.youtube_score) || 0,
         buzz: Number(current.buzz_score) || 0,
         album: Number(current.album_sales_score) || 0,
         music: Number(current.music_score) || 0,
-        prev,
-        prevRecent,
+        prev: prevMap.get(eid) || null,
         current,
-      });
-    }
-
-    // 4b) 퍼센타일 함수: 정렬 후 각 값의 순위를 0~1로 변환
-    function toPercentiles(values: number[]): number[] {
-      const sorted = [...values].sort((a, b) => a - b);
-      return values.map(v => {
-        const rank = sorted.filter(s => s < v).length;
-        const ties = sorted.filter(s => s === v).length;
-        return (rank + (ties - 1) / 2) / Math.max(sorted.length - 1, 1);
       });
     }
 
@@ -155,81 +168,35 @@ Deno.serve(async (req) => {
     const albumPcts = toPercentiles(rawData.map(d => d.album));
     const musicPcts = toPercentiles(rawData.map(d => d.music));
 
-    // 4c) 결과 생성
+    // ── 5) 결과 생성 ──
     const results: any[] = [];
     for (let i = 0; i < rawData.length; i++) {
       try {
         const r = rawData[i];
-        const prev = r.prev;
-
-        const ytPrev = prev ? Number(prev.youtube_score) || 0 : 0;
-        const buzzPrev = prev ? Number(prev.buzz_score) || 0 : 0;
-        const albumPrev = prev ? Number(prev.album_score) || 0 : 0;
-        const musicPrev = prev ? Number(prev.music_score) || 0 : 0;
-
-        let ytChange = pctChange(r.yt, ytPrev);
-        let buzzChange = pctChange(r.buzz, buzzPrev);
-        let albumChange = pctChange(r.album, albumPrev);
-        let musicChange = pctChange(r.music, musicPrev);
-
-        // 24h 비교가 전부 0이면, 최근(최소 1시간 이전) non-zero 스냅샷으로 fallback
-        if (ytChange === 0 && buzzChange === 0 && albumChange === 0 && musicChange === 0 && r.prevRecent) {
-          const p = r.prevRecent;
-          const ytPrevRecent = Number(p.youtube_score) || 0;
-          const buzzPrevRecent = Number(p.buzz_score) || 0;
-          const albumPrevRecent = Number(p.album_score) || 0;
-          const musicPrevRecent = Number(p.music_score) || 0;
-
-          const hasRecentNonZero = [ytPrevRecent, buzzPrevRecent, albumPrevRecent, musicPrevRecent].some(v => v > 0);
-          if (hasRecentNonZero) {
-            ytChange = pctChange(r.yt, ytPrevRecent);
-            buzzChange = pctChange(r.buzz, buzzPrevRecent);
-            albumChange = pctChange(r.album, albumPrevRecent);
-            musicChange = pctChange(r.music, musicPrevRecent);
-          }
-        }
-
-        const overallChange = ytChange * WEIGHTS.youtube + buzzChange * WEIGHTS.buzz +
-          musicChange * WEIGHTS.music + albumChange * WEIGHTS.album;
-
-        // 퍼센타일 가중합 → 10~250 범위
-        const weightedPct = ytPcts[i] * WEIGHTS.youtube + buzzPcts[i] * WEIGHTS.buzz +
-          albumPcts[i] * WEIGHTS.album + musicPcts[i] * WEIGHTS.music;
-        const energyScore = clamp(Math.round(10 + weightedPct * (MAX_SCORE - 10)), 10, MAX_SCORE);
-
-        const ytVelocity = changeToScore(ytChange);
-        const ytIntensity = clamp(Math.round(ytPcts[i] * MAX_SCORE), 0, MAX_SCORE);
-        const buzzVelocity = changeToScore(buzzChange);
-        const buzzIntensity = clamp(Math.round(buzzPcts[i] * MAX_SCORE), 0, MAX_SCORE);
-        const albumVelocity = changeToScore(albumChange);
-        const albumIntensity = clamp(Math.round(albumPcts[i] * MAX_SCORE), 0, MAX_SCORE);
-        const musicVelocity = changeToScore(musicChange);
-        const musicIntensity = clamp(Math.round(musicPcts[i] * MAX_SCORE), 0, MAX_SCORE);
+        const calc = calculateArtistEnergy(
+          { yt: r.yt, buzz: r.buzz, album: r.album, music: r.music },
+          r.prev,
+          { yt: ytPcts[i], buzz: buzzPcts[i], album: albumPcts[i], music: musicPcts[i] },
+        );
 
         results.push({
-          eid: r.eid, energyScore,
-          ytVelocity, ytIntensity, buzzVelocity, buzzIntensity,
-          albumVelocity, albumIntensity, musicVelocity, musicIntensity,
-          change24h: Math.round(overallChange * 10) / 10,
-          ytChange: Math.round(ytChange * 10) / 10,
-          buzzChange: Math.round(buzzChange * 10) / 10,
-          albumChange: Math.round(albumChange * 10) / 10,
-          musicChange: Math.round(musicChange * 10) / 10,
+          eid: r.eid,
+          ...calc,
           ytCurrent: r.yt, buzzCurrent: r.buzz, albumCurrent: r.album, musicCurrent: r.music,
           scoreId: r.current.id,
           baseline: baselineMap.get(r.eid),
+          prevSnapshotAt: r.prev?.snapshot_at || null,
         });
       } catch (e) {
-        console.error(`[FES-v5] Error for ${rawData[i].eid}:`, e);
+        console.error(`[FES-v5.1] Error for ${rawData[i].eid}:`, e);
       }
     }
 
-    // ── 5) DB writes ──
-    console.log(`[FES-v5] Writing ${results.length} results...`);
+    // ── 6) DB writes ──
+    console.log(`[FES-v5.1] Writing ${results.length} results...`);
     const writeOps: Promise<any>[] = [];
 
     for (const r of results) {
-      // Snapshot with per-category scores
       writeOps.push(sb.from("v3_energy_snapshots_v2").insert({
         wiki_entry_id: r.eid,
         energy_score: r.energyScore,
@@ -247,7 +214,6 @@ Deno.serve(async (req) => {
         music_intensity: r.musicIntensity,
       }));
 
-      // v3_scores_v2 update
       writeOps.push(sb.from("v3_scores_v2").update({
         energy_score: r.energyScore,
         energy_change_24h: r.change24h,
@@ -258,7 +224,6 @@ Deno.serve(async (req) => {
         scored_at: new Date().toISOString(),
       }).eq("id", r.scoreId));
 
-      // Baseline EMA
       if (r.baseline) {
         const a7 = 0.15, a30 = 0.05;
         writeOps.push(sb.from("v3_energy_baselines_v2").update({
@@ -270,9 +235,9 @@ Deno.serve(async (req) => {
     }
 
     await Promise.all(writeOps);
-    console.log(`[FES-v5] All writes completed`);
+    console.log(`[FES-v5.1] All writes completed`);
 
-    // ── 6) energy_rank 업데이트 ──
+    // ── 7) energy_rank 업데이트 ──
     const { data: allV2Scores } = await sb
       .from("v3_scores_v2")
       .select("id, wiki_entry_id, energy_score")
@@ -286,7 +251,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── 7) 마일스톤 감지 (간소화) ──
+    // ── 8) 마일스톤 감지 ──
     try {
       const today = new Date().toISOString().slice(0, 10);
       const totalScoreRanked = [...(allV2Scores || [])]
@@ -320,7 +285,7 @@ Deno.serve(async (req) => {
         });
       }
     } catch (e) {
-      console.error("[FES-v5] Milestone error:", e);
+      console.error("[FES-v5.1] Milestone error:", e);
     }
 
     return new Response(JSON.stringify({
@@ -329,11 +294,12 @@ Deno.serve(async (req) => {
       sample: results.slice(0, 3).map(r => ({
         eid: r.eid, energy: r.energyScore, change: r.change24h,
         yt: r.ytChange, buzz: r.buzzChange, album: r.albumChange, music: r.musicChange,
+        prevSnapshotAt: r.prevSnapshotAt,
       })),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
-    console.error("[FES-v5] Fatal:", err);
+    console.error("[FES-v5.1] Fatal:", err);
     return new Response(JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
