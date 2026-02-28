@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -66,6 +66,16 @@ const AdminRankings = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<1 | 2>(1);
+  const [pipelineRunId, setPipelineRunId] = useState<string | null>(null);
+  const [pipelineStartTime, setPipelineStartTime] = useState<number | null>(null);
+  // Elapsed time counter for pipeline
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!pipelineStartTime || !pipelineRunId) { setElapsed(0); return; }
+    const timer = setInterval(() => setElapsed(Math.round((Date.now() - pipelineStartTime) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [pipelineStartTime, pipelineRunId]);
+
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-artist-tiers'],
     queryFn: async () => {
@@ -117,6 +127,41 @@ const AdminRankings = () => {
     },
   });
 
+  // Pipeline progress polling
+  const { data: pipelineRun } = useQuery({
+    queryKey: ['pipeline-run', pipelineRunId],
+    queryFn: async () => {
+      if (!pipelineRunId) return null;
+      const { data, error } = await supabase
+        .from('ktrenz_engine_runs')
+        .select('status, current_module, modules_requested, results, error_message, started_at, completed_at')
+        .eq('id', pipelineRunId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: !!pipelineRunId,
+    refetchInterval: pipelineRunId ? 5000 : false,
+  });
+
+  // Auto-clear pipeline tracking when done
+  useEffect(() => {
+    if (pipelineRun && (pipelineRun.status === 'completed' || pipelineRun.status === 'failed')) {
+      if (pipelineRun.status === 'completed') {
+        toast.success('전체 수집 파이프라인 완료!');
+        queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      } else {
+        toast.error(`파이프라인 실패: ${pipelineRun.error_message || 'Unknown error'}`);
+      }
+      // Keep showing for 3 seconds then clear
+      setTimeout(() => {
+        setPipelineRunId(null);
+        setPipelineStartTime(null);
+        setRunningSource(null);
+      }, 3000);
+    }
+  }, [pipelineRun?.status]);
+
   const toggleTierMutation = useMutation({
     mutationFn: async ({ wiki_entry_id, newTier }: { wiki_entry_id: string; newTier: number }) => {
       const { error } = await supabase
@@ -156,9 +201,15 @@ const AdminRankings = () => {
           body: { module: 'all', triggerSource: 'admin' },
         });
         if (error) throw error;
+        // Track pipeline run for progress polling
+        if (data?.runId) {
+          setPipelineRunId(data.runId);
+          setPipelineStartTime(Date.now());
+        }
         toast.success('전체 파이프라인 시작됨', {
-          description: `Run ID: ${data?.runId?.slice(0, 8)}… — YouTube → Music → Album → Buzz → Energy 순서로 실행됩니다`,
+          description: 'YouTube → Music → Album → Buzz → Energy 순서로 실행됩니다',
         });
+        // Don't reset runningSource here - pipeline polling will handle it
       } else {
         // 개별 모듈: data-engine 개별 모듈 호출
         const moduleMap: Record<string, string> = { album: 'hanteo' };
@@ -168,11 +219,11 @@ const AdminRankings = () => {
         });
         if (error) throw error;
         toast.success(`${source} 수집 완료`, { description: JSON.stringify(data?.result).slice(0, 100) });
+        setRunningSource(null);
       }
       queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
     } catch (err: any) {
       toast.error(`${source} 수집 실패: ${err.message}`);
-    } finally {
       setRunningSource(null);
     }
   };
@@ -582,6 +633,60 @@ const AdminRankings = () => {
           </Button>
         </div>
       </div>
+
+      {/* Pipeline Progress Banner */}
+      {pipelineRunId && pipelineRun && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Loader2 className={`w-4 h-4 ${pipelineRun.status === 'completed' ? 'text-emerald-500' : pipelineRun.status === 'failed' ? 'text-destructive' : 'animate-spin text-primary'}`} />
+              <span className="text-sm font-semibold">
+                {pipelineRun.status === 'completed' ? '✅ 파이프라인 완료' : pipelineRun.status === 'failed' ? '❌ 파이프라인 실패' : '파이프라인 실행 중'}
+              </span>
+              {pipelineStartTime && pipelineRun.status === 'running' && (
+                <span className="text-xs text-muted-foreground">
+                  ({elapsed}s 경과)
+                </span>
+              )}
+            </div>
+            {(pipelineRun.status === 'completed' || pipelineRun.status === 'failed') && (
+              <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setPipelineRunId(null); setPipelineStartTime(null); setRunningSource(null); }}>
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+          {/* Module progress steps */}
+          {pipelineRun.modules_requested && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {(pipelineRun.modules_requested as string[]).map((mod: string, i: number) => {
+                const isCurrent = pipelineRun.current_module === mod;
+                const results = pipelineRun.results as Record<string, any> | null;
+                const isDone = results && mod in results;
+                const isFailed = pipelineRun.status === 'failed' && isCurrent;
+                return (
+                  <div key={mod} className="flex items-center gap-1">
+                    {i > 0 && <span className="text-muted-foreground text-xs">→</span>}
+                    <Badge
+                      variant={isDone ? 'default' : isCurrent ? 'secondary' : 'outline'}
+                      className={`text-[10px] px-2 py-0.5 ${
+                        isDone ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' :
+                        isFailed ? 'bg-destructive/20 text-destructive border-destructive/30' :
+                        isCurrent ? 'bg-primary/20 text-primary border-primary/30 animate-pulse' :
+                        'text-muted-foreground'
+                      }`}
+                    >
+                      {isDone ? '✓ ' : isCurrent ? '● ' : ''}{mod}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {pipelineRun.error_message && (
+            <p className="text-xs text-destructive">{pipelineRun.error_message}</p>
+          )}
+        </div>
+      )}
 
       <Tabs defaultValue="tier1">
         <TabsList>
