@@ -97,7 +97,12 @@ const V3Rankings = () => {
 
   const sortedRankings = useMemo(() => {
     if (!rankings?.length) return [];
-    const sorted = [...rankings]
+
+    const base = category === "all"
+      ? rankings.filter((item: any) => Number(item.youtube_score ?? 0) > 0)
+      : rankings;
+
+    const sorted = [...base]
       .map(item => ({ ...item, changePercent: getCatChange(item, category) }))
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
     const top5 = sorted.slice(0, 5);
