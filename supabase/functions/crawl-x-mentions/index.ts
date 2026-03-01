@@ -27,35 +27,35 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:d",
-    limit: 30,
+    limit: 100,
   },
   {
     name: "news",
     weight: 2.0,
     buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com -site:tiktok.com`,
     tbs: "qdr:w",
-    limit: 30,
+    limit: 100,
   },
   {
     name: "reddit",
     weight: 1.2,
     buildQuery: (name) => `"${name}" site:reddit.com kpop`,
     tbs: "qdr:w",
-    limit: 20,
+    limit: 50,
   },
   {
     name: "youtube",
     weight: 1.0,
     buildQuery: (name) => `"${name}" site:youtube.com`,
     tbs: "qdr:w",
-    limit: 20,
+    limit: 50,
   },
   {
     name: "naver",
     weight: 1.3,
     buildQuery: (name) => `"${name}" site:naver.com OR site:theqoo.net OR site:instiz.net OR site:pann.nate.com`,
     tbs: "qdr:w",
-    limit: 20,
+    limit: 50,
   },
   {
     name: "tiktok",
@@ -66,7 +66,7 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:w",
-    limit: 20,
+    limit: 50,
   },
 ];
 
