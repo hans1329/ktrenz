@@ -22,6 +22,7 @@ const translations: Record<string, Record<Language, string>> = {
   // ── Navigation / Tabs ──
   "nav.trendz": { en: "K-Trenz", ko: "K·트렌즈", ja: "K·トレンズ", zh: "K·趋势" },
   "nav.agent": { en: "Agent", ko: "에이전트", ja: "エージェント", zh: "助手" },
+  "nav.notifications": { en: "Alerts", ko: "알림", ja: "通知", zh: "通知" },
   "nav.activity": { en: "Activity", ko: "활동", ja: "アクティビティ", zh: "活动" },
   "nav.fanAgent": { en: "Fan Agent", ko: "팬 에이전트", ja: "ファンエージェント", zh: "粉丝助手" },
   "nav.collapse": { en: "Collapse", ko: "접기", ja: "折りたたむ", zh: "折叠" },
