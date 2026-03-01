@@ -573,10 +573,45 @@ const AdminRankings = () => {
     const key = `${wikiEntryId}-${source}`;
     setRecollecting(key);
     try {
+      // 수집 전 최신 스냅샷 시각 기록
+      const platformMap: Record<string, string> = { youtube: 'youtube', buzz: 'buzz_multi', hanteo: 'hanteo', music: 'lastfm' };
+      const platform = platformMap[source] || source;
+      const { data: beforeSnap } = await supabase
+        .from('ktrenz_data_snapshots')
+        .select('collected_at')
+        .eq('wiki_entry_id', wikiEntryId)
+        .eq('platform', platform)
+        .order('collected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const beforeTime = beforeSnap?.collected_at || '1970-01-01T00:00:00Z';
+
       const { data, error } = await supabase.functions.invoke('ktrenz-data-collector', {
         body: { source, wikiEntryId },
       });
       if (error) throw error;
+
+      // 새 스냅샷이 생길 때까지 폴링 (최대 30초)
+      const pollStart = Date.now();
+      const MAX_POLL_MS = 30000;
+      const POLL_INTERVAL = 2000;
+      let found = false;
+      while (Date.now() - pollStart < MAX_POLL_MS) {
+        await new Promise(r => setTimeout(r, POLL_INTERVAL));
+        const { data: afterSnap } = await supabase
+          .from('ktrenz_data_snapshots')
+          .select('collected_at')
+          .eq('wiki_entry_id', wikiEntryId)
+          .eq('platform', platform)
+          .order('collected_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (afterSnap?.collected_at && afterSnap.collected_at > beforeTime) {
+          found = true;
+          break;
+        }
+      }
+
       toast.success(`${artistName} ${sourceLabel} 수집 완료`);
       queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
     } catch (err: any) {
