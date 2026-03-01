@@ -382,32 +382,49 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     staleTime: 30_000,
   });
 
-  // Sort and layout by selected category
-  const sortedItems = useMemo(() => {
-    if (!items?.length) return [];
+  // Sort and split into 3 groups: rising, flat, falling
+  const { risingItems, flatItems, fallingItems } = useMemo(() => {
+    if (!items?.length) return { risingItems: [], flatItems: [], fallingItems: [] };
 
     const base = category === "all"
       ? items.filter((item) => Number(item.youtubeScore ?? 0) > 0)
       : items;
 
-    return [...base].sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
+    const rising: TreemapItem[] = [];
+    const flat: TreemapItem[] = [];
+    const falling: TreemapItem[] = [];
+
+    for (const item of base) {
+      const change = getCategoryChange(item, category);
+      if (change > 2) rising.push(item);
+      else if (change < -2) falling.push(item);
+      else flat.push(item);
+    }
+
+    rising.sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
+    flat.sort((a, b) => Math.abs(getCategoryChange(b, category)) - Math.abs(getCategoryChange(a, category)));
+    falling.sort((a, b) => getCategoryChange(a, category) - getCategoryChange(b, category));
+
+    return { risingItems: rising, flatItems: flat, fallingItems: falling };
   }, [items, category]);
 
+  const sortedItems = useMemo(() => [...risingItems, ...flatItems, ...fallingItems], [risingItems, flatItems, fallingItems]);
+
   const containerWidth = isMobile ? 360 : 420;
-  const containerHeight = isMobile ? 620 : 520;
-  const rects = useMemo(() => {
-    if (!sortedItems.length) return [];
-    return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category);
-  }, [sortedItems, containerWidth, containerHeight, category]);
+  const sectionHeight = (count: number) => {
+    const total = risingItems.length + flatItems.length + fallingItems.length;
+    if (total === 0) return 0;
+    const baseHeight = isMobile ? 620 : 520;
+    return Math.max(80, Math.round((count / total) * baseHeight));
+  };
+
+  const risingRects = useMemo(() => risingItems.length ? squarify(risingItems, 0, 0, containerWidth, sectionHeight(risingItems.length), category) : [], [risingItems, containerWidth, category]);
+  const flatRects = useMemo(() => flatItems.length ? squarify(flatItems, 0, 0, containerWidth, sectionHeight(flatItems.length), category) : [], [flatItems, containerWidth, category]);
+  const fallingRects = useMemo(() => fallingItems.length ? squarify(fallingItems, 0, 0, containerWidth, sectionHeight(fallingItems.length), category) : [], [fallingItems, containerWidth, category]);
 
   const handleTileClick = useCallback((item: TreemapItem) => {
     setSelectedItem(prev => prev?.id === item.id ? null : item);
   }, []);
-
-  const topChangeId = useMemo(() => {
-    if (!sortedItems.length) return null;
-    return sortedItems[0]?.id || null;
-  }, [sortedItems]);
 
   if (isLoading) return (
     <div className="px-4 pb-4">
@@ -418,7 +435,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       <div className="flex items-center justify-center gap-4 mb-3">
         {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-7 w-14 rounded-full" />)}
       </div>
-      <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
+      <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / 520` }}>
         <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 gap-[2px] p-[2px]">
           {[...Array(10)].map((_, i) => (
             <Skeleton key={i} className={cn("rounded-lg", i === 0 && "col-span-2 row-span-2", i === 1 && "row-span-2")} />
@@ -432,9 +449,99 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
   const maxAbsChange = Math.max(...sortedItems.map(i => Math.abs(getCategoryChange(i, category))), 1);
 
+  const renderTile = (rect: Rect, sectionWidth: number, sectionHeight: number) => {
+    const left = (rect.x / sectionWidth) * 100;
+    const top = (rect.y / sectionHeight) * 100;
+    const width = (rect.w / sectionWidth) * 100;
+    const rh = (rect.h / sectionHeight) * 100;
+    const isLarge = width > 18 && rh > 15;
+    const isMedium = width > 10 && rh > 8;
+    const isSelected = selectedItem?.id === rect.item.id;
+    const catChange = getCategoryChange(rect.item, category);
+    const catScore = getCategoryScore(rect.item, category);
+    const surging = isSurging(catChange);
+
+    return (
+      <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
+        className={cn(
+          "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5 overflow-hidden",
+          isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
+        )}
+        style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${rh}%`, background: getTileColor(catChange) }}>
+
+        {isMedium && (() => {
+          const absChange = Math.abs(catChange);
+          return (
+            <BoxParticles
+              count={Math.max(5, Math.round((absChange / maxAbsChange) * 40))}
+              speed={Math.max(0.1, Math.min(1, absChange / maxAbsChange))}
+              density={0.5}
+              color="hsl(0, 0%, 100%)"
+            />
+          );
+        })()}
+
+        {rect.item.sparkline.length >= 2 && isMedium && (
+          <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}
+            color={catChange >= 0 ? "rgba(255,255,255,0.45)" : "rgba(150,180,255,0.45)"}
+            ema7d={rect.item.ema7d} ema30d={rect.item.ema30d} />
+        )}
+
+        {isMedium && catChange !== 0 && (
+          <span className={cn(
+            "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
+            catChange >= 15 ? "text-white" : catChange > 0 ? "text-green-200" : "text-blue-200"
+          )}>
+            {catChange > 0 ? "▲" : "▼"}{Math.abs(catChange).toFixed(1)}%
+          </span>
+        )}
+
+        {isLarge ? (
+          <div className="relative z-10 flex flex-col items-center gap-0.5 w-full overflow-hidden px-1">
+            <span className="text-xs md:text-base font-black text-white truncate w-full text-center leading-tight drop-shadow-lg">{rect.item.title}</span>
+            <span className="text-base md:text-xl font-black text-white/95 drop-shadow-lg">{Math.round(catScore)}</span>
+            <span className={cn("text-[9px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full backdrop-blur-sm",
+              surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
+            )}>
+              {surging ? "🔥 " : ""}{catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
+            </span>
+          </div>
+        ) : isMedium ? (
+          <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5">
+            <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight drop-shadow-md">{rect.item.title}</span>
+            <span className="text-[11px] font-black text-white/90 drop-shadow-md">{Math.round(catScore)}</span>
+          </div>
+        ) : (
+          <div className="relative z-10 flex flex-col items-center overflow-hidden w-full px-0.5">
+            <span className="text-[7px] font-bold text-white/80 truncate w-full text-center leading-tight drop-shadow-md">{rect.item.title}</span>
+            <span className="text-[8px] font-black text-white/70 drop-shadow-md">{Math.round(catScore)}</span>
+          </div>
+        )}
+      </button>
+    );
+  };
+
+  const renderSection = (label: string, emoji: string, rects: Rect[], height: number, colorClass: string) => {
+    if (!rects.length) return null;
+    return (
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{emoji}</span>
+          <span className={cn("text-[11px] font-bold uppercase tracking-wider", colorClass)}>{label}</span>
+          <span className="text-[10px] text-muted-foreground font-medium">({rects.length})</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <div className="relative w-full rounded-xl overflow-hidden border border-border" style={{ height: `${height}px` }}>
+          <div className="absolute inset-0">
+            {rects.map((rect) => renderTile(rect, containerWidth, height))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="px-4 pb-4">
-      {/* Header */}
       <div className="pt-4 pb-3">
         <h2 className="text-xl font-black text-muted-foreground">⚡ Energy Map</h2>
         <p className="text-xs text-muted-foreground mt-0.5 pl-7">
@@ -442,22 +549,16 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
         </p>
       </div>
 
-      {/* Category Filter Chips */}
       <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
         {(Object.keys(CATEGORY_CONFIG) as EnergyCategory[]).map((cat) => {
           const config = CATEGORY_CONFIG[cat];
           const isActive = category === cat;
           return (
-            <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat)}
+            <button key={cat} onClick={() => handleCategoryChange(cat)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all border",
-                isActive
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-              )}
-            >
+                isActive ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+              )}>
               {config.icon}
               {config.label}
             </button>
@@ -465,85 +566,12 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
         })}
       </div>
 
-
-      {/* Inspector */}
       {selectedItem && <InspectorPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
-      {/* Treemap */}
-      <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
-        <div className="absolute inset-0">
-          {rects.map((rect) => {
-            const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
-            const width = (rect.w / containerWidth) * 100; const height = (rect.h / containerHeight) * 100;
-            const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8;
-            const isSelected = selectedItem?.id === rect.item.id;
-            const catChange = getCategoryChange(rect.item, category);
-            const catScore = getCategoryScore(rect.item, category);
-            const surging = isSurging(catChange);
-
-            return (
-              <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
-                className={cn(
-                  "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5 overflow-hidden",
-                  rect.item.id === topChangeId ? "z-10 shadow-[inset_0_0_24px_8px_hsla(25,100%,55%,0.6),0_0_16px_4px_hsla(11,100%,46%,0.4)] border-2 border-orange-400/60" : "",
-                  isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
-                )}
-                style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(catChange) }}>
-
-                {isMedium && (() => {
-                  const isTop1 = rect.item.id === topChangeId;
-                  const absChange = Math.abs(catChange);
-                  return (
-                    <BoxParticles
-                      count={isTop1 ? 80 : Math.max(5, Math.round((absChange / maxAbsChange) * 40))}
-                      speed={isTop1 ? 0.7 : Math.max(0.1, Math.min(1, absChange / maxAbsChange))}
-                      density={isTop1 ? 1.0 : 0.5}
-                      color={isTop1 ? "hsl(35, 100%, 70%)" : "hsl(0, 0%, 100%)"}
-                    />
-                  );
-                })()}
-
-                {rect.item.sparkline.length >= 2 && isMedium && (
-                  <MiniSparkline data={rect.item.sparkline} width={Math.round(rect.w)} height={Math.round(rect.h)}
-                    color={catChange >= 0 ? "rgba(255,255,255,0.45)" : "rgba(150,180,255,0.45)"}
-                    ema7d={rect.item.ema7d} ema30d={rect.item.ema30d} />
-                )}
-
-                {/* Category change badge */}
-                {isMedium && catChange !== 0 && (
-                  <span className={cn(
-                    "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
-                    catChange >= 15 ? "text-white" : catChange > 0 ? "text-green-200" : "text-blue-200"
-                  )}>
-                    {catChange > 0 ? "▲" : "▼"}{Math.abs(catChange).toFixed(1)}%
-                  </span>
-                )}
-
-                {isLarge ? (
-                  <div className="relative z-10 flex flex-col items-center gap-0.5 w-full overflow-hidden px-1">
-                    <span className="text-xs md:text-base font-black text-white truncate w-full text-center leading-tight drop-shadow-lg">{rect.item.title}</span>
-                    <span className="text-base md:text-xl font-black text-white/95 drop-shadow-lg">{Math.round(catScore)}</span>
-                    <span className={cn("text-[9px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full backdrop-blur-sm",
-                      surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
-                    )}>
-                      {surging ? "🔥 " : ""}{catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
-                    </span>
-                  </div>
-                ) : isMedium ? (
-                  <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5">
-                    <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight drop-shadow-md">{rect.item.title}</span>
-                    <span className="text-[11px] font-black text-white/90 drop-shadow-md">{Math.round(catScore)}</span>
-                  </div>
-                ) : (
-                  <div className="relative z-10 flex flex-col items-center overflow-hidden w-full px-0.5">
-                    <span className="text-[7px] font-bold text-white/80 truncate w-full text-center leading-tight drop-shadow-md">{rect.item.title}</span>
-                    <span className="text-[8px] font-black text-white/70 drop-shadow-md">{Math.round(catScore)}</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="space-y-4">
+        {renderSection("상승", "📈", risingRects, sectionHeight(risingItems.length), "text-green-500")}
+        {renderSection("보합", "➡️", flatRects, sectionHeight(flatItems.length), "text-muted-foreground")}
+        {renderSection("하락", "📉", fallingRects, sectionHeight(fallingItems.length), "text-blue-400")}
       </div>
     </div>
   );
