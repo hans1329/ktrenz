@@ -410,12 +410,26 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     flat.sort((a, b) => getCategoryScore(b, category) - getCategoryScore(a, category));
     falling.sort((a, b) => getCategoryChange(a, category) - getCategoryChange(b, category));
 
-    // 상위 N개씩 뽑기
+    // 상위 N개씩 뽑되, 부족하면 다른 그룹에서 채움
     const pickedRising = rising.slice(0, RISING_COUNT);
     const pickedFlat = flat.slice(0, FLAT_COUNT);
     const pickedFalling = falling.slice(0, FALLING_COUNT);
 
-    return [...pickedRising, ...pickedFlat, ...pickedFalling];
+    let result = [...pickedRising, ...pickedFlat, ...pickedFalling];
+    const pickedIds = new Set(result.map(r => r.id));
+
+    // 23개 미달 시 남은 후보에서 change 내림차순으로 채움
+    if (result.length < displayCount) {
+      const remaining = base
+        .filter(item => !pickedIds.has(item.id))
+        .sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
+      for (const item of remaining) {
+        if (result.length >= displayCount) break;
+        result.push(item);
+      }
+    }
+
+    return result;
   }, [items, category]);
 
   const containerWidth = isMobile ? 360 : 420;

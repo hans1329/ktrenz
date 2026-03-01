@@ -420,17 +420,24 @@ const V3TrendRankings = () => {
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["v3-trend-rankings", period],
     queryFn: async () => {
+      // Tier 1 아티스트만 필터링
+      const { data: tier1Entries } = await supabase
+        .from("v3_artist_tiers" as any)
+        .select("wiki_entry_id")
+        .eq("tier", 1);
+      const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id));
+
       const { data: allScores, error } = await supabase
         .from("v3_scores_v2" as any)
         .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score,
           youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, schema_type)`)
-        .order("total_score", { ascending: false })
-        .limit(60);
+        .order("scored_at", { ascending: false })
+        .limit(200);
 
       if (error) throw error;
       if (!allScores?.length) return [];
-      const typedScores = allScores as any[];
+      const typedScores = (allScores as any[]).filter(s => tier1Ids.has(s.wiki_entry_id));
 
       const latestMap = new Map<string, any>();
       for (const s of typedScores) {
