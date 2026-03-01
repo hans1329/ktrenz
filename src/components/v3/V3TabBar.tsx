@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, Power, Activity } from "lucide-react";
+import { TrendingUp, Bot, Power, Activity, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -9,7 +9,7 @@ import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type V3Tab = "rankings" | "agent" | "activity";
+export type V3Tab = "rankings" | "agent" | "activity" | "settings";
 
 interface V3TabBarProps {
   activeTab: V3Tab;
@@ -47,6 +47,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
     { id: "activity" as const, labelKey: "nav.activity", icon: Activity },
     { id: "profile" as const, labelKey: "nav.profile", icon: null, isCenter: true },
     { id: "agent" as const, labelKey: "nav.agent", icon: Bot },
+    { id: "settings" as const, labelKey: "common.settings", icon: Settings },
   ];
 
   return (
@@ -84,7 +85,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             const Icon = tab.icon!;
 
             return (
-              <button key={tab.id} onClick={() => (tab.id === "agent" ? navigate("/agent") : tab.id === "activity" ? navigate("/dashboard") : onTabChange(tab.id as V3Tab))}
+              <button key={tab.id} onClick={() => (tab.id === "agent" ? navigate("/agent") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "settings" ? navigate("/kpass") : onTabChange(tab.id as V3Tab))}
                 className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
