@@ -435,7 +435,7 @@ const UserDashboard = () => {
                 {/* 팬 기여도 (외부 링크 클릭 기반) */}
                 <div className="px-4 pb-4">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-primary" /> 팬 기여도
+                    <Flame className="w-3 h-3 text-primary" /> 나의 기여도
                   </p>
 
                   {/* 점수 + 순위 */}
