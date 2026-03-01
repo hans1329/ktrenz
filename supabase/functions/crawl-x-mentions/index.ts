@@ -43,13 +43,7 @@ const SOURCES: SourceConfig[] = [
     tbs: "qdr:d",
     limit: 100,
   },
-  {
-    name: "youtube",
-    weight: 1.0,
-    buildQuery: (name) => `"${name}" site:youtube.com`,
-    tbs: "qdr:d",
-    limit: 100,
-  },
+  // YouTube 소스 제거됨 — YouTube는 독립 데이터 소스(40%)로 이미 수집 중
   {
     name: "naver",
     weight: 1.3,
@@ -113,7 +107,7 @@ function calculateBuzzScore(
   const sentimentBonus = Math.round((overallSentiment.score - 50) * 6);
 
   const activeSources = sourceResults.filter(s => s.count > 0).length;
-  const diversityBonus = activeSources >= 5 ? 250 : activeSources >= 4 ? 200 : activeSources >= 3 ? 100 : activeSources >= 2 ? 50 : 0;
+  const diversityBonus = activeSources >= 4 ? 250 : activeSources >= 3 ? 200 : activeSources >= 2 ? 100 : activeSources >= 1 ? 50 : 0;
 
   return Math.max(0, baseScore + sentimentBonus + diversityBonus);
 }
