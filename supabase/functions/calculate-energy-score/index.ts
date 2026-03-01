@@ -135,14 +135,19 @@ Deno.serve(async (req) => {
 
     const prevSnapResults = await Promise.all(
       entryIds.map(async (eid) => {
-        // 24h 이전에 기록된 가장 최근 스냅샷 1개만 가져옴
+        // 24h 이전에 기록된 스냅샷 중, 세부 점수가 유효한(0이 아닌) 가장 최근 것을 찾음
         const { data } = await sb.from("v3_energy_snapshots_v2")
           .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
           .eq("wiki_entry_id", eid)
           .lte("snapshot_at", cutoff24h)
           .order("snapshot_at", { ascending: false })
-          .limit(1);
-        return { eid, prev: data?.[0] || null };
+          .limit(5);
+        // 세부 점수가 하나라도 0이 아닌 스냅샷 찾기
+        const valid = (data || []).find((s: any) =>
+          (Number(s.youtube_score) || 0) > 0 || (Number(s.buzz_score) || 0) > 0 ||
+          (Number(s.album_score) || 0) > 0 || (Number(s.music_score) || 0) > 0
+        );
+        return { eid, prev: valid || null };
       })
     );
 
