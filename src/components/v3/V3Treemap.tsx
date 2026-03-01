@@ -266,9 +266,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           )}
 
           <button onClick={() => navigate(`/artist/${item.slug}`)}
-            className="w-full flex items-center justify-center gap-2 text-xs font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-2.5 rounded-full transition-colors">
-            <ExternalLink className="w-3.5 h-3.5" /> View Full Profile
+            className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-3.5 rounded-full transition-colors">
+            <ExternalLink className="w-4 h-4" /> View Full Profile
           </button>
+          <div className="h-3" />
         </div>
       </div>
     </div>
