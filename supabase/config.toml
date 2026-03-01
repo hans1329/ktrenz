@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.fill-youtube-topic-ids]
 verify_jwt = false
+
+[functions.fill-topic-ids-firecrawl]
+verify_jwt = false
