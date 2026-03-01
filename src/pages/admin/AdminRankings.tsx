@@ -91,8 +91,9 @@ const AdminRankings = () => {
   const [resultsExpanded, setResultsExpanded] = useState(false);
   // Elapsed time counter for pipeline
   const [elapsed, setElapsed] = useState(0);
+  const [finalElapsed, setFinalElapsed] = useState<number | null>(null);
   useEffect(() => {
-    if (!pipelineStartTime || !pipelineRunId) { setElapsed(0); return; }
+    if (!pipelineStartTime || !pipelineRunId) { setElapsed(0); setFinalElapsed(null); return; }
     const timer = setInterval(() => setElapsed(Math.round((Date.now() - pipelineStartTime) / 1000)), 1000);
     return () => clearInterval(timer);
   }, [pipelineStartTime, pipelineRunId]);
@@ -296,7 +297,18 @@ const AdminRankings = () => {
     refetchInterval: pipelineRunId ? 3000 : false,
   });
 
-  // Live collection stats polling - counts snapshots created since pipeline start
+  // Freeze elapsed time when pipeline completes/fails and compute actual duration
+  useEffect(() => {
+    if (pipelineRun?.status === 'completed' || pipelineRun?.status === 'failed') {
+      if (pipelineRun.started_at && pipelineRun.completed_at) {
+        const actual = Math.round((new Date(pipelineRun.completed_at).getTime() - new Date(pipelineRun.started_at).getTime()) / 1000);
+        setFinalElapsed(actual);
+      } else {
+        setFinalElapsed(elapsed);
+      }
+    }
+  }, [pipelineRun?.status]);
+
   const { data: liveStats } = useQuery({
     queryKey: ['pipeline-live-stats', pipelineStartTime],
     queryFn: async () => {
@@ -1127,7 +1139,7 @@ const AdminRankings = () => {
               </span>
               {pipelineStartTime && (
                 <span className="text-xs text-muted-foreground">
-                  ({elapsed}s 경과)
+                  ({finalElapsed !== null ? `${finalElapsed}s 소요` : `${elapsed}s 경과`})
                 </span>
               )}
             </div>
