@@ -162,10 +162,10 @@ Deno.serve(async (req) => {
 
     // 상위 기사의 og:image 병렬 추출
     const ogImages = await Promise.all(
-      top5filtered.map((item) => fetchOgImage(item.originallink || item.link))
+      top5.map((item) => fetchOgImage(item.originallink || item.link))
     );
 
-    const topMentions = top5filtered.map((item, i) => ({
+    const topMentions = top5.map((item, i) => ({
       title: stripHtml(item.title),
       url: item.originallink || item.link,
       description: stripHtml(item.description),
