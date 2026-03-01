@@ -605,7 +605,14 @@ async function collectForSingleArtist(
   if ((collectAll || source === "hanteo") && keys.firecrawl) {
     try {
       console.log(`[DataCollector] Scraping Hanteo for ${artistTitle}...`);
-      const hanteoData = await scrapeWithFirecrawl("https://www.hanteochart.com/honors/initial", keys.firecrawl);
+      // DB에서 설정된 한터 차트 URL 가져오기
+      const { data: cfgRow } = await adminClient
+        .from("ktrenz_collection_config")
+        .select("hanteo_chart_url")
+        .eq("id", "default")
+        .maybeSingle();
+      const hanteoUrlSingle = cfgRow?.hanteo_chart_url || "https://www.hanteochart.com/honors/initial";
+      const hanteoData = await scrapeWithFirecrawl(hanteoUrlSingle, keys.firecrawl);
       const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
       const parsed = parseHanteoInitial(md);
 
@@ -810,17 +817,36 @@ Deno.serve(async (req) => {
       results.youtube = { error: "YOUTUBE_API_KEY not configured" };
     }
 
-    // ── 한터차트 초동 ──
+   // ── 한터차트 ──
     if (collectSources.includes("hanteo")) {
       if (!FIRECRAWL_API_KEY) {
         results.hanteo = { error: "FIRECRAWL_API_KEY not configured" };
       } else {
         console.log("[DataCollector] Scraping Hanteo Chart...");
         try {
-          const hanteoData = await scrapeWithFirecrawl("https://www.hanteochart.com/honors/initial", FIRECRAWL_API_KEY);
+          // DB에서 설정된 한터 차트 URL 가져오기
+          const { data: configRow } = await adminClient
+            .from("ktrenz_collection_config")
+            .select("hanteo_chart_url")
+            .eq("id", "default")
+            .maybeSingle();
+          const hanteoUrl = configRow?.hanteo_chart_url || "https://www.hanteochart.com/honors/initial";
+          console.log(`[DataCollector] Hanteo URL: ${hanteoUrl}`);
+          const hanteoData = await scrapeWithFirecrawl(hanteoUrl, FIRECRAWL_API_KEY);
           const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
+          if (!md || md.length < 50) {
+            throw new Error(`Hanteo 스크랩 실패: 마크다운 비어있음 (URL: ${hanteoUrl}, 응답 길이: ${md.length}). SPA 렌더링이 필요한 페이지일 수 있습니다.`);
+          }
           const parsed = parseHanteoInitial(md);
-
+          if (parsed.length === 0) {
+            console.warn(`[DataCollector] Hanteo: 파싱된 앨범 0건 (마크다운 길이: ${md.length})`);
+            await adminClient.from("ktrenz_collection_log").insert({
+              platform: "hanteo", status: "failed",
+              error_message: `파싱 결과 0건. URL: ${hanteoUrl}. 페이지 구조가 변경되었거나 SPA 렌더링 실패`,
+              records_collected: 0,
+            });
+            results.hanteo = { error: "파싱 결과 0건", url: hanteoUrl, markdownLength: md.length, parsed: 0 };
+          } else {
           let saved = 0, matched = 0;
           const artistAlbums: Record<string, { wikiEntryId: string | null; albums: any[] }> = {};
           const artistWikiCache = new Map<string, string | null>();
@@ -860,7 +886,8 @@ Deno.serve(async (req) => {
           await adminClient.from("ktrenz_collection_log").insert({
             platform: "hanteo", status: parsed.length > 0 ? "success" : "partial", records_collected: saved,
           });
-          results.hanteo = { parsed: parsed.length, saved, matched, scoresUpdated };
+          results.hanteo = { parsed: parsed.length, saved, matched, scoresUpdated, url: hanteoUrl };
+          } // end else (parsed.length > 0)
         } catch (e) {
           console.error("[DataCollector] Hanteo error:", e);
           await adminClient.from("ktrenz_collection_log").insert({ platform: "hanteo", status: "error", error_message: e.message, records_collected: 0 });
