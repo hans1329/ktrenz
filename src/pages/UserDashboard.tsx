@@ -518,7 +518,7 @@ const UserDashboard = () => {
                   </p>
 
                   {/* 점수 + 순위 */}
-                  <div className="flex items-center gap-3 mb-3 p-4 py-5 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
+                  <div className="flex items-center gap-3 mb-3 px-5 py-5 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
                     <div className="text-center min-w-[80px]">
                       <p className="font-black leading-none bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
                         <span className="text-4xl md:text-5xl">{favoriteArtist.contribution.totalScore > 0 ? Math.round(favoriteArtist.contribution.totalScore) : 0}</span>
