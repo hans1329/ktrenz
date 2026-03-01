@@ -45,41 +45,101 @@ function launchCollector(supabaseUrl: string, serviceKey: string, source: string
 
 // ── 모듈 실행기: 기본 파이프라인 ──
 
-async function runYouTube(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching YouTube (fire-and-forget)...");
-  launchCollector(supabaseUrl, serviceKey, "youtube");
-  return { status: "launched", module: "youtube" };
+async function runCollectorModule(
+  supabaseUrl: string,
+  serviceKey: string,
+  source: "youtube" | "music" | "hanteo",
+  waitForCompletion: boolean = false,
+): Promise<any> {
+  if (!waitForCompletion) {
+    console.log(`[data-engine] Launching ${source} (fire-and-forget)...`);
+    launchCollector(supabaseUrl, serviceKey, source);
+    return { status: "launched", module: source };
+  }
+
+  console.log(`[data-engine] Running ${source} and waiting for completion...`);
+  const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+    body: JSON.stringify({ source }),
+  });
+
+  const text = await resp.text();
+  let parsed: any = null;
+  try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text.slice(0, 300) }; }
+  if (!resp.ok) throw new Error(`[${source}] ${text.slice(0, 500)}`);
+
+  const payload = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? parsed
+    : { raw: text.slice(0, 300) };
+
+  return { status: "completed", module: source, ...payload };
 }
 
-async function runMusic(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching Music (fire-and-forget)...");
-  launchCollector(supabaseUrl, serviceKey, "music");
-  return { status: "launched", module: "music" };
+async function runYouTube(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
+  return runCollectorModule(supabaseUrl, serviceKey, "youtube", waitForCompletion);
 }
 
-async function runHanteo(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching Hanteo (fire-and-forget)...");
-  launchCollector(supabaseUrl, serviceKey, "hanteo");
-  return { status: "launched", module: "hanteo" };
+async function runMusic(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
+  return runCollectorModule(supabaseUrl, serviceKey, "music", waitForCompletion);
 }
 
-async function runBuzz(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Running Buzz module (fire-and-forget batches)...");
+async function runHanteo(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
+  return runCollectorModule(supabaseUrl, serviceKey, "hanteo", waitForCompletion);
+}
+
+async function runBuzz(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
+  console.log(`[data-engine] Running Buzz module... (waitForCompletion=${waitForCompletion})`);
   const BATCH_SIZE = 5;
   const TOTAL_BATCHES = 12;
-  let launched = 0;
-  for (let i = 0; i < TOTAL_BATCHES; i++) {
-    const p = fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
-    }).catch((e) => console.warn(`[data-engine] Buzz batch ${i} fire error:`, e.message));
-    fireAndForget(p);
-    launched++;
-    if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 2000));
+
+  if (!waitForCompletion) {
+    let launched = 0;
+    for (let i = 0; i < TOTAL_BATCHES; i++) {
+      const p = fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+      }).catch((e) => console.warn(`[data-engine] Buzz batch ${i} fire error:`, e.message));
+      fireAndForget(p);
+      launched++;
+      if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 2000));
+    }
+    console.log(`[data-engine] Buzz: launched ${launched} batches`);
+    return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
   }
-  console.log(`[data-engine] Buzz: launched ${launched} batches`);
-  return { launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
+
+  const batchResults: any[] = [];
+  for (let i = 0; i < TOTAL_BATCHES; i++) {
+    try {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+      });
+      const text = await resp.text();
+      let parsed: any = null;
+      try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text.slice(0, 200) }; }
+      batchResults.push({ batch: i, ok: resp.ok, status: resp.status, result: parsed });
+    } catch (e) {
+      batchResults.push({ batch: i, ok: false, status: 0, error: (e as Error).message });
+    }
+
+    if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 1000));
+  }
+
+  const successBatches = batchResults.filter(b => b.ok).length;
+  const failedBatches = batchResults.length - successBatches;
+  console.log(`[data-engine] Buzz awaited done: success=${successBatches}, failed=${failedBatches}`);
+
+  return {
+    status: "completed",
+    batchSize: BATCH_SIZE,
+    totalBatches: TOTAL_BATCHES,
+    successBatches,
+    failedBatches,
+    batches: batchResults,
+  };
 }
 
 async function runEnergy(supabaseUrl: string, serviceKey: string, isBaseline: boolean = false): Promise<any> {
@@ -350,8 +410,18 @@ Deno.serve(async (req) => {
     try {
       // pipeline(runId 존재) 또는 명시적 isBaseline에서 energy 호출 시 baseline=true
       const shouldBaseline = mod === "energy" && (!!runId || isBaseline === true);
+      const waitForCompletion = !!runId; // 전체 파이프라인에서는 각 모듈 완료를 기다려 데이터 정합성 보장
+
       if (mod === "energy" && shouldBaseline) {
         result = await runEnergy(supabaseUrl, serviceKey, true);
+      } else if (mod === "youtube") {
+        result = await runYouTube(supabaseUrl, serviceKey, waitForCompletion);
+      } else if (mod === "music") {
+        result = await runMusic(supabaseUrl, serviceKey, waitForCompletion);
+      } else if (mod === "hanteo") {
+        result = await runHanteo(supabaseUrl, serviceKey, waitForCompletion);
+      } else if (mod === "buzz") {
+        result = await runBuzz(supabaseUrl, serviceKey, waitForCompletion);
       } else {
         result = await MODULE_RUNNERS[mod](supabaseUrl, serviceKey);
       }
