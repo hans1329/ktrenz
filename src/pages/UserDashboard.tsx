@@ -7,12 +7,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Users, MousePointerClick, Bot, ExternalLink, Eye,
-  TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft
+  TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft, Home
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -243,12 +244,11 @@ const UserDashboard = () => {
       <SEO title="나의 활동 – KTrenZ" description="Your activity and analytics" path="/dashboard" />
       {/* Compact header */}
       <header className="sticky top-0 z-50 flex items-center gap-3 h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-full hover:bg-muted transition-colors">
-          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
-        </button>
-        <h1 className="text-base font-bold text-foreground">나의 활동</h1>
+        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ChevronLeft className="w-5 h-5" /></Button>
+        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
+        <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">나의 활동</h1>
         {isAdmin && !selectedUserId && (
-          <span className="ml-auto text-[10px] text-muted-foreground">Admin</span>
+          <span className="text-[10px] text-muted-foreground">Admin</span>
         )}
       </header>
       <main className="flex-1 overflow-auto px-4 pb-8 pt-6 max-w-4xl mx-auto w-full">
