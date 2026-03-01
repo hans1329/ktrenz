@@ -122,9 +122,23 @@ const V3ArtistDetail = () => {
     }
   }, [entry?.title, slug, track]);
 
+  const detectPlatform = (url: string): string => {
+    if (!url) return "other";
+    const u = url.toLowerCase();
+    if (u.includes("youtube.com") || u.includes("youtu.be")) return "YouTube";
+    if (u.includes("twitter.com") || u.includes("x.com")) return "X";
+    if (u.includes("reddit.com")) return "Reddit";
+    if (u.includes("tiktok.com")) return "TikTok";
+    if (u.includes("instagram.com")) return "Instagram";
+    if (u.includes("spotify.com")) return "Spotify";
+    if (u.includes("melon.com")) return "Melon";
+    if (u.includes("naver.com")) return "Naver";
+    return "other";
+  };
+
   const trackExternalClick = (url: string) => {
     if (entry?.title && slug) {
-      track("external_link_click", { artist_slug: slug, artist_name: entry.title, url });
+      track("external_link_click", { artist_slug: slug, artist_name: entry.title, url, platform: detectPlatform(url) });
     }
   };
 
