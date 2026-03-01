@@ -225,7 +225,7 @@ const UserDashboard = () => {
           <span className="ml-auto text-[10px] text-muted-foreground">Admin</span>
         )}
       </header>
-      <main className="flex-1 overflow-auto px-4 pb-8 pt-4 max-w-4xl mx-auto w-full">
+      <main className="flex-1 overflow-auto px-4 pb-8 pt-6 max-w-4xl mx-auto w-full">
 
         {/* 관리자: 유저 선택 */}
         {isAdmin && (
@@ -260,6 +260,39 @@ const UserDashboard = () => {
           </div>
         ) : (
           <>
+            {/* 관심 아티스트 태그 클라우드 */}
+            {stats.topArtists.length > 0 && (
+              <div className="mb-6 mt-2">
+                <h3 className="text-sm font-bold text-foreground mb-3">나의 관심 아티스트</h3>
+                <div className="flex flex-wrap gap-2">
+                  {stats.topArtists.map((artist, idx) => {
+                    const maxCount = stats.topArtists[0]?.count || 1;
+                    const ratio = artist.count / maxCount;
+                    // Scale: font size 12~22px, opacity 60~100%
+                    const fontSize = Math.round(12 + ratio * 10);
+                    const opacity = 0.6 + ratio * 0.4;
+                    const isTop3 = idx < 3;
+                    return (
+                      <Link
+                        key={artist.name}
+                        to={`/artist/${encodeURIComponent(artist.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full border transition-all hover:scale-105",
+                          isTop3
+                            ? "bg-primary/10 border-primary/30 text-primary font-bold"
+                            : "bg-muted/50 border-border text-foreground/80 font-medium"
+                        )}
+                        style={{ fontSize: `${fontSize}px`, opacity }}
+                      >
+                        {artist.name}
+                        <span className="ml-1.5 text-[10px] opacity-60">{artist.count}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 관리자 DAU 차트 */}
             {isAdmin && !selectedUserId && dauData && (
               <Card className="p-4 mb-4 bg-card border-border">
