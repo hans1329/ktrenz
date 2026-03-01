@@ -80,7 +80,7 @@ const AdminRankings = () => {
   const [runningSource, setRunningSource] = useState<string | null>(null);
   const [recollecting, setRecollecting] = useState<string | null>(null);
   const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
-  const [dataDetailOpen, setDataDetailOpen] = useState<{ artist: ArtistTier; source: string } | null>(null);
+  const [dataDetailOpen, setDataDetailOpen] = useState<{ wikiEntryId: string; source: string } | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<1 | 2>(1);
@@ -638,7 +638,7 @@ const AdminRankings = () => {
     return (
       <button
         className="text-right font-mono text-xs text-muted-foreground cursor-pointer w-full"
-        onClick={() => setDataDetailOpen({ artist, source })}
+        onClick={() => setDataDetailOpen({ wikiEntryId, source })}
       >
         <div className="flex flex-col items-end">
           <span>{value?.toLocaleString() ?? '—'}</span>
@@ -1406,7 +1406,9 @@ const AdminRankings = () => {
       <Dialog open={!!dataDetailOpen} onOpenChange={(open) => !open && setDataDetailOpen(null)}>
         <DialogContent className="max-w-lg">
           {dataDetailOpen && (() => {
-            const { artist, source } = dataDetailOpen;
+            const { wikiEntryId, source } = dataDetailOpen;
+            const artist = artists.find((a) => a.wiki_entry_id === wikiEntryId);
+            if (!artist) return null;
             const m = artist.metrics;
             const sourceLabels: Record<string, string> = { youtube: 'YouTube', buzz: 'Buzz (소셜)', hanteo: 'Album (한터)', music: 'Music' };
             const collectionDate = source === 'youtube' ? artist.collection.youtube
