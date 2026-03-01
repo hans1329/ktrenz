@@ -564,24 +564,6 @@ const V3TrendRankings = () => {
               )}
               {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
             </div>
-            <div className="relative" ref={periodRef}>
-              <button onClick={() => setPeriodOpen(!periodOpen)}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground shadow-sm">
-                {period}
-                <ChevronRight className={cn("w-3 h-3 transition-transform", periodOpen && "rotate-90")} />
-              </button>
-              {periodOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden min-w-[80px]">
-                  {(["1D", "1W", "1M", "3M"] as Period[]).map((p) => (
-                    <button key={p} onClick={() => { setPeriod(p); setPeriodOpen(false); }}
-                      className={cn("block w-full px-4 py-2 text-xs font-semibold text-left transition-colors",
-                        period === p ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted")}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -593,6 +575,15 @@ const V3TrendRankings = () => {
             <div className="pt-4 pb-3">
               <h2 className="text-xl font-black text-muted-foreground">🏆 Trend Rankings</h2>
               <p className="text-xs text-muted-foreground mt-0.5 pl-7">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
+              <div className="flex items-center gap-1 mt-2 pl-7">
+                {(["1D", "1W", "1M", "3M"] as Period[]).map((p) => (
+                  <button key={p} onClick={() => setPeriod(p)}
+                    className={cn("px-3 py-1.5 text-xs font-semibold rounded-full transition-colors",
+                      period === p ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground")}>
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
