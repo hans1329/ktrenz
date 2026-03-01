@@ -142,10 +142,10 @@ const AdminDataHealth = () => {
   });
 
   const bulkFillYoutube = useMutation({
-    mutationFn: async (tier: number) => {
+    mutationFn: async ({ tier, target }: { tier: number; target: string }) => {
       setYtFillTier(tier);
       const { data, error } = await supabase.functions.invoke('fill-youtube-channels', {
-        body: { tier, dryRun: false, limit: 200 },
+        body: { tier, target, dryRun: false, limit: 200 },
       });
       if (error) throw error;
       return data;
@@ -153,9 +153,19 @@ const AdminDataHealth = () => {
     onSuccess: (data: any) => {
       setYtFillTier(null);
       queryClient.invalidateQueries({ queryKey: ['admin-data-health'] });
-      toast.success(`${data.updated}/${data.totalProcessed}명의 YouTube 공식채널 ID가 채워졌습니다`);
-      const notFound = data.results?.filter((r: any) => !r.channelId)?.length || 0;
-      if (notFound > 0) toast.info(`${notFound}명은 자동 매칭 실패 — 수동 입력 필요`);
+      const msgs: string[] = [];
+      if (data.updatedOfficial > 0) msgs.push(`공식 ${data.updatedOfficial}명`);
+      if (data.updatedTopic > 0) msgs.push(`Topic ${data.updatedTopic}명`);
+      if (msgs.length > 0) {
+        toast.success(`${msgs.join(', ')} YouTube ID가 채워졌습니다 (${data.totalProcessed}명 처리)`);
+      } else {
+        toast.info(`${data.totalProcessed}명 처리했으나 새로 채운 ID 없음`);
+      }
+      const officialMiss = data.results?.filter((r: any) => !r.officialChannelId)?.length || 0;
+      const topicMiss = data.results?.filter((r: any) => !r.topicChannelId)?.length || 0;
+      if (officialMiss > 0 || topicMiss > 0) {
+        toast.info(`미발견: 공식 ${officialMiss}명, Topic ${topicMiss}명 — 수동 입력 필요`);
+      }
     },
     onError: (err: any) => { setYtFillTier(null); toast.error('실패: ' + err.message); },
   });
@@ -194,13 +204,13 @@ const AdminDataHealth = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           {[1, 2].map(tier => {
-            const tierYtMissing = artists.filter(a => a.tier === tier && !a.youtube_channel_id).length;
+            const tierAnyMissing = artists.filter(a => a.tier === tier && (!a.youtube_channel_id || !a.youtube_topic_channel_id)).length;
             return (
               <Button key={`yt-tier-${tier}`} size="sm" variant="outline" className="h-9 gap-1.5"
-                disabled={bulkFillYoutube.isPending || tierYtMissing === 0}
-                onClick={() => { if (confirm(`Tier ${tier} YouTube 공식채널 누락 ${tierYtMissing}명을 YouTube API로 검색하시겠습니까?`)) bulkFillYoutube.mutate(tier); }}>
+                disabled={bulkFillYoutube.isPending || tierAnyMissing === 0}
+                onClick={() => { if (confirm(`Tier ${tier} YouTube 누락 ${tierAnyMissing}명을 OpenAI+YouTube API로 검색하시겠습니까? (공식+Topic 동시)`)) bulkFillYoutube.mutate({ tier, target: 'both' }); }}>
                 {bulkFillYoutube.isPending && ytFillTier === tier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
-                YT T{tier} {tierYtMissing > 0 && `(${tierYtMissing})`}
+                YT T{tier} {tierAnyMissing > 0 && `(${tierAnyMissing})`}
               </Button>
             );
           })}
