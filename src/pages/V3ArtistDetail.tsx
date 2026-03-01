@@ -247,7 +247,7 @@ const V3ArtistDetail = () => {
       if (notificationFes != null) parts.push(`FES: ${Math.round(notificationFes)}`);
       const desc = parts.join(' · ') || 'Using cached data';
       if (data.ytQuotaExceeded) {
-        toast({ title: "YouTube 쿼터 소진", description: "일일 YouTube API 할당량이 소진되었습니다. 내일 자동으로 리셋됩니다.", variant: "destructive" });
+        toast({ title: "YouTube 할당량 소진", description: "일일 할당량이 소진되었습니다. 내일 자동으로 리셋됩니다.", variant: "destructive" });
       }
       if (data.warnings?.length) {
         toast({ title: "일부 수집 실패", description: `${desc}\n⚠️ ${data.warnings.join(', ')}` });
@@ -347,7 +347,7 @@ const V3ArtistDetail = () => {
 
   const PageContent = () => {
     if (entryLoading) return <div className="max-w-2xl mx-auto px-4 py-6 space-y-4"><Skeleton className="h-32 w-full rounded-2xl" /><div className="grid grid-cols-2 gap-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div></div>;
-    if (!entry) return <div className="max-w-2xl mx-auto px-4 py-16 text-center"><p className="text-muted-foreground">Artist not found</p><Link to="/" className="text-primary mt-2 inline-block">← Back to Rankings</Link></div>;
+    if (!entry) return <div className="max-w-2xl mx-auto px-4 py-16 text-center"><p className="text-muted-foreground">아티스트를 찾을 수 없습니다</p><Link to="/" className="text-primary mt-2 inline-block">← 랭킹으로 돌아가기</Link></div>;
 
     const ytScore = ytData?.youtubeScore || 0; const bzScore = buzzData?.buzzScore || 0; const msScore = effectiveMusicScore;
     let ytWeight = 0.6, bzWeight = 0.2, msWeight = 0.2;
@@ -363,7 +363,7 @@ const V3ArtistDetail = () => {
           </Avatar>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-black text-foreground truncate">{entry.title}</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{entry.schema_type === 'member' ? 'Solo Artist' : 'Group'}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{entry.schema_type === 'member' ? '솔로 아티스트' : '그룹'}</p>
           </div>
         </div>
 
@@ -372,7 +372,7 @@ const V3ArtistDetail = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-primary" /></div>
-                <div><p className="text-xs text-muted-foreground font-medium">Trend Score</p><p className="text-2xl font-black text-foreground">{(totalTrendScore || 0).toLocaleString()}</p></div>
+                <div><p className="text-xs text-muted-foreground font-medium">트렌드 스코어</p><p className="text-2xl font-black text-foreground">{(totalTrendScore || 0).toLocaleString()}</p></div>
               </div>
               <div className="text-right space-y-1">
                 {ytData && <div className="flex items-center gap-1.5 justify-end"><Youtube className="w-3 h-3 text-destructive" /><span className="text-xs font-semibold text-foreground">{(ytData.youtubeScore || 0).toLocaleString()}</span></div>}
@@ -404,31 +404,31 @@ const V3ArtistDetail = () => {
         {!ytData && !buzzData && !refreshMutation.isPending && (
           <Card className="p-8 text-center border-dashed">
             <Youtube className="w-12 h-12 text-destructive/30 mx-auto mb-3" />
-            <h3 className="font-bold text-foreground mb-1">No Data Yet</h3>
-            <p className="text-sm text-muted-foreground">Tap the ▶ button in the header to fetch analytics for {entry?.title || 'this artist'}</p>
+            <h3 className="font-bold text-foreground mb-1">데이터 없음</h3>
+            <p className="text-sm text-muted-foreground">위의 '데이터 수집' 버튼을 눌러 {entry?.title || '이 아티스트'}의 데이터를 가져오세요</p>
           </Card>
         )}
 
         {ytData && (
           <>
             <div className="grid grid-cols-3 gap-2">
-              <MetricCard icon={Users} label="Subscribers" value={formatNumber(ytData.channel?.subscriberCount || 0)} color="bg-destructive" />
-              <MetricCard icon={Eye} label="Total Views" value={formatNumber(ytData.channel?.totalViewCount || 0)} color="bg-blue-500" />
-              <MetricCard icon={Film} label="Videos" value={formatNumber(ytData.channel?.videoCount || 0)} color="bg-purple-500" />
+              <MetricCard icon={Users} label="구독자" value={formatNumber(ytData.channel?.subscriberCount || 0)} color="bg-destructive" />
+              <MetricCard icon={Eye} label="총 조회수" value={formatNumber(ytData.channel?.totalViewCount || 0)} color="bg-blue-500" />
+              <MetricCard icon={Film} label="영상 수" value={formatNumber(ytData.channel?.videoCount || 0)} color="bg-purple-500" />
             </div>
             {ytData.summary && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">Recent Videos Summary</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">최근 영상 요약</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="grid grid-cols-3 gap-2">
-                  <MetricCard icon={Eye} label="Recent Views" value={formatNumber(ytData.summary.totalRecentViews || 0)} color="bg-green-500" />
-                  <MetricCard icon={ThumbsUp} label="Likes" value={formatNumber(ytData.summary.totalRecentLikes || 0)} color="bg-pink-500" />
-                  <MetricCard icon={MessageSquare} label="Comments" value={formatNumber(ytData.summary.totalRecentComments || 0)} color="bg-amber-500" />
+                  <MetricCard icon={Eye} label="최근 조회" value={formatNumber(ytData.summary.totalRecentViews || 0)} color="bg-green-500" />
+                  <MetricCard icon={ThumbsUp} label="좋아요" value={formatNumber(ytData.summary.totalRecentLikes || 0)} color="bg-pink-500" />
+                  <MetricCard icon={MessageSquare} label="댓글" value={formatNumber(ytData.summary.totalRecentComments || 0)} color="bg-amber-500" />
                 </div>
               </>
             )}
             {(ytData.topEngagement?.length > 0 || ytData.recentVideos?.length > 0) && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">Top Videos</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">인기 영상</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="space-y-1.5">
                   {(ytData.topEngagement || ytData.recentVideos || []).slice(0, 10).map((video: any, idx: number) => <VideoRow key={video.videoId} video={video} rank={idx + 1} onExternalClick={trackExternalClick} />)}
                 </div>
@@ -437,10 +437,10 @@ const V3ArtistDetail = () => {
             {/* MV Category Metrics */}
             {(ytData.musicVideoViews > 0 || ytData.musicVideoCount > 0) && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3 text-primary" /> Music Videos</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3 text-primary" /> 뮤직비디오</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="grid grid-cols-2 gap-2">
-                  <MetricCard icon={Play} label="MV Views" value={formatNumber(ytData.musicVideoViews)} subValue={`${ytData.musicVideoCount} music videos`} color="bg-primary" />
-                  <MetricCard icon={Film} label="MV Count" value={String(ytData.musicVideoCount)} subValue="Category: Music" color="bg-primary" />
+                  <MetricCard icon={Play} label="MV 조회수" value={formatNumber(ytData.musicVideoViews)} subValue={`${ytData.musicVideoCount}개 뮤직비디오`} color="bg-primary" />
+                  <MetricCard icon={Film} label="MV 수" value={String(ytData.musicVideoCount)} subValue="카테고리: 음악" color="bg-primary" />
                 </div>
               </>
             )}
@@ -452,20 +452,42 @@ const V3ArtistDetail = () => {
           <>
             <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Headphones className="w-3 h-3" /> YouTube Music</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
-              <MetricCard icon={Headphones} label="Streams" value={formatNumber(ytMusicData.topicTotalViews)} subValue="Topic Channel" color="bg-destructive" />
-              <MetricCard icon={Users} label="Subscribers" value={formatNumber(ytMusicData.topicSubscribers)} subValue="Topic Channel" color="bg-destructive" />
-              <MetricCard icon={Disc3} label="Tracks" value={String(ytMusicData.tracksCount)} subValue="Recent" color="bg-destructive" />
+              <MetricCard icon={Headphones} label="스트림" value={formatNumber(ytMusicData.topicTotalViews)} subValue="토픽 채널" color="bg-destructive" />
+              <MetricCard icon={Users} label="구독자" value={formatNumber(ytMusicData.topicSubscribers)} subValue="토픽 채널" color="bg-destructive" />
+              <MetricCard icon={Disc3} label="트랙" value={String(ytMusicData.tracksCount)} subValue="최근" color="bg-destructive" />
+            </div>
+          </>
+        )}
+
+        {/* 네이버 뉴스 */}
+        {naverNews && naverNews.items.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Newspaper className="w-3 h-3 text-emerald-500" /> 네이버 뉴스</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="space-y-1.5">
+              {naverNews.items.map((item: any, idx: number) => (
+                <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackExternalClick(item.url)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card transition-colors">
+                  <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: item.title }} />
+                    {item.description && <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5" dangerouslySetInnerHTML={{ __html: item.description }} />}
+                    {item.source && <span className="text-[9px] text-muted-foreground/60">{item.source}</span>}
+                  </div>
+                  <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                </a>
+              ))}
             </div>
           </>
         )}
 
         {buzzData && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> X Buzz</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> X 버즈</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
-              <MetricCard icon={Zap} label="Buzz Score" value={String(buzzData.buzzScore || 0)} color="bg-amber-500" />
-              <MetricCard icon={Hash} label="Mentions" value={String(buzzData.mentionCount || 0)} subValue="24h" color="bg-sky-500" />
-              <MetricCard icon={Smile} label="Sentiment" value={buzzData.sentiment?.label || 'neutral'} subValue={`${buzzData.sentiment?.score || 50}`} color={buzzData.sentiment?.label === 'positive' ? 'bg-emerald-500' : buzzData.sentiment?.label === 'negative' ? 'bg-rose-500' : 'bg-slate-500'} />
+              <MetricCard icon={Zap} label="버즈 스코어" value={String(buzzData.buzzScore || 0)} color="bg-amber-500" />
+              <MetricCard icon={Hash} label="멘션" value={String(buzzData.mentionCount || 0)} subValue="24시간" color="bg-sky-500" />
+              <MetricCard icon={Smile} label="감성" value={buzzData.sentiment?.label === 'positive' ? '긍정' : buzzData.sentiment?.label === 'negative' ? '부정' : '중립'} subValue={`${buzzData.sentiment?.score || 50}`} color={buzzData.sentiment?.label === 'positive' ? 'bg-emerald-500' : buzzData.sentiment?.label === 'negative' ? 'bg-rose-500' : 'bg-slate-500'} />
             </div>
             {buzzData.topMentions?.length > 0 && (
               <div className="space-y-1.5">
@@ -483,40 +505,18 @@ const V3ArtistDetail = () => {
 
         {musicData && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3" /> Music Data</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3" /> 음악 데이터</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
-              {musicData.lastfm && (<><MetricCard icon={Headphones} label="Listeners" value={formatNumber(musicData.lastfm.listeners)} subValue="Last.fm" color="bg-red-600" /><MetricCard icon={Music} label="Plays" value={formatNumber(musicData.lastfm.playcount)} subValue="Last.fm" color="bg-red-600" /></>)}
-              {musicData.deezer && <MetricCard icon={Users} label="Fans" value={formatNumber(musicData.deezer.fans)} subValue="Deezer" color="bg-purple-600" />}
+              {musicData.lastfm && (<><MetricCard icon={Headphones} label="리스너" value={formatNumber(musicData.lastfm.listeners)} subValue="Last.fm" color="bg-red-600" /><MetricCard icon={Music} label="재생수" value={formatNumber(musicData.lastfm.playcount)} subValue="Last.fm" color="bg-red-600" /></>)}
+              {musicData.deezer && <MetricCard icon={Users} label="팬" value={formatNumber(musicData.deezer.fans)} subValue="Deezer" color="bg-purple-600" />}
             </div>
             {musicData.musicbrainz && (
               <div className="grid grid-cols-3 gap-2">
-                <MetricCard icon={Disc3} label="Albums" value={String(musicData.musicbrainz.albums || 0)} subValue="MusicBrainz" color="bg-amber-600" />
-                <MetricCard icon={Music} label="Singles" value={String(musicData.musicbrainz.singles || 0)} color="bg-amber-600" />
-                <MetricCard icon={Disc3} label="EPs" value={String(musicData.musicbrainz.eps || 0)} color="bg-amber-600" />
+                <MetricCard icon={Disc3} label="앨범" value={String(musicData.musicbrainz.albums || 0)} subValue="MusicBrainz" color="bg-amber-600" />
+                <MetricCard icon={Music} label="싱글" value={String(musicData.musicbrainz.singles || 0)} color="bg-amber-600" />
+                <MetricCard icon={Disc3} label="EP" value={String(musicData.musicbrainz.eps || 0)} color="bg-amber-600" />
               </div>
             )}
-          </>
-        )}
-
-        {/* Naver News */}
-        {naverNews && naverNews.items.length > 0 && (
-          <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Newspaper className="w-3 h-3 text-emerald-500" /> Naver News</span><div className="h-px flex-1 bg-border" /></div>
-            <div className="space-y-1.5">
-              {naverNews.items.map((item: any, idx: number) => (
-                <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer"
-                  onClick={() => trackExternalClick(item.url)}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card transition-colors">
-                  <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: item.title }} />
-                    {item.description && <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5" dangerouslySetInnerHTML={{ __html: item.description }} />}
-                    {item.source && <span className="text-[9px] text-muted-foreground/60">{item.source}</span>}
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
-                </a>
-              ))}
-            </div>
           </>
         )}
 
