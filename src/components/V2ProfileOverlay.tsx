@@ -208,7 +208,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
-              onClick={() => onOpenChange(false)}
+              onClick={() => { onOpenChange(false); navigate("/settings"); }}
             >
               <Settings className="w-4 h-4" /> <span className="text-sm">{t("common.settings")}</span>
             </Button>
