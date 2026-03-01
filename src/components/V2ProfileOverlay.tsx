@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, ChevronRight, Settings, Coins, Bell } from "lucide-react";
+import { LogOut, ChevronRight, Settings, Coins } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Drawer,
@@ -168,13 +168,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
           {/* Menu items */}
           <div className="space-y-0.5 pt-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
-              onClick={() => { onOpenChange(false); navigate("/notifications"); }}
-            >
-              <Bell className="w-4 h-4" /> <span className="text-sm">{t("nav.notifications") || "Notifications"}</span>
-            </Button>
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
