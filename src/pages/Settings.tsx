@@ -22,6 +22,7 @@ const SettingsPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
@@ -41,6 +42,28 @@ const SettingsPage = () => {
       </div>
     );
   }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const urlWithCache = `${publicUrl}?t=${Date.now()}`;
+      const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: urlWithCache }).eq("id", user.id);
+      if (updateErr) throw updateErr;
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+      toast.success("프로필 이미지가 변경되었습니다");
+    } catch (e: any) {
+      toast.error(e.message || "업로드 실패");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!user?.id) return;
@@ -108,14 +131,18 @@ const SettingsPage = () => {
             </p>
             <div className="rounded-xl border border-border bg-card p-4 space-y-4">
               <div className="flex items-center gap-4">
-                <div className="relative">
+                <label className="relative cursor-pointer group">
                   <Avatar className="w-16 h-16 border-2 border-border">
                     <AvatarImage src={profile?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
                       {profile?.username?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                </div>
+                  <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {uploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                </label>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-foreground truncate">
                     {profile?.display_name || profile?.username || "User"}
