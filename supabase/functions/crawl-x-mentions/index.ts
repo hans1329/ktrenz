@@ -33,29 +33,29 @@ const SOURCES: SourceConfig[] = [
     name: "news",
     weight: 2.0,
     buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com -site:tiktok.com`,
-    tbs: "qdr:w",
+    tbs: "qdr:d",
     limit: 100,
   },
   {
     name: "reddit",
     weight: 1.2,
     buildQuery: (name) => `"${name}" site:reddit.com kpop`,
-    tbs: "qdr:w",
-    limit: 50,
+    tbs: "qdr:d",
+    limit: 100,
   },
   {
     name: "youtube",
     weight: 1.0,
     buildQuery: (name) => `"${name}" site:youtube.com`,
-    tbs: "qdr:w",
-    limit: 50,
+    tbs: "qdr:d",
+    limit: 100,
   },
   {
     name: "naver",
     weight: 1.3,
     buildQuery: (name) => `"${name}" site:naver.com OR site:theqoo.net OR site:instiz.net OR site:pann.nate.com`,
-    tbs: "qdr:w",
-    limit: 50,
+    tbs: "qdr:d",
+    limit: 100,
   },
   {
     name: "tiktok",
@@ -65,8 +65,8 @@ const SOURCES: SourceConfig[] = [
       if (hashtags?.length) parts.push(hashtags.map(h => `#${h}`).join(" OR "));
       return parts.join(" OR ");
     },
-    tbs: "qdr:w",
-    limit: 50,
+    tbs: "qdr:d",
+    limit: 100,
   },
 ];
 
@@ -206,17 +206,33 @@ Deno.serve(async (req) => {
     console.log(`[crawl-x-mentions] Multi-source crawl for: ${artistName} (sources: ${activeSources.map(s=>s.name).join(",")})${contextKeyword ? ` (context: ${contextKeyword})` : ""}`);
 
     // 선택된 소스 병렬 검색
+    const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+
     const sourcePromises = activeSources.map(async (src) => {
       let query = src.buildQuery(artistName, hashtags);
       if (contextKeyword) query = `${query} ${contextKeyword}`;
-      const results = await firecrawlSearch(apiKey, query, src.limit, src.tbs);
-      const texts = results.map((r: any) => (r.markdown || r.description || r.title || "")).filter(Boolean);
+      const rawResults = await firecrawlSearch(apiKey, query, src.limit, src.tbs);
+
+      // 24시간 이내 게시물만 필터링 (publishedDate 또는 metadata 기반)
+      const filtered = rawResults.filter((r: any) => {
+        // Firecrawl이 publishedDate를 반환하는 경우
+        const dateStr = r.publishedDate || r.metadata?.publishedDate || r.metadata?.date;
+        if (dateStr) {
+          const pubTime = new Date(dateStr).getTime();
+          return !isNaN(pubTime) && pubTime >= cutoff24h;
+        }
+        // 날짜 정보 없으면 포함 (qdr:d가 이미 필터링)
+        return true;
+      });
+
+      const texts = filtered.map((r: any) => (r.markdown || r.description || r.title || "")).filter(Boolean);
       return {
         name: src.name,
         weight: src.weight,
-        count: results.length,
+        count: filtered.length,
+        totalFetched: rawResults.length,
         texts,
-        topMentions: results.slice(0, 3).map((r: any) => ({
+        topMentions: filtered.slice(0, 3).map((r: any) => ({
           title: r.title || "",
           url: r.url || "",
           description: r.description || "",
@@ -237,7 +253,7 @@ Deno.serve(async (req) => {
     const tiktokResult = sourceResults.find(s => s.name === "tiktok");
     const tiktokMentions = tiktokResult?.count ?? 0;
 
-    const sourceLog = sourceResults.map(s => `${s.name}=${s.count}`).join(", ");
+    const sourceLog = sourceResults.map(s => `${s.name}=${s.count}/${s.totalFetched}`).join(", ");
     console.log(`[crawl-x-mentions] ${artistName}: total=${totalMentions} (${sourceLog}), sentiment=${sentiment.label}(${sentiment.score}), buzzScore=${buzzScore}`);
 
     const allTopMentions = sourceResults
