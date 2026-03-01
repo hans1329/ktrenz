@@ -243,13 +243,17 @@ const UserDashboard = () => {
     <div className="min-h-[100dvh] flex flex-col bg-background">
       <SEO title="나의 활동 – KTrenZ" description="Your activity and analytics" path="/dashboard" />
       {/* Compact header */}
-      <header className="sticky top-0 z-50 flex items-center gap-3 h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
-        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ChevronLeft className="w-5 h-5" /></Button>
-        <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
+      <header className="sticky top-0 z-50 flex items-center h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
+        <div className="flex items-center gap-1 w-24 shrink-0">
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ChevronLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
+        </div>
         <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">나의 활동</h1>
-        {isAdmin && !selectedUserId && (
-          <span className="text-[10px] text-muted-foreground">Admin</span>
-        )}
+        <div className="w-24 shrink-0 flex justify-end">
+          {isAdmin && !selectedUserId && (
+            <span className="text-[10px] text-muted-foreground">Admin</span>
+          )}
+        </div>
       </header>
       <main className="flex-1 overflow-auto px-4 pb-8 pt-6 max-w-4xl mx-auto w-full">
 
