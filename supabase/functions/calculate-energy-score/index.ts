@@ -131,19 +131,13 @@ Deno.serve(async (req) => {
     console.log(`[FES-v5.2] Processing ${entryIds.length} artists... (isBaseline=${isBaseline})`);
 
     // ── 2) 기준 스냅샷(is_baseline=true) 찾기 ──
-    // 가장 최근의 is_baseline=true 스냅샷을 비교 기준으로 사용
-    // 베이스라인이 없으면 fallback: 24h 이전 유효 스냅샷
-    // 현재 시각 기준 10분 전 (방금 생성된 스냅샷 제외, 이전 1시간은 너무 길어서 유효 비교 불가)
-    const recentCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-
+    // 무조건 최근 베이스라인과 비교 (fallback 스냅샷 사용 금지)
     const prevSnapResults = await Promise.all(
       entryIds.map(async (eid) => {
-        // 1차: is_baseline=true인 가장 최근 스냅샷 (현재 실행 이전 것)
         const { data: baselineData } = await sb.from("v3_energy_snapshots_v2")
           .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
           .eq("wiki_entry_id", eid)
           .eq("is_baseline", true)
-          .lte("snapshot_at", recentCutoff)
           .order("snapshot_at", { ascending: false })
           .limit(1);
 
@@ -155,18 +149,7 @@ Deno.serve(async (req) => {
           return { eid, prev: baseline };
         }
 
-        // 2차 fallback: 가장 최근 유효 스냅샷 (baseline 여부 무관, 1시간 이전)
-        const { data } = await sb.from("v3_energy_snapshots_v2")
-          .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
-          .eq("wiki_entry_id", eid)
-          .lte("snapshot_at", recentCutoff)
-          .order("snapshot_at", { ascending: false })
-          .limit(5);
-        const valid = (data || []).find((s: any) =>
-          (Number(s.youtube_score) || 0) > 0 || (Number(s.buzz_score) || 0) > 0 ||
-          (Number(s.album_score) || 0) > 0 || (Number(s.music_score) || 0) > 0
-        );
-        return { eid, prev: valid || null };
+        return { eid, prev: null };
       })
     );
 
