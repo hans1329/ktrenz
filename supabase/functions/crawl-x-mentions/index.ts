@@ -44,13 +44,7 @@ const SOURCES: SourceConfig[] = [
     limit: 100,
   },
   // YouTube 소스 제거됨 — YouTube는 독립 데이터 소스(40%)로 이미 수집 중
-  {
-    name: "naver",
-    weight: 1.3,
-    buildQuery: (name) => `"${name}" site:naver.com OR site:theqoo.net OR site:instiz.net OR site:pann.nate.com`,
-    tbs: "qdr:d",
-    limit: 100,
-  },
+  // Naver 소스 제거됨 — crawl-naver-news 별도 API로 수집 후 가상 소스로 반영
   {
     name: "tiktok",
     weight: 1.4,
@@ -259,6 +253,28 @@ Deno.serve(async (req) => {
           weight: 1.5,
           count: normalizedComments,
           totalFetched: ytComments,
+          texts: [],
+          topMentions: [],
+        });
+      }
+
+      // Naver News 가상 소스 추가 (crawl-naver-news에서 별도 수집된 데이터)
+      const { data: naverSnap } = await sb
+        .from("ktrenz_data_snapshots")
+        .select("metrics")
+        .eq("wiki_entry_id", wikiEntryId)
+        .eq("platform", "naver_news")
+        .order("collected_at", { ascending: false })
+        .limit(1)
+        .maybeSingle() as { data: any };
+
+      const naverArticles = naverSnap?.metrics?.mention_count || naverSnap?.metrics?.article_count_24h || naverSnap?.metrics?.article_count || 0;
+      if (naverArticles > 0) {
+        sourceResults.push({
+          name: "naver",
+          weight: 1.3,
+          count: naverArticles,
+          totalFetched: naverArticles,
           texts: [],
           topMentions: [],
         });
