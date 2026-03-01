@@ -233,6 +233,36 @@ Deno.serve(async (req) => {
 
     const sourceResults = await Promise.all(sourcePromises);
 
+    // YouTube 댓글 데이터를 Buzz 소스로 추가
+    if (wikiEntryId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey);
+
+      const { data: ytSnap } = await sb
+        .from("ktrenz_data_snapshots")
+        .select("metrics")
+        .eq("wiki_entry_id", wikiEntryId)
+        .eq("platform", "youtube")
+        .order("collected_at", { ascending: false })
+        .limit(1)
+        .maybeSingle() as { data: any };
+
+      const ytComments = ytSnap?.metrics?.recentTotalComments || 0;
+      if (ytComments > 0) {
+        // 댓글 수를 가상 소스로 추가 (100개 단위로 정규화, 가중치 1.5)
+        const normalizedComments = Math.min(100, Math.round(ytComments / 100));
+        sourceResults.push({
+          name: "yt_comments",
+          weight: 1.5,
+          count: normalizedComments,
+          totalFetched: ytComments,
+          texts: [],
+          topMentions: [],
+        });
+      }
+    }
+
     // 전체 텍스트 감성 분석
     const allTexts = sourceResults.flatMap(s => s.texts);
     const sentiment = analyzeSentiment(allTexts);

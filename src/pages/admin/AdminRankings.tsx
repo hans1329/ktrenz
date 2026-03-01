@@ -81,6 +81,7 @@ const AdminRankings = () => {
   const [recollecting, setRecollecting] = useState<string | null>(null);
   const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
   const [dataDetailOpen, setDataDetailOpen] = useState<{ wikiEntryId: string; source: string } | null>(null);
+  const dataDetailWikiId = dataDetailOpen?.wikiEntryId || null;
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<1 | 2>(1);
@@ -424,7 +425,7 @@ const AdminRankings = () => {
       if (!detailArtist) return [];
       const { data, error } = await supabase
         .from('v3_energy_snapshots_v2')
-        .select('youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity, energy_score, snapshot_at')
+        .select('youtube_score, buzz_score, album_score, music_score, youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity, energy_score, is_baseline, snapshot_at')
         .eq('wiki_entry_id', detailArtist.wiki_entry_id)
         .order('snapshot_at', { ascending: false })
         .limit(50);
@@ -447,6 +448,25 @@ const AdminRankings = () => {
       return data;
     },
     enabled: !!detailArtist,
+  });
+
+  // Baseline snapshot for data detail modal
+  const { data: dataDetailBaseline } = useQuery({
+    queryKey: ['data-detail-baseline', dataDetailWikiId],
+    queryFn: async () => {
+      if (!dataDetailWikiId) return null;
+      const { data, error } = await supabase
+        .from('v3_energy_snapshots_v2' as any)
+        .select('youtube_score, buzz_score, album_score, music_score, energy_score, snapshot_at')
+        .eq('wiki_entry_id', dataDetailWikiId)
+        .eq('is_baseline', true)
+        .order('snapshot_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: !!dataDetailWikiId,
   });
 
   // Search wiki_entries not yet in v3_artist_tiers
@@ -1139,7 +1159,7 @@ const AdminRankings = () => {
                               {Object.entries(liveStats.buzzSources).map(([source, count]) => {
                                 const labels: Record<string, string> = {
                                   x_twitter: '𝕏 Twitter', news: '📰 News', reddit: '💬 Reddit',
-                                  youtube: '▶ YouTube', naver: '🇰🇷 Naver', tiktok: '🎵 TikTok',
+                                  naver: '🇰🇷 Naver', tiktok: '🎵 TikTok', yt_comments: '💬 YT댓글',
                                 };
                                 return (
                                   <span key={source} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-[10px] font-medium">
@@ -1434,33 +1454,64 @@ const AdminRankings = () => {
                 </DialogHeader>
 
                 <div className="space-y-4">
-                  {/* Score summary */}
-                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">스코어</p>
-                      <p className="text-2xl font-bold font-mono">
-                        {source === 'youtube' ? artist.scores?.youtube_score?.toLocaleString() ?? '—'
-                          : source === 'buzz' ? artist.scores?.buzz_score?.toLocaleString() ?? '—'
-                          : source === 'hanteo' ? artist.scores?.album_sales_score?.toLocaleString() ?? '—'
-                          : artist.scores?.music_score?.toLocaleString() ?? '—'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">24h 변동</p>
-                      {(() => {
-                        const ch = source === 'youtube' ? artist.scores?.youtube_change_24h
-                          : source === 'buzz' ? artist.scores?.buzz_change_24h
-                          : source === 'hanteo' ? artist.scores?.album_change_24h
-                          : artist.scores?.music_change_24h;
-                        if (ch == null) return <p className="text-lg font-mono text-muted-foreground">—</p>;
-                        return (
-                          <p className={`text-lg font-mono font-bold ${ch > 0 ? 'text-emerald-500' : ch < -5 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                            {ch > 0 ? '+' : ''}{ch.toFixed(1)}%
-                          </p>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                  {/* Score summary with baseline */}
+                  {(() => {
+                    const currentScore = source === 'youtube' ? artist.scores?.youtube_score
+                      : source === 'buzz' ? artist.scores?.buzz_score
+                      : source === 'hanteo' ? artist.scores?.album_sales_score
+                      : artist.scores?.music_score;
+                    const baselineScore = dataDetailBaseline
+                      ? (source === 'youtube' ? dataDetailBaseline.youtube_score
+                        : source === 'buzz' ? dataDetailBaseline.buzz_score
+                        : source === 'hanteo' ? dataDetailBaseline.album_score
+                        : dataDetailBaseline.music_score)
+                      : null;
+                    const ch = source === 'youtube' ? artist.scores?.youtube_change_24h
+                      : source === 'buzz' ? artist.scores?.buzz_change_24h
+                      : source === 'hanteo' ? artist.scores?.album_change_24h
+                      : artist.scores?.music_change_24h;
+
+                    return (
+                      <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-muted-foreground">현재 스코어</p>
+                            <p className="text-2xl font-bold font-mono">{currentScore?.toLocaleString() ?? '—'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">24h 변동 (vs 베이스라인)</p>
+                            {ch == null
+                              ? <p className="text-lg font-mono text-muted-foreground">—</p>
+                              : <p className={`text-lg font-mono font-bold ${ch > 0 ? 'text-emerald-500' : ch < -5 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                  {ch > 0 ? '+' : ''}{ch.toFixed(1)}%
+                                </p>
+                            }
+                          </div>
+                        </div>
+                        {/* Baseline info */}
+                        <div className="border-t border-border/50 pt-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">📌 베이스라인</span>
+                            <span className="font-mono font-medium">{baselineScore != null ? Number(baselineScore).toLocaleString() : '없음'}</span>
+                          </div>
+                          {dataDetailBaseline?.snapshot_at && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              기준 시점: {formatAgo(dataDetailBaseline.snapshot_at)} ({new Date(dataDetailBaseline.snapshot_at).toLocaleString('ko-KR')})
+                            </p>
+                          )}
+                          {baselineScore != null && currentScore != null && Number(baselineScore) > 0 && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-muted-foreground">차이:</span>
+                              <span className={`text-xs font-mono font-medium ${currentScore - Number(baselineScore) > 0 ? 'text-emerald-500' : currentScore - Number(baselineScore) < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                {currentScore - Number(baselineScore) > 0 ? '+' : ''}{(currentScore - Number(baselineScore)).toLocaleString()}
+                                {' '}({(((currentScore - Number(baselineScore)) / Number(baselineScore)) * 100).toFixed(1)}%)
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* YouTube Details */}
                   {source === 'youtube' && m.youtube && (
@@ -1508,7 +1559,7 @@ const AdminRankings = () => {
                         <div className="space-y-1.5 border-t border-border/50 pt-2">
                           <p className="text-[10px] font-semibold text-muted-foreground">소스별 분포</p>
                           {(() => {
-                            const labels: Record<string, string> = { x_twitter: '𝕏 Twitter', news: '📰 News', reddit: '💬 Reddit', youtube: '▶ YouTube', naver: '🇰🇷 Naver', tiktok: '🎵 TikTok' };
+                            const labels: Record<string, string> = { x_twitter: '𝕏 Twitter', news: '📰 News', reddit: '💬 Reddit', naver: '🇰🇷 Naver', tiktok: '🎵 TikTok', yt_comments: '💬 YT댓글' };
                             return m.buzz_multi!.source_breakdown!.map((s: any) => (
                               <div key={s.source} className="flex items-center justify-between text-xs">
                                 <span>{labels[s.source] || s.source}</span>
