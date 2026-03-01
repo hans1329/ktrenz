@@ -213,16 +213,12 @@ Deno.serve(async (req) => {
       if (contextKeyword) query = `${query} ${contextKeyword}`;
       const rawResults = await firecrawlSearch(apiKey, query, src.limit, src.tbs);
 
-      // 24시간 이내 게시물만 필터링 (publishedDate 또는 metadata 기반)
+      // 24시간 이내 게시물만 필터링 — 날짜 없으면 제외 (엄격 모드)
       const filtered = rawResults.filter((r: any) => {
-        // Firecrawl이 publishedDate를 반환하는 경우
         const dateStr = r.publishedDate || r.metadata?.publishedDate || r.metadata?.date;
-        if (dateStr) {
-          const pubTime = new Date(dateStr).getTime();
-          return !isNaN(pubTime) && pubTime >= cutoff24h;
-        }
-        // 날짜 정보 없으면 포함 (qdr:d가 이미 필터링)
-        return true;
+        if (!dateStr) return false; // 날짜 정보 없으면 제외
+        const pubTime = new Date(dateStr).getTime();
+        return !isNaN(pubTime) && pubTime >= cutoff24h;
       });
 
       const texts = filtered.map((r: any) => (r.markdown || r.description || r.title || "")).filter(Boolean);
