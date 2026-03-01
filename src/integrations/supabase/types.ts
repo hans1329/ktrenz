@@ -2128,6 +2128,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          description: string | null
           id: string
           metadata: Json | null
           reason: string
@@ -2136,6 +2137,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          description?: string | null
           id?: string
           metadata?: Json | null
           reason: string
@@ -2144,6 +2146,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          description?: string | null
           id?: string
           metadata?: Json | null
           reason?: string
