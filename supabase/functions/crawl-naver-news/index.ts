@@ -62,8 +62,8 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/gi, " ").replace(/\[사진\]|\[포토\]|\[화보\]|\[영상\]/g, "").trim();
 }
 
-// 제목 유사도 체크 (간단한 토큰 기반)
-function titleSimilarity(a: string, b: string): number {
+// 텍스트 유사도 체크 (토큰 기반)
+function textSimilarity(a: string, b: string): number {
   const tokensA = new Set(a.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(t => t.length > 1));
   const tokensB = new Set(b.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(t => t.length > 1));
   if (tokensA.size === 0 || tokensB.size === 0) return 0;
@@ -72,10 +72,13 @@ function titleSimilarity(a: string, b: string): number {
   return overlap / Math.min(tokensA.size, tokensB.size);
 }
 
-function deduplicateByTitle(items: { title: string }[]): typeof items {
+function deduplicateNews(items: { title: string; description: string }[]): typeof items {
   const result: typeof items = [];
   for (const item of items) {
-    const isDup = result.some(r => titleSimilarity(r.title, item.title) > 0.6);
+    const isDup = result.some(r =>
+      textSimilarity(r.title, item.title) >= 0.5 ||
+      textSimilarity(r.description, item.description) >= 0.6
+    );
     if (!isDup) result.push(item);
   }
   return result;
@@ -154,11 +157,14 @@ Deno.serve(async (req) => {
     const weight = 1.3;
     const weightedCount = Math.round(mentionCount * weight);
 
-    // 제목 기반 중복 제거 후 상위 5개
-    const strippedFiltered = filtered.map(item => ({ ...item, cleanTitle: stripHtml(item.title) }));
-    const deduplicated = deduplicateByTitle(strippedFiltered.map(i => ({ ...i, title: i.cleanTitle })));
-    const top5Indices = deduplicated.slice(0, 5).map(d => strippedFiltered.findIndex(s => s.cleanTitle === d.title));
-    const top5 = top5Indices.map(i => filtered[i]);
+    // 제목+설명 기반 중복 제거 후 상위 5개
+    const cleaned = filtered.map(item => ({
+      ...item,
+      cleanTitle: stripHtml(item.title),
+      cleanDesc: stripHtml(item.description),
+    }));
+    const deduplicated = deduplicateNews(cleaned.map(i => ({ ...i, title: i.cleanTitle, description: i.cleanDesc })));
+    const top5 = deduplicated.slice(0, 5).map(d => cleaned.find(c => c.cleanTitle === d.title)!).filter(Boolean);
 
     // 상위 기사의 og:image 병렬 추출
     const ogImages = await Promise.all(
