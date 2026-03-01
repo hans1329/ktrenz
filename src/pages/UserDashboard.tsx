@@ -348,7 +348,7 @@ const UserDashboard = () => {
                     const maxCount = stats.topArtists[0]?.count || 1;
                     const ratio = artist.count / maxCount;
                     // Scale: font size 12~22px, opacity 60~100%
-                    const fontSize = Math.round(12 + ratio * 10);
+                    const fontSize = Math.round(11 + ratio * 6);
                     const opacity = 0.6 + ratio * 0.4;
                     const isTop3 = idx < 3;
                     return (
@@ -390,28 +390,22 @@ const UserDashboard = () => {
                     <Heart className="w-5 h-5 text-primary fill-primary/30" />
                   </div>
                 </div>
-                <div className="p-4 grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
-                      <Eye className="w-4 h-4 text-primary" />
+                <div className="p-4 grid grid-cols-5 gap-2">
+                  {[
+                    { icon: Eye, value: favoriteArtist.activity.detailViews, label: "프로필 조회" },
+                    { icon: MousePointerClick, value: favoriteArtist.activity.treemapClicks, label: "에너지맵" },
+                    { icon: BarChart3, value: (events || []).filter((e: any) => e.event_type === "list_click" && (e.event_data as any)?.artist_name === favoriteArtistName).length, label: "리스트" },
+                    { icon: ExternalLink, value: favoriteArtist.activity.externalClicks, label: "외부 링크" },
+                    { icon: Bot, value: favoriteArtist.activity.agentChats, label: "에이전트" },
+                  ].map((item, i) => (
+                    <div key={i} className="text-center">
+                      <div className="w-7 h-7 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
+                        <item.icon className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <p className="text-sm font-black text-foreground">{item.value}</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">{item.label}</p>
                     </div>
-                    <p className="text-lg font-black text-foreground">{favoriteArtist.activity.detailViews}</p>
-                    <p className="text-[10px] text-muted-foreground">프로필 조회</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
-                      <ExternalLink className="w-4 h-4 text-primary" />
-                    </div>
-                    <p className="text-lg font-black text-foreground">{favoriteArtist.activity.externalClicks}</p>
-                    <p className="text-[10px] text-muted-foreground">외부 링크</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
-                      <Bot className="w-4 h-4 text-primary" />
-                    </div>
-                    <p className="text-lg font-black text-foreground">{favoriteArtist.activity.agentChats}</p>
-                    <p className="text-[10px] text-muted-foreground">에이전트 대화</p>
-                  </div>
+                  ))}
                 </div>
                 {favoriteArtist.contribution && (
                   <div className="px-4 pb-4">
