@@ -201,7 +201,16 @@ const V3ArtistDetail = () => {
           ytQuotaExceeded = true;
         }
       }
-      if (runBuzz) { const r = results[idx++]; buzzData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
+      if (runBuzz) {
+        const r = results[idx++];
+        buzzData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null;
+        // Buzz 수집 성공 시 네이버 뉴스(og:image 포함) 스냅샷도 자동 갱신
+        if (buzzData) {
+          supabase.functions.invoke('crawl-naver-news', { body: { artistName: entry.title, wikiEntryId: entry.id } })
+            .then(() => queryClient.invalidateQueries({ queryKey: ["naver-news-snapshot", entry.id] }))
+            .catch(() => {});
+        }
+      }
       if (runMusic) { const r = results[idx++]; musicData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
       if (runAlbum) { const r = results[idx++]; albumData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
 
