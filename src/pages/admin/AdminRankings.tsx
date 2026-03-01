@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2, ChevronDown, ChevronUp, Clock, Calendar } from 'lucide-react';
+import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2, ChevronDown, ChevronUp, Clock, Calendar, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -98,6 +98,39 @@ const AdminRankings = () => {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleHour, setScheduleHour] = useState(5); // KST
   const [scheduleMinute, setScheduleMinute] = useState(5);
+
+  // Hanteo URL config state
+  const [hanteoConfigOpen, setHanteoConfigOpen] = useState(false);
+  const [hanteoUrlInput, setHanteoUrlInput] = useState('');
+
+  const { data: hanteoConfig, refetch: refetchHanteoConfig } = useQuery({
+    queryKey: ['hanteo-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ktrenz_collection_config' as any)
+        .select('hanteo_chart_url, updated_at')
+        .eq('id', 'default')
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const updateHanteoUrlMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const { error } = await supabase
+        .from('ktrenz_collection_config' as any)
+        .update({ hanteo_chart_url: url, updated_at: new Date().toISOString() } as any)
+        .eq('id', 'default');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchHanteoConfig();
+      toast.success('한터 차트 URL이 업데이트되었습니다');
+      setHanteoConfigOpen(false);
+    },
+    onError: (err: any) => toast.error('URL 업데이트 실패: ' + err.message),
+  });
 
   // Fetch current schedule
   const { data: scheduleData, refetch: refetchSchedule } = useQuery({
@@ -954,6 +987,55 @@ const AdminRankings = () => {
               {src === 'album' ? 'Album' : src.charAt(0).toUpperCase() + src.slice(1)}
             </Button>
           ))}
+          {/* 한터 URL 설정 */}
+          <Popover open={hanteoConfigOpen} onOpenChange={(open) => {
+            setHanteoConfigOpen(open);
+            if (open && hanteoConfig?.hanteo_chart_url) {
+              setHanteoUrlInput(hanteoConfig.hanteo_chart_url);
+            }
+          }}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs px-2">
+                <Settings2 className="w-3.5 h-3.5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-3 space-y-3" align="end">
+              <div className="space-y-1">
+                <span className="text-sm font-semibold">한터 차트 수집 URL</span>
+                <p className="text-[11px] text-muted-foreground">앨범 판매 데이터를 수집할 한터차트 URL을 입력하세요</p>
+              </div>
+              <Input
+                value={hanteoUrlInput}
+                onChange={(e) => setHanteoUrlInput(e.target.value)}
+                placeholder="https://www.hanteochart.com/..."
+                className="text-xs h-8"
+              />
+              {hanteoConfig?.updated_at && (
+                <p className="text-[10px] text-muted-foreground">마지막 변경: {formatAgo(hanteoConfig.updated_at)}</p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 h-7 text-xs"
+                  disabled={updateHanteoUrlMutation.isPending || !hanteoUrlInput}
+                  onClick={() => updateHanteoUrlMutation.mutate(hanteoUrlInput)}
+                >
+                  {updateHanteoUrlMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                  저장
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    setHanteoUrlInput('https://www.hanteochart.com/honors/initial');
+                  }}
+                >
+                  초기화
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button
             size="sm"
             className="h-8 text-xs gap-1.5"
