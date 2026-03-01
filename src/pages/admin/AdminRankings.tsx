@@ -536,6 +536,35 @@ const AdminRankings = () => {
     enabled: !!dataDetailWikiId,
   });
 
+  // Live metrics for data detail modal (fetch latest snapshots from DB directly)
+  const { data: dataDetailMetrics } = useQuery({
+    queryKey: ['data-detail-metrics', dataDetailWikiId],
+    queryFn: async () => {
+      if (!dataDetailWikiId) return null;
+      const { data, error } = await supabase
+        .from('ktrenz_data_snapshots')
+        .select('platform, metrics, collected_at')
+        .eq('wiki_entry_id', dataDetailWikiId)
+        .order('collected_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      const m: SnapshotMetrics = {};
+      const seen = new Set<string>();
+      for (const s of (data || [])) {
+        const p = s.platform as string;
+        if (p === 'hanteo') {
+          if (!m.hanteo) m.hanteo = [];
+          if (s.metrics) m.hanteo.push(s.metrics as any);
+        } else if (!seen.has(p)) {
+          seen.add(p);
+          (m as any)[p] = s.metrics;
+        }
+      }
+      return m;
+    },
+    enabled: !!dataDetailWikiId,
+  });
+
   // Search wiki_entries not yet in v3_artist_tiers
   const { data: searchResults = [], isLoading: searchLoading } = useQuery({
     queryKey: ['artist-search', searchQuery],
@@ -663,7 +692,9 @@ const AdminRankings = () => {
       });
 
       await queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      await queryClient.invalidateQueries({ queryKey: ['data-detail-metrics'] });
       await queryClient.refetchQueries({ queryKey: ['admin-artist-tiers'], type: 'active' });
+      await queryClient.refetchQueries({ queryKey: ['data-detail-metrics'], type: 'active' });
 
       if (reflected) {
         toast.success(`${artistName} ${sourceLabel} 반영 완료`);
@@ -1523,7 +1554,7 @@ const AdminRankings = () => {
             const { wikiEntryId, source } = dataDetailOpen;
             const artist = artists.find((a) => a.wiki_entry_id === wikiEntryId);
             if (!artist) return null;
-            const m = artist.metrics;
+            const m = dataDetailMetrics || artist.metrics;
             const sourceLabels: Record<string, string> = { youtube: 'YouTube', buzz: 'Buzz (소셜)', hanteo: 'Album (한터)', music: 'Music' };
             const collectionDate = source === 'youtube' ? artist.collection.youtube
               : source === 'buzz' ? artist.collection.buzz_multi
