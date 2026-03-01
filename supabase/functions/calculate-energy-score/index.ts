@@ -133,10 +133,8 @@ Deno.serve(async (req) => {
     // ── 2) 기준 스냅샷(is_baseline=true) 찾기 ──
     // 가장 최근의 is_baseline=true 스냅샷을 비교 기준으로 사용
     // 베이스라인이 없으면 fallback: 24h 이전 유효 스냅샷
-    // cutoff removed - using recentCutoff (1h) instead of 24h for better fallback
-
-    // 현재 시각 기준 1시간 전 (방금 생성된 스냅샷 제외)
-    const recentCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // 현재 시각 기준 10분 전 (방금 생성된 스냅샷 제외, 이전 1시간은 너무 길어서 유효 비교 불가)
+    const recentCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
     const prevSnapResults = await Promise.all(
       entryIds.map(async (eid) => {
