@@ -1030,12 +1030,39 @@ Deno.serve(async (req) => {
           const lastfm = LASTFM_API_KEY ? await fetchLastfmArtist(artist.title, LASTFM_API_KEY, endpoints?.lastfm_artist_name) : null;
           const deezer = await fetchDeezerArtist(artist.title, endpoints?.deezer_artist_id);
 
-          // DB에서 YouTube Music Topic 스냅샷 조회
+          // DB에서 최근 YouTube Music Topic 스냅샷 조회 (1시간 이내)
           let ytMusicData: { topicTotalViews?: number; topicSubscribers?: number } | null = null;
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
           const { data: ytmSnap } = await adminClient.from("ktrenz_data_snapshots")
-            .select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "youtube_music")
+            .select("metrics, collected_at").eq("wiki_entry_id", artist.id).eq("platform", "youtube_music")
             .order("collected_at", { ascending: false }).limit(1).maybeSingle();
-          if (ytmSnap?.metrics) {
+          if (ytmSnap?.metrics && ytmSnap.collected_at >= oneHourAgo) {
+            ytMusicData = { topicTotalViews: (ytmSnap.metrics as any).topicTotalViews || 0, topicSubscribers: (ytmSnap.metrics as any).topicSubscribers || 0 };
+          } else if (endpoints?.youtube_topic_channel_id && YOUTUBE_API_KEY) {
+            // 최근 스냅샷이 없으면 직접 수집 (YouTube 단계에서 실패했을 수 있음)
+            try {
+              const topicData = await fetchYouTubeTopicData(artist.title, YOUTUBE_API_KEY, endpoints.youtube_topic_channel_id, false);
+              if (topicData) {
+                await adminClient.from("ktrenz_data_snapshots").insert({
+                  wiki_entry_id: artist.id, platform: "youtube_music",
+                  metrics: {
+                    topicTotalViews: topicData.topicTotalViews,
+                    topicSubscribers: topicData.topicSubscribers,
+                    topTracks: topicData.topMusicTracks || [],
+                  },
+                });
+                ytMusicData = { topicTotalViews: topicData.topicTotalViews, topicSubscribers: topicData.topicSubscribers };
+                console.log(`[DataCollector] Music batch→YT Music fallback: ${artist.title} → views=${topicData.topicTotalViews}, subs=${topicData.topicSubscribers}`);
+              }
+            } catch (topicErr) {
+              console.warn(`[DataCollector] Music batch→YT Music fallback error for ${artist.title}:`, (topicErr as any).message);
+              // Fallback: 오래된 스냅샷이라도 사용
+              if (ytmSnap?.metrics) {
+                ytMusicData = { topicTotalViews: (ytmSnap.metrics as any).topicTotalViews || 0, topicSubscribers: (ytmSnap.metrics as any).topicSubscribers || 0 };
+              }
+            }
+          } else if (ytmSnap?.metrics) {
+            // topic_channel_id 없으면 오래된 스냅샷이라도 사용
             ytMusicData = { topicTotalViews: (ytmSnap.metrics as any).topicTotalViews || 0, topicSubscribers: (ytmSnap.metrics as any).topicSubscribers || 0 };
           }
 
