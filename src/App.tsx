@@ -12,6 +12,7 @@ import FanAgent from "./pages/FanAgent";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import KPass from "./pages/KPass";
+import Settings from "./pages/Settings";
 import PitchDeck from "./pages/PitchDeck";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
@@ -47,6 +48,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/k-pass" element={<KPass />} />
+            <Route path="/kpass" element={<KPass />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
             <Route path="/admin/login" element={<AdminLogin />} />
