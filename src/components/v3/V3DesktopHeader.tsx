@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity } from "lucide-react";
+import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,6 +165,11 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
             </div>
 
             <LanguageSwitcher />
+
+            {/* Notifications */}
+            <Button variant="ghost" size="icon" onClick={() => navigate("/notifications")} className="w-9 h-9 rounded-full">
+              <Bell className="w-4 h-4" />
+            </Button>
 
             {/* Profile / Sign In */}
             {user ? (
