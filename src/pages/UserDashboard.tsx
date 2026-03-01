@@ -212,14 +212,75 @@ const UserDashboard = () => {
       if (!entry) return null;
 
       // 나의 기여도 (외부 링크 클릭 기반)
+      const weightByPlatform: Record<string, number> = {
+        youtube: 1.5,
+        twitter: 1.5,
+        news: 2.0,
+        tiktok: 1.4,
+        naver: 1.3,
+        spotify: 1.2,
+        melon: 1.2,
+        reddit: 1.2,
+        other: 1.0,
+      };
+
+      const normalizePlatform = (platform?: string, url?: string) => {
+        const p = (platform || "").toLowerCase();
+        if (p.includes("youtube")) return "youtube";
+        if (p === "x" || p.includes("twitter")) return "twitter";
+        if (p.includes("reddit")) return "reddit";
+        if (p.includes("tiktok")) return "tiktok";
+        if (p.includes("instagram")) return "other";
+        if (p.includes("spotify")) return "spotify";
+        if (p.includes("melon")) return "melon";
+        if (p.includes("naver")) return "naver";
+        if (p.includes("news")) return "news";
+
+        const u = (url || "").toLowerCase();
+        if (u.includes("youtube.com") || u.includes("youtu.be")) return "youtube";
+        if (u.includes("x.com") || u.includes("twitter.com")) return "twitter";
+        if (u.includes("reddit.com")) return "reddit";
+        if (u.includes("tiktok.com")) return "tiktok";
+        if (u.includes("spotify.com")) return "spotify";
+        if (u.includes("melon.com")) return "melon";
+        if (u.includes("naver.com")) return "naver";
+        return "other";
+      };
+
       const { data: myContribs } = await supabase
         .from("ktrenz_fan_contributions" as any)
         .select("platform, click_count, weighted_score")
         .eq("wiki_entry_id", entry.id)
         .eq("user_id", viewUserId!);
 
-      const totalScore = (myContribs || []).reduce((s: number, c: any) => s + Number(c.weighted_score), 0);
-      const totalClicks = (myContribs || []).reduce((s: number, c: any) => s + Number(c.click_count), 0);
+      let resolvedContribs = (myContribs || []).map((c: any) => ({
+        platform: c.platform,
+        clicks: Number(c.click_count) || 0,
+        score: Number(c.weighted_score) || 0,
+      }));
+
+      // 폴백: fan_contributions가 비어있으면 이벤트 로그로 기여도 계산
+      if (resolvedContribs.length === 0) {
+        const fallbackEvents = (events || []).filter((e: any) => {
+          const data = (e.event_data as any) || {};
+          return e.event_type === "external_link_click" && (data.artist_slug === entry.slug || data.artist_name === entry.title);
+        });
+
+        const byPlatform = new Map<string, { platform: string; clicks: number; score: number }>();
+        for (const e of fallbackEvents) {
+          const data = (e.event_data as any) || {};
+          const key = normalizePlatform(data.platform, data.url);
+          const prev = byPlatform.get(key) || { platform: key, clicks: 0, score: 0 };
+          prev.clicks += 1;
+          prev.score += weightByPlatform[key] || 1.0;
+          byPlatform.set(key, prev);
+        }
+
+        resolvedContribs = Array.from(byPlatform.values());
+      }
+
+      const totalScore = resolvedContribs.reduce((s, c) => s + c.score, 0);
+      const totalClicks = resolvedContribs.reduce((s, c) => s + c.clicks, 0);
 
       // 전체 팬 기여도 순위 (같은 아티스트)
       const { data: allFanScores } = await supabase
@@ -238,11 +299,7 @@ const UserDashboard = () => {
       const percentile = totalFans > 0 ? Math.max(1, Math.round((myRank / totalFans) * 100)) : 0;
 
       // 플랫폼별 breakdown
-      const platformBreakdown = (myContribs || []).map((c: any) => ({
-        platform: c.platform,
-        clicks: c.click_count,
-        score: Number(c.weighted_score),
-      })).sort((a: any, b: any) => b.score - a.score);
+      const platformBreakdown = resolvedContribs.sort((a: any, b: any) => b.score - a.score);
 
       // Get event breakdown for this artist
       const artistEvents = (events || []).filter((e: any) => (e.event_data as any)?.artist_name === favoriteArtistName);

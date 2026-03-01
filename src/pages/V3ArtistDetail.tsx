@@ -144,14 +144,17 @@ const V3ArtistDetail = () => {
       track("external_link_click", { artist_slug: slug, artist_name: entry.title, url, platform });
 
       // 기여도 기록 (로그인 유저만)
-      if (user?.id && entry?.id) {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = user ?? authData.user;
+
+      if (authUser?.id && entry?.id) {
         const dbPlatform: Record<string, string> = {
           YouTube: "youtube", X: "twitter", Reddit: "reddit", TikTok: "tiktok",
           Instagram: "instagram", Spotify: "spotify", Melon: "melon", Naver: "naver",
         };
 
         const { error } = await supabase.rpc("ktrenz_record_contribution" as any, {
-          _user_id: user.id,
+          _user_id: authUser.id,
           _wiki_entry_id: entry.id,
           _platform: dbPlatform[platform] || "other",
         });
