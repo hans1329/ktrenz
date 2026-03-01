@@ -519,11 +519,11 @@ const UserDashboard = () => {
 
                   {/* 점수 + 순위 */}
                   <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
-                    <div className="text-center min-w-[110px]">
+                    <div className="text-center min-w-[80px]">
                       <p className="text-4xl md:text-5xl font-black leading-none bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
-                        {Math.round(favoriteArtist.contribution.totalScore)}
+                        {favoriteArtist.contribution.totalScore > 0 ? `${Math.round(favoriteArtist.contribution.totalScore)}%` : "0%"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">기여 점수</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">기여도</p>
                     </div>
                     <div className="h-8 w-px bg-border" />
                     <div className="text-center">
@@ -536,12 +536,12 @@ const UserDashboard = () => {
                         <>
                           <div className="flex items-center justify-center gap-1">
                             <Trophy className="w-4 h-4 text-yellow-400" />
-                            <p className="text-lg font-black text-foreground">
-                              상위 {favoriteArtist.contribution.percentile}%
+                            <p className="text-2xl font-black text-foreground">
+                              {favoriteArtist.contribution.myRank}등
                             </p>
                           </div>
                           <p className="text-[9px] text-muted-foreground">
-                            {favoriteArtist.contribution.myRank}위 / {favoriteArtist.contribution.totalFans}명{favoriteArtist.contribution.rankSource === "events" ? " · 이벤트 기준" : ""}
+                            {favoriteArtist.contribution.totalFans}명 중{favoriteArtist.contribution.rankSource === "events" ? " · 이벤트 기준" : ""}
                           </p>
                         </>
                       ) : (
