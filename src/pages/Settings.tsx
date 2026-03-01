@@ -93,13 +93,51 @@ const SettingsPage = () => {
 
   const handleSaveProfile = async () => {
     if (!user?.id) return;
+    const trimmedUsername = username.trim();
+    const trimmedDisplay = displayName.trim();
+
+    if (!trimmedUsername) {
+      toast.error("닉네임을 입력해주세요");
+      return;
+    }
+
     setSaving(true);
     try {
+      // 닉네임 중복 체크
+      if (trimmedUsername !== profile?.username) {
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", trimmedUsername)
+          .neq("id", user.id)
+          .maybeSingle();
+        if (existing) {
+          toast.error("이미 사용 중인 닉네임입니다");
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 표시이름 중복 체크
+      if (trimmedDisplay && trimmedDisplay !== profile?.display_name) {
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("display_name", trimmedDisplay)
+          .neq("id", user.id)
+          .maybeSingle();
+        if (existing) {
+          toast.error("이미 사용 중인 표시 이름입니다");
+          setSaving(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({
-          display_name: displayName.trim() || null,
-          username: username.trim(),
+          display_name: trimmedDisplay || null,
+          username: trimmedUsername,
         })
         .eq("id", user.id);
       if (error) throw error;
@@ -179,7 +217,7 @@ const SettingsPage = () => {
 
               <div className="space-y-3">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">닉네임</label>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">닉네임 (핸들)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
                     <Input
