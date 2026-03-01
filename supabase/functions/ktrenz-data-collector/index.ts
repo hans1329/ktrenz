@@ -276,26 +276,52 @@ function calculateYouTubeScore(data: {
   totalViewCount: number;
   recentTotalViews: number;
   recentTotalLikes: number;
+  recentTotalComments?: number;
   videoCount?: number;
   previousRecentTotalViews?: number;
+  previousRecentTotalLikes?: number;
+  previousRecentTotalComments?: number;
+  previousTotalViewCount?: number;
 }): number {
-  const subScore = (data.subscriberCount / 1_000_000) * 100;
-  const totalViewScore = (data.totalViewCount / 100_000_000) * 50;
-  const recentViewScore = (data.recentTotalViews / 1_000_000) * 30;
-  // 댓글은 Buzz로 분리됨 — 좋아요만 인게이지먼트로 반영
-  const recentEngagement = (data.recentTotalLikes / 100_000) * 20;
-  const volumeScore = Math.min(50, ((data.videoCount ?? 0) / 100) * 10);
+  // ── Base Score (30%): 절대 규모 — log scale로 압축 ──
+  const subBase = data.subscriberCount > 0 ? Math.log10(data.subscriberCount) * 50 : 0; // 100M → 400
+  const viewBase = data.totalViewCount > 0 ? Math.log10(data.totalViewCount) * 30 : 0;  // 41B → 318
+  const baseScore = subBase + viewBase; // ~718 max for top artists
 
-  let momentumBonus = 0;
-  if (data.previousRecentTotalViews && data.previousRecentTotalViews > 0 && data.recentTotalViews > data.previousRecentTotalViews) {
-    const growthRate = (data.recentTotalViews - data.previousRecentTotalViews) / data.previousRecentTotalViews;
-    momentumBonus = Math.min(500, Math.round(growthRate * 1000));
-    if (momentumBonus > 0) {
-      console.log(`[DataCollector] YouTube Momentum: +${(growthRate * 100).toFixed(1)}% → bonus ${momentumBonus}pts`);
-    }
+  // ── Delta Score (70%): 24h 변동분 기반 ──
+  let deltaScore = 0;
+
+  // 최근 영상 조회수 변동
+  if (data.previousRecentTotalViews && data.previousRecentTotalViews > 0) {
+    const viewDelta = data.recentTotalViews - data.previousRecentTotalViews;
+    // 양수/음수 모두 반영 — 100만 조회 증가 = 1000점
+    deltaScore += Math.round((viewDelta / 100_000) * 100);
+    console.log(`[DataCollector] YouTube Delta Views: ${viewDelta > 0 ? '+' : ''}${viewDelta.toLocaleString()} → ${Math.round((viewDelta / 100_000) * 100)}pts`);
+  } else {
+    // 이전 데이터 없으면 현재 recentViews 기반 fallback
+    deltaScore += Math.round((data.recentTotalViews / 1_000_000) * 30);
   }
 
-  return Math.round(subScore + totalViewScore + recentViewScore + recentEngagement + volumeScore + momentumBonus);
+  // 좋아요 변동
+  if (data.previousRecentTotalLikes && data.previousRecentTotalLikes > 0) {
+    const likeDelta = data.recentTotalLikes - data.previousRecentTotalLikes;
+    deltaScore += Math.round((likeDelta / 10_000) * 50);
+  } else {
+    deltaScore += Math.round((data.recentTotalLikes / 100_000) * 20);
+  }
+
+  // 총 조회수 변동 (채널 전체)
+  if (data.previousTotalViewCount && data.previousTotalViewCount > 0) {
+    const totalViewDelta = data.totalViewCount - data.previousTotalViewCount;
+    deltaScore += Math.round((totalViewDelta / 1_000_000) * 50);
+  }
+
+  // deltaScore는 음수 가능 — 최소 0으로 제한
+  deltaScore = Math.max(0, deltaScore);
+
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
+  console.log(`[DataCollector] YouTube Score: base=${Math.round(baseScore)} delta=${deltaScore} final=${finalScore}`);
+  return finalScore;
 }
 
 // ══════════════════════════════════════
@@ -403,25 +429,61 @@ async function fetchDeezerArtist(artistName: string, fixedId?: string | null) {
   }
 }
 
-function calculateMusicScore(lastfm: any, deezer: any, ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null, ytMusicVideos?: { musicVideoViews?: number; musicVideoCount?: number } | null): number {
-  let score = 0;
-  if (lastfm) {
-    if (lastfm.playcount > 0) score += Math.round(Math.log10(lastfm.playcount) * 10);
-    if (lastfm.listeners > 0) score += Math.round(Math.log10(lastfm.listeners) * 8);
+function calculateMusicScore(
+  lastfm: any, deezer: any,
+  ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null,
+  ytMusicVideos?: { musicVideoViews?: number; musicVideoCount?: number } | null,
+  prevMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
+): number {
+  // ── Base Score (30%): log scale 절대값 ──
+  let baseScore = 0;
+  if (lastfm?.playcount > 0) baseScore += Math.round(Math.log10(lastfm.playcount) * 10);
+  if (lastfm?.listeners > 0) baseScore += Math.round(Math.log10(lastfm.listeners) * 8);
+  if (deezer?.fans > 0) baseScore += Math.round(Math.log10(deezer.fans) * 8);
+  if (ytMusic?.topicTotalViews && ytMusic.topicTotalViews > 0) baseScore += Math.round(Math.log10(ytMusic.topicTotalViews + 1) * 10);
+  if (ytMusic?.topicSubscribers && ytMusic.topicSubscribers > 0) baseScore += Math.round(Math.log10(ytMusic.topicSubscribers + 1) * 8);
+  if (ytMusicVideos?.musicVideoViews && ytMusicVideos.musicVideoViews > 0) baseScore += Math.round(Math.log10(ytMusicVideos.musicVideoViews + 1) * 12);
+
+  // ── Delta Score (70%): 24h 변동분 기반 ──
+  let deltaScore = 0;
+  let hasPrev = false;
+
+  if (prevMetrics) {
+    // Last.fm playcount 변동
+    if (prevMetrics.lastfm_playcount && prevMetrics.lastfm_playcount > 0 && lastfm?.playcount > 0) {
+      const delta = lastfm.playcount - prevMetrics.lastfm_playcount;
+      deltaScore += Math.round((delta / 10_000) * 30);
+      hasPrev = true;
+    }
+    // Deezer fans 변동
+    if (prevMetrics.deezer_fans && prevMetrics.deezer_fans > 0 && deezer?.fans > 0) {
+      const delta = deezer.fans - prevMetrics.deezer_fans;
+      deltaScore += Math.round((delta / 1_000) * 20);
+      hasPrev = true;
+    }
+    // YT Music topic views 변동
+    if (prevMetrics.topic_views && prevMetrics.topic_views > 0 && ytMusic?.topicTotalViews) {
+      const delta = ytMusic.topicTotalViews - prevMetrics.topic_views;
+      deltaScore += Math.round((delta / 100_000) * 40);
+      hasPrev = true;
+    }
+    // MV views 변동
+    if (prevMetrics.mv_views && prevMetrics.mv_views > 0 && ytMusicVideos?.musicVideoViews) {
+      const delta = ytMusicVideos.musicVideoViews - prevMetrics.mv_views;
+      deltaScore += Math.round((delta / 100_000) * 50);
+      hasPrev = true;
+    }
   }
-  if (deezer?.fans > 0) score += Math.round(Math.log10(deezer.fans) * 8);
-  // YouTube Music Topic 채널 조회수 반영
-  if (ytMusic?.topicTotalViews && ytMusic.topicTotalViews > 0) {
-    score += Math.round(Math.log10(ytMusic.topicTotalViews + 1) * 10);
+
+  if (!hasPrev) {
+    // 이전 데이터 없으면 기존 방식 fallback
+    return baseScore;
   }
-  if (ytMusic?.topicSubscribers && ytMusic.topicSubscribers > 0) {
-    score += Math.round(Math.log10(ytMusic.topicSubscribers + 1) * 8);
-  }
-  // 공식 채널의 Music 카테고리 영상 조회수 반영
-  if (ytMusicVideos?.musicVideoViews && ytMusicVideos.musicVideoViews > 0) {
-    score += Math.round(Math.log10(ytMusicVideos.musicVideoViews + 1) * 12);
-  }
-  return score;
+
+  deltaScore = Math.max(0, deltaScore);
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
+  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} final=${finalScore}`);
+  return finalScore;
 }
 
 // ══════════════════════════════════════
@@ -525,8 +587,17 @@ async function collectForSingleArtist(
           .limit(1)
           .maybeSingle();
         const previousRecentTotalViews = prevSnapshot?.metrics?.recentTotalViews ?? 0;
+        const previousRecentTotalLikes = prevSnapshot?.metrics?.recentTotalLikes ?? 0;
+        const previousRecentTotalComments = prevSnapshot?.metrics?.recentTotalComments ?? 0;
+        const previousTotalViewCount = prevSnapshot?.metrics?.totalViewCount ?? 0;
 
-        const ytScore = calculateYouTubeScore({ ...ytData, previousRecentTotalViews });
+        const ytScore = calculateYouTubeScore({
+          ...ytData,
+          previousRecentTotalViews,
+          previousRecentTotalLikes,
+          previousRecentTotalComments,
+          previousTotalViewCount,
+        });
         await upsertV3Score(adminClient, wikiEntryId, {
           youtube_score: ytScore,
         });
@@ -535,6 +606,7 @@ async function collectForSingleArtist(
           metrics: {
             subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount,
             recentTotalViews: ytData.recentTotalViews, recentTotalComments: ytData.recentTotalComments,
+            recentTotalLikes: ytData.recentTotalLikes,
             musicVideoViews: ytData.musicVideoViews, musicVideoCount: ytData.musicVideoCount,
           },
         });
@@ -645,7 +717,33 @@ async function collectForSingleArtist(
         }
       }
       if (lastfm || deezer || ytMusicData || ytMvData) {
-        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData);
+        // 24h 전 스냅샷에서 이전 메트릭 가져오기
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        let prevMusicMetrics: any = null;
+
+        const [prevLastfmSnap, prevDeezerSnap, prevYtmSnap, prevYtSnap] = await Promise.all([
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "lastfm")
+            .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "deezer")
+            .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube_music")
+            .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube")
+            .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+        ]);
+
+        prevMusicMetrics = {
+          lastfm_playcount: prevLastfmSnap?.data?.metrics?.playcount ?? 0,
+          deezer_fans: prevDeezerSnap?.data?.metrics?.fans ?? 0,
+          topic_views: prevYtmSnap?.data?.metrics?.topicTotalViews ?? 0,
+          mv_views: prevYtSnap?.data?.metrics?.musicVideoViews ?? 0,
+        };
+
+        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics);
         await upsertV3Score(adminClient, wikiEntryId, {
           music_score: musicScore,
         });
@@ -899,13 +997,25 @@ Deno.serve(async (req) => {
           }
           const ytData = await fetchYouTubeData(artist.title, YOUTUBE_API_KEY, endpoints.youtube_channel_id, false);
           if (ytData) {
-            const ytScore = calculateYouTubeScore(ytData);
+            // 24h 전 스냅샷 조회
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const { data: prevSnap } = await adminClient.from("ktrenz_data_snapshots")
+              .select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "youtube")
+              .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle();
+
+            const ytScore = calculateYouTubeScore({
+              ...ytData,
+              previousRecentTotalViews: prevSnap?.metrics?.recentTotalViews ?? 0,
+              previousRecentTotalLikes: prevSnap?.metrics?.recentTotalLikes ?? 0,
+              previousTotalViewCount: prevSnap?.metrics?.totalViewCount ?? 0,
+            });
             await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore });
             await adminClient.from("ktrenz_data_snapshots").insert({
               wiki_entry_id: artist.id, platform: "youtube",
               metrics: {
                 subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount,
                 recentTotalViews: ytData.recentTotalViews, recentTotalComments: ytData.recentTotalComments || 0,
+                recentTotalLikes: ytData.recentTotalLikes || 0,
                 musicVideoViews: ytData.musicVideoViews || 0, musicVideoCount: ytData.musicVideoCount || 0,
               },
             });
@@ -1088,7 +1198,21 @@ Deno.serve(async (req) => {
 
           if (!lastfm && !deezer && !ytMusicData && !ytMvData) continue;
 
-          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData);
+          // 24h 전 이전 메트릭 조회
+          const oneDayAgoBatch = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const [prevLfS, prevDzS, prevYtmS2, prevYtS2] = await Promise.all([
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "lastfm").lte("collected_at", oneDayAgoBatch).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "deezer").lte("collected_at", oneDayAgoBatch).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "youtube_music").lte("collected_at", oneDayAgoBatch).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+            adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "youtube").lte("collected_at", oneDayAgoBatch).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          ]);
+          const prevMM = {
+            lastfm_playcount: prevLfS?.data?.metrics?.playcount ?? 0,
+            deezer_fans: prevDzS?.data?.metrics?.fans ?? 0,
+            topic_views: prevYtmS2?.data?.metrics?.topicTotalViews ?? 0,
+            mv_views: prevYtS2?.data?.metrics?.musicVideoViews ?? 0,
+          };
+          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM);
           await upsertV3Score(adminClient, artist.id, {
             music_score: musicScore,
           });
