@@ -284,18 +284,36 @@ Deno.serve(async (req) => {
     await Promise.all(writeOps);
     console.log(`[FES-v5.2] All writes completed`);
 
-    // ── 7) energy_rank 업데이트 ──
+    // ── 7) energy_rank 업데이트 + 미처리 아티스트 변동률 초기화 ──
     const { data: allV2Scores } = await sb
       .from("v3_scores_v2")
       .select("id, wiki_entry_id, energy_score")
       .order("energy_score", { ascending: false });
 
     if (allV2Scores) {
-      await Promise.all(
-        allV2Scores.map((s: any, i: number) =>
-          sb.from("v3_scores_v2").update({ energy_rank: i + 1 }).eq("id", s.id)
-        )
-      );
+      const processedEids = new Set(results.map(r => r.eid));
+      const rankOps: Promise<any>[] = [];
+
+      for (let i = 0; i < allV2Scores.length; i++) {
+        const s = allV2Scores[i] as any;
+        if (processedEids.has(s.wiki_entry_id)) {
+          // 처리된 아티스트: 랭크만 업데이트
+          rankOps.push(sb.from("v3_scores_v2").update({ energy_rank: i + 1 }).eq("id", s.id));
+        } else {
+          // 미처리 아티스트: 랭크 업데이트 + 잔존 변동률 초기화
+          rankOps.push(sb.from("v3_scores_v2").update({
+            energy_rank: i + 1,
+            energy_change_24h: null,
+            youtube_change_24h: null,
+            buzz_change_24h: null,
+            album_change_24h: null,
+            music_change_24h: null,
+          }).eq("id", s.id));
+        }
+      }
+
+      await Promise.all(rankOps);
+      console.log(`[FES-v5.2] Ranks updated: ${allV2Scores.length} total, ${processedEids.size} processed, ${allV2Scores.length - processedEids.size} reset`);
     }
 
     // ── 8) 마일스톤 감지 ──
