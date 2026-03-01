@@ -220,7 +220,7 @@ const UserDashboard = () => {
         <button onClick={() => navigate(-1)} className="p-1.5 rounded-full hover:bg-muted transition-colors">
           <ChevronLeft className="w-5 h-5 text-muted-foreground" />
         </button>
-        <h1 className="text-base font-bold text-foreground">📊 나의 활동</h1>
+        <h1 className="text-base font-bold text-foreground">나의 활동</h1>
         {isAdmin && !selectedUserId && (
           <span className="ml-auto text-[10px] text-muted-foreground">Admin</span>
         )}
