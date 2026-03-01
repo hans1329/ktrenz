@@ -220,9 +220,17 @@ async function fetchYouTubeTopicData(
     // 채널 통계 (1 unit)
     const chUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${topicChannelId}&key=${apiKey}`;
     const chResp = await fetch(chUrl);
+    if (!chResp.ok) {
+      const errText = await chResp.text();
+      console.error(`[DataCollector] YouTube Topic channels API failed for ${artistName}: ${chResp.status} - ${errText}`);
+      return null;
+    }
     const chData = await chResp.json();
     const ch = chData?.items?.[0];
-    if (!ch) return null;
+    if (!ch) {
+      console.warn(`[DataCollector] YouTube Topic: No channel data returned for ${artistName} (topicId: ${topicChannelId}), response: ${JSON.stringify(chData)}`);
+      return null;
+    }
 
     const topicTotalViews = parseInt(ch.statistics?.viewCount) || 0;
     const topicSubscribers = parseInt(ch.statistics?.subscriberCount) || 0;
