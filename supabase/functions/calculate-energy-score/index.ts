@@ -233,13 +233,14 @@ Deno.serve(async (req) => {
         is_baseline: isBaseline,
       }));
 
+      // 베이스라인 실행 시 변경률은 0으로 리셋 (새 기준점 = 현재 데이터)
       writeOps.push(sb.from("v3_scores_v2").update({
         energy_score: r.energyScore,
-        energy_change_24h: r.change24h,
-        youtube_change_24h: r.ytChange,
-        buzz_change_24h: r.buzzChange,
-        album_change_24h: r.albumChange,
-        music_change_24h: r.musicChange,
+        energy_change_24h: isBaseline ? 0 : r.change24h,
+        youtube_change_24h: isBaseline ? 0 : r.ytChange,
+        buzz_change_24h: isBaseline ? 0 : r.buzzChange,
+        album_change_24h: isBaseline ? 0 : r.albumChange,
+        music_change_24h: isBaseline ? 0 : r.musicChange,
         scored_at: new Date().toISOString(),
       }).eq("id", r.scoreId));
 
