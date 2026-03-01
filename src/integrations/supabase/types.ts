@@ -1955,6 +1955,33 @@ export type Database = {
           },
         ]
       }
+      ktrenz_data_run_usage: {
+        Row: {
+          created_at: string
+          id: string
+          module: string
+          run_date: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module: string
+          run_date?: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module?: string
+          run_date?: string
+          user_id?: string
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_data_snapshots: {
         Row: {
           collected_at: string

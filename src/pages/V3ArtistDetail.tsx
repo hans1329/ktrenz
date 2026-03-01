@@ -16,6 +16,7 @@ import { ArrowLeft, Home, Youtube, Eye, ThumbsUp, MessageSquare, Film, Users, Tr
 import V3EnergyChart from "@/components/v3/V3EnergyChart";
 import V3ArtistMilestones from "@/components/v3/V3ArtistMilestones";
 import AdminDataSourcePanel from "@/components/v3/AdminDataSourcePanel";
+import DataRunDialog from "@/components/v3/DataRunDialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -87,6 +88,7 @@ const V3ArtistDetail = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const { isAdmin } = useAdminAuth();
+  const [dataRunDialogOpen, setDataRunDialogOpen] = useState(false);
 
   // 크론잡 실행 상태 확인
   const { data: crawlStatus } = useQuery({
@@ -170,40 +172,57 @@ const V3ArtistDetail = () => {
   const cachedBuzz = (entry?.metadata as any)?.buzz_stats;
 
   const refreshMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (module: string = "all") => {
       if (!entry) throw new Error("No entry");
-      const [ytResult, buzzResult, musicResult] = await Promise.allSettled([
-        supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'youtube', wikiEntryId: entry.id } }),
-        supabase.functions.invoke('crawl-x-mentions', { body: { artistName: entry.title, wikiEntryId: entry.id, hashtags: [(entry.metadata as any)?.hashtag].filter(Boolean) } }),
-        supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'music', wikiEntryId: entry.id } }),
-      ]);
-      const ytRaw = ytResult.status === 'fulfilled' ? ytResult.value : null;
-      const buzzRaw = buzzResult.status === 'fulfilled' ? buzzResult.value : null;
-      const musicRaw = musicResult.status === 'fulfilled' ? musicResult.value : null;
-      const ytData = ytRaw?.data?.success ? ytRaw.data : null;
-      const buzzData = buzzRaw?.data?.success ? buzzRaw.data : null;
-      const musicData = musicRaw?.data?.success ? musicRaw.data : null;
+
+      const runYoutube = module === "all" || module === "youtube";
+      const runBuzz = module === "all" || module === "buzz";
+      const runMusic = module === "all" || module === "music";
+      const runAlbum = module === "all" || module === "album";
+
+      const promises: Promise<any>[] = [];
+      if (runYoutube) promises.push(supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'youtube', wikiEntryId: entry.id } }));
+      if (runBuzz) promises.push(supabase.functions.invoke('crawl-x-mentions', { body: { artistName: entry.title, wikiEntryId: entry.id, hashtags: [(entry.metadata as any)?.hashtag].filter(Boolean) } }));
+      if (runMusic) promises.push(supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'music', wikiEntryId: entry.id } }));
+      if (runAlbum) promises.push(supabase.functions.invoke('ktrenz-data-collector', { body: { source: 'hanteo', wikiEntryId: entry.id } }));
+
+      const results = await Promise.allSettled(promises);
+
+      // Parse results based on what was requested
+      let ytData = null, buzzData = null, musicData = null, albumData = null;
+      let idx = 0;
+      if (runYoutube) { const r = results[idx++]; ytData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
+      if (runBuzz) { const r = results[idx++]; buzzData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
+      if (runMusic) { const r = results[idx++]; musicData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
+      if (runAlbum) { const r = results[idx++]; albumData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
+
       const warnings: string[] = [];
-      if (ytRaw?.data && !ytRaw.data.success && !ytRaw.data.error?.includes('quota') && !ytRaw.data.error?.includes('No YouTube channel')) warnings.push('YouTube error');
-      if (buzzRaw?.data && !buzzRaw.data.success) warnings.push('Buzz error');
-      if (musicRaw?.data && !musicRaw.data.success) warnings.push('Music error');
+      if (runYoutube && !ytData) warnings.push('YouTube');
+      if (runBuzz && !buzzData) warnings.push('Buzz');
+      if (runMusic && !musicData) warnings.push('Music');
+      if (runAlbum && !albumData) warnings.push('Album');
+
+      // Energy score calculation only on full run
       let fesData = null;
       let latestDbFes: { energy_score?: number | null } | null = null;
-      try {
-        const { data } = await supabase.functions.invoke('calculate-energy-score', { body: { wikiEntryId: entry.id } });
-        fesData = data;
-      } catch {}
-      const { data: latestScore } = await supabase
-        .from("v3_scores_v2" as any)
-        .select("energy_score")
-        .eq("wiki_entry_id", entry.id)
-        .order("scored_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      latestDbFes = latestScore as any;
+      if (module === "all") {
+        try {
+          const { data } = await supabase.functions.invoke('calculate-energy-score', { body: { wikiEntryId: entry.id } });
+          fesData = data;
+        } catch {}
+        const { data: latestScore } = await supabase
+          .from("v3_scores_v2" as any)
+          .select("energy_score")
+          .eq("wiki_entry_id", entry.id)
+          .order("scored_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        latestDbFes = latestScore as any;
+      }
+
       const youtubeMusic = ytData?.results?.youtube_music || null;
       const ytMvInfo = ytData?.results?.youtube || null;
-      return { youtube: ytData, youtubeMusic, ytMvInfo, buzz: buzzData, music: musicData, fes: latestDbFes, fallbackFes: fesData, warnings };
+      return { youtube: ytData, youtubeMusic, ytMvInfo, buzz: buzzData, music: musicData, album: albumData, fes: latestDbFes, fallbackFes: fesData, warnings, module };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["v3-artist", slug] });
@@ -213,6 +232,7 @@ const V3ArtistDetail = () => {
       if (data.youtube?.youtubeScore != null) parts.push(`YouTube: ${data.youtube.youtubeScore}`);
       if (data.buzz?.buzzScore != null) parts.push(`Buzz: ${data.buzz.buzzScore}`);
       if (data.music?.musicScore != null) parts.push(`Music: ${data.music.musicScore}`);
+      if (data.album) parts.push('Album ✓');
       const notificationFes = data.fes?.energy_score ?? data.fallbackFes?.results?.[0]?.energyScore;
       if (notificationFes != null) parts.push(`FES: ${Math.round(notificationFes)}`);
       const desc = parts.join(' · ') || 'Using cached data';
@@ -221,9 +241,15 @@ const V3ArtistDetail = () => {
       } else {
         toast({ title: "Data Refreshed", description: desc });
       }
+      setDataRunDialogOpen(false);
     },
     onError: (err: any) => { toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
+
+  const handleRunModule = (module: string) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    refreshMutation.mutate(module);
+  };
 
   const liveData = refreshMutation.data;
   const liveYt = liveData?.youtube;
@@ -301,7 +327,7 @@ const V3ArtistDetail = () => {
         <h1 className="flex-1 text-center text-sm font-bold text-foreground truncate">{pageTitle}</h1>
         <div className="flex items-center w-24 justify-end gap-0.5">
           <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
-            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }}
+            onClick={() => setDataRunDialogOpen(true)}
             disabled={refreshMutation.isPending || isCrawling}
             title={isCrawling ? "Global data collection in progress..." : undefined}>
             <span className="text-xs font-medium">{isCrawling ? "Running..." : "Data"}</span>
@@ -481,8 +507,20 @@ const V3ArtistDetail = () => {
     );
   };
 
+  const dataRunDialog = entry?.id ? (
+    <DataRunDialog
+      open={dataRunDialogOpen}
+      onOpenChange={setDataRunDialogOpen}
+      wikiEntryId={entry.id}
+      artistTitle={entry.title}
+      onRunModule={handleRunModule}
+      isRunning={refreshMutation.isPending}
+      isCrawling={isCrawling}
+    />
+  ) : null;
+
   if (isMobile) {
-    return (<><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} /><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div></>);
+    return (<><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} /><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div>{dataRunDialog}</>);
   }
 
   return (
@@ -493,7 +531,7 @@ const V3ArtistDetail = () => {
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
           <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">{pageTitle}</h1>
           <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
-            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); refreshMutation.mutate(); }} disabled={refreshMutation.isPending || isCrawling}
+            onClick={() => setDataRunDialogOpen(true)} disabled={refreshMutation.isPending || isCrawling}
             title={isCrawling ? "Global data collection in progress..." : undefined}>
             <span className="text-xs font-medium">{isCrawling ? "Running..." : "Data"}</span>
             <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
@@ -501,6 +539,7 @@ const V3ArtistDetail = () => {
         </header>
         <main className="flex-1 overflow-auto"><PageContent /></main>
       </div>
+      {dataRunDialog}
     </>
   );
 };
