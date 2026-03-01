@@ -10,6 +10,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** deltaScore 이상치 방지: 최소 0, 최대 baseScore * 5 (최소 보장 500) */
+function clampDelta(delta: number, base: number): number {
+  const cap = Math.max(base * 5, 500);
+  return Math.max(0, Math.min(delta, cap));
+}
+
 // ── 한글↔영문 아티스트명 매핑 ──
 const ARTIST_NAME_MAP: Record<string, string[]> = {
   "방탄소년단": ["BTS", "방탄소년단"],
@@ -316,8 +322,8 @@ function calculateYouTubeScore(data: {
     deltaScore += Math.round((totalViewDelta / 1_000_000) * 50);
   }
 
-  // deltaScore는 음수 가능 — 최소 0으로 제한
-  deltaScore = Math.max(0, deltaScore);
+  // deltaScore: 최소 0, 최대 baseScore * 5 (이상치 방지)
+  deltaScore = clampDelta(deltaScore, baseScore);
 
   const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
   console.log(`[DataCollector] YouTube Score: base=${Math.round(baseScore)} delta=${deltaScore} final=${finalScore}`);
@@ -480,7 +486,9 @@ function calculateMusicScore(
     return baseScore;
   }
 
-  deltaScore = Math.max(0, deltaScore);
+  // deltaScore: 최소 0, 최대 baseScore * 5 (Deezer 오매칭 등 이상치 방지)
+  deltaScore = clampDelta(deltaScore, baseScore);
+
   const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
   console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} final=${finalScore}`);
   return finalScore;
