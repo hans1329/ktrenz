@@ -170,6 +170,20 @@ const AdminDataHealth = () => {
     onError: (err: any) => { setYtFillTier(null); toast.error('실패: ' + err.message); },
   });
 
+  const bulkCollectAll = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('data-engine', {
+        body: { module: 'all' },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('전체 데이터 수집 파이프라인이 시작되었습니다. 완료까지 수 분 소요됩니다.');
+    },
+    onError: (err: any) => toast.error('수집 실패: ' + err.message),
+  });
+
   const missing = artists.filter(a =>
     !a.youtube_channel_id || !a.youtube_topic_channel_id || !a.lastfm_artist_name || !a.deezer_artist_id
   );
@@ -203,6 +217,12 @@ const AdminDataHealth = () => {
           <p className="text-sm text-muted-foreground mt-1">엔드포인트 ID가 누락된 아티스트를 확인하고 수정합니다.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button size="sm" variant="default" className="h-9 gap-1.5"
+            disabled={bulkCollectAll.isPending}
+            onClick={() => { if (confirm('전체 데이터 수집 파이프라인(YouTube → Music → Hanteo → Buzz → Energy)을 실행하시겠습니까?')) bulkCollectAll.mutate(); }}>
+            {bulkCollectAll.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            전체 수집
+          </Button>
           {[1, 2].map(tier => {
             const tierAnyMissing = artists.filter(a => a.tier === tier && (!a.youtube_channel_id || !a.youtube_topic_channel_id)).length;
             return (
