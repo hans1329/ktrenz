@@ -376,8 +376,8 @@ Deno.serve(async (req) => {
 
     let result: any = {};
     try {
-      // pipeline(runId 존재) 또는 명시적 isBaseline에서 energy 호출 시 baseline=true
-      const shouldBaseline = mod === "energy" && (!!runId || isBaseline === true);
+      // 명시적 isBaseline 요청 시에만 baseline=true, 파이프라인 일반 수집은 false
+      const shouldBaseline = mod === "energy" && isBaseline === true;
       const waitForCompletion = !!runId; // 전체 파이프라인에서는 각 모듈 완료를 기다려 데이터 정합성 보장
 
       if (mod === "energy" && shouldBaseline) {
