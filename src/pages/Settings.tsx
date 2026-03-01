@@ -43,14 +43,40 @@ const SettingsPage = () => {
     );
   }
 
+  const compressToWebp = (file: File, maxSize = 512): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          const ratio = Math.min(maxSize / width, maxSize / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("압축 실패"))),
+          "image/webp",
+          0.8
+        );
+      };
+      img.onerror = () => reject(new Error("이미지 로드 실패"));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.id) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      const webpBlob = await compressToWebp(file);
+      const path = `${user.id}/avatar.webp`;
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, webpBlob, { upsert: true, contentType: "image/webp" });
       if (uploadErr) throw uploadErr;
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       const urlWithCache = `${publicUrl}?t=${Date.now()}`;
