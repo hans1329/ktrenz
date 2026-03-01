@@ -67,25 +67,39 @@ async function resolveToChannelId(
   // @handle 형식이면 forHandle API 사용
   if (query.startsWith("@")) {
     const handle = query.slice(1);
-    const url = `https://www.googleapis.com/youtube/v3/channels?forHandle=${encodeURIComponent(handle)}&part=id&key=${ytApiKey}`;
+    const url = `https://www.googleapis.com/youtube/v3/channels?forHandle=${encodeURIComponent(handle)}&part=id,snippet&key=${ytApiKey}`;
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
-      if (data.items?.[0]?.id) return data.items[0].id;
+      const item = data.items?.[0];
+      if (item?.id) {
+        // Topic 채널이면 스킵
+        const title = item.snippet?.title || "";
+        if (title.includes("- Topic") || title.includes("– Topic")) {
+          console.log(`  ⚠ Handle "${query}" resolved to Topic channel "${title}", skipping`);
+          return null;
+        }
+        return item.id;
+      }
     }
   }
 
   // 검색 API로 채널 찾기
-  const searchUrl = `https://www.googleapis.com/youtube/v3/search?q=${encodeURIComponent(query)}&type=channel&part=id,snippet&maxResults=3&key=${ytApiKey}`;
+  const searchUrl = `https://www.googleapis.com/youtube/v3/search?q=${encodeURIComponent(query)}&type=channel&part=id,snippet&maxResults=5&key=${ytApiKey}`;
   const searchRes = await fetch(searchUrl);
   if (!searchRes.ok) return null;
 
   const searchData = await searchRes.json();
   const items = searchData.items || [];
 
-  // 첫 번째 채널 결과 반환
-  if (items.length > 0) {
-    return items[0].id?.channelId || items[0].snippet?.channelId || null;
+  // Topic 채널을 제외한 첫 번째 채널 결과 반환
+  for (const item of items) {
+    const title = item.snippet?.title || "";
+    if (title.includes("- Topic") || title.includes("– Topic")) {
+      console.log(`  ⚠ Skipping Topic channel: "${title}"`);
+      continue;
+    }
+    return item.id?.channelId || item.snippet?.channelId || null;
   }
 
   return null;
