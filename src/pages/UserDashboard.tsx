@@ -59,10 +59,23 @@ const EVENT_LABELS: Record<string, string> = {
   agent_mode_switch: "에이전트 모드 전환",
 };
 
+const PLATFORM_COLORS: Record<string, string> = {
+  YouTube: "bg-red-500/15 text-red-400",
+  X: "bg-foreground/10 text-foreground",
+  Reddit: "bg-orange-500/15 text-orange-400",
+  TikTok: "bg-pink-500/15 text-pink-400",
+  Instagram: "bg-fuchsia-500/15 text-fuchsia-400",
+  Spotify: "bg-green-500/15 text-green-400",
+  Melon: "bg-emerald-500/15 text-emerald-400",
+  Naver: "bg-lime-500/15 text-lime-400",
+  other: "bg-muted text-muted-foreground",
+};
+
 const TimelineRow = ({ event }: { event: any }) => {
   const data = event.event_data || {};
   const label = EVENT_LABELS[event.event_type] || event.event_type;
-  const detail = data.artist_name || data.section || data.mode || data.url || "";
+  const platform = data.platform as string | undefined;
+  const detail = data.artist_name || data.section || data.mode || "";
   const time = new Date(event.created_at);
   const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`;
 
@@ -70,7 +83,12 @@ const TimelineRow = ({ event }: { event: any }) => {
     <div className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0">
       <span className="text-[10px] text-muted-foreground w-14 shrink-0">{timeStr}</span>
       <span className="text-xs font-semibold text-foreground">{label}</span>
-      {detail && <span className="text-[10px] text-muted-foreground truncate flex-1">{String(detail).substring(0, 40)}</span>}
+      {platform && (
+        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", PLATFORM_COLORS[platform] || PLATFORM_COLORS.other)}>
+          {platform}
+        </span>
+      )}
+      {detail && <span className="text-[10px] text-muted-foreground truncate flex-1">{String(detail).substring(0, 30)}</span>}
     </div>
   );
 };
@@ -178,6 +196,7 @@ const UserDashboard = () => {
 
     const artistCounts = new Map<string, number>();
     const externalCounts = new Map<string, number>();
+    const platformCounts = new Map<string, number>();
     let treemapClicks = 0, listClicks = 0, detailViews = 0, agentChats = 0, externalClicks = 0;
 
     for (const e of events) {
@@ -193,6 +212,8 @@ const UserDashboard = () => {
         case "external_link_click":
           externalClicks++;
           if (name) externalCounts.set(name, (externalCounts.get(name) || 0) + 1);
+          const plat = (e.event_data as any)?.platform || "other";
+          platformCounts.set(plat, (platformCounts.get(plat) || 0) + 1);
           break;
       }
     }
@@ -207,7 +228,11 @@ const UserDashboard = () => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    return { totalEvents: events.length, treemapClicks, listClicks, detailViews, agentChats, externalClicks, topArtists, externalArtists };
+    const platformBreakdown = Array.from(platformCounts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { totalEvents: events.length, treemapClicks, listClicks, detailViews, agentChats, externalClicks, topArtists, externalArtists, platformBreakdown };
   }, [events]);
 
   const recentEvents = (events || []).slice(0, 30);
@@ -342,13 +367,24 @@ const UserDashboard = () => {
               </Card>
 
               <Card className="p-4 bg-card border-border">
-                <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4 text-amber-400" /> 외부 링크 클릭 아티스트
+                <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4 text-amber-400" /> 외부 링크 클릭
                 </h3>
-                {stats.externalArtists.length > 0 ? (
-                  stats.externalArtists.map((a, i) => (
-                    <ArtistRow key={a.name} rank={i + 1} name={a.name} count={a.count} />
-                  ))
+                {/* Platform breakdown */}
+                {stats.platformBreakdown.length > 0 ? (
+                  <>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {stats.platformBreakdown.map(p => (
+                        <span key={p.name} className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full", PLATFORM_COLORS[p.name] || PLATFORM_COLORS.other)}>
+                          {p.name} <span className="opacity-60">{p.count}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-2">아티스트별</p>
+                    {stats.externalArtists.map((a, i) => (
+                      <ArtistRow key={a.name} rank={i + 1} name={a.name} count={a.count} />
+                    ))}
+                  </>
                 ) : (
                   <p className="text-xs text-muted-foreground py-4 text-center">데이터 없음</p>
                 )}
