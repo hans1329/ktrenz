@@ -33,6 +33,7 @@ interface ScoreData {
 
 interface SnapshotMetrics {
   youtube?: { totalViewCount?: number; subscriberCount?: number; recentTotalViews?: number };
+  youtube_music?: { topicSubscribers?: number; topicTotalViews?: number; topTracks?: Array<{ title: string; viewCount: number }> };
   buzz_multi?: { buzz_score?: number; total_mentions?: number; sentiment_score?: number; source_breakdown?: Array<{ source: string; mentions: number; weighted: number }> };
   hanteo?: Array<{ album: string; artist: string; first_week_sales: number }>;
   lastfm?: { listeners?: number; playcount?: number };
@@ -1606,6 +1607,36 @@ const AdminRankings = () => {
                   {source === 'music' && (
                     <div className="rounded-lg border border-border p-3 space-y-3">
                       <p className="text-xs font-semibold text-muted-foreground">Music 상세 데이터</p>
+                      {/* YouTube Music */}
+                      {m.youtube_music ? (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">▶ YouTube Music (Topic)</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">구독자</p>
+                              <p className="text-sm font-mono font-medium">{(m.youtube_music.topicSubscribers || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">총 조회수</p>
+                              <p className="text-sm font-mono font-medium">{(m.youtube_music.topicTotalViews || 0).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          {m.youtube_music.topTracks && m.youtube_music.topTracks.length > 0 && (
+                            <div className="mt-2 space-y-1 border-t border-border/50 pt-2">
+                              <p className="text-[10px] text-muted-foreground font-semibold">인기 트랙</p>
+                              {m.youtube_music.topTracks.slice(0, 5).map((t: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between text-xs">
+                                  <span className="truncate flex-1 min-w-0">{i + 1}. {t.title}</span>
+                                  <span className="font-mono text-muted-foreground ml-2 shrink-0">{(t.viewCount || 0).toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">YouTube Music 데이터 없음</p>
+                      )}
+                      {/* Last.fm */}
                       {m.lastfm ? (
                         <div>
                           <p className="text-[10px] font-semibold text-muted-foreground mb-1">Last.fm</p>
@@ -1623,6 +1654,7 @@ const AdminRankings = () => {
                       ) : (
                         <p className="text-xs text-muted-foreground">Last.fm 데이터 없음</p>
                       )}
+                      {/* Deezer */}
                       {m.deezer ? (
                         <div>
                           <p className="text-[10px] font-semibold text-muted-foreground mb-1">Deezer</p>
