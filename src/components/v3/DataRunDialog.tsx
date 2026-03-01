@@ -159,6 +159,11 @@ export default function DataRunDialog({
           </span>
         </div>
 
+        {/* Rainbow progress bar during collection */}
+        {isRunning && runningModule && (
+          <RainbowProgressBar />
+        )}
+
         {!user && (
           <p className="text-sm text-muted-foreground text-center py-4">로그인 후 이용할 수 있습니다.</p>
         )}
@@ -203,10 +208,6 @@ export default function DataRunDialog({
           })}
         </div>
 
-        {/* Rainbow progress bar during collection */}
-        {isRunning && runningModule && (
-          <RainbowProgressBar />
-        )}
 
         {remaining <= 0 && user && (
           <p className="text-xs text-center text-muted-foreground mt-2">
