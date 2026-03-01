@@ -1,5 +1,5 @@
 // 유저용 개별 아티스트 Energy 실시간 조회 엔드포인트
-// 24h 전 전체 호출 스냅샷을 기준으로 현재 데이터 대비 Velocity/Intensity/Energy 계산
+// 롤링 24h 윈도우: 현재 시간 -24h 이전의 가장 최근 스냅샷 대비 변동률 (거래소 스타일)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
