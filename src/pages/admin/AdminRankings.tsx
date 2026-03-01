@@ -236,9 +236,9 @@ const AdminRankings = () => {
     setRunningSource(source);
     try {
       if (source === 'all') {
-        // 전체 수집: data-engine 오케스트레이터 사용
+        // 전체 수집: data-engine 오케스트레이터 사용 (기준 스냅샷으로 마킹)
         const { data, error } = await supabase.functions.invoke('data-engine', {
-          body: { module: 'all', triggerSource: 'admin' },
+          body: { module: 'all', triggerSource: 'admin', isBaseline: true },
         });
         if (error) throw error;
         // Track pipeline run for progress polling
@@ -246,8 +246,8 @@ const AdminRankings = () => {
           setPipelineRunId(data.runId);
           setPipelineStartTime(Date.now());
         }
-        toast.success('전체 파이프라인 시작됨', {
-          description: 'YouTube → Music → Album → Buzz → Energy 순서로 실행됩니다',
+        toast.success('기준 스냅샷 수집 시작됨', {
+          description: 'YouTube → Music → Album → Buzz → Energy (기준 스냅샷) 순서로 실행됩니다',
         });
         // Don't reset runningSource here - pipeline polling will handle it
       } else {

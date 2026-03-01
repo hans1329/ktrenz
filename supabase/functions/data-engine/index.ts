@@ -82,12 +82,12 @@ async function runBuzz(supabaseUrl: string, serviceKey: string): Promise<any> {
   return { launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
 }
 
-async function runEnergy(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Running Energy module...");
+async function runEnergy(supabaseUrl: string, serviceKey: string, isBaseline: boolean = false): Promise<any> {
+  console.log(`[data-engine] Running Energy module... (isBaseline=${isBaseline})`);
   const resp = await fetch(`${supabaseUrl}/functions/v1/calculate-energy-score`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ isBaseline }),
   });
   const text = await resp.text();
   try { return JSON.parse(text); } catch { return { raw: text.slice(0, 200) }; }
@@ -142,12 +142,13 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 }
 
 // ── 통합 모듈 러너 맵 ──
+// energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
   music: runMusic,
   hanteo: runHanteo,
   buzz: runBuzz,
-  energy: runEnergy,
+  energy: (url, key) => runEnergy(url, key, false), // 개별 호출 시 기본값
   // buzz 개별 소스
   ...Object.fromEntries(
     BUZZ_SOURCES.map(mod => [mod, (url: string, key: string) => runBuzzSource(url, key, mod)])
@@ -167,11 +168,12 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json().catch(() => ({}));
-    const { module = "all", runId, chain, wikiEntryId } = body as {
+    const { module = "all", runId, chain, wikiEntryId, isBaseline } = body as {
       module?: string;
       runId?: string;
       chain?: string[];
       wikiEntryId?: string;
+      isBaseline?: boolean;
     };
 
     const currentRunId = runId || crypto.randomUUID();
@@ -280,7 +282,13 @@ Deno.serve(async (req) => {
 
     let result: any = {};
     try {
-      result = await MODULE_RUNNERS[mod](supabaseUrl, serviceKey);
+      // pipeline(runId 존재) 또는 명시적 isBaseline에서 energy 호출 시 baseline=true
+      const shouldBaseline = mod === "energy" && (!!runId || isBaseline === true);
+      if (mod === "energy" && shouldBaseline) {
+        result = await runEnergy(supabaseUrl, serviceKey, true);
+      } else {
+        result = await MODULE_RUNNERS[mod](supabaseUrl, serviceKey);
+      }
       console.log(`[data-engine] Module ${mod} completed:`, JSON.stringify(result).slice(0, 300));
     } catch (e) {
       console.error(`[data-engine] Module ${mod} failed:`, e);

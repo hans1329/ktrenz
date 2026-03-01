@@ -4703,6 +4703,7 @@ export type Database = {
           buzz_velocity: number | null
           energy_score: number
           id: string
+          is_baseline: boolean
           music_intensity: number | null
           music_score: number | null
           music_velocity: number | null
@@ -4721,6 +4722,7 @@ export type Database = {
           buzz_velocity?: number | null
           energy_score?: number
           id?: string
+          is_baseline?: boolean
           music_intensity?: number | null
           music_score?: number | null
           music_velocity?: number | null
@@ -4739,6 +4741,7 @@ export type Database = {
           buzz_velocity?: number | null
           energy_score?: number
           id?: string
+          is_baseline?: boolean
           music_intensity?: number | null
           music_score?: number | null
           music_velocity?: number | null
