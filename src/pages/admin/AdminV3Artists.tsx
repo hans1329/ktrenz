@@ -434,8 +434,11 @@ const AdminV3Artists = () => {
                   <Label className="text-[11px]">Deezer Artist ID</Label>
                   <Input value={editDeezerArtistId} onChange={(e) => setEditDeezerArtistId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
-
-
+                <div className="space-y-1 col-span-2">
+                  <Label className="text-[11px]">YT Music Topic Channel ID</Label>
+                  <Input value={editYoutubeTopicChannelId} onChange={(e) => setEditYoutubeTopicChannelId(e.target.value)} placeholder="UC... (YouTube Music Topic 채널)" className="h-8 text-xs" />
+                  <p className="text-[10px] text-muted-foreground">YouTube Music 스트리밍 데이터 수집용 Topic 채널 ID</p>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
