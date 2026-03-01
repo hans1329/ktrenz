@@ -13,7 +13,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Users, MousePointerClick, Bot, ExternalLink, Eye,
-  TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft, Home
+  TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft, Home,
+  Heart, MessageSquare, ThumbsUp, FileText, Coins
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -186,7 +187,55 @@ const UserDashboard = () => {
     staleTime: 60_000,
   });
 
-  // ── 통계 계산 ──
+  // ── 최애 아티스트 + 기여도 ──
+  const favoriteArtistName = useMemo(() => {
+    if (!events?.length) return null;
+    const counts = new Map<string, number>();
+    for (const e of events) {
+      const name = (e.event_data as any)?.artist_name;
+      if (name) counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    if (counts.size === 0) return null;
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+  }, [events]);
+
+  const { data: favoriteArtist } = useQuery({
+    queryKey: ["favorite-artist-detail", favoriteArtistName, viewUserId],
+    enabled: !!favoriteArtistName && !!viewUserId,
+    queryFn: async () => {
+      // Get wiki entry for this artist
+      const { data: entry } = await supabase
+        .from("wiki_entries")
+        .select("id, title, slug, image_url, metadata")
+        .ilike("title", favoriteArtistName!)
+        .limit(1)
+        .maybeSingle();
+      if (!entry) return null;
+
+      // Get contribution data
+      const { data: contrib } = await supabase
+        .from("wiki_entry_user_contributions" as any)
+        .select("*")
+        .eq("wiki_entry_id", entry.id)
+        .eq("user_id", viewUserId!)
+        .maybeSingle();
+
+      // Get event breakdown for this artist
+      const artistEvents = (events || []).filter((e: any) => (e.event_data as any)?.artist_name === favoriteArtistName);
+      const detailViews = artistEvents.filter((e: any) => e.event_type === "artist_detail_view").length;
+      const externalClicks = artistEvents.filter((e: any) => e.event_type === "external_link_click").length;
+      const agentChats = artistEvents.filter((e: any) => e.event_type === "agent_chat").length;
+      const treemapClicks = artistEvents.filter((e: any) => e.event_type === "treemap_click").length;
+
+      return {
+        entry,
+        contribution: contrib as any,
+        activity: { detailViews, externalClicks, agentChats, treemapClicks, total: artistEvents.length },
+      };
+    },
+    staleTime: 60_000,
+  });
+
   const stats = useMemo(() => {
     if (!events?.length) return {
       totalEvents: 0, treemapClicks: 0, listClicks: 0,
@@ -323,7 +372,90 @@ const UserDashboard = () => {
               </div>
             )}
 
-            {/* 관리자 DAU 차트 */}
+            {/* 최애 아티스트 기여도 카드 */}
+            {favoriteArtist && (
+              <Card className="mb-6 overflow-hidden border-border bg-card">
+                <div className="p-4 border-b border-border/50 bg-gradient-to-r from-primary/8 to-transparent">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-12 h-12 border-2 border-primary/20">
+                      <AvatarImage src={favoriteArtist.entry.image_url || (favoriteArtist.entry.metadata as any)?.profile_image} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold">{favoriteArtist.entry.title?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">My Favorite</p>
+                      <Link to={`/artist/${favoriteArtist.entry.slug}`} className="text-base font-black text-foreground truncate block hover:text-primary transition-colors">
+                        {favoriteArtist.entry.title}
+                      </Link>
+                    </div>
+                    <Heart className="w-5 h-5 text-primary fill-primary/30" />
+                  </div>
+                </div>
+                <div className="p-4 grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
+                      <Eye className="w-4 h-4 text-primary" />
+                    </div>
+                    <p className="text-lg font-black text-foreground">{favoriteArtist.activity.detailViews}</p>
+                    <p className="text-[10px] text-muted-foreground">프로필 조회</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
+                      <ExternalLink className="w-4 h-4 text-primary" />
+                    </div>
+                    <p className="text-lg font-black text-foreground">{favoriteArtist.activity.externalClicks}</p>
+                    <p className="text-[10px] text-muted-foreground">외부 링크</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
+                      <Bot className="w-4 h-4 text-primary" />
+                    </div>
+                    <p className="text-lg font-black text-foreground">{favoriteArtist.activity.agentChats}</p>
+                    <p className="text-[10px] text-muted-foreground">에이전트 대화</p>
+                  </div>
+                </div>
+                {favoriteArtist.contribution && (
+                  <div className="px-4 pb-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">커뮤니티 기여도</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.posts_count || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">작성한 글</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.comments_count || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">댓글</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                        <ThumbsUp className="w-3.5 h-3.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.votes_received || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">받은 추천</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                        <Coins className="w-3.5 h-3.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.contribution_score || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">기여 점수</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="px-4 pb-4">
+                  <p className="text-center text-[10px] text-muted-foreground">
+                    총 {favoriteArtist.activity.total}회 상호작용
+                  </p>
+                </div>
+              </Card>
+            )}
+
             {isAdmin && !selectedUserId && dauData && (
               <Card className="p-4 mb-4 bg-card border-border">
                 <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
