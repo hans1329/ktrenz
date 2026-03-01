@@ -144,9 +144,9 @@ const AdminDataHealth = () => {
   const bulkFillYoutube = useMutation({
     mutationFn: async ({ tier, target }: { tier: number; target: string }) => {
       setYtFillTier(tier);
-      const { data, error } = await supabase.functions.invoke('fill-youtube-channels', {
-        body: { tier, target, dryRun: false, limit: 200 },
-      });
+      const body: any = { target, dryRun: false, limit: 200 };
+      if (tier > 0) body.tier = tier;
+      const { data, error } = await supabase.functions.invoke('fill-youtube-channels', { body });
       if (error) throw error;
       return data;
     },
@@ -168,20 +168,6 @@ const AdminDataHealth = () => {
       }
     },
     onError: (err: any) => { setYtFillTier(null); toast.error('실패: ' + err.message); },
-  });
-
-  const bulkCollectAll = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('data-engine', {
-        body: { module: 'all' },
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast.success('전체 데이터 수집 파이프라인이 시작되었습니다. 완료까지 수 분 소요됩니다.');
-    },
-    onError: (err: any) => toast.error('수집 실패: ' + err.message),
   });
 
   const missing = artists.filter(a =>
@@ -218,10 +204,10 @@ const AdminDataHealth = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="default" className="h-9 gap-1.5"
-            disabled={bulkCollectAll.isPending}
-            onClick={() => { if (confirm('전체 데이터 수집 파이프라인(YouTube → Music → Hanteo → Buzz → Energy)을 실행하시겠습니까?')) bulkCollectAll.mutate(); }}>
-            {bulkCollectAll.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            전체 수집
+            disabled={bulkFillYoutube.isPending || (ytMissing === 0 && topicMissing === 0)}
+            onClick={() => { if (confirm(`YouTube 누락 전체(공식 ${ytMissing}명 + Topic ${topicMissing}명)를 OpenAI+YouTube API로 검색하시겠습니까?`)) bulkFillYoutube.mutate({ tier: 0, target: 'both' }); }}>
+            {bulkFillYoutube.isPending && ytFillTier === 0 ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
+            YT 전체 채우기 {(ytMissing + topicMissing) > 0 && `(${ytMissing + topicMissing})`}
           </Button>
           {[1, 2].map(tier => {
             const tierAnyMissing = artists.filter(a => a.tier === tier && (!a.youtube_channel_id || !a.youtube_topic_channel_id)).length;
