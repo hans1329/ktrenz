@@ -47,6 +47,20 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: dailyLoginPoints } = useQuery({
+    queryKey: ["daily-login-points-setting"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_point_settings" as any)
+        .select("points")
+        .eq("reward_type", "daily_login")
+        .eq("is_enabled", true)
+        .maybeSingle();
+      return (data as any)?.points ?? 10;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
   if (!user) return null;
 
   const tierName = kpassInfo?.name || "Free";
@@ -96,7 +110,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 </div>
               </div>
               <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                매일 로그인 +10
+                매일 로그인 +{dailyLoginPoints ?? 10}
               </span>
             </div>
           </div>
