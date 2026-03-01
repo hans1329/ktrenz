@@ -596,9 +596,35 @@ async function collectForSingleArtist(
     } catch (e) { results.music = { error: (e as any).message }; }
   }
 
-  // 3) Buzz — 개별 호출에서는 SKIP (일일 크론에서만 처리)
+  // 3) Buzz — crawl-x-mentions 직접 호출
   if (collectAll || source === "buzz") {
-    results.buzz = { skipped: true, reason: "Buzz runs only via daily cron" };
+    if (keys.firecrawl) {
+      try {
+        console.log(`[DataCollector] Buzz: Calling crawl-x-mentions for ${artistTitle}...`);
+        const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/crawl-x-mentions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({ wikiEntryId, artistName: artistTitle }),
+        });
+        const buzzResult = await buzzResp.json();
+        if (buzzResp.ok && buzzResult?.buzzScore !== undefined) {
+          await upsertV3Score(adminClient, wikiEntryId, { buzz_score: buzzResult.buzzScore });
+          results.buzz = { score: buzzResult.buzzScore, totalMentions: buzzResult.totalMentions, sentiment: buzzResult.sentiment };
+          console.log(`[DataCollector] Buzz: ${artistTitle} → score=${buzzResult.buzzScore}, mentions=${buzzResult.totalMentions}`);
+        } else {
+          results.buzz = { error: buzzResult?.error || "Unknown error from crawl-x-mentions" };
+          console.error(`[DataCollector] Buzz error for ${artistTitle}:`, buzzResult);
+        }
+      } catch (e) {
+        results.buzz = { error: (e as any).message };
+        console.error(`[DataCollector] Buzz catch error for ${artistTitle}:`, e);
+      }
+    } else {
+      results.buzz = { skipped: true, reason: "FIRECRAWL_API_KEY missing" };
+    }
   }
 
   // 4) Hanteo Album Sales (한터차트 초동)
