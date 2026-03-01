@@ -239,7 +239,7 @@ const UserDashboard = () => {
   const recentEvents = (events || []).slice(0, 30);
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background">
+    <div className="min-h-[100dvh] flex flex-col bg-background">
       <SEO title="나의 활동 – KTrenZ" description="Your activity and analytics" path="/dashboard" />
       {/* Compact header */}
       <header className="sticky top-0 z-50 flex items-center gap-3 h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
