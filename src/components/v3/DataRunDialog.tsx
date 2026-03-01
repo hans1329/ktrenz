@@ -174,7 +174,6 @@ export default function DataRunDialog({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground">{mod.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{mod.description}</p>
                 </div>
                 {locked && (
                   <Badge variant="outline" className="text-[10px] shrink-0">Pro+</Badge>
