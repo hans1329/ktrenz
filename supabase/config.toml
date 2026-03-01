@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.crawl-naver-news]
 verify_jwt = false
+
+[functions.fill-youtube-topic-ids]
+verify_jwt = false

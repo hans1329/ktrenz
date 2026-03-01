@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, ExternalLink, Wand2, Music, Youtube } from 'lucide-react';
+import { Loader2, AlertTriangle, ExternalLink, Wand2, Music, Youtube, Headphones } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ interface ArtistHealth {
   name_ko: string | null;
   image_url: string | null;
   youtube_channel_id: string | null;
+  youtube_topic_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
   wiki_title: string;
@@ -26,13 +27,14 @@ interface ArtistHealth {
 const AdminDataHealth = () => {
   const queryClient = useQueryClient();
   const [ytFillTier, setYtFillTier] = useState<number | null>(null);
+  const [topicFillTier, setTopicFillTier] = useState<number | null>(null);
 
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-data-health'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, youtube_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -43,6 +45,7 @@ const AdminDataHealth = () => {
         name_ko: row.name_ko,
         image_url: row.image_url,
         youtube_channel_id: row.youtube_channel_id,
+        youtube_topic_channel_id: row.youtube_topic_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
         wiki_title: row.wiki_entries.title,
@@ -55,7 +58,6 @@ const AdminDataHealth = () => {
     mutationFn: async () => {
       const targets = artists.filter(a => !a.lastfm_artist_name && a.display_name);
       if (targets.length === 0) throw new Error('채울 대상이 없습니다');
-      
       let filled = 0;
       for (const a of targets) {
         const { error } = await supabase
@@ -113,8 +115,32 @@ const AdminDataHealth = () => {
     },
   });
 
+  const bulkFillTopicIds = useMutation({
+    mutationFn: async (tier: number) => {
+      setTopicFillTier(tier);
+      const { data, error } = await supabase.functions.invoke('fill-youtube-topic-ids', {
+        body: { tier, dryRun: false, limit: 200 },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      setTopicFillTier(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-data-health'] });
+      toast.success(`${data.updated}/${data.totalProcessed}명의 YT Topic ID가 채워졌습니다`);
+      const notFound = data.results?.filter((r: any) => !r.topicChannelId)?.length || 0;
+      if (notFound > 0) {
+        toast.info(`${notFound}명은 Topic 채널 미발견 — 수동 입력 필요`);
+      }
+    },
+    onError: (err: any) => {
+      setTopicFillTier(null);
+      toast.error('실패: ' + err.message);
+    },
+  });
+
   const missing = artists.filter(a =>
-    !a.youtube_channel_id || !a.lastfm_artist_name || !a.deezer_artist_id
+    !a.youtube_channel_id || !a.youtube_topic_channel_id || !a.lastfm_artist_name || !a.deezer_artist_id
   );
 
   const tier1Missing = missing.filter(a => a.tier === 1);
@@ -122,6 +148,7 @@ const AdminDataHealth = () => {
 
   const total = artists.length;
   const ytMissing = artists.filter(a => !a.youtube_channel_id).length;
+  const topicMissing = artists.filter(a => !a.youtube_topic_channel_id).length;
   const lastfmMissing = artists.filter(a => !a.lastfm_artist_name).length;
   const deezerMissing = artists.filter(a => !a.deezer_artist_id).length;
 
@@ -155,7 +182,27 @@ const AdminDataHealth = () => {
                 }}
               >
                 {bulkFillYoutube.isPending && ytFillTier === tier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
-                YT Tier {tier} {tierYtMissing > 0 && `(${tierYtMissing})`}
+                YT T{tier} {tierYtMissing > 0 && `(${tierYtMissing})`}
+              </Button>
+            );
+          })}
+          {[1, 2].map(tier => {
+            const tierTopicMissing = artists.filter(a => a.tier === tier && !a.youtube_topic_channel_id).length;
+            return (
+              <Button
+                key={`topic-tier-${tier}`}
+                size="sm"
+                variant="outline"
+                className="h-9 gap-1.5"
+                disabled={bulkFillTopicIds.isPending || tierTopicMissing === 0}
+                onClick={() => {
+                  if (confirm(`Tier ${tier} YT Topic ID 누락 ${tierTopicMissing}명을 YouTube API로 검색하시겠습니까?`)) {
+                    bulkFillTopicIds.mutate(tier);
+                  }
+                }}
+              >
+                {bulkFillTopicIds.isPending && topicFillTier === tier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
+                Topic T{tier} {tierTopicMissing > 0 && `(${tierTopicMissing})`}
               </Button>
             );
           })}
@@ -190,9 +237,10 @@ const AdminDataHealth = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <SummaryCard label="전체 아티스트" value={total} />
         <SummaryCard label="YouTube ID 누락" value={ytMissing} warn={ytMissing > 0} />
+        <SummaryCard label="YT Topic ID 누락" value={topicMissing} warn={topicMissing > 0} />
         <SummaryCard label="Last.fm 누락" value={lastfmMissing} warn={lastfmMissing > 0} />
         <SummaryCard label="Deezer ID 누락" value={deezerMissing} warn={deezerMissing > 0} />
       </div>
@@ -219,6 +267,7 @@ const AdminDataHealth = () => {
                       <TableHead className="w-10">#</TableHead>
                       <TableHead>아티스트</TableHead>
                       <TableHead className="text-center">YouTube</TableHead>
+                      <TableHead className="text-center">YT Topic</TableHead>
                       <TableHead className="text-center">Last.fm</TableHead>
                       <TableHead className="text-center">Deezer</TableHead>
                       <TableHead className="text-center w-20">수정</TableHead>
@@ -242,6 +291,9 @@ const AdminDataHealth = () => {
                         </TableCell>
                         <TableCell className="text-center">
                           <StatusBadge ok={!!a.youtube_channel_id} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <StatusBadge ok={!!a.youtube_topic_channel_id} />
                         </TableCell>
                         <TableCell className="text-center">
                           <StatusBadge ok={!!a.lastfm_artist_name} />
