@@ -469,6 +469,11 @@ const V3ArtistDetail = () => {
                   onClick={() => trackExternalClick(item.url)}
                   className="flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card transition-colors">
                   <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
+                  {item.image && (
+                    <div className="w-16 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
+                      <img src={item.image} alt="" className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: item.title }} />
                     {item.description && <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5" dangerouslySetInnerHTML={{ __html: item.description }} />}
