@@ -161,7 +161,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
               {/* Bottom half */}
               <div className="px-4 py-3.5 flex items-center justify-between"
-                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(59,130,246,0.1), rgba(6,182,212,0.08))' }}>
+                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.2), rgba(6,182,212,0.18))' }}>
                 <p className="text-xs text-muted-foreground">
                   View plans & upgrade →
                 </p>
