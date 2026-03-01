@@ -80,6 +80,7 @@ const AdminRankings = () => {
   const [runningSource, setRunningSource] = useState<string | null>(null);
   const [recollecting, setRecollecting] = useState<string | null>(null);
   const [detailArtist, setDetailArtist] = useState<ArtistTier | null>(null);
+  const [dataDetailOpen, setDataDetailOpen] = useState<{ artist: ArtistTier; source: string } | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<1 | 2>(1);
@@ -625,111 +626,25 @@ const AdminRankings = () => {
     );
   };
 
-  const DetailScoreCell = ({ value, change, source, wikiEntryId, artistName, metrics }: { 
-    value?: number | null; change?: number | null; source: string; wikiEntryId: string; artistName: string; metrics?: SnapshotMetrics 
+  const DetailScoreCell = ({ value, change, source, wikiEntryId, artistName, metrics, artist }: { 
+    value?: number | null; change?: number | null; source: string; wikiEntryId: string; artistName: string; metrics?: SnapshotMetrics; artist: ArtistTier 
   }) => {
-    const key = `${wikiEntryId}-${source}`;
-    const isRunning = recollecting === key;
-
-    const getTooltipContent = () => {
-      if (!metrics) return null;
-      if (source === 'youtube' && metrics.youtube) {
-        const m = metrics.youtube;
-        return (
-          <div className="space-y-1 text-[11px]">
-            <p>구독자: <span className="font-medium">{(m.subscriberCount || 0).toLocaleString()}</span></p>
-            <p>총 조회수: <span className="font-medium">{(m.totalViewCount || 0).toLocaleString()}</span></p>
-            <p>최근 조회수: <span className="font-medium">{(m.recentTotalViews || 0).toLocaleString()}</span></p>
-          </div>
-        );
-      }
-      if (source === 'buzz' && metrics.buzz_multi) {
-        const m = metrics.buzz_multi;
-        const sourceLabels: Record<string, string> = { x_twitter: 'X', news: 'News', reddit: 'Reddit', youtube: 'YT', naver: 'Naver', tiktok: 'TikTok' };
-        return (
-          <div className="space-y-1 text-[11px]">
-            <p>총 멘션: <span className="font-medium">{(m.total_mentions || 0).toLocaleString()}</span></p>
-            <p>감성: <span className="font-medium">{m.sentiment_score || '—'}</span></p>
-            {m.source_breakdown && (
-              <div className="space-y-0.5 mt-1 border-t border-border/50 pt-1">
-                {m.source_breakdown.map((s: any) => (
-                  <div key={s.source} className="flex justify-between gap-3">
-                    <span>{sourceLabels[s.source] || s.source}</span>
-                    <span className="font-medium">{s.mentions} ({s.weighted})</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      }
-      if (source === 'hanteo' && metrics.hanteo && metrics.hanteo.length > 0) {
-        return (
-          <div className="space-y-1 text-[11px]">
-            {metrics.hanteo.slice(0, 3).map((h: any, i: number) => (
-              <div key={i} className="flex justify-between gap-3">
-                <span className="truncate max-w-[120px]">{h.album}</span>
-                <span className="font-medium whitespace-nowrap">{(h.first_week_sales || 0).toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
-        );
-      }
-      if (source === 'music') {
-        const parts: JSX.Element[] = [];
-        if (metrics.lastfm) {
-          parts.push(
-            <div key="lastfm" className="space-y-0.5">
-              <p className="font-medium text-[10px] text-muted-foreground">Last.fm</p>
-              <p>리스너: <span className="font-medium">{(metrics.lastfm.listeners || 0).toLocaleString()}</span></p>
-              <p>재생수: <span className="font-medium">{(metrics.lastfm.playcount || 0).toLocaleString()}</span></p>
-            </div>
-          );
-        }
-        if (metrics.deezer) {
-          parts.push(
-            <div key="deezer" className="space-y-0.5">
-              <p className="font-medium text-[10px] text-muted-foreground">Deezer</p>
-              <p>팬: <span className="font-medium">{(metrics.deezer.fans || 0).toLocaleString()}</span></p>
-            </div>
-          );
-        }
-        return parts.length > 0 ? <div className="space-y-2">{parts}</div> : null;
-      }
-      return null;
-    };
-
-    const tooltipContent = getTooltipContent();
     const changeEl = change != null ? (
       <span className={`text-[9px] ${change > 0 ? 'text-emerald-500' : change < -5 ? 'text-red-500' : 'text-muted-foreground'}`}>
         {change > 0 ? '+' : ''}{change.toFixed(1)}%
       </span>
     ) : null;
 
-    const cell = (
-      <button
-        className="text-right font-mono text-xs text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors w-full disabled:opacity-50"
-        disabled={isRunning}
-        onClick={() => triggerSingleCollection(source, wikiEntryId, artistName)}
-      >
-        {isRunning ? <Loader2 className="w-3 h-3 animate-spin inline" /> : (
-          <div className="flex flex-col items-end">
-            <span>{value?.toLocaleString() ?? '—'}</span>
-            {changeEl}
-          </div>
-        )}
-      </button>
-    );
-
-    if (!tooltipContent) return cell;
-
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>{cell}</TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-[200px]">
-          {tooltipContent}
-        </TooltipContent>
-      </Tooltip>
+      <button
+        className="text-right font-mono text-xs text-muted-foreground cursor-pointer w-full"
+        onClick={() => setDataDetailOpen({ artist, source })}
+      >
+        <div className="flex flex-col items-end">
+          <span>{value?.toLocaleString() ?? '—'}</span>
+          {changeEl}
+        </div>
+      </button>
     );
   };
 
@@ -768,10 +683,10 @@ const AdminRankings = () => {
               <TableCell className="text-right font-mono text-sm font-semibold">{a.scores?.total_score?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-sm">{a.scores?.energy_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-center"><ChangeIndicator value={a.scores?.energy_change_24h} artist={a} /></TableCell>
-              <TableCell><DetailScoreCell value={a.scores?.youtube_score} change={a.scores?.youtube_change_24h} source="youtube" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
-              <TableCell><DetailScoreCell value={a.scores?.buzz_score} change={a.scores?.buzz_change_24h} source="buzz" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
-              <TableCell><DetailScoreCell value={a.scores?.album_sales_score} change={a.scores?.album_change_24h} source="hanteo" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
-              <TableCell><DetailScoreCell value={a.scores?.music_score} change={a.scores?.music_change_24h} source="music" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.youtube_score} change={a.scores?.youtube_change_24h} source="youtube" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} artist={a} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.buzz_score} change={a.scores?.buzz_change_24h} source="buzz" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} artist={a} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.album_sales_score} change={a.scores?.album_change_24h} source="hanteo" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} artist={a} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.music_score} change={a.scores?.music_change_24h} source="music" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} artist={a} /></TableCell>
               <TableCell className="text-center"><DataStatus collection={a.collection} wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
               <TableCell className="text-center">
                 {a.is_manual_override ? (
@@ -1484,6 +1399,212 @@ const AdminRankings = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Data Detail Modal */}
+      <Dialog open={!!dataDetailOpen} onOpenChange={(open) => !open && setDataDetailOpen(null)}>
+        <DialogContent className="max-w-lg">
+          {dataDetailOpen && (() => {
+            const { artist, source } = dataDetailOpen;
+            const m = artist.metrics;
+            const sourceLabels: Record<string, string> = { youtube: 'YouTube', buzz: 'Buzz (소셜)', hanteo: 'Album (한터)', music: 'Music' };
+            const collectionDate = source === 'youtube' ? artist.collection.youtube
+              : source === 'buzz' ? artist.collection.buzz_multi
+              : source === 'hanteo' ? artist.collection.hanteo
+              : artist.collection.lastfm || artist.collection.deezer;
+            const key = `${artist.wiki_entry_id}-${source}`;
+            const isRunning = recollecting === key;
+
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6 rounded-md">
+                      <AvatarImage src={artist.image_url || undefined} className="object-cover" />
+                      <AvatarFallback className="rounded-md text-[9px]">{artist.title.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    {artist.title} — {sourceLabels[source] || source}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {collectionDate ? `마지막 수집: ${formatAgo(collectionDate)} (${new Date(collectionDate).toLocaleString('ko-KR')})` : '수집 기록 없음'}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  {/* Score summary */}
+                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">스코어</p>
+                      <p className="text-2xl font-bold font-mono">
+                        {source === 'youtube' ? artist.scores?.youtube_score?.toLocaleString() ?? '—'
+                          : source === 'buzz' ? artist.scores?.buzz_score?.toLocaleString() ?? '—'
+                          : source === 'hanteo' ? artist.scores?.album_sales_score?.toLocaleString() ?? '—'
+                          : artist.scores?.music_score?.toLocaleString() ?? '—'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">24h 변동</p>
+                      {(() => {
+                        const ch = source === 'youtube' ? artist.scores?.youtube_change_24h
+                          : source === 'buzz' ? artist.scores?.buzz_change_24h
+                          : source === 'hanteo' ? artist.scores?.album_change_24h
+                          : artist.scores?.music_change_24h;
+                        if (ch == null) return <p className="text-lg font-mono text-muted-foreground">—</p>;
+                        return (
+                          <p className={`text-lg font-mono font-bold ${ch > 0 ? 'text-emerald-500' : ch < -5 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            {ch > 0 ? '+' : ''}{ch.toFixed(1)}%
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* YouTube Details */}
+                  {source === 'youtube' && m.youtube && (
+                    <div className="rounded-lg border border-border p-3 space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground">YouTube 상세 데이터</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">구독자</p>
+                          <p className="text-sm font-mono font-medium">{(m.youtube.subscriberCount || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">총 조회수</p>
+                          <p className="text-sm font-mono font-medium">{(m.youtube.totalViewCount || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">최근 영상 조회수 합</p>
+                          <p className="text-sm font-mono font-medium">{(m.youtube.recentTotalViews || 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {source === 'youtube' && !m.youtube && (
+                    <p className="text-sm text-muted-foreground text-center py-4">YouTube 메트릭 데이터 없음</p>
+                  )}
+
+                  {/* Buzz Details */}
+                  {source === 'buzz' && m.buzz_multi && (
+                    <div className="rounded-lg border border-border p-3 space-y-3">
+                      <p className="text-xs font-semibold text-muted-foreground">Buzz 상세 데이터</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">총 멘션</p>
+                          <p className="text-sm font-mono font-medium">{(m.buzz_multi.total_mentions || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">감성 점수</p>
+                          <p className="text-sm font-mono font-medium">{m.buzz_multi.sentiment_score ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">버즈 스코어</p>
+                          <p className="text-sm font-mono font-medium">{m.buzz_multi.buzz_score?.toLocaleString() ?? '—'}</p>
+                        </div>
+                      </div>
+                      {m.buzz_multi.source_breakdown && m.buzz_multi.source_breakdown.length > 0 && (
+                        <div className="space-y-1.5 border-t border-border/50 pt-2">
+                          <p className="text-[10px] font-semibold text-muted-foreground">소스별 분포</p>
+                          {(() => {
+                            const labels: Record<string, string> = { x_twitter: '𝕏 Twitter', news: '📰 News', reddit: '💬 Reddit', youtube: '▶ YouTube', naver: '🇰🇷 Naver', tiktok: '🎵 TikTok' };
+                            return m.buzz_multi!.source_breakdown!.map((s: any) => (
+                              <div key={s.source} className="flex items-center justify-between text-xs">
+                                <span>{labels[s.source] || s.source}</span>
+                                <div className="flex items-center gap-3 font-mono">
+                                  <span className="text-muted-foreground">멘션 <span className="text-foreground font-medium">{s.mentions}</span></span>
+                                  <span className="text-muted-foreground">가중 <span className="text-foreground font-medium">{s.weighted}</span></span>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {source === 'buzz' && !m.buzz_multi && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Buzz 메트릭 데이터 없음</p>
+                  )}
+
+                  {/* Hanteo / Album Details */}
+                  {source === 'hanteo' && m.hanteo && m.hanteo.length > 0 && (
+                    <div className="rounded-lg border border-border p-3 space-y-2">
+                      <p className="text-xs font-semibold text-muted-foreground">한터차트 앨범 데이터</p>
+                      <div className="space-y-1.5">
+                        {m.hanteo.map((h: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-border/30 last:border-0">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">{h.album || '—'}</p>
+                              <p className="text-[10px] text-muted-foreground">{h.artist || '—'}</p>
+                            </div>
+                            <div className="text-right shrink-0 ml-3">
+                              <p className="font-mono font-medium">{(h.first_week_sales || 0).toLocaleString()}</p>
+                              <p className="text-[10px] text-muted-foreground">초동</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {source === 'hanteo' && (!m.hanteo || m.hanteo.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">한터차트 데이터 없음</p>
+                  )}
+
+                  {/* Music Details */}
+                  {source === 'music' && (
+                    <div className="rounded-lg border border-border p-3 space-y-3">
+                      <p className="text-xs font-semibold text-muted-foreground">Music 상세 데이터</p>
+                      {m.lastfm ? (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">Last.fm</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">리스너</p>
+                              <p className="text-sm font-mono font-medium">{(m.lastfm.listeners || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">재생수</p>
+                              <p className="text-sm font-mono font-medium">{(m.lastfm.playcount || 0).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Last.fm 데이터 없음</p>
+                      )}
+                      {m.deezer ? (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">Deezer</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">팬</p>
+                              <p className="text-sm font-mono font-medium">{(m.deezer.fans || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground">앨범 수</p>
+                              <p className="text-sm font-mono font-medium">{m.deezer.nb_album || '—'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Deezer 데이터 없음</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Re-collect button */}
+                  <Button
+                    className="w-full gap-2"
+                    disabled={isRunning}
+                    onClick={() => {
+                      triggerSingleCollection(source, artist.wiki_entry_id, artist.title);
+                    }}
+                  >
+                    {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    {sourceLabels[source] || source} 재수집
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
