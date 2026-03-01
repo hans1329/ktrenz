@@ -237,7 +237,7 @@ async function fetchYouTubeTopicData(
 
     // 최근 음원 (2 units: playlistItems + videos)
     const uploadsId = "UU" + topicChannelId.slice(2);
-    const plUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=10&key=${apiKey}`;
+    const plUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsId}&maxResults=20&key=${apiKey}`;
     const plResp = await fetch(plUrl);
     const plData = await plResp.json();
     const vIds = (plData?.items || []).map((v: any) => v.contentDetails?.videoId).filter(Boolean);
@@ -250,6 +250,17 @@ async function fetchYouTubeTopicData(
       for (const v of vData?.items || []) {
         topMusicTracks.push({ title: v.snippet?.title, viewCount: parseInt(v.statistics?.viewCount) || 0 });
       }
+      // 같은 제목의 중복 트랙 제거 (조회수 높은 쪽 유지)
+      const deduped = new Map<string, { title: string; viewCount: number }>();
+      for (const t of topMusicTracks) {
+        const key = (t.title || "").toLowerCase().trim();
+        const existing = deduped.get(key);
+        if (!existing || t.viewCount > existing.viewCount) {
+          deduped.set(key, t);
+        }
+      }
+      topMusicTracks.length = 0;
+      topMusicTracks.push(...Array.from(deduped.values()));
       topMusicTracks.sort((a, b) => b.viewCount - a.viewCount);
     }
 
