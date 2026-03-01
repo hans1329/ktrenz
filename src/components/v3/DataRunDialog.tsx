@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,26 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 type DataModule = "youtube" | "buzz" | "music" | "album" | "all";
+
+const RainbowProgressBar = () => {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress(prev => prev >= 95 ? 95 : prev + Math.random() * 8);
+    }, 300);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="w-full space-y-2 py-3">
+      <div className="relative h-2 rounded-full overflow-hidden bg-muted">
+        <div className="h-full rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00cc00, #0088ff, #8800ff, #ff00ff)', backgroundSize: '200% 100%', animation: 'rainbow-slide 1.5s linear infinite' }} />
+      </div>
+      <p className="text-xs text-muted-foreground text-center animate-pulse">Fetching social data...</p>
+      <style>{`@keyframes rainbow-slide { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }`}</style>
+    </div>
+  );
+};
 
 interface ModuleConfig {
   id: DataModule;
@@ -182,6 +202,11 @@ export default function DataRunDialog({
             );
           })}
         </div>
+
+        {/* Rainbow progress bar during collection */}
+        {isRunning && runningModule && (
+          <RainbowProgressBar />
+        )}
 
         {remaining <= 0 && user && (
           <p className="text-xs text-center text-muted-foreground mt-2">
