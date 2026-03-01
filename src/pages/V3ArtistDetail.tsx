@@ -191,14 +191,23 @@ const V3ArtistDetail = () => {
 
       // Parse results based on what was requested
       let ytData = null, buzzData = null, musicData = null, albumData = null;
+      let ytQuotaExceeded = false;
       let idx = 0;
-      if (runYoutube) { const r = results[idx++]; ytData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
+      if (runYoutube) {
+        const r = results[idx++];
+        const raw = r?.status === 'fulfilled' ? r.value?.data : null;
+        if (raw?.success) { ytData = raw; }
+        else if (raw?.error?.includes?.('quota') || raw?.error?.includes?.('Quota') || raw?.quotaExceeded) {
+          ytQuotaExceeded = true;
+        }
+      }
       if (runBuzz) { const r = results[idx++]; buzzData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
       if (runMusic) { const r = results[idx++]; musicData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
       if (runAlbum) { const r = results[idx++]; albumData = r?.status === 'fulfilled' && r.value?.data?.success ? r.value.data : null; }
 
       const warnings: string[] = [];
-      if (runYoutube && !ytData) warnings.push('YouTube');
+      if (ytQuotaExceeded) warnings.push('YouTube 쿼터 소진');
+      else if (runYoutube && !ytData) warnings.push('YouTube');
       if (runBuzz && !buzzData) warnings.push('Buzz');
       if (runMusic && !musicData) warnings.push('Music');
       if (runAlbum && !albumData) warnings.push('Album');
@@ -223,7 +232,7 @@ const V3ArtistDetail = () => {
 
       const youtubeMusic = ytData?.results?.youtube_music || null;
       const ytMvInfo = ytData?.results?.youtube || null;
-      return { youtube: ytData, youtubeMusic, ytMvInfo, buzz: buzzData, music: musicData, album: albumData, fes: latestDbFes, fallbackFes: fesData, warnings, module };
+      return { youtube: ytData, youtubeMusic, ytMvInfo, buzz: buzzData, music: musicData, album: albumData, fes: latestDbFes, fallbackFes: fesData, warnings, module, ytQuotaExceeded };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["v3-artist", slug] });
@@ -237,10 +246,13 @@ const V3ArtistDetail = () => {
       const notificationFes = data.fes?.energy_score ?? data.fallbackFes?.results?.[0]?.energyScore;
       if (notificationFes != null) parts.push(`FES: ${Math.round(notificationFes)}`);
       const desc = parts.join(' · ') || 'Using cached data';
+      if (data.ytQuotaExceeded) {
+        toast({ title: "YouTube 쿼터 소진", description: "일일 YouTube API 할당량이 소진되었습니다. 내일 자동으로 리셋됩니다.", variant: "destructive" });
+      }
       if (data.warnings?.length) {
-        toast({ title: "Partial Update", description: `${desc}\n⚠️ ${data.warnings.join(', ')}` });
-      } else {
-        toast({ title: "Data Refreshed", description: desc });
+        toast({ title: "일부 수집 실패", description: `${desc}\n⚠️ ${data.warnings.join(', ')}` });
+      } else if (!data.ytQuotaExceeded) {
+        toast({ title: "수집 완료", description: desc });
       }
       setDataRunDialogOpen(false);
     },
