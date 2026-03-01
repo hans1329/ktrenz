@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Home, Youtube, Eye, ThumbsUp, MessageSquare, Film, Users, TrendingUp, ExternalLink, Play, Hash, Smile, Zap, Music, Disc3, Headphones } from "lucide-react";
+import { ArrowLeft, Home, Youtube, Eye, ThumbsUp, MessageSquare, Film, Users, TrendingUp, ExternalLink, Play, Hash, Smile, Zap, Music, Disc3, Headphones, Newspaper } from "lucide-react";
 import V3EnergyChart from "@/components/v3/V3EnergyChart";
 import V3ArtistMilestones from "@/components/v3/V3ArtistMilestones";
 import AdminDataSourcePanel from "@/components/v3/AdminDataSourcePanel";
@@ -244,6 +244,27 @@ const V3ArtistDetail = () => {
   // v3_scores_v2 값이 있으면 우선 사용
   const effectiveMusicScore = v2MusicScore != null ? v2MusicScore : (musicData?.musicScore || 0);
 
+  // 네이버 뉴스 스냅샷
+  const { data: naverNews } = useQuery({
+    queryKey: ["naver-news-snapshot", entry?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_data_snapshots")
+        .select("raw_response, collected_at")
+        .eq("wiki_entry_id", entry!.id)
+        .eq("platform", "naver_news")
+        .not("raw_response", "is", null)
+        .order("collected_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data?.raw_response) return null;
+      const items = (data.raw_response as any)?.top_items || [];
+      return { items: items.slice(0, 5), collectedAt: data.collected_at };
+    },
+    enabled: !!entry?.id,
+    staleTime: 60_000,
+  });
+
   const pageTitle = entry?.title || "Artist";
 
   const MobileHeader = () => (
@@ -406,6 +427,28 @@ const V3ArtistDetail = () => {
                 <MetricCard icon={Disc3} label="EPs" value={String(musicData.musicbrainz.eps || 0)} color="bg-amber-600" />
               </div>
             )}
+          </>
+        )}
+
+        {/* Naver News */}
+        {naverNews && naverNews.items.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Newspaper className="w-3 h-3 text-emerald-500" /> Naver News</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="space-y-1.5">
+              {naverNews.items.map((item: any, idx: number) => (
+                <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackExternalClick(item.url)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card transition-colors">
+                  <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: item.title }} />
+                    {item.description && <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5" dangerouslySetInnerHTML={{ __html: item.description }} />}
+                    {item.source && <span className="text-[9px] text-muted-foreground/60">{item.source}</span>}
+                  </div>
+                  <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                </a>
+              ))}
+            </div>
           </>
         )}
 
