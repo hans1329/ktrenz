@@ -192,6 +192,7 @@ const UserDashboard = () => {
       detailViews: 0, agentChats: 0, externalClicks: 0,
       topArtists: [] as { name: string; count: number }[],
       externalArtists: [] as { name: string; count: number }[],
+      platformBreakdown: [] as { name: string; count: number }[],
     };
 
     const artistCounts = new Map<string, number>();
