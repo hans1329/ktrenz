@@ -6588,6 +6588,7 @@ export type Database = {
       }
       get_daily_post_status: { Args: { user_id_param: string }; Returns: Json }
       get_daily_vote_status: { Args: { user_id_param: string }; Returns: Json }
+      get_ktrenz_schedule: { Args: never; Returns: Json }
       get_next_nonce: { Args: { p_sender_address: string }; Returns: number }
       get_platform_activity_count: { Args: never; Returns: number }
       get_point_value: { Args: { action_type_param: string }; Returns: number }
@@ -6699,6 +6700,10 @@ export type Database = {
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
+      manage_ktrenz_schedule: {
+        Args: { p_action: string; p_hour?: number; p_minute?: number }
+        Returns: Json
+      }
       pin_post: { Args: { post_id_param: string }; Returns: boolean }
       pin_wiki_entry: {
         Args: { wiki_entry_id_param: string }
