@@ -112,9 +112,11 @@ function squarify(items: TreemapItem[], x: number, y: number, w: number, h: numb
   const tileSize = (i: TreemapItem, idx: number) => {
     const score = getCategoryScore(i, category);
     const base = Math.log1p(Math.max(score, 1));
-    if (idx === 0) return base * 3.5;
-    if (idx === 1) return base * 2.8;
-    if (idx === 2) return base * 1.6;
+    if (idx === 0) return base * 5.0;
+    if (idx === 1) return base * 3.8;
+    if (idx === 2) return base * 2.4;
+    if (idx === 3) return base * 1.8;
+    if (idx === 4) return base * 1.5;
     return base;
   };
   const totalValue = items.reduce((s, i, idx) => s + tileSize(i, idx), 0);
@@ -511,10 +513,10 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             // 박스 크기에 비례한 동적 폰트 크기 계산
             const boxArea = width * height;
             const sizeFactor = Math.sqrt(boxArea) / 10;
-            const titleSize = Math.max(6, Math.min(16, sizeFactor * 2.2));
-            const scoreSize = Math.max(7, Math.min(22, sizeFactor * 2.8));
-            const badgeFontSize = Math.max(7, Math.min(12, sizeFactor * 1.6));
-            const badgePx = Math.max(4, Math.min(12, sizeFactor * 1.5));
+            const titleSize = Math.max(8, Math.min(22, sizeFactor * 2.8));
+            const scoreSize = Math.max(9, Math.min(28, sizeFactor * 3.2));
+            const badgeFontSize = Math.max(8, Math.min(14, sizeFactor * 1.8));
+            const badgePx = Math.max(5, Math.min(14, sizeFactor * 1.6));
             const badgePy = Math.max(1, Math.min(4, sizeFactor * 0.6));
             const titleOpacity = Math.max(0.6, Math.min(1, sizeFactor / 4));
             const scoreOpacity = Math.max(0.6, Math.min(0.95, sizeFactor / 4.5));
