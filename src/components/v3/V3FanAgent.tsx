@@ -6,6 +6,7 @@ import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, Bell
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
@@ -492,10 +493,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, []);
 
+  const track = useTrackEvent();
   const handleSend = useCallback(async (overrideText?: string) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
 
+    track("agent_chat", { mode: "chat" });
     setChatInput("");
     setIsStreaming(true);
     setHasStarted(true);
