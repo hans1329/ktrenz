@@ -50,7 +50,7 @@ const MODULES: ModuleConfig[] = [
 // 티어별 일일 횟수 & 전체수집 허용
 const TIER_LIMITS: Record<number, { daily: number; allowAll: boolean; label: string }> = {
   1: { daily: 1, allowAll: false, label: "Free" },
-  2: { daily: 3, allowAll: false, label: "Basic" },
+  2: { daily: 5, allowAll: false, label: "Basic" },
   3: { daily: 10, allowAll: true, label: "Pro" },
   4: { daily: 30, allowAll: true, label: "Premium" },
   5: { daily: 999, allowAll: true, label: "VIP" },
