@@ -325,15 +325,7 @@ const V3ArtistDetail = () => {
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
         </div>
         <h1 className="flex-1 text-center text-sm font-bold text-foreground truncate">{pageTitle}</h1>
-        <div className="flex items-center w-24 justify-end gap-0.5">
-          <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
-            onClick={() => setDataRunDialogOpen(true)}
-            disabled={refreshMutation.isPending || isCrawling}
-            title={isCrawling ? "Global data collection in progress..." : undefined}>
-            <span className="text-xs font-medium">{isCrawling ? "수집중..." : "데이터 수집"}</span>
-            <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
-          </Button>
-        </div>
+        <div className="w-20" />
       </div>
     </header>
   );
@@ -380,6 +372,17 @@ const V3ArtistDetail = () => {
 
         {/* Admin: 소스별 데이터 패널 */}
         {isAdmin && entry?.id && <AdminDataSourcePanel wikiEntryId={entry.id} artistTitle={entry.title} />}
+
+        {/* 데이터 수집 버튼 */}
+        <Button
+          variant="outline"
+          className="w-full h-10 rounded-xl gap-2 border-primary/30 text-primary hover:bg-primary/10"
+          onClick={() => setDataRunDialogOpen(true)}
+          disabled={refreshMutation.isPending || isCrawling}
+        >
+          <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse")} />
+          <span className="text-sm font-semibold">{isCrawling ? "수집중..." : "데이터 수집"}</span>
+        </Button>
 
         {entry?.id && <V3EnergyChart wikiEntryId={entry.id} />}
 
@@ -530,12 +533,7 @@ const V3ArtistDetail = () => {
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
           <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">{pageTitle}</h1>
-          <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
-            onClick={() => setDataRunDialogOpen(true)} disabled={refreshMutation.isPending || isCrawling}
-            title={isCrawling ? "Global data collection in progress..." : undefined}>
-            <span className="text-xs font-medium">{isCrawling ? "수집중..." : "데이터 수집"}</span>
-            <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
-          </Button>
+          <div className="w-20" />
         </header>
         <main className="flex-1 overflow-auto"><PageContent /></main>
       </div>
