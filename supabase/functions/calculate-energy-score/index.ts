@@ -1,4 +1,4 @@
-// Fan Energy Score (FES) v5.1 — 24h 전 전체 호출 스냅샷 기준 비교
+// Fan Energy Score (FES) v5.2 — is_baseline 기준 스냅샷 비교
 // YouTube 40%, Buzz 25%, Music 20%, Album 15%
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json().catch(() => ({}));
+    const isBaseline: boolean = body.isBaseline === true;
 
     // ── 1) 1군(tier=1) 아티스트 목록 ──
     const { data: tier1Entries } = await sb
@@ -127,22 +128,38 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    console.log(`[FES-v5.1] Processing ${entryIds.length} artists...`);
+    console.log(`[FES-v5.2] Processing ${entryIds.length} artists... (isBaseline=${isBaseline})`);
 
-    // ── 2) 24h 전 "단일 스냅샷" 찾기 ──
-    // 24시간 전 시점 이전에 찍힌 가장 최근의 단일 스냅샷을 사용
+    // ── 2) 기준 스냅샷(is_baseline=true) 찾기 ──
+    // 가장 최근의 is_baseline=true 스냅샷을 비교 기준으로 사용
+    // 베이스라인이 없으면 fallback: 24h 이전 유효 스냅샷
     const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const prevSnapResults = await Promise.all(
       entryIds.map(async (eid) => {
-        // 24h 이전에 기록된 스냅샷 중, 세부 점수가 유효한(0이 아닌) 가장 최근 것을 찾음
+        // 1차: is_baseline=true인 가장 최근 스냅샷
+        const { data: baselineData } = await sb.from("v3_energy_snapshots_v2")
+          .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
+          .eq("wiki_entry_id", eid)
+          .eq("is_baseline", true)
+          .order("snapshot_at", { ascending: false })
+          .limit(1);
+
+        const baseline = baselineData?.[0];
+        if (baseline && (
+          (Number(baseline.youtube_score) || 0) > 0 || (Number(baseline.buzz_score) || 0) > 0 ||
+          (Number(baseline.album_score) || 0) > 0 || (Number(baseline.music_score) || 0) > 0
+        )) {
+          return { eid, prev: baseline };
+        }
+
+        // 2차 fallback: 24h 이전 유효 스냅샷 (베이스라인 전환 전 호환)
         const { data } = await sb.from("v3_energy_snapshots_v2")
           .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
           .eq("wiki_entry_id", eid)
           .lte("snapshot_at", cutoff24h)
           .order("snapshot_at", { ascending: false })
           .limit(5);
-        // 세부 점수가 하나라도 0이 아닌 스냅샷 찾기
         const valid = (data || []).find((s: any) =>
           (Number(s.youtube_score) || 0) > 0 || (Number(s.buzz_score) || 0) > 0 ||
           (Number(s.album_score) || 0) > 0 || (Number(s.music_score) || 0) > 0
@@ -204,12 +221,12 @@ Deno.serve(async (req) => {
           prevSnapshotAt: r.prev?.snapshot_at || null,
         });
       } catch (e) {
-        console.error(`[FES-v5.1] Error for ${rawData[i].eid}:`, e);
+        console.error(`[FES-v5.2] Error for ${rawData[i].eid}:`, e);
       }
     }
 
     // ── 6) DB writes ──
-    console.log(`[FES-v5.1] Writing ${results.length} results...`);
+    console.log(`[FES-v5.2] Writing ${results.length} results... (isBaseline=${isBaseline})`);
     const writeOps: Promise<any>[] = [];
 
     for (const r of results) {
@@ -228,6 +245,7 @@ Deno.serve(async (req) => {
         album_intensity: r.albumIntensity,
         music_velocity: r.musicVelocity,
         music_intensity: r.musicIntensity,
+        is_baseline: isBaseline,
       }));
 
       writeOps.push(sb.from("v3_scores_v2").update({
@@ -251,7 +269,7 @@ Deno.serve(async (req) => {
     }
 
     await Promise.all(writeOps);
-    console.log(`[FES-v5.1] All writes completed`);
+    console.log(`[FES-v5.2] All writes completed`);
 
     // ── 7) energy_rank 업데이트 ──
     const { data: allV2Scores } = await sb
@@ -301,12 +319,13 @@ Deno.serve(async (req) => {
         });
       }
     } catch (e) {
-      console.error("[FES-v5.1] Milestone error:", e);
+      console.error("[FES-v5.2] Milestone error:", e);
     }
 
     return new Response(JSON.stringify({
       success: true,
       processed: results.length,
+      isBaseline,
       sample: results.slice(0, 3).map(r => ({
         eid: r.eid, energy: r.energyScore, change: r.change24h,
         yt: r.ytChange, buzz: r.buzzChange, album: r.albumChange, music: r.musicChange,
@@ -315,7 +334,7 @@ Deno.serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
-    console.error("[FES-v5.1] Fatal:", err);
+    console.error("[FES-v5.2] Fatal:", err);
     return new Response(JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
