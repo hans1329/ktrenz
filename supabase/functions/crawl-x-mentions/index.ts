@@ -245,18 +245,17 @@ Deno.serve(async (req) => {
         .maybeSingle() as { data: any };
 
       const ytComments = ytSnap?.metrics?.recentTotalComments || 0;
-      if (ytComments > 0) {
-        // 댓글 수를 가상 소스로 추가 (100개 단위로 정규화, 가중치 1.5)
-        const normalizedComments = Math.min(100, Math.round(ytComments / 100));
-        sourceResults.push({
-          name: "yt_comments",
-          weight: 1.5,
-          count: normalizedComments,
-          totalFetched: ytComments,
-          texts: [],
-          topMentions: [],
-        });
-      }
+      // 댓글 수를 가상 소스로 추가 (100개 단위로 정규화, 가중치 1.5)
+      // 0이어도 항상 소스 분포표에 포함
+      const normalizedComments = ytComments > 0 ? Math.min(100, Math.round(ytComments / 100)) : 0;
+      sourceResults.push({
+        name: "yt_comments",
+        weight: 1.5,
+        count: normalizedComments,
+        totalFetched: ytComments,
+        texts: [],
+        topMentions: [],
+      });
 
       // Naver News 가상 소스 추가 (crawl-naver-news에서 별도 수집된 데이터)
       const { data: naverSnap } = await sb
