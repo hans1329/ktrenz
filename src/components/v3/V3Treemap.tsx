@@ -505,6 +505,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const catScore = getCategoryScore(rect.item, category);
             const surging = isSurging(catChange);
 
+            // 박스 크기에 비례한 동적 폰트 크기 계산
+            const boxArea = width * height;
+            const sizeFactor = Math.sqrt(boxArea) / 10;
+            const titleSize = Math.max(6, Math.min(16, sizeFactor * 2.2));
+            const scoreSize = Math.max(7, Math.min(22, sizeFactor * 2.8));
+            const badgeFontSize = Math.max(7, Math.min(12, sizeFactor * 1.6));
+            const badgePx = Math.max(4, Math.min(12, sizeFactor * 1.5));
+            const badgePy = Math.max(1, Math.min(4, sizeFactor * 0.6));
+            const titleOpacity = Math.max(0.6, Math.min(1, sizeFactor / 4));
+            const scoreOpacity = Math.max(0.6, Math.min(0.95, sizeFactor / 4.5));
+
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
@@ -540,27 +551,19 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   </span>
                 )}
 
-                {isLarge ? (
-                  <div className="relative z-10 flex flex-col items-center gap-0.5 w-full overflow-hidden px-1">
-                    <span className="text-xs md:text-base font-black text-white truncate w-full text-center leading-tight drop-shadow-lg">{rect.item.title}</span>
-                    <span className="text-base md:text-xl font-black text-white/95 drop-shadow-lg">{Math.round(catScore)}</span>
-                    <span className={cn("text-[9px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full backdrop-blur-sm",
+                <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
+                  <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
+                    style={{ fontSize: `${titleSize}px`, opacity: titleOpacity }}>{rect.item.title}</span>
+                  <span className="font-black text-white drop-shadow-lg"
+                    style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity }}>{Math.round(catScore)}</span>
+                  {isLarge && (
+                    <span className={cn("font-bold rounded-full backdrop-blur-sm",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
-                    )}>
+                    )} style={{ fontSize: `${badgeFontSize}px`, padding: `${badgePy}px ${badgePx}px` }}>
                       {surging ? "🔥 " : ""}{catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
                     </span>
-                  </div>
-                ) : isMedium ? (
-                  <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5">
-                    <span className="text-[10px] font-bold text-white truncate w-full text-center leading-tight drop-shadow-md">{rect.item.title}</span>
-                    <span className="text-[11px] font-black text-white/90 drop-shadow-md">{Math.round(catScore)}</span>
-                  </div>
-                ) : (
-                  <div className="relative z-10 flex flex-col items-center overflow-hidden w-full px-0.5">
-                    <span className="text-[7px] font-bold text-white/80 truncate w-full text-center leading-tight drop-shadow-md">{rect.item.title}</span>
-                    <span className="text-[8px] font-black text-white/70 drop-shadow-md">{Math.round(catScore)}</span>
-                  </div>
-                )}
+                  )}
+                </div>
               </button>
             );
           })}
