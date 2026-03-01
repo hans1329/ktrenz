@@ -180,12 +180,16 @@ const SettingsPage = () => {
               <div className="space-y-3">
                 <div>
                   <label className="text-[11px] font-medium text-muted-foreground mb-1 block">닉네임</label>
-                  <Input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="username"
-                    className="h-9 text-sm"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                    <Input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+                      placeholder="username"
+                      className="h-9 text-sm pl-7"
+                      maxLength={20}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="text-[11px] font-medium text-muted-foreground mb-1 block">표시 이름</label>
