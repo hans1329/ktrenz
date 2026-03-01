@@ -407,41 +407,25 @@ const UserDashboard = () => {
                     </div>
                   ))}
                 </div>
-                {favoriteArtist.contribution && (
-                  <div className="px-4 pb-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">커뮤니티 기여도</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                <div className="px-4 pb-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">커뮤니티 기여도</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { icon: FileText, value: favoriteArtist.contribution?.posts_count || 0, label: "작성한 글" },
+                      { icon: MessageSquare, value: favoriteArtist.contribution?.comments_count || 0, label: "댓글" },
+                      { icon: ThumbsUp, value: favoriteArtist.contribution?.votes_received || 0, label: "받은 추천" },
+                      { icon: Coins, value: favoriteArtist.contribution?.contribution_score || 0, label: "기여 점수" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                        <item.icon className="w-3.5 h-3.5 text-muted-foreground" />
                         <div>
-                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.posts_count || 0}</p>
-                          <p className="text-[10px] text-muted-foreground">작성한 글</p>
+                          <p className="text-sm font-bold text-foreground">{item.value}</p>
+                          <p className="text-[10px] text-muted-foreground">{item.label}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.comments_count || 0}</p>
-                          <p className="text-[10px] text-muted-foreground">댓글</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                        <ThumbsUp className="w-3.5 h-3.5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.votes_received || 0}</p>
-                          <p className="text-[10px] text-muted-foreground">받은 추천</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                        <Coins className="w-3.5 h-3.5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-bold text-foreground">{favoriteArtist.contribution.contribution_score || 0}</p>
-                          <p className="text-[10px] text-muted-foreground">기여 점수</p>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                )}
+                </div>
                 <div className="px-4 pb-4">
                   <p className="text-center text-[10px] text-muted-foreground">
                     총 {favoriteArtist.activity.total}회 상호작용
