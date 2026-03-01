@@ -257,7 +257,8 @@ const UserDashboard = () => {
         activity: { detailViews, externalClicks, agentChats, treemapClicks, total: artistEvents.length },
       };
     },
-    staleTime: 60_000,
+    staleTime: 5_000,
+    refetchOnMount: "always",
   });
 
   const stats = useMemo(() => {

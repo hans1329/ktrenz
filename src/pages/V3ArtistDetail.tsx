@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import SEO from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,7 @@ const V3ArtistDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const { isAdmin } = useAdminAuth();
 
@@ -142,17 +144,21 @@ const V3ArtistDetail = () => {
       track("external_link_click", { artist_slug: slug, artist_name: entry.title, url, platform });
 
       // 기여도 기록 (로그인 유저만)
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && entry?.id) {
+      if (user?.id && entry?.id) {
         const dbPlatform: Record<string, string> = {
           YouTube: "youtube", X: "twitter", Reddit: "reddit", TikTok: "tiktok",
           Instagram: "instagram", Spotify: "spotify", Melon: "melon", Naver: "naver",
         };
-        supabase.rpc("ktrenz_record_contribution" as any, {
+
+        const { error } = await supabase.rpc("ktrenz_record_contribution" as any, {
           _user_id: user.id,
           _wiki_entry_id: entry.id,
           _platform: dbPlatform[platform] || "other",
         });
+
+        if (error) {
+          console.error("Failed to record fan contribution:", error);
+        }
       }
     }
   };
