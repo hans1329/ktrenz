@@ -21,6 +21,7 @@ interface V3Artist {
   is_manual_override: boolean;
   updated_at: string;
   youtube_channel_id: string | null;
+  youtube_topic_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
   // from wiki_entries join
@@ -44,6 +45,7 @@ const AdminV3Artists = () => {
   const [editYoutubeChannelId, setEditYoutubeChannelId] = useState('');
   const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
   const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
+  const [editYoutubeTopicChannelId, setEditYoutubeTopicChannelId] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,7 +54,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -65,6 +67,7 @@ const AdminV3Artists = () => {
         is_manual_override: row.is_manual_override,
         updated_at: row.updated_at,
         youtube_channel_id: row.youtube_channel_id,
+        youtube_topic_channel_id: row.youtube_topic_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
         wiki_title: row.wiki_entries.title,
@@ -109,7 +112,7 @@ const AdminV3Artists = () => {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
+    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
       let ytChannelId = payload.youtube_channel_id;
       if (ytChannelId && !ytChannelId.startsWith('UC')) {
         ytChannelId = await resolveYoutubeChannelId(ytChannelId);
@@ -121,6 +124,7 @@ const AdminV3Artists = () => {
           name_ko: payload.name_ko || null,
           image_url: payload.image_url || null,
           youtube_channel_id: ytChannelId || null,
+          youtube_topic_channel_id: payload.youtube_topic_channel_id || null,
           lastfm_artist_name: payload.lastfm_artist_name || null,
           deezer_artist_id: payload.deezer_artist_id || null,
         } as any)
@@ -186,6 +190,7 @@ const AdminV3Artists = () => {
     setEditNameKo(artist.name_ko || '');
     setEditImageUrl(artist.image_url || artist.wiki_image || '');
     setEditYoutubeChannelId(artist.youtube_channel_id || '');
+    setEditYoutubeTopicChannelId(artist.youtube_topic_channel_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
     setEditDeezerArtistId(artist.deezer_artist_id || '');
   };
@@ -445,6 +450,7 @@ const AdminV3Artists = () => {
                     name_ko: editNameKo,
                     image_url: editImageUrl,
                     youtube_channel_id: editYoutubeChannelId,
+                    youtube_topic_channel_id: editYoutubeTopicChannelId,
                     lastfm_artist_name: editLastfmArtistName,
                     deezer_artist_id: editDeezerArtistId,
                   });
