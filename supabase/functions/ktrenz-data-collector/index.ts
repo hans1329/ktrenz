@@ -977,15 +977,35 @@ Deno.serve(async (req) => {
           const endpoints = tier1Map.get(artist.id);
           const lastfm = LASTFM_API_KEY ? await fetchLastfmArtist(artist.title, LASTFM_API_KEY, endpoints?.lastfm_artist_name) : null;
           const deezer = await fetchDeezerArtist(artist.title, endpoints?.deezer_artist_id);
-          if (!lastfm && !deezer) continue;
 
-          const musicScore = calculateMusicScore(lastfm, deezer);
+          // DB에서 YouTube Music Topic 스냅샷 조회
+          let ytMusicData: { topicTotalViews?: number; topicSubscribers?: number } | null = null;
+          const { data: ytmSnap } = await adminClient.from("ktrenz_data_snapshots")
+            .select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "youtube_music")
+            .order("collected_at", { ascending: false }).limit(1).maybeSingle();
+          if (ytmSnap?.metrics) {
+            ytMusicData = { topicTotalViews: (ytmSnap.metrics as any).topicTotalViews || 0, topicSubscribers: (ytmSnap.metrics as any).topicSubscribers || 0 };
+          }
+
+          // DB에서 YouTube MV 스냅샷 조회
+          let ytMvData: { musicVideoViews?: number; musicVideoCount?: number } | null = null;
+          const { data: ytSnap } = await adminClient.from("ktrenz_data_snapshots")
+            .select("metrics").eq("wiki_entry_id", artist.id).eq("platform", "youtube")
+            .order("collected_at", { ascending: false }).limit(1).maybeSingle();
+          if (ytSnap?.metrics) {
+            ytMvData = { musicVideoViews: (ytSnap.metrics as any).musicVideoViews || 0, musicVideoCount: (ytSnap.metrics as any).musicVideoCount || 0 };
+          }
+
+          if (!lastfm && !deezer && !ytMusicData && !ytMvData) continue;
+
+          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData);
           await upsertV3Score(adminClient, artist.id, {
             music_score: musicScore,
           });
           if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
           if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
           musicUpdated++;
+          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}`);
         } catch (e) { musicErrors++; }
       }
       await adminClient.from("ktrenz_collection_log").insert({ platform: "music", status: musicUpdated > 0 ? "success" : "partial", records_collected: musicUpdated });
