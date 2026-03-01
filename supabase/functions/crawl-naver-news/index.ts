@@ -62,6 +62,27 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/gi, " ").trim();
 }
 
+async function fetchOgImage(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenZBot/1.0)" },
+      signal: controller.signal,
+      redirect: "follow",
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // og:image 메타태그 추출
+    const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    return match?.[1] || null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -114,11 +135,18 @@ Deno.serve(async (req) => {
     const weight = 1.3; // naver 가중치
     const weightedCount = Math.round(mentionCount * weight);
 
-    const topMentions = filtered.slice(0, 5).map((item) => ({
+    const top5 = filtered.slice(0, 5);
+    // 상위 5개 기사의 og:image 병렬 추출
+    const ogImages = await Promise.all(
+      top5.map((item) => fetchOgImage(item.originallink || item.link))
+    );
+
+    const topMentions = top5.map((item, i) => ({
       title: stripHtml(item.title),
       url: item.originallink || item.link,
       description: stripHtml(item.description),
       source: "naver_news",
+      image: ogImages[i] || null,
     }));
 
     console.log(
