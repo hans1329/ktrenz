@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.fill-deezer-ids]
 verify_jwt = false
+
+[functions.crawl-naver-news]
+verify_jwt = false

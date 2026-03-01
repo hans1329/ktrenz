@@ -23,16 +23,16 @@ const SOURCE_CONFIG = [
   { key: "hanteo", label: "Hanteo", icon: Disc3, color: "text-amber-500", platform: "hanteo" },
   { key: "buzz_x", label: "X (Twitter)", icon: Twitter, color: "text-blue-400", platform: "buzz_multi", sourceFilter: "x_twitter" },
   { key: "buzz_reddit", label: "Reddit", icon: MessageCircle, color: "text-orange-500", platform: "buzz_multi", sourceFilter: "reddit" },
-  { key: "buzz_naver", label: "Naver", icon: Globe, color: "text-green-500", platform: "buzz_multi", sourceFilter: "naver" },
+  { key: "buzz_naver", label: "Naver Buzz", icon: Globe, color: "text-green-500", platform: "buzz_multi", sourceFilter: "naver" },
   { key: "buzz_tiktok", label: "TikTok", icon: Hash, color: "text-pink-400", platform: "buzz_multi", sourceFilter: "tiktok" },
   { key: "buzz_news", label: "News", icon: Newspaper, color: "text-sky-500", platform: "buzz_multi", sourceFilter: "news" },
-  { key: "buzz_youtube", label: "YT Buzz", icon: Youtube, color: "text-red-300", platform: "buzz_multi", sourceFilter: "youtube" },
+  { key: "naver_news", label: "Naver News", icon: Newspaper, color: "text-green-600", platform: "naver_news" },
 ] as const;
 
 // 수집 모듈 매핑 (data-engine에 전달할 모듈명)
 const COLLECT_MODULE_MAP: Record<string, string> = {
   youtube: "youtube",
-  youtube_music: "youtube", // YouTube 수집 시 같이 수집됨
+  youtube_music: "youtube",
   lastfm: "music",
   deezer: "music",
   hanteo: "hanteo",
@@ -41,7 +41,7 @@ const COLLECT_MODULE_MAP: Record<string, string> = {
   buzz_naver: "buzz_naver",
   buzz_tiktok: "buzz_tiktok",
   buzz_news: "buzz_news",
-  buzz_youtube: "buzz_youtube",
+  naver_news: "naver_news",
 };
 
 const formatValue = (v: any): string => {
@@ -73,7 +73,7 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   const { data: snapshots, isLoading, refetch } = useQuery({
     queryKey: ["admin-source-snapshots", wikiEntryId],
     queryFn: async () => {
-      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "hanteo", "buzz_multi"];
+      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "hanteo", "buzz_multi", "naver_news"];
       const results: Record<string, any> = {};
 
       const promises = platforms.map(async (platform) => {
