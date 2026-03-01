@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Loader2, Pencil, Search, Plus, Trash2, Upload } from 'lucide-react';
+import { Loader2, Pencil, Search, Plus, Trash2, Upload, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface V3Artist {
@@ -164,6 +164,22 @@ const AdminV3Artists = () => {
     onError: (err: any) => toast.error('제거 실패: ' + err.message),
   });
 
+  const toggleTierMutation = useMutation({
+    mutationFn: async ({ id, newTier }: { id: string; newTier: number }) => {
+      const { error } = await supabase
+        .from('v3_artist_tiers')
+        .update({ tier: newTier, is_manual_override: true } as any)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-v3-artists'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      toast.success('티어가 변경되었습니다');
+    },
+    onError: (err: any) => toast.error('변경 실패: ' + err.message),
+  });
+
   const openEdit = (artist: V3Artist) => {
     setEditArtist(artist);
     setEditDisplayName(artist.display_name || artist.wiki_title || '');
@@ -257,6 +273,16 @@ const AdminV3Artists = () => {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] gap-0.5 px-1.5"
+                          disabled={toggleTierMutation.isPending}
+                          onClick={() => toggleTierMutation.mutate({ id: a.id, newTier: a.tier === 1 ? 2 : 1 })}
+                        >
+                          <ArrowUpDown className="w-3 h-3" />
+                          T{a.tier === 1 ? 2 : 1}
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(a)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
