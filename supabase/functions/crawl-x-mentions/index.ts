@@ -269,16 +269,15 @@ Deno.serve(async (req) => {
         .maybeSingle() as { data: any };
 
       const naverArticles = naverSnap?.metrics?.mention_count || naverSnap?.metrics?.article_count_24h || naverSnap?.metrics?.article_count || 0;
-      if (naverArticles > 0) {
-        sourceResults.push({
-          name: "naver",
-          weight: 1.3,
-          count: naverArticles,
-          totalFetched: naverArticles,
-          texts: [],
-          topMentions: [],
-        });
-      }
+      // 네이버 데이터가 0이어도 항상 소스에 포함 (소스 분포표에 표시)
+      sourceResults.push({
+        name: "naver",
+        weight: 1.3,
+        count: naverArticles,
+        totalFetched: naverArticles,
+        texts: [],
+        topMentions: [],
+      });
     }
 
     // 전체 텍스트 감성 분석
