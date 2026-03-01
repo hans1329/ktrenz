@@ -382,6 +382,55 @@ const AdminRankings = () => {
     onError: (err: any) => toast.error('해제 실패: ' + err.message),
   });
 
+  const modulePlatforms: Record<string, string[]> = {
+    youtube: ['youtube'],
+    music: ['lastfm', 'deezer', 'youtube_music'],
+    buzz: ['buzz_multi', 'naver_news'],
+    hanteo: ['hanteo'],
+  };
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const getLatestSnapshotTime = async (platforms: string[], wikiEntryId?: string) => {
+    let query = supabase
+      .from('ktrenz_data_snapshots')
+      .select('collected_at')
+      .in('platform', platforms)
+      .order('collected_at', { ascending: false })
+      .limit(1);
+
+    if (wikiEntryId) {
+      query = query.eq('wiki_entry_id', wikiEntryId);
+    } else {
+      query = query.not('wiki_entry_id', 'is', null);
+    }
+
+    const { data } = await query.maybeSingle();
+    return data?.collected_at ?? '1970-01-01T00:00:00Z';
+  };
+
+  const waitForSnapshotUpdate = async ({
+    platforms,
+    beforeTime,
+    wikiEntryId,
+    timeoutMs = 30000,
+    intervalMs = 2000,
+  }: {
+    platforms: string[];
+    beforeTime: string;
+    wikiEntryId?: string;
+    timeoutMs?: number;
+    intervalMs?: number;
+  }) => {
+    const pollStart = Date.now();
+    while (Date.now() - pollStart < timeoutMs) {
+      await sleep(intervalMs);
+      const latest = await getLatestSnapshotTime(platforms, wikiEntryId);
+      if (latest > beforeTime) return true;
+    }
+    return false;
+  };
+
   const triggerCollection = async (source: string) => {
     setRunningSource(source);
     try {
@@ -401,17 +450,34 @@ const AdminRankings = () => {
         });
         // Don't reset runningSource here - pipeline polling will handle it
       } else {
-        // 개별 모듈: data-engine 개별 모듈 호출
+        // 개별 모듈: data-engine은 fire-and-forget이므로 실제 스냅샷 반영까지 대기
         const moduleMap: Record<string, string> = { album: 'hanteo' };
         const mod = moduleMap[source] || source;
-        const { data, error } = await supabase.functions.invoke('data-engine', {
+        const watchPlatforms = modulePlatforms[mod] || [mod];
+        const beforeTime = await getLatestSnapshotTime(watchPlatforms);
+
+        const { error } = await supabase.functions.invoke('data-engine', {
           body: { module: mod },
         });
         if (error) throw error;
-        toast.success(`${source} 수집 완료`, { description: JSON.stringify(data?.result).slice(0, 100) });
+
+        const reflected = await waitForSnapshotUpdate({
+          platforms: watchPlatforms,
+          beforeTime,
+          timeoutMs: 35000,
+          intervalMs: 2000,
+        });
+
+        await queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+        await queryClient.refetchQueries({ queryKey: ['admin-artist-tiers'], type: 'active' });
+
+        if (reflected) {
+          toast.success(`${source} 수집 반영 완료`);
+        } else {
+          toast.success(`${source} 수집 실행됨`, { description: '백그라운드 처리 중입니다. 잠시 후 리스트에 반영됩니다.' });
+        }
         setRunningSource(null);
       }
-      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
     } catch (err: any) {
       toast.error(`${source} 수집 실패: ${err.message}`);
       setRunningSource(null);
@@ -573,47 +639,39 @@ const AdminRankings = () => {
     const key = `${wikiEntryId}-${source}`;
     setRecollecting(key);
     try {
-      // 수집 전 최신 스냅샷 시각 기록
-      const platformMap: Record<string, string> = { youtube: 'youtube', buzz: 'buzz_multi', hanteo: 'hanteo', music: 'lastfm' };
-      const platform = platformMap[source] || source;
-      const { data: beforeSnap } = await supabase
-        .from('ktrenz_data_snapshots')
-        .select('collected_at')
-        .eq('wiki_entry_id', wikiEntryId)
-        .eq('platform', platform)
-        .order('collected_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const beforeTime = beforeSnap?.collected_at || '1970-01-01T00:00:00Z';
+      // 수집 전 최신 스냅샷 시각 기록 (소스별 관련 플랫폼 전체)
+      const sourcePlatformMap: Record<string, string[]> = {
+        youtube: ['youtube'],
+        buzz: ['buzz_multi', 'naver_news'],
+        hanteo: ['hanteo'],
+        music: ['lastfm', 'deezer', 'youtube_music'],
+      };
+      const watchPlatforms = sourcePlatformMap[source] || [source];
+      const beforeTime = await getLatestSnapshotTime(watchPlatforms, wikiEntryId);
 
-      const { data, error } = await supabase.functions.invoke('ktrenz-data-collector', {
+      const { error } = await supabase.functions.invoke('ktrenz-data-collector', {
         body: { source, wikiEntryId },
       });
       if (error) throw error;
 
-      // 새 스냅샷이 생길 때까지 폴링 (최대 30초)
-      const pollStart = Date.now();
-      const MAX_POLL_MS = 30000;
-      const POLL_INTERVAL = 2000;
-      let found = false;
-      while (Date.now() - pollStart < MAX_POLL_MS) {
-        await new Promise(r => setTimeout(r, POLL_INTERVAL));
-        const { data: afterSnap } = await supabase
-          .from('ktrenz_data_snapshots')
-          .select('collected_at')
-          .eq('wiki_entry_id', wikiEntryId)
-          .eq('platform', platform)
-          .order('collected_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (afterSnap?.collected_at && afterSnap.collected_at > beforeTime) {
-          found = true;
-          break;
-        }
-      }
+      const reflected = await waitForSnapshotUpdate({
+        platforms: watchPlatforms,
+        beforeTime,
+        wikiEntryId,
+        timeoutMs: 35000,
+        intervalMs: 2000,
+      });
 
-      toast.success(`${artistName} ${sourceLabel} 수집 완료`);
-      queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-artist-tiers'] });
+      await queryClient.refetchQueries({ queryKey: ['admin-artist-tiers'], type: 'active' });
+
+      if (reflected) {
+        toast.success(`${artistName} ${sourceLabel} 반영 완료`);
+      } else {
+        toast.success(`${artistName} ${sourceLabel} 수집 실행됨`, {
+          description: '백그라운드 처리 중입니다. 잠시 후 리스트에 반영됩니다.',
+        });
+      }
     } catch (err: any) {
       toast.error(`수집 실패: ${err.message}`);
     } finally {
