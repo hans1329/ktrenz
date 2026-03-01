@@ -87,13 +87,18 @@ export function calculateArtistEnergy(
 
   const categoryEnergies: { weight: number; energy: number }[] = [];
   const categories = [
-    { w: WEIGHTS.youtube, vel: ytVelocity, int: ytIntensity },
-    { w: WEIGHTS.buzz, vel: buzzVelocity, int: buzzIntensity },
-    { w: WEIGHTS.music, vel: musicVelocity, int: musicIntensity },
-    { w: WEIGHTS.album, vel: albumVelocity, int: albumIntensity },
+    { w: WEIGHTS.youtube, vel: ytVelocity, int: ytIntensity, raw: current.yt },
+    { w: WEIGHTS.buzz, vel: buzzVelocity, int: buzzIntensity, raw: current.buzz },
+    { w: WEIGHTS.music, vel: musicVelocity, int: musicIntensity, raw: current.music },
+    { w: WEIGHTS.album, vel: albumVelocity, int: albumIntensity, raw: current.album },
   ];
 
   for (const cat of categories) {
+    // 원점수 0인 카테고리: 가중치 유지 + 에너지 0 → 전체 점수를 끌어내림
+    if (cat.raw <= 0) {
+      categoryEnergies.push({ weight: cat.w, energy: 0 });
+      continue;
+    }
     const catEnergy = cat.vel != null
       ? cat.vel * VELOCITY_WEIGHT + cat.int * INTENSITY_WEIGHT
       : cat.int; // Velocity 없으면 Intensity만
@@ -103,6 +108,7 @@ export function calculateArtistEnergy(
   const totalCatWeight = categoryEnergies.reduce((s, c) => s + c.weight, 0);
   const rawEnergy = categoryEnergies.reduce((s, c) => s + c.energy * (c.weight / totalCatWeight), 0);
   const energyScore = clamp(Math.round(rawEnergy), 10, MAX_SCORE);
+
 
   return {
     energyScore,
@@ -284,7 +290,7 @@ Deno.serve(async (req) => {
     await Promise.all(writeOps);
     console.log(`[FES-v5.2] All writes completed`);
 
-    // ── 7) energy_rank 업데이트 + 미처리 아티스트 변동률 초기화 ──
+    // ── 7) energy_rank 업데이트 + 미처리 아티스트 점수/변동률 초기화 ──
     const { data: allV2Scores } = await sb
       .from("v3_scores_v2")
       .select("id, wiki_entry_id, energy_score")
@@ -292,17 +298,28 @@ Deno.serve(async (req) => {
 
     if (allV2Scores) {
       const processedEids = new Set(results.map(r => r.eid));
-      const rankOps: Promise<any>[] = [];
+      // 에너지 결과 맵 (최신 점수)
+      const energyMap = new Map<string, number>();
+      for (const r of results) energyMap.set(r.eid, r.energyScore);
 
-      for (let i = 0; i < allV2Scores.length; i++) {
-        const s = allV2Scores[i] as any;
+      // 미처리 아티스트 점수를 0으로 설정한 뒤 재정렬
+      const scoredEntries = allV2Scores.map((s: any) => ({
+        ...s,
+        effective_energy: processedEids.has(s.wiki_entry_id)
+          ? (energyMap.get(s.wiki_entry_id) || s.energy_score)
+          : 0,
+      }));
+      scoredEntries.sort((a: any, b: any) => b.effective_energy - a.effective_energy);
+
+      const rankOps: Promise<any>[] = [];
+      for (let i = 0; i < scoredEntries.length; i++) {
+        const s = scoredEntries[i];
         if (processedEids.has(s.wiki_entry_id)) {
-          // 처리된 아티스트: 랭크만 업데이트
           rankOps.push(sb.from("v3_scores_v2").update({ energy_rank: i + 1 }).eq("id", s.id));
         } else {
-          // 미처리 아티스트: 랭크 업데이트 + 잔존 변동률 초기화
           rankOps.push(sb.from("v3_scores_v2").update({
             energy_rank: i + 1,
+            energy_score: 0,
             energy_change_24h: null,
             youtube_change_24h: null,
             buzz_change_24h: null,
@@ -313,7 +330,7 @@ Deno.serve(async (req) => {
       }
 
       await Promise.all(rankOps);
-      console.log(`[FES-v5.2] Ranks updated: ${allV2Scores.length} total, ${processedEids.size} processed, ${allV2Scores.length - processedEids.size} reset`);
+      console.log(`[FES-v5.2] Ranks updated: ${scoredEntries.length} total, ${processedEids.size} processed, ${scoredEntries.length - processedEids.size} reset`);
     }
 
     // ── 8) 마일스톤 감지 ──
