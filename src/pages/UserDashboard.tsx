@@ -5,17 +5,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
-import V3Header from "@/components/v3/V3Header";
-import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
+
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Users, MousePointerClick, Bot, ExternalLink, Eye,
-  TrendingUp, Calendar, ArrowLeft, Crown
+  TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // ── 통계 카드 ──
 const StatCard = ({ icon: Icon, label, value, sub, color }: {
@@ -80,6 +79,7 @@ const UserDashboard = () => {
   const { user } = useAuth();
   const { isAdmin } = useAdminAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -213,22 +213,19 @@ const UserDashboard = () => {
   const recentEvents = (events || []).slice(0, 30);
 
   return (
-    <>
-      <SEO title="Activity Dashboard – KTrenZ" description="Your activity and analytics" path="/dashboard" />
-      {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
-      <main className={cn("max-w-4xl mx-auto px-4 pb-20", isMobile ? "pt-16" : "pt-4")}>
-        {/* Header */}
-        <div className="flex items-center gap-3 py-4">
-          <Link to="/" className="p-2 rounded-full hover:bg-muted transition-colors">
-            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-black text-foreground">📊 Activity Dashboard</h1>
-            <p className="text-xs text-muted-foreground">
-              {isAdmin && !selectedUserId ? "전체 유저 행동 분석" : "내 활동 요약"}
-            </p>
-          </div>
-        </div>
+    <div className="h-[100dvh] flex flex-col bg-background">
+      <SEO title="나의 활동 – KTrenZ" description="Your activity and analytics" path="/dashboard" />
+      {/* Compact header */}
+      <header className="sticky top-0 z-50 flex items-center gap-3 h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
+        <button onClick={() => navigate(-1)} className="p-1.5 rounded-full hover:bg-muted transition-colors">
+          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+        </button>
+        <h1 className="text-base font-bold text-foreground">📊 나의 활동</h1>
+        {isAdmin && !selectedUserId && (
+          <span className="ml-auto text-[10px] text-muted-foreground">Admin</span>
+        )}
+      </header>
+      <main className="flex-1 overflow-auto px-4 pb-8 pt-4 max-w-4xl mx-auto w-full">
 
         {/* 관리자: 유저 선택 */}
         {isAdmin && (
@@ -339,7 +336,7 @@ const UserDashboard = () => {
           </>
         )}
       </main>
-    </>
+    </div>
   );
 };
 
