@@ -158,23 +158,23 @@ Deno.serve(async (req) => {
 
     console.log(`[FES-v5.2] Processing ${entryIds.length} artists... (isBaseline=${isBaseline})`);
 
-    // ── 2) 기준 스냅샷(is_baseline=true) 찾기 ──
-    // 무조건 최근 베이스라인과 비교 (fallback 스냅샷 사용 금지)
+    // ── 2) 롤링 24h 윈도우: ~24시간 전 스냅샷과 비교 (거래소 스타일) ──
+    const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const prevSnapResults = await Promise.all(
       entryIds.map(async (eid) => {
-        const { data: baselineData } = await sb.from("v3_energy_snapshots_v2")
+        const { data: snapData } = await sb.from("v3_energy_snapshots_v2")
           .select("youtube_score, buzz_score, album_score, music_score, snapshot_at")
           .eq("wiki_entry_id", eid)
-          .eq("is_baseline", true)
+          .lte("snapshot_at", cutoff24h)
           .order("snapshot_at", { ascending: false })
           .limit(1);
 
-        const baseline = baselineData?.[0];
-        if (baseline && (
-          (Number(baseline.youtube_score) || 0) > 0 || (Number(baseline.buzz_score) || 0) > 0 ||
-          (Number(baseline.album_score) || 0) > 0 || (Number(baseline.music_score) || 0) > 0
+        const snap = snapData?.[0];
+        if (snap && (
+          (Number(snap.youtube_score) || 0) > 0 || (Number(snap.buzz_score) || 0) > 0 ||
+          (Number(snap.album_score) || 0) > 0 || (Number(snap.music_score) || 0) > 0
         )) {
-          return { eid, prev: baseline };
+          return { eid, prev: snap };
         }
 
         return { eid, prev: null };
