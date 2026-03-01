@@ -141,32 +141,33 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; 
   if (!entry) return null;
 
   const rankStyles = {
-    1: { icon: <Crown className="w-5 h-5 text-yellow-400" />, border: "border-yellow-400/30", glow: "shadow-[0_0_20px_hsl(45_100%_50%/0.15)]", gradient: "", size: "w-16 h-16", label: "1ST", labelColor: "text-yellow-400" },
-    2: { icon: <Medal className="w-4 h-4 text-slate-300" />, border: "border-slate-300/20", glow: "shadow-[0_0_15px_hsl(210_10%_70%/0.1)]", gradient: "from-slate-300/8 via-transparent to-transparent", size: "w-14 h-14", label: "2ND", labelColor: "text-slate-300" },
-    3: { icon: <Medal className="w-4 h-4 text-amber-600" />, border: "border-amber-600/20", glow: "shadow-[0_0_15px_hsl(30_80%_40%/0.1)]", gradient: "from-amber-600/8 via-transparent to-transparent", size: "w-14 h-14", label: "3RD", labelColor: "text-amber-600" },
-  }[rank] || { icon: null, border: "", glow: "", gradient: "", size: "w-12 h-12", label: "", labelColor: "" };
+    1: { icon: <Crown className="w-6 h-6 text-yellow-400" />, border: "border-yellow-400/30", glow: "shadow-[0_0_30px_hsl(45_100%_50%/0.2)]", gradient: "from-yellow-400/10 via-transparent to-transparent", size: "w-20 h-20", label: "1ST", labelColor: "text-yellow-400", isFirst: true },
+    2: { icon: <Medal className="w-4 h-4 text-slate-300" />, border: "border-slate-300/20", glow: "shadow-[0_0_15px_hsl(210_10%_70%/0.1)]", gradient: "from-slate-300/8 via-transparent to-transparent", size: "w-14 h-14", label: "2ND", labelColor: "text-slate-300", isFirst: false },
+    3: { icon: <Medal className="w-4 h-4 text-amber-600" />, border: "border-amber-600/20", glow: "shadow-[0_0_15px_hsl(30_80%_40%/0.1)]", gradient: "from-amber-600/8 via-transparent to-transparent", size: "w-14 h-14", label: "3RD", labelColor: "text-amber-600", isFirst: false },
+  }[rank] || { icon: null, border: "", glow: "", gradient: "", size: "w-12 h-12", label: "", labelColor: "", isFirst: false };
 
   const hasEnergy = item.energy_score > 0;
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
 
   return (
     <Link to={`/artist/${entry.slug}`} className="block" onClick={onTrack}>
-      <div className={cn("relative rounded-2xl p-4 transition-all active:scale-[0.97]", "bg-gradient-to-br", rankStyles.gradient, rankStyles.glow, "bg-card hover:shadow-card-hover")}>
+      <div className={cn("relative rounded-2xl transition-all active:scale-[0.97]", "bg-gradient-to-br", rankStyles.gradient, rankStyles.glow, "bg-card hover:shadow-card-hover",
+        rankStyles.isFirst ? "p-5 border-2 border-yellow-400/20" : "p-4")}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             {rankStyles.icon}
-            <span className={cn("text-xs font-black tracking-wider", rankStyles.labelColor)}>{rankStyles.label}</span>
+            <span className={cn("font-black tracking-wider", rankStyles.labelColor, rankStyles.isFirst ? "text-sm" : "text-xs")}>{rankStyles.label}</span>
           </div>
           <ChangeIndicator change={item.changePercent ?? 0} />
         </div>
-        <div className="flex items-center gap-3">
+        <div className={cn("flex items-center", rankStyles.isFirst ? "gap-4" : "gap-3")}>
           <Avatar className={cn(rankStyles.size, "ring-2 ring-offset-2 ring-offset-card",
             rank === 1 ? "ring-yellow-400/50" : rank === 2 ? "ring-slate-300/30" : "ring-amber-600/30")}>
             <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
-            <AvatarFallback className="bg-muted text-lg font-bold">{entry.title?.[0]}</AvatarFallback>
+            <AvatarFallback className={cn("bg-muted font-bold", rankStyles.isFirst ? "text-xl" : "text-lg")}>{entry.title?.[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{entry.title}</p>
+            <p className={cn("font-bold text-foreground truncate", rankStyles.isFirst ? "text-lg" : "text-sm")}>{entry.title}</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {item.youtube_score > 0 && (
                 <div className="flex items-center gap-0.5">
@@ -183,7 +184,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; 
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-lg font-black text-primary">{Math.round(displayScore)}</p>
+            <p className={cn("font-black text-primary", rankStyles.isFirst ? "text-2xl" : "text-lg")}>{Math.round(displayScore)}</p>
             <div className="mt-1 w-16 h-1.5 rounded-full bg-muted overflow-hidden ml-auto">
               <div className="h-full rounded-full bg-gradient-to-r from-primary to-orange-400 transition-all"
                 style={{ width: `${maxScore > 0 ? (displayScore / maxScore) * 100 : 0}%` }} />
