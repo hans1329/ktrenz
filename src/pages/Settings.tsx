@@ -3,19 +3,36 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
+
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || "");
+      setUsername(profile.username || "");
+    }
+  }, [profile]);
 
   if (loading) {
     return (
@@ -24,6 +41,27 @@ const SettingsPage = () => {
       </div>
     );
   }
+
+  const handleSaveProfile = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          display_name: displayName.trim() || null,
+          username: username.trim(),
+        })
+        .eq("id", user.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+      toast.success("프로필이 저장되었습니다");
+    } catch (e: any) {
+      toast.error(e.message || "저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const sections = [
     {
@@ -63,6 +101,61 @@ const SettingsPage = () => {
         </header>
 
         <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+          {/* Profile Edit Section */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">
+              프로필
+            </p>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Avatar className="w-16 h-16 border-2 border-border">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                      {profile?.username?.[0]?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-foreground truncate">
+                    {profile?.display_name || profile?.username || "User"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">닉네임</label>
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="username"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1 block">표시 이름</label>
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Display Name"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="w-full"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  저장
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {sections.map((section) => (
             <div key={section.title}>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">
