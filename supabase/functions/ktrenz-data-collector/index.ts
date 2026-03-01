@@ -580,6 +580,33 @@ async function collectForSingleArtist(
     try {
       const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm, endpoints?.lastfm_artist_name) : null;
       const deezer = await fetchDeezerArtist(artistTitle, endpoints?.deezer_artist_id);
+
+      // Music 수집 시에도 YouTube Music Topic 채널 데이터를 직접 수집
+      if (endpoints?.youtube_topic_channel_id && keys.youtube && !results.youtube_music) {
+        try {
+          const topicData = await fetchYouTubeTopicData(artistTitle, keys.youtube, endpoints.youtube_topic_channel_id, false);
+          if (topicData) {
+            await adminClient.from("ktrenz_data_snapshots").insert({
+              wiki_entry_id: wikiEntryId, platform: "youtube_music",
+              metrics: {
+                topicTotalViews: topicData.topicTotalViews,
+                topicSubscribers: topicData.topicSubscribers,
+                topTracks: topicData.topMusicTracks,
+              },
+            });
+            results.youtube_music = {
+              topicTotalViews: topicData.topicTotalViews,
+              topicSubscribers: topicData.topicSubscribers,
+              tracksCount: topicData.topMusicTracks.length,
+              usedFixedTopicId: true,
+            };
+            console.log(`[DataCollector] Music→YT Music Topic: ${artistTitle} → ${topicData.topicTotalViews.toLocaleString()} views, ${topicData.topicSubscribers.toLocaleString()} subs`);
+          }
+        } catch (topicErr) {
+          console.warn(`[DataCollector] Music→YT Music Topic error for ${artistTitle}:`, (topicErr as any).message);
+        }
+      }
+
       // YouTube Music 데이터: 같은 세션의 results에서 가져오거나, 없으면 DB 최신 스냅샷에서 조회
       let ytMusicData = results.youtube_music ? {
         topicTotalViews: results.youtube_music.topicTotalViews,

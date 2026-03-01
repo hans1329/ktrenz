@@ -670,7 +670,7 @@ const AdminRankings = () => {
     try {
       // 수집 전 최신 스냅샷 시각 기록 (소스별 관련 플랫폼 전체)
       const sourcePlatformMap: Record<string, string[]> = {
-        youtube: ['youtube'],
+        youtube: ['youtube', 'youtube_music'],
         buzz: ['buzz_multi', 'naver_news'],
         hanteo: ['hanteo'],
         music: ['lastfm', 'deezer', 'youtube_music'],
