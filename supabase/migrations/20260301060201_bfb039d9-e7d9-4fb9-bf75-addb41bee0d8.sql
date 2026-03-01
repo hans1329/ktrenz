@@ -1,0 +1,1 @@
+UPDATE v3_artist_tiers SET youtube_topic_channel_id = 'UCmjn6sW1OgqnwJHNK_o6TOg' WHERE wiki_entry_id = (SELECT id FROM wiki_entries WHERE title = 'aespa' LIMIT 1);
