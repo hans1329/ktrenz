@@ -282,17 +282,39 @@ const UserDashboard = () => {
       const totalScore = resolvedContribs.reduce((s, c) => s + c.score, 0);
       const totalClicks = resolvedContribs.reduce((s, c) => s + c.clicks, 0);
 
-      // 전체 팬 기여도 순위 (같은 아티스트)
+      // 전체 팬 순위 (같은 아티스트)
       const { data: allFanScores } = await supabase
         .from("ktrenz_fan_contributions" as any)
         .select("user_id, weighted_score")
         .eq("wiki_entry_id", entry.id);
 
-      // 유저별 합산
       const fanTotals = new Map<string, number>();
       for (const row of (allFanScores || []) as any[]) {
         fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + Number(row.weighted_score));
       }
+
+      let rankSource: "contributions" | "events" = "contributions";
+
+      // 폴백: 기여도 테이블이 비어있으면 외부링크 이벤트 기반으로 순위 계산
+      if (fanTotals.size === 0) {
+        rankSource = "events";
+        const { data: allExternalEvents } = await supabase
+          .from("ktrenz_user_events" as any)
+          .select("user_id, event_data")
+          .eq("event_type", "external_link_click")
+          .limit(3000);
+
+        for (const row of (allExternalEvents || []) as any[]) {
+          const data = (row.event_data as any) || {};
+          const isSameArtist = data.artist_slug === entry.slug || data.artist_name === entry.title;
+          if (!isSameArtist || !row.user_id) continue;
+
+          const platformKey = normalizePlatform(data.platform, data.url);
+          const weight = weightByPlatform[platformKey] || 1.0;
+          fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + weight);
+        }
+      }
+
       const sortedFans = Array.from(fanTotals.entries()).sort((a, b) => b[1] - a[1]);
       const myRank = sortedFans.findIndex(([uid]) => uid === viewUserId) + 1;
       const totalFans = sortedFans.length;
@@ -310,7 +332,7 @@ const UserDashboard = () => {
 
       return {
         entry,
-        contribution: { totalScore, totalClicks, myRank, totalFans, percentile, platformBreakdown },
+        contribution: { totalScore, totalClicks, myRank, totalFans, percentile, platformBreakdown, rankSource },
         activity: { detailViews, externalClicks, agentChats, treemapClicks, total: artistEvents.length },
       };
     },
@@ -497,9 +519,9 @@ const UserDashboard = () => {
 
                   {/* 점수 + 순위 */}
                   <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
-                    <div className="text-center">
-                      <p className="text-2xl font-black text-foreground">{Math.round(favoriteArtist.contribution.totalScore)}</p>
-                      <p className="text-[9px] text-muted-foreground">기여 점수</p>
+                    <div className="text-center min-w-[110px]">
+                      <p className="text-4xl md:text-5xl font-black text-foreground leading-none">{Math.round(favoriteArtist.contribution.totalScore)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">기여 점수</p>
                     </div>
                     <div className="h-8 w-px bg-border" />
                     <div className="text-center">
@@ -517,7 +539,7 @@ const UserDashboard = () => {
                             </p>
                           </div>
                           <p className="text-[9px] text-muted-foreground">
-                            {favoriteArtist.contribution.myRank}위 / {favoriteArtist.contribution.totalFans}명
+                            {favoriteArtist.contribution.myRank}위 / {favoriteArtist.contribution.totalFans}명{favoriteArtist.contribution.rankSource === "events" ? " · 이벤트 기준" : ""}
                           </p>
                         </>
                       ) : (
