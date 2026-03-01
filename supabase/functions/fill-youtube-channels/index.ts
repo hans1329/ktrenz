@@ -1,4 +1,4 @@
-// YouTube Channel ID 자동 매칭: OpenAI로 채널명 추천 → YouTube API로 검증
+// YouTube Channel ID 자동 매칭: YouTube Search API로 공식채널 + Topic채널 동시 검색
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,99 +10,75 @@ const corsHeaders = {
 interface ChannelResult {
   id: string;
   display_name: string;
-  channelId: string | null;
-  matchedUrl: string | null;
+  officialChannelId: string | null;
+  topicChannelId: string | null;
   error?: string;
 }
 
-// OpenAI로 아티스트의 공식 YouTube 채널 핸들/이름 추천
-async function suggestYoutubeChannel(
-  openaiKey: string,
-  artistName: string
-): Promise<string[]> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a K-Pop expert. Given a K-Pop artist or group name, return their official YouTube channel handle(s) or channel name(s). Return ONLY a JSON array of strings, no explanation. Include @handle format if known. Example: [\"@BLACKPINK\", \"BLACKPINK\"]",
-        },
-        {
-          role: "user",
-          content: `Artist: "${artistName}". Return their official YouTube channel handle(s).`,
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI error: ${err}`);
-  }
+// YouTube Search API로 공식 채널 찾기 (Topic 제외)
+async function findOfficialChannel(
+  ytApiKey: string,
+  artistName: string,
+): Promise<string | null> {
+  const searchUrl = `https://www.googleapis.com/youtube/v3/search?q=${encodeURIComponent(artistName)}&type=channel&part=id,snippet&maxResults=10&key=${ytApiKey}`;
+  const res = await fetch(searchUrl);
+  if (!res.ok) return null;
 
   const data = await res.json();
-  const content = data.choices?.[0]?.message?.content?.trim() || "[]";
-
-  try {
-    const parsed = JSON.parse(content);
-    return Array.isArray(parsed) ? parsed : [content];
-  } catch {
-    return [content];
+  for (const item of data.items || []) {
+    const title: string = item.snippet?.title || "";
+    // Topic 채널 제외
+    if (title.includes("- Topic") || title.includes("– Topic")) continue;
+    return item.id?.channelId || item.snippet?.channelId || null;
   }
+  return null;
 }
 
-// YouTube API로 핸들/채널명 → Channel ID 검증
-async function resolveToChannelId(
+// YouTube Search API로 Topic 채널 찾기
+async function findTopicChannel(
   ytApiKey: string,
-  query: string
+  artistName: string,
 ): Promise<string | null> {
-  // @handle 형식이면 forHandle API 사용
-  if (query.startsWith("@")) {
-    const handle = query.slice(1);
-    const url = `https://www.googleapis.com/youtube/v3/channels?forHandle=${encodeURIComponent(handle)}&part=id,snippet&key=${ytApiKey}`;
+  const queries = [`${artistName} - Topic`, `${artistName} – Topic`];
+
+  for (const query of queries) {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&maxResults=5&key=${ytApiKey}`;
     const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      const item = data.items?.[0];
-      if (item?.id) {
-        // Topic 채널이면 스킵
-        const title = item.snippet?.title || "";
-        if (title.includes("- Topic") || title.includes("– Topic")) {
-          console.log(`  ⚠ Handle "${query}" resolved to Topic channel "${title}", skipping`);
-          return null;
-        }
-        return item.id;
+    if (!res.ok) continue;
+    const data = await res.json();
+
+    for (const item of data.items || []) {
+      const title: string = item.snippet?.title || "";
+      if (title.includes("- Topic") || title.includes("– Topic")) {
+        const channelId = item.id?.channelId || item.snippet?.channelId;
+        if (channelId) return channelId;
       }
     }
   }
-
-  // 검색 API로 채널 찾기
-  const searchUrl = `https://www.googleapis.com/youtube/v3/search?q=${encodeURIComponent(query)}&type=channel&part=id,snippet&maxResults=5&key=${ytApiKey}`;
-  const searchRes = await fetch(searchUrl);
-  if (!searchRes.ok) return null;
-
-  const searchData = await searchRes.json();
-  const items = searchData.items || [];
-
-  // Topic 채널을 제외한 첫 번째 채널 결과 반환
-  for (const item of items) {
-    const title = item.snippet?.title || "";
-    if (title.includes("- Topic") || title.includes("– Topic")) {
-      console.log(`  ⚠ Skipping Topic channel: "${title}"`);
-      continue;
-    }
-    return item.id?.channelId || item.snippet?.channelId || null;
-  }
-
   return null;
+}
+
+// @handle → Channel ID 변환
+async function resolveHandle(
+  ytApiKey: string,
+  handle: string,
+): Promise<string | null> {
+  const cleanHandle = handle.startsWith("@") ? handle.slice(1) : handle;
+  const url = `https://www.googleapis.com/youtube/v3/channels?forHandle=${encodeURIComponent(cleanHandle)}&part=id,snippet&key=${ytApiKey}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const item = data.items?.[0];
+  if (!item?.id) return null;
+
+  // Topic 채널이면 무시
+  const title = item.snippet?.title || "";
+  if (title.includes("- Topic") || title.includes("– Topic")) {
+    console.log(`  ⚠ Handle "@${cleanHandle}" resolved to Topic channel, skipping`);
+    return null;
+  }
+  return item.id;
 }
 
 Deno.serve(async (req) => {
@@ -112,36 +88,21 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-
-    // 핸들 → Channel ID 변환 모드 (기존 유지)
-    if (body.resolveHandle) {
-      const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
-      if (!ytApiKey) {
-        return new Response(
-          JSON.stringify({ error: "YOUTUBE_API_KEY not configured" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const channelId = await resolveToChannelId(ytApiKey, `@${body.resolveHandle}`);
-      return new Response(
-        JSON.stringify({ handle: body.resolveHandle, channelId }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
-
-    if (!openaiKey) {
-      return new Response(
-        JSON.stringify({ error: "OPENAI_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
     if (!ytApiKey) {
       return new Response(
         JSON.stringify({ error: "YOUTUBE_API_KEY not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 핸들 → Channel ID 변환 모드 (인라인 수정 다이얼로그용)
+    if (body.resolveHandle) {
+      const handle = body.resolveHandle;
+      const channelId = await resolveHandle(ytApiKey, handle);
+      return new Response(
+        JSON.stringify({ handle, channelId }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -151,12 +112,14 @@ Deno.serve(async (req) => {
 
     const dryRun = body.dryRun ?? true;
     const tierFilter = body.tier;
-    const limitCount = body.limit || 10;
+    const limitCount = body.limit || 50;
+    // target: "official" | "topic" | "both" (default: "both")
+    const target: string = body.target || "both";
 
+    // 누락된 아티스트 조회
     let query = sb
       .from("v3_artist_tiers")
-      .select("id, display_name, youtube_channel_id, wiki_entries!inner(title)")
-      .is("youtube_channel_id", null)
+      .select("id, display_name, youtube_channel_id, youtube_topic_channel_id, wiki_entries!inner(title)")
       .order("tier", { ascending: true })
       .limit(limitCount);
 
@@ -164,73 +127,105 @@ Deno.serve(async (req) => {
       query = query.eq("tier", tierFilter);
     }
 
+    // target에 따라 필터링
+    if (target === "official") {
+      query = query.is("youtube_channel_id", null);
+    } else if (target === "topic") {
+      query = query.is("youtube_topic_channel_id", null);
+    } else {
+      // both: 어느 하나라도 누락
+      query = query.or("youtube_channel_id.is.null,youtube_topic_channel_id.is.null");
+    }
+
     const { data: artists, error: fetchErr } = await query;
     if (fetchErr) throw fetchErr;
     if (!artists?.length) {
       return new Response(
-        JSON.stringify({ message: "No artists without YouTube channel ID", results: [] }),
+        JSON.stringify({ message: "No artists to process", results: [] }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[fill-youtube-channels] Processing ${artists.length} artists via OpenAI+YouTube API (dryRun=${dryRun})`);
+    console.log(`[fill-youtube-channels] Processing ${artists.length} artists, target=${target}, dryRun=${dryRun}`);
 
     const results: ChannelResult[] = [];
-    let updated = 0;
+    let updatedOfficial = 0;
+    let updatedTopic = 0;
 
     for (const artist of artists as any[]) {
       const name = artist.display_name || artist.wiki_entries?.title || "";
       if (!name) {
-        results.push({ id: artist.id, display_name: name, channelId: null, matchedUrl: null, error: "No name" });
+        results.push({ id: artist.id, display_name: name, officialChannelId: null, topicChannelId: null, error: "No name" });
         continue;
       }
 
       try {
-        // Step 1: OpenAI로 채널 핸들/이름 추천
-        const suggestions = await suggestYoutubeChannel(openaiKey, name);
-        console.log(`  ${name} → OpenAI suggestions: ${JSON.stringify(suggestions)}`);
+        let officialId: string | null = artist.youtube_channel_id || null;
+        let topicId: string | null = artist.youtube_topic_channel_id || null;
 
-        // Step 2: YouTube API로 각 추천을 검증
-        let foundId: string | null = null;
-        let matchedQuery = "";
-
-        for (const suggestion of suggestions) {
-          foundId = await resolveToChannelId(ytApiKey, suggestion);
-          if (foundId) {
-            matchedQuery = suggestion;
-            break;
+        // 공식 채널 검색 (누락 시)
+        if (!officialId && (target === "official" || target === "both")) {
+          officialId = await findOfficialChannel(ytApiKey, name);
+          if (officialId) {
+            console.log(`  ✓ ${name} → official: ${officialId}`);
+          } else {
+            console.log(`  ✗ ${name} → official not found`);
           }
+          // API 쿼터 보호
+          await new Promise(r => setTimeout(r, 200));
         }
 
-        if (foundId) {
-          results.push({
-            id: artist.id,
-            display_name: name,
-            channelId: foundId,
-            matchedUrl: matchedQuery,
-          });
+        // Topic 채널 검색 (누락 시)
+        if (!topicId && (target === "topic" || target === "both")) {
+          topicId = await findTopicChannel(ytApiKey, name);
+          if (topicId) {
+            console.log(`  ✓ ${name} → topic: ${topicId}`);
+          } else {
+            console.log(`  ✗ ${name} → topic not found`);
+          }
+          // API 쿼터 보호
+          await new Promise(r => setTimeout(r, 200));
+        }
 
-          if (!dryRun) {
+        results.push({
+          id: artist.id,
+          display_name: name,
+          officialChannelId: officialId,
+          topicChannelId: topicId,
+        });
+
+        if (!dryRun) {
+          const updatePayload: Record<string, string | null> = {};
+          if (!artist.youtube_channel_id && officialId) {
+            updatePayload.youtube_channel_id = officialId;
+            updatedOfficial++;
+          }
+          if (!artist.youtube_topic_channel_id && topicId) {
+            updatePayload.youtube_topic_channel_id = topicId;
+            updatedTopic++;
+          }
+          if (Object.keys(updatePayload).length > 0) {
             await sb
               .from("v3_artist_tiers")
-              .update({ youtube_channel_id: foundId } as any)
+              .update(updatePayload as any)
               .eq("id", artist.id);
-            updated++;
           }
-
-          console.log(`  ✓ ${name} → ${foundId} (via "${matchedQuery}")`);
-        } else {
-          results.push({ id: artist.id, display_name: name, channelId: null, matchedUrl: null, error: "No channel found" });
-          console.log(`  ✗ ${name} → not found`);
         }
       } catch (e) {
-        results.push({ id: artist.id, display_name: name, channelId: null, matchedUrl: null, error: e.message });
+        results.push({ id: artist.id, display_name: name, officialChannelId: null, topicChannelId: null, error: e.message });
         console.error(`  ✗ ${name} → error: ${e.message}`);
       }
     }
 
     return new Response(
-      JSON.stringify({ dryRun, totalProcessed: artists.length, updated, results }),
+      JSON.stringify({
+        dryRun,
+        target,
+        totalProcessed: artists.length,
+        updatedOfficial,
+        updatedTopic,
+        results,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
