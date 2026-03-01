@@ -48,7 +48,6 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/k-pass" element={<KPass />} />
-            <Route path="/kpass" element={<KPass />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
