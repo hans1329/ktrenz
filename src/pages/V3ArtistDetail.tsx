@@ -330,7 +330,7 @@ const V3ArtistDetail = () => {
             onClick={() => setDataRunDialogOpen(true)}
             disabled={refreshMutation.isPending || isCrawling}
             title={isCrawling ? "Global data collection in progress..." : undefined}>
-            <span className="text-xs font-medium">{isCrawling ? "Running..." : "Data"}</span>
+            <span className="text-xs font-medium">{isCrawling ? "수집중..." : "데이터 수집"}</span>
             <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
           </Button>
         </div>
@@ -533,7 +533,7 @@ const V3ArtistDetail = () => {
           <Button variant="ghost" size="sm" className="h-9 rounded-full gap-1 px-3"
             onClick={() => setDataRunDialogOpen(true)} disabled={refreshMutation.isPending || isCrawling}
             title={isCrawling ? "Global data collection in progress..." : undefined}>
-            <span className="text-xs font-medium">{isCrawling ? "Running..." : "Data"}</span>
+            <span className="text-xs font-medium">{isCrawling ? "수집중..." : "데이터 수집"}</span>
             <Play className={cn("w-4 h-4", refreshMutation.isPending && "animate-pulse text-primary", isCrawling && "text-muted-foreground")} />
           </Button>
         </header>
