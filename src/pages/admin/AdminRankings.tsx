@@ -6,11 +6,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Crown, Star, ArrowUpDown, TrendingUp, TrendingDown, Minus, AlertTriangle, X, Play, RefreshCw, Plus, Search, Trash2, ChevronDown, ChevronUp, Clock, Calendar } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 interface ScoreData {
@@ -77,6 +80,56 @@ const AdminRankings = () => {
     const timer = setInterval(() => setElapsed(Math.round((Date.now() - pipelineStartTime) / 1000)), 1000);
     return () => clearInterval(timer);
   }, [pipelineStartTime, pipelineRunId]);
+
+  // Schedule management state
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleHour, setScheduleHour] = useState(5); // KST
+  const [scheduleMinute, setScheduleMinute] = useState(5);
+
+  // Fetch current schedule
+  const { data: scheduleData, refetch: refetchSchedule } = useQuery({
+    queryKey: ['ktrenz-schedule'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_ktrenz_schedule');
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const scheduleMutation = useMutation({
+    mutationFn: async ({ action, hour, minute }: { action: string; hour?: number; minute?: number }) => {
+      // Convert KST to UTC
+      const utcHour = hour !== undefined ? (hour - 9 + 24) % 24 : undefined;
+      const { data, error } = await supabase.rpc('manage_ktrenz_schedule', {
+        p_action: action,
+        p_hour: utcHour ?? 20,
+        p_minute: minute ?? 5,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      refetchSchedule();
+      if (vars.action === 'set') {
+        toast.success(`스케줄 설정: 매일 ${String(vars.hour).padStart(2, '0')}:${String(vars.minute).padStart(2, '0')} (KST)`);
+      } else {
+        toast.success('스케줄이 해제되었습니다');
+      }
+    },
+    onError: (err: any) => toast.error('스케줄 변경 실패: ' + err.message),
+  });
+
+  // Parse current schedule for display
+  const isScheduled = scheduleData?.status === 'active';
+  const currentSchedule = isScheduled && scheduleData?.schedule
+    ? (() => {
+        const parts = (scheduleData.schedule as string).split(' ');
+        const utcMin = parseInt(parts[0]);
+        const utcHour = parseInt(parts[1]);
+        const kstHour = (utcHour + 9) % 24;
+        return { kstHour, minute: utcMin };
+      })()
+    : null;
 
   const { data: artists = [], isLoading } = useQuery({
     queryKey: ['admin-artist-tiers'],
@@ -632,10 +685,107 @@ const AdminRankings = () => {
               수집 지연 {staleCount}개
             </Badge>
           )}
-          {['all', 'youtube', 'album', 'music', 'buzz'].map((src) => (
+          {/* 전체 수집 + 스케줄 그룹 */}
+          <div className="flex items-center gap-0">
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 text-xs gap-1.5 rounded-r-none"
+              disabled={!!runningSource}
+              onClick={() => triggerCollection('all')}
+            >
+              {runningSource === 'all' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+              전체 수집
+            </Button>
+            <Popover open={scheduleOpen} onOpenChange={setScheduleOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className={`h-8 text-xs px-2 rounded-l-none border-l border-primary-foreground/20 ${isScheduled ? '' : 'opacity-70'}`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  {isScheduled && currentSchedule && (
+                    <span className="ml-1">{String(currentSchedule.kstHour).padStart(2, '0')}:{String(currentSchedule.minute).padStart(2, '0')}</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3 space-y-3" align="end">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4" />
+                    일일 자동 수집
+                  </span>
+                  <Switch
+                    checked={isScheduled}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        scheduleMutation.mutate({ action: 'set', hour: scheduleHour, minute: scheduleMinute });
+                      } else {
+                        scheduleMutation.mutate({ action: 'clear' });
+                      }
+                    }}
+                    disabled={scheduleMutation.isPending}
+                  />
+                </div>
+                {isScheduled && (
+                  <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                    ✓ 매일 {currentSchedule ? `${String(currentSchedule.kstHour).padStart(2, '0')}:${String(currentSchedule.minute).padStart(2, '0')}` : '...'} KST 자동 실행
+                  </p>
+                )}
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={String(isScheduled && currentSchedule ? currentSchedule.kstHour : scheduleHour)}
+                    onValueChange={(v) => setScheduleHour(parseInt(v))}
+                  >
+                    <SelectTrigger className="w-20 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}시</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-muted-foreground">:</span>
+                  <Select
+                    value={String(isScheduled && currentSchedule ? currentSchedule.minute : scheduleMinute)}
+                    onValueChange={(v) => setScheduleMinute(parseInt(v))}
+                  >
+                    <SelectTrigger className="w-20 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((m) => (
+                        <SelectItem key={m} value={String(m)}>{String(m).padStart(2, '0')}분</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-muted-foreground">KST</span>
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full h-8 text-xs"
+                  disabled={scheduleMutation.isPending}
+                  onClick={() => {
+                    scheduleMutation.mutate({ action: 'set', hour: scheduleHour, minute: scheduleMinute });
+                    setScheduleOpen(false);
+                  }}
+                >
+                  {scheduleMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                  스케줄 저장
+                </Button>
+              </PopoverContent>
+            </Popover>
+          </div>
+          {['youtube', 'album', 'music', 'buzz'].map((src) => (
             <Button
               key={src}
-              variant={src === 'all' ? 'default' : 'outline'}
+              variant="outline"
               size="sm"
               className="h-8 text-xs gap-1.5"
               disabled={!!runningSource}
@@ -643,12 +793,10 @@ const AdminRankings = () => {
             >
               {runningSource === src ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : src === 'all' ? (
-                <Play className="w-3.5 h-3.5" />
               ) : (
                 <RefreshCw className="w-3.5 h-3.5" />
               )}
-              {src === 'all' ? '전체 수집' : src === 'album' ? 'Album' : src.charAt(0).toUpperCase() + src.slice(1)}
+              {src === 'album' ? 'Album' : src.charAt(0).toUpperCase() + src.slice(1)}
             </Button>
           ))}
           <Button
