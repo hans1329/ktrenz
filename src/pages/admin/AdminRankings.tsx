@@ -652,7 +652,7 @@ const AdminRankings = () => {
     <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="hover:bg-transparent transition-none">
             <TableHead className="w-10">#</TableHead>
             <TableHead>Artist</TableHead>
             <TableHead className="text-right">Total</TableHead>
@@ -669,7 +669,7 @@ const AdminRankings = () => {
         </TableHeader>
         <TableBody>
           {items.map((a, idx) => (
-            <TableRow key={a.wiki_entry_id}>
+            <TableRow key={a.wiki_entry_id} className="hover:bg-transparent transition-none">
               <TableCell className="font-medium text-muted-foreground text-xs">{idx + 1}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -732,7 +732,7 @@ const AdminRankings = () => {
             </TableRow>
           ))}
           {items.length === 0 && (
-            <TableRow>
+            <TableRow className="hover:bg-transparent transition-none">
               <TableCell colSpan={13} className="text-center text-muted-foreground py-8">No artists in this tier</TableCell>
             </TableRow>
           )}
