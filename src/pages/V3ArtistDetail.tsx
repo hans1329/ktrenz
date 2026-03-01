@@ -421,7 +421,7 @@ const V3ArtistDetail = () => {
   return (
     <><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} />
       <div className="h-[100dvh] flex flex-col bg-background">
-        <header className="sticky top-0 z-50 flex items-center gap-3 h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0 max-w-4xl mx-auto w-full">
+        <header className="sticky top-0 z-50 flex items-center gap-3 h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
           <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">{pageTitle}</h1>
