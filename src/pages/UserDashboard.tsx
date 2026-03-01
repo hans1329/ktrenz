@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3, Users, MousePointerClick, Bot, ExternalLink, Eye,
   TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft, Home,
-  Heart, MessageSquare, ThumbsUp, FileText, Coins
+  Heart, MessageSquare, ThumbsUp, FileText, Coins, Trophy, Flame
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -203,7 +203,6 @@ const UserDashboard = () => {
     queryKey: ["favorite-artist-detail", favoriteArtistName, viewUserId],
     enabled: !!favoriteArtistName && !!viewUserId,
     queryFn: async () => {
-      // Get wiki entry for this artist
       const { data: entry } = await supabase
         .from("wiki_entries")
         .select("id, title, slug, image_url, metadata")
@@ -212,13 +211,38 @@ const UserDashboard = () => {
         .maybeSingle();
       if (!entry) return null;
 
-      // Get contribution data
-      const { data: contrib } = await supabase
-        .from("wiki_entry_user_contributions" as any)
-        .select("*")
+      // 나의 기여도 (외부 링크 클릭 기반)
+      const { data: myContribs } = await supabase
+        .from("ktrenz_fan_contributions" as any)
+        .select("platform, click_count, weighted_score")
         .eq("wiki_entry_id", entry.id)
-        .eq("user_id", viewUserId!)
-        .maybeSingle();
+        .eq("user_id", viewUserId!);
+
+      const totalScore = (myContribs || []).reduce((s: number, c: any) => s + Number(c.weighted_score), 0);
+      const totalClicks = (myContribs || []).reduce((s: number, c: any) => s + Number(c.click_count), 0);
+
+      // 전체 팬 기여도 순위 (같은 아티스트)
+      const { data: allFanScores } = await supabase
+        .from("ktrenz_fan_contributions" as any)
+        .select("user_id, weighted_score")
+        .eq("wiki_entry_id", entry.id);
+
+      // 유저별 합산
+      const fanTotals = new Map<string, number>();
+      for (const row of (allFanScores || []) as any[]) {
+        fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + Number(row.weighted_score));
+      }
+      const sortedFans = Array.from(fanTotals.entries()).sort((a, b) => b[1] - a[1]);
+      const myRank = sortedFans.findIndex(([uid]) => uid === viewUserId) + 1;
+      const totalFans = sortedFans.length;
+      const percentile = totalFans > 0 ? Math.max(1, Math.round((myRank / totalFans) * 100)) : 0;
+
+      // 플랫폼별 breakdown
+      const platformBreakdown = (myContribs || []).map((c: any) => ({
+        platform: c.platform,
+        clicks: c.click_count,
+        score: Number(c.weighted_score),
+      })).sort((a: any, b: any) => b.score - a.score);
 
       // Get event breakdown for this artist
       const artistEvents = (events || []).filter((e: any) => (e.event_data as any)?.artist_name === favoriteArtistName);
@@ -229,7 +253,7 @@ const UserDashboard = () => {
 
       return {
         entry,
-        contribution: contrib as any,
+        contribution: { totalScore, totalClicks, myRank, totalFans, percentile, platformBreakdown },
         activity: { detailViews, externalClicks, agentChats, treemapClicks, total: artistEvents.length },
       };
     },
@@ -407,24 +431,63 @@ const UserDashboard = () => {
                     </div>
                   ))}
                 </div>
+                {/* 팬 기여도 (외부 링크 클릭 기반) */}
                 <div className="px-4 pb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">커뮤니티 기여도</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { icon: FileText, value: favoriteArtist.contribution?.posts_count || 0, label: "작성한 글" },
-                      { icon: MessageSquare, value: favoriteArtist.contribution?.comments_count || 0, label: "댓글" },
-                      { icon: ThumbsUp, value: favoriteArtist.contribution?.votes_received || 0, label: "받은 추천" },
-                      { icon: Coins, value: favoriteArtist.contribution?.contribution_score || 0, label: "기여 점수" },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                        <item.icon className="w-3.5 h-3.5 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-bold text-foreground">{item.value}</p>
-                          <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                        </div>
-                      </div>
-                    ))}
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
+                    <Flame className="w-3 h-3 text-primary" /> 팬 기여도
+                  </p>
+
+                  {/* 점수 + 순위 */}
+                  <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-foreground">{Math.round(favoriteArtist.contribution.totalScore)}</p>
+                      <p className="text-[9px] text-muted-foreground">기여 점수</p>
+                    </div>
+                    <div className="h-8 w-px bg-border" />
+                    <div className="text-center">
+                      <p className="text-lg font-black text-foreground">{favoriteArtist.contribution.totalClicks}</p>
+                      <p className="text-[9px] text-muted-foreground">링크 클릭</p>
+                    </div>
+                    <div className="h-8 w-px bg-border" />
+                    <div className="text-center flex-1">
+                      {favoriteArtist.contribution.totalFans > 0 ? (
+                        <>
+                          <div className="flex items-center justify-center gap-1">
+                            <Trophy className="w-4 h-4 text-yellow-400" />
+                            <p className="text-lg font-black text-foreground">
+                              상위 {favoriteArtist.contribution.percentile}%
+                            </p>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground">
+                            {favoriteArtist.contribution.myRank}위 / {favoriteArtist.contribution.totalFans}명
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-bold text-muted-foreground">—</p>
+                          <p className="text-[9px] text-muted-foreground">순위 없음</p>
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {/* 플랫폼별 기여 */}
+                  {favoriteArtist.contribution.platformBreakdown.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {favoriteArtist.contribution.platformBreakdown.map((p: any) => {
+                        const platformDisplayNames: Record<string, string> = {
+                          youtube: "YouTube", twitter: "X", reddit: "Reddit", tiktok: "TikTok",
+                          instagram: "Instagram", spotify: "Spotify", melon: "Melon", naver: "Naver",
+                        };
+                        const name = platformDisplayNames[p.platform] || p.platform;
+                        return (
+                          <span key={p.platform} className={cn("text-[10px] font-bold px-2 py-1 rounded-full", PLATFORM_COLORS[name] || PLATFORM_COLORS.other)}>
+                            {name} <span className="opacity-60">{p.clicks}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div className="px-4 pb-4">
                   <p className="text-center text-[10px] text-muted-foreground">

@@ -2053,6 +2053,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_fan_contributions: {
+        Row: {
+          click_count: number
+          id: string
+          platform: string
+          updated_at: string
+          user_id: string
+          weighted_score: number
+          wiki_entry_id: string
+        }
+        Insert: {
+          click_count?: number
+          id?: string
+          platform: string
+          updated_at?: string
+          user_id: string
+          weighted_score?: number
+          wiki_entry_id: string
+        }
+        Update: {
+          click_count?: number
+          id?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+          weighted_score?: number
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_fan_contributions_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_point_settings: {
         Row: {
           description: string | null
@@ -6745,6 +6783,10 @@ export type Database = {
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
+      ktrenz_record_contribution: {
+        Args: { _platform: string; _user_id: string; _wiki_entry_id: string }
+        Returns: undefined
+      }
       manage_ktrenz_schedule: {
         Args: { p_action: string; p_hour?: number; p_minute?: number }
         Returns: Json
