@@ -23,7 +23,7 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
   music: 10,
   hanteo: 10,
-  buzz: 30,
+  buzz: 120, // 12배치 × 5아티스트 완료 대기 (fire-and-forget이므로 충분한 여유 필요)
   energy: 0,
 };
 
@@ -88,58 +88,26 @@ async function runHanteo(supabaseUrl: string, serviceKey: string, waitForComplet
   return runCollectorModule(supabaseUrl, serviceKey, "hanteo", waitForCompletion);
 }
 
-async function runBuzz(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
-  console.log(`[data-engine] Running Buzz module... (waitForCompletion=${waitForCompletion})`);
+async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
+  // NOTE: Buzz는 12배치 × 5아티스트 × ~10초 = 600초+ 소요되어 edge function 타임아웃 초과
+  // 따라서 항상 fire-and-forget으로 실행하고, 파이프라인에서는 DELAY_AFTER로 대기
+  console.log(`[data-engine] Running Buzz module (always fire-and-forget to avoid timeout)...`);
   const BATCH_SIZE = 5;
   const TOTAL_BATCHES = 12;
 
-  if (!waitForCompletion) {
-    let launched = 0;
-    for (let i = 0; i < TOTAL_BATCHES; i++) {
-      const p = fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-        body: JSON.stringify({ batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
-      }).catch((e) => console.warn(`[data-engine] Buzz batch ${i} fire error:`, e.message));
-      fireAndForget(p);
-      launched++;
-      if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 2000));
-    }
-    console.log(`[data-engine] Buzz: launched ${launched} batches`);
-    return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
-  }
-
-  const batchResults: any[] = [];
+  let launched = 0;
   for (let i = 0; i < TOTAL_BATCHES; i++) {
-    try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-        body: JSON.stringify({ batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
-      });
-      const text = await resp.text();
-      let parsed: any = null;
-      try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text.slice(0, 200) }; }
-      batchResults.push({ batch: i, ok: resp.ok, status: resp.status, result: parsed });
-    } catch (e) {
-      batchResults.push({ batch: i, ok: false, status: 0, error: (e as Error).message });
-    }
-
-    if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 1000));
+    const p = fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+    }).catch((e) => console.warn(`[data-engine] Buzz batch ${i} fire error:`, e.message));
+    fireAndForget(p);
+    launched++;
+    if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 2000));
   }
-
-  const successBatches = batchResults.filter(b => b.ok).length;
-  const failedBatches = batchResults.length - successBatches;
-  console.log(`[data-engine] Buzz awaited done: success=${successBatches}, failed=${failedBatches}`);
-
-  return {
-    status: "completed",
-    batchSize: BATCH_SIZE,
-    totalBatches: TOTAL_BATCHES,
-    successBatches,
-    failedBatches,
-    batches: batchResults,
-  };
+  console.log(`[data-engine] Buzz: launched ${launched} batches`);
+  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
 }
 
 async function runEnergy(supabaseUrl: string, serviceKey: string, isBaseline: boolean = false): Promise<any> {
