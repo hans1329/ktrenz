@@ -68,20 +68,48 @@ export function calculateArtistEnergy(
     }
   }
 
-  const weightedPct = percentiles.yt * WEIGHTS.youtube + percentiles.buzz * WEIGHTS.buzz +
-    percentiles.album * WEIGHTS.album + percentiles.music * WEIGHTS.music;
-  const energyScore = clamp(Math.round(10 + weightedPct * (MAX_SCORE - 10)), 10, MAX_SCORE);
+  // ── Velocity (각 카테고리별) ──
+  const ytVelocity = ytChange != null ? changeToScore(ytChange) : null;
+  const buzzVelocity = buzzChange != null ? changeToScore(buzzChange) : null;
+  const albumVelocity = albumChange != null ? changeToScore(albumChange) : null;
+  const musicVelocity = musicChange != null ? changeToScore(musicChange) : null;
+
+  // ── Intensity (각 카테고리별) ──
+  const ytIntensity = clamp(Math.round(percentiles.yt * MAX_SCORE), 0, MAX_SCORE);
+  const buzzIntensity = clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE);
+  const albumIntensity = clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE);
+  const musicIntensity = clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE);
+
+  // ── Energy Score: 60% Velocity + 40% Intensity ──
+  // Velocity가 없는(베이스라인 없음) 카테고리는 Intensity만 사용
+  const VELOCITY_WEIGHT = 0.6;
+  const INTENSITY_WEIGHT = 0.4;
+
+  const categoryEnergies: { weight: number; energy: number }[] = [];
+  const categories = [
+    { w: WEIGHTS.youtube, vel: ytVelocity, int: ytIntensity },
+    { w: WEIGHTS.buzz, vel: buzzVelocity, int: buzzIntensity },
+    { w: WEIGHTS.music, vel: musicVelocity, int: musicIntensity },
+    { w: WEIGHTS.album, vel: albumVelocity, int: albumIntensity },
+  ];
+
+  for (const cat of categories) {
+    const catEnergy = cat.vel != null
+      ? cat.vel * VELOCITY_WEIGHT + cat.int * INTENSITY_WEIGHT
+      : cat.int; // Velocity 없으면 Intensity만
+    categoryEnergies.push({ weight: cat.w, energy: catEnergy });
+  }
+
+  const totalCatWeight = categoryEnergies.reduce((s, c) => s + c.weight, 0);
+  const rawEnergy = categoryEnergies.reduce((s, c) => s + c.energy * (c.weight / totalCatWeight), 0);
+  const energyScore = clamp(Math.round(rawEnergy), 10, MAX_SCORE);
 
   return {
     energyScore,
-    ytVelocity: ytChange != null ? changeToScore(ytChange) : null,
-    ytIntensity: clamp(Math.round(percentiles.yt * MAX_SCORE), 0, MAX_SCORE),
-    buzzVelocity: buzzChange != null ? changeToScore(buzzChange) : null,
-    buzzIntensity: clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE),
-    albumVelocity: albumChange != null ? changeToScore(albumChange) : null,
-    albumIntensity: clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE),
-    musicVelocity: musicChange != null ? changeToScore(musicChange) : null,
-    musicIntensity: clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE),
+    ytVelocity, ytIntensity,
+    buzzVelocity, buzzIntensity,
+    albumVelocity, albumIntensity,
+    musicVelocity, musicIntensity,
     change24h: overallChange != null ? Math.round(overallChange * 10) / 10 : null,
     ytChange: ytChange != null ? Math.round(ytChange * 10) / 10 : null,
     buzzChange: buzzChange != null ? Math.round(buzzChange * 10) / 10 : null,
