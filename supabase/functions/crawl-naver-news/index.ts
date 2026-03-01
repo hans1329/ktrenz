@@ -59,7 +59,26 @@ async function searchNaverNews(
 }
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/gi, " ").trim();
+  return html.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/gi, " ").replace(/\[사진\]|\[포토\]|\[화보\]|\[영상\]/g, "").trim();
+}
+
+// 제목 유사도 체크 (간단한 토큰 기반)
+function titleSimilarity(a: string, b: string): number {
+  const tokensA = new Set(a.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(t => t.length > 1));
+  const tokensB = new Set(b.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(t => t.length > 1));
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+  let overlap = 0;
+  for (const t of tokensA) if (tokensB.has(t)) overlap++;
+  return overlap / Math.min(tokensA.size, tokensB.size);
+}
+
+function deduplicateByTitle(items: { title: string }[]): typeof items {
+  const result: typeof items = [];
+  for (const item of items) {
+    const isDup = result.some(r => titleSimilarity(r.title, item.title) > 0.6);
+    if (!isDup) result.push(item);
+  }
+  return result;
 }
 
 async function fetchOgImage(url: string): Promise<string | null> {
@@ -132,16 +151,21 @@ Deno.serve(async (req) => {
     });
 
     const mentionCount = filtered.length;
-    const weight = 1.3; // naver 가중치
+    const weight = 1.3;
     const weightedCount = Math.round(mentionCount * weight);
 
-    const top5 = filtered.slice(0, 5);
-    // 상위 5개 기사의 og:image 병렬 추출
+    // 제목 기반 중복 제거 후 상위 5개
+    const strippedFiltered = filtered.map(item => ({ ...item, cleanTitle: stripHtml(item.title) }));
+    const deduplicated = deduplicateByTitle(strippedFiltered.map(i => ({ ...i, title: i.cleanTitle })));
+    const top5Indices = deduplicated.slice(0, 5).map(d => strippedFiltered.findIndex(s => s.cleanTitle === d.title));
+    const top5 = top5Indices.map(i => filtered[i]);
+
+    // 상위 기사의 og:image 병렬 추출
     const ogImages = await Promise.all(
-      top5.map((item) => fetchOgImage(item.originallink || item.link))
+      top5filtered.map((item) => fetchOgImage(item.originallink || item.link))
     );
 
-    const topMentions = top5.map((item, i) => ({
+    const topMentions = top5filtered.map((item, i) => ({
       title: stripHtml(item.title),
       url: item.originallink || item.link,
       description: stripHtml(item.description),
