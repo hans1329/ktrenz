@@ -1,5 +1,5 @@
 // data-engine: 데이터 수집 오케스트레이터
-// 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok, buzz_news, buzz_youtube)
+// 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok, buzz_news) + naver_news
 // 모드: 개별 모듈 또는 "all" (체이닝 + 타임시프트)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -13,7 +13,7 @@ const PIPELINE = ["youtube", "music", "hanteo", "buzz", "energy"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
-const BUZZ_SOURCES = ["buzz_x", "buzz_reddit", "buzz_naver", "buzz_tiktok", "buzz_news", "buzz_youtube"] as const;
+const BUZZ_SOURCES = ["buzz_x", "buzz_reddit", "buzz_naver", "buzz_tiktok", "buzz_news"] as const;
 type BuzzSourceModule = typeof BUZZ_SOURCES[number];
 
 type Module = PipelineModule | BuzzSourceModule;
@@ -101,7 +101,6 @@ const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
   buzz_naver: "naver",
   buzz_tiktok: "tiktok",
   buzz_news: "news",
-  buzz_youtube: "youtube",
 };
 
 async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule: BuzzSourceModule): Promise<any> {
@@ -141,6 +140,32 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
   return { status: "launched", source: sourceName, artists: launched };
 }
 
+// ── 네이버 뉴스 전용 모듈 ──
+async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<any> {
+  console.log("[data-engine] Launching Naver News (fire-and-forget)...");
+  const sb = createClient(supabaseUrl, serviceKey);
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1);
+  const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
+  if (!tier1Ids.length) return { status: "no_artists" };
+
+  const { data: artists } = await sb.from("wiki_entries").select("id, title").eq("schema_type", "artist").in("id", tier1Ids);
+  if (!artists?.length) return { status: "no_artists" };
+
+  let launched = 0;
+  for (const artist of artists) {
+    const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ artistName: artist.title, wikiEntryId: artist.id }),
+    }).catch((e) => console.warn(`[data-engine] Naver News for ${artist.title} error:`, e.message));
+    fireAndForget(p);
+    launched++;
+    if (launched % 5 === 0) await new Promise(r => setTimeout(r, 500));
+  }
+  console.log(`[data-engine] Naver News: launched ${launched} artists`);
+  return { status: "launched", artists: launched };
+}
+
 // ── 통합 모듈 러너 맵 ──
 // energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
@@ -148,7 +173,8 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
   music: runMusic,
   hanteo: runHanteo,
   buzz: runBuzz,
-  energy: (url, key) => runEnergy(url, key, false), // 개별 호출 시 기본값
+  energy: (url, key) => runEnergy(url, key, false),
+  naver_news: runNaverNews,
   // buzz 개별 소스
   ...Object.fromEntries(
     BUZZ_SOURCES.map(mod => [mod, (url: string, key: string) => runBuzzSource(url, key, mod)])
@@ -218,6 +244,25 @@ Deno.serve(async (req) => {
             sources,
           }),
         }).catch((e) => console.warn(`[data-engine] Buzz single fire error:`, e.message));
+        fireAndForget(p);
+        return new Response(
+          JSON.stringify({ success: true, module, wikiEntryId, status: "launched", runId: currentRunId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // naver_news (개별 아티스트)
+      if (module === "naver_news") {
+        const { data: artist } = await sb.from("wiki_entries").select("title").eq("id", wikiEntryId).single();
+        if (!artist) {
+          return new Response(JSON.stringify({ success: false, error: "Artist not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ artistName: artist.title, wikiEntryId }),
+        }).catch((e) => console.warn(`[data-engine] Naver News single fire error:`, e.message));
         fireAndForget(p);
         return new Response(
           JSON.stringify({ success: true, module, wikiEntryId, status: "launched", runId: currentRunId }),
