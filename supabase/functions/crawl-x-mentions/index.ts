@@ -207,12 +207,14 @@ Deno.serve(async (req) => {
       if (contextKeyword) query = `${query} ${contextKeyword}`;
       const rawResults = await firecrawlSearch(apiKey, query, src.limit, src.tbs);
 
-      // 24시간 이내 게시물만 필터링 — 날짜 없으면 제외 (엄격 모드)
+      // 24시간 이내 게시물 필터링
+      // tbs:"qdr:d"로 이미 검색 API에서 24h 필터 적용됨
+      // 날짜 정보가 있으면 검증, 없으면 검색엔진 필터를 신뢰하여 포함
       const filtered = rawResults.filter((r: any) => {
         const dateStr = r.publishedDate || r.metadata?.publishedDate || r.metadata?.date;
-        if (!dateStr) return false; // 날짜 정보 없으면 제외
+        if (!dateStr) return true; // 날짜 없으면 tbs 필터 신뢰
         const pubTime = new Date(dateStr).getTime();
-        return !isNaN(pubTime) && pubTime >= cutoff24h;
+        return isNaN(pubTime) || pubTime >= cutoff24h;
       });
 
       const texts = filtered.map((r: any) => (r.markdown || r.description || r.title || "")).filter(Boolean);
