@@ -24,7 +24,19 @@ interface ScoreData {
   buzz_score: number;
   album_sales_score: number;
   music_score: number;
+  youtube_change_24h: number | null;
+  buzz_change_24h: number | null;
+  album_change_24h: number | null;
+  music_change_24h: number | null;
   scored_at: string;
+}
+
+interface SnapshotMetrics {
+  youtube?: { totalViewCount?: number; subscriberCount?: number; recentTotalViews?: number };
+  buzz_multi?: { buzz_score?: number; total_mentions?: number; sentiment_score?: number; source_breakdown?: Array<{ source: string; mentions: number; weighted: number }> };
+  hanteo?: Array<{ album: string; artist: string; first_week_sales: number }>;
+  lastfm?: { listeners?: number; playcount?: number };
+  deezer?: { fans?: number; nb_album?: number };
 }
 
 interface CollectionStatus {
@@ -47,6 +59,7 @@ interface ArtistTier {
   trending_score: number;
   scores: ScoreData | null;
   collection: CollectionStatus;
+  metrics: SnapshotMetrics;
 }
 
 const STALE_HOURS = 26; // 26시간 이상이면 경고
@@ -141,10 +154,10 @@ const AdminRankings = () => {
           .order('tier', { ascending: true }),
         supabase
           .from('v3_scores_v2')
-          .select('wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at'),
+          .select('wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, scored_at'),
         supabase
           .from('ktrenz_data_snapshots')
-          .select('wiki_entry_id, platform, collected_at')
+          .select('wiki_entry_id, platform, collected_at, metrics')
           .not('wiki_entry_id', 'is', null)
           .order('collected_at', { ascending: false }),
       ]);
@@ -154,8 +167,9 @@ const AdminRankings = () => {
       const scoreMap = new Map<string, ScoreData>();
       (scoresRes.data || []).forEach((s: any) => scoreMap.set(s.wiki_entry_id, s));
 
-      // 아티스트별 플랫폼별 최신 수집 시각
+      // 아티스트별 플랫폼별 최신 수집 시각 + 메트릭스
       const collectionMap = new Map<string, CollectionStatus>();
+      const metricsMap = new Map<string, SnapshotMetrics>();
       (snapshotsRes.data || []).forEach((s: any) => {
         if (!s.wiki_entry_id) return;
         const existing = collectionMap.get(s.wiki_entry_id) || {};
@@ -164,6 +178,23 @@ const AdminRankings = () => {
         if (!existing[platform as keyof CollectionStatus]) {
           existing[platform as keyof CollectionStatus] = s.collected_at;
           collectionMap.set(s.wiki_entry_id, existing);
+
+          // 메트릭스 저장
+          const m = metricsMap.get(s.wiki_entry_id) || {};
+          if (platform === 'hanteo') {
+            // hanteo는 여러 앨범이 올 수 있으므로 배열로
+            if (!m.hanteo) m.hanteo = [];
+            if (s.metrics && s.wiki_entry_id) m.hanteo.push(s.metrics);
+          } else {
+            (m as any)[platform] = s.metrics;
+          }
+          metricsMap.set(s.wiki_entry_id, m);
+        } else if (platform === 'hanteo' && s.wiki_entry_id) {
+          // hanteo 추가 앨범
+          const m = metricsMap.get(s.wiki_entry_id) || {};
+          if (!m.hanteo) m.hanteo = [];
+          if (s.metrics) m.hanteo.push(s.metrics);
+          metricsMap.set(s.wiki_entry_id, m);
         }
       });
 
@@ -178,6 +209,7 @@ const AdminRankings = () => {
         trending_score: row.wiki_entries.trending_score ?? 0,
         scores: scoreMap.get(row.wiki_entry_id) || null,
         collection: collectionMap.get(row.wiki_entry_id) || {},
+        metrics: metricsMap.get(row.wiki_entry_id) || {},
       })) as ArtistTier[];
     },
   });
@@ -560,17 +592,111 @@ const AdminRankings = () => {
     );
   };
 
-  const ScoreCell = ({ value, source, wikiEntryId, artistName }: { value?: number | null; source: string; wikiEntryId: string; artistName: string }) => {
+  const DetailScoreCell = ({ value, change, source, wikiEntryId, artistName, metrics }: { 
+    value?: number | null; change?: number | null; source: string; wikiEntryId: string; artistName: string; metrics?: SnapshotMetrics 
+  }) => {
     const key = `${wikiEntryId}-${source}`;
     const isRunning = recollecting === key;
-    return (
+
+    const getTooltipContent = () => {
+      if (!metrics) return null;
+      if (source === 'youtube' && metrics.youtube) {
+        const m = metrics.youtube;
+        return (
+          <div className="space-y-1 text-[11px]">
+            <p>구독자: <span className="font-medium">{(m.subscriberCount || 0).toLocaleString()}</span></p>
+            <p>총 조회수: <span className="font-medium">{(m.totalViewCount || 0).toLocaleString()}</span></p>
+            <p>최근 조회수: <span className="font-medium">{(m.recentTotalViews || 0).toLocaleString()}</span></p>
+          </div>
+        );
+      }
+      if (source === 'buzz' && metrics.buzz_multi) {
+        const m = metrics.buzz_multi;
+        const sourceLabels: Record<string, string> = { x_twitter: 'X', news: 'News', reddit: 'Reddit', youtube: 'YT', naver: 'Naver', tiktok: 'TikTok' };
+        return (
+          <div className="space-y-1 text-[11px]">
+            <p>총 멘션: <span className="font-medium">{(m.total_mentions || 0).toLocaleString()}</span></p>
+            <p>감성: <span className="font-medium">{m.sentiment_score || '—'}</span></p>
+            {m.source_breakdown && (
+              <div className="space-y-0.5 mt-1 border-t border-border/50 pt-1">
+                {m.source_breakdown.map((s: any) => (
+                  <div key={s.source} className="flex justify-between gap-3">
+                    <span>{sourceLabels[s.source] || s.source}</span>
+                    <span className="font-medium">{s.mentions} ({s.weighted})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+      if (source === 'hanteo' && metrics.hanteo && metrics.hanteo.length > 0) {
+        return (
+          <div className="space-y-1 text-[11px]">
+            {metrics.hanteo.slice(0, 3).map((h: any, i: number) => (
+              <div key={i} className="flex justify-between gap-3">
+                <span className="truncate max-w-[120px]">{h.album}</span>
+                <span className="font-medium whitespace-nowrap">{(h.first_week_sales || 0).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      if (source === 'music') {
+        const parts: JSX.Element[] = [];
+        if (metrics.lastfm) {
+          parts.push(
+            <div key="lastfm" className="space-y-0.5">
+              <p className="font-medium text-[10px] text-muted-foreground">Last.fm</p>
+              <p>리스너: <span className="font-medium">{(metrics.lastfm.listeners || 0).toLocaleString()}</span></p>
+              <p>재생수: <span className="font-medium">{(metrics.lastfm.playcount || 0).toLocaleString()}</span></p>
+            </div>
+          );
+        }
+        if (metrics.deezer) {
+          parts.push(
+            <div key="deezer" className="space-y-0.5">
+              <p className="font-medium text-[10px] text-muted-foreground">Deezer</p>
+              <p>팬: <span className="font-medium">{(metrics.deezer.fans || 0).toLocaleString()}</span></p>
+            </div>
+          );
+        }
+        return parts.length > 0 ? <div className="space-y-2">{parts}</div> : null;
+      }
+      return null;
+    };
+
+    const tooltipContent = getTooltipContent();
+    const changeEl = change != null ? (
+      <span className={`text-[9px] ${change > 0 ? 'text-emerald-500' : change < -5 ? 'text-red-500' : 'text-muted-foreground'}`}>
+        {change > 0 ? '+' : ''}{change.toFixed(1)}%
+      </span>
+    ) : null;
+
+    const cell = (
       <button
         className="text-right font-mono text-xs text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors w-full disabled:opacity-50"
         disabled={isRunning}
         onClick={() => triggerSingleCollection(source, wikiEntryId, artistName)}
       >
-        {isRunning ? <Loader2 className="w-3 h-3 animate-spin inline" /> : (value?.toLocaleString() ?? '—')}
+        {isRunning ? <Loader2 className="w-3 h-3 animate-spin inline" /> : (
+          <div className="flex flex-col items-end">
+            <span>{value?.toLocaleString() ?? '—'}</span>
+            {changeEl}
+          </div>
+        )}
       </button>
+    );
+
+    if (!tooltipContent) return cell;
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{cell}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[200px]">
+          {tooltipContent}
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
@@ -609,10 +735,10 @@ const AdminRankings = () => {
               <TableCell className="text-right font-mono text-sm font-semibold">{a.scores?.total_score?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? '—'}</TableCell>
               <TableCell className="text-right font-mono text-sm">{a.scores?.energy_score?.toLocaleString() ?? '—'}</TableCell>
               <TableCell className="text-center"><ChangeIndicator value={a.scores?.energy_change_24h} artist={a} /></TableCell>
-              <TableCell><ScoreCell value={a.scores?.youtube_score} source="youtube" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
-              <TableCell><ScoreCell value={a.scores?.buzz_score} source="buzz" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
-              <TableCell><ScoreCell value={a.scores?.album_sales_score} source="hanteo" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
-              <TableCell><ScoreCell value={a.scores?.music_score} source="music" wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.youtube_score} change={a.scores?.youtube_change_24h} source="youtube" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.buzz_score} change={a.scores?.buzz_change_24h} source="buzz" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.album_sales_score} change={a.scores?.album_change_24h} source="hanteo" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
+              <TableCell><DetailScoreCell value={a.scores?.music_score} change={a.scores?.music_change_24h} source="music" wikiEntryId={a.wiki_entry_id} artistName={a.title} metrics={a.metrics} /></TableCell>
               <TableCell className="text-center"><DataStatus collection={a.collection} wikiEntryId={a.wiki_entry_id} artistName={a.title} /></TableCell>
               <TableCell className="text-center">
                 {a.is_manual_override ? (
