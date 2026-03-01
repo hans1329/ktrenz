@@ -120,29 +120,27 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
             className="w-full group text-left"
           >
-            <div className="relative rounded-xl overflow-hidden bg-card" style={{ boxShadow: `0 0 20px 2px ${tierColor}15, 0 0 40px 4px ${tierColor}08` }}>
+            <div className="relative rounded-xl overflow-hidden" style={{ boxShadow: '0 0 24px 4px rgba(139,92,246,0.15), 0 0 48px 8px rgba(59,130,246,0.08)' }}>
               {/* Top half */}
               <div
                 className="relative px-4 py-3.5 overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${tierColor}35, ${tierColor}15)` }}
+                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.25), rgba(6,182,212,0.2))' }}
               >
-                <div
-                  className="absolute -right-4 -top-4 w-20 h-20 rounded-full blur-xl opacity-20"
-                  style={{ background: tierColor }}
-                />
+                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-30"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }} />
+                <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full blur-2xl opacity-20"
+                  style={{ background: 'linear-gradient(135deg, #06b6d4, #8b5cf6)' }} />
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                      style={{ background: 'hsl(0 0% 45%)' }}
+                      style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.5), rgba(59,130,246,0.5))' }}
                     >
                       <span className="text-foreground">{tierIcon}</span>
                     </div>
                     <div>
-                      <p
-                        className="text-[10px] font-semibold uppercase tracking-[0.15em]"
-                        style={{ color: tierColor }}
-                      >
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em]"
+                        style={{ background: 'linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         K-Pass
                       </p>
                       <p className="text-base font-bold text-foreground leading-tight">
@@ -155,23 +153,24 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Perforation */}
-              <div className="relative h-0 flex items-center">
-                <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-card z-10" />
+              <div className="relative h-0 flex items-center" style={{ background: 'linear-gradient(90deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))' }}>
+                <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-background z-10" />
                 <div className="w-full border-t border-dashed border-border/60 mx-4" />
-                <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-card z-10" />
+                <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-background z-10" />
               </div>
 
               {/* Bottom half */}
-              <div className="px-4 py-3.5 flex items-center justify-between" style={{ background: `${tierColor}18` }}>
+              <div className="px-4 py-3.5 flex items-center justify-between"
+                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(59,130,246,0.1), rgba(6,182,212,0.08))' }}>
                 <p className="text-xs text-muted-foreground">
                   View plans & upgrade →
                 </p>
                 <span
                   className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
                   style={{
-                    color: tierColor,
-                    borderColor: `${tierColor}30`,
-                    background: `${tierColor}08`,
+                    background: 'linear-gradient(90deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15))',
+                    borderColor: 'rgba(139,92,246,0.3)',
+                    color: '#a78bfa',
                   }}
                 >
                   Active
