@@ -65,7 +65,31 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
   const tierName = kpassInfo?.name || "Free";
   const tierIcon = kpassInfo?.icon || "🎵";
-  const tierColor = "#0ABAB5";
+
+  // Tier-based gradient palettes
+  const tierGradients: Record<string, { top: string; bottom: string; glow: string; accent: string; label: string; badge: string; badgeBorder: string; badgeText: string }> = {
+    Free: {
+      top: 'linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.25), rgba(6,182,212,0.2))',
+      bottom: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.2), rgba(6,182,212,0.18))',
+      glow: '0 0 24px 4px rgba(139,92,246,0.15), 0 0 48px 8px rgba(59,130,246,0.08)',
+      accent: 'linear-gradient(135deg, rgba(139,92,246,0.5), rgba(59,130,246,0.5))',
+      label: 'linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee)',
+      badge: 'linear-gradient(90deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15))',
+      badgeBorder: 'rgba(139,92,246,0.3)',
+      badgeText: '#a78bfa',
+    },
+    Basic: {
+      top: 'linear-gradient(135deg, rgba(56,189,248,0.45), rgba(34,211,238,0.35), rgba(52,211,153,0.3))',
+      bottom: 'linear-gradient(135deg, rgba(56,189,248,0.35), rgba(34,211,238,0.28), rgba(52,211,153,0.25))',
+      glow: '0 0 24px 4px rgba(56,189,248,0.2), 0 0 48px 8px rgba(34,211,238,0.1)',
+      accent: 'linear-gradient(135deg, rgba(56,189,248,0.6), rgba(34,211,238,0.6))',
+      label: 'linear-gradient(90deg, #38bdf8, #22d3ee, #34d399)',
+      badge: 'linear-gradient(90deg, rgba(56,189,248,0.2), rgba(34,211,238,0.2))',
+      badgeBorder: 'rgba(56,189,248,0.4)',
+      badgeText: '#38bdf8',
+    },
+  };
+  const g = tierGradients[tierName] || tierGradients.Free;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -120,27 +144,27 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
             className="w-full group text-left"
           >
-            <div className="relative rounded-xl overflow-hidden" style={{ boxShadow: '0 0 24px 4px rgba(139,92,246,0.15), 0 0 48px 8px rgba(59,130,246,0.08)' }}>
+            <div className="relative rounded-xl overflow-hidden" style={{ boxShadow: g.glow }}>
               {/* Top half */}
               <div
                 className="relative px-4 py-3.5 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.25), rgba(6,182,212,0.2))' }}
+                style={{ background: g.top }}
               >
                 <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-30"
-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)' }} />
+                  style={{ background: g.accent }} />
                 <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full blur-2xl opacity-20"
-                  style={{ background: 'linear-gradient(135deg, #06b6d4, #8b5cf6)' }} />
+                  style={{ background: g.accent }} />
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                      style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.5), rgba(59,130,246,0.5))' }}
+                      style={{ background: g.accent }}
                     >
                       <span className="text-foreground">{tierIcon}</span>
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.15em]"
-                        style={{ background: 'linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        style={{ background: g.label, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         K-Pass
                       </p>
                       <p className="text-base font-bold text-foreground leading-tight">
@@ -153,7 +177,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Perforation */}
-              <div className="relative h-0 flex items-center" style={{ background: 'linear-gradient(90deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))' }}>
+              <div className="relative h-0 flex items-center">
                 <div className="absolute -left-2.5 w-5 h-5 rounded-full bg-background z-10" />
                 <div className="w-full border-t border-dashed border-border/60 mx-4" />
                 <div className="absolute -right-2.5 w-5 h-5 rounded-full bg-background z-10" />
@@ -161,16 +185,16 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
               {/* Bottom half */}
               <div className="px-4 py-3.5 flex items-center justify-between"
-                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.2), rgba(6,182,212,0.18))' }}>
+                style={{ background: g.bottom }}>
                 <p className="text-xs text-muted-foreground">
                   View plans & upgrade →
                 </p>
                 <span
                   className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
                   style={{
-                    background: 'linear-gradient(90deg, rgba(139,92,246,0.15), rgba(59,130,246,0.15))',
-                    borderColor: 'rgba(139,92,246,0.3)',
-                    color: '#a78bfa',
+                    background: g.badge,
+                    borderColor: g.badgeBorder,
+                    color: g.badgeText,
                   }}
                 >
                   Active
