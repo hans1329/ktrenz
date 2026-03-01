@@ -282,7 +282,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   };
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
   const isMobile = useIsMobile();
-  const displayCount = isMobile ? 20 : 24;
+  // 상승 10 + 보합 5 + 하락 8 = 23 고정
+  const RISING_COUNT = 10;
+  const FLAT_COUNT = 5;
+  const FALLING_COUNT = 8;
+  const displayCount = RISING_COUNT + FLAT_COUNT + FALLING_COUNT;
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
@@ -313,11 +317,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       const allCandidates = Array.from(latestMap.values())
         .filter((s) => (s.wiki_entries as any)?.slug);
       
-      // Tier 1 전체를 표시 (displayCount 제한)
-      const sorted = [...allCandidates].sort(
+      // Tier 1 전체에서 상승/하락/보합 뽑기 위해 전부 가져옴
+      const allByChange = [...allCandidates].sort(
         (a, b) => (b.energy_change_24h || 0) - (a.energy_change_24h || 0)
       );
-      const topItems = sorted.slice(0, displayCount);
+      const topItems = allByChange; // 전체 후보 유지, 뽑기는 useMemo에서
       const topIds = topItems.map((s) => s.wiki_entry_id);
 
       const [{ data: snapshots }, { data: baselines }, { data: tierData }] = await Promise.all([
@@ -382,7 +386,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     staleTime: 30_000,
   });
 
-  // Sort: rising → flat → falling within single treemap
+  // 전체 Tier1에서 상승/보합/하락 각각 뽑아서 23개 구성
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
 
@@ -401,11 +405,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       else flat.push(item);
     }
 
+    // 각 그룹 내 정렬
     rising.sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
     flat.sort((a, b) => getCategoryScore(b, category) - getCategoryScore(a, category));
     falling.sort((a, b) => getCategoryChange(a, category) - getCategoryChange(b, category));
 
-    return [...rising, ...flat, ...falling];
+    // 상위 N개씩 뽑기
+    const pickedRising = rising.slice(0, RISING_COUNT);
+    const pickedFlat = flat.slice(0, FLAT_COUNT);
+    const pickedFalling = falling.slice(0, FALLING_COUNT);
+
+    return [...pickedRising, ...pickedFlat, ...pickedFalling];
   }, [items, category]);
 
   const containerWidth = isMobile ? 360 : 420;
