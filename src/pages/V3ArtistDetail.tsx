@@ -20,6 +20,7 @@ import DataRunDialog from "@/components/v3/DataRunDialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const RainbowProgress = ({ isComplete }: { isComplete: boolean }) => {
   const [progress, setProgress] = useState(0);
@@ -325,7 +326,9 @@ const V3ArtistDetail = () => {
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
         </div>
         <h1 className="flex-1 text-center text-sm font-bold text-foreground truncate">{pageTitle}</h1>
-        <div className="w-20" />
+        <div className="flex items-center justify-end w-20">
+          <LanguageSwitcher />
+        </div>
       </div>
     </header>
   );
@@ -533,7 +536,9 @@ const V3ArtistDetail = () => {
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ArrowLeft className="w-5 h-5" /></Button>
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
           <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">{pageTitle}</h1>
-          <div className="w-20" />
+          <div className="flex items-center justify-end w-20">
+            <LanguageSwitcher />
+          </div>
         </header>
         <main className="flex-1 overflow-auto"><PageContent /></main>
       </div>
