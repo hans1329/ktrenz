@@ -520,7 +520,9 @@ const UserDashboard = () => {
                   {/* 점수 + 순위 */}
                   <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
                     <div className="text-center min-w-[110px]">
-                      <p className="text-4xl md:text-5xl font-black text-foreground leading-none">{Math.round(favoriteArtist.contribution.totalScore)}</p>
+                      <p className="text-4xl md:text-5xl font-black leading-none bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
+                        {Math.round(favoriteArtist.contribution.totalScore)}
+                      </p>
                       <p className="text-[10px] text-muted-foreground mt-1">기여 점수</p>
                     </div>
                     <div className="h-8 w-px bg-border" />
