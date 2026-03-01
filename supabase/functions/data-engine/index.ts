@@ -120,16 +120,24 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
   for (const artist of artists) {
     const meta = artist.metadata as any;
     const hashtags = meta?.hashtags || [];
-    const p = fetch(`${supabaseUrl}/functions/v1/crawl-x-mentions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({
-        artistName: artist.title,
-        wikiEntryId: artist.id,
-        hashtags,
-        sources: [sourceName], // 개별 소스만
-      }),
-    }).catch((e) => console.warn(`[data-engine] Buzz ${sourceName} for ${artist.title} error:`, e.message));
+
+    const p = sourceName === "naver"
+      ? fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ artistName: artist.title, wikiEntryId: artist.id }),
+        }).catch((e) => console.warn(`[data-engine] Naver News for ${artist.title} error:`, e.message))
+      : fetch(`${supabaseUrl}/functions/v1/crawl-x-mentions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({
+            artistName: artist.title,
+            wikiEntryId: artist.id,
+            hashtags,
+            sources: [sourceName], // 개별 소스만
+          }),
+        }).catch((e) => console.warn(`[data-engine] Buzz ${sourceName} for ${artist.title} error:`, e.message));
+
     fireAndForget(p);
     launched++;
     // Firecrawl rate limit 방지
@@ -233,6 +241,19 @@ Deno.serve(async (req) => {
         const sources = module === "buzz"
           ? undefined // 전체 소스
           : [BUZZ_SOURCE_MAP[module as BuzzSourceModule]];
+
+        // buzz 전체 실행 시 Naver API를 먼저 동기 수집해 최신 snapshot 확보
+        if (module === "buzz") {
+          const naverResp = await fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify({ artistName: artist.title, wikiEntryId }),
+          });
+          if (!naverResp.ok) {
+            const naverErr = await naverResp.text();
+            console.warn(`[data-engine] Buzz single naver pre-collect failed: ${naverErr}`);
+          }
+        }
 
         const p = fetch(`${supabaseUrl}/functions/v1/crawl-x-mentions`, {
           method: "POST",

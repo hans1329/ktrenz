@@ -75,6 +75,24 @@ Deno.serve(async (req) => {
         const meta = artist.metadata as any;
         const hashtags = meta?.hashtags || [];
 
+        // Naver API를 먼저 호출해 최신 naver_news snapshot을 생성
+        const naverResp = await fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            artistName: artist.title,
+            wikiEntryId: artist.id,
+          }),
+        });
+
+        if (!naverResp.ok) {
+          const naverErr = await naverResp.text();
+          console.warn(`[buzz-cron] Naver pre-collect failed for ${artist.title}: ${naverErr.slice(0, 200)}`);
+        }
+
         const resp = await fetch(`${supabaseUrl}/functions/v1/crawl-x-mentions`, {
           method: "POST",
           headers: {

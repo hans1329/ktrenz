@@ -594,16 +594,39 @@ async function collectForSingleArtist(
     } catch (e) { results.music = { error: (e as any).message }; }
   }
 
-  // 3) Buzz — crawl-x-mentions 직접 호출
+  // 3) Buzz — Naver API 선수집 후 crawl-x-mentions 호출
   if (collectAll || source === "buzz") {
     if (keys.firecrawl) {
       try {
-        console.log(`[DataCollector] Buzz: Calling crawl-x-mentions for ${artistTitle}...`);
-        const buzzResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/crawl-x-mentions`, {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+        // (1) Naver News를 먼저 수집해서 최신 snapshot을 만든 뒤
+        // (2) crawl-x-mentions가 해당 snapshot을 읽어 buzz source_breakdown에 반영
+        console.log(`[DataCollector] Buzz: Calling crawl-naver-news for ${artistTitle}...`);
+        const naverResp = await fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ wikiEntryId, artistName: artistTitle }),
+        });
+
+        if (!naverResp.ok) {
+          const naverErr = await naverResp.text();
+          console.warn(`[DataCollector] Naver pre-collect failed for ${artistTitle}: ${naverErr}`);
+        } else {
+          const naverResult = await naverResp.json();
+          console.log(`[DataCollector] Naver pre-collect: ${artistTitle} → mentions=${naverResult?.mentionCount ?? 0}`);
+        }
+
+        console.log(`[DataCollector] Buzz: Calling crawl-x-mentions for ${artistTitle}...`);
+        const buzzResp = await fetch(`${supabaseUrl}/functions/v1/crawl-x-mentions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
           },
           body: JSON.stringify({ wikiEntryId, artistName: artistTitle }),
         });
