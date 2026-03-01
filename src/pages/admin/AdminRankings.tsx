@@ -182,6 +182,35 @@ const AdminRankings = () => {
     },
   });
 
+  // Load latest engine run on mount (persist across page navigations)
+  const { data: latestRun } = useQuery({
+    queryKey: ['latest-engine-run'],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase
+        .from('ktrenz_engine_runs')
+        .select('id, status, current_module, modules_requested, results, error_message, started_at, completed_at')
+        .gte('started_at', today.toISOString())
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+    staleTime: 10_000,
+  });
+
+  // Auto-restore pipeline tracking from latest run on mount
+  useEffect(() => {
+    if (latestRun && !pipelineRunId) {
+      setPipelineRunId(latestRun.id);
+      if (latestRun.started_at) {
+        setPipelineStartTime(new Date(latestRun.started_at).getTime());
+      }
+    }
+  }, [latestRun]);
+
   // Pipeline progress polling
   const { data: pipelineRun } = useQuery({
     queryKey: ['pipeline-run', pipelineRunId],
