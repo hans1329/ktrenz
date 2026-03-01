@@ -572,15 +572,32 @@ async function collectForSingleArtist(
     try {
       const lastfm = keys.lastfm ? await fetchLastfmArtist(artistTitle, keys.lastfm, endpoints?.lastfm_artist_name) : null;
       const deezer = await fetchDeezerArtist(artistTitle, endpoints?.deezer_artist_id);
-      // YouTube Music 데이터: results에서 가져오기 (youtube 수집이 먼저 실행됨)
-      const ytMusicData = results.youtube_music ? {
+      // YouTube Music 데이터: 같은 세션의 results에서 가져오거나, 없으면 DB 최신 스냅샷에서 조회
+      let ytMusicData = results.youtube_music ? {
         topicTotalViews: results.youtube_music.topicTotalViews,
         topicSubscribers: results.youtube_music.topicSubscribers,
       } : null;
-      const ytMvData = results.youtube ? {
+      let ytMvData = results.youtube ? {
         musicVideoViews: results.youtube.musicVideoViews || 0,
         musicVideoCount: results.youtube.musicVideoCount || 0,
       } : null;
+      // 개별 music 수집 시 DB에서 기존 스냅샷 읽기
+      if (!ytMusicData) {
+        const { data: ytmSnap } = await adminClient.from("ktrenz_data_snapshots")
+          .select("metrics").eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube_music")
+          .order("collected_at", { ascending: false }).limit(1).maybeSingle();
+        if (ytmSnap?.metrics) {
+          ytMusicData = { topicTotalViews: ytmSnap.metrics.topicTotalViews || 0, topicSubscribers: ytmSnap.metrics.topicSubscribers || 0 };
+        }
+      }
+      if (!ytMvData) {
+        const { data: ytSnap } = await adminClient.from("ktrenz_data_snapshots")
+          .select("metrics").eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube")
+          .order("collected_at", { ascending: false }).limit(1).maybeSingle();
+        if (ytSnap?.metrics) {
+          ytMvData = { musicVideoViews: ytSnap.metrics.musicVideoViews || 0, musicVideoCount: ytSnap.metrics.musicVideoCount || 0 };
+        }
+      }
       if (lastfm || deezer || ytMusicData || ytMvData) {
         const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData);
         await upsertV3Score(adminClient, wikiEntryId, {
