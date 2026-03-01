@@ -112,9 +112,9 @@ function squarify(items: TreemapItem[], x: number, y: number, w: number, h: numb
   const tileSize = (i: TreemapItem, idx: number) => {
     const score = getCategoryScore(i, category);
     const base = Math.log1p(Math.max(score, 1));
-    if (idx === 0) return base * 7.0;
-    if (idx === 1) return base * 5.0;
-    if (idx === 2) return base * 3.5;
+    if (idx === 0) return base * 10.0;
+    if (idx === 1) return base * 7.0;
+    if (idx === 2) return base * 5.0;
     if (idx === 3) return base * 1.8;
     if (idx === 4) return base * 1.5;
     return base;
