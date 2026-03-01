@@ -170,8 +170,8 @@ const V3Rankings = () => {
               return (
                 <Link key={item.wiki_entry_id} to={`/artist/${entry.slug}`}>
                   <div className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-colors active:scale-[0.98]",
-                    rank <= 3 ? "bg-card border border-border/50" : "bg-card/50 hover:bg-card"
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 active:scale-[0.98] will-change-transform",
+                    rank <= 3 ? "bg-card border border-border/50 hover:bg-card" : "bg-card/50 hover:bg-card/80"
                   )}>
                     <div className="w-7 flex justify-center shrink-0">
                       <RankIcon rank={rank} />
