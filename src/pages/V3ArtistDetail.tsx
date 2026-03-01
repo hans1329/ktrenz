@@ -59,8 +59,9 @@ const MetricCard = ({ icon: Icon, label, value, subValue, color }: { icon: any; 
   </Card>
 );
 
-const VideoRow = ({ video, rank }: { video: any; rank: number }) => (
+const VideoRow = ({ video, rank, onExternalClick }: { video: any; rank: number; onExternalClick?: (url: string) => void }) => (
   <a href={`https://www.youtube.com/watch?v=${video.videoId}`} target="_blank" rel="noopener noreferrer"
+    onClick={() => onExternalClick?.(`https://www.youtube.com/watch?v=${video.videoId}`)}
     className="flex items-center gap-2 p-2.5 rounded-xl bg-card/50 hover:bg-card transition-colors">
     <span className="w-4 text-center text-[10px] font-bold text-muted-foreground shrink-0">{rank}</span>
     <div className="w-16 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
@@ -120,6 +121,12 @@ const V3ArtistDetail = () => {
       track("artist_detail_view", { artist_slug: slug, artist_name: entry.title });
     }
   }, [entry?.title, slug, track]);
+
+  const trackExternalClick = (url: string) => {
+    if (entry?.title && slug) {
+      track("external_link_click", { artist_slug: slug, artist_name: entry.title, url });
+    }
+  };
 
   const cachedYt = (entry?.metadata as any)?.youtube_stats;
   const cachedBuzz = (entry?.metadata as any)?.buzz_stats;
@@ -320,7 +327,7 @@ const V3ArtistDetail = () => {
               <>
                 <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">Top Videos</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="space-y-1.5">
-                  {(ytData.topEngagement || ytData.recentVideos || []).slice(0, 10).map((video: any, idx: number) => <VideoRow key={video.videoId} video={video} rank={idx + 1} />)}
+                  {(ytData.topEngagement || ytData.recentVideos || []).slice(0, 10).map((video: any, idx: number) => <VideoRow key={video.videoId} video={video} rank={idx + 1} onExternalClick={trackExternalClick} />)}
                 </div>
               </>
             )}
@@ -360,7 +367,7 @@ const V3ArtistDetail = () => {
             {buzzData.topMentions?.length > 0 && (
               <div className="space-y-1.5">
                 {buzzData.topMentions.map((mention: any, idx: number) => (
-                  <a key={idx} href={mention.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card transition-colors">
+                  <a key={idx} href={mention.url} target="_blank" rel="noopener noreferrer" onClick={() => trackExternalClick(mention.url)} className="flex items-center gap-3 p-3 rounded-xl bg-card/50 hover:bg-card transition-colors">
                     <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
                     <div className="flex-1 min-w-0"><p className="text-xs font-semibold text-foreground line-clamp-2">{mention.title || mention.description || ''}</p></div>
                     <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
