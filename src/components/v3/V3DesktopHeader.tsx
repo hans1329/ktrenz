@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, Search, X, Loader2, ChevronRight } from "lucide-react";
+import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +22,10 @@ interface SearchResult {
   schema_type: string;
 }
 
-const navItems: { id: V3Tab; titleKey: string; icon: typeof TrendingUp }[] = [
+const navItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
   { id: "agent", titleKey: "nav.fanAgent", icon: Bot },
+  { id: "myActivity", titleKey: "nav.myActivity", icon: Activity },
 ];
 
 interface V3DesktopHeaderProps {
@@ -97,7 +98,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => item.id === "agent" ? navigate("/agent") : onTabChange(item.id)}
+                  onClick={() => item.id === "agent" ? navigate("/agent") : item.id === "myActivity" ? navigate("/dashboard") : onTabChange(item.id)}
                   className={cn(
                     "relative flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all",
                     active
