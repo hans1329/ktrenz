@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -166,7 +167,7 @@ function ChannelBar({ icon, label, value, total, color, href }: { icon: React.Re
       </div>
     </div>
   );
-  if (href) return <a href={href} target="_blank" rel="noopener noreferrer">{content}</a>;
+  if (href) return <a href={href} target="_blank" rel="noopener noreferrer" data-track-category={label}>{content}</a>;
   return content;
 }
 
@@ -439,9 +440,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category);
   }, [sortedItems, containerWidth, containerHeight, category]);
 
+  const track = useTrackEvent();
   const handleTileClick = useCallback((item: TreemapItem) => {
     setSelectedItem(prev => prev?.id === item.id ? null : item);
-  }, []);
+    track("treemap_click", { artist_slug: item.slug, artist_name: item.title });
+  }, [track]);
 
   if (isLoading) return (
     <div className="px-4 pb-4">

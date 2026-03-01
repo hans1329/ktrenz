@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect } from "react";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import SEO from "@/components/SEO";
@@ -99,7 +100,9 @@ const V3ArtistDetail = () => {
   });
   const isCrawling = crawlStatus?.status === "running";
 
+  const track = useTrackEvent();
   useEffect(() => { document.documentElement.classList.add("v3-theme"); return () => { document.documentElement.classList.remove("v3-theme"); }; }, []);
+
 
   const { data: entry, isLoading: entryLoading } = useQuery({
     queryKey: ["v3-artist", slug],
@@ -110,6 +113,13 @@ const V3ArtistDetail = () => {
     },
     enabled: !!slug,
   });
+
+  // 상세 페이지 진입 추적
+  useEffect(() => {
+    if (entry?.title && slug) {
+      track("artist_detail_view", { artist_slug: slug, artist_name: entry.title });
+    }
+  }, [entry?.title, slug, track]);
 
   const cachedYt = (entry?.metadata as any)?.youtube_stats;
   const cachedBuzz = (entry?.metadata as any)?.buzz_stats;

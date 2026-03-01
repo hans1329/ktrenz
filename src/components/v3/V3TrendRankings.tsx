@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
 import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { toast } from "sonner";
@@ -135,7 +136,7 @@ const MiniCategoryBars = ({ data }: { data: Record<string, { velocity: number; i
   );
 };
 
-const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }> }) => {
+const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }>; onTrack?: () => void }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
 
@@ -149,7 +150,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
 
   return (
-    <Link to={`/artist/${entry.slug}`} className="block">
+    <Link to={`/artist/${entry.slug}`} className="block" onClick={onTrack}>
       <div className={cn("relative rounded-2xl p-4 transition-all active:scale-[0.97]", "bg-gradient-to-br", rankStyles.gradient, rankStyles.glow, "bg-card hover:shadow-card-hover")}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
@@ -204,14 +205,14 @@ const PodiumCard = ({ item, rank, maxScore, energyData }: { item: any; rank: num
   );
 };
 
-const RankingRow = ({ item, rank, maxScore }: { item: any; rank: number; maxScore: number }) => {
+const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number; maxScore: number; onTrack?: () => void }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
   const scorePercent = maxScore > 0 ? (displayScore / maxScore) * 100 : 0;
 
   return (
-    <Link to={`/artist/${entry.slug}`}>
+    <Link to={`/artist/${entry.slug}`} onClick={onTrack}>
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 hover:bg-card transition-colors active:scale-[0.98]">
         <span className="w-6 text-center text-sm font-bold text-muted-foreground">{rank}</span>
         <Avatar className="w-10 h-10 shrink-0">
@@ -250,6 +251,7 @@ type Period = "1D" | "1W" | "1M" | "3M";
 const periodDays: Record<Period, number> = { "1D": 1, "1W": 7, "1M": 30, "3M": 90 };
 
 const V3TrendRankings = () => {
+  const track = useTrackEvent();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const { isAdmin } = useAdminAuth();
@@ -592,7 +594,7 @@ const V3TrendRankings = () => {
               <p className="text-xs text-muted-foreground mt-0.5 pl-7">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
             </div>
             {top3.map((item, idx) => (
-              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} />
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             ))}
             <Link to="/rankings"
               className="flex items-center justify-center gap-2 py-3 rounded-xl bg-muted/50 hover:bg-muted text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
@@ -671,7 +673,7 @@ const V3TrendRankings = () => {
           </div>
           <div className="px-4 space-y-3 mb-4">
             {top3.map((item, idx) => (
-              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} />
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             ))}
           </div>
           {rest.length > 0 && (
@@ -684,7 +686,7 @@ const V3TrendRankings = () => {
                 </div>
               </div>
               <div className="px-4 space-y-1.5">
-                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} />)}
+                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />)}
               </div>
             </>
           )}
