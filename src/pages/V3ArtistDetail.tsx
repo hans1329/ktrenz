@@ -136,9 +136,24 @@ const V3ArtistDetail = () => {
     return "other";
   };
 
-  const trackExternalClick = (url: string) => {
+  const trackExternalClick = async (url: string) => {
     if (entry?.title && slug) {
-      track("external_link_click", { artist_slug: slug, artist_name: entry.title, url, platform: detectPlatform(url) });
+      const platform = detectPlatform(url);
+      track("external_link_click", { artist_slug: slug, artist_name: entry.title, url, platform });
+
+      // 기여도 기록 (로그인 유저만)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && entry?.id) {
+        const dbPlatform: Record<string, string> = {
+          YouTube: "youtube", X: "twitter", Reddit: "reddit", TikTok: "tiktok",
+          Instagram: "instagram", Spotify: "spotify", Melon: "melon", Naver: "naver",
+        };
+        supabase.rpc("ktrenz_record_contribution" as any, {
+          _user_id: user.id,
+          _wiki_entry_id: entry.id,
+          _platform: dbPlatform[platform] || "other",
+        });
+      }
     }
   };
 
