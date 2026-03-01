@@ -257,21 +257,19 @@ function calculateYouTubeScore(data: {
   totalViewCount: number;
   recentTotalViews: number;
   recentTotalLikes: number;
-  recentTotalComments: number;
   videoCount?: number;
-  previousRecentTotalViews?: number; // 이전 스냅샷의 recentTotalViews
+  previousRecentTotalViews?: number;
 }): number {
   const subScore = (data.subscriberCount / 1_000_000) * 100;
   const totalViewScore = (data.totalViewCount / 100_000_000) * 50;
   const recentViewScore = (data.recentTotalViews / 1_000_000) * 30;
-  const recentEngagement = ((data.recentTotalLikes + data.recentTotalComments) / 100_000) * 20;
+  // 댓글은 Buzz로 분리됨 — 좋아요만 인게이지먼트로 반영
+  const recentEngagement = (data.recentTotalLikes / 100_000) * 20;
   const volumeScore = Math.min(50, ((data.videoCount ?? 0) / 100) * 10);
 
-  // MV 조회수 일간 증가율 모멘텀 보너스 (최대 500점)
   let momentumBonus = 0;
   if (data.previousRecentTotalViews && data.previousRecentTotalViews > 0 && data.recentTotalViews > data.previousRecentTotalViews) {
     const growthRate = (data.recentTotalViews - data.previousRecentTotalViews) / data.previousRecentTotalViews;
-    // 10% 증가 = 100점, 50% = 500점 (캡)
     momentumBonus = Math.min(500, Math.round(growthRate * 1000));
     if (momentumBonus > 0) {
       console.log(`[DataCollector] YouTube Momentum: +${(growthRate * 100).toFixed(1)}% → bonus ${momentumBonus}pts`);
@@ -517,7 +515,7 @@ async function collectForSingleArtist(
           wiki_entry_id: wikiEntryId, platform: "youtube",
           metrics: {
             subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount,
-            recentTotalViews: ytData.recentTotalViews,
+            recentTotalViews: ytData.recentTotalViews, recentTotalComments: ytData.recentTotalComments,
             musicVideoViews: ytData.musicVideoViews, musicVideoCount: ytData.musicVideoCount,
           },
         });
