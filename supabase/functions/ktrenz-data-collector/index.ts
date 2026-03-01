@@ -865,7 +865,11 @@ Deno.serve(async (req) => {
             await upsertV3Score(adminClient, artist.id, { youtube_score: ytScore });
             await adminClient.from("ktrenz_data_snapshots").insert({
               wiki_entry_id: artist.id, platform: "youtube",
-              metrics: { subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount, recentTotalViews: ytData.recentTotalViews },
+              metrics: {
+                subscriberCount: ytData.subscriberCount, totalViewCount: ytData.totalViewCount,
+                recentTotalViews: ytData.recentTotalViews, recentTotalComments: ytData.recentTotalComments || 0,
+                musicVideoViews: ytData.musicVideoViews || 0, musicVideoCount: ytData.musicVideoCount || 0,
+              },
             });
             // 최신 영상 ID 저장
             if (ytData.latestVideo?.videoId) {
@@ -879,7 +883,28 @@ Deno.serve(async (req) => {
             }
             ytUpdated++;
           }
-          // YouTube API quota 보호 (고정 ID 기준 약 3 calls/artist)
+
+          // YouTube Music Topic 채널 데이터 수집 (배치)
+          if (endpoints?.youtube_topic_channel_id && YOUTUBE_API_KEY) {
+            try {
+              const topicData = await fetchYouTubeTopicData(artist.title, YOUTUBE_API_KEY, endpoints.youtube_topic_channel_id, false);
+              if (topicData) {
+                await adminClient.from("ktrenz_data_snapshots").insert({
+                  wiki_entry_id: artist.id, platform: "youtube_music",
+                  metrics: {
+                    topicTotalViews: topicData.topicTotalViews,
+                    topicSubscribers: topicData.topicSubscribers,
+                    topTracks: topicData.topMusicTracks || [],
+                  },
+                });
+                console.log(`[DataCollector] YT Music batch: ${artist.title} → subs=${topicData.topicSubscribers}, views=${topicData.topicTotalViews}`);
+              }
+            } catch (topicErr) {
+              console.warn(`[DataCollector] YT Music batch error for ${artist.title}:`, (topicErr as any).message);
+            }
+          }
+
+          // YouTube API quota 보호 (고정 ID 기준 약 3-6 calls/artist)
           await new Promise(r => setTimeout(r, 500));
         } catch (e) { ytErrors++; }
       }
