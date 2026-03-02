@@ -1800,13 +1800,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "homework_completions_homework_content_id_fkey"
-            columns: ["homework_content_id"]
-            isOneToOne: false
-            referencedRelation: "homework_contents"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "homework_completions_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
             isOneToOne: false
