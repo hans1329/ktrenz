@@ -7361,6 +7361,7 @@ export type Database = {
         Args: { post_id_param: string }
         Returns: undefined
       }
+      increment_view_count: { Args: { entry_id: string }; Returns: undefined }
       increment_voucher_usage: {
         Args: { _amount_usd: number; _gas_usd?: number; _voucher_id: string }
         Returns: undefined
