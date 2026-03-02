@@ -660,11 +660,11 @@ const AdminRankings = () => {
 
   const ChangeIndicator = ({ value, artist }: { value: number | null | undefined; artist: ArtistTier }) => {
     if (value == null) return <span className="text-muted-foreground">—</span>;
-    const inner = value >= 10
+    const inner = value > 0
       ? <span className="text-emerald-500 flex items-center gap-0.5 text-xs font-medium"><TrendingUp className="w-3 h-3" />+{value.toFixed(1)}%</span>
-      : value > -5
-        ? <span className="text-muted-foreground flex items-center gap-0.5 text-xs"><Minus className="w-3 h-3" />{value.toFixed(1)}%</span>
-        : <span className="text-red-500 flex items-center gap-0.5 text-xs font-medium"><TrendingDown className="w-3 h-3" />{value.toFixed(1)}%</span>;
+      : value < 0
+        ? <span className="text-red-500 flex items-center gap-0.5 text-xs font-medium"><TrendingDown className="w-3 h-3" />{value.toFixed(1)}%</span>
+        : <span className="text-muted-foreground flex items-center gap-0.5 text-xs"><Minus className="w-3 h-3" />0%</span>;
     return (
       <button className="hover:underline cursor-pointer" onClick={() => setDetailArtist(artist)}>
         {inner}
