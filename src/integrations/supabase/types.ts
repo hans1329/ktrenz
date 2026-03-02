@@ -316,6 +316,90 @@ export type Database = {
         }
         Relationships: []
       }
+      artist_community_funds: {
+        Row: {
+          id: string
+          total_fund_usdc: number
+          total_throws: number
+          updated_at: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          id?: string
+          total_fund_usdc?: number
+          total_throws?: number
+          updated_at?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          id?: string
+          total_fund_usdc?: number
+          total_throws?: number
+          updated_at?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_community_funds_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: true
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artist_fan_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          tier: string
+          total_thrown: number
+          updated_at: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tier?: string
+          total_thrown?: number
+          updated_at?: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tier?: string
+          total_thrown?: number
+          updated_at?: string
+          user_id?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_fan_tiers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_fan_tiers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_fan_tiers_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artist_listing_requests: {
         Row: {
           artist_name: string
@@ -1689,6 +1773,101 @@ export type Database = {
         }
         Relationships: []
       }
+      homework_completions: {
+        Row: {
+          completed_at: string
+          energy_cost: number
+          homework_content_id: string
+          id: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          completed_at?: string
+          energy_cost?: number
+          homework_content_id: string
+          id?: string
+          user_id: string
+          wiki_entry_id: string
+        }
+        Update: {
+          completed_at?: string
+          energy_cost?: number
+          homework_content_id?: string
+          id?: string
+          user_id?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_completions_homework_content_id_fkey"
+            columns: ["homework_content_id"]
+            isOneToOne: false
+            referencedRelation: "homework_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "homework_completions_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homework_contents: {
+        Row: {
+          content_type: string
+          created_at: string
+          description: string | null
+          display_date: string
+          display_order: number
+          id: string
+          is_active: boolean
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          url: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          display_date?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          url: string
+          wiki_entry_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          display_date?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_contents_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_code_uses: {
         Row: {
           id: string
@@ -2359,6 +2538,118 @@ export type Database = {
         }
         Relationships: []
       }
+      lightstick_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_purchased: number
+          total_thrown: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_purchased?: number
+          total_thrown?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_purchased?: number
+          total_thrown?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lightstick_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lightstick_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lightstick_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          onchain_batch_hash: string | null
+          onchain_tx_hash: string | null
+          payment_method: string | null
+          stripe_session_id: string | null
+          total_usdc: number
+          type: string
+          unit_price_usdc: number
+          user_id: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          onchain_batch_hash?: string | null
+          onchain_tx_hash?: string | null
+          payment_method?: string | null
+          stripe_session_id?: string | null
+          total_usdc: number
+          type: string
+          unit_price_usdc?: number
+          user_id: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          onchain_batch_hash?: string | null
+          onchain_tx_hash?: string | null
+          payment_method?: string | null
+          stripe_session_id?: string | null
+          total_usdc?: number
+          type?: string
+          unit_price_usdc?: number
+          user_id?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lightstick_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lightstick_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lightstick_transactions_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lol_badges: {
         Row: {
           color: string
@@ -2607,6 +2898,135 @@ export type Database = {
           vision_score?: number
         }
         Relationships: []
+      }
+      market_groups: {
+        Row: {
+          close_time: string
+          correct_option_label: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          question: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          close_time: string
+          correct_option_label?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          question: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string
+          correct_option_label?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          question?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_pools: {
+        Row: {
+          close_time: string
+          collateral_locked: number
+          correct_outcome: string | null
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          fee_rate: number
+          group_id: string | null
+          id: string
+          image_url: string | null
+          no_shares: number
+          option_label: string | null
+          question: string
+          seed_usdc: number
+          settled_at: string | null
+          settled_by: string | null
+          status: string
+          total_fees_usdc: number
+          total_volume_usdc: number
+          updated_at: string | null
+          version: number
+          wiki_entry_id: string | null
+          yes_shares: number
+        }
+        Insert: {
+          close_time: string
+          collateral_locked?: number
+          correct_outcome?: string | null
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          fee_rate?: number
+          group_id?: string | null
+          id?: string
+          image_url?: string | null
+          no_shares?: number
+          option_label?: string | null
+          question: string
+          seed_usdc?: number
+          settled_at?: string | null
+          settled_by?: string | null
+          status?: string
+          total_fees_usdc?: number
+          total_volume_usdc?: number
+          updated_at?: string | null
+          version?: number
+          wiki_entry_id?: string | null
+          yes_shares?: number
+        }
+        Update: {
+          close_time?: string
+          collateral_locked?: number
+          correct_outcome?: string | null
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          fee_rate?: number
+          group_id?: string | null
+          id?: string
+          image_url?: string | null
+          no_shares?: number
+          option_label?: string | null
+          question?: string
+          seed_usdc?: number
+          settled_at?: string | null
+          settled_by?: string | null
+          status?: string
+          total_fees_usdc?: number
+          total_volume_usdc?: number
+          updated_at?: string | null
+          version?: number
+          wiki_entry_id?: string | null
+          yes_shares?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_pools_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "market_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_pools_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       master_applications: {
         Row: {
@@ -3983,6 +4403,71 @@ export type Database = {
           },
         ]
       }
+      swap_history: {
+        Row: {
+          action: string
+          client_ip: string | null
+          created_at: string | null
+          fee_usdc: number
+          id: string
+          market_id: string
+          no_pool_after: number | null
+          no_pool_before: number | null
+          outcome: string
+          price_after_yes: number | null
+          price_before_yes: number | null
+          shares_amount: number
+          usdc_amount: number
+          user_id: string
+          yes_pool_after: number | null
+          yes_pool_before: number | null
+        }
+        Insert: {
+          action: string
+          client_ip?: string | null
+          created_at?: string | null
+          fee_usdc: number
+          id?: string
+          market_id: string
+          no_pool_after?: number | null
+          no_pool_before?: number | null
+          outcome: string
+          price_after_yes?: number | null
+          price_before_yes?: number | null
+          shares_amount: number
+          usdc_amount: number
+          user_id: string
+          yes_pool_after?: number | null
+          yes_pool_before?: number | null
+        }
+        Update: {
+          action?: string
+          client_ip?: string | null
+          created_at?: string | null
+          fee_usdc?: number
+          id?: string
+          market_id?: string
+          no_pool_after?: number | null
+          no_pool_before?: number | null
+          outcome?: string
+          price_after_yes?: number | null
+          price_before_yes?: number | null
+          shares_amount?: number
+          usdc_amount?: number
+          user_id?: string
+          yes_pool_after?: number | null
+          yes_pool_before?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swap_history_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "market_pools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_jobs: {
         Row: {
           completed_at: string | null
@@ -4084,6 +4569,36 @@ export type Database = {
           created_at?: string
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usdc_deposits: {
+        Row: {
+          amount: number
+          created_at: string
+          from_address: string
+          id: string
+          status: string
+          tx_hash: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          from_address: string
+          id?: string
+          status?: string
+          tx_hash: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          from_address?: string
+          id?: string
+          status?: string
+          tx_hash?: string
           user_id?: string
         }
         Relationships: []
@@ -4440,6 +4955,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_shares: {
+        Row: {
+          cost_basis_usdc: number
+          id: string
+          market_id: string
+          outcome: string
+          shares: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cost_basis_usdc?: number
+          id?: string
+          market_id: string
+          outcome: string
+          shares?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cost_basis_usdc?: number
+          id?: string
+          market_id?: string
+          outcome?: string
+          shares?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_shares_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "market_pools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v3_agent_alerts: {
         Row: {
@@ -6536,6 +7089,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      auto_close_expired_markets: { Args: never; Returns: undefined }
       award_daily_login_bonus: {
         Args: { user_id_param: string }
         Returns: boolean
@@ -6569,6 +7123,7 @@ export type Database = {
         Args: { entry_id_param: string }
         Returns: undefined
       }
+      calculate_fan_tier: { Args: { thrown_count: number }; Returns: string }
       calculate_fanz_buy_cost: {
         Args: { amount_param?: number; token_id_param: string }
         Returns: number
@@ -6676,6 +7231,16 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      execute_swap: {
+        Args: {
+          p_action: string
+          p_amount: number
+          p_market_id: string
+          p_outcome: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       expire_boosted_posts: { Args: never; Returns: undefined }
       generate_invitation_code: { Args: never; Returns: string }
@@ -6849,6 +7414,22 @@ export type Database = {
       save_user_fingerprint: {
         Args: { p_fingerprint: string; p_user_id: string }
         Returns: undefined
+      }
+      settle_group_market: {
+        Args: {
+          p_admin_id: string
+          p_correct_option_label: string
+          p_group_id: string
+        }
+        Returns: Json
+      }
+      settle_market: {
+        Args: {
+          p_admin_id: string
+          p_correct_outcome: string
+          p_market_id: string
+        }
+        Returns: Json
       }
       unpin_post: { Args: { post_id_param: string }; Returns: boolean }
       unpin_wiki_entry: {
