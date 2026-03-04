@@ -16,6 +16,39 @@ function clampDelta(delta: number, base: number): number {
   return Math.max(0, Math.min(delta, cap));
 }
 
+/**
+ * 누적 메트릭의 증가량 기반 델타 점수 (delta-over-delta)
+ * 
+ * 예: topicTotalViews 45억 → 45억 2백만 → 45억 1천만
+ *   어제 증가량: 2백만, 오늘 증가량: 8백만 → acceleration = 4.0x
+ *   → log10(8백만) * scale * 4.0 으로 점수화
+ * 
+ * @param current 현재 누적값
+ * @param prev24h 24시간 전 누적값
+ * @param prev48h 48시간 전 누적값 (없으면 acceleration 미적용)
+ * @param scale 점수 배율
+ */
+function incrementDeltaScore(current: number, prev24h: number, prev48h: number | null, scale: number): number {
+  if (prev24h <= 0 || current <= prev24h) return 0;
+  const increment = current - prev24h;
+
+  // log-scaled increment magnitude (기본 점수)
+  let score = Math.round(Math.log10(Math.max(increment, 1)) * scale);
+
+  // Acceleration: 어제 증가량 대비 오늘 증가량 비율
+  if (prev48h != null && prev48h > 0 && prev24h > prev48h) {
+    const prevIncrement = prev24h - prev48h;
+    if (prevIncrement > 0) {
+      const acceleration = increment / prevIncrement; // 1.0 = 동일, 5.0 = 5배 증가
+      const multiplier = Math.max(0.3, Math.min(5, acceleration));
+      score = Math.round(score * multiplier);
+      console.log(`[DataCollector] Acceleration: today=${increment.toLocaleString()} vs yesterday=${prevIncrement.toLocaleString()} → ${acceleration.toFixed(2)}x`);
+    }
+  }
+
+  return score;
+}
+
 // ── 한글↔영문 아티스트명 매핑 ──
 const ARTIST_NAME_MAP: Record<string, string[]> = {
   "방탄소년단": ["BTS", "방탄소년단"],
@@ -288,11 +321,12 @@ function calculateYouTubeScore(data: {
   previousRecentTotalLikes?: number;
   previousRecentTotalComments?: number;
   previousTotalViewCount?: number;
+  prev48hTotalViewCount?: number;
 }): number {
   // ── Base Score (30%): 절대 규모 — log scale로 압축 ──
-  const subBase = data.subscriberCount > 0 ? Math.log10(data.subscriberCount) * 50 : 0; // 100M → 400
-  const viewBase = data.totalViewCount > 0 ? Math.log10(data.totalViewCount) * 30 : 0;  // 41B → 318
-  const baseScore = subBase + viewBase; // ~718 max for top artists
+  const subBase = data.subscriberCount > 0 ? Math.log10(data.subscriberCount) * 50 : 0;
+  const viewBase = data.totalViewCount > 0 ? Math.log10(data.totalViewCount) * 30 : 0;
+  const baseScore = subBase + viewBase;
 
   // ── Delta Score (70%): 24h 변동분 기반 ──
   let deltaScore = 0;
@@ -300,11 +334,9 @@ function calculateYouTubeScore(data: {
   // 최근 영상 조회수 변동
   if (data.previousRecentTotalViews && data.previousRecentTotalViews > 0) {
     const viewDelta = data.recentTotalViews - data.previousRecentTotalViews;
-    // 양수/음수 모두 반영 — 100만 조회 증가 = 1000점
     deltaScore += Math.round((viewDelta / 100_000) * 100);
     console.log(`[DataCollector] YouTube Delta Views: ${viewDelta > 0 ? '+' : ''}${viewDelta.toLocaleString()} → ${Math.round((viewDelta / 100_000) * 100)}pts`);
   } else {
-    // 이전 데이터 없으면 현재 recentViews 기반 fallback
     deltaScore += Math.round((data.recentTotalViews / 1_000_000) * 30);
   }
 
@@ -316,10 +348,15 @@ function calculateYouTubeScore(data: {
     deltaScore += Math.round((data.recentTotalLikes / 100_000) * 20);
   }
 
-  // 총 조회수 변동 (채널 전체)
+  // 총 조회수 변동 (채널 전체) — delta-over-delta 적용
   if (data.previousTotalViewCount && data.previousTotalViewCount > 0) {
-    const totalViewDelta = data.totalViewCount - data.previousTotalViewCount;
-    deltaScore += Math.round((totalViewDelta / 1_000_000) * 50);
+    const totalViewDeltaScore = incrementDeltaScore(
+      data.totalViewCount,
+      data.previousTotalViewCount,
+      data.prev48hTotalViewCount ?? null,
+      50,
+    );
+    deltaScore += totalViewDeltaScore;
   }
 
   // deltaScore: 최소 0, 최대 baseScore * 5 (이상치 방지)
@@ -509,6 +546,7 @@ function calculateMusicScore(
   ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null,
   ytMusicVideos?: { musicVideoViews?: number; musicVideoCount?: number } | null,
   prevMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
+  prev48hMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
 ): number {
   // ── Base Score (30%): log scale 절대값 ──
   let baseScore = 0;
@@ -519,43 +557,49 @@ function calculateMusicScore(
   if (ytMusic?.topicSubscribers && ytMusic.topicSubscribers > 0) baseScore += Math.round(Math.log10(ytMusic.topicSubscribers + 1) * 8);
   if (ytMusicVideos?.musicVideoViews && ytMusicVideos.musicVideoViews > 0) baseScore += Math.round(Math.log10(ytMusicVideos.musicVideoViews + 1) * 12);
 
-  // ── Delta Score (70%): 24h 변동분 기반 ──
+  // ── Delta Score (70%): delta-over-delta (증가량의 변동률) ──
   let deltaScore = 0;
   let hasPrev = false;
 
   if (prevMetrics) {
-    // Last.fm playcount 변동
+    // Last.fm playcount — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.lastfm_playcount && prevMetrics.lastfm_playcount > 0 && lastfm?.playcount > 0) {
-      const delta = lastfm.playcount - prevMetrics.lastfm_playcount;
-      deltaScore += Math.round((delta / 10_000) * 30);
+      deltaScore += incrementDeltaScore(
+        lastfm.playcount, prevMetrics.lastfm_playcount,
+        prev48hMetrics?.lastfm_playcount ?? null, 30,
+      );
       hasPrev = true;
     }
-    // Deezer fans 변동
+    // Deezer fans — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.deezer_fans && prevMetrics.deezer_fans > 0 && deezer?.fans > 0) {
-      const delta = deezer.fans - prevMetrics.deezer_fans;
-      deltaScore += Math.round((delta / 1_000) * 20);
+      deltaScore += incrementDeltaScore(
+        deezer.fans, prevMetrics.deezer_fans,
+        prev48hMetrics?.deezer_fans ?? null, 20,
+      );
       hasPrev = true;
     }
-    // YT Music topic views 변동
+    // YT Music topic views — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.topic_views && prevMetrics.topic_views > 0 && ytMusic?.topicTotalViews) {
-      const delta = ytMusic.topicTotalViews - prevMetrics.topic_views;
-      deltaScore += Math.round((delta / 100_000) * 40);
+      deltaScore += incrementDeltaScore(
+        ytMusic.topicTotalViews, prevMetrics.topic_views,
+        prev48hMetrics?.topic_views ?? null, 40,
+      );
       hasPrev = true;
     }
-    // MV views 변동
+    // MV views — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.mv_views && prevMetrics.mv_views > 0 && ytMusicVideos?.musicVideoViews) {
-      const delta = ytMusicVideos.musicVideoViews - prevMetrics.mv_views;
-      deltaScore += Math.round((delta / 100_000) * 50);
+      deltaScore += incrementDeltaScore(
+        ytMusicVideos.musicVideoViews, prevMetrics.mv_views,
+        prev48hMetrics?.mv_views ?? null, 50,
+      );
       hasPrev = true;
     }
   }
 
   if (!hasPrev) {
-    // 이전 데이터 없으면 기존 방식 fallback
     return baseScore;
   }
 
-  // deltaScore: 최소 0, 최대 baseScore * 5 (Deezer 오매칭 등 이상치 방지)
   deltaScore = clampDelta(deltaScore, baseScore);
 
   const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
@@ -652,21 +696,22 @@ async function collectForSingleArtist(
       } else {
         const ytData = await fetchYouTubeData(artistTitle, keys.youtube, endpoints.youtube_channel_id, false);
         if (ytData) {
-        // 24시간 전 스냅샷에서 recentTotalViews 가져오기 (일간 모멘텀 계산용)
+        // 24시간 전 + 48시간 전 스냅샷 가져오기 (delta-over-delta용)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { data: prevSnapshot } = await adminClient
-          .from("ktrenz_data_snapshots")
-          .select("metrics")
-          .eq("wiki_entry_id", wikiEntryId)
-          .eq("platform", "youtube")
-          .lte("collected_at", oneDayAgo)
-          .order("collected_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+        const [{ data: prevSnapshot }, { data: prev48hSnapshot }] = await Promise.all([
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube")
+            .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube")
+            .lte("collected_at", twoDaysAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+        ]);
         const previousRecentTotalViews = prevSnapshot?.metrics?.recentTotalViews ?? 0;
         const previousRecentTotalLikes = prevSnapshot?.metrics?.recentTotalLikes ?? 0;
         const previousRecentTotalComments = prevSnapshot?.metrics?.recentTotalComments ?? 0;
         const previousTotalViewCount = prevSnapshot?.metrics?.totalViewCount ?? 0;
+        const prev48hTotalViewCount = prev48hSnapshot?.metrics?.totalViewCount ?? 0;
 
         const ytScore = calculateYouTubeScore({
           ...ytData,
@@ -674,6 +719,7 @@ async function collectForSingleArtist(
           previousRecentTotalLikes,
           previousRecentTotalComments,
           previousTotalViewCount,
+          prev48hTotalViewCount,
         });
         await upsertV3Score(adminClient, wikiEntryId, {
           youtube_score: ytScore,
@@ -794,11 +840,13 @@ async function collectForSingleArtist(
         }
       }
       if (lastfm || deezer || ytMusicData || ytMvData) {
-        // 24h 전 스냅샷에서 이전 메트릭 가져오기
+        // 24h + 48h 전 스냅샷에서 이전 메트릭 가져오기 (delta-over-delta용)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        let prevMusicMetrics: any = null;
+        const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-        const [prevLastfmSnap, prevDeezerSnap, prevYtmSnap, prevYtSnap] = await Promise.all([
+        const [prevLastfmSnap, prevDeezerSnap, prevYtmSnap, prevYtSnap,
+               prev48hLastfmSnap, prev48hDeezerSnap, prev48hYtmSnap, prev48hYtSnap] = await Promise.all([
+          // 24h ago
           adminClient.from("ktrenz_data_snapshots").select("metrics")
             .eq("wiki_entry_id", wikiEntryId).eq("platform", "lastfm")
             .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
@@ -811,16 +859,36 @@ async function collectForSingleArtist(
           adminClient.from("ktrenz_data_snapshots").select("metrics")
             .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube")
             .lte("collected_at", oneDayAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          // 48h ago
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "lastfm")
+            .lte("collected_at", twoDaysAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "deezer")
+            .lte("collected_at", twoDaysAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube_music")
+            .lte("collected_at", twoDaysAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
+          adminClient.from("ktrenz_data_snapshots").select("metrics")
+            .eq("wiki_entry_id", wikiEntryId).eq("platform", "youtube")
+            .lte("collected_at", twoDaysAgo).order("collected_at", { ascending: false }).limit(1).maybeSingle(),
         ]);
 
-        prevMusicMetrics = {
+        const prevMusicMetrics = {
           lastfm_playcount: prevLastfmSnap?.data?.metrics?.playcount ?? 0,
           deezer_fans: prevDeezerSnap?.data?.metrics?.fans ?? 0,
           topic_views: prevYtmSnap?.data?.metrics?.topicTotalViews ?? 0,
           mv_views: prevYtSnap?.data?.metrics?.musicVideoViews ?? 0,
         };
 
-        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics);
+        const prev48hMusicMetrics = {
+          lastfm_playcount: prev48hLastfmSnap?.data?.metrics?.playcount ?? 0,
+          deezer_fans: prev48hDeezerSnap?.data?.metrics?.fans ?? 0,
+          topic_views: prev48hYtmSnap?.data?.metrics?.topicTotalViews ?? 0,
+          mv_views: prev48hYtSnap?.data?.metrics?.musicVideoViews ?? 0,
+        };
+
+        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics);
         await upsertV3Score(adminClient, wikiEntryId, {
           music_score: musicScore,
         });
