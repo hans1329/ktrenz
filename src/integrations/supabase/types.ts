@@ -5394,6 +5394,9 @@ export type Database = {
           buzz_score: number | null
           buzz_velocity: number | null
           energy_score: number
+          fan_intensity: number | null
+          fan_score: number | null
+          fan_velocity: number | null
           id: string
           is_baseline: boolean
           music_intensity: number | null
@@ -5413,6 +5416,9 @@ export type Database = {
           buzz_score?: number | null
           buzz_velocity?: number | null
           energy_score?: number
+          fan_intensity?: number | null
+          fan_score?: number | null
+          fan_velocity?: number | null
           id?: string
           is_baseline?: boolean
           music_intensity?: number | null
@@ -5432,6 +5438,9 @@ export type Database = {
           buzz_score?: number | null
           buzz_velocity?: number | null
           energy_score?: number
+          fan_intensity?: number | null
+          fan_score?: number | null
+          fan_velocity?: number | null
           id?: string
           is_baseline?: boolean
           music_intensity?: number | null
@@ -5693,6 +5702,8 @@ export type Database = {
           energy_change_24h: number | null
           energy_rank: number | null
           energy_score: number | null
+          fan_change_24h: number | null
+          fan_score: number | null
           id: string
           music_change_24h: number | null
           music_score: number | null
@@ -5710,6 +5721,8 @@ export type Database = {
           energy_change_24h?: number | null
           energy_rank?: number | null
           energy_score?: number | null
+          fan_change_24h?: number | null
+          fan_score?: number | null
           id?: string
           music_change_24h?: number | null
           music_score?: number | null
@@ -5727,6 +5740,8 @@ export type Database = {
           energy_change_24h?: number | null
           energy_rank?: number | null
           energy_score?: number | null
+          fan_change_24h?: number | null
+          fan_score?: number | null
           id?: string
           music_change_24h?: number | null
           music_score?: number | null
