@@ -292,10 +292,10 @@ export default function V3MissionCards({
           <Zap className="w-5 h-5 text-amber-400" />
           <p className="text-sm font-bold text-foreground uppercase tracking-wider">Today's Mission</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="font-bold text-primary">{completedCount}/{missions.length}</span>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="font-bold text-primary text-base">{completedCount}/{missions.length}</span>
           <span>·</span>
-          <span className="font-bold text-amber-500">+{totalPoints}P</span>
+          <span className="font-extrabold text-amber-500 text-base">+{totalPoints}P</span>
         </div>
       </div>
 
