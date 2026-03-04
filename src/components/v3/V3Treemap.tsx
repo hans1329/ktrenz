@@ -303,18 +303,19 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                         </rect>
                       </svg>
                       {/* Particle overlay on dominant segment */}
-                      <div className="absolute top-0 pointer-events-none overflow-hidden"
+                      <div className="absolute top-0 pointer-events-none"
                         style={{
                           left: `${domLeftPct}%`,
                           width: `${domWidthPct}%`,
                           height: '100%',
-                          borderRadius: 'inherit',
+                          borderRadius: '9999px',
+                          overflow: 'hidden',
                         }}>
                         <BoxParticles
                           count={15}
                           color="hsl(0, 0%, 100%)"
                           speed={0.4}
-                          density={0.25}
+                          density={0.35}
                         />
                       </div>
                     </div>
