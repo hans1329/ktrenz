@@ -80,10 +80,16 @@ export default {
             height: "0",
           },
         },
+        "shake": {
+          "0%, 100%": { transform: "translateX(0)" },
+          "15%, 45%, 75%": { transform: "translateX(-2px)" },
+          "30%, 60%, 90%": { transform: "translateX(2px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "shake": "shake 0.5s ease-in-out",
       },
     },
   },

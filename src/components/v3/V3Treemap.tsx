@@ -246,14 +246,18 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
                 </p>
-                {/* Single stacked bar */}
+                {/* Animated stacked bar with countup + shake on top category */}
                 {(() => {
-                  // Use absolute change values for the bar — categories with 0% change get no space
                   const changeChannels = channels.map(ch => ({ ...ch, absChange: Math.abs(ch.change) }));
                   const totalChange = changeChannels.reduce((sum, ch) => sum + ch.absChange, 0);
                   const activeChannels = changeChannels.filter(ch => ch.absChange > 0);
                   if (activeChannels.length === 0 || totalChange === 0) return null;
-                  // Build gradient stops with smooth blending at boundaries
+
+                  // Find the dominant category (highest absolute change)
+                  const maxChange = Math.max(...activeChannels.map(ch => ch.absChange));
+                  const dominantIndex = activeChannels.findIndex(ch => ch.absChange === maxChange);
+
+                  // Build gradient stops
                   const stops: { offset: string; color: string }[] = [];
                   let cumPct = 0;
                   const blendSize = 3;
@@ -269,36 +273,77 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   });
                   stops.push({ offset: `100%`, color: activeChannels[activeChannels.length - 1].color });
                   const gradId = `cat-grad-${item.id}`;
+
+                  // Calculate dominant segment boundaries for glow overlay
+                  let domStart = 0;
+                  for (let i = 0; i < dominantIndex; i++) {
+                    domStart += (activeChannels[i].absChange / totalChange) * 200;
+                  }
+                  const domWidth = (activeChannels[dominantIndex].absChange / totalChange) * 200;
+
                   return (
-                    <svg className="w-full h-7" preserveAspectRatio="none" viewBox="0 0 200 14" style={{ borderRadius: '9999px', overflow: 'hidden', display: 'block' }}>
-                      <defs>
-                        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                          {stops.map((s, i) => <stop key={i} offset={s.offset} stopColor={s.color} />)}
-                        </linearGradient>
-                      </defs>
-                      <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill={`url(#${gradId})`} />
-                    </svg>
+                    <div className="relative">
+                      <svg className="w-full h-7" preserveAspectRatio="none" viewBox="0 0 200 14"
+                        style={{ borderRadius: '9999px', overflow: 'hidden', display: 'block' }}>
+                        <defs>
+                          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+                            {stops.map((s, i) => <stop key={i} offset={s.offset} stopColor={s.color} />)}
+                          </linearGradient>
+                          <filter id={`glow-${item.id}`}>
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feMerge>
+                              <feMergeNode in="blur" />
+                              <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        {/* Background track */}
+                        <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill="hsl(var(--muted))" opacity="0.3" />
+                        {/* Animated fill bar — countup from 0 to full width */}
+                        <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill={`url(#${gradId})`}>
+                          <animate attributeName="width" from="0" to="200" dur="0.8s" fill="freeze"
+                            calcMode="spline" keySplines="0.25 0.1 0.25 1" keyTimes="0;1" />
+                        </rect>
+                        {/* Pulsing glow on dominant segment */}
+                        <rect x={domStart} y="0" width={domWidth} height="14" rx="3" ry="3"
+                          fill={activeChannels[dominantIndex].color} opacity="0"
+                          filter={`url(#glow-${item.id})`}>
+                          <animate attributeName="opacity" values="0;0;0.4;0.15;0.4;0.15" dur="2.5s"
+                            begin="0.8s" repeatCount="2" fill="freeze" />
+                        </rect>
+                      </svg>
+                    </div>
                   );
                 })()}
                 {/* Legend with change % */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
-                  {channels.map(ch => {
-                    const shortLabel = ch.label.split(' · ')[0];
-                    return (
-                      <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
-                        className={cn("flex items-center justify-between py-1 group", ch.href && "cursor-pointer")}>
-                        <span className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
-                          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: ch.color }} />
-                          {ch.icon} {shortLabel}
-                        </span>
-                        <span className={cn("text-[10px] font-bold",
-                          ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
-                        )}>
-                          {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
-                        </span>
-                      </a>
-                    );
-                  })}
+                  {(() => {
+                    const maxAbsChange = Math.max(...channels.map(ch => Math.abs(ch.change)));
+                    return channels.map(ch => {
+                      const shortLabel = ch.label.split(' · ')[0];
+                      const isDominant = Math.abs(ch.change) === maxAbsChange && maxAbsChange > 0;
+                      return (
+                        <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
+                          className={cn(
+                            "flex items-center justify-between py-1 group",
+                            ch.href && "cursor-pointer",
+                            isDominant && "animate-[shake_0.5s_ease-in-out_1s_1]"
+                          )}>
+                          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
+                            <span className={cn("w-2.5 h-2.5 rounded-sm shrink-0", isDominant && "animate-pulse")}
+                              style={{ background: ch.color }} />
+                            {ch.icon} {shortLabel}
+                          </span>
+                          <span className={cn("text-[10px] font-bold",
+                            ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground",
+                            isDominant && "text-[11px]"
+                          )}>
+                            {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
+                          </span>
+                        </a>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             )}
