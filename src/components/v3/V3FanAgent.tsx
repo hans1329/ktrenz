@@ -628,13 +628,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // ── Chat messages ──
   const renderMessages = () => (
-    <div className="flex-1 overflow-auto px-4 py-3 space-y-3">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3">
       {messages.map((msg, i) => (
         <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
             <AgentAvatar avatarUrl={avatarUrl} size="sm" />
           )}
-          <div className={cn("flex flex-col max-w-[85%]", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
+          <div className={cn("flex flex-col max-w-[85%] min-w-0", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
             <div
               className={cn(
                 "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
@@ -644,7 +644,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               )}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
+                <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
                   <ReactMarkdown
                     components={{
                       a: ({ href, children }) => {
