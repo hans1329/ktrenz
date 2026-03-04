@@ -729,11 +729,30 @@ Deno.serve(async (req) => {
     const { messages, mode, language } = body;
     const userLang = language || "ko";
     const isBriefingMode = mode === "briefing";
+    const isClearChatMode = mode === "clear_chat";
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    if (isClearChatMode) {
+      const { error } = await adminClient
+        .from("ktrenz_fan_agent_messages")
+        .delete()
+        .eq("user_id", userId);
+
+      if (error) {
+        return new Response(JSON.stringify({ error: "Failed to clear chat history" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
