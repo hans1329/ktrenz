@@ -568,7 +568,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
         <div className="absolute inset-0">
-          {rects.map((rect) => {
+          {rects.map((rect, rectIndex) => {
             const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
             const width = (rect.w / containerWidth) * 100; const height = (rect.h / containerHeight) * 100;
             const isLarge = width > 18 && height > 15; const isMedium = width > 10 && height > 8;
@@ -576,6 +576,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const catChange = getCategoryChange(rect.item, category);
             const catScore = getCategoryScore(rect.item, category);
             const surging = isSurging(catChange);
+            const isFirst = rectIndex === 0;
 
             // 박스 크기에 비례한 동적 폰트 크기 계산
             const boxArea = width * height;
@@ -595,6 +596,13 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(catChange) }}>
+
+                {/* 1등 박스 인너 글로우 */}
+                {isFirst && (
+                  <div className="absolute inset-0 z-[1] pointer-events-none" style={{
+                    boxShadow: 'inset 0 0 30px 8px hsla(38, 95%, 55%, 0.5), inset 0 0 60px 15px hsla(30, 100%, 50%, 0.25)',
+                  }} />
+                )}
 
                 {isMedium && (() => {
                   const absChange = Math.abs(catChange);
