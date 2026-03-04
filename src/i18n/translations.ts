@@ -90,6 +90,29 @@ const translations: Record<string, Record<Language, string>> = {
   // ── PWA ──
   "pwa.newVersion": { en: "New version available", ko: "새 버전이 있습니다", ja: "新しいバージョンがあります", zh: "有新版本可用" },
   "pwa.refresh": { en: "Refresh", ko: "새로고침", ja: "更新", zh: "刷新" },
+
+  // ── Missions ──
+  "mission.todaysMission": { en: "Today's Mission", ko: "Today's Mission", ja: "今日のミッション", zh: "今日任务" },
+  "mission.loginForReward": { en: "Sign in to earn mission rewards!", ko: "로그인하면 미션 보상을 받을 수 있어요!", ja: "ログインしてミッション報酬を獲得！", zh: "登录即可获取任务奖励！" },
+  "mission.complete": { en: "Mission Complete! 🎉", ko: "미션 완료! 🎉", ja: "ミッション完了！🎉", zh: "任务完成！🎉" },
+  "mission.category.youtube": { en: "YouTube", ko: "YouTube", ja: "YouTube", zh: "YouTube" },
+  "mission.category.news": { en: "News", ko: "뉴스", ja: "ニュース", zh: "新闻" },
+  "mission.category.buzz": { en: "Buzz", ko: "Buzz", ja: "バズ", zh: "热议" },
+  "mission.category.music": { en: "Music", ko: "Music", ja: "ミュージック", zh: "音乐" },
+  "mission.categoryMission": { en: "Mission", ko: "미션", ja: "ミッション", zh: "任务" },
+  "mission.searchOnX": { en: "Search on X", ko: "X에서 검색하기", ja: "Xで検索", zh: "在X上搜索" },
+  "mission.latestNews": { en: "Check latest news", ko: "최신 소식 확인", ja: "最新ニュースを確認", zh: "查看最新消息" },
+  "mission.postOnX": { en: "Post support on X", ko: "X에 응원 게시글 작성", ja: "Xで応援投稿", zh: "在X发布应援帖" },
+  "mission.hashtag": { en: "hashtag", ko: "해시태그", ja: "ハッシュタグ", zh: "话题标签" },
+  "mission.spotifyStream": { en: "Spotify Streaming", ko: "Spotify 스트리밍", ja: "Spotifyストリーミング", zh: "Spotify 播放" },
+  "mission.melonStream": { en: "Melon Streaming", ko: "멜론 스트리밍", ja: "Melonストリーミング", zh: "Melon 播放" },
+  "mission.melonSearch": { en: "Search on Melon", ko: "멜론에서 검색", ja: "Melonで検索", zh: "在Melon搜索" },
+  "mission.listenTo": { en: "Listen to", ko: "듣기", ja: "聴く", zh: "收听" },
+  "mission.listenLatest": { en: "Listen to latest songs", ko: "최신곡 듣기", ja: "最新曲を聴く", zh: "收听最新歌曲" },
+  "mission.enjoyMusic": { en: "Enjoy music", ko: "음악 감상", ja: "音楽を楽しむ", zh: "欣赏音乐" },
+  "mission.video": { en: "Video", ko: "영상", ja: "動画", zh: "视频" },
+  "mission.latestVideo": { en: "Latest video", ko: "최신 영상", ja: "最新動画", zh: "最新视频" },
+  "mission.completed": { en: "Completed: ", ko: "미션 완료: ", ja: "ミッション完了: ", zh: "任务完成: " },
 };
 
 export default translations;
