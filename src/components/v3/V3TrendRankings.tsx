@@ -606,32 +606,22 @@ const V3TrendRankings = () => {
     <div className="pb-4">
       <div className="px-4 pt-4 pb-4">
         <div className="flex items-center justify-between pt-4 pb-2">
-          <div>
-            <h2 className="text-xl font-black text-foreground">
-              <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
-            </h2>
-            {isCrawling ? (
-              <p className="text-[10px] text-primary font-medium mt-0.5 pl-7 animate-pulse">
-                {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
-            )}
-            {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-full bg-muted p-0.5">
-              <button onClick={() => setViewMode("list")}
-                className={cn("p-1.5 rounded-full transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
-                <List className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => setViewMode("treemap")}
-                className={cn("p-1.5 rounded-full transition-colors", viewMode === "treemap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
-                <LayoutGrid className="w-3.5 h-3.5" />
-              </button>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="min-w-0">
+              <h2 className="text-xl font-black text-foreground">
+                <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
+              </h2>
+              {isCrawling ? (
+                <p className="text-[10px] text-primary font-medium mt-0.5 pl-7 animate-pulse">
+                  {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
+              )}
+              {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
             </div>
             {viewMode === "list" && (
-              <div className="relative" ref={periodRef}>
+              <div className="relative shrink-0 ml-auto mr-2" ref={periodRef}>
                 <button onClick={() => setPeriodOpen(!periodOpen)}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground shadow-sm">
                   {period}
@@ -650,6 +640,16 @@ const V3TrendRankings = () => {
                 )}
               </div>
             )}
+          </div>
+          <div className="flex items-center rounded-full bg-muted p-0.5 shrink-0">
+            <button onClick={() => setViewMode("list")}
+              className={cn("p-1.5 rounded-full transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => setViewMode("treemap")}
+              className={cn("p-1.5 rounded-full transition-colors", viewMode === "treemap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>
