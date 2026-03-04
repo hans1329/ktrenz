@@ -282,11 +282,13 @@ export default function V3MissionCards({
       </div>
 
       {/* Mission cards */}
-      <div className="grid grid-cols-2 gap-2">
-        {missions.map((mission) => {
+      <div className="flex flex-col gap-2">
+        {missions.map((mission, index) => {
           const completed = completedSet.has(mission.key);
           const isCompleting = completing === mission.key;
           const cfg = CATEGORY_CONFIG[mission.category];
+          const isYoutube = mission.category === "youtube";
+          const showThumb = isYoutube && videoId;
 
           return (
             <button
@@ -294,27 +296,49 @@ export default function V3MissionCards({
               onClick={() => handleMission(mission)}
               disabled={isCompleting}
               className={cn(
-                "relative flex flex-col items-start gap-1 p-2.5 rounded-xl border text-left transition-all duration-200",
+                "relative flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-200 w-full",
                 completed
                   ? "bg-muted/30 border-border opacity-60"
-                  : `${cfg.bg} ${cfg.border} hover:scale-[1.02] active:scale-[0.98]`,
+                  : `${cfg.bg} ${cfg.border} hover:scale-[1.01] active:scale-[0.99]`,
                 isCompleting && "animate-pulse"
               )}
             >
-              <div className="flex items-center gap-1.5 w-full">
-                <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
-                <span className="text-[10px] font-bold text-foreground truncate flex-1">{mission.title}</span>
-                {completed ? (
-                  <Check className="w-3 h-3 text-green-500 shrink-0" />
-                ) : (
-                  <span className="text-[9px] font-bold text-amber-500 shrink-0">+{mission.points}P</span>
-                )}
-              </div>
-              <p className="text-[9px] text-muted-foreground line-clamp-1 w-full">{mission.description}</p>
-              {completed && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-xl">
-                  <Check className="w-5 h-5 text-green-500" />
+              {/* Number badge */}
+              <span className={cn(
+                "shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
+                completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
+              )}>
+                {completed ? <Check className="w-3 h-3" /> : index + 1}
+              </span>
+
+              {/* YouTube thumbnail */}
+              {showThumb && (
+                <img
+                  src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                  alt=""
+                  className="shrink-0 w-16 h-9 rounded-md object-cover"
+                  loading="lazy"
+                />
+              )}
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
+                  <span className="text-[10px] font-bold text-foreground truncate">{mission.title}</span>
                 </div>
+                <p className="text-[9px] text-muted-foreground line-clamp-1 mt-0.5">{mission.description}</p>
+              </div>
+
+              {/* Points / check */}
+              {completed ? (
+                <Check className="w-4 h-4 text-green-500 shrink-0" />
+              ) : (
+                <span className="text-[9px] font-bold text-amber-500 shrink-0 whitespace-nowrap">+{mission.points}P</span>
+              )}
+
+              {completed && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-xl" />
               )}
             </button>
           );
