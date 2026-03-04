@@ -170,7 +170,7 @@ export default function V3MissionCards({
     setCelebration({ title: mission.title, points: mission.points, category: mission.category });
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
-      setTimeout(() => setCelebration(null), 1500);
+      setTimeout(() => setCelebration(null), 1000);
     }, 4000);
   }, []);
 
@@ -427,7 +427,7 @@ export default function V3MissionCards({
             "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500",
             celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
           )}
-            style={{ transitionDelay: celebration.closing ? "0.8s" : "0s" }}
+            style={{ transitionDelay: celebration.closing ? "0.4s" : "0s" }}
           >
             <div className={cn(
               "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-500",
