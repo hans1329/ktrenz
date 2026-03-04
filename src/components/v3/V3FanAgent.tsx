@@ -505,15 +505,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between h-14 px-4">
-        <div className="flex items-center gap-1 min-w-[72px]">
+        <div className="flex items-center min-w-[72px]">
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          {hasStarted && messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 text-muted-foreground hover:text-destructive" onClick={handleClearChat} title={t("agent.clearChat")}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
         </div>
         <div className="flex items-center gap-2.5">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
@@ -523,6 +518,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </h1>
         </div>
         <div className="flex items-center gap-2 min-w-[72px] justify-end">
+          {hasStarted && messages.length > 0 && (
+            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleClearChat} title={t("agent.clearChat")}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
           {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
           <button
             type="button"
