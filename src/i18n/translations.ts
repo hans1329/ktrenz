@@ -92,7 +92,7 @@ const translations: Record<string, Record<Language, string>> = {
   "pwa.refresh": { en: "Refresh", ko: "새로고침", ja: "更新", zh: "刷新" },
 
   // ── Treemap / Drawer ──
-  "drawer.categoryChanges": { en: "Category Changes (24h)", ko: "카테고리 변동 (24h)", ja: "カテゴリ変動 (24h)", zh: "分类变化 (24h)" },
+  "drawer.categoryChanges": { en: "Category Changes", ko: "카테고리 변동", ja: "カテゴリ変動", zh: "分类变化" },
   "drawer.scoreMomentum": { en: "Score Momentum", ko: "스코어 모멘텀", ja: "スコアモメンタム", zh: "评分趋势" },
   "drawer.energySurging": { en: "Energy Surging", ko: "에너지 급상승", ja: "エネルギー急上昇", zh: "能量飙升" },
   "drawer.surgingLocation": { en: "Energy Surging Location", ko: "에너지 급상승 위치", ja: "エネルギー急上昇の位置", zh: "能量飙升位置" },
