@@ -150,7 +150,7 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, language: (window as any).__ktrenz_lang || "ko" }),
   });
 
   if (!resp.ok) {
@@ -367,7 +367,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ mode: "briefing" }),
+        body: JSON.stringify({ mode: "briefing", language: (window as any).__ktrenz_lang || "ko" }),
       });
 
       if (!resp.ok) return;
@@ -403,7 +403,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       setWelcomeSent(true);
       const welcomeMsg: ChatMessage = {
         role: "assistant",
-        content: "안녕하세요, 주인님! 🎵\n\n아직 관심 아티스트가 등록되지 않았어요.\n**당신의 최애 아티스트는 누구인가요?** 💜\n\n아티스트 이름을 알려주시면 실시간 트렌드 알림과 맞춤 분석을 시작할게요!",
+        content: t("agent.welcomeNoArtist"),
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, welcomeMsg]);
@@ -493,7 +493,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             type="button"
             onClick={async () => {
               if (!hasAlertOn) {
-                handleSend("How do I set up artist tracking for alerts? Please guide me.");
+                handleSend(t("agent.prompt.alertSetup"));
               } else if (user?.id) {
                 await supabase
                   .from("ktrenz_watched_artists")

@@ -543,11 +543,19 @@ JSON 구조:
 }
 
 // ── System Prompt ──────────────────────────────────
-const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석과 맞춤형 스트리밍 전략을 제공해.
+const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
+  ko: "한국어로 답변해. 유저를 '주인님'이라고 불러.",
+  en: "Answer in English. Address the user warmly.",
+  ja: "日本語で答えて。ユーザーに親しみを込めて話して。",
+  zh: "用中文回答。对用户友好亲切。",
+};
 
-말투 규칙:
-- 유저를 "주인님"이라고 부르기
-- 관심 아티스트를 언급할 때 "주인님의 최애 아티스트"라고 표현
+function getSystemPrompt(language: string): string {
+  const langRule = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS["ko"];
+  return `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석과 맞춤형 스트리밍 전략을 제공해.
+
+언어 규칙: ${langRule}
+- 관심 아티스트를 언급할 때 애칭으로 표현
 - 존댓말 쓰되 친근하고 귀여운 톤 유지
 
 핵심 역할:
@@ -573,9 +581,10 @@ const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI
 - 예시: 스밍 가이드 요청 시 → 먼저 현재 상황을 요약하고 → "세부 전략을 볼까요?" 물어봐
 - 예시: 아티스트 등록 직후 → 환영 + 간단한 현재 순위만. 스밍 가이드나 뉴스는 요청 시에만.
 - 답변 길이: 최대 5~8줄 이내. 더 필요하면 유저가 물어보게 유도해.
-- 한국어 답변, 마크다운 포맷, 이모지 활용
+- 마크다운 포맷, 이모지 활용
 - 데이터 기반 구체적 수치 인용
 - 모르는 건 모른다고 솔직히`;
+}
 
 // ── Main Handler ──────────────────────────────────
 Deno.serve(async (req) => {
@@ -608,7 +617,8 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     const body = await req.json();
-    const { messages, mode } = body;
+    const { messages, mode, language } = body;
+    const userLang = language || "ko";
     const isBriefingMode = mode === "briefing";
 
     const adminClient = createClient(
@@ -746,7 +756,7 @@ Deno.serve(async (req) => {
 
     // Build OpenAI messages
     const openaiMessages: any[] = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: getSystemPrompt(userLang) },
       ...messages.slice(-15).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
