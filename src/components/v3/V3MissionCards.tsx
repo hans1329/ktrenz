@@ -44,8 +44,8 @@ function generateMissions(
     missions.push({
       key: `yt_${i}_watch`,
       category: "youtube",
-      title: "시청하기",
-      description: video.title.slice(0, 50),
+      title: video.title.slice(0, 40),
+      description: "",
       url: `https://www.youtube.com/watch?v=${video.id}`,
       points: 10,
       icon: CATEGORY_CONFIG.youtube.icon,
