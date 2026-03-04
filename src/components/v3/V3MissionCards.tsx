@@ -193,7 +193,7 @@ export default function V3MissionCards({
       const raw = data[0].raw_response;
       return (raw?.top_items || [])
         .filter((item: any) => item.url && item.title)
-        .map((item: any) => ({ title: item.title, url: item.url, og_image: item.og_image || null }));
+        .map((item: any) => ({ title: item.title, url: item.url, og_image: item.image || item.og_image || null }));
     },
     staleTime: 1000 * 60 * 30,
   });
