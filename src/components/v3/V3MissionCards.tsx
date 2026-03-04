@@ -170,7 +170,7 @@ export default function V3MissionCards({
     setCelebration({ title: mission.title, points: mission.points, category: mission.category });
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
-      setTimeout(() => setCelebration(null), 500);
+      setTimeout(() => setCelebration(null), 1600);
     }, 4000);
   }, []);
 
