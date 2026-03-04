@@ -101,6 +101,21 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_streaming_guide",
+      description: "Generate a detailed streaming strategy guide for a specific artist. Includes platform-specific tips, recommended playlist patterns, optimal streaming times, gap analysis vs competitors, and action items. Call this when the user asks about streaming strategy, 스밍 가이드, 총공, 플레이리스트, or chart strategy.",
+      parameters: {
+        type: "object",
+        properties: {
+          artist_name: { type: "string", description: "Artist name to generate streaming guide for" },
+        },
+        required: ["artist_name"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Tool Handlers ──────────────────────────────────
@@ -303,13 +318,152 @@ async function handleTool(
       return JSON.stringify({ watched_artists: result });
     }
 
+    case "get_streaming_guide": {
+      const artistName = args.artist_name;
+
+      // Find wiki_entry_id
+      const { data: wikiMatch } = await adminClient
+        .from("wiki_entries")
+        .select("id, title")
+        .ilike("title", artistName)
+        .limit(1);
+
+      const wikiId = wikiMatch?.[0]?.id ?? null;
+      const resolvedName = wikiMatch?.[0]?.title ?? artistName;
+
+      if (!wikiId) {
+        return JSON.stringify({ error: "not_found", message: `"${artistName}" was not found. Cannot generate streaming guide.` });
+      }
+
+      // Check cache (6h)
+      const { data: cached } = await adminClient
+        .from("ktrenz_streaming_guides")
+        .select("guide_data")
+        .eq("wiki_entry_id", wikiId)
+        .eq("user_id", userId)
+        .gt("expires_at", new Date().toISOString())
+        .order("generated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cached?.guide_data) {
+        return JSON.stringify({ artist: resolvedName, guide: cached.guide_data, cached: true });
+      }
+
+      // Gather data for AI analysis
+      const [fesRes, salesRes, tierRes] = await Promise.all([
+        adminClient.from("v3_scores_v2")
+          .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, music_score, album_sales_score, scored_at")
+          .eq("wiki_entry_id", wikiId).order("scored_at", { ascending: false }).limit(1).maybeSingle(),
+        adminClient.from("ktrenz_data_snapshots")
+          .select("metrics, platform")
+          .eq("wiki_entry_id", wikiId).in("platform", ["circle_chart", "hanteo"])
+          .order("collected_at", { ascending: false }).limit(5),
+        adminClient.from("v3_artist_tiers")
+          .select("tier, latest_video_title").eq("wiki_entry_id", wikiId).maybeSingle(),
+      ]);
+
+      const fes = fesRes.data;
+      const sales = salesRes.data ?? [];
+      const tier = tierRes.data;
+
+      // Get rankings for context
+      const allScores = await getAllScores();
+      const artistRank = allScores.findIndex((a: any) => a.wiki_entry_id === wikiId) + 1;
+      const top5 = allScores.slice(0, 5).map((a: any, i: number) => `${i + 1}. ${(a.wiki_entries as any)?.title} (Energy: ${Math.round(a.energy_score)})`);
+
+      // Get music data for track names
+      const { data: musicSnap } = await adminClient
+        .from("ktrenz_data_snapshots")
+        .select("metrics")
+        .eq("wiki_entry_id", wikiId)
+        .eq("platform", "music_multi")
+        .order("collected_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const musicMetrics = musicSnap?.metrics as any;
+      const lastfmTracks = musicMetrics?.lastfm?.top_tracks ?? [];
+      const deezerTracks = musicMetrics?.deezer?.top_tracks ?? [];
+      const uniqueTracks = [...new Set([
+        ...lastfmTracks.map((t: any) => t.name),
+        ...deezerTracks.map((t: any) => t.title),
+      ])].slice(0, 10);
+
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY) {
+        return JSON.stringify({ error: "AI not configured" });
+      }
+
+      const contextParts = [
+        `아티스트: ${resolvedName}`,
+        fes ? `FES: Energy ${Math.round(fes.energy_score)} (24h: ${(fes.energy_change_24h ?? 0).toFixed(1)}%), 순위 ${artistRank || "N/A"}, Total ${Math.round(fes.total_score)}, YT ${Math.round(fes.youtube_score)}, Buzz ${Math.round(fes.buzz_score ?? 0)}, Music ${Math.round(fes.music_score ?? 0)}, Album ${Math.round(fes.album_sales_score ?? 0)}` : "FES: 없음",
+        tier ? `티어: ${tier.tier}, 최신 영상: ${tier.latest_video_title ?? "N/A"}` : "",
+        uniqueTracks.length > 0 ? `인기곡: ${uniqueTracks.join(", ")}` : "",
+        sales.length > 0 ? `판매량:\n${sales.map((s: any) => `- [${s.platform}] ${(s.metrics as any).album}: ${(s.metrics as any).weekly_sales ?? (s.metrics as any).first_week_sales ?? "N/A"}장`).join("\n")}` : "",
+        `현재 Top 5:\n${top5.join("\n")}`,
+      ].filter(Boolean);
+
+      const guidePrompt = `너는 K-Pop 스트리밍 전략 분석 AI야. 아래 데이터를 분석해서 팬이 실행할 수 있는 구체적인 스트리밍/차트 전략을 JSON으로 제공해.
+
+중요: 인기곡 데이터가 있으면 반드시 실제 곡명으로 플레이리스트를 만들어. 봇 인식 회피를 위해 타이틀→수록→타이틀 패턴 사용.
+
+JSON 구조:
+{
+  "artist_name": "아티스트명",
+  "current_rank": 순위,
+  "momentum": "rising"|"stable"|"declining",
+  "momentum_detail": "1-2문장",
+  "platform_focus": [{"platform": "youtube"|"spotify"|"melon", "priority": "high"|"medium"|"low", "reason": "이유", "action": "행동"}],
+  "gap_analysis": {"target_rank": 목표, "energy_gap": 차이, "key_deficit": "설명"},
+  "streaming_playlist": {
+    "description": "전략 설명",
+    "hourly_pattern": [{"time_slot": "00-10분", "tracks": ["곡명"]}],
+    "total_public_time": "총공 시간대",
+    "platform_tips": [{"platform": "YouTube", "tip": "팁"}]
+  },
+  "action_items": ["행동1", "행동2", "행동3"],
+  "timing_tip": "타이밍 조언"
+}`;
+
+      const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "system", content: guidePrompt }, { role: "user", content: contextParts.join("\n\n") }],
+          max_tokens: 1024, temperature: 0.3,
+        }),
+      });
+
+      if (!aiResp.ok) {
+        console.error("Streaming guide AI error:", await aiResp.text());
+        return JSON.stringify({ error: "AI generation failed" });
+      }
+
+      const aiData = await aiResp.json();
+      const rawContent = aiData.choices?.[0]?.message?.content ?? "";
+      let guideData: any;
+      try {
+        const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+        guideData = jsonMatch ? JSON.parse(jsonMatch[0]) : { raw: rawContent };
+      } catch { guideData = { raw: rawContent }; }
+
+      // Cache the guide
+      await adminClient.from("ktrenz_streaming_guides").insert({
+        user_id: userId, wiki_entry_id: wikiId, artist_name: resolvedName, guide_data: guideData,
+      });
+
+      return JSON.stringify({ artist: resolvedName, guide: guideData, cached: false });
+    }
+
     default:
       return JSON.stringify({ error: "unknown_tool" });
   }
 }
 
 // ── System Prompt ──────────────────────────────────
-const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석과 맞춤형 스트리밍 전략 가이드를 제공해.
+const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI 어시스턴트로, 실시간 FES(Fan Energy Score) 데이터를 기반으로 트렌드 분석과 맞춤형 스트리밍 전략을 제공해.
 
 말투 규칙:
 - 유저를 "주인님"이라고 부르기
@@ -319,7 +473,7 @@ const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI
 핵심 역할:
 - FES 랭킹 데이터 변동 분석 및 브리핑 (도구를 사용하여 실시간 조회)
 - 아티스트별 Energy, YouTube, Buzz, Music, Album 스코어 해석
-- 스트리밍 전략/가이드 제공 (유저가 요청 시)
+- 스트리밍 전략/가이드 제공 (get_streaming_guide 도구 사용)
 - 관심 아티스트 관리 (추가/삭제)
 
 도구 사용 규칙:
@@ -327,29 +481,10 @@ const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI
 - 추측하지 말고 항상 도구로 확인한 데이터를 기반으로 답변해
 - 유저가 "관심 아티스트 추가/등록" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
 - 유저가 관심 아티스트 목록/현황을 물으면 get_watched_artists 도구 사용
+- 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
+- 스트리밍 가이드 결과를 받으면 핵심만 읽기 좋게 요약하고, 상세 데이터를 자연스럽게 전달해
 
-━━━ 스트리밍 가이드 지식 ━━━
-
-🎵 권장 플레이리스트 (1시간 기준):
-- 타이틀곡만 반복하면 봇 인식 → 차트 반영 누락!
-- 최적: 타이틀곡 50~60%, 수록곡 20~30%, 이전 히트곡 10~20%
-- 반드시 해당 아티스트의 실제 곡명 사용. "수록곡A" 같은 placeholder 절대 금지!
-- 모르는 아티스트의 곡은 솔직히 모른다고 말하기
-
-📱 플랫폼별 주의사항:
-YouTube Music: 720p+, 1x 속도, 볼륨 50%+
-Spotify: 반복재생 OFF, 셔플 OFF, 30초 이상 듣기
-멜론: 캐시 삭제, 음소거 X, 1시간 1곡 1회
-벅스/지니: 멜론과 유사, 정액제가 가중치 높음
-
-⏰ 총공 시간대:
-멜론 실시간: 매시 정각 / 일간: 오전 7시 마감
-지니: 매시 정각 / 벅스: 매시 30분
-빌보드: 금→목 / Spotify: UTC 자정 리셋
-컴백/발매일: 첫 1시간이 가장 중요!
-
-━━━ 대화 규칙 ━━━
-
+대화 규칙:
 - 한 번에 너무 많은 정보 X. 단계적 대화!
 - 아티스트 등록 직후: 환영 + 간단 현황만. 스밍 가이드는 요청 시에만.
 - 한국어 답변, 마크다운 포맷, 이모지 활용
