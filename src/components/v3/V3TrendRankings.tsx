@@ -602,7 +602,7 @@ const V3TrendRankings = () => {
   // Mobile: toggle view mode
   return (
     <div className="pb-4">
-      <div className="px-4 md:px-6 pt-4 pb-4">
+      <div className="px-4 md:px-6 pt-4 pb-1">
         <div className="flex items-center justify-between pt-4 pb-2 gap-2">
           <div className="min-w-0">
             <h2 className="text-xl font-black text-foreground">
