@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3 } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 
@@ -212,7 +212,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             {/* Surging Location Box */}
             {surging && (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
-                <span className="text-lg shrink-0">🔥</span>
+                <MapPin className="w-4 h-4 text-destructive shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-destructive">{t("drawer.surgingLocation")}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -311,7 +311,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                         }}>
                         <BoxParticles
                           count={12}
-                          color={activeChannels[dominantIndex].color}
+                          color="hsl(0, 0%, 100%)"
                           speed={0.6}
                           density={0.7}
                         />
