@@ -299,6 +299,8 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               </div>
             )}
 
+            <div className="h-px bg-border my-2" />
+
             {/* Today's Mission */}
             <V3MissionCards
               wikiEntryId={item.id}
