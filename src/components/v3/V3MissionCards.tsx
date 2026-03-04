@@ -327,18 +327,18 @@ export default function V3MissionCards({
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
                   <span className={cn(
-                    "shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                    "shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
                     completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
                   )}>
-                    {completed ? <Check className="w-3 h-3" /> : index + 1}
+                    {completed ? <Check className="w-3.5 h-3.5" /> : index + 1}
                   </span>
                   <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
-                  <span className={cn("text-[11px] font-semibold", cfg.color)}>{categoryLabel}</span>
+                  <span className={cn("text-xs font-semibold", cfg.color)}>{categoryLabel}</span>
                 </div>
                 {completed ? (
                   <Check className="w-4 h-4 text-green-500 shrink-0" />
                 ) : (
-                  <span className="text-[11px] font-bold text-amber-500">+{mission.points}P</span>
+                  <span className="text-xs font-bold text-amber-500">+{mission.points}P</span>
                 )}
               </div>
 
@@ -352,11 +352,11 @@ export default function V3MissionCards({
                     loading="lazy"
                   />
                 )}
-                <span className="text-xs font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
+                <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
               </div>
 
               {mission.description && (
-                <p className="text-[11px] text-muted-foreground line-clamp-1">{mission.description}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{mission.description}</p>
               )}
 
               {completed && (
