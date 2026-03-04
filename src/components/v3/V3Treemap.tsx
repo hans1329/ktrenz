@@ -281,6 +281,9 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   }
                   const domWidth = (activeChannels[dominantIndex].absChange / totalChange) * 200;
 
+                  const domLeftPct = (domStart / 200) * 100;
+                  const domWidthPct = (domWidth / 200) * 100;
+
                   return (
                     <div className="relative">
                       <svg className="w-full h-7" preserveAspectRatio="none" viewBox="0 0 200 14"
@@ -298,6 +301,21 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                             calcMode="spline" keySplines="0.25 0.1 0.25 1" keyTimes="0;1" />
                         </rect>
                       </svg>
+                      {/* Particle overlay on dominant segment */}
+                      <div className="absolute top-0 pointer-events-none overflow-hidden"
+                        style={{
+                          left: `${domLeftPct}%`,
+                          width: `${domWidthPct}%`,
+                          height: '100%',
+                          borderRadius: 'inherit',
+                        }}>
+                        <BoxParticles
+                          count={12}
+                          color={activeChannels[dominantIndex].color}
+                          speed={0.6}
+                          density={0.7}
+                        />
+                      </div>
                     </div>
                   );
                 })()}
