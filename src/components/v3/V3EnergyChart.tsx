@@ -98,14 +98,35 @@ const ChartTooltipContent = ({ active, payload, label }: any) => {
 interface V3EnergyChartProps { wikiEntryId: string; }
 
 const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
+  // Category weights matching FES v5.3 formula
+  const WEIGHTS = { youtube: 0.37, buzz: 0.23, music: 0.18, album: 0.14, fan: 0.08 };
+
+  const computeAggregated = (row: any) => {
+    if (!row) return { velocity: 100, intensity: 100 };
+    const cats = ["youtube", "buzz", "album", "music", "fan"] as const;
+    let velSum = 0, intSum = 0, wSum = 0;
+    for (const cat of cats) {
+      const v = Number(row[`${cat}_velocity`]) || 0;
+      const i = Number(row[`${cat}_intensity`]) || 0;
+      const w = WEIGHTS[cat] || 0;
+      if (v > 0 || i > 0) {
+        velSum += v * w;
+        intSum += i * w;
+        wSum += w;
+      }
+    }
+    if (wSum === 0) return { velocity: 100, intensity: 100 };
+    return { velocity: Math.round(velSum / wSum), intensity: Math.round(intSum / wSum) };
+  };
+
   const { data, isLoading } = useQuery({
     queryKey: ["v3-energy", wikiEntryId],
     queryFn: async () => {
       const [snapshotsRes, baselineRes, scoresRes, latestSnapshotRes] = await Promise.all([
-        supabase.from("v3_energy_snapshots_v2" as any).select("snapshot_at, velocity_score, intensity_score, energy_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(100),
+        supabase.from("v3_energy_snapshots_v2" as any).select("snapshot_at, energy_score, youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity, fan_velocity, fan_intensity").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(100),
         supabase.from("v3_energy_baselines_v2" as any).select("*").eq("wiki_entry_id", wikiEntryId).maybeSingle(),
         supabase.from("v3_scores_v2" as any).select("energy_score, energy_change_24h, energy_rank").eq("wiki_entry_id", wikiEntryId).order("scored_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("v3_energy_snapshots_v2" as any).select("velocity_score, intensity_score").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("v3_energy_snapshots_v2" as any).select("youtube_velocity, youtube_intensity, buzz_velocity, buzz_intensity, album_velocity, album_intensity, music_velocity, music_intensity, fan_velocity, fan_intensity").eq("wiki_entry_id", wikiEntryId).order("snapshot_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       return { snapshots: (snapshotsRes.data || []) as any[], baseline: baselineRes.data as any, currentScore: scoresRes.data as any, latestSnapshot: latestSnapshotRes.data as any };
     },
@@ -120,14 +141,18 @@ const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
 
   const latestFromHistory = snapshots?.[0];
   const energyScore = currentScore?.energy_score ?? latestFromHistory?.energy_score ?? 100;
-  const velocity = latestSnap?.velocity_score ?? latestFromHistory?.velocity_score ?? 100;
-  const intensity = latestSnap?.intensity_score ?? latestFromHistory?.intensity_score ?? 100;
+  const aggregated = computeAggregated(latestSnap ?? latestFromHistory);
+  const velocity = aggregated.velocity;
+  const intensity = aggregated.intensity;
   const change24h = currentScore?.energy_change_24h || 0;
 
-  const chartData = [...(snapshots || [])].reverse().map((s: any) => ({
-    time: new Date(s.snapshot_at).toLocaleDateString("en", { month: "short", day: "numeric", hour: "2-digit" }),
-    Energy: Number(s.energy_score), Velocity: Number(s.velocity_score), Intensity: Number(s.intensity_score),
-  }));
+  const chartData = [...(snapshots || [])].reverse().map((s: any) => {
+    const agg = computeAggregated(s);
+    return {
+      time: new Date(s.snapshot_at).toLocaleDateString("en", { month: "short", day: "numeric", hour: "2-digit" }),
+      Energy: Number(s.energy_score), Velocity: agg.velocity, Intensity: agg.intensity,
+    };
+  });
 
   return (
     <div className="space-y-4 -mx-4 px-4">
