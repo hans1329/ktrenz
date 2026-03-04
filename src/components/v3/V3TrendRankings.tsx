@@ -551,19 +551,17 @@ const V3TrendRankings = () => {
     // PC: Treemap + List side by side
     return (
       <div className="pb-4">
-        <div className="pt-4 pb-1">
-          <div className="flex items-center justify-center pb-2">
-            <div className="text-center">
-              <h2 className="text-2xl font-black text-foreground">
-                <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
-              </h2>
-              {isCrawling && (
-                <p className="text-[10px] text-primary font-medium mt-0.5 animate-pulse">
-                  {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
-                </p>
-              )}
-              {isAdmin && <div className="mt-1.5"><AdminCollectButtons /></div>}
-            </div>
+        <div className="px-4 pt-4 pb-1">
+          <div className="pb-2">
+            <h2 className="text-2xl font-black text-foreground">
+              <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
+            </h2>
+            {isCrawling && (
+              <p className="text-[10px] text-primary font-medium mt-0.5 animate-pulse">
+                {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
+              </p>
+            )}
+            {isAdmin && <div className="mt-1.5"><AdminCollectButtons /></div>}
           </div>
         </div>
 
