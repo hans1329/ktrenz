@@ -677,9 +677,10 @@ function getSystemPrompt(language: string): string {
 - 추측하지 말고 항상 도구로 확인한 데이터를 기반으로 답변해
 - 유저가 "관심 아티스트 추가/등록" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
 - 유저가 관심 아티스트 목록/현황을 물으면 get_watched_artists 도구 사용
+- 유저가 "관심 아티스트"라고 말하면 먼저 get_watched_artists를 호출하고, 목록이 있으면 절대 아티스트명을 다시 묻지 말고 그 목록 기준으로 바로 답변해
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
+- 스밍 요청이면서 "관심 아티스트" 표현이 있으면 get_watched_artists 호출 후 관심 아티스트들(최대 3명)에 대해 get_streaming_guide를 호출해 통합 요약해
 - 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
-- get_artist_news에서 뉴스가 없으면 자동으로 Perplexity 웹 검색 fallback이 동작하므로 별도 처리 불필요
 - DB에 없는 일반적인 K-Pop 질문, 컴백 일정, 콘서트 정보 등은 search_web 도구를 사용해서 실시간 검색
 - 스트리밍 가이드 결과를 받으면 핵심만 읽기 좋게 요약하고, 상세 데이터를 자연스럽게 전달해
 
