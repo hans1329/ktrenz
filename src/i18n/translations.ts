@@ -98,6 +98,8 @@ const translations: Record<string, Record<Language, string>> = {
   "drawer.surgingLocation": { en: "Energy Surging Location", ko: "에너지 급상승 위치", ja: "エネルギー急上昇の位置", zh: "能量飙升位置" },
   "drawer.fanEnergyInspector": { en: "Fan Energy Inspector", ko: "팬 에너지 분석", ja: "ファンエネルギー分析", zh: "粉丝能量分析" },
 
+  "drawer.fesLabel": { en: "Fan Energy Score", ko: "팬 에너지 스코어", ja: "ファンエネルギースコア", zh: "粉丝能量分数" },
+
   // ── Missions ──
   "mission.todaysMission": { en: "Today's Mission", ko: "오늘의 미션", ja: "今日のミッション", zh: "今日任务" },
   "mission.loginForReward": { en: "Sign in to earn mission rewards!", ko: "로그인하면 미션 보상을 받을 수 있어요!", ja: "ログインしてミッション報酬を獲得！", zh: "登录即可获取任务奖励！" },
