@@ -570,10 +570,11 @@ const V3TrendRankings = () => {
             <V3Treemap category={energyCategory} onCategoryChange={setEnergyCategory} />
           </div>
           <div className="w-[40%] min-w-0 space-y-2">
-            <div className="pt-4 pb-0">
+            <div className="pt-4 pb-3">
               <h2 className="text-xl font-bold text-muted-foreground">Trend Rankings</h2>
               <p className="text-xs text-muted-foreground mt-0.5">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
-              <div className="flex items-center gap-1.5 mt-2 mb-3">
+            </div>
+            <div className="flex items-center gap-1.5 mb-3">
                 {(["1D", "1W", "1M", "3M"] as Period[]).map((p) => (
                   <button key={p} onClick={() => setPeriod(p)}
                     className={cn("px-3.5 py-2 text-xs font-bold rounded-full transition-colors border",
@@ -581,7 +582,6 @@ const V3TrendRankings = () => {
                     {p}
                   </button>
                 ))}
-              </div>
             </div>
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
