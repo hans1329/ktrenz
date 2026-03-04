@@ -62,6 +62,12 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/gi, " ").replace(/\[사진\]|\[포토\]|\[화보\]|\[영상\]/g, "").trim();
 }
 
+// 일본어(히라가나/가타카나) 포함 기사 필터링
+function isJapanese(text: string): boolean {
+  const jpChars = text.match(/[\u3040-\u309F\u30A0-\u30FF]/g);
+  return (jpChars?.length || 0) >= 3;
+}
+
 // 텍스트 유사도 체크 (토큰 기반)
 function textSimilarity(a: string, b: string): number {
   const tokensA = new Set(a.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(t => t.length > 1));
@@ -147,10 +153,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 24시간 이내 필터링
+    // 24시간 이내 필터링 + 일본어 기사 제외
     const filtered = allItems.filter((item) => {
       const pubTime = new Date(item.pubDate).getTime();
-      return !isNaN(pubTime) && pubTime >= cutoff24h;
+      if (isNaN(pubTime) || pubTime < cutoff24h) return false;
+      if (isJapanese(item.title) || isJapanese(item.description)) return false;
+      return true;
     });
 
     const mentionCount = filtered.length;
