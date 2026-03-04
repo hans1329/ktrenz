@@ -113,6 +113,8 @@ const translations: Record<string, Record<Language, string>> = {
   "mission.video": { en: "Video", ko: "영상", ja: "動画", zh: "视频" },
   "mission.latestVideo": { en: "Latest video", ko: "최신 영상", ja: "最新動画", zh: "最新视频" },
   "mission.completed": { en: "Completed: ", ko: "미션 완료: ", ja: "ミッション完了: ", zh: "任务完成: " },
+  "mission.allDoneTitle": { en: "All missions complete! 🎉", ko: "오늘의 미션 올클리어! 🎉", ja: "全ミッションクリア！🎉", zh: "全部任务完成！🎉" },
+  "mission.allDoneDesc": { en: "Great job! Come back tomorrow for new missions.", ko: "잘 하셨어요! 내일 또 새로운 미션으로 만나요 💪", ja: "お疲れ様でした！明日も新しいミッションでお会いしましょう💪", zh: "做得好！明天再来完成新任务吧💪" },
 };
 
 export default translations;

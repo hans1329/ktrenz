@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
@@ -250,6 +250,7 @@ export default function V3MissionCards({
   const completedSet = new Set(completedMissions);
   const completedCount = missions.filter(m => completedSet.has(m.key)).length;
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
+  const allDone = missions.length > 0 && completedCount === missions.length;
 
   const handleMission = async (mission: Mission) => {
     // 로그인 유저 + 미완료 미션이면 pendingRef 세팅 (탭 복귀 시 축하 모달용)
@@ -341,68 +342,80 @@ export default function V3MissionCards({
       </div>
 
       {/* Mission cards — single column, numbered */}
-      <div className="flex flex-col gap-2">
-        {missions.map((mission, index) => {
-          const completed = completedSet.has(mission.key);
-          const isCompleting = completing === mission.key;
-          const cfg = CATEGORY_CONFIG[mission.category];
-          const categoryLabel = t(`mission.category.${mission.category}`);
+      <div className="flex flex-col gap-2 relative">
+        {(() => {
+          const midIndex = Math.floor(missions.length / 2);
+          return missions.map((mission, index) => {
+            const completed = completedSet.has(mission.key);
+            const isCompleting = completing === mission.key;
+            const cfg = CATEGORY_CONFIG[mission.category];
+            const categoryLabel = t(`mission.category.${mission.category}`);
 
-          return (
-            <button
-              key={mission.key}
-              onClick={() => handleMission(mission)}
-              disabled={isCompleting}
-              className={cn(
-                "relative flex flex-col gap-2 p-3 rounded-xl border text-left transition-all duration-200 w-full",
-                completed
-                  ? "bg-muted/30 border-border opacity-60"
-                  : `${cfg.bg} ${cfg.border} hover:scale-[1.01] active:scale-[0.99]`,
-                isCompleting && "animate-pulse"
-              )}
-            >
-              {/* Top row: number, source, points */}
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                    completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
-                  )}>
-                    {completed ? <Check className="w-3.5 h-3.5" /> : index + 1}
-                  </span>
-                  <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
-                  <span className={cn("text-xs font-semibold", cfg.color)}>{categoryLabel}</span>
-                </div>
-                {completed ? (
-                  <Check className="w-4 h-4 text-green-500 shrink-0" />
-                ) : (
-                  <span className="text-xs font-bold text-amber-500">+{mission.points}P</span>
+            return (
+              <React.Fragment key={mission.key}>
+                {/* All-done banner at midpoint */}
+                {allDone && index === midIndex && (
+                  <div className="flex flex-col items-center gap-2 py-6 px-4 my-1 rounded-2xl bg-primary/5 border border-primary/10">
+                    <span className="text-3xl">🏆</span>
+                    <p className="text-sm font-extrabold text-foreground text-center">{t("mission.allDoneTitle")}</p>
+                    <p className="text-xs text-muted-foreground text-center">{t("mission.allDoneDesc")}</p>
+                  </div>
                 )}
-              </div>
+                <button
+                  onClick={() => handleMission(mission)}
+                  disabled={isCompleting}
+                  className={cn(
+                    "relative flex flex-col gap-2 p-3 rounded-xl border text-left transition-all duration-200 w-full",
+                    completed
+                      ? "bg-muted/30 border-border opacity-60"
+                      : `${cfg.bg} ${cfg.border} hover:scale-[1.01] active:scale-[0.99]`,
+                    isCompleting && "animate-pulse"
+                  )}
+                >
+                  {/* Top row: number, source, points */}
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                        completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
+                      )}>
+                        {completed ? <Check className="w-3.5 h-3.5" /> : index + 1}
+                      </span>
+                      <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
+                      <span className={cn("text-xs font-semibold", cfg.color)}>{categoryLabel}</span>
+                    </div>
+                    {completed ? (
+                      <Check className="w-4 h-4 text-green-500 shrink-0" />
+                    ) : (
+                      <span className="text-xs font-bold text-amber-500">+{mission.points}P</span>
+                    )}
+                  </div>
 
-              {/* Content row: thumbnail + title */}
-              <div className="flex items-start gap-2.5 w-full">
-                {mission.thumbnail && (
-                  <img
-                    src={mission.thumbnail}
-                    alt=""
-                    className="shrink-0 w-20 h-11 rounded-md object-cover"
-                    loading="lazy"
-                  />
-                )}
-                <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
-              </div>
+                  {/* Content row: thumbnail + title */}
+                  <div className="flex items-start gap-2.5 w-full">
+                    {mission.thumbnail && (
+                      <img
+                        src={mission.thumbnail}
+                        alt=""
+                        className="shrink-0 w-20 h-11 rounded-md object-cover"
+                        loading="lazy"
+                      />
+                    )}
+                    <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
+                  </div>
 
-              {mission.description && (
-                <p className="text-xs text-muted-foreground line-clamp-1">{mission.description}</p>
-              )}
+                  {mission.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-1">{mission.description}</p>
+                  )}
 
-              {completed && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-xl" />
-              )}
-            </button>
-          );
-        })}
+                  {completed && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-xl" />
+                  )}
+                </button>
+              </React.Fragment>
+            );
+          });
+        })()}
       </div>
 
       {/* 축하 모달 */}
