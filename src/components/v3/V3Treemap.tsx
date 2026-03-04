@@ -268,13 +268,13 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   stops.push({ offset: `100%`, color: validChannels[validChannels.length - 1].color });
                   const gradId = `cat-grad-${item.id}`;
                   return (
-                    <svg className="w-full h-7 rounded-full overflow-hidden" preserveAspectRatio="none" viewBox="0 0 100 10">
+                    <svg className="w-full h-7" preserveAspectRatio="none" viewBox="0 0 200 14" style={{ borderRadius: '9999px', overflow: 'hidden', display: 'block' }}>
                       <defs>
                         <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
                           {stops.map((s, i) => <stop key={i} offset={s.offset} stopColor={s.color} />)}
                         </linearGradient>
                       </defs>
-                      <rect x="0" y="0" width="100" height="10" rx="5" fill={`url(#${gradId})`} />
+                      <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill={`url(#${gradId})`} />
                     </svg>
                   );
                 })()}
@@ -312,8 +312,8 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
                 </div>
-                <div className="relative h-16 overflow-hidden">
-                  <MiniSparkline data={item.sparkline} width={280} height={64}
+                <div className="relative h-16 w-full overflow-hidden">
+                  <MiniSparkline data={item.sparkline} width={600} height={64}
                     color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
                     ema7d={item.ema7d} ema30d={item.ema30d} />
                 </div>
