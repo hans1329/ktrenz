@@ -67,6 +67,17 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.signInRequired": { en: "Sign In Required", ko: "로그인 필요", ja: "ログインが必要です", zh: "需要登录" },
   "agent.signInDesc": { en: "Please sign in to use Fan Agent.", ko: "팬 에이전트를 사용하려면 로그인하세요.", ja: "ファンエージェントを使用するにはログインしてください。", zh: "请登录以使用粉丝助手。" },
   "agent.goBack": { en: "← Go Back", ko: "← 돌아가기", ja: "← 戻る", zh: "← 返回" },
+  "agent.title": { en: "Fan Agent", ko: "팬 에이전트", ja: "ファンエージェント", zh: "粉丝助手" },
+  "agent.subtitle": { en: "Helps with streaming strategy, trend analysis, and fan activities based on real-time data", ko: "실시간 데이터 기반 스트리밍 전략, 트렌드 분석, 팬 활동을 도와드려요", ja: "リアルタイムデータに基づくストリーミング戦略、トレンド分析、ファン活動をサポート", zh: "基于实时数据的流媒体策略、趋势分析和粉丝活动支持" },
+  "agent.liveRankings": { en: "Live Rankings", ko: "실시간 랭킹", ja: "ライブランキング", zh: "实时排名" },
+  "agent.trendAnalysis": { en: "Trend Analysis", ko: "트렌드 분석", ja: "トレンド分析", zh: "趋势分析" },
+  "agent.streamingGuide": { en: "Streaming Guide", ko: "스밍 가이드", ja: "ストリーミングガイド", zh: "流媒体指南" },
+  "agent.alertSettings": { en: "Alert Settings", ko: "알림 설정", ja: "アラート設定", zh: "提醒设置" },
+  "agent.inputPlaceholder": { en: "Ask about artists, trends, streaming...", ko: "아티스트, 트렌드, 스트리밍에 대해 물어보세요...", ja: "アーティスト、トレンド、ストリーミングについて質問...", zh: "询问有关艺人、趋势、流媒体的问题..." },
+  "agent.signInNotice": { en: "Sign In Required", ko: "로그인 필요", ja: "ログインが必要です", zh: "需要登录" },
+  "agent.signInNoticeDesc": { en: "Please sign in to activate Fan Agent", ko: "팬 에이전트를 활성화하려면 로그인하세요", ja: "ファンエージェントを有効にするにはログインしてください", zh: "请登录以激活粉丝助手" },
+  "agent.alertsOff": { en: "Alerts turned off", ko: "알림이 해제되었습니다", ja: "アラートがオフになりました", zh: "提醒已关闭" },
+  "agent.uploadSuccess": { en: "Agent profile image updated!", ko: "에이전트 프로필 이미지가 업데이트되었습니다!", ja: "エージェントのプロフィール画像が更新されました！", zh: "助手头像已更新！" },
 
   // ── Profile Overlay ──
   "profile.viewPlans": { en: "View plans & upgrade →", ko: "플랜 보기 및 업그레이드 →", ja: "プランを見る →", zh: "查看方案和升级 →" },

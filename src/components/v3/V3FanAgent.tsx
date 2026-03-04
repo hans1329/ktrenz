@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useLanguage } from "@/contexts/LanguageContext";
 import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
@@ -33,11 +34,11 @@ interface QuickAction {
   color: string;
 }
 
-const QUICK_ACTIONS: QuickAction[] = [
-  { icon: TrendingUp, label: "Live Rankings", prompt: "Show me the live trend rankings Top 10", mode: "trend", color: "text-blue-400" },
-  { icon: Sparkles, label: "Trend Analysis", prompt: "Analyze today's most notable trend changes", mode: "trend", color: "text-purple-400" },
-  { icon: Music2, label: "Streaming Guide", prompt: "Create a streaming guide for my watched artists. Include platform-specific tips, recommended playlists, and optimal streaming times.", mode: "streaming", color: "text-green-400" },
-  { icon: Bell, label: "Alert Settings", prompt: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name. Artists not in the current rankings can also be added.", mode: "alert", color: "text-amber-400" },
+const getQuickActions = (t: (key: string) => string): QuickAction[] => [
+  { icon: TrendingUp, label: t("agent.liveRankings"), prompt: "Show me the live trend rankings Top 10", mode: "trend", color: "text-blue-400" },
+  { icon: Sparkles, label: t("agent.trendAnalysis"), prompt: "Analyze today's most notable trend changes", mode: "trend", color: "text-purple-400" },
+  { icon: Music2, label: t("agent.streamingGuide"), prompt: "Create a streaming guide for my watched artists. Include platform-specific tips, recommended playlists, and optimal streaming times.", mode: "streaming", color: "text-green-400" },
+  { icon: Bell, label: t("agent.alertSettings"), prompt: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name. Artists not in the current rankings can also be added.", mode: "alert", color: "text-amber-400" },
 ];
 
 const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁|streaming\s*guide|streaming\s*strategy/i;
@@ -270,11 +271,13 @@ interface V3FanAgentProps {
 const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const navigate = useNavigate();
   const { user, session } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [chatInput, setChatInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [hasStarted, setHasStarted] = useState(false);
+  const QUICK_ACTIONS = getQuickActions(t);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -572,7 +575,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
           <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
           <h1 className="text-base font-bold text-foreground">
-            {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : "Fan Agent"}
+            {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title")}
           </h1>
         </div>
         <div className="flex items-center gap-2 min-w-[72px] justify-end">
@@ -588,7 +591,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   .delete()
                   .eq("user_id", user.id);
                 queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                toast.success("Alerts turned off");
+                toast.success(t("agent.alertsOff"));
               }
             }}
             className={cn(
@@ -617,8 +620,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
             <Bot className="w-10 h-10 text-primary/40" />
           </div>
-          <p className="text-lg font-semibold text-foreground">Sign In Required</p>
-          <p className="text-sm text-muted-foreground">Please sign in to activate Fan Agent</p>
+          <p className="text-lg font-semibold text-foreground">{t("agent.signInNotice")}</p>
+          <p className="text-sm text-muted-foreground">{t("agent.signInNoticeDesc")}</p>
         </div>
       </div>
     );
@@ -628,9 +631,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const renderWelcome = () => (
     <div className="flex flex-col items-center justify-center h-full px-4 py-8">
       <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
-      <h2 className="text-lg font-bold text-foreground mb-1 mt-4">KTRENZ Fan Agent</h2>
+      <h2 className="text-lg font-bold text-foreground mb-1 mt-4">KTRENZ {t("agent.title")}</h2>
       <p className="text-sm text-muted-foreground text-center max-w-[280px] mb-6">
-        Helps with streaming strategy, trend analysis, and fan activities based on real-time data
+        {t("agent.subtitle")}
       </p>
 
       <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
@@ -739,7 +742,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="Ask about artists, trends, streaming..."
+            placeholder={t("agent.inputPlaceholder")}
             className="flex-1 bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
             disabled={isStreaming}
           />
