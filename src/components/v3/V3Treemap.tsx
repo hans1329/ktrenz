@@ -222,7 +222,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   return (
     <Drawer open onOpenChange={(open) => { if (!open) onClose(); }} handleOnly>
       <DrawerContent className={cn(
-        "max-h-[75vh] lg:max-h-[85vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
+        "max-h-[75vh] lg:max-h-[92vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
         surging ? "border-destructive/50" : "border-border"
       )}>
         {/* Drag handle + title = draggable zone */}
