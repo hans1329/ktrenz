@@ -575,10 +575,10 @@ const V3TrendRankings = () => {
             <div className="pt-4 pb-3">
               <h2 className="text-xl font-medium text-muted-foreground">🏆 Trend Rankings</h2>
               <p className="text-xs text-muted-foreground mt-0.5 pl-7">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
-              <div className="flex items-center gap-1 mt-2 pl-7">
+              <div className="flex items-center gap-1.5 mt-2 pl-7">
                 {(["1D", "1W", "1M", "3M"] as Period[]).map((p) => (
                   <button key={p} onClick={() => setPeriod(p)}
-                    className={cn("px-3 py-1.5 text-xs font-bold rounded-full transition-colors border",
+                    className={cn("px-3.5 py-2 text-xs font-bold rounded-full transition-colors border",
                       period === p ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground")}>
                     {p}
                   </button>
