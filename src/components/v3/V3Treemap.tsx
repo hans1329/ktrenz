@@ -222,16 +222,16 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   return (
     <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DrawerContent className={cn(
-        "max-h-[90vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card",
+        "max-h-[85vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
         surging ? "border-destructive/50" : "border-border"
       )}>
-        <div className="sticky top-0 z-10 border-b border-border -mt-1">
+        <div className="sticky top-0 z-10 border-b border-border -mt-1 shrink-0">
           <div className="flex items-center gap-2 px-4 py-3 min-w-0">
             {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
             <p className="text-base font-black text-foreground truncate">{item.title}</p>
           </div>
         </div>
-        <div className="overflow-y-auto max-h-[calc(90vh-4rem)]">
+        <div className="overflow-y-auto flex-1 min-h-0">
           <div className="p-4 space-y-5 overflow-hidden">
             {/* Surging Location Box */}
             {surging && (
