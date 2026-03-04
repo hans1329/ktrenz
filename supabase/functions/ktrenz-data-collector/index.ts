@@ -334,14 +334,14 @@ function calculateYouTubeScore(data: {
 // Hanteo Chart (Firecrawl scraping)
 // ══════════════════════════════════════
 
-async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<any> {
+async function scrapeWithFirecrawl(url: string, apiKey: string, onlyMainContent = true): Promise<any> {
   const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true, waitFor: 5000 }),
+    body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent, waitFor: 8000 }),
   });
   if (!resp.ok) {
     const err = await resp.text();
@@ -371,6 +371,75 @@ function parseHanteoInitial(markdown: string): Array<{ album: string; artist: st
     }
   }
   return results;
+}
+
+/** 한터 일간 차트 마크다운 파서 (onlyMainContent: false 결과용) */
+function parseHanteoDaily(markdown: string): Array<{ rank: number; album: string; artist: string; daily_sales: number }> {
+  const results: Array<any> = [];
+  const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
+  
+  for (let i = 0; i < lines.length; i++) {
+    // 코드블록 안의 아티스트명 찾기: ``` → 아티스트명 → ```
+    if (lines[i] === "```" && i + 1 < lines.length && i + 2 < lines.length && lines[i + 2] === "```") {
+      const artistName = lines[i + 1].trim();
+      
+      // 위로 올라가며 앨범명 찾기
+      let albumName = "";
+      for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+        const line = lines[j];
+        if (!line.startsWith("!") && !line.startsWith("[") && !line.match(/^\d+$/) && line.length > 0) {
+          albumName = line;
+          break;
+        }
+      }
+      
+      // 아래로 내려가며 판매량 찾기
+      let dailySales = 0;
+      for (let j = i + 3; j < Math.min(lines.length, i + 5); j++) {
+        const salesMatch = lines[j].match(/^([\d,]+)$/);
+        if (salesMatch) {
+          dailySales = parseInt(salesMatch[1].replace(/,/g, ""));
+          break;
+        }
+      }
+      
+      // 순위 찾기
+      let rankNum = 0;
+      for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
+        const rankMatch = lines[j].match(/^(\d+)$/);
+        if (rankMatch && parseInt(rankMatch[1]) <= 100) {
+          rankNum = parseInt(rankMatch[1]);
+          break;
+        }
+      }
+      
+      if (albumName && artistName && dailySales > 0) {
+        results.push({ rank: rankNum, album: albumName, artist: artistName, daily_sales: dailySales });
+      }
+      
+      i += 2;
+    }
+  }
+  return results;
+}
+
+/** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) */
+function calculateAlbumScore(dailySales: number, previousDailySales: number | null): number {
+  const baseScore = dailySales > 0 ? Math.log10(dailySales) * 200 : 0;
+
+  let deltaScore = 0;
+  if (previousDailySales != null && previousDailySales > 0) {
+    const delta = dailySales - previousDailySales;
+    deltaScore = Math.round((delta / 10_000) * 500);
+  } else {
+    deltaScore = dailySales > 0 ? Math.round(Math.log10(dailySales) * 100) : 0;
+  }
+
+  deltaScore = clampDelta(deltaScore, baseScore);
+
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
+  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
+  return finalScore;
 }
 
 // ══════════════════════════════════════
@@ -817,43 +886,80 @@ async function collectForSingleArtist(
     }
   }
 
-  // 4) Hanteo Album Sales (한터차트 초동)
+  // 4) Hanteo Album Sales (일간 차트 delta 모델 + 초동 fallback)
   if ((collectAll || source === "hanteo") && keys.firecrawl) {
     try {
-      console.log(`[DataCollector] Scraping Hanteo for ${artistTitle}...`);
-      // DB에서 설정된 한터 차트 URL 가져오기
+      console.log(`[DataCollector] Scraping Hanteo Daily for ${artistTitle}...`);
       const { data: cfgRow } = await adminClient
         .from("ktrenz_collection_config")
-        .select("hanteo_chart_url")
+        .select("hanteo_chart_url, hanteo_daily_url")
         .eq("id", "default")
         .maybeSingle();
-      const hanteoUrlSingle = cfgRow?.hanteo_chart_url || "https://www.hanteochart.com/honors/initial";
-      const hanteoData = await scrapeWithFirecrawl(hanteoUrlSingle, keys.firecrawl);
-      const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
-      const parsed = parseHanteoInitial(md);
-
-      const matchedAlbums: any[] = [];
-      for (const entry of parsed) {
+      
+      // 일간 차트 우선 시도
+      const dailyUrl = cfgRow?.hanteo_daily_url || "https://www.hanteochart.com/chart/album/daily";
+      const dailyData = await scrapeWithFirecrawl(dailyUrl, keys.firecrawl, false);
+      const dailyMd = dailyData?.data?.markdown || dailyData?.markdown || "";
+      const dailyParsed = parseHanteoDaily(dailyMd);
+      
+      const matchedDaily: any[] = [];
+      for (const entry of dailyParsed) {
         const entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
         if (entryWikiId === wikiEntryId) {
-          matchedAlbums.push(entry);
+          matchedDaily.push(entry);
         }
       }
-
-      if (matchedAlbums.length > 0) {
-        const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
-        const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+      
+      if (matchedDaily.length > 0) {
+        const totalDailySales = matchedDaily.reduce((sum, d) => sum + d.daily_sales, 0);
+        
+        // 24시간 전 스냅샷에서 이전 일간 판매량 가져오기
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: prevSnap } = await adminClient
+          .from("ktrenz_data_snapshots")
+          .select("metrics")
+          .eq("wiki_entry_id", wikiEntryId)
+          .eq("platform", "hanteo_daily")
+          .lte("collected_at", oneDayAgo)
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const prevDailySales = prevSnap?.metrics?.total_daily_sales ?? null;
+        
+        const score = calculateAlbumScore(totalDailySales, prevDailySales);
         await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
-        for (const entry of matchedAlbums) {
-          await adminClient.from("ktrenz_data_snapshots").insert({
-            wiki_entry_id: wikiEntryId, platform: "hanteo",
-            metrics: { album: entry.album, artist: entry.artist, first_week_sales: entry.first_week_sales, chart_type: "initial_sales" },
-          });
-        }
-        results.hanteo = { albums: matchedAlbums.length, score, totalSales };
-        console.log(`[DataCollector] Hanteo: ${artistTitle} → score=${score}, albums=${matchedAlbums.length}`);
+        
+        await adminClient.from("ktrenz_data_snapshots").insert({
+          wiki_entry_id: wikiEntryId, platform: "hanteo_daily",
+          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales" },
+        });
+        
+        results.hanteo = { type: "daily", albums: matchedDaily.length, score, totalDailySales, prevDailySales };
+        console.log(`[DataCollector] Hanteo Daily: ${artistTitle} → score=${score}, daily=${totalDailySales}, prev=${prevDailySales}`);
       } else {
-        results.hanteo = { albums: 0, message: "No matching albums found on chart" };
+        // 일간 차트에 없으면 초동 fallback
+        console.log(`[DataCollector] Hanteo Daily: ${artistTitle} not on daily chart, trying initial...`);
+        const hanteoUrl = cfgRow?.hanteo_chart_url || "https://www.hanteochart.com/honors/initial";
+        const hanteoData = await scrapeWithFirecrawl(hanteoUrl, keys.firecrawl);
+        const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
+        const parsed = parseHanteoInitial(md);
+        
+        const matchedAlbums: any[] = [];
+        for (const entry of parsed) {
+          const entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+          if (entryWikiId === wikiEntryId) {
+            matchedAlbums.push(entry);
+          }
+        }
+        
+        if (matchedAlbums.length > 0) {
+          const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
+          const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+          await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
+          results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales };
+        } else {
+          results.hanteo = { albums: 0, message: "No matching albums on daily or initial chart" };
+        }
       }
     } catch (e) {
       results.hanteo = { error: e.message };
@@ -1070,77 +1176,129 @@ Deno.serve(async (req) => {
       results.youtube = { error: "YOUTUBE_API_KEY not configured" };
     }
 
-   // ── 한터차트 ──
+   // ── 한터차트 (일간 차트 delta 모델) ──
     if (collectSources.includes("hanteo")) {
       if (!FIRECRAWL_API_KEY) {
         results.hanteo = { error: "FIRECRAWL_API_KEY not configured" };
       } else {
-        console.log("[DataCollector] Scraping Hanteo Chart...");
+        console.log("[DataCollector] Scraping Hanteo Daily Chart...");
         try {
-          // DB에서 설정된 한터 차트 URL 가져오기
           const { data: configRow } = await adminClient
             .from("ktrenz_collection_config")
-            .select("hanteo_chart_url")
+            .select("hanteo_chart_url, hanteo_daily_url")
             .eq("id", "default")
             .maybeSingle();
-          const hanteoUrl = configRow?.hanteo_chart_url || "https://www.hanteochart.com/honors/initial";
-          console.log(`[DataCollector] Hanteo URL: ${hanteoUrl}`);
-          const hanteoData = await scrapeWithFirecrawl(hanteoUrl, FIRECRAWL_API_KEY);
-          const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
-          if (!md || md.length < 50) {
-            throw new Error(`Hanteo 스크랩 실패: 마크다운 비어있음 (URL: ${hanteoUrl}, 응답 길이: ${md.length}). SPA 렌더링이 필요한 페이지일 수 있습니다.`);
+          
+          // 일간 차트 스크래핑 (onlyMainContent: false로 앨범명/아티스트명 포함)
+          const dailyUrl = configRow?.hanteo_daily_url || "https://www.hanteochart.com/chart/album/daily";
+          console.log(`[DataCollector] Hanteo Daily URL: ${dailyUrl}`);
+          const dailyData = await scrapeWithFirecrawl(dailyUrl, FIRECRAWL_API_KEY, false);
+          const dailyMd = dailyData?.data?.markdown || dailyData?.markdown || "";
+          
+          if (!dailyMd || dailyMd.length < 50) {
+            throw new Error(`Hanteo Daily 스크랩 실패: 마크다운 비어있음 (URL: ${dailyUrl}, 응답 길이: ${dailyMd.length})`);
           }
-          const parsed = parseHanteoInitial(md);
-          if (parsed.length === 0) {
-            console.warn(`[DataCollector] Hanteo: 파싱된 앨범 0건 (마크다운 길이: ${md.length})`);
+          
+          const dailyParsed = parseHanteoDaily(dailyMd);
+          console.log(`[DataCollector] Hanteo Daily: 파싱된 앨범 ${dailyParsed.length}건`);
+          
+          if (dailyParsed.length === 0) {
+            // 일간 차트 파싱 실패 시 초동 fallback
+            console.warn(`[DataCollector] Hanteo Daily 파싱 0건, 초동 fallback 시도...`);
+            const hanteoUrl = configRow?.hanteo_chart_url || "https://www.hanteochart.com/honors/initial";
+            const hanteoData = await scrapeWithFirecrawl(hanteoUrl, FIRECRAWL_API_KEY);
+            const md = hanteoData?.data?.markdown || hanteoData?.markdown || "";
+            const parsed = parseHanteoInitial(md);
+            
+            let saved = 0, matched = 0, scoresUpdated = 0;
+            const artistAlbums: Record<string, { wikiEntryId: string | null; albums: any[] }> = {};
+            const artistWikiCache = new Map<string, string | null>();
+            
+            for (const entry of parsed) {
+              let entryWikiId: string | null;
+              if (artistWikiCache.has(entry.artist)) {
+                entryWikiId = artistWikiCache.get(entry.artist) ?? null;
+              } else {
+                entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+                artistWikiCache.set(entry.artist, entryWikiId);
+              }
+              if (!artistAlbums[entry.artist]) artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
+              artistAlbums[entry.artist].albums.push(entry);
+              saved++;
+              if (entryWikiId) matched++;
+            }
+            
+            for (const [, data] of Object.entries(artistAlbums)) {
+              if (data.wikiEntryId) {
+                const totalSales = data.albums.reduce((sum: number, d: any) => sum + d.first_week_sales, 0);
+                const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+                await upsertV3Score(adminClient, data.wikiEntryId, { album_sales_score: score });
+                scoresUpdated++;
+              }
+            }
+            
             await adminClient.from("ktrenz_collection_log").insert({
-              platform: "hanteo", status: "failed",
-              error_message: `파싱 결과 0건. URL: ${hanteoUrl}. 페이지 구조가 변경되었거나 SPA 렌더링 실패`,
-              records_collected: 0,
+              platform: "hanteo", status: "partial", records_collected: saved,
+              error_message: "일간 차트 파싱 실패, 초동 fallback 사용",
             });
-            results.hanteo = { error: "파싱 결과 0건", url: hanteoUrl, markdownLength: md.length, parsed: 0 };
+            results.hanteo = { type: "initial_fallback", parsed: parsed.length, saved, matched, scoresUpdated };
           } else {
-          let saved = 0, matched = 0;
-          const artistAlbums: Record<string, { wikiEntryId: string | null; albums: any[] }> = {};
-          const artistWikiCache = new Map<string, string | null>();
-
-          for (const entry of parsed) {
-            let entryWikiId: string | null;
-            if (artistWikiCache.has(entry.artist)) {
-              entryWikiId = artistWikiCache.get(entry.artist) ?? null;
-            } else {
-              entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
-              artistWikiCache.set(entry.artist, entryWikiId);
+            // 일간 차트 성공
+            let saved = 0, matched = 0, scoresUpdated = 0;
+            const artistDailyData: Record<string, { wikiEntryId: string | null; albums: any[]; totalDailySales: number }> = {};
+            const artistWikiCache = new Map<string, string | null>();
+            
+            for (const entry of dailyParsed) {
+              let entryWikiId: string | null;
+              if (artistWikiCache.has(entry.artist)) {
+                entryWikiId = artistWikiCache.get(entry.artist) ?? null;
+              } else {
+                entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
+                artistWikiCache.set(entry.artist, entryWikiId);
+              }
+              if (!artistDailyData[entry.artist]) {
+                artistDailyData[entry.artist] = { wikiEntryId: entryWikiId, albums: [], totalDailySales: 0 };
+              }
+              artistDailyData[entry.artist].albums.push(entry);
+              artistDailyData[entry.artist].totalDailySales += entry.daily_sales;
+              saved++;
+              if (entryWikiId) matched++;
             }
-            if (!artistAlbums[entry.artist]) artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
-            artistAlbums[entry.artist].albums.push(entry);
-            await adminClient.from("ktrenz_data_snapshots").insert({
-              wiki_entry_id: entryWikiId, platform: "hanteo",
-              metrics: { album: entry.album, artist: entry.artist, first_week_sales: entry.first_week_sales, chart_type: "initial_sales" },
-              raw_response: entryWikiId ? undefined : { unmatched_artist: entry.artist },
+            
+            // 아티스트별 점수 계산 (delta 모델)
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            for (const [artistName, data] of Object.entries(artistDailyData)) {
+              if (data.wikiEntryId) {
+                // 24시간 전 스냅샷 조회
+                const { data: prevSnap } = await adminClient
+                  .from("ktrenz_data_snapshots")
+                  .select("metrics")
+                  .eq("wiki_entry_id", data.wikiEntryId)
+                  .eq("platform", "hanteo_daily")
+                  .lte("collected_at", oneDayAgo)
+                  .order("collected_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                const prevDailySales = prevSnap?.metrics?.total_daily_sales ?? null;
+                
+                const score = calculateAlbumScore(data.totalDailySales, prevDailySales);
+                await upsertV3Score(adminClient, data.wikiEntryId, { album_sales_score: score });
+                
+                // 스냅샷 저장
+                await adminClient.from("ktrenz_data_snapshots").insert({
+                  wiki_entry_id: data.wikiEntryId, platform: "hanteo_daily",
+                  metrics: { total_daily_sales: data.totalDailySales, albums: data.albums, chart_type: "daily_sales" },
+                });
+                
+                scoresUpdated++;
+              }
+            }
+            
+            await adminClient.from("ktrenz_collection_log").insert({
+              platform: "hanteo", status: "success", records_collected: saved,
             });
-            saved++;
-            if (entryWikiId) matched++;
+            results.hanteo = { type: "daily", parsed: dailyParsed.length, saved, matched, scoresUpdated, url: dailyUrl };
           }
-
-          let scoresUpdated = 0;
-          for (const [, data] of Object.entries(artistAlbums)) {
-            if (data.wikiEntryId) {
-              const totalSales = data.albums.reduce((sum: number, d: any) => sum + d.first_week_sales, 0);
-              const topAlbum = data.albums.sort((a: any, b: any) => b.first_week_sales - a.first_week_sales)[0];
-              const score = Math.round(Math.sqrt(totalSales / 10) * 10);
-              await upsertV3Score(adminClient, data.wikiEntryId, {
-                album_sales_score: score,
-              });
-              scoresUpdated++;
-            }
-          }
-
-          await adminClient.from("ktrenz_collection_log").insert({
-            platform: "hanteo", status: parsed.length > 0 ? "success" : "partial", records_collected: saved,
-          });
-          results.hanteo = { parsed: parsed.length, saved, matched, scoresUpdated, url: hanteoUrl };
-          } // end else (parsed.length > 0)
         } catch (e) {
           console.error("[DataCollector] Hanteo error:", e);
           await adminClient.from("ktrenz_collection_log").insert({ platform: "hanteo", status: "error", error_message: e.message, records_collected: 0 });

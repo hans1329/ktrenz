@@ -2071,18 +2071,21 @@ export type Database = {
       ktrenz_collection_config: {
         Row: {
           hanteo_chart_url: string
+          hanteo_daily_url: string | null
           id: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           hanteo_chart_url?: string
+          hanteo_daily_url?: string | null
           id?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           hanteo_chart_url?: string
+          hanteo_daily_url?: string | null
           id?: string
           updated_at?: string
           updated_by?: string | null
