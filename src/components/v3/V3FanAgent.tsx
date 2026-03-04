@@ -330,9 +330,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [chatHistory, messages.length, hasStarted]);
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   // --- 자동 브리핑 트리거 ---
   const fetchBriefing = useCallback(async () => {
@@ -443,6 +447,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
+    // Ensure scroll after input
+    requestAnimationFrame(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }));
 
     let assistantContent = "";
 
