@@ -221,7 +221,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
                 <span className="text-lg shrink-0">🔥</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-destructive">{t("drawer.surgingLocation")}</p>
+                  <p className="text-sm font-bold text-destructive">{t("drawer.surgingLocation")}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
                     {(() => {
                       const surgingCats = channels.filter(ch => ch.change >= 15);
@@ -250,7 +250,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
             {channels.length > 0 && (
               <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
+                <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
                 </p>
                 {/* Single stacked bar */}
@@ -293,7 +293,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
             {item.sparkline.length >= 2 && (
               <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("drawer.scoreMomentum")}</p>
+                <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("drawer.scoreMomentum")}</p>
                 <div className="flex items-center gap-3 mb-1">
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
