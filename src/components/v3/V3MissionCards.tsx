@@ -343,7 +343,7 @@ export default function V3MissionCards({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
-                  <span className="text-xs font-bold text-foreground truncate">{mission.title}</span>
+                  <span className="text-xs font-bold text-foreground line-clamp-2">{mission.title}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{mission.description}</p>
               </div>
