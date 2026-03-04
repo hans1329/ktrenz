@@ -489,17 +489,19 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // ── Sub-header ──
   const handleClearChat = useCallback(async () => {
     if (!user?.id) return;
-    // Delete from DB
-    await supabase
-      .from("ktrenz_fan_agent_messages" as any)
-      .delete()
-      .eq("user_id", user.id);
+    // Clear local state first to give instant feedback
     setMessages([]);
     setHasStarted(false);
     setWelcomeSent(false);
     setBriefingTriggered(false);
-    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user.id] });
+    // Set cache to empty array directly (don't refetch)
+    queryClient.setQueryData(["ktrenz-agent-chat", user.id], []);
     toast.success(t("agent.chatCleared"));
+    // Delete from DB in background
+    await supabase
+      .from("ktrenz_fan_agent_messages" as any)
+      .delete()
+      .eq("user_id", user.id);
   }, [user?.id, queryClient, t]);
 
   const renderSubHeader = () => (
