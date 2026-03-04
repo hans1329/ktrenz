@@ -31,6 +31,26 @@ interface TreemapItem {
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
 
+const PENDING_MISSION_KEY = "ktrenz_pending_mission_v1";
+const LAST_INSPECTOR_KEY = "ktrenz_last_inspector_artist_v1";
+const PENDING_MISSION_TTL_MS = 1000 * 60 * 30;
+
+function hasValidPendingMission(): boolean {
+  try {
+    const raw = localStorage.getItem(PENDING_MISSION_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.createdAt || Date.now() - parsed.createdAt > PENDING_MISSION_TTL_MS) {
+      localStorage.removeItem(PENDING_MISSION_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    localStorage.removeItem(PENDING_MISSION_KEY);
+    return false;
+  }
+}
+
 function getTrendLabel(change: number, sparkline: number[]): TrendLabel {
   const len = sparkline.length;
   if (len >= 4) {
@@ -405,6 +425,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     onCategoryChange?.(cat);
   };
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
+  const [restoreAttempted, setRestoreAttempted] = useState(false);
   const isMobile = useIsMobile();
   // 상승 10 + 보합 5 + 하락 8 = 23 고정
   const RISING_COUNT = 10;
@@ -512,6 +533,36 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     staleTime: 30_000,
   });
 
+  const rememberInspectorItem = useCallback((itemId: string) => {
+    try {
+      localStorage.setItem(LAST_INSPECTOR_KEY, itemId);
+    } catch {
+      // no-op
+    }
+  }, []);
+
+  const clearRememberedInspectorItem = useCallback(() => {
+    try {
+      localStorage.removeItem(LAST_INSPECTOR_KEY);
+    } catch {
+      // no-op
+    }
+  }, []);
+
+  useEffect(() => {
+    if (restoreAttempted || selectedItem || !items?.length) return;
+    setRestoreAttempted(true);
+    if (!hasValidPendingMission()) return;
+
+    const rememberedId = localStorage.getItem(LAST_INSPECTOR_KEY);
+    if (!rememberedId) return;
+
+    const matched = items.find((item) => item.id === rememberedId);
+    if (matched) {
+      setSelectedItem(matched);
+    }
+  }, [items, restoreAttempted, selectedItem]);
+
   // 전체 Tier1에서 상승/보합/하락 각각 뽑아서 23개 구성
   const sortedItems = useMemo(() => {
     if (!items?.length) return [];
@@ -567,9 +618,23 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
   const track = useTrackEvent();
   const handleTileClick = useCallback((item: TreemapItem) => {
-    setSelectedItem(prev => prev?.id === item.id ? null : item);
+    setSelectedItem((prev) => {
+      const next = prev?.id === item.id ? null : item;
+      if (next) {
+        rememberInspectorItem(next.id);
+      } else {
+        clearRememberedInspectorItem();
+      }
+      return next;
+    });
+
     track("treemap_click", { artist_slug: item.slug, artist_name: item.title });
-  }, [track]);
+  }, [track, rememberInspectorItem, clearRememberedInspectorItem]);
+
+  const handleInspectorClose = useCallback(() => {
+    setSelectedItem(null);
+    clearRememberedInspectorItem();
+  }, [clearRememberedInspectorItem]);
 
   if (isLoading) return (
     <div className="px-4 pb-4">
@@ -620,7 +685,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
         })}
       </div>
 
-      {selectedItem && <InspectorPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
+      {selectedItem && <InspectorPanel item={selectedItem} onClose={handleInspectorClose} />}
 
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
         <div className="absolute inset-0">
