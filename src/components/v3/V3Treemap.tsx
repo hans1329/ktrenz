@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useNavigate } from "react-router-dom";
@@ -177,6 +178,7 @@ function ChannelBar({ icon, label, value, total, color, href }: { icon: React.Re
 
 // ── Inspector Panel ──
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
   const surging = isSurging(item.energyChange24h);
@@ -232,7 +234,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             {channels.length > 0 && (
               <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5" /> Category Changes (24h)
+                  <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
                 </p>
                 <div className="space-y-2">
                   {channels.map(ch => (
@@ -253,7 +255,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
             {item.sparkline.length >= 2 && (
               <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
+                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("drawer.scoreMomentum")}</p>
                 <div className="flex items-center gap-3 mb-1">
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
