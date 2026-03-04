@@ -582,14 +582,21 @@ JSON 구조:
       const trimmed = allArticles.slice(0, limit);
       const collectedAt = newsSnapshots[0].collected_at;
 
+      // If snapshots exist but no articles extracted, fallback to Perplexity
+      if (trimmed.length === 0) {
+        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`);
+        if (perplexityResult) {
+          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
+        }
+        return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
+      }
+
       return JSON.stringify({
         artist: resolvedName,
         articles: trimmed,
         total_found: allArticles.length,
         collected_at: collectedAt,
-        message: trimmed.length > 0
-          ? `${resolvedName}의 최근 뉴스 ${trimmed.length}건을 찾았습니다.`
-          : "수집된 뉴스가 없습니다.",
+        message: `${resolvedName}의 최근 뉴스 ${trimmed.length}건을 찾았습니다.`,
       });
     }
 
