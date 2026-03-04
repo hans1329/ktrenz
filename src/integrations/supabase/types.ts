@@ -2127,6 +2127,36 @@ export type Database = {
           },
         ]
       }
+      ktrenz_daily_missions: {
+        Row: {
+          completed_at: string
+          id: string
+          mission_date: string
+          mission_key: string
+          points_awarded: number
+          user_id: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          mission_date?: string
+          mission_key: string
+          points_awarded?: number
+          user_id: string
+          wiki_entry_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          mission_date?: string
+          mission_key?: string
+          points_awarded?: number
+          user_id?: string
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_data_run_usage: {
         Row: {
           created_at: string

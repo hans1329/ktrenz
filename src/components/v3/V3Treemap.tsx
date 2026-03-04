@@ -9,6 +9,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3 } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
+import V3MissionCards from "@/components/v3/V3MissionCards";
 
 // ── Types ──
 export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music";
@@ -264,6 +265,16 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 </div>
               </div>
             )}
+
+            {/* Today's Mission */}
+            <V3MissionCards
+              wikiEntryId={item.id}
+              artistName={item.title}
+              videoId={item.latestYoutubeVideoId || null}
+              videoTitle={item.latestYoutubeVideoTitle || null}
+              channelId={item.youtubeChannelId || null}
+              metadata={item.metadata}
+            />
 
             <button onClick={() => navigate(`/artist/${item.slug}`)}
               className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-3.5 rounded-full transition-colors">
