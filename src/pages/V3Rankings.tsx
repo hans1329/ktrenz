@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronUp, ChevronDown, Flame, ArrowLeft, Crown, Medal, Youtube, Twitter, Music, Disc3 } from "lucide-react";
+import { ChevronUp, ChevronDown, Flame, ArrowLeft, Crown, Medal, Youtube, Twitter, Music, Disc3, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
@@ -40,6 +40,7 @@ const CATEGORY_CHIPS: { key: EnergyCategory; label: string; icon: React.ReactNod
   { key: "buzz", label: "Buzz", icon: <Twitter className="w-3 h-3" /> },
   { key: "album", label: "Album", icon: <Disc3 className="w-3 h-3" /> },
   { key: "music", label: "Music", icon: <Music className="w-3 h-3" /> },
+  { key: "fan", label: "Fan", icon: <TrendingUp className="w-3 h-3" /> },
 ];
 
 const V3Rankings = () => {
@@ -91,6 +92,7 @@ const V3Rankings = () => {
       case "buzz": return item.buzz_change_24h ?? 0;
       case "album": return item.album_change_24h ?? 0;
       case "music": return item.music_change_24h ?? 0;
+      case "fan": return item.fan_change_24h ?? 0;
       default: return item.energy_change_24h ?? 0;
     }
   };
@@ -101,6 +103,7 @@ const V3Rankings = () => {
       case "buzz": return Number(item.buzz_score ?? 0);
       case "album": return Number(item.album_sales_score ?? 0);
       case "music": return Number(item.music_score ?? 0);
+      case "fan": return Number(item.fan_score ?? 0);
       default: return Number(item.total_score ?? 0);
     }
   };
