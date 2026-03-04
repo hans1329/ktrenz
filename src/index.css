@@ -140,5 +140,5 @@ html {
 }
 
 .animate-shrink-bar {
-  animation: shrink-bar 3.5s linear forwards;
+  animation: shrink-bar 5s linear forwards;
 }
