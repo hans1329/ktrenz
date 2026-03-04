@@ -319,10 +319,10 @@ export default function V3MissionCards({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400" />
-          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Today's Mission</p>
+          <Zap className="w-5 h-5 text-amber-400" />
+          <p className="text-sm font-bold text-foreground uppercase tracking-wider">Today's Mission</p>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="font-bold text-primary">{completedCount}/{missions.length}</span>
           <span>·</span>
           <span className="font-bold text-amber-500">+{totalPoints}P</span>
@@ -359,7 +359,7 @@ export default function V3MissionCards({
             >
               {/* Number badge */}
               <span className={cn(
-                "shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
+                "shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold",
                 completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
               )}>
                 {completed ? <Check className="w-3 h-3" /> : index + 1}
@@ -370,7 +370,7 @@ export default function V3MissionCards({
                 <img
                   src={mission.thumbnail}
                   alt=""
-                  className="shrink-0 w-16 h-9 rounded-md object-cover"
+                  className="shrink-0 w-20 h-11 rounded-md object-cover"
                   loading="lazy"
                 />
               )}
@@ -379,16 +379,16 @@ export default function V3MissionCards({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
-                  <span className="text-[10px] font-bold text-foreground truncate">{mission.title}</span>
+                  <span className="text-xs font-bold text-foreground truncate">{mission.title}</span>
                 </div>
-                <p className="text-[9px] text-muted-foreground line-clamp-1 mt-0.5">{mission.description}</p>
+                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{mission.description}</p>
               </div>
 
               {/* Points / check */}
               {completed ? (
                 <Check className="w-4 h-4 text-green-500 shrink-0" />
               ) : (
-                <span className="text-[9px] font-bold text-amber-500 shrink-0 whitespace-nowrap">+{mission.points}P</span>
+                <span className="text-[11px] font-bold text-amber-500 shrink-0 whitespace-nowrap">+{mission.points}P</span>
               )}
 
               {completed && (
