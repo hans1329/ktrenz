@@ -39,27 +39,17 @@ function generateMissions(
 ): Mission[] {
   const missions: Mission[] = [];
 
-  // YouTube missions — each video gets its own unique mission
+  // YouTube missions — one mission per video (시청), max 3 videos
   videos.slice(0, 3).forEach((video, i) => {
-    const actions = [
-      { key: `yt_${i}_watch`, title: "영상 시청", desc: video.title.slice(0, 40), points: 10 },
-      { key: `yt_${i}_like`, title: "좋아요 누르기", desc: video.title.slice(0, 30) + " 좋아요", points: 5 },
-    ];
-    // Only add comment mission for the first video
-    if (i === 0) {
-      actions.push({ key: `yt_${i}_comment`, title: "댓글 달기", desc: "응원 댓글 남기기", points: 15 });
-    }
-    actions.forEach(a => {
-      missions.push({
-        key: a.key,
-        category: "youtube",
-        title: a.title,
-        description: a.desc,
-        url: `https://www.youtube.com/watch?v=${video.id}`,
-        points: a.points,
-        icon: CATEGORY_CONFIG.youtube.icon,
-        thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
-      });
+    missions.push({
+      key: `yt_${i}_watch`,
+      category: "youtube",
+      title: `영상 시청 ${i + 1}`,
+      description: video.title.slice(0, 50),
+      url: `https://www.youtube.com/watch?v=${video.id}`,
+      points: 10,
+      icon: CATEGORY_CONFIG.youtube.icon,
+      thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
     });
   });
 
