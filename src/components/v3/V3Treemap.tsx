@@ -232,7 +232,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
               </div>
               <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-                <p className="text-[10px] text-muted-foreground mb-1">24h Δ</p>
+                <p className="text-[10px] text-muted-foreground mb-1">{t("drawer.change24h")}</p>
                 <p className={cn("text-lg font-black truncate",
                   item.energyChange24h >= 15 ? "text-destructive" : item.energyChange24h >= 0 ? "text-green-500" : "text-blue-400"
                 )}>
