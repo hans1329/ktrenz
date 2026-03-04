@@ -652,6 +652,19 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </div>
         </div>
       ))}
+
+      {/* Rainbow progress bar while waiting for agent response */}
+      {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+        <div className="flex justify-start">
+          <AgentAvatar avatarUrl={avatarUrl} size="sm" />
+          <div className="ml-2 w-48 rounded-2xl px-3.5 py-3 bg-card/60 border border-border/30 rounded-bl-md">
+            <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted/50">
+              <div className="h-full w-full rounded-full bg-gradient-to-r from-red-500 via-yellow-400 via-green-400 via-blue-500 to-purple-500 animate-rainbow-slide" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div ref={chatEndRef} />
     </div>
   );
@@ -698,7 +711,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             onClick={() => handleSend()}
             disabled={!chatInput.trim() || isStreaming}
           >
-            {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            <Send className="w-4 h-4" />
           </Button>
         </div>
       </div>
