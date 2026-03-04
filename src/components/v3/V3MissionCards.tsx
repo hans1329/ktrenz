@@ -165,7 +165,7 @@ export default function V3MissionCards({
   // 탭 복귀 감지 → 축하 모달
   const showCelebration = useCallback((mission: Mission) => {
     setCelebration({ title: mission.title, points: mission.points });
-    setTimeout(() => setCelebration(null), 3500);
+    setTimeout(() => setCelebration(null), 5000);
   }, []);
 
   useEffect(() => {
