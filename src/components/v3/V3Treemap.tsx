@@ -198,10 +198,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   return (
     <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DrawerContent className={cn(
-        "max-h-[90vh] rounded-t-2xl border-t mx-auto max-w-[600px]",
+        "max-h-[90vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card",
         surging ? "border-destructive/50" : "border-border"
       )}>
-        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
+        <div className="sticky top-0 z-10 border-b border-border -mt-1">
           <div className="flex items-center gap-2 px-4 py-3 min-w-0">
             {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
             <p className="text-base font-black text-foreground truncate">{item.title}</p>
