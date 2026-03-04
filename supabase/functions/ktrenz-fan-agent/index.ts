@@ -135,6 +135,19 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "get_fan_activity",
+      description: "Get one personalized fan activity recommendation for the user's watched artist. Each call returns a different activity systematically (YouTube watch, Spotify streaming, Melon streaming, X posting, news reading, etc). Activities build on each other throughout the day. Call this when the user clicks '오늘의 팬활동' or asks for fan activity suggestions.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "search_web",
       description: "Search the web in real-time using Perplexity AI for any K-Pop related question that cannot be answered from the database alone. Use this for latest news, comeback schedules, concert info, social media trends, or any question requiring up-to-date web information. Also use as fallback when get_artist_news returns no results.",
       parameters: {
@@ -635,6 +648,239 @@ JSON 구조:
       });
     }
 
+    case "get_fan_activity": {
+      // Get watched artists
+      const { data: watched } = await adminClient
+        .from("ktrenz_watched_artists")
+        .select("artist_name, wiki_entry_id")
+        .eq("user_id", userId);
+
+      if (!watched || watched.length === 0) {
+        return JSON.stringify({ error: "no_watched", message: "관심 아티스트가 없습니다. 먼저 관심 아티스트를 등록해주세요!" });
+      }
+
+      // Pick a random watched artist for variety
+      const artist = watched[Math.floor(Math.random() * watched.length)];
+      const artistName = artist.artist_name;
+      const wikiId = artist.wiki_entry_id;
+
+      // Get artist data for context
+      const allScores = await getAllScores();
+      const found = allScores.find((a: any) => a.wiki_entry_id === wikiId);
+      const rank = found?._rank ?? null;
+      const energyScore = found ? Math.round(found.energy_score ?? 0) : null;
+      const energyChange = found ? +(found.energy_change_24h ?? 0).toFixed(1) : null;
+
+      // Get tier info for latest video
+      let latestVideoTitle: string | null = null;
+      let latestVideoId: string | null = null;
+      if (wikiId) {
+        const { data: tierData } = await adminClient
+          .from("v3_artist_tiers")
+          .select("latest_video_title, latest_video_id")
+          .eq("wiki_entry_id", wikiId)
+          .maybeSingle();
+        latestVideoTitle = tierData?.latest_video_title ?? null;
+        latestVideoId = tierData?.latest_video_id ?? null;
+      }
+
+      // Get music data for track names
+      let topTracks: string[] = [];
+      if (wikiId) {
+        const { data: musicSnap } = await adminClient
+          .from("ktrenz_data_snapshots")
+          .select("metrics")
+          .eq("wiki_entry_id", wikiId)
+          .eq("platform", "music_multi")
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const mm = musicSnap?.metrics as any;
+        const lastfm = mm?.lastfm?.top_tracks ?? [];
+        const deezer = mm?.deezer?.top_tracks ?? [];
+        topTracks = [...new Set([
+          ...lastfm.map((t: any) => t.name),
+          ...deezer.map((t: any) => t.title),
+        ])].slice(0, 5) as string[];
+      }
+
+      // Get recent news thumbnail
+      let newsThumbnail: string | null = null;
+      let newsTitle: string | null = null;
+      let newsLink: string | null = null;
+      if (wikiId) {
+        const { data: newsSnap } = await adminClient
+          .from("ktrenz_data_snapshots")
+          .select("metrics, raw_response")
+          .eq("wiki_entry_id", wikiId)
+          .eq("platform", "naver_news")
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (newsSnap) {
+          const rawResp = newsSnap.raw_response as any;
+          const topItems = rawResp?.top_items ?? [];
+          if (topItems.length > 0) {
+            const item = topItems[0];
+            newsThumbnail = item.image ?? null;
+            newsTitle = item.title ?? null;
+            newsLink = item.url ?? null;
+          }
+          if (!newsTitle) {
+            const metrics = newsSnap.metrics as any;
+            const articles = metrics?.articles ?? metrics?.items ?? [];
+            if (articles.length > 0) {
+              newsTitle = (articles[0].title ?? "").replace(/<[^>]*>/g, "").trim();
+              newsLink = articles[0].link ?? articles[0].originallink ?? null;
+            }
+          }
+        }
+      }
+
+      // Check today's activity history from chat to determine which activity to suggest next
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: todayMessages } = await adminClient
+        .from("ktrenz_fan_agent_messages")
+        .select("content")
+        .eq("user_id", userId)
+        .eq("role", "assistant")
+        .gte("created_at", today + "T00:00:00Z")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      const pastContent = (todayMessages ?? []).map((m: any) => m.content).join(" ");
+
+      // Activity pool — rotate through systematically
+      const activities = [
+        {
+          type: "youtube_watch",
+          done: pastContent.includes("YouTube") && pastContent.includes("시청"),
+          data: {
+            activity: "YouTube 뮤비/콘텐츠 시청",
+            description: latestVideoTitle
+              ? `최신 영상 "${latestVideoTitle}" 시청하기`
+              : `${artistName} 최신 영상 시청하기`,
+            link: latestVideoId
+              ? `https://www.youtube.com/watch?v=${latestVideoId}`
+              : `https://www.youtube.com/results?search_query=${encodeURIComponent(artistName)}`,
+            thumbnail: latestVideoId ? `https://img.youtube.com/vi/${latestVideoId}/hqdefault.jpg` : null,
+            platform: "YouTube",
+            emoji: "▶️",
+          },
+        },
+        {
+          type: "spotify_stream",
+          done: pastContent.includes("Spotify") && pastContent.includes("스트리밍"),
+          data: {
+            activity: "Spotify 스트리밍",
+            description: topTracks.length > 0
+              ? `"${topTracks[0]}" 플레이리스트에 추가하고 반복 재생`
+              : `${artistName} 인기곡 스트리밍`,
+            link: `https://open.spotify.com/search/${encodeURIComponent(artistName)}`,
+            platform: "Spotify",
+            emoji: "🎧",
+          },
+        },
+        {
+          type: "melon_stream",
+          done: pastContent.includes("멜론") && pastContent.includes("스트리밍"),
+          data: {
+            activity: "멜론 스트리밍",
+            description: topTracks.length > 1
+              ? `"${topTracks[1] || topTracks[0]}" 멜론에서 좋아요 + 스트리밍`
+              : `${artistName} 멜론 차트 밀어주기`,
+            link: `https://www.melon.com/search/total/index.htm?q=${encodeURIComponent(artistName)}`,
+            platform: "Melon",
+            emoji: "🍈",
+          },
+        },
+        {
+          type: "x_support",
+          done: pastContent.includes("X에서") && pastContent.includes("응원"),
+          data: {
+            activity: "X(Twitter) 응원 게시글",
+            description: `#${artistName.replace(/\s/g, "")} 해시태그로 응원 트윗 작성하기`,
+            link: `https://x.com/intent/tweet?text=${encodeURIComponent(`${artistName} 화이팅! 💜 #${artistName.replace(/\s/g, "")} #KTrenZ`)}`,
+            platform: "X",
+            emoji: "📣",
+          },
+        },
+        {
+          type: "news_read",
+          done: pastContent.includes("뉴스") && pastContent.includes("읽기"),
+          data: {
+            activity: "최신 뉴스 읽기",
+            description: newsTitle ? `"${newsTitle}"` : `${artistName} 최신 소식 확인`,
+            link: newsLink || `https://search.naver.com/search.naver?query=${encodeURIComponent(artistName + " 뉴스")}`,
+            thumbnail: newsThumbnail,
+            platform: "Naver News",
+            emoji: "📰",
+          },
+        },
+        {
+          type: "bugs_stream",
+          done: pastContent.includes("벅스") && pastContent.includes("스트리밍"),
+          data: {
+            activity: "벅스 스트리밍",
+            description: topTracks.length > 2
+              ? `"${topTracks[2] || topTracks[0]}" 벅스에서 스트리밍`
+              : `${artistName} 벅스 차트 지원`,
+            link: `https://music.bugs.co.kr/search/integrated?q=${encodeURIComponent(artistName)}`,
+            platform: "Bugs",
+            emoji: "🎵",
+          },
+        },
+        {
+          type: "instagram_like",
+          done: pastContent.includes("인스타그램"),
+          data: {
+            activity: "인스타그램 좋아요 & 댓글",
+            description: `${artistName} 최신 게시물에 좋아요와 응원 댓글 달기`,
+            link: `https://www.instagram.com/explore/tags/${encodeURIComponent(artistName.replace(/\s/g, ""))}/`,
+            platform: "Instagram",
+            emoji: "❤️",
+          },
+        },
+        {
+          type: "genie_stream",
+          done: pastContent.includes("지니") && pastContent.includes("스트리밍"),
+          data: {
+            activity: "지니 스트리밍",
+            description: `${artistName} 지니뮤직에서 좋아요 + 스트리밍`,
+            link: `https://www.genie.co.kr/search/searchMain?query=${encodeURIComponent(artistName)}`,
+            platform: "Genie",
+            emoji: "🧞",
+          },
+        },
+      ];
+
+      // Find the first activity not yet done today
+      let nextActivity = activities.find((a) => !a.done);
+      if (!nextActivity) {
+        // All done — cycle back, pick based on time
+        const hour = new Date().getUTCHours();
+        nextActivity = activities[hour % activities.length];
+      }
+
+      // Determine previous activity for continuity
+      const doneActivities = activities.filter((a) => a.done);
+      const previousActivity = doneActivities.length > 0
+        ? doneActivities[doneActivities.length - 1].data.activity
+        : null;
+
+      return JSON.stringify({
+        artist: artistName,
+        rank,
+        energy_score: energyScore,
+        energy_change_24h: energyChange,
+        activity: nextActivity.data,
+        previous_activity: previousActivity,
+        completed_today: doneActivities.length,
+        total_activities: activities.length,
+        top_tracks: topTracks.slice(0, 3),
+      });
+    }
+
     case "search_web": {
       const query = args.query;
       const recency = args.recency || "week";
@@ -761,7 +1007,18 @@ function getSystemPrompt(language: string): string {
 - 답변 길이: 최대 5~8줄 이내. 더 필요하면 유저가 물어보게 유도해.
 - 마크다운 포맷, 이모지 활용
 - 데이터 기반 구체적 수치 인용
-- 모르는 건 모른다고 솔직히`;
+- 모르는 건 모른다고 솔직히
+
+🎯 오늘의 팬활동 응답 규칙 (매우 중요):
+- get_fan_activity 도구 결과를 받으면, 반드시 아래 형식으로 예쁘게 카드형 응답을 만들어:
+  1. 먼저 아티스트 현재 순위/에너지 점수를 한줄로 표시
+  2. 활동 추천을 이모지와 함께 눈에 띄게 표시
+  3. 썸네일이 있으면 ![title](thumbnail) 마크다운 이미지로 보여줘
+  4. 클릭 가능한 링크를 [플랫폼 바로가기 →](URL) 형식으로 제공
+  5. previous_activity가 있으면 "아까 {이전활동}을 하셨으니, 이번에는..." 식으로 자연스럽게 연결해
+  6. completed_today/total_activities 로 "오늘 {n}/{total} 활동 완료!" 진행 상황 표시
+  7. 격려 한마디 추가 ("이 조합이면 차트 순위에 큰 도움이 될 거예요! 🔥")
+- 한 번에 하나의 활동만 추천해. 절대 여러 개를 한꺼번에 나열하지 마.`;
 }
 
 // ── Main Handler ──────────────────────────────────

@@ -89,6 +89,8 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.prompt.streamingGuide": { en: "I want a streaming guide for my watched artist.", ko: "내 관심 아티스트 스밍 가이드를 보고 싶어.", ja: "お気に入りアーティストのストリーミングガイドが見たい。", zh: "我想看关注艺人的流媒体指南。" },
   "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name.", ko: "관심 아티스트의 랭킹 변동 알림을 설정하고 싶어. 아티스트 이름으로 추가하는 방법을 안내해줘.", ja: "お気に入りアーティストのランキング変動アラートを設定したい。アーティスト名で追加する方法を教えて。", zh: "我想为喜欢的艺人设置排名变动提醒。请指导我如何按名字添加艺人。" },
   "agent.prompt.alertSetup": { en: "How do I set up artist tracking for alerts? Please guide me.", ko: "아티스트 트래킹 알림은 어떻게 설정하나요? 안내해주세요.", ja: "アーティストのトラッキングアラートはどう設定しますか？教えてください。", zh: "如何设置艺人跟踪提醒？请指导我。" },
+  "agent.fanActivity": { en: "Today's Activity", ko: "오늘의 팬활동", ja: "今日のファン活動", zh: "今日粉丝活动" },
+  "agent.prompt.fanActivity": { en: "Recommend one fan activity I can do right now for my favorite artist!", ko: "지금 바로 할 수 있는 팬활동 하나 추천해줘!", ja: "今すぐできるファン活動を1つ推薦して！", zh: "推荐一个我现在可以做的粉丝活动！" },
   "agent.welcomeNoArtist": { en: "Hello! 🎵\n\nYou haven't registered any favorite artists yet.\n**Who is your favorite artist?** 💜\n\nTell me their name and I'll start providing real-time trend alerts and personalized analysis!", ko: "안녕하세요, 주인님! 🎵\n\n아직 관심 아티스트가 등록되지 않았어요.\n**당신의 최애 아티스트는 누구인가요?** 💜\n\n아티스트 이름을 알려주시면 실시간 트렌드 알림과 맞춤 분석을 시작할게요!", ja: "こんにちは！🎵\n\nまだお気に入りアーティストが登録されていません。\n**あなたの推しアーティストは誰ですか？** 💜\n\nアーティスト名を教えていただければ、リアルタイムトレンドアラートとパーソナル分析を始めます！", zh: "你好！🎵\n\n还没有注册任何关注的艺人。\n**你最喜欢的艺人是谁？** 💜\n\n告诉我名字，我将开始提供实时趋势提醒和个性化分析！" },
 
   // ── Profile Overlay ──
