@@ -573,7 +573,7 @@ const V3TrendRankings = () => {
             <div className="pt-6 pb-0">
               <h2 className="text-xl font-bold text-muted-foreground">Trend Rankings</h2>
               <p className="text-xs text-muted-foreground mt-0.5">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
-              <div className="flex items-center gap-1.5 mt-2 mb-1">
+              <div className="flex items-center gap-1.5 mt-2 mb-3">
                 {(["1D", "1W", "1M", "3M"] as Period[]).map((p) => (
                   <button key={p} onClick={() => setPeriod(p)}
                     className={cn("px-3.5 py-2 text-xs font-bold rounded-full transition-colors border",
