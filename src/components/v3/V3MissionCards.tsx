@@ -460,17 +460,46 @@ export default function V3MissionCards({
               </div>
             </div>
 
-            {/* 터지는 파티클 */}
+            {/* 터지는 파티클 + 스파크 + 링 */}
             {celebration.closing && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* 확산 링 */}
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={`ring-${i}`}
+                    className="absolute left-1/2 top-1/2 rounded-full border-amber-500/60 animate-burst-ring"
+                    style={{
+                      width: `${120 + i * 80}px`,
+                      height: `${120 + i * 80}px`,
+                      animationDelay: `${i * 0.1}s`,
+                    }}
+                  />
+                ))}
+                {/* 메인 파티클 (큰 원) */}
+                {[...Array(16)].map((_, i) => (
+                  <div
+                    key={`p-${i}`}
+                    className="absolute left-1/2 top-1/2 rounded-full animate-burst-particle"
+                    style={{
+                      width: `${8 + Math.random() * 8}px`,
+                      height: `${8 + Math.random() * 8}px`,
+                      background: ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#3b82f6", "#ec4899", "#f97316", "#06b6d4"][i % 8],
+                      "--burst-angle": `${i * 22.5}deg`,
+                      "--burst-distance": `${100 + Math.random() * 100}px`,
+                      animationDelay: `${Math.random() * 0.15}s`,
+                    } as React.CSSProperties}
+                  />
+                ))}
+                {/* 스파크 (가느다란 선) */}
                 {[...Array(12)].map((_, i) => (
                   <div
-                    key={i}
-                    className="absolute left-1/2 top-1/2 w-3 h-3 rounded-full animate-burst-particle"
+                    key={`s-${i}`}
+                    className="absolute left-1/2 top-1/2 rounded-full animate-burst-spark"
                     style={{
-                      background: ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#3b82f6", "#ec4899"][i % 6],
-                      "--burst-angle": `${i * 30}deg`,
-                      "--burst-distance": `${80 + Math.random() * 60}px`,
+                      background: ["#fbbf24", "#fde68a", "#ffffff"][i % 3],
+                      "--spark-angle": `${i * 30 + 15}deg`,
+                      "--spark-distance": `${80 + Math.random() * 60}px`,
+                      animationDelay: `${Math.random() * 0.1}s`,
                     } as React.CSSProperties}
                   />
                 ))}
