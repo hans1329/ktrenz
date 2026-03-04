@@ -642,7 +642,7 @@ const V3TrendRankings = () => {
           <div className="px-4 pt-2 pb-3 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-black text-muted-foreground">🏆 Trend Rankings</h2>
-              <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 pl-7">실시간 트렌드 순위 · 멀티 플랫폼 트렌드 점수</p>
             </div>
             <div className="relative shrink-0" ref={periodRef}>
               <button onClick={() => setPeriodOpen(!periodOpen)}
