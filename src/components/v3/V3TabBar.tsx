@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, Bot, Power, Activity, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,18 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // 프로필 이미지 preload
+  useEffect(() => {
+    const url = profile?.avatar_url;
+    if (!url) return;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = url;
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, [profile?.avatar_url]);
 
   // 관심 아티스트 유무 체크 → 없으면 알림 뱃지 표시
   const { data: watchedArtists } = useQuery({
@@ -62,17 +74,21 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             if (tab.isCenter) {
               return (
                 <button key={tab.id} onClick={handleProfileClick} className="flex flex-col items-center justify-center -mt-6">
-                  <div className={cn("w-16 h-16 rounded-full border-4 transition-all duration-200 overflow-hidden",
+                  <div className={cn("w-16 h-16 rounded-full border-4 transition-all duration-200 overflow-hidden bg-black",
                     profileOpen ? "border-primary shadow-lg shadow-primary/30" : "border-background shadow-md")}>
                     {user ? (
                       <Avatar className="w-full h-full">
-                        <AvatarImage src={profile?.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-lg font-medium">
+                        <AvatarImage
+                          src={profile?.avatar_url || undefined}
+                          loading="eager"
+                          fetchPriority="high"
+                        />
+                        <AvatarFallback className="bg-black text-primary text-lg font-medium">
                           {profile?.username?.[0]?.toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
                     ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <div className="w-full h-full bg-black flex items-center justify-center">
                         <Power className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
