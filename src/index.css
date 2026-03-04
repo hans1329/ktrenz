@@ -152,7 +152,7 @@ html {
 }
 
 .animate-celebration-burst {
-  animation: celebration-burst 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: celebration-burst 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes burst-particle {
@@ -174,7 +174,7 @@ html {
 }
 
 .animate-burst-particle {
-  animation: burst-particle 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: burst-particle 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes burst-ring {
@@ -195,7 +195,7 @@ html {
 }
 
 .animate-burst-ring {
-  animation: burst-ring 2s ease-out forwards;
+  animation: burst-ring 1.2s ease-out forwards;
 }
 
 @keyframes burst-spark {
@@ -218,7 +218,7 @@ html {
 }
 
 .animate-burst-spark {
-  animation: burst-spark 2s ease-out forwards;
+  animation: burst-spark 1.2s ease-out forwards;
 }
 
 @keyframes burst-flash {
@@ -228,5 +228,5 @@ html {
 }
 
 .animate-burst-flash {
-  animation: burst-flash 1.8s ease-out forwards;
+  animation: burst-flash 1s ease-out forwards;
 }
