@@ -170,7 +170,7 @@ export default function V3MissionCards({
     setCelebration({ title: mission.title, points: mission.points, category: mission.category });
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
-      setTimeout(() => setCelebration(null), 1600);
+      setTimeout(() => setCelebration(null), 2600);
     }, 4000);
   }, []);
 
@@ -424,9 +424,11 @@ export default function V3MissionCards({
         const categoryLabel = t(`mission.category.${celebration.category}`);
         return (
           <div className={cn(
-            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500",
+            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-700",
             celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
-          )}>
+          )}
+            style={{ transitionDelay: celebration.closing ? "1.5s" : "0s" }}
+          >
             <div className={cn(
               "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-500",
               "bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl",
@@ -463,43 +465,46 @@ export default function V3MissionCards({
             {/* 터지는 파티클 + 스파크 + 링 */}
             {celebration.closing && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* 화면 전체 플래시 */}
+                <div className="absolute inset-0 bg-amber-500/30 animate-burst-flash" />
+
                 {/* 확산 링 */}
-                {[...Array(3)].map((_, i) => (
+                {[...Array(4)].map((_, i) => (
                   <div
                     key={`ring-${i}`}
                     className="absolute left-1/2 top-1/2 rounded-full border-amber-500/60 animate-burst-ring"
                     style={{
-                      width: `${120 + i * 80}px`,
-                      height: `${120 + i * 80}px`,
-                      animationDelay: `${i * 0.1}s`,
+                      width: `${140 + i * 100}px`,
+                      height: `${140 + i * 100}px`,
+                      animationDelay: `${i * 0.15}s`,
                     }}
                   />
                 ))}
                 {/* 메인 파티클 (큰 원) */}
-                {[...Array(16)].map((_, i) => (
+                {[...Array(20)].map((_, i) => (
                   <div
                     key={`p-${i}`}
                     className="absolute left-1/2 top-1/2 rounded-full animate-burst-particle"
                     style={{
-                      width: `${8 + Math.random() * 8}px`,
-                      height: `${8 + Math.random() * 8}px`,
+                      width: `${10 + Math.random() * 10}px`,
+                      height: `${10 + Math.random() * 10}px`,
                       background: ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#3b82f6", "#ec4899", "#f97316", "#06b6d4"][i % 8],
-                      "--burst-angle": `${i * 22.5}deg`,
-                      "--burst-distance": `${100 + Math.random() * 100}px`,
-                      animationDelay: `${Math.random() * 0.15}s`,
+                      "--burst-angle": `${i * 18}deg`,
+                      "--burst-distance": `${140 + Math.random() * 140}px`,
+                      animationDelay: `${Math.random() * 0.2}s`,
                     } as React.CSSProperties}
                   />
                 ))}
                 {/* 스파크 (가느다란 선) */}
-                {[...Array(12)].map((_, i) => (
+                {[...Array(16)].map((_, i) => (
                   <div
                     key={`s-${i}`}
                     className="absolute left-1/2 top-1/2 rounded-full animate-burst-spark"
                     style={{
                       background: ["#fbbf24", "#fde68a", "#ffffff"][i % 3],
-                      "--spark-angle": `${i * 30 + 15}deg`,
-                      "--spark-distance": `${80 + Math.random() * 60}px`,
-                      animationDelay: `${Math.random() * 0.1}s`,
+                      "--spark-angle": `${i * 22.5}deg`,
+                      "--spark-distance": `${100 + Math.random() * 80}px`,
+                      animationDelay: `${Math.random() * 0.15}s`,
                     } as React.CSSProperties}
                   />
                 ))}
