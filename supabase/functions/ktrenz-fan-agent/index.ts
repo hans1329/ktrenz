@@ -116,6 +116,22 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_artist_news",
+      description: "Get recent news articles about a specific artist collected from Naver News. Returns article titles, descriptions, publication dates, and links. Call this when the user asks about 근황, 최근 소식, 뉴스, what's happening with an artist, or recent activities.",
+      parameters: {
+        type: "object",
+        properties: {
+          artist_name: { type: "string", description: "Artist name to get news for" },
+          limit: { type: "number", description: "Number of articles to return (default 10, max 20)" },
+        },
+        required: ["artist_name"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Tool Handlers ──────────────────────────────────
@@ -457,6 +473,70 @@ JSON 구조:
       return JSON.stringify({ artist: resolvedName, guide: guideData, cached: false });
     }
 
+    case "get_artist_news": {
+      const artistName = args.artist_name;
+      const limit = Math.min(args.limit || 10, 20);
+
+      // Find wiki_entry_id
+      const { data: wikiMatch } = await adminClient
+        .from("wiki_entries")
+        .select("id, title")
+        .ilike("title", artistName)
+        .limit(1);
+
+      const wikiId = wikiMatch?.[0]?.id ?? null;
+      const resolvedName = wikiMatch?.[0]?.title ?? artistName;
+
+      if (!wikiId) {
+        return JSON.stringify({ error: "not_found", message: `"${artistName}" was not found in the database.` });
+      }
+
+      // Get naver_news snapshots (each snapshot contains articles array in metrics)
+      const { data: newsSnapshots } = await adminClient
+        .from("ktrenz_data_snapshots")
+        .select("metrics, collected_at")
+        .eq("wiki_entry_id", wikiId)
+        .eq("platform", "naver_news")
+        .order("collected_at", { ascending: false })
+        .limit(3);
+
+      if (!newsSnapshots || newsSnapshots.length === 0) {
+        return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
+      }
+
+      // Extract articles from snapshots, deduplicate by title
+      const seenTitles = new Set<string>();
+      const allArticles: any[] = [];
+      for (const snap of newsSnapshots) {
+        const metrics = snap.metrics as any;
+        const articles = metrics?.articles ?? metrics?.items ?? [];
+        for (const article of articles) {
+          const title = (article.title ?? "").replace(/<[^>]*>/g, "").trim();
+          if (!title || seenTitles.has(title)) continue;
+          seenTitles.add(title);
+          allArticles.push({
+            title,
+            description: (article.description ?? "").replace(/<[^>]*>/g, "").trim(),
+            link: article.link ?? article.originallink ?? null,
+            pub_date: article.pubDate ?? article.pub_date ?? null,
+          });
+        }
+      }
+
+      const trimmed = allArticles.slice(0, limit);
+      const collectedAt = newsSnapshots[0].collected_at;
+
+      return JSON.stringify({
+        artist: resolvedName,
+        articles: trimmed,
+        total_found: allArticles.length,
+        collected_at: collectedAt,
+        message: trimmed.length > 0
+          ? `${resolvedName}의 최근 뉴스 ${trimmed.length}건을 찾았습니다.`
+          : "수집된 뉴스가 없습니다.",
+      });
+    }
+
     default:
       return JSON.stringify({ error: "unknown_tool" });
   }
@@ -482,6 +562,7 @@ const SYSTEM_PROMPT = `너는 KTRENZ Fan Agent야. KTRENZ 플랫폼의 전용 AI
 - 유저가 "관심 아티스트 추가/등록" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
 - 유저가 관심 아티스트 목록/현황을 물으면 get_watched_artists 도구 사용
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
+- 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
 - 스트리밍 가이드 결과를 받으면 핵심만 읽기 좋게 요약하고, 상세 데이터를 자연스럽게 전달해
 
 대화 규칙:
