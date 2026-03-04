@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, ChevronRight, Settings, Coins } from "lucide-react";
+import { LogOut, ChevronRight, Settings, Coins, Globe, Check } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGES } from "@/i18n/translations";
+import { cn } from "@/lib/utils";
 import {
   Drawer,
   DrawerContent,
@@ -21,7 +23,7 @@ interface V2ProfileOverlayProps {
 const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const { user, profile, signOut, kPoints } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const { data: kpassInfo } = useQuery({
     queryKey: ["kpass-current", user?.id],
@@ -202,6 +204,32 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
             </div>
           </button>
+
+          {/* Language */}
+          <div className="rounded-xl border border-border bg-card p-3">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Globe className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Language</span>
+            </div>
+            <div className="flex gap-1.5">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => setLanguage(lang.code)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    language === lang.code
+                      ? "bg-primary/10 text-primary border border-primary/30"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent"
+                  )}
+                >
+                  <span>{lang.flag}</span>
+                  <span>{lang.label}</span>
+                  {language === lang.code && <Check className="w-3 h-3" />}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Menu items */}
           <div className="space-y-0.5 pt-1">

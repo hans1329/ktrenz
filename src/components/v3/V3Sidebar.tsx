@@ -2,7 +2,6 @@ import { useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { Link, useNavigate } from "react-router-dom";
 import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight, Activity } from "lucide-react";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import {
@@ -80,7 +79,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
             {collapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}
             {!collapsed && <span className="text-sm">{t("nav.collapse")}</span>}
           </button>
-          {!collapsed && <LanguageSwitcher className="px-1" />}
+          
         </div>
 
         <SidebarFooter className="p-3 border-t border-border">
