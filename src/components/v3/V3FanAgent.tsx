@@ -41,10 +41,6 @@ const getQuickActions = (t: (key: string) => string): QuickAction[] => [
   { icon: Bell, label: t("agent.alertSettings"), prompt: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name. Artists not in the current rankings can also be added.", mode: "alert", color: "text-amber-400" },
 ];
 
-const STREAMING_KEYWORDS = /스밍|스트리밍|streaming|플레이리스트|playlist|총공|차트|스밍\s*가이드|스밍\s*전략|스밍\s*팁|streaming\s*guide|streaming\s*strategy/i;
-const RANKING_KEYWORDS = /실시간\s*랭킹|랭킹\s*Top|트렌드\s*랭킹|ranking|순위|live\s*ranking|top\s*10/i;
-
-const GUIDE_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-streaming-guide`;
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
 
 // ── Avatar Upload Hook ─────────────────────────────────
@@ -424,77 +420,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [hasAlertOn, session?.access_token, briefingTriggered, isStreaming, fetchBriefing]);
 
-  const fetchGuideData = useCallback(async (): Promise<any[] | null> => {
-    if (!session?.access_token) return null;
-    try {
-      const resp = await fetch(GUIDE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({}),
-      });
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      return data?.guides ?? null;
-    } catch {
-      return null;
-    }
-  }, [session?.access_token]);
-
-  const fetchRankingData = useCallback(async (): Promise<RankingEntry[] | null> => {
-    try {
-      // Get latest score per artist, ordered by energy_score desc
-      const { data, error } = await supabase
-        .rpc('get_trending_wiki_entries') as any;
-
-      // Fallback: query v3_scores directly
-      const { data: scores, error: scErr } = await supabase
-        .from("v3_scores_v2" as any)
-        .select("wiki_entry_id, total_score, energy_score, energy_change_24h, energy_rank, youtube_score, buzz_score, scored_at")
-        .order("scored_at", { ascending: false })
-        .limit(200);
-
-      if (scErr || !scores) return null;
-
-      // Deduplicate by wiki_entry_id (keep latest)
-      const seen = new Map<string, any>();
-      for (const s of scores as any[]) {
-        if (!seen.has(s.wiki_entry_id)) seen.set(s.wiki_entry_id, s);
-      }
-
-      // Sort by energy_score desc, take top 10
-      const sorted = Array.from(seen.values())
-        .sort((a: any, b: any) => b.energy_score - a.energy_score)
-        .slice(0, 10);
-
-      // Fetch artist names
-      const entryIds = sorted.map((s: any) => s.wiki_entry_id);
-      const { data: entries } = await supabase
-        .from("wiki_entries")
-        .select("id, title, image_url")
-        .in("id", entryIds);
-
-      const entryMap = new Map((entries ?? []).map((e: any) => [e.id, e]));
-
-      return sorted.map((s: any, i: number) => {
-        const entry = entryMap.get(s.wiki_entry_id);
-        return {
-          rank: i + 1,
-          artist_name: entry?.title ?? "Unknown",
-          image_url: entry?.image_url ?? null,
-          total_score: s.total_score ?? 0,
-          energy_score: s.energy_score ?? 0,
-          energy_change_24h: s.energy_change_24h ?? 0,
-          youtube_score: s.youtube_score ?? 0,
-          buzz_score: s.buzz_score ?? 0,
-        };
-      });
-    } catch {
-      return null;
-    }
-  }, []);
+  // Guide/Ranking data fetching removed — now handled via tool calling in the edge function
 
   const track = useTrackEvent();
   const handleSend = useCallback(async (overrideText?: string) => {
@@ -506,16 +432,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setIsStreaming(true);
     setHasStarted(true);
 
-    const isStreamingQuery = STREAMING_KEYWORDS.test(text);
-    const isRankingQuery = RANKING_KEYWORDS.test(text);
-
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
 
     let assistantContent = "";
-    const guidePromise = isStreamingQuery && hasAlertOn ? fetchGuideData() : Promise.resolve(null);
-    const rankingPromise = isRankingQuery ? fetchRankingData() : Promise.resolve(null);
 
     try {
       await streamChat({
@@ -533,19 +454,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             return [...prev, { role: "assistant" as const, content: assistantContent, timestamp: new Date().toISOString() }];
           });
         },
-        onDone: async () => {
-          const [guideData, rankingData] = await Promise.all([guidePromise, rankingPromise]);
-          setMessages((prev) => {
-            const lastIdx = prev.length - 1;
-            if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
-              return prev.map((m, i) => i === lastIdx ? {
-                ...m,
-                ...(guideData && guideData.length > 0 ? { guideData } : {}),
-                ...(rankingData && rankingData.length > 0 ? { rankingData } : {}),
-              } : m);
-            }
-            return prev;
-          });
+        onDone: () => {
           setIsStreaming(false);
           queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id] });
           queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
@@ -556,7 +465,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       toast.error(e.message || "Failed to send message");
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, fetchGuideData, fetchRankingData, hasAlertOn]);
+  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, hasAlertOn]);
 
   const handleQuickAction = (action: QuickAction) => {
     handleSend(action.prompt);
