@@ -729,11 +729,15 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
                 {isMedium && (() => {
                   const absChange = Math.abs(catChange);
+                  const isTop3 = rectIndex <= 2;
+                  const baseCount = isTop3
+                    ? Math.max(30, Math.round((absChange / maxAbsChange) * 65))
+                    : Math.max(5, Math.round((absChange / maxAbsChange) * 40));
                   return (
                     <BoxParticles
-                      count={Math.max(5, Math.round((absChange / maxAbsChange) * 40))}
+                      count={baseCount}
                       speed={Math.max(0.1, Math.min(1, absChange / maxAbsChange))}
-                      density={0.5}
+                      density={isTop3 ? 0.75 : 0.5}
                       color="hsl(0, 0%, 100%)"
                     />
                   );
