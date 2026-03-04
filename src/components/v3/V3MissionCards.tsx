@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { cn } from "@/lib/utils";
-import { Youtube, Newspaper, MessageCircle, Music, ExternalLink, Check, Zap, Lock } from "lucide-react";
+import { Youtube, Newspaper, MessageCircle, Music, Check, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 interface Mission {
@@ -14,6 +14,7 @@ interface Mission {
   url: string;
   points: number;
   icon: React.ReactNode;
+  thumbnail?: string | null;
 }
 
 const CATEGORY_CONFIG = {
@@ -23,47 +24,45 @@ const CATEGORY_CONFIG = {
   music: { icon: <Music className="w-3.5 h-3.5" />, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", platform: "spotify" },
 };
 
+interface YTVideo {
+  id: string;
+  title: string;
+}
+
 function generateMissions(
   artistName: string,
   encodedName: string,
-  videoId: string | null,
-  videoTitle: string | null,
+  videos: YTVideo[],
   channelId: string | null,
   newsItems: Array<{ title: string; url: string }>,
   musicCharts: any,
 ): Mission[] {
   const missions: Mission[] = [];
 
-  // YouTube missions
-  if (videoId) {
-    missions.push({
-      key: "yt_watch",
-      category: "youtube",
-      title: "최신 영상 시청",
-      description: videoTitle?.slice(0, 40) || "최신 영상",
-      url: `https://www.youtube.com/watch?v=${videoId}`,
-      points: 10,
-      icon: CATEGORY_CONFIG.youtube.icon,
+  // YouTube missions — each video gets its own unique mission
+  videos.slice(0, 3).forEach((video, i) => {
+    const actions = [
+      { key: `yt_${i}_watch`, title: "영상 시청", desc: video.title.slice(0, 40), points: 10 },
+      { key: `yt_${i}_like`, title: "좋아요 누르기", desc: video.title.slice(0, 30) + " 좋아요", points: 5 },
+    ];
+    // Only add comment mission for the first video
+    if (i === 0) {
+      actions.push({ key: `yt_${i}_comment`, title: "댓글 달기", desc: "응원 댓글 남기기", points: 15 });
+    }
+    actions.forEach(a => {
+      missions.push({
+        key: a.key,
+        category: "youtube",
+        title: a.title,
+        description: a.desc,
+        url: `https://www.youtube.com/watch?v=${video.id}`,
+        points: a.points,
+        icon: CATEGORY_CONFIG.youtube.icon,
+        thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+      });
     });
-    missions.push({
-      key: "yt_like",
-      category: "youtube",
-      title: "영상 좋아요 누르기",
-      description: "좋아요로 응원하기",
-      url: `https://www.youtube.com/watch?v=${videoId}`,
-      points: 5,
-      icon: CATEGORY_CONFIG.youtube.icon,
-    });
-    missions.push({
-      key: "yt_comment",
-      category: "youtube",
-      title: "영상에 댓글 달기",
-      description: "응원 댓글 남기기",
-      url: `https://www.youtube.com/watch?v=${videoId}`,
-      points: 15,
-      icon: CATEGORY_CONFIG.youtube.icon,
-    });
-  }
+  });
+
   if (channelId) {
     missions.push({
       key: "yt_subscribe",
@@ -76,13 +75,13 @@ function generateMissions(
     });
   }
 
-  // News missions from naver_news
+  // News missions — each with different article
   newsItems.slice(0, 4).forEach((item, i) => {
     missions.push({
       key: `news_${i}`,
       category: "news",
-      title: "뉴스 읽기",
-      description: item.title.slice(0, 40),
+      title: `뉴스 ${i + 1}`,
+      description: item.title.slice(0, 50),
       url: item.url,
       points: 8,
       icon: CATEGORY_CONFIG.news.icon,
@@ -109,29 +108,55 @@ function generateMissions(
     icon: CATEGORY_CONFIG.buzz.icon,
   });
 
-  // Music missions
-  const latestSong = musicCharts?.spotify?.top_songs?.[0]?.title || musicCharts?.melon?.top_songs?.[0]?.title;
-  const musicQuery = latestSong ? encodeURIComponent(`${artistName} ${latestSong}`) : encodedName;
-  missions.push({
-    key: "music_listen",
-    category: "music",
-    title: "음악 스트리밍",
-    description: latestSong ? `${latestSong} 듣기` : "최신곡 듣기",
-    url: `https://open.spotify.com/search/${musicQuery}`,
-    points: 10,
-    icon: CATEGORY_CONFIG.music.icon,
-  });
-  missions.push({
-    key: "music_melon",
-    category: "music",
-    title: "멜론에서 검색",
-    description: `${artistName} 음악 감상`,
-    url: `https://www.melon.com/search/total/index.htm?q=${encodedName}`,
-    points: 8,
-    icon: CATEGORY_CONFIG.music.icon,
-  });
+  // Music missions — different songs
+  const spotifySongs = musicCharts?.spotify?.top_songs || [];
+  const melonSongs = musicCharts?.melon?.top_songs || [];
+  const allSongs = [...spotifySongs, ...melonSongs];
 
-  // Target 12, auto-proportional: take what we have, cap at 12
+  if (allSongs.length > 0) {
+    const song1 = allSongs[0];
+    missions.push({
+      key: "music_spotify",
+      category: "music",
+      title: "Spotify 스트리밍",
+      description: `${song1.title} 듣기`,
+      url: `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${song1.title}`)}`,
+      points: 10,
+      icon: CATEGORY_CONFIG.music.icon,
+    });
+    if (allSongs.length > 1) {
+      const song2 = allSongs[1];
+      missions.push({
+        key: "music_melon",
+        category: "music",
+        title: "멜론 스트리밍",
+        description: `${song2.title} 듣기`,
+        url: `https://www.melon.com/search/total/index.htm?q=${encodeURIComponent(`${artistName} ${song2.title}`)}`,
+        points: 8,
+        icon: CATEGORY_CONFIG.music.icon,
+      });
+    }
+  } else {
+    missions.push({
+      key: "music_spotify",
+      category: "music",
+      title: "Spotify 스트리밍",
+      description: "최신곡 듣기",
+      url: `https://open.spotify.com/search/${encodedName}`,
+      points: 10,
+      icon: CATEGORY_CONFIG.music.icon,
+    });
+    missions.push({
+      key: "music_melon",
+      category: "music",
+      title: "멜론에서 검색",
+      description: `${artistName} 음악 감상`,
+      url: `https://www.melon.com/search/total/index.htm?q=${encodedName}`,
+      points: 8,
+      icon: CATEGORY_CONFIG.music.icon,
+    });
+  }
+
   return missions.slice(0, 12);
 }
 
@@ -155,6 +180,37 @@ export default function V3MissionCards({
   const [completing, setCompleting] = useState<string | null>(null);
   const encodedName = encodeURIComponent(artistName);
   const today = new Date().toISOString().slice(0, 10);
+
+  // Fetch recent YouTube videos for this artist
+  const { data: ytVideos = [] } = useQuery({
+    queryKey: ["mission-yt-videos", wikiEntryId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("ktrenz_data_snapshots")
+        .select("raw_response")
+        .eq("wiki_entry_id", wikiEntryId)
+        .eq("platform", "youtube")
+        .not("raw_response", "is", null)
+        .order("collected_at", { ascending: false })
+        .limit(1);
+      if (!data?.[0]) return videoId && videoTitle ? [{ id: videoId, title: videoTitle }] : [];
+      const raw = data[0].raw_response;
+      const items = raw?.recent_videos || raw?.items || [];
+      const vids: YTVideo[] = items
+        .filter((v: any) => v.video_id || v.videoId || v.id)
+        .map((v: any) => ({
+          id: v.video_id || v.videoId || v.id,
+          title: v.title || "영상",
+        }))
+        .slice(0, 5);
+      // Fallback to the prop videoId if snapshot has nothing
+      if (vids.length === 0 && videoId) {
+        vids.push({ id: videoId, title: videoTitle || "최신 영상" });
+      }
+      return vids;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
 
   // Fetch naver news items for this artist
   const { data: newsItems = [] } = useQuery({
@@ -195,7 +251,7 @@ export default function V3MissionCards({
   });
 
   const musicCharts = metadata?.music_charts;
-  const missions = generateMissions(artistName, encodedName, videoId, videoTitle, channelId, newsItems, musicCharts);
+  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts);
   const completedSet = new Set(completedMissions);
   const completedCount = missions.filter(m => completedSet.has(m.key)).length;
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
@@ -281,14 +337,12 @@ export default function V3MissionCards({
         />
       </div>
 
-      {/* Mission cards */}
+      {/* Mission cards — single column, numbered */}
       <div className="flex flex-col gap-2">
         {missions.map((mission, index) => {
           const completed = completedSet.has(mission.key);
           const isCompleting = completing === mission.key;
           const cfg = CATEGORY_CONFIG[mission.category];
-          const isYoutube = mission.category === "youtube";
-          const showThumb = isYoutube && videoId;
 
           return (
             <button
@@ -311,10 +365,10 @@ export default function V3MissionCards({
                 {completed ? <Check className="w-3 h-3" /> : index + 1}
               </span>
 
-              {/* YouTube thumbnail */}
-              {showThumb && (
+              {/* Thumbnail (YouTube) */}
+              {mission.thumbnail && (
                 <img
-                  src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                  src={mission.thumbnail}
                   alt=""
                   className="shrink-0 w-16 h-9 rounded-md object-cover"
                   loading="lazy"
