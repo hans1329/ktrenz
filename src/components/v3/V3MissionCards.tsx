@@ -419,8 +419,8 @@ export default function V3MissionCards({
                 : "animate-in zoom-in-95 duration-300"
             )}
               style={{
-                maskImage: "radial-gradient(ellipse 90% 85% at 50% 50%, black 60%, transparent 100%)",
-                WebkitMaskImage: "radial-gradient(ellipse 90% 85% at 50% 50%, black 60%, transparent 100%)",
+                maskImage: "radial-gradient(ellipse 80% 75% at 50% 50%, black 40%, transparent 100%)",
+                WebkitMaskImage: "radial-gradient(ellipse 80% 75% at 50% 50%, black 40%, transparent 100%)",
               }}
             >
               {/* 카테고리 뱃지 */}
