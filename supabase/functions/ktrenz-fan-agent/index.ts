@@ -132,6 +132,22 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "search_web",
+      description: "Search the web in real-time using Perplexity AI for any K-Pop related question that cannot be answered from the database alone. Use this for latest news, comeback schedules, concert info, social media trends, or any question requiring up-to-date web information. Also use as fallback when get_artist_news returns no results.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search query in natural language (e.g., '아이브 최근 활동', 'BTS comeback 2026')" },
+          recency: { type: "string", enum: ["day", "week", "month"], description: "How recent the results should be (default: week)" },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Tool Handlers ──────────────────────────────────
@@ -536,6 +552,11 @@ JSON 구조:
         .limit(3);
 
       if (!newsSnapshots || newsSnapshots.length === 0) {
+        // Fallback to Perplexity web search
+        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`);
+        if (perplexityResult) {
+          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
+        }
         return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
       }
 
@@ -572,8 +593,58 @@ JSON 구조:
       });
     }
 
+    case "search_web": {
+      const query = args.query;
+      const recency = args.recency || "week";
+      const result = await searchWithPerplexity(query, recency);
+      if (!result) {
+        return JSON.stringify({ error: "web_search_failed", message: "웹 검색에 실패했습니다. 잠시 후 다시 시도해주세요." });
+      }
+      return JSON.stringify({ content: result.content, citations: result.citations, source: "perplexity" });
+    }
+
     default:
       return JSON.stringify({ error: "unknown_tool" });
+  }
+}
+
+// ── Perplexity Web Search Helper ──────────────────
+async function searchWithPerplexity(query: string, recency: string = "week"): Promise<{ content: string; citations: string[] } | null> {
+  const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+  if (!PERPLEXITY_API_KEY) {
+    console.error("PERPLEXITY_API_KEY not configured");
+    return null;
+  }
+
+  try {
+    const resp = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "sonar",
+        messages: [
+          { role: "system", content: "K-Pop 관련 최신 뉴스와 정보를 검색하여 한국어로 간결하게 요약해줘. 핵심 사실만 5-8줄 이내로." },
+          { role: "user", content: query },
+        ],
+        search_recency_filter: recency,
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error("Perplexity API error:", resp.status, await resp.text());
+      return null;
+    }
+
+    const data = await resp.json();
+    const content = data.choices?.[0]?.message?.content ?? "";
+    const citations = data.citations ?? [];
+    return { content, citations };
+  } catch (e) {
+    console.error("Perplexity search error:", e);
+    return null;
   }
 }
 
@@ -599,6 +670,7 @@ function getSystemPrompt(language: string): string {
 - 스트리밍 전략/가이드 제공 (get_streaming_guide 도구 사용)
 - 관심 아티스트 관리 (추가/삭제)
 - 아티스트 근황/뉴스 제공 (get_artist_news 도구 사용)
+- 실시간 웹 검색으로 최신 정보 제공 (search_web 도구 사용)
 
 도구 사용 규칙:
 - 유저가 랭킹, 순위, 특정 아티스트 정보를 물으면 반드시 도구를 호출해서 최신 데이터를 가져와
@@ -607,6 +679,8 @@ function getSystemPrompt(language: string): string {
 - 유저가 관심 아티스트 목록/현황을 물으면 get_watched_artists 도구 사용
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
 - 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
+- get_artist_news에서 뉴스가 없으면 자동으로 Perplexity 웹 검색 fallback이 동작하므로 별도 처리 불필요
+- DB에 없는 일반적인 K-Pop 질문, 컴백 일정, 콘서트 정보 등은 search_web 도구를 사용해서 실시간 검색
 - 스트리밍 가이드 결과를 받으면 핵심만 읽기 좋게 요약하고, 상세 데이터를 자연스럽게 전달해
 
 ⚠️ 단계적 대화 규칙 (매우 중요):
