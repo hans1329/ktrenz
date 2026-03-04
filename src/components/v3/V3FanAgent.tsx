@@ -35,10 +35,10 @@ interface QuickAction {
 }
 
 const getQuickActions = (t: (key: string) => string): QuickAction[] => [
-  { icon: TrendingUp, label: t("agent.liveRankings"), prompt: "Show me the live trend rankings Top 10", mode: "trend", color: "text-blue-400" },
-  { icon: Sparkles, label: t("agent.trendAnalysis"), prompt: "Analyze today's most notable trend changes", mode: "trend", color: "text-purple-400" },
-  { icon: Music2, label: t("agent.streamingGuide"), prompt: "Create a streaming guide for my watched artists. Include platform-specific tips, recommended playlists, and optimal streaming times.", mode: "streaming", color: "text-green-400" },
-  { icon: Bell, label: t("agent.alertSettings"), prompt: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name. Artists not in the current rankings can also be added.", mode: "alert", color: "text-amber-400" },
+  { icon: TrendingUp, label: t("agent.liveRankings"), prompt: t("agent.prompt.liveRankings"), mode: "trend", color: "text-blue-400" },
+  { icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
+  { icon: Music2, label: t("agent.streamingGuide"), prompt: t("agent.prompt.streamingGuide"), mode: "streaming", color: "text-green-400" },
+  { icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
 ];
 
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
