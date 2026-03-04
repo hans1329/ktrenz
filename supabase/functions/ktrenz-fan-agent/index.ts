@@ -542,10 +542,10 @@ JSON 구조:
         return JSON.stringify({ error: "not_found", message: `"${artistName}" was not found in the database.` });
       }
 
-      // Get naver_news snapshots (each snapshot contains articles array in metrics)
+      // Get naver_news snapshots (metrics + raw_response for thumbnails)
       const { data: newsSnapshots } = await adminClient
         .from("ktrenz_data_snapshots")
-        .select("metrics, collected_at")
+        .select("metrics, raw_response, collected_at")
         .eq("wiki_entry_id", wikiId)
         .eq("platform", "naver_news")
         .order("collected_at", { ascending: false })
@@ -560,6 +560,21 @@ JSON 구조:
         return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
       }
 
+      // Build thumbnail map from raw_response.top_items
+      const thumbMap = new Map<string, string>();
+      for (const snap of newsSnapshots) {
+        const rawResp = snap.raw_response as any;
+        const topItems = rawResp?.top_items ?? [];
+        for (const item of topItems) {
+          if (item.image && item.url) {
+            thumbMap.set(item.url, item.image);
+          }
+          if (item.image && item.title) {
+            thumbMap.set(item.title, item.image);
+          }
+        }
+      }
+
       // Extract articles from snapshots, deduplicate by title
       const seenTitles = new Set<string>();
       const allArticles: any[] = [];
@@ -570,11 +585,31 @@ JSON 구조:
           const title = (article.title ?? "").replace(/<[^>]*>/g, "").trim();
           if (!title || seenTitles.has(title)) continue;
           seenTitles.add(title);
+          const link = article.link ?? article.originallink ?? null;
           allArticles.push({
             title,
             description: (article.description ?? "").replace(/<[^>]*>/g, "").trim(),
-            link: article.link ?? article.originallink ?? null,
+            link,
             pub_date: article.pubDate ?? article.pub_date ?? null,
+            thumbnail: thumbMap.get(link) ?? thumbMap.get(title) ?? null,
+          });
+        }
+      }
+
+      // Also add top_items from raw_response that might not be in metrics
+      for (const snap of newsSnapshots) {
+        const rawResp = snap.raw_response as any;
+        const topItems = rawResp?.top_items ?? [];
+        for (const item of topItems) {
+          const title = (item.title ?? "").trim();
+          if (!title || seenTitles.has(title)) continue;
+          seenTitles.add(title);
+          allArticles.push({
+            title,
+            description: (item.description ?? "").trim(),
+            link: item.url ?? null,
+            pub_date: null,
+            thumbnail: item.image ?? null,
           });
         }
       }
@@ -693,13 +728,14 @@ function getSystemPrompt(language: string): string {
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
 - 스밍 요청이면서 "관심 아티스트" 표현이 있으면 get_watched_artists 호출 후 관심 아티스트들(최대 3명)에 대해 get_streaming_guide를 호출해 통합 요약해
 - 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
-- DB에 없는 일반적인 K-Pop 질문, 컴백 일정, 콘서트 정보 등은 search_web 도구를 사용해서 실시간 검색
-- 사진/이미지/셀카/포토 요청 시: search_web으로 검색하되, 결과에 이미지가 없으면 "못 찾았어요"라고만 하지 말고 반드시 아래 링크를 직접 제공해:
-  * [인스타그램에서 보기](https://www.instagram.com/{아티스트_인스타_계정}/) (계정을 모르면 검색 링크: https://www.instagram.com/explore/tags/{아티스트명}/)
+- 뉴스 기사에 thumbnail 필드가 있으면 반드시 마크다운 이미지로 표시해: ![기사제목](thumbnail_url) 형식으로 기사 앞에 썸네일을 보여줘
+- 사진/이미지/셀카/포토 요청 시: 먼저 get_artist_news로 뉴스 썸네일을 확인하고, 썸네일이 있는 기사를 이미지와 함께 보여줘
+- 뉴스 썸네일이 없거나 부족하면 search_web으로 추가 검색하고, 그래도 이미지가 없으면 아래 링크를 제공해:
+  * [인스타그램에서 보기](https://www.instagram.com/explore/tags/{아티스트명}/)
   * [X에서 최신 사진 보기](https://x.com/search?q={아티스트명}%20filter%3Aimages&f=live)
-  * [위버스에서 보기](https://weverse.io/) (위버스 사용 아티스트인 경우)
   * [Pinterest에서 보기](https://www.pinterest.com/search/pins/?q={아티스트명})
 - "찾을 수 없어요"로 끝내지 말고, 항상 대안 링크와 함께 안내해
+- DB에 없는 일반적인 K-Pop 질문, 컴백 일정, 콘서트 정보 등은 search_web 도구를 사용해서 실시간 검색
 
 🎵 스트리밍 가이드 응답 규칙 (매우 중요):
 - 스밍 가이드 결과를 받으면 절대 한 번에 전부 보여주지 마!
