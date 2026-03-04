@@ -289,16 +289,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
                             {stops.map((s, i) => <stop key={i} offset={s.offset} stopColor={s.color} />)}
                           </linearGradient>
-                          <filter id={`glow-${item.id}`} x="-50%" y="-100%" width="200%" height="300%">
-                            <feGaussianBlur stdDeviation="3.5" result="blur" />
-                            <feFlood floodColor={activeChannels[dominantIndex].color} floodOpacity="0.6" result="color" />
-                            <feComposite in="color" in2="blur" operator="in" result="colorBlur" />
-                            <feMerge>
-                              <feMergeNode in="colorBlur" />
-                              <feMergeNode in="colorBlur" />
-                              <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                          </filter>
                         </defs>
                         {/* Background track */}
                         <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill="hsl(var(--muted))" opacity="0.3" />
@@ -306,13 +296,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                         <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill={`url(#${gradId})`}>
                           <animate attributeName="width" from="0" to="200" dur="0.8s" fill="freeze"
                             calcMode="spline" keySplines="0.25 0.1 0.25 1" keyTimes="0;1" />
-                        </rect>
-                        {/* Pulsing glow on dominant segment — infinite repeat */}
-                        <rect x={Math.max(0, domStart - 4)} y="-3" width={domWidth + 8} height="20" rx="5" ry="5"
-                          fill={activeChannels[dominantIndex].color} opacity="0"
-                          filter={`url(#glow-${item.id})`}>
-                          <animate attributeName="opacity" values="0;0.7;0.25;0.7;0.25" dur="2s"
-                            begin="0.8s" repeatCount="indefinite" />
                         </rect>
                       </svg>
                     </div>
