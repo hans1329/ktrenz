@@ -694,6 +694,12 @@ function getSystemPrompt(language: string): string {
 - 스밍 요청이면서 "관심 아티스트" 표현이 있으면 get_watched_artists 호출 후 관심 아티스트들(최대 3명)에 대해 get_streaming_guide를 호출해 통합 요약해
 - 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
 - DB에 없는 일반적인 K-Pop 질문, 컴백 일정, 콘서트 정보 등은 search_web 도구를 사용해서 실시간 검색
+- 사진/이미지/셀카/포토 요청 시: search_web으로 검색하되, 결과에 이미지가 없으면 "못 찾았어요"라고만 하지 말고 반드시 아래 링크를 직접 제공해:
+  * [인스타그램에서 보기](https://www.instagram.com/{아티스트_인스타_계정}/) (계정을 모르면 검색 링크: https://www.instagram.com/explore/tags/{아티스트명}/)
+  * [X에서 최신 사진 보기](https://x.com/search?q={아티스트명}%20filter%3Aimages&f=live)
+  * [위버스에서 보기](https://weverse.io/) (위버스 사용 아티스트인 경우)
+  * [Pinterest에서 보기](https://www.pinterest.com/search/pins/?q={아티스트명})
+- "찾을 수 없어요"로 끝내지 말고, 항상 대안 링크와 함께 안내해
 
 🎵 스트리밍 가이드 응답 규칙 (매우 중요):
 - 스밍 가이드 결과를 받으면 절대 한 번에 전부 보여주지 마!
