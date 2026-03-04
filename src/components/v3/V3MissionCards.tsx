@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { cn } from "@/lib/utils";
-import { Youtube, Newspaper, MessageCircle, Music, Check, Zap } from "lucide-react";
+import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 interface Mission {
@@ -157,10 +157,29 @@ export default function V3MissionCards({
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{ title: string; points: number } | null>(null);
+  const pendingMissionRef = useRef<Mission | null>(null);
   const encodedName = encodeURIComponent(artistName);
   const today = new Date().toISOString().slice(0, 10);
 
-  // Extract YouTube videos from metadata (youtube_top_videos) + fallback to prop
+  // 탭 복귀 감지 → 축하 모달
+  const showCelebration = useCallback((mission: Mission) => {
+    setCelebration({ title: mission.title, points: mission.points });
+    setTimeout(() => setCelebration(null), 3500);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible" && pendingMissionRef.current) {
+        const mission = pendingMissionRef.current;
+        pendingMissionRef.current = null;
+        showCelebration(mission);
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, [showCelebration]);
+
   const ytVideos: YTVideo[] = (() => {
     const topVideos = metadata?.youtube_stats?.youtube_top_videos || [];
     const vids: YTVideo[] = topVideos
@@ -227,21 +246,30 @@ export default function V3MissionCards({
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
 
   const handleMission = async (mission: Mission) => {
+    // 로그인 유저 + 미완료 미션이면 pendingRef 세팅 (탭 복귀 시 축하 모달용)
+    const { data: authData } = await supabase.auth.getUser();
+    const isLoggedIn = !!authData.user;
+    const alreadyDone = completedSet.has(mission.key);
+
+    if (isLoggedIn && !alreadyDone) {
+      pendingMissionRef.current = mission;
+    }
+
     // Open link
     window.open(mission.url, "_blank", "noopener,noreferrer");
 
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData.user) {
+    if (!isLoggedIn) {
       toast.info("로그인하면 미션 보상을 받을 수 있어요!");
       return;
     }
-    if (completedSet.has(mission.key)) return;
+    if (alreadyDone) return;
 
     setCompleting(mission.key);
     try {
       // Record mission completion
+      const userId = authData.user!.id;
       const { error: missionError } = await supabase.from("ktrenz_daily_missions" as any).insert({
-        user_id: authData.user.id,
+        user_id: userId,
         wiki_entry_id: wikiEntryId,
         mission_key: mission.key,
         points_awarded: mission.points,
@@ -261,20 +289,19 @@ export default function V3MissionCards({
 
       // Record contribution
       await supabase.rpc("ktrenz_record_contribution" as any, {
-        _user_id: authData.user.id,
+        _user_id: userId,
         _wiki_entry_id: wikiEntryId,
         _platform: CATEGORY_CONFIG[mission.category].platform,
       });
 
       // Award K-Points
       await supabase.from("ktrenz_point_transactions" as any).insert({
-        user_id: authData.user.id,
+        user_id: userId,
         amount: mission.points,
         description: `미션 완료: ${mission.title} (${artistName})`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
-      toast.success(`+${mission.points} K-Points!`, { duration: 2000 });
     } catch (e) {
       console.error("Mission complete error:", e);
     } finally {
@@ -371,6 +398,23 @@ export default function V3MissionCards({
           );
         })}
       </div>
+
+      {/* 축하 모달 — 탭 복귀 시 3.5초 자동 닫힘 */}
+      {celebration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-in fade-in duration-300">
+          <div className="flex flex-col items-center gap-4 bg-card border border-border rounded-2xl px-8 py-10 shadow-2xl animate-in zoom-in-95 duration-300 max-w-[280px]">
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <PartyPopper className="w-8 h-8 text-amber-500" />
+            </div>
+            <p className="text-lg font-extrabold text-foreground text-center">미션 완료! 🎉</p>
+            <p className="text-sm text-muted-foreground text-center line-clamp-2">{celebration.title}</p>
+            <span className="text-2xl font-black text-amber-500">+{celebration.points}P</span>
+            <div className="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
+              <div className="h-full bg-amber-500 rounded-full animate-shrink-bar" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -133,3 +133,12 @@ html {
     pointer-events: none;
   }
 }
+
+@keyframes shrink-bar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-shrink-bar {
+  animation: shrink-bar 3.5s linear forwards;
+}
