@@ -248,24 +248,26 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 </p>
                 {/* Single stacked bar */}
                 {(() => {
-                  const validChannels = channels.filter(ch => total > 0 && (ch.value / total) * 100 > 0);
-                  if (validChannels.length === 0) return null;
+                  // Use absolute change values for the bar — categories with 0% change get no space
+                  const changeChannels = channels.map(ch => ({ ...ch, absChange: Math.abs(ch.change) }));
+                  const totalChange = changeChannels.reduce((sum, ch) => sum + ch.absChange, 0);
+                  const activeChannels = changeChannels.filter(ch => ch.absChange > 0);
+                  if (activeChannels.length === 0 || totalChange === 0) return null;
                   // Build gradient stops with smooth blending at boundaries
                   const stops: { offset: string; color: string }[] = [];
                   let cumPct = 0;
-                  const blendSize = 3; // percentage points for gradient blend
-                  validChannels.forEach((ch, i) => {
-                    const pct = (ch.value / total) * 100;
+                  const blendSize = 3;
+                  activeChannels.forEach((ch, i) => {
+                    const pct = (ch.absChange / totalChange) * 100;
                     if (i === 0) {
                       stops.push({ offset: `${cumPct}%`, color: ch.color });
                     } else {
-                      // blend zone: previous color -> current color
-                      stops.push({ offset: `${Math.max(cumPct - blendSize, 0)}%`, color: validChannels[i - 1].color });
+                      stops.push({ offset: `${Math.max(cumPct - blendSize, 0)}%`, color: activeChannels[i - 1].color });
                       stops.push({ offset: `${Math.min(cumPct + blendSize, 100)}%`, color: ch.color });
                     }
                     cumPct += pct;
                   });
-                  stops.push({ offset: `100%`, color: validChannels[validChannels.length - 1].color });
+                  stops.push({ offset: `100%`, color: activeChannels[activeChannels.length - 1].color });
                   const gradId = `cat-grad-${item.id}`;
                   return (
                     <svg className="w-full h-7" preserveAspectRatio="none" viewBox="0 0 200 14" style={{ borderRadius: '9999px', overflow: 'hidden', display: 'block' }}>
@@ -281,7 +283,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 {/* Legend with change % */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
                   {channels.map(ch => {
-                    const pct = total > 0 ? (ch.value / total) * 100 : 0;
                     const shortLabel = ch.label.split(' · ')[0];
                     return (
                       <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
@@ -290,13 +291,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                           <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: ch.color }} />
                           {ch.icon} {shortLabel}
                         </span>
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-muted-foreground">{pct.toFixed(0)}%</span>
-                          <span className={cn("text-[10px] font-bold",
-                            ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
-                          )}>
-                            {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
-                          </span>
+                        <span className={cn("text-[10px] font-bold",
+                          ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
+                        )}>
+                          {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
                         </span>
                       </a>
                     );
