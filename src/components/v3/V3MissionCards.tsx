@@ -411,19 +411,19 @@ export default function V3MissionCards({
         const categoryLabel = t(`mission.category.${celebration.category}`);
         return (
           <div className={cn(
-            "fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-500",
+            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500",
             celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
           )}>
             <div className={cn(
-              "relative flex flex-col items-center gap-5 w-[90vw] max-w-[400px] rounded-3xl px-8 py-10 shadow-2xl transition-all duration-500",
-              "bg-gradient-to-b from-card/95 to-card/80 backdrop-blur-xl",
+              "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-500",
+              "bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl",
               celebration.closing
                 ? "animate-celebration-burst"
                 : "animate-in zoom-in-95 duration-300"
             )}
               style={{
-                maskImage: "radial-gradient(ellipse 80% 75% at 50% 50%, black 40%, transparent 100%)",
-                WebkitMaskImage: "radial-gradient(ellipse 80% 75% at 50% 50%, black 40%, transparent 100%)",
+                maskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
+                WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
               }}
             >
               {/* 카테고리 뱃지 */}
