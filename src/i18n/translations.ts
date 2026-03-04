@@ -80,6 +80,8 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.uploadSuccess": { en: "Agent profile image updated!", ko: "에이전트 프로필 이미지가 업데이트되었습니다!", ja: "エージェントのプロフィール画像が更新されました！", zh: "助手头像已更新！" },
   "agent.clearChat": { en: "Clear chat", ko: "대화 초기화", ja: "チャットをクリア", zh: "清除聊天" },
   "agent.chatCleared": { en: "Chat history cleared", ko: "대화 기록이 초기화되었습니다", ja: "チャット履歴がクリアされました", zh: "聊天记录已清除" },
+  "agent.status.thinking": { en: "Analyzing your question…", ko: "질문을 분석하고 있어요…", ja: "質問を分析中…", zh: "正在分析您的问题…" },
+  "agent.status.writing": { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" },
 
   // ── Agent Quick Action Prompts ──
   "agent.prompt.liveRankings": { en: "Show me the live trend rankings Top 10", ko: "실시간 트렌드 랭킹 Top 10 보여줘", ja: "リアルタイムトレンドランキングTop10を見せて", zh: "展示实时趋势排名前10" },
