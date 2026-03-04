@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_collection_config ADD COLUMN IF NOT EXISTS hanteo_daily_url TEXT DEFAULT 'https://www.hanteochart.com/chart/album/daily';
