@@ -94,6 +94,8 @@ const translations: Record<string, Record<Language, string>> = {
   // ── Treemap / Drawer ──
   "drawer.categoryChanges": { en: "Category Changes (24h)", ko: "카테고리 변동 (24h)", ja: "カテゴリ変動 (24h)", zh: "分类变化 (24h)" },
   "drawer.scoreMomentum": { en: "Score Momentum", ko: "스코어 모멘텀", ja: "スコアモメンタム", zh: "评分趋势" },
+  "drawer.energySurging": { en: "Energy Surging", ko: "에너지 급상승", ja: "エネルギー急上昇", zh: "能量飙升" },
+  "drawer.fanEnergyInspector": { en: "Fan Energy Inspector", ko: "팬 에너지 분석", ja: "ファンエネルギー分析", zh: "粉丝能量分析" },
 
   // ── Missions ──
   "mission.todaysMission": { en: "Today's Mission", ko: "Today's Mission", ja: "今日のミッション", zh: "今日任务" },
