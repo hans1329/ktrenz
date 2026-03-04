@@ -220,13 +220,14 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   ].filter(c => c.value > 0);
 
   return (
-    <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Drawer open onOpenChange={(open) => { if (!open) onClose(); }} handleOnly>
       <DrawerContent className={cn(
-        "max-h-[85vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
+        "max-h-[75vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
         surging ? "border-destructive/50" : "border-border"
       )}>
-        <div className="sticky top-0 z-10 border-b border-border -mt-1 shrink-0">
-          <div className="flex items-center gap-2 px-4 py-3 min-w-0">
+        {/* Drag handle + title = draggable zone */}
+        <div className="shrink-0 border-b border-border -mt-1" vaul-drawer-handle="">
+          <div className="flex items-center gap-2 px-4 py-3 min-w-0 cursor-grab active:cursor-grabbing">
             {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
             <p className="text-base font-black text-foreground truncate">{item.title}</p>
           </div>
