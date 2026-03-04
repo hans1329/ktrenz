@@ -554,7 +554,7 @@ const V3TrendRankings = () => {
         <div className="pt-4 pb-1">
           <div className="flex items-center justify-center pb-2">
             <div className="text-center">
-              <h2 className="text-xl font-black text-foreground">
+              <h2 className="text-2xl font-black text-foreground">
                 <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
               </h2>
               {isCrawling && (
