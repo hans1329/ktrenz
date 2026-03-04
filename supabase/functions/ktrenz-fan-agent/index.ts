@@ -231,10 +231,10 @@ async function handleTool(
   async function getTierInfo(wikiId: string) {
     const { data } = await adminClient
       .from("v3_artist_tiers")
-      .select("tier, latest_video_title, latest_video_id")
+      .select("tier, latest_youtube_video_title, latest_youtube_video_id")
       .eq("wiki_entry_id", wikiId)
       .maybeSingle();
-    return data;
+    return data ? { ...data, latest_video_title: data.latest_youtube_video_title, latest_video_id: data.latest_youtube_video_id } : data;
   }
 
   switch (name) {
@@ -671,17 +671,23 @@ JSON 구조:
       const energyScore = found ? Math.round(found.energy_score ?? 0) : null;
       const energyChange = found ? +(found.energy_change_24h ?? 0).toFixed(1) : null;
 
-      // Get tier info for latest video
+      // Get tier info for latest video + social handles
       let latestVideoTitle: string | null = null;
       let latestVideoId: string | null = null;
+      let youtubeChannelId: string | null = null;
+      let instagramHandle: string | null = null;
+      let xHandle: string | null = null;
       if (wikiId) {
         const { data: tierData } = await adminClient
           .from("v3_artist_tiers")
-          .select("latest_video_title, latest_video_id")
+          .select("latest_youtube_video_title, latest_youtube_video_id, youtube_channel_id, instagram_handle, x_handle")
           .eq("wiki_entry_id", wikiId)
           .maybeSingle();
-        latestVideoTitle = tierData?.latest_video_title ?? null;
-        latestVideoId = tierData?.latest_video_id ?? null;
+        latestVideoTitle = tierData?.latest_youtube_video_title ?? null;
+        latestVideoId = tierData?.latest_youtube_video_id ?? null;
+        youtubeChannelId = tierData?.youtube_channel_id ?? null;
+        instagramHandle = tierData?.instagram_handle ?? null;
+        xHandle = tierData?.x_handle ?? null;
       }
 
       // Get music data for track names
@@ -704,10 +710,22 @@ JSON 구조:
         ])].slice(0, 5) as string[];
       }
 
-      // Get recent news thumbnail
-      let newsThumbnail: string | null = null;
-      let newsTitle: string | null = null;
-      let newsLink: string | null = null;
+      // Get YouTube Music top tracks for specific content
+      let ytMusicTracks: { title: string; viewCount: number }[] = [];
+      if (wikiId) {
+        const { data: ytmSnap } = await adminClient
+          .from("ktrenz_data_snapshots")
+          .select("metrics")
+          .eq("wiki_entry_id", wikiId)
+          .eq("platform", "youtube_music")
+          .order("collected_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        ytMusicTracks = (ytmSnap?.metrics as any)?.topTracks ?? [];
+      }
+
+      // Get multiple recent news articles (not just one)
+      const newsArticles: { title: string; link: string; thumbnail: string | null }[] = [];
       if (wikiId) {
         const { data: newsSnap } = await adminClient
           .from("ktrenz_data_snapshots")
@@ -720,18 +738,18 @@ JSON 구조:
         if (newsSnap) {
           const rawResp = newsSnap.raw_response as any;
           const topItems = rawResp?.top_items ?? [];
-          if (topItems.length > 0) {
-            const item = topItems[0];
-            newsThumbnail = item.image ?? null;
-            newsTitle = item.title ?? null;
-            newsLink = item.url ?? null;
+          for (const item of topItems.slice(0, 3)) {
+            if (item.title && item.url) {
+              newsArticles.push({ title: item.title, link: item.url, thumbnail: item.image ?? null });
+            }
           }
-          if (!newsTitle) {
+          if (newsArticles.length === 0) {
             const metrics = newsSnap.metrics as any;
             const articles = metrics?.articles ?? metrics?.items ?? [];
-            if (articles.length > 0) {
-              newsTitle = (articles[0].title ?? "").replace(/<[^>]*>/g, "").trim();
-              newsLink = articles[0].link ?? articles[0].originallink ?? null;
+            for (const a of articles.slice(0, 3)) {
+              const title = (a.title ?? "").replace(/<[^>]*>/g, "").trim();
+              const link = a.link ?? a.originallink ?? null;
+              if (title && link) newsArticles.push({ title, link, thumbnail: null });
             }
           }
         }
@@ -750,22 +768,25 @@ JSON 구조:
 
       const pastContent = (todayMessages ?? []).map((m: any) => m.content).join(" ");
 
-      // Activity pool — rotate through systematically
+      // Activity pool — rotate through systematically with SPECIFIC content
       const activities = [
         {
           type: "youtube_watch",
           done: pastContent.includes("YouTube") && pastContent.includes("시청"),
           data: {
-            activity: "YouTube 뮤비/콘텐츠 시청",
+            activity: "YouTube 최신 영상 시청",
             description: latestVideoTitle
-              ? `최신 영상 "${latestVideoTitle}" 시청하기`
+              ? `"${latestVideoTitle}"`
               : `${artistName} 최신 영상 시청하기`,
             link: latestVideoId
               ? `https://www.youtube.com/watch?v=${latestVideoId}`
-              : `https://www.youtube.com/results?search_query=${encodeURIComponent(artistName)}`,
+              : youtubeChannelId
+                ? `https://www.youtube.com/channel/${youtubeChannelId}/videos`
+                : `https://www.youtube.com/results?search_query=${encodeURIComponent(artistName)}`,
             thumbnail: latestVideoId ? `https://img.youtube.com/vi/${latestVideoId}/hqdefault.jpg` : null,
             platform: "YouTube",
             emoji: "▶️",
+            tip: "조회수 + 좋아요 + 댓글까지 남기면 알고리즘에 3배 효과!",
           },
         },
         {
@@ -773,12 +794,15 @@ JSON 구조:
           done: pastContent.includes("Spotify") && pastContent.includes("스트리밍"),
           data: {
             activity: "Spotify 스트리밍",
-            description: topTracks.length > 0
-              ? `"${topTracks[0]}" 플레이리스트에 추가하고 반복 재생`
-              : `${artistName} 인기곡 스트리밍`,
-            link: `https://open.spotify.com/search/${encodeURIComponent(artistName)}`,
+            description: ytMusicTracks.length > 0
+              ? `인기곡 "${ytMusicTracks[0].title}" (${(ytMusicTracks[0].viewCount / 1000000).toFixed(1)}M views) 반복 재생`
+              : topTracks.length > 0
+                ? `"${topTracks[0]}" 플레이리스트에 추가하고 반복 재생`
+                : `${artistName} 인기곡 스트리밍`,
+            link: `https://open.spotify.com/search/${encodeURIComponent(artistName + (ytMusicTracks[0]?.title ? " " + ytMusicTracks[0].title : ""))}`,
             platform: "Spotify",
             emoji: "🎧",
+            tip: "30초 이상 들어야 스트리밍 1회로 카운트됩니다!",
           },
         },
         {
@@ -786,12 +810,15 @@ JSON 구조:
           done: pastContent.includes("멜론") && pastContent.includes("스트리밍"),
           data: {
             activity: "멜론 스트리밍",
-            description: topTracks.length > 1
-              ? `"${topTracks[1] || topTracks[0]}" 멜론에서 좋아요 + 스트리밍`
-              : `${artistName} 멜론 차트 밀어주기`,
+            description: ytMusicTracks.length > 1
+              ? `"${ytMusicTracks[1]?.title || ytMusicTracks[0]?.title}" 멜론에서 좋아요 + 스트리밍`
+              : topTracks.length > 1
+                ? `"${topTracks[1] || topTracks[0]}" 멜론에서 좋아요 + 스트리밍`
+                : `${artistName} 멜론 차트 밀어주기`,
             link: `https://www.melon.com/search/total/index.htm?q=${encodeURIComponent(artistName)}`,
             platform: "Melon",
             emoji: "🍈",
+            tip: "멜론은 고유 리스너 수가 중요! 여러 기기에서 들으면 효과적",
           },
         },
         {
@@ -799,10 +826,15 @@ JSON 구조:
           done: pastContent.includes("X에서") && pastContent.includes("응원"),
           data: {
             activity: "X(Twitter) 응원 게시글",
-            description: `#${artistName.replace(/\s/g, "")} 해시태그로 응원 트윗 작성하기`,
-            link: `https://x.com/intent/tweet?text=${encodeURIComponent(`${artistName} 화이팅! 💜 #${artistName.replace(/\s/g, "")} #KTrenZ`)}`,
+            description: xHandle
+              ? `@${xHandle} 멘션하며 응원 트윗 작성하기`
+              : `#${artistName.replace(/\s/g, "")} 해시태그로 응원 트윗 작성하기`,
+            link: xHandle
+              ? `https://x.com/intent/tweet?text=${encodeURIComponent(`@${xHandle} 화이팅! 💜 #${artistName.replace(/\s/g, "")} #KTrenZ`)}`
+              : `https://x.com/intent/tweet?text=${encodeURIComponent(`${artistName} 화이팅! 💜 #${artistName.replace(/\s/g, "")} #KTrenZ`)}`,
             platform: "X",
             emoji: "📣",
+            tip: xHandle ? `공식 계정 @${xHandle} 태그하면 노출 UP!` : "해시태그 + 이미지 포함 시 노출 2배!",
           },
         },
         {
@@ -810,11 +842,13 @@ JSON 구조:
           done: pastContent.includes("뉴스") && pastContent.includes("읽기"),
           data: {
             activity: "최신 뉴스 읽기",
-            description: newsTitle ? `"${newsTitle}"` : `${artistName} 최신 소식 확인`,
-            link: newsLink || `https://search.naver.com/search.naver?query=${encodeURIComponent(artistName + " 뉴스")}`,
-            thumbnail: newsThumbnail,
+            description: newsArticles.length > 0 ? `"${newsArticles[0].title}"` : `${artistName} 최신 소식 확인`,
+            link: newsArticles.length > 0 ? newsArticles[0].link : `https://search.naver.com/search.naver?query=${encodeURIComponent(artistName + " 뉴스")}`,
+            thumbnail: newsArticles.length > 0 ? newsArticles[0].thumbnail : null,
             platform: "Naver News",
             emoji: "📰",
+            tip: "기사 공유하면 Buzz 스코어에 반영돼요!",
+            extra_articles: newsArticles.slice(1).map(a => ({ title: a.title, link: a.link, thumbnail: a.thumbnail })),
           },
         },
         {
@@ -822,12 +856,15 @@ JSON 구조:
           done: pastContent.includes("벅스") && pastContent.includes("스트리밍"),
           data: {
             activity: "벅스 스트리밍",
-            description: topTracks.length > 2
-              ? `"${topTracks[2] || topTracks[0]}" 벅스에서 스트리밍`
-              : `${artistName} 벅스 차트 지원`,
+            description: ytMusicTracks.length > 2
+              ? `"${ytMusicTracks[2]?.title || ytMusicTracks[0]?.title}" 벅스에서 스트리밍`
+              : topTracks.length > 2
+                ? `"${topTracks[2] || topTracks[0]}" 벅스에서 스트리밍`
+                : `${artistName} 벅스 차트 지원`,
             link: `https://music.bugs.co.kr/search/integrated?q=${encodeURIComponent(artistName)}`,
             platform: "Bugs",
             emoji: "🎵",
+            tip: "벅스는 다운로드 + 스트리밍 복합 차트!",
           },
         },
         {
@@ -835,10 +872,15 @@ JSON 구조:
           done: pastContent.includes("인스타그램"),
           data: {
             activity: "인스타그램 좋아요 & 댓글",
-            description: `${artistName} 최신 게시물에 좋아요와 응원 댓글 달기`,
-            link: `https://www.instagram.com/explore/tags/${encodeURIComponent(artistName.replace(/\s/g, ""))}/`,
+            description: instagramHandle
+              ? `@${instagramHandle} 최신 게시물에 좋아요와 응원 댓글 달기`
+              : `${artistName} 최신 게시물에 좋아요와 응원 댓글 달기`,
+            link: instagramHandle
+              ? `https://www.instagram.com/${instagramHandle}/`
+              : `https://www.instagram.com/explore/tags/${encodeURIComponent(artistName.replace(/\s/g, ""))}/`,
             platform: "Instagram",
             emoji: "❤️",
+            tip: instagramHandle ? `공식 계정 @${instagramHandle}에서 최신 포스트 확인!` : "게시 후 1시간 내 반응이 노출에 중요!",
           },
         },
         {
@@ -846,10 +888,13 @@ JSON 구조:
           done: pastContent.includes("지니") && pastContent.includes("스트리밍"),
           data: {
             activity: "지니 스트리밍",
-            description: `${artistName} 지니뮤직에서 좋아요 + 스트리밍`,
+            description: ytMusicTracks.length > 0
+              ? `"${ytMusicTracks[0].title}" 지니뮤직에서 좋아요 + 스트리밍`
+              : `${artistName} 지니뮤직에서 좋아요 + 스트리밍`,
             link: `https://www.genie.co.kr/search/searchMain?query=${encodeURIComponent(artistName)}`,
             platform: "Genie",
             emoji: "🧞",
+            tip: "지니는 이용권 스트리밍만 차트에 반영!",
           },
         },
       ];
