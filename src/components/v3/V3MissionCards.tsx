@@ -436,8 +436,11 @@ export default function V3MissionCards({
                       <img
                         src={mission.thumbnail}
                         alt=""
-                        className="shrink-0 w-20 h-11 rounded-md object-cover"
+                        className="shrink-0 w-20 h-11 rounded-md object-cover bg-muted"
                         loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
                       />
                     )}
                     <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>

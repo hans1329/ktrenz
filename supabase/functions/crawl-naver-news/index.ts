@@ -93,19 +93,37 @@ function deduplicateNews(items: { title: string; description: string }[]): typeo
 async function fetchOgImage(url: string): Promise<string | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenZBot/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      },
       signal: controller.signal,
       redirect: "follow",
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
-    const html = await res.text();
+    // 처음 50KB만 읽어서 파싱 (성능 개선)
+    const reader = res.body?.getReader();
+    if (!reader) return null;
+    let html = "";
+    const decoder = new TextDecoder();
+    while (html.length < 50000) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      html += decoder.decode(value, { stream: true });
+    }
+    reader.cancel();
     // og:image 메타태그 추출
     const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-    return match?.[1] || null;
+    if (match?.[1]) return match[1];
+    // fallback: twitter:image
+    const twMatch = html.match(/<meta[^>]+(?:name|property)=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']twitter:image["']/i);
+    return twMatch?.[1] || null;
   } catch {
     return null;
   }
@@ -176,7 +194,15 @@ Deno.serve(async (req) => {
 
     // 상위 기사의 og:image 병렬 추출
     const ogImages = await Promise.all(
-      top5.map((item) => fetchOgImage(item.originallink || item.link))
+      top5.map(async (item) => {
+        // originallink 먼저 시도, 실패 시 naver link로 fallback
+        const img = await fetchOgImage(item.originallink || item.link);
+        if (img) return img;
+        if (item.originallink && item.link !== item.originallink) {
+          return fetchOgImage(item.link);
+        }
+        return null;
+      })
     );
 
     const topMentions = top5.map((item, i) => ({
