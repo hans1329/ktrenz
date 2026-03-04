@@ -462,6 +462,7 @@ const V3TrendRankings = () => {
       case "buzz": return item.buzz_change_24h ?? 0;
       case "album": return item.album_change_24h ?? 0;
       case "music": return item.music_change_24h ?? 0;
+      case "fan": return item.fan_change_24h ?? 0;
       default: return item.energy_change_24h ?? 0;
     }
   };
@@ -472,6 +473,7 @@ const V3TrendRankings = () => {
       case "buzz": return Number(item.buzz_score ?? 0);
       case "album": return Number(item.album_sales_score ?? 0);
       case "music": return Number(item.music_score ?? 0);
+      case "fan": return Number(item.fan_score ?? 0);
       default: return Number(item.total_score ?? 0);
     }
   };
