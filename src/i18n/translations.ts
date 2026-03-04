@@ -79,6 +79,12 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.alertsOff": { en: "Alerts turned off", ko: "알림이 해제되었습니다", ja: "アラートがオフになりました", zh: "提醒已关闭" },
   "agent.uploadSuccess": { en: "Agent profile image updated!", ko: "에이전트 프로필 이미지가 업데이트되었습니다!", ja: "エージェントのプロフィール画像が更新されました！", zh: "助手头像已更新！" },
 
+  // ── Agent Quick Action Prompts ──
+  "agent.prompt.liveRankings": { en: "Show me the live trend rankings Top 10", ko: "실시간 트렌드 랭킹 Top 10 보여줘", ja: "リアルタイムトレンドランキングTop10を見せて", zh: "展示实时趋势排名前10" },
+  "agent.prompt.trendAnalysis": { en: "Analyze today's most notable trend changes", ko: "오늘 가장 주목할 만한 트렌드 변화를 분석해줘", ja: "今日の最も注目すべきトレンド変化を分析して", zh: "分析今天最值得关注的趋势变化" },
+  "agent.prompt.streamingGuide": { en: "Create a streaming guide for my watched artists. Include platform-specific tips, recommended playlists, and optimal streaming times.", ko: "내가 관심 등록한 아티스트의 스밍 가이드를 만들어줘. 플랫폼별 팁, 추천 플레이리스트, 최적 스트리밍 시간을 포함해줘.", ja: "お気に入りアーティストのストリーミングガイドを作成して。プラットフォーム別のヒント、おすすめプレイリスト、最適なストリーミング時間を含めて。", zh: "为我关注的艺人创建流媒体指南。包括各平台技巧、推荐播放列表和最佳播放时间。" },
+  "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for my favorite artists. Guide me on how to add artists by name.", ko: "관심 아티스트의 랭킹 변동 알림을 설정하고 싶어. 아티스트 이름으로 추가하는 방법을 안내해줘.", ja: "お気に入りアーティストのランキング変動アラートを設定したい。アーティスト名で追加する方法を教えて。", zh: "我想为喜欢的艺人设置排名变动提醒。请指导我如何按名字添加艺人。" },
+
   // ── Profile Overlay ──
   "profile.viewPlans": { en: "View plans & upgrade →", ko: "플랜 보기 및 업그레이드 →", ja: "プランを見る →", zh: "查看方案和升级 →" },
 
