@@ -39,12 +39,12 @@ function generateMissions(
 ): Mission[] {
   const missions: Mission[] = [];
 
-  // YouTube missions — one mission per video (시청), max 3 videos
-  videos.slice(0, 3).forEach((video, i) => {
+  // YouTube missions — 최신 영상 시청만, 최대 4개
+  videos.slice(0, 4).forEach((video, i) => {
     missions.push({
       key: `yt_${i}_watch`,
       category: "youtube",
-      title: `영상 시청 ${i + 1}`,
+      title: "시청하기",
       description: video.title.slice(0, 50),
       url: `https://www.youtube.com/watch?v=${video.id}`,
       points: 10,
@@ -52,18 +52,6 @@ function generateMissions(
       thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
     });
   });
-
-  if (channelId) {
-    missions.push({
-      key: "yt_subscribe",
-      category: "youtube",
-      title: "채널 구독하기",
-      description: "공식 채널 구독",
-      url: `https://www.youtube.com/channel/${channelId}?sub_confirmation=1`,
-      points: 10,
-      icon: CATEGORY_CONFIG.youtube.icon,
-    });
-  }
 
   // News missions — each with different article
   newsItems.slice(0, 4).forEach((item, i) => {
