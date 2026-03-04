@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
+import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
 
 // ── Types ──────────────────────────────────────────────
@@ -644,7 +645,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             >
               {msg.role === "assistant" ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      a: ({ href, children }) => {
+                        if (!href) return <a>{children}</a>;
+                        return <V3InlineLinkCard href={href}>{children}</V3InlineLinkCard>;
+                      },
+                      img: ({ src, alt }) => (
+                        <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
+                      ),
+                    }}
+                  >{msg.content}</ReactMarkdown>
                   {isStreaming && i === messages.length - 1 && (
                     <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
                   )}
