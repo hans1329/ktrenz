@@ -142,3 +142,28 @@ html {
 .animate-shrink-bar {
   animation: shrink-bar 5s linear forwards;
 }
+
+@keyframes celebration-burst {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.animate-celebration-burst {
+  animation: celebration-burst 0.5s ease-out forwards;
+}
+
+@keyframes burst-particle {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateY(calc(-1 * var(--burst-distance))) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-burst-particle {
+  animation: burst-particle 0.5s ease-out forwards;
+}
