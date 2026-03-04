@@ -34,7 +34,7 @@ function generateMissions(
   encodedName: string,
   videos: YTVideo[],
   channelId: string | null,
-  newsItems: Array<{ title: string; url: string }>,
+  newsItems: Array<{ title: string; url: string; og_image?: string | null }>,
   musicCharts: any,
 ): Mission[] {
   const missions: Mission[] = [];
@@ -53,16 +53,17 @@ function generateMissions(
     });
   });
 
-  // News missions — each with different article
+  // News missions — each with different article + thumbnail
   newsItems.slice(0, 4).forEach((item, i) => {
     missions.push({
       key: `news_${i}`,
       category: "news",
-      title: `뉴스 ${i + 1}`,
-      description: item.title.slice(0, 50),
+      title: item.title.slice(0, 50),
+      description: "",
       url: item.url,
       points: 8,
       icon: CATEGORY_CONFIG.news.icon,
+      thumbnail: item.og_image || null,
     });
   });
 
@@ -192,7 +193,7 @@ export default function V3MissionCards({
       const raw = data[0].raw_response;
       return (raw?.top_items || [])
         .filter((item: any) => item.url && item.title)
-        .map((item: any) => ({ title: item.title, url: item.url }));
+        .map((item: any) => ({ title: item.title, url: item.url, og_image: item.og_image || null }));
     },
     staleTime: 1000 * 60 * 30,
   });
@@ -307,6 +308,7 @@ export default function V3MissionCards({
           const completed = completedSet.has(mission.key);
           const isCompleting = completing === mission.key;
           const cfg = CATEGORY_CONFIG[mission.category];
+          const categoryLabel = { youtube: "YouTube", news: "뉴스", buzz: "Buzz", music: "Music" }[mission.category];
 
           return (
             <button
@@ -314,45 +316,47 @@ export default function V3MissionCards({
               onClick={() => handleMission(mission)}
               disabled={isCompleting}
               className={cn(
-                "relative flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-200 w-full",
+                "relative flex flex-col gap-2 p-3 rounded-xl border text-left transition-all duration-200 w-full",
                 completed
                   ? "bg-muted/30 border-border opacity-60"
                   : `${cfg.bg} ${cfg.border} hover:scale-[1.01] active:scale-[0.99]`,
                 isCompleting && "animate-pulse"
               )}
             >
-              {/* Number badge */}
-              <span className={cn(
-                "shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold",
-                completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
-              )}>
-                {completed ? <Check className="w-3 h-3" /> : index + 1}
-              </span>
-
-              {/* Thumbnail (YouTube) */}
-              {mission.thumbnail && (
-                <img
-                  src={mission.thumbnail}
-                  alt=""
-                  className="shrink-0 w-20 h-11 rounded-md object-cover"
-                  loading="lazy"
-                />
-              )}
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+              {/* Top row: number, source, points */}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                    completed ? "bg-green-500/20 text-green-500" : `${cfg.bg} ${cfg.color}`
+                  )}>
+                    {completed ? <Check className="w-3 h-3" /> : index + 1}
+                  </span>
                   <span className={cn(cfg.color, "shrink-0")}>{mission.icon}</span>
-                  <span className="text-xs font-bold text-foreground line-clamp-2">{mission.title}</span>
+                  <span className={cn("text-[11px] font-semibold", cfg.color)}>{categoryLabel}</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{mission.description}</p>
+                {completed ? (
+                  <Check className="w-4 h-4 text-green-500 shrink-0" />
+                ) : (
+                  <span className="text-[11px] font-bold text-amber-500">+{mission.points}P</span>
+                )}
               </div>
 
-              {/* Points / check */}
-              {completed ? (
-                <Check className="w-4 h-4 text-green-500 shrink-0" />
-              ) : (
-                <span className="text-[11px] font-bold text-amber-500 shrink-0 whitespace-nowrap">+{mission.points}P</span>
+              {/* Content row: thumbnail + title */}
+              <div className="flex items-start gap-2.5 w-full">
+                {mission.thumbnail && (
+                  <img
+                    src={mission.thumbnail}
+                    alt=""
+                    className="shrink-0 w-20 h-11 rounded-md object-cover"
+                    loading="lazy"
+                  />
+                )}
+                <span className="text-xs font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
+              </div>
+
+              {mission.description && (
+                <p className="text-[11px] text-muted-foreground line-clamp-1">{mission.description}</p>
               )}
 
               {completed && (
