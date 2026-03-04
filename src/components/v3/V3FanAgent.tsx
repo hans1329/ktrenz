@@ -488,16 +488,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [chatInput, isStreaming, session, messages, user?.id, queryClient, hasAlertOn]);
 
   const handleQuickAction = (action: QuickAction) => {
-    if (action.mode === "streaming" && (watchedArtists?.length ?? 0) > 0) {
-      const watchedNames = (watchedArtists as any[])
-        .map((w: any) => w.artist_name)
-        .filter(Boolean)
-        .slice(0, 3);
-      if (watchedNames.length > 0) {
-        handleSend(`${action.prompt}\n관심 아티스트: ${watchedNames.join(", ")}`);
-        return;
-      }
-    }
     handleSend(action.prompt);
   };
 
