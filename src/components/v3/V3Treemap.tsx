@@ -676,7 +676,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
           return (
             <button key={cat} onClick={() => handleCategoryChange(cat)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all border",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
                 isActive ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
               )}>
               {config.icon}
