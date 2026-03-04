@@ -663,7 +663,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   return (
     <div className="px-4 pb-4">
       <div className="pt-4 pb-3">
-        <h2 className="text-xl font-black text-muted-foreground">⚡ Energy Map</h2>
+        <h2 className="text-xl font-medium text-muted-foreground">⚡ Energy Map</h2>
         <p className="text-xs text-muted-foreground mt-0.5 pl-7">
           카테고리별 24h 변동률 · Top {displayCount} · Tap to inspect
         </p>
