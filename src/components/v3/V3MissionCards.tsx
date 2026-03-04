@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ function generateMissions(
   channelId: string | null,
   newsItems: Array<{ title: string; url: string; og_image?: string | null }>,
   musicCharts: any,
+  t: (key: string) => string,
 ): Mission[] {
   const missions: Mission[] = [];
 
@@ -71,8 +73,8 @@ function generateMissions(
   missions.push({
     key: "buzz_x_search",
     category: "buzz",
-    title: "X에서 검색하기",
-    description: `${artistName} 최신 소식 확인`,
+    title: t("mission.searchOnX"),
+    description: `${artistName} ${t("mission.latestNews")}`,
     url: `https://x.com/search?q=${encodedName}&src=typed_query&f=live`,
     points: 8,
     icon: CATEGORY_CONFIG.buzz.icon,
@@ -80,8 +82,8 @@ function generateMissions(
   missions.push({
     key: "buzz_x_post",
     category: "buzz",
-    title: "X에 응원 게시글 작성",
-    description: `#${artistName.replace(/\s/g, "")} 해시태그`,
+    title: t("mission.postOnX"),
+    description: `#${artistName.replace(/\s/g, "")} ${t("mission.hashtag")}`,
     url: `https://x.com/intent/post?text=${encodeURIComponent(`${artistName} 💖 #${artistName.replace(/\s/g, "")} #KPop`)}`,
     points: 15,
     icon: CATEGORY_CONFIG.buzz.icon,
@@ -97,8 +99,8 @@ function generateMissions(
     missions.push({
       key: "music_spotify",
       category: "music",
-      title: "Spotify 스트리밍",
-      description: `${song1.title} 듣기`,
+      title: t("mission.spotifyStream"),
+      description: `${song1.title} ${t("mission.listenTo")}`,
       url: `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${song1.title}`)}`,
       points: 10,
       icon: CATEGORY_CONFIG.music.icon,
@@ -108,8 +110,8 @@ function generateMissions(
       missions.push({
         key: "music_melon",
         category: "music",
-        title: "멜론 스트리밍",
-        description: `${song2.title} 듣기`,
+        title: t("mission.melonStream"),
+        description: `${song2.title} ${t("mission.listenTo")}`,
         url: `https://www.melon.com/search/total/index.htm?q=${encodeURIComponent(`${artistName} ${song2.title}`)}`,
         points: 8,
         icon: CATEGORY_CONFIG.music.icon,
@@ -119,8 +121,8 @@ function generateMissions(
     missions.push({
       key: "music_spotify",
       category: "music",
-      title: "Spotify 스트리밍",
-      description: "최신곡 듣기",
+      title: t("mission.spotifyStream"),
+      description: t("mission.listenLatest"),
       url: `https://open.spotify.com/search/${encodedName}`,
       points: 10,
       icon: CATEGORY_CONFIG.music.icon,
@@ -128,8 +130,8 @@ function generateMissions(
     missions.push({
       key: "music_melon",
       category: "music",
-      title: "멜론에서 검색",
-      description: `${artistName} 음악 감상`,
+      title: t("mission.melonSearch"),
+      description: `${artistName} ${t("mission.enjoyMusic")}`,
       url: `https://www.melon.com/search/total/index.htm?q=${encodedName}`,
       points: 8,
       icon: CATEGORY_CONFIG.music.icon,
@@ -154,6 +156,7 @@ export default function V3MissionCards({
   channelId: string | null;
   metadata: any;
 }) {
+  const { t } = useLanguage();
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
@@ -189,12 +192,12 @@ export default function V3MissionCards({
       .filter((v: any) => v.videoId || v.video_id)
       .map((v: any) => ({
         id: v.videoId || v.video_id,
-        title: v.title || "영상",
+        title: v.title || t("mission.video"),
       }))
       .slice(0, 5);
     // Fallback to the single prop videoId if metadata has nothing
     if (vids.length === 0 && videoId) {
-      vids.push({ id: videoId, title: videoTitle || "최신 영상" });
+      vids.push({ id: videoId, title: videoTitle || t("mission.latestVideo") });
     }
     return vids;
   })();
@@ -243,7 +246,7 @@ export default function V3MissionCards({
   });
 
   const musicCharts = metadata?.music_charts;
-  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts);
+  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts, t);
   const completedSet = new Set(completedMissions);
   const completedCount = missions.filter(m => completedSet.has(m.key)).length;
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
@@ -262,7 +265,7 @@ export default function V3MissionCards({
     window.open(mission.url, "_blank", "noopener,noreferrer");
 
     if (!isLoggedIn) {
-      toast.info("로그인하면 미션 보상을 받을 수 있어요!");
+      toast.info(t("mission.loginForReward"));
       return;
     }
     if (alreadyDone) return;
@@ -301,7 +304,7 @@ export default function V3MissionCards({
       await supabase.from("ktrenz_point_transactions" as any).insert({
         user_id: userId,
         amount: mission.points,
-        description: `미션 완료: ${mission.title} (${artistName})`,
+        description: `${t("mission.completed")}${mission.title} (${artistName})`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
@@ -320,7 +323,7 @@ export default function V3MissionCards({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-amber-400" />
-          <p className="text-sm font-bold text-foreground uppercase tracking-wider">Today's Mission</p>
+          <p className="text-sm font-bold text-foreground uppercase tracking-wider">{t("mission.todaysMission")}</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="font-bold text-primary text-base">{completedCount}/{missions.length}</span>
@@ -343,7 +346,7 @@ export default function V3MissionCards({
           const completed = completedSet.has(mission.key);
           const isCompleting = completing === mission.key;
           const cfg = CATEGORY_CONFIG[mission.category];
-          const categoryLabel = { youtube: "YouTube", news: "뉴스", buzz: "Buzz", music: "Music" }[mission.category];
+          const categoryLabel = t(`mission.category.${mission.category}`);
 
           return (
             <button
@@ -405,7 +408,7 @@ export default function V3MissionCards({
       {/* 축하 모달 */}
       {celebration && (() => {
         const cfg = CATEGORY_CONFIG[celebration.category];
-        const categoryLabel = { youtube: "YouTube", news: "뉴스", buzz: "Buzz", music: "Music" }[celebration.category];
+        const categoryLabel = t(`mission.category.${celebration.category}`);
         return (
           <div className={cn(
             "fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-500",
@@ -426,7 +429,7 @@ export default function V3MissionCards({
               {/* 카테고리 뱃지 */}
               <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold", cfg.bg, cfg.color)}>
                 {cfg.icon}
-                <span>{categoryLabel} 미션</span>
+                <span>{categoryLabel} {t("mission.categoryMission")}</span>
               </div>
 
               {/* 아이콘 */}
@@ -434,7 +437,7 @@ export default function V3MissionCards({
                 <PartyPopper className="w-8 h-8 text-amber-500" />
               </div>
 
-              <p className="text-lg font-extrabold text-foreground text-center">미션 완료! 🎉</p>
+              <p className="text-lg font-extrabold text-foreground text-center">{t("mission.complete")}</p>
               <p className="text-sm text-muted-foreground text-center line-clamp-2 max-w-[280px]">{celebration.title}</p>
               <span className="text-3xl font-black text-amber-500">+{celebration.points}P</span>
 
