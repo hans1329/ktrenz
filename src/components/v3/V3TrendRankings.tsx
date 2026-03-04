@@ -570,7 +570,7 @@ const V3TrendRankings = () => {
             <V3Treemap category={energyCategory} onCategoryChange={setEnergyCategory} />
           </div>
           <div className="w-[40%] min-w-0 space-y-3">
-            <div className="pt-1 pb-3">
+            <div className="pb-2">
               <h2 className="text-xl font-bold text-muted-foreground">Trend Rankings</h2>
               <p className="text-xs text-muted-foreground mt-0.5">실시간 트렌드 순위 · {t("rankings.subtitle")}</p>
               <div className="flex items-center gap-1.5 mt-2">
