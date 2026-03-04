@@ -722,7 +722,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                 {/* 1등 박스 인너 글로우 */}
                 {isFirst && (
                   <div className="absolute inset-0 z-[1] pointer-events-none" style={{
-                    boxShadow: 'inset 0 0 30px 8px hsla(38, 95%, 55%, 0.5), inset 0 0 60px 15px hsla(30, 100%, 50%, 0.25)',
+                    boxShadow: 'inset 0 0 40px 12px hsla(45, 100%, 70%, 0.7), inset 0 0 80px 25px hsla(38, 100%, 60%, 0.4), inset 0 0 120px 40px hsla(30, 100%, 50%, 0.2)',
+                    background: 'radial-gradient(ellipse at center, hsla(45, 100%, 80%, 0.15) 0%, transparent 70%)',
                   }} />
                 )}
 
