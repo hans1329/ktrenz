@@ -385,7 +385,7 @@ export default function V3MissionCards({
                       <span className={cn("text-xs font-semibold", cfg.color)}>{categoryLabel}</span>
                     </div>
                     {completed ? (
-                      <Check className="w-4 h-4 text-green-500 shrink-0" />
+                      <Check className="w-5 h-5 text-teal-400 shrink-0 relative z-10 drop-shadow-[0_0_4px_rgba(45,212,191,0.6)]" />
                     ) : (
                       <span className="text-xs font-bold text-amber-500">+{mission.points}P</span>
                     )}
