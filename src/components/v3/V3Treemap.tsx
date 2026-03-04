@@ -195,7 +195,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   return (
     <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DrawerContent className={cn(
-        "max-h-[90vh] rounded-t-2xl border-t",
+        "max-h-[90vh] rounded-t-2xl border-t mx-auto max-w-[600px]",
         surging ? "border-destructive/50" : "border-border"
       )}>
         <div className="overflow-y-auto max-h-[calc(90vh-2rem)]">
