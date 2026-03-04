@@ -140,7 +140,7 @@ html {
 }
 
 .animate-shrink-bar {
-  animation: shrink-bar 5s linear forwards;
+  animation: shrink-bar 4s linear forwards;
 }
 
 @keyframes celebration-burst {

@@ -168,7 +168,7 @@ export default function V3MissionCards({
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
       setTimeout(() => setCelebration(null), 500);
-    }, 5000);
+    }, 4000);
   }, []);
 
   useEffect(() => {
@@ -409,7 +409,7 @@ export default function V3MissionCards({
           celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
         )}>
           <div className={cn(
-            "flex flex-col items-center gap-4 bg-card border border-border rounded-2xl px-8 py-10 shadow-2xl max-w-[280px] transition-all duration-500",
+            "flex flex-col items-center gap-4 bg-card border border-border rounded-2xl px-8 py-10 shadow-2xl w-[90vw] max-w-[400px] transition-all duration-500",
             celebration.closing
               ? "animate-celebration-burst"
               : "animate-in zoom-in-95 duration-300"
