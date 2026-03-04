@@ -164,13 +164,37 @@ async function handleTool(
     return sorted;
   }
 
-  // Helper: find artist by name (fuzzy)
+  // Helper: Korean name map (cached)
+  let koNameMap: Map<string, string> | null = null;
+  async function getKoNameMap(): Promise<Map<string, string>> {
+    if (koNameMap) return koNameMap;
+    const { data } = await adminClient
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id, name_ko, display_name")
+      .not("name_ko", "is", null);
+    koNameMap = new Map();
+    for (const row of data ?? []) {
+      if (row.name_ko) koNameMap.set(row.wiki_entry_id, row.name_ko.toLowerCase());
+    }
+    return koNameMap;
+  }
+
+  // Helper: find artist by name (fuzzy, supports Korean names)
   async function findArtist(name: string) {
     const all = await getAllScores();
     const lower = name.toLowerCase().trim();
-    return all.find((a: any) => {
+    // Direct title match first
+    const directMatch = all.find((a: any) => {
       const title = (a.wiki_entries as any)?.title?.toLowerCase() ?? "";
       return title === lower || title.includes(lower) || lower.includes(title);
+    });
+    if (directMatch) return directMatch;
+
+    // Korean name match
+    const koMap = await getKoNameMap();
+    return all.find((a: any) => {
+      const ko = koMap.get(a.wiki_entry_id);
+      return ko && (ko === lower || ko.includes(lower) || lower.includes(ko));
     });
   }
 
@@ -262,12 +286,23 @@ async function handleTool(
     }
 
     case "search_artist": {
+      // Search by English title
       const { data: matches } = await adminClient
         .from("wiki_entries")
         .select("id, title")
         .ilike("title", `%${args.query}%`)
         .limit(10);
-      return JSON.stringify({ results: (matches ?? []).map((m: any) => m.title) });
+      // Also search by Korean name
+      const { data: koMatches } = await adminClient
+        .from("v3_artist_tiers")
+        .select("wiki_entry_id, display_name, name_ko")
+        .ilike("name_ko", `%${args.query}%`)
+        .limit(10);
+      const titles = new Set((matches ?? []).map((m: any) => m.title));
+      for (const km of koMatches ?? []) {
+        titles.add(`${km.display_name} (${km.name_ko})`);
+      }
+      return JSON.stringify({ results: [...titles] });
     }
 
     case "manage_watched_artist": {
