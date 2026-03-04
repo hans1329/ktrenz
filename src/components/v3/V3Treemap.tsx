@@ -207,7 +207,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
               <div className="min-w-0">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-                  {surging ? "Energy Surging" : "Fan Energy Inspector"}
+                  {surging ? t("drawer.energySurging") : t("drawer.fanEnergyInspector")}
                 </p>
                 <p className="text-sm font-black text-foreground truncate">{item.title}</p>
               </div>
@@ -216,6 +216,23 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           </div>
 
           <div className="p-4 space-y-5 overflow-hidden">
+            {/* Surging Alert Box */}
+            {surging && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
+                <span className="text-lg shrink-0">🔥</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-destructive">{t("drawer.energySurging")}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {(() => {
+                      const surgingCats = channels.filter(ch => ch.change >= 15);
+                      if (surgingCats.length === 0) return `FES +${item.energyChange24h.toFixed(1)}%`;
+                      return surgingCats.map(ch => `${ch.label.split(' · ')[0]} +${ch.change.toFixed(1)}%`).join(', ');
+                    })()}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
                 <p className="text-[10px] text-muted-foreground mb-1">FES</p>
@@ -236,19 +253,32 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
                 </p>
-                <div className="space-y-2">
-                  {channels.map(ch => (
-                    <div key={ch.label}>
-                      <ChannelBar icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
-                      <div className="flex justify-end mt-0.5 mr-1">
-                        <span className={cn("text-[10px] font-bold",
+                {/* Unified grouped bar chart */}
+                <div className="space-y-1">
+                  {channels.map(ch => {
+                    const pct = total > 0 ? (ch.value / total) * 100 : 0;
+                    const shortLabel = ch.label.split(' · ')[0];
+                    return (
+                      <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer" data-track-category={ch.label}
+                        className={cn("flex items-center gap-2 py-1.5 group", ch.href ? "cursor-pointer" : "cursor-default")}>
+                        <span className="w-14 flex items-center gap-1 text-[10px] font-semibold text-foreground shrink-0">
+                          {ch.icon} {shortLabel}
+                        </span>
+                        <div className="flex-1 h-4 rounded bg-muted overflow-hidden relative">
+                          <div className="h-full rounded transition-all duration-500 group-hover:brightness-110"
+                            style={{ width: `${pct}%`, background: ch.color }} />
+                          <span className="absolute inset-0 flex items-center justify-end pr-1.5 text-[9px] font-bold text-foreground">
+                            {Math.round(ch.value)}
+                          </span>
+                        </div>
+                        <span className={cn("w-12 text-right text-[10px] font-bold shrink-0",
                           ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
                         )}>
                           {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
                         </span>
-                      </div>
-                    </div>
-                  ))}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             )}
