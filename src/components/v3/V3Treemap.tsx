@@ -247,16 +247,37 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
                 </p>
                 {/* Single stacked bar */}
-                <div className="h-6 rounded-full overflow-hidden flex w-full bg-muted">
-                  {channels.map(ch => {
-                    const pct = total > 0 ? (ch.value / total) * 100 : 0;
-                    if (pct <= 0) return null;
-                    return (
-                      <div key={ch.label} className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full"
-                        style={{ width: `${pct}%`, background: ch.color }} title={`${ch.label.split(' · ')[0]}: ${Math.round(ch.value)} (${pct.toFixed(0)}%)`} />
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const validChannels = channels.filter(ch => total > 0 && (ch.value / total) * 100 > 0);
+                  if (validChannels.length === 0) return null;
+                  // Build gradient stops with smooth blending at boundaries
+                  const stops: { offset: string; color: string }[] = [];
+                  let cumPct = 0;
+                  const blendSize = 3; // percentage points for gradient blend
+                  validChannels.forEach((ch, i) => {
+                    const pct = (ch.value / total) * 100;
+                    if (i === 0) {
+                      stops.push({ offset: `${cumPct}%`, color: ch.color });
+                    } else {
+                      // blend zone: previous color -> current color
+                      stops.push({ offset: `${Math.max(cumPct - blendSize, 0)}%`, color: validChannels[i - 1].color });
+                      stops.push({ offset: `${Math.min(cumPct + blendSize, 100)}%`, color: ch.color });
+                    }
+                    cumPct += pct;
+                  });
+                  stops.push({ offset: `100%`, color: validChannels[validChannels.length - 1].color });
+                  const gradId = `cat-grad-${item.id}`;
+                  return (
+                    <svg className="w-full h-7 rounded-full overflow-hidden" preserveAspectRatio="none" viewBox="0 0 100 10">
+                      <defs>
+                        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+                          {stops.map((s, i) => <stop key={i} offset={s.offset} stopColor={s.color} />)}
+                        </linearGradient>
+                      </defs>
+                      <rect x="0" y="0" width="100" height="10" rx="5" fill={`url(#${gradId})`} />
+                    </svg>
+                  );
+                })()}
                 {/* Legend with change % */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
                   {channels.map(ch => {
