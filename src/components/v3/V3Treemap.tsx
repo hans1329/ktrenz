@@ -201,20 +201,13 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
         "max-h-[90vh] rounded-t-2xl border-t mx-auto max-w-[600px]",
         surging ? "border-destructive/50" : "border-border"
       )}>
-        <div className="overflow-y-auto max-h-[calc(90vh-2rem)]">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
-              <div className="min-w-0">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-                  {t("drawer.fanEnergyInspector")}
-                </p>
-                <p className="text-sm font-black text-foreground truncate">{item.title}</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 shrink-0 ml-2">×</button>
+        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border">
+          <div className="flex items-center gap-2 px-4 py-3 min-w-0">
+            {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
+            <p className="text-base font-black text-foreground truncate">{item.title}</p>
           </div>
-
+        </div>
+        <div className="overflow-y-auto max-h-[calc(90vh-4rem)]">
           <div className="p-4 space-y-5 overflow-hidden">
             {/* Surging Location Box */}
             {surging && (
