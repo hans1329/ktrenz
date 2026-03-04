@@ -181,36 +181,22 @@ export default function V3MissionCards({
   const encodedName = encodeURIComponent(artistName);
   const today = new Date().toISOString().slice(0, 10);
 
-  // Fetch recent YouTube videos for this artist
-  const { data: ytVideos = [] } = useQuery({
-    queryKey: ["mission-yt-videos", wikiEntryId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("ktrenz_data_snapshots")
-        .select("raw_response")
-        .eq("wiki_entry_id", wikiEntryId)
-        .eq("platform", "youtube")
-        .not("raw_response", "is", null)
-        .order("collected_at", { ascending: false })
-        .limit(1);
-      if (!data?.[0]) return videoId && videoTitle ? [{ id: videoId, title: videoTitle }] : [];
-      const raw = data[0].raw_response;
-      const items = raw?.recent_videos || raw?.items || [];
-      const vids: YTVideo[] = items
-        .filter((v: any) => v.video_id || v.videoId || v.id)
-        .map((v: any) => ({
-          id: v.video_id || v.videoId || v.id,
-          title: v.title || "영상",
-        }))
-        .slice(0, 5);
-      // Fallback to the prop videoId if snapshot has nothing
-      if (vids.length === 0 && videoId) {
-        vids.push({ id: videoId, title: videoTitle || "최신 영상" });
-      }
-      return vids;
-    },
-    staleTime: 1000 * 60 * 30,
-  });
+  // Extract YouTube videos from metadata (youtube_top_videos) + fallback to prop
+  const ytVideos: YTVideo[] = (() => {
+    const topVideos = metadata?.youtube_stats?.youtube_top_videos || [];
+    const vids: YTVideo[] = topVideos
+      .filter((v: any) => v.videoId || v.video_id)
+      .map((v: any) => ({
+        id: v.videoId || v.video_id,
+        title: v.title || "영상",
+      }))
+      .slice(0, 5);
+    // Fallback to the single prop videoId if metadata has nothing
+    if (vids.length === 0 && videoId) {
+      vids.push({ id: videoId, title: videoTitle || "최신 영상" });
+    }
+    return vids;
+  })();
 
   // Fetch naver news items for this artist
   const { data: newsItems = [] } = useQuery({
