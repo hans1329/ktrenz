@@ -157,14 +157,14 @@ export default function V3MissionCards({
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{ title: string; points: number; closing?: boolean } | null>(null);
+  const [celebration, setCelebration] = useState<{ title: string; points: number; category: keyof typeof CATEGORY_CONFIG; closing?: boolean } | null>(null);
   const pendingMissionRef = useRef<Mission | null>(null);
   const encodedName = encodeURIComponent(artistName);
   const today = new Date().toISOString().slice(0, 10);
 
   // 탭 복귀 감지 → 축하 모달
   const showCelebration = useCallback((mission: Mission) => {
-    setCelebration({ title: mission.title, points: mission.points });
+    setCelebration({ title: mission.title, points: mission.points, category: mission.category });
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
       setTimeout(() => setCelebration(null), 500);
@@ -402,46 +402,67 @@ export default function V3MissionCards({
         })}
       </div>
 
-      {/* 축하 모달 — 탭 복귀 시 3.5초 자동 닫힘 */}
-      {celebration && (
-        <div className={cn(
-          "fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-500",
-          celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
-        )}>
+      {/* 축하 모달 */}
+      {celebration && (() => {
+        const cfg = CATEGORY_CONFIG[celebration.category];
+        const categoryLabel = { youtube: "YouTube", news: "뉴스", buzz: "Buzz", music: "Music" }[celebration.category];
+        return (
           <div className={cn(
-            "flex flex-col items-center gap-4 bg-card border border-border rounded-2xl px-8 py-10 shadow-2xl w-[90vw] max-w-[400px] transition-all duration-500",
-            celebration.closing
-              ? "animate-celebration-burst"
-              : "animate-in zoom-in-95 duration-300"
+            "fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-500",
+            celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
           )}>
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
-              <PartyPopper className="w-8 h-8 text-amber-500" />
+            <div className={cn(
+              "relative flex flex-col items-center gap-5 w-[90vw] max-w-[400px] rounded-3xl px-8 py-10 shadow-2xl transition-all duration-500",
+              "bg-gradient-to-b from-card/95 to-card/80 backdrop-blur-xl",
+              celebration.closing
+                ? "animate-celebration-burst"
+                : "animate-in zoom-in-95 duration-300"
+            )}
+              style={{
+                maskImage: "radial-gradient(ellipse 90% 85% at 50% 50%, black 60%, transparent 100%)",
+                WebkitMaskImage: "radial-gradient(ellipse 90% 85% at 50% 50%, black 60%, transparent 100%)",
+              }}
+            >
+              {/* 카테고리 뱃지 */}
+              <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold", cfg.bg, cfg.color)}>
+                {cfg.icon}
+                <span>{categoryLabel} 미션</span>
+              </div>
+
+              {/* 아이콘 */}
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <PartyPopper className="w-8 h-8 text-amber-500" />
+              </div>
+
+              <p className="text-lg font-extrabold text-foreground text-center">미션 완료! 🎉</p>
+              <p className="text-sm text-muted-foreground text-center line-clamp-2 max-w-[280px]">{celebration.title}</p>
+              <span className="text-3xl font-black text-amber-500">+{celebration.points}P</span>
+
+              {/* 타이머 바 */}
+              <div className="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
+                <div className="h-full bg-amber-500 rounded-full animate-shrink-bar" />
+              </div>
             </div>
-            <p className="text-lg font-extrabold text-foreground text-center">미션 완료! 🎉</p>
-            <p className="text-sm text-muted-foreground text-center line-clamp-2">{celebration.title}</p>
-            <span className="text-2xl font-black text-amber-500">+{celebration.points}P</span>
-            <div className="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
-              <div className="h-full bg-amber-500 rounded-full animate-shrink-bar" />
-            </div>
+
+            {/* 터지는 파티클 */}
+            {celebration.closing && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute left-1/2 top-1/2 w-3 h-3 rounded-full animate-burst-particle"
+                    style={{
+                      background: ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#3b82f6", "#ec4899"][i % 6],
+                      "--burst-angle": `${i * 30}deg`,
+                      "--burst-distance": `${80 + Math.random() * 60}px`,
+                    } as React.CSSProperties}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-          {/* 터지는 파티클 */}
-          {celebration.closing && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {[...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 w-3 h-3 rounded-full animate-burst-particle"
-                  style={{
-                    background: ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#3b82f6", "#ec4899"][i % 6],
-                    "--burst-angle": `${i * 30}deg`,
-                    "--burst-distance": `${80 + Math.random() * 60}px`,
-                  } as React.CSSProperties}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
