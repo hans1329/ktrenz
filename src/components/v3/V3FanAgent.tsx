@@ -282,6 +282,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   const { avatarUrl, uploadAvatar } = useAgentAvatar(user?.id);
   const [briefingTriggered, setBriefingTriggered] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
@@ -488,7 +489,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // ── Sub-header ──
   const handleClearChat = useCallback(async () => {
-    if (!user?.id || !session?.access_token) return;
+    if (!user?.id || !session?.access_token || isClearing) return;
+    setIsClearing(true);
 
     try {
       const resp = await fetch(CHAT_URL, {
@@ -514,8 +516,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       toast.success(t("agent.chatCleared"));
     } catch (e: any) {
       toast.error(e?.message || "Failed to clear chat");
+    } finally {
+      setIsClearing(false);
     }
-  }, [user?.id, session?.access_token, queryClient, t]);
+  }, [user?.id, session?.access_token, queryClient, t, isClearing]);
 
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
@@ -534,8 +538,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         </div>
         <div className="flex items-center gap-2 min-w-[72px] justify-end">
           {hasStarted && messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleClearChat} title={t("agent.clearChat")}>
-              <Trash2 className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleClearChat} disabled={isClearing} title={t("agent.clearChat")}>
+              {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             </Button>
           )}
           {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
