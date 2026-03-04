@@ -99,7 +99,7 @@ const translations: Record<string, Record<Language, string>> = {
   "drawer.fanEnergyInspector": { en: "Fan Energy Inspector", ko: "팬 에너지 분석", ja: "ファンエネルギー分析", zh: "粉丝能量分析" },
 
   // ── Missions ──
-  "mission.todaysMission": { en: "Today's Mission", ko: "Today's Mission", ja: "今日のミッション", zh: "今日任务" },
+  "mission.todaysMission": { en: "Today's Mission", ko: "오늘의 미션", ja: "今日のミッション", zh: "今日任务" },
   "mission.loginForReward": { en: "Sign in to earn mission rewards!", ko: "로그인하면 미션 보상을 받을 수 있어요!", ja: "ログインしてミッション報酬を獲得！", zh: "登录即可获取任务奖励！" },
   "mission.complete": { en: "Mission Complete! 🎉", ko: "미션 완료! 🎉", ja: "ミッション完了！🎉", zh: "任务完成！🎉" },
   "mission.category.youtube": { en: "YouTube", ko: "YouTube", ja: "YouTube", zh: "YouTube" },
