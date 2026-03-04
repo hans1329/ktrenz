@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3 } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
@@ -192,87 +193,87 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   ].filter(c => c.value > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-12 pb-20 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className={cn(
-        "relative z-10 w-full max-w-sm rounded-2xl border overflow-hidden shadow-2xl my-auto",
-        surging ? "border-destructive/50 bg-card" : "border-border bg-card"
-      )} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
-            <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-                {surging ? "Energy Surging" : "Fan Energy Inspector"}
-              </p>
-              <p className="text-sm font-black text-foreground truncate">{item.title}</p>
+    <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DrawerContent className={cn(
+        "max-h-[90vh] rounded-t-2xl border-t",
+        surging ? "border-destructive/50" : "border-border"
+      )}>
+        <div className="overflow-y-auto max-h-[calc(90vh-2rem)]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
+              <div className="min-w-0">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
+                  {surging ? "Energy Surging" : "Fan Energy Inspector"}
+                </p>
+                <p className="text-sm font-black text-foreground truncate">{item.title}</p>
+              </div>
             </div>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 shrink-0 ml-2">×</button>
-        </div>
-
-        <div className="p-4 space-y-5 overflow-hidden">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-              <p className="text-[10px] text-muted-foreground mb-1">FES</p>
-              <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
-            </div>
-            <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
-              <p className="text-[10px] text-muted-foreground mb-1">24h Δ</p>
-              <p className={cn("text-lg font-black truncate",
-                item.energyChange24h >= 15 ? "text-destructive" : item.energyChange24h >= 0 ? "text-green-500" : "text-blue-400"
-              )}>
-                {item.energyChange24h > 0 ? "+" : ""}{item.energyChange24h.toFixed(1)}%
-              </p>
-            </div>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none p-1 shrink-0 ml-2">×</button>
           </div>
 
-          {/* Per-category changes */}
-          {channels.length > 0 && (
-            <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5" /> Category Changes (24h)
-              </p>
-              <div className="space-y-2">
-                {channels.map(ch => (
-                  <div key={ch.label}>
-                    <ChannelBar icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
-                    <div className="flex justify-end mt-0.5 mr-1">
-                      <span className={cn("text-[10px] font-bold",
-                        ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
-                      )}>
-                        {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
-                      </span>
+          <div className="p-4 space-y-5 overflow-hidden">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
+                <p className="text-[10px] text-muted-foreground mb-1">FES</p>
+                <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
+              </div>
+              <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
+                <p className="text-[10px] text-muted-foreground mb-1">24h Δ</p>
+                <p className={cn("text-lg font-black truncate",
+                  item.energyChange24h >= 15 ? "text-destructive" : item.energyChange24h >= 0 ? "text-green-500" : "text-blue-400"
+                )}>
+                  {item.energyChange24h > 0 ? "+" : ""}{item.energyChange24h.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+
+            {channels.length > 0 && (
+              <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5" /> Category Changes (24h)
+                </p>
+                <div className="space-y-2">
+                  {channels.map(ch => (
+                    <div key={ch.label}>
+                      <ChannelBar icon={ch.icon} label={ch.label} value={ch.value} total={total} color={ch.color} href={ch.href} />
+                      <div className="flex justify-end mt-0.5 mr-1">
+                        <span className={cn("text-[10px] font-bold",
+                          ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
+                        )}>
+                          {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {item.sparkline.length >= 2 && (
-            <div className="rounded-xl bg-muted/30 border border-border p-3">
-              <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
-              <div className="flex items-center gap-3 mb-1">
-                <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
-                <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
+            {item.sparkline.length >= 2 && (
+              <div className="rounded-xl bg-muted/30 border border-border p-3">
+                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Score Momentum</p>
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
+                  <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
+                </div>
+                <div className="relative h-16 overflow-hidden">
+                  <MiniSparkline data={item.sparkline} width={280} height={64}
+                    color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
+                    ema7d={item.ema7d} ema30d={item.ema30d} />
+                </div>
               </div>
-              <div className="relative h-16 overflow-hidden">
-                <MiniSparkline data={item.sparkline} width={280} height={64}
-                  color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
-                  ema7d={item.ema7d} ema30d={item.ema30d} />
-              </div>
-            </div>
-          )}
+            )}
 
-          <button onClick={() => navigate(`/artist/${item.slug}`)}
-            className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-3.5 rounded-full transition-colors">
-            <ExternalLink className="w-4 h-4" /> View Full Profile
-          </button>
-          <div className="h-3" />
+            <button onClick={() => navigate(`/artist/${item.slug}`)}
+              className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-3.5 rounded-full transition-colors">
+              <ExternalLink className="w-4 h-4" /> View Full Profile
+            </button>
+            <div className="h-3" />
+          </div>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
