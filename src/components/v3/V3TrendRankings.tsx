@@ -608,12 +608,10 @@ const V3TrendRankings = () => {
             <h2 className="text-xl font-black text-foreground">
               <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
             </h2>
-            {isCrawling ? (
+            {isCrawling && (
               <p className="text-[10px] text-primary font-medium mt-0.5 pl-7 animate-pulse">
                 {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
               </p>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-0.5 pl-7">{t("rankings.subtitle")}</p>
             )}
             {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
           </div>
