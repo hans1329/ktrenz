@@ -189,10 +189,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   const musicSearchQuery = latestSong ? encodeURIComponent(`${item.title} ${latestSong}`) : encodedName;
 
   const channels = [
-    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 70%, 50%)", change: item.youtubeChange24h, href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
-    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 60%, 55%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
-    { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 80%, 50%)", change: item.albumChange24h },
-    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 60%, 45%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
+    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 80%, 45%)", change: item.youtubeChange24h, href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
+    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 70%, 45%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
+    { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 90%, 42%)", change: item.albumChange24h },
+    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 70%, 38%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
   ].filter(c => c.value > 0);
 
   return (
