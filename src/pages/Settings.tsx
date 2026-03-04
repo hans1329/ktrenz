@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+
 import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -161,7 +161,7 @@ const SettingsPage = () => {
     {
       title: "앱 설정",
       items: [
-        { icon: Globe, label: t("common.settings"), desc: "언어 변경", custom: <LanguageSwitcher /> },
+        { icon: Globe, label: t("common.settings"), desc: "프로필 메뉴에서 변경 가능" },
         { icon: Bell, label: "알림", desc: "푸시 알림 설정", comingSoon: true },
         { icon: Moon, label: "다크 모드", desc: "자동 (시스템 설정 따름)", comingSoon: true },
       ],

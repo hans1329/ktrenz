@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+
 import { useLanguage } from "@/contexts/LanguageContext";
 import kTrenzLogo from "@/assets/k-trenz-logo.webp";
 
@@ -102,7 +102,7 @@ const Login = () => {
     <>
       <SEO title={t("login.title")} description="Sign in to KTrenZ to access K-Pop trend data and Fan Agent." path="/login" />
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <div className="absolute top-4 right-4"><LanguageSwitcher /></div>
+        
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
           <div className="flex flex-col items-center gap-4">
