@@ -488,20 +488,34 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // ── Sub-header ──
   const handleClearChat = useCallback(async () => {
-    if (!user?.id) return;
-    // Delete from DB first to prevent refetch restoring old messages
-    await supabase
-      .from("ktrenz_fan_agent_messages" as any)
-      .delete()
-      .eq("user_id", user.id);
-    // Clear local state and cache
-    setMessages([]);
-    setHasStarted(false);
-    setWelcomeSent(false);
-    setBriefingTriggered(false);
-    queryClient.setQueryData(["ktrenz-agent-chat", user.id], []);
-    toast.success(t("agent.chatCleared"));
-  }, [user?.id, queryClient, t]);
+    if (!user?.id || !session?.access_token) return;
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ mode: "clear_chat" }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Failed to clear chat" }));
+        throw new Error(err.error || "Failed to clear chat");
+      }
+
+      setMessages([]);
+      setHasStarted(false);
+      setWelcomeSent(false);
+      setBriefingTriggered(false);
+      queryClient.setQueryData(["ktrenz-agent-chat", user.id], []);
+      queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user.id] });
+      toast.success(t("agent.chatCleared"));
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to clear chat");
+    }
+  }, [user?.id, session?.access_token, queryClient, t]);
 
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
