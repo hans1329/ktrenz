@@ -551,8 +551,8 @@ const V3TrendRankings = () => {
     // PC: Treemap + List side by side
     return (
       <div className="pb-4">
-        <div className="px-4 pt-4 pb-4">
-          <div className="flex items-center justify-between pt-4 pb-2">
+        <div className="px-4 pt-4 pb-1">
+          <div className="flex items-center justify-between pb-2">
             <div>
               <h2 className="text-xl font-black text-foreground">
                 <span className={isCrawling ? "animate-fire-burn" : ""}>🔥</span> {t("rankings.live").replace("🔥 ", "")}
