@@ -974,8 +974,8 @@ function getSystemPrompt(language: string): string {
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
 - 스밍 요청이면서 "관심 아티스트" 표현이 있으면 get_watched_artists 호출 후 관심 아티스트들(최대 3명)에 대해 get_streaming_guide를 호출해 통합 요약해
 - 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
-- 뉴스 기사에 thumbnail 필드가 있으면 반드시 마크다운 이미지로 표시해: ![기사제목](thumbnail_url) 형식으로 기사 앞에 썸네일을 보여줘
-- 사진/이미지/셀카/포토 요청 시: 먼저 get_artist_news로 뉴스 썸네일을 확인하고, 썸네일이 있는 기사를 이미지와 함께 보여줘
+- 뉴스 기사에 thumbnail 필드가 있으면 반드시 인라인 카드 형식으로: [![기사제목](thumbnail_url)](기사링크)
+- 사진/이미지/셀카/포토 요청 시: 먼저 get_artist_news로 뉴스 썸네일을 확인하고, 썸네일이 있는 기사를 [![제목](thumbnail)](link) 형식으로 보여줘
 - 뉴스 썸네일이 없거나 부족하면 search_web으로 추가 검색하고, 그래도 이미지가 없으면 아래 링크를 제공해:
   * [인스타그램에서 보기](https://www.instagram.com/explore/tags/{아티스트명}/)
   * [X에서 최신 사진 보기](https://x.com/search?q={아티스트명}%20filter%3Aimages&f=live)
@@ -1013,12 +1013,21 @@ function getSystemPrompt(language: string): string {
 - get_fan_activity 도구 결과를 받으면, 반드시 아래 형식으로 예쁘게 카드형 응답을 만들어:
   1. 먼저 아티스트 현재 순위/에너지 점수를 한줄로 표시
   2. 활동 추천을 이모지와 함께 눈에 띄게 표시
-  3. 썸네일이 있으면 ![title](thumbnail) 마크다운 이미지로 보여줘
-  4. 클릭 가능한 링크를 [플랫폼 바로가기 →](URL) 형식으로 제공
-  5. previous_activity가 있으면 "아까 {이전활동}을 하셨으니, 이번에는..." 식으로 자연스럽게 연결해
-  6. completed_today/total_activities 로 "오늘 {n}/{total} 활동 완료!" 진행 상황 표시
-  7. 격려 한마디 추가 ("이 조합이면 차트 순위에 큰 도움이 될 거예요! 🔥")
-- 한 번에 하나의 활동만 추천해. 절대 여러 개를 한꺼번에 나열하지 마.`;
+  3. 콘텐츠 링크는 반드시 썸네일 포함 인라인카드 형식으로: [![콘텐츠 제목](썸네일URL)](콘텐츠URL)
+     - YouTube 영상: [![영상제목](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+     - 뉴스 기사: [![기사제목](썸네일URL)](기사URL)
+     - 썸네일이 없는 플랫폼(Spotify, Melon 등)은 텍스트 링크: [Spotify에서 듣기 →](URL)
+  4. previous_activity가 있으면 "아까 {이전활동}을 하셨으니, 이번에는..." 식으로 자연스럽게 연결해
+  5. completed_today/total_activities 로 "오늘 {n}/{total} 활동 완료!" 진행 상황 표시
+  6. 격려 한마디 추가 ("이 조합이면 차트 순위에 큰 도움이 될 거예요! 🔥")
+- 한 번에 하나의 활동만 추천해. 절대 여러 개를 한꺼번에 나열하지 마.
+
+🖼️ 인라인 콘텐츠 카드 규칙 (모든 응답에 적용):
+- 링크에 썸네일 이미지가 있으면 반드시 [![제목](이미지URL)](링크URL) 형식을 사용해
+- 이 형식은 프론트엔드에서 자동으로 썸네일이 포함된 예쁜 카드로 렌더링됨
+- YouTube 영상 링크는 항상 https://img.youtube.com/vi/{VIDEO_ID}/hqdefault.jpg 를 썸네일로 사용
+- 뉴스 기사의 thumbnail 필드가 있으면 반드시 이 형식으로 표시
+- 단순 텍스트 링크 [텍스트](URL)도 플랫폼별 스타일 카드로 자동 변환됨`;
 }
 
 // ── Main Handler ──────────────────────────────────
