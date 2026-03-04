@@ -163,26 +163,34 @@ export default function V3MissionCards({
   const [celebration, setCelebration] = useState<{ title: string; points: number; category: keyof typeof CATEGORY_CONFIG; closing?: boolean } | null>(null);
   const encodedName = encodeURIComponent(artistName);
 
-  // sessionStorage 기반 pending mission (모바일 메모리 해제 대비)
-  const PENDING_KEY = "ktrenz_pending_mission";
-  const setPendingMission = (mission: Mission | null) => {
+  // pending mission 저장 (모바일 메모리 해제/리로드 대비)
+  const PENDING_KEY = "ktrenz_pending_mission_v1";
+  const setPendingMission = (mission: { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null) => {
     if (mission) {
-      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ title: mission.title, points: mission.points, category: mission.category, key: mission.key }));
+      localStorage.setItem(PENDING_KEY, JSON.stringify({ ...mission, createdAt: Date.now() }));
     } else {
-      sessionStorage.removeItem(PENDING_KEY);
+      localStorage.removeItem(PENDING_KEY);
     }
   };
   const getPendingMission = (): { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null => {
     try {
-      const raw = sessionStorage.getItem(PENDING_KEY);
+      const raw = localStorage.getItem(PENDING_KEY);
       if (!raw) return null;
-      return JSON.parse(raw);
-    } catch { return null; }
+      const parsed = JSON.parse(raw);
+      if (!parsed?.createdAt || Date.now() - parsed.createdAt > 1000 * 60 * 30) {
+        localStorage.removeItem(PENDING_KEY);
+        return null;
+      }
+      return parsed;
+    } catch {
+      localStorage.removeItem(PENDING_KEY);
+      return null;
+    }
   };
   const today = new Date().toISOString().slice(0, 10);
 
   // 탭 복귀 감지 → 축하 모달
-  const showCelebration = useCallback((mission: Mission) => {
+  const showCelebration = useCallback((mission: Pick<Mission, "title" | "points" | "category">) => {
     setCelebration({ title: mission.title, points: mission.points, category: mission.category });
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
@@ -190,19 +198,31 @@ export default function V3MissionCards({
     }, 4000);
   }, []);
 
-  useEffect(() => {
-    const handler = () => {
-      if (document.visibilityState === "visible") {
-        const pending = getPendingMission();
-        if (pending) {
-          setPendingMission(null);
-          showCelebration(pending as any);
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", handler);
-    return () => document.removeEventListener("visibilitychange", handler);
+  const consumePendingMission = useCallback(() => {
+    const pending = getPendingMission();
+    if (!pending) return;
+    setPendingMission(null);
+    showCelebration(pending);
   }, [showCelebration]);
+
+  useEffect(() => {
+    // 리로드 복귀 케이스 대응
+    consumePendingMission();
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") consumePendingMission();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", consumePendingMission);
+    window.addEventListener("pageshow", consumePendingMission);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", consumePendingMission);
+      window.removeEventListener("pageshow", consumePendingMission);
+    };
+  }, [consumePendingMission]);
 
   const ytVideos: YTVideo[] = (() => {
     const topVideos = metadata?.youtube_stats?.youtube_top_videos || [];
@@ -380,6 +400,7 @@ export default function V3MissionCards({
                   </div>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleMission(mission)}
                   disabled={isCompleting}
                   className={cn(
