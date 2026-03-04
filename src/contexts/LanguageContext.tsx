@@ -18,12 +18,17 @@ const getStoredLanguage = (): Language => {
 };
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguageState] = useState<Language>(getStoredLanguage);
+  const [language, setLanguageState] = useState<Language>(() => {
+    const lang = getStoredLanguage();
+    (window as any).__ktrenz_lang = lang;
+    return lang;
+  });
 
   const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     try { localStorage.setItem("ktrenz-lang", lang); } catch {}
     document.documentElement.lang = lang;
+    (window as any).__ktrenz_lang = lang;
   }, []);
 
   const t = useCallback((key: string): string => {
