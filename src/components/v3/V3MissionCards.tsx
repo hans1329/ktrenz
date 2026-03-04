@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
@@ -161,8 +161,24 @@ export default function V3MissionCards({
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<{ title: string; points: number; category: keyof typeof CATEGORY_CONFIG; closing?: boolean } | null>(null);
-  const pendingMissionRef = useRef<Mission | null>(null);
   const encodedName = encodeURIComponent(artistName);
+
+  // sessionStorage 기반 pending mission (모바일 메모리 해제 대비)
+  const PENDING_KEY = "ktrenz_pending_mission";
+  const setPendingMission = (mission: Mission | null) => {
+    if (mission) {
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ title: mission.title, points: mission.points, category: mission.category, key: mission.key }));
+    } else {
+      sessionStorage.removeItem(PENDING_KEY);
+    }
+  };
+  const getPendingMission = (): { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  };
   const today = new Date().toISOString().slice(0, 10);
 
   // 탭 복귀 감지 → 축하 모달
@@ -176,10 +192,12 @@ export default function V3MissionCards({
 
   useEffect(() => {
     const handler = () => {
-      if (document.visibilityState === "visible" && pendingMissionRef.current) {
-        const mission = pendingMissionRef.current;
-        pendingMissionRef.current = null;
-        showCelebration(mission);
+      if (document.visibilityState === "visible") {
+        const pending = getPendingMission();
+        if (pending) {
+          setPendingMission(null);
+          showCelebration(pending as any);
+        }
       }
     };
     document.addEventListener("visibilitychange", handler);
@@ -259,7 +277,7 @@ export default function V3MissionCards({
     const alreadyDone = completedSet.has(mission.key);
 
     if (isLoggedIn && !alreadyDone) {
-      pendingMissionRef.current = mission;
+      setPendingMission(mission);
     }
 
     // Open link
