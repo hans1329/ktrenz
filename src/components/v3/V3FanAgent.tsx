@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -137,11 +137,13 @@ async function streamChat({
   messages,
   token,
   onDelta,
+  onMeta,
   onDone,
 }: {
   messages: ChatMessage[];
   token: string;
   onDelta: (text: string) => void;
+  onMeta?: (meta: any) => void;
   onDone: () => void;
 }) {
   const resp = await fetch(CHAT_URL, {
@@ -165,6 +167,25 @@ async function streamChat({
   const decoder = new TextDecoder();
   let buffer = "";
 
+  const processLine = (line: string) => {
+    if (line.endsWith("\r")) line = line.slice(0, -1);
+    if (line.startsWith(":") || line.trim() === "") return false;
+    if (!line.startsWith("data: ")) return false;
+    const jsonStr = line.slice(6).trim();
+    if (jsonStr === "[DONE]") return true;
+    try {
+      const parsed = JSON.parse(jsonStr);
+      // Check for meta event (structured card data)
+      if (parsed.meta && onMeta) {
+        onMeta(parsed.meta);
+        return false;
+      }
+      const content = parsed.choices?.[0]?.delta?.content ?? parsed.content;
+      if (content) onDelta(content);
+    } catch { /* partial chunk, ignore */ }
+    return false;
+  };
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -172,33 +193,15 @@ async function streamChat({
 
     let idx: number;
     while ((idx = buffer.indexOf("\n")) !== -1) {
-      let line = buffer.slice(0, idx);
+      const line = buffer.slice(0, idx);
       buffer = buffer.slice(idx + 1);
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (line.startsWith(":") || line.trim() === "") continue;
-      if (!line.startsWith("data: ")) continue;
-      const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") { onDone(); return; }
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content ?? parsed.content;
-        if (content) onDelta(content);
-      } catch { /* partial chunk, ignore */ }
+      if (processLine(line)) { onDone(); return; }
     }
   }
 
   if (buffer.trim()) {
-    for (let raw of buffer.split("\n")) {
-      if (!raw) continue;
-      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-      if (!raw.startsWith("data: ")) continue;
-      const jsonStr = raw.slice(6).trim();
-      if (jsonStr === "[DONE]") continue;
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content ?? parsed.content;
-        if (content) onDelta(content);
-      } catch { /* ignore */ }
+    for (const raw of buffer.split("\n")) {
+      if (raw) processLine(raw);
     }
   }
   onDone();
@@ -454,6 +457,18 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             return [...prev, { role: "assistant" as const, content: assistantContent, timestamp: new Date().toISOString() }];
           });
         },
+        onMeta: (meta) => {
+          // Attach structured data (guideData, rankingData) to the last assistant message
+          setMessages((prev) => {
+            const lastIdx = prev.length - 1;
+            if (lastIdx >= 0 && prev[lastIdx]?.role === "assistant") {
+              return prev.map((m, i) =>
+                i === lastIdx ? { ...m, guideData: meta.guideData ?? m.guideData, rankingData: meta.rankingData ?? m.rankingData } : m
+              );
+            }
+            return prev;
+          });
+        },
         onDone: () => {
           setIsStreaming(false);
           queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id] });
@@ -472,6 +487,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   };
 
   // ── Sub-header ──
+  const handleClearChat = useCallback(async () => {
+    if (!user?.id) return;
+    // Delete from DB
+    await supabase
+      .from("ktrenz_fan_agent_messages" as any)
+      .delete()
+      .eq("user_id", user.id);
+    setMessages([]);
+    setHasStarted(false);
+    setWelcomeSent(false);
+    setBriefingTriggered(false);
+    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user.id] });
+    toast.success(t("agent.chatCleared"));
+  }, [user?.id, queryClient, t]);
+
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between h-14 px-4">
@@ -479,6 +509,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
+          {hasStarted && messages.length > 0 && (
+            <Button variant="ghost" size="icon" className="rounded-full w-9 h-9 text-muted-foreground hover:text-destructive" onClick={handleClearChat} title={t("agent.clearChat")}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2.5">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />

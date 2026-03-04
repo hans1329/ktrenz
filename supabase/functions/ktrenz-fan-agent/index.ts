@@ -628,6 +628,8 @@ Deno.serve(async (req) => {
 
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
+    // Collect structured data from tool calls for inline card rendering
+    const collectedMeta: { guideData?: any[]; rankingData?: any[] } = {};
 
     // ── Briefing Mode (unchanged logic) ──
     if (isBriefingMode) {
@@ -827,6 +829,7 @@ Deno.serve(async (req) => {
 
         // Stream the final response as SSE (for frontend compatibility)
         const encoder = new TextEncoder();
+        const hasMeta = collectedMeta.guideData || collectedMeta.rankingData;
         const stream = new ReadableStream({
           start(controller) {
             // Send the content in chunks to simulate streaming
@@ -835,6 +838,11 @@ Deno.serve(async (req) => {
               const chunk = finalContent.slice(i, i + chunkSize);
               const sseData = JSON.stringify({ choices: [{ delta: { content: chunk } }] });
               controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+            }
+            // Send structured meta data for inline card rendering
+            if (hasMeta) {
+              const metaEvent = JSON.stringify({ meta: collectedMeta });
+              controller.enqueue(encoder.encode(`data: ${metaEvent}\n\n`));
             }
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             controller.close();
@@ -861,6 +869,17 @@ Deno.serve(async (req) => {
         console.log(`[FanAgent] Tool call: ${fnName}`, fnArgs);
 
         const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache);
+
+        // Collect structured data for inline cards
+        if (fnName === "get_streaming_guide") {
+          try {
+            const parsed = JSON.parse(result);
+            if (parsed.guide && !parsed.error) {
+              if (!collectedMeta.guideData) collectedMeta.guideData = [];
+              collectedMeta.guideData.push({ artist_name: parsed.artist, guide_data: parsed.guide });
+            }
+          } catch {}
+        }
 
         openaiMessages.push({
           role: "tool",
