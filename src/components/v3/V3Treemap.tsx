@@ -207,7 +207,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
               <div className="min-w-0">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-                  {surging ? t("drawer.energySurging") : t("drawer.fanEnergyInspector")}
+                  {t("drawer.fanEnergyInspector")}
                 </p>
                 <p className="text-sm font-black text-foreground truncate">{item.title}</p>
               </div>
@@ -216,12 +216,12 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           </div>
 
           <div className="p-4 space-y-5 overflow-hidden">
-            {/* Surging Alert Box */}
+            {/* Surging Location Box */}
             {surging && (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
                 <span className="text-lg shrink-0">🔥</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-destructive">{t("drawer.energySurging")}</p>
+                  <p className="text-xs font-bold text-destructive">{t("drawer.surgingLocation")}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
                     {(() => {
                       const surgingCats = channels.filter(ch => ch.change >= 15);
@@ -253,28 +253,36 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
                 </p>
-                {/* Unified grouped bar chart */}
-                <div className="space-y-1">
+                {/* Single stacked bar */}
+                <div className="h-6 rounded-full overflow-hidden flex w-full bg-muted">
+                  {channels.map(ch => {
+                    const pct = total > 0 ? (ch.value / total) * 100 : 0;
+                    if (pct <= 0) return null;
+                    return (
+                      <div key={ch.label} className="h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full"
+                        style={{ width: `${pct}%`, background: ch.color }} title={`${ch.label.split(' · ')[0]}: ${Math.round(ch.value)} (${pct.toFixed(0)}%)`} />
+                    );
+                  })}
+                </div>
+                {/* Legend with change % */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
                   {channels.map(ch => {
                     const pct = total > 0 ? (ch.value / total) * 100 : 0;
                     const shortLabel = ch.label.split(' · ')[0];
                     return (
-                      <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer" data-track-category={ch.label}
-                        className={cn("flex items-center gap-2 py-1.5 group", ch.href ? "cursor-pointer" : "cursor-default")}>
-                        <span className="w-14 flex items-center gap-1 text-[10px] font-semibold text-foreground shrink-0">
+                      <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
+                        className={cn("flex items-center justify-between py-1 group", ch.href && "cursor-pointer")}>
+                        <span className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
+                          <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: ch.color }} />
                           {ch.icon} {shortLabel}
                         </span>
-                        <div className="flex-1 h-4 rounded bg-muted overflow-hidden relative">
-                          <div className="h-full rounded transition-all duration-500 group-hover:brightness-110"
-                            style={{ width: `${pct}%`, background: ch.color }} />
-                          <span className="absolute inset-0 flex items-center justify-end pr-1.5 text-[9px] font-bold text-foreground">
-                            {Math.round(ch.value)}
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-muted-foreground">{pct.toFixed(0)}%</span>
+                          <span className={cn("text-[10px] font-bold",
+                            ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
+                          )}>
+                            {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
                           </span>
-                        </div>
-                        <span className={cn("w-12 text-right text-[10px] font-bold shrink-0",
-                          ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground"
-                        )}>
-                          {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
                         </span>
                       </a>
                     );
