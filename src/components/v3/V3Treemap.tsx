@@ -19,8 +19,8 @@ interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
   energyScore: number; energyChange24h: number; totalScore: number;
   youtubeScore: number; buzzScore: number; twitterScore: number;
-  albumSalesScore: number; musicScore: number;
-  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number;
+  albumSalesScore: number; musicScore: number; fanScore: number;
+  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number; fanChange24h: number;
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
   metadata?: any;
@@ -193,6 +193,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 70%, 45%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 90%, 42%)", change: item.albumChange24h },
     { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 70%, 38%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
+    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Fan", value: item.fanScore, color: "hsl(200, 80%, 50%)", change: item.fanChange24h },
   ].filter(c => c.value > 0);
 
   return (
@@ -310,10 +311,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                           borderRadius: 'inherit',
                         }}>
                         <BoxParticles
-                          count={12}
+                          count={15}
                           color="hsl(0, 0%, 100%)"
-                          speed={0.6}
-                          density={0.7}
+                          speed={0.4}
+                          density={0.25}
                         />
                       </div>
                     </div>
@@ -419,8 +420,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
       const { data, error } = await supabase.from("v3_scores_v2" as any)
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
-          youtube_score, buzz_score, album_sales_score, music_score,
-          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h,
+          youtube_score, buzz_score, album_sales_score, music_score, fan_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, fan_change_24h,
           scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata)`)
         .order("total_score", { ascending: false })
@@ -489,10 +490,12 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
           energyScore: s.energy_score || 0, energyChange24h: change, totalScore: s.total_score || 0,
           youtubeScore: s.youtube_score || 0, buzzScore: s.buzz_score || 0, twitterScore: 0,
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
+          fanScore: s.fan_score || 0,
           youtubeChange24h: s.youtube_change_24h || 0,
           buzzChange24h: s.buzz_change_24h || 0,
           albumChange24h: s.album_change_24h || 0,
           musicChange24h: s.music_change_24h || 0,
+          fanChange24h: s.fan_change_24h || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
           metadata: entry?.metadata || null,
