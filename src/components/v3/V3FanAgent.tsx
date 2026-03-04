@@ -283,6 +283,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const { avatarUrl, uploadAvatar } = useAgentAvatar(user?.id);
   const [briefingTriggered, setBriefingTriggered] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [streamingStatus, setStreamingStatus] = useState("");
 
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
@@ -434,6 +435,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     track("agent_chat", { mode: "chat" });
     setChatInput("");
     setIsStreaming(true);
+    setStreamingStatus(t("agent.status.thinking"));
     setHasStarted(true);
 
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
@@ -447,6 +449,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         messages: updatedMessages,
         token: session.access_token,
         onDelta: (chunk) => {
+          if (assistantContent === "") setStreamingStatus(t("agent.status.writing"));
           assistantContent += chunk;
           setMessages((prev) => {
             const last = prev[prev.length - 1];
@@ -472,12 +475,14 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         },
         onDone: () => {
           setIsStreaming(false);
+          setStreamingStatus("");
           queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id] });
           queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
         },
       });
     } catch (e: any) {
       setIsStreaming(false);
+      setStreamingStatus("");
       toast.error(e.message || "Failed to send message");
       setMessages((prev) => prev.slice(0, -1));
     }
@@ -672,12 +677,19 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {/* Rainbow progress bar while waiting for agent response */}
       {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "user" && (
-        <div className="flex justify-start">
+         <div className="flex justify-start">
           <AgentAvatar avatarUrl={avatarUrl} size="sm" />
-          <div className="ml-2 w-48 rounded-2xl px-3.5 py-3 bg-card/60 border border-border/30 rounded-bl-md">
-            <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted/50">
-              <div className="h-full w-full rounded-full bg-gradient-to-r from-red-500 via-yellow-400 via-green-400 via-blue-500 to-purple-500 animate-rainbow-slide" />
+          <div className="ml-2 flex flex-col gap-1.5">
+            <div className="w-48 rounded-2xl px-3.5 py-3 bg-card/60 border border-border/30 rounded-bl-md">
+              <div className="h-1.5 w-full rounded-full overflow-hidden bg-muted/50">
+                <div className="h-full w-full rounded-full bg-gradient-to-r from-red-500 via-yellow-400 via-green-400 via-blue-500 to-purple-500 animate-rainbow-slide" />
+              </div>
             </div>
+            {streamingStatus && (
+              <span className="text-[11px] text-muted-foreground/60 px-1 animate-pulse">
+                {streamingStatus}
+              </span>
+            )}
           </div>
         </div>
       )}
