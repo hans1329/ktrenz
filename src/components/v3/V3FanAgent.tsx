@@ -469,6 +469,36 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [user?.id, watchedArtists, hasAlertOn, welcomeSent, isStreaming, chatHistory]);
 
+  // --- 관심 아티스트 등록 시 에이전트 슬롯 이름/이미지 동기화 & 프로필 메뉴 열기 ---
+  const prevWatchedCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!watchedArtists || !activeSlot || !user?.id) return;
+    const prevCount = prevWatchedCountRef.current;
+    prevWatchedCountRef.current = watchedArtists.length;
+    if (prevCount === null || watchedArtists.length <= prevCount) return;
+    const latestArtist = watchedArtists[watchedArtists.length - 1];
+    if (!latestArtist) return;
+    const syncSlotWithArtist = async () => {
+      const updatePayload: Record<string, any> = { artist_name: latestArtist.artist_name };
+      if (latestArtist.wiki_entry_id) {
+        updatePayload.wiki_entry_id = latestArtist.wiki_entry_id;
+        const { data: wiki } = await supabase
+          .from("wiki_entries")
+          .select("image_url")
+          .eq("id", latestArtist.wiki_entry_id)
+          .single();
+        if (wiki?.image_url) updatePayload.avatar_url = wiki.image_url;
+      }
+      await (supabase as any)
+        .from("ktrenz_agent_slots")
+        .update(updatePayload)
+        .eq("id", activeSlot.id);
+      queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user.id] });
+      setShowMenu(true);
+    };
+    syncSlotWithArtist();
+  }, [watchedArtists, activeSlot?.id, user?.id, queryClient]);
+
   useEffect(() => {
     if (hasAlertOn && session?.access_token && !briefingTriggered && !isStreaming) {
       setBriefingTriggered(true);
