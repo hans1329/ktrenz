@@ -198,31 +198,19 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </button>
 
-          {/* Language */}
-          <div className="rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center gap-2 mb-2.5">
-              <Globe className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Language</span>
-            </div>
-            <div className="flex gap-1.5">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => setLanguage(lang.code)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                    language === lang.code
-                      ? "bg-primary/10 text-primary border border-primary/30"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted border border-transparent"
-                  )}
-                >
-                  <span>{lang.flag}</span>
-                  <span>{lang.label}</span>
-                  {language === lang.code && <Check className="w-3 h-3" />}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Language toggle */}
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              const codes = LANGUAGES.map(l => l.code);
+              const idx = codes.indexOf(language);
+              setLanguage(codes[(idx + 1) % codes.length]);
+            }}
+          >
+            <Globe className="w-4 h-4" />
+            <span className="text-sm">{language.toUpperCase()}</span>
+          </Button>
 
           {/* Menu items */}
           <div className="space-y-0.5 pt-1">
