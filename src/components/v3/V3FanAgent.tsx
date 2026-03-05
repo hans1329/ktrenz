@@ -637,7 +637,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         </div>
 
         {/* Center: avatar (popover trigger) + name */}
-        <Popover open={showMenu} onOpenChange={setShowMenu}>
+        <Popover
+          open={showMenu}
+          onOpenChange={(open) => {
+            setShowMenu(open);
+            if (!open) setShowSlotList(false);
+          }}
+        >
           <PopoverTrigger asChild>
             <button type="button" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
@@ -645,146 +651,149 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </button>
           </PopoverTrigger>
           <PopoverContent align="center" className="w-60 p-1.5 rounded-xl" sideOffset={8}>
-            {/* Agent name + "+" button */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 mb-1">
-              <span className="text-sm font-bold text-foreground truncate">
-                {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMenu(false);
-                  setShowAddAgentDialog(true);
-                }}
-                className="w-6 h-6 rounded-md flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
-                title={t("agent.addAgent")}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+            {/* Active agent row + swap button */}
+            <div className="px-1 pb-1 border-b border-border/50 mb-1">
+              <div className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg bg-primary/10 text-foreground">
+                <AgentAvatar avatarUrl={avatarUrl} size="sm" />
+                <span className="truncate flex-1 text-left text-sm font-medium">
+                  {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSlotList((prev) => !prev)}
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
+                  title={t("agent.manageAgents")}
+                >
+                  <ArrowLeftRight className="w-4 h-4" />
+                  <span className="sr-only">{t("agent.manageAgents")}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Agent slots */}
-            <div className="px-1 pb-1 space-y-0.5 border-b border-border/50 mb-1">
-              {slots.map((slot) => (
-                <button
-                  key={slot.id}
-                  type="button"
-                  onClick={() => {
-                    switchSlot(slot.id);
-                    setShowMenu(false);
-                    setMessages([]);
-                    setHasStarted(false);
-                    setWelcomeSent(false);
-                    setBriefingTriggered(false);
-                  }}
-                  className={cn(
-                    "flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors",
-                    slot.is_active
-                      ? "bg-primary/10 text-foreground font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <AgentAvatar avatarUrl={slot.avatar_url ?? (slot.slot_index === 0 ? legacyAgentAvatarUrl : null)} size="sm" />
-                  <span className="truncate flex-1 text-left">{getSlotDisplayName(slot, watchedArtists, hasAlertOn)}</span>
-                  {slot.is_active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                </button>
-              ))}
-            </div>
-
-            {/* Menu items */}
-                <button
-                  type="button"
-                  onClick={() => { setShowMenu(false); avatarFileRef.current?.click(); }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
-                >
-                  <Camera className="w-4 h-4 text-muted-foreground" />
-                  {t("agent.changePhoto")}
-                </button>
-                {/* Alert toggle */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setShowMenu(false);
-                    if (!hasAlertOn) {
-                      handleSend(t("agent.prompt.alertSetup"));
-                    } else if (user?.id) {
-                      await supabase
-                        .from("ktrenz_watched_artists")
-                        .delete()
-                        .eq("user_id", user.id);
-                      queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                      toast.success(t("agent.alertsOff"));
-                    }
-                  }}
-                  className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Bell className="w-4 h-4 text-muted-foreground" />
-                    <span>{t("agent.alertSettings")}</span>
-                  </div>
-                  <div className={cn(
-                    "w-8 h-4.5 rounded-full flex items-center px-0.5 transition-colors",
-                    hasAlertOn ? "bg-primary justify-end" : "bg-muted-foreground/30 justify-start"
-                  )}>
-                    <div className="w-3.5 h-3.5 rounded-full bg-background shadow-sm" />
-                  </div>
-                </button>
-                {/* Buy K-Points */}
-                <button
-                  type="button"
-                  onClick={() => { setShowMenu(false); setShowKPointsDrawer(true); }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
-                >
-                  <Coins className="w-4 h-4 text-amber-500" />
-                  {t("points.buyPoints")}
-                </button>
-                {/* Clear chat */}
-                {hasStarted && messages.length > 0 && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        {t("agent.clearChat")}
-                      </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t("agent.clearChatConfirmTitle")}</AlertDialogTitle>
-                        <AlertDialogDescription>{t("agent.clearChatConfirmDesc")}</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t("agent.clearChatCancel")}</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => { setShowMenu(false); handleClearChat(); }}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {isClearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                          {t("agent.clearChatConfirm")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-
-                {/* Add Agent button at bottom */}
-                {canAddSlot && (
-                  <div className="border-t border-border/50 mt-1 pt-1">
+            {/* Agent slots (swap list) */}
+            {showSlotList && (
+              <div className="px-1 pb-1 space-y-0.5 border-b border-border/50 mb-1">
+                {slots
+                  .filter((slot) => !slot.is_active)
+                  .map((slot) => (
                     <button
+                      key={slot.id}
                       type="button"
                       onClick={() => {
+                        switchSlot(slot.id);
                         setShowMenu(false);
-                        setShowAddAgentDialog(true);
+                        setShowSlotList(false);
+                        setMessages([]);
+                        setHasStarted(false);
+                        setWelcomeSent(false);
+                        setBriefingTriggered(false);
                       }}
-                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-primary/10 transition-colors font-medium"
+                      className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                      <Plus className="w-4 h-4" />
-                      {t("agent.addAgent")}
+                      <AgentAvatar avatarUrl={slot.avatar_url ?? (slot.slot_index === 0 ? legacyAgentAvatarUrl : null)} size="sm" />
+                      <span className="truncate flex-1 text-left">{getSlotDisplayName(slot, watchedArtists, hasAlertOn)}</span>
                     </button>
-                  </div>
-                )}
+                  ))}
+              </div>
+            )}
+
+            {/* Menu items */}
+            <button
+              type="button"
+              onClick={() => { setShowMenu(false); avatarFileRef.current?.click(); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <Camera className="w-4 h-4 text-muted-foreground" />
+              {t("agent.changePhoto")}
+            </button>
+
+            {/* Alert toggle */}
+            <button
+              type="button"
+              onClick={async () => {
+                setShowMenu(false);
+                if (!hasAlertOn) {
+                  handleSend(t("agent.prompt.alertSetup"));
+                } else if (user?.id) {
+                  await supabase
+                    .from("ktrenz_watched_artists")
+                    .delete()
+                    .eq("user_id", user.id);
+                  queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
+                  toast.success(t("agent.alertsOff"));
+                }
+              }}
+              className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                <span>{t("agent.alertSettings")}</span>
+              </div>
+              <div className={cn(
+                "w-8 h-4.5 rounded-full flex items-center px-0.5 transition-colors",
+                hasAlertOn ? "bg-primary justify-end" : "bg-muted-foreground/30 justify-start"
+              )}>
+                <div className="w-3.5 h-3.5 rounded-full bg-background shadow-sm" />
+              </div>
+            </button>
+
+            {/* Buy K-Points */}
+            <button
+              type="button"
+              onClick={() => { setShowMenu(false); setShowKPointsDrawer(true); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <Coins className="w-4 h-4 text-amber-500" />
+              {t("points.buyPoints")}
+            </button>
+
+            {/* Clear chat */}
+            {hasStarted && messages.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {t("agent.clearChat")}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("agent.clearChatConfirmTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("agent.clearChatConfirmDesc")}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("agent.clearChatCancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => { setShowMenu(false); handleClearChat(); }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isClearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                      {t("agent.clearChatConfirm")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
+            {/* Add Agent button under clear chat */}
+            {canAddSlot && (
+              <div className="border-t border-border/50 mt-1 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowAddAgentDialog(true);
+                  }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-primary/10 transition-colors font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t("agent.addAgent")}
+                </button>
+              </div>
+            )}
           </PopoverContent>
         </Popover>
 
