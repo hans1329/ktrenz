@@ -538,17 +538,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          {agentUsage && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/80 text-xs font-medium text-muted-foreground">
-              <MessageCircle className="w-3 h-3" />
-              <span className={cn(
-                agentUsage.remaining <= 5 && agentUsage.remaining > 0 && "text-amber-500",
-                agentUsage.remaining === 0 && "text-destructive"
-              )}>
-                {agentUsage.remaining}/{agentUsage.daily_limit}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Center: avatar (popover trigger) + title */}
@@ -616,8 +605,20 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </PopoverContent>
         </Popover>
 
-        {/* Right: spacer for balance */}
-        <div className="min-w-[72px]" />
+        {/* Right: usage indicator */}
+        <div className="min-w-[72px] flex justify-end">
+          {agentUsage && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/80 text-xs font-medium text-muted-foreground">
+              <MessageCircle className="w-3 h-3" />
+              <span className={cn(
+                agentUsage.remaining <= 5 && agentUsage.remaining > 0 && "text-amber-500",
+                agentUsage.remaining === 0 && "text-destructive"
+              )}>
+                {agentUsage.remaining}/{agentUsage.daily_limit}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Hidden file input for avatar upload */}
         <input
