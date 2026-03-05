@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, Users, MessageSquare, Brain, Sparkles, ArrowRight, Lock, Eye } from 'lucide-react';
+import { TrendingUp, Users, MessageSquare, Brain, Sparkles, ArrowRight, Lock, Eye, GitCompareArrows, Clock, AlertTriangle, Lightbulb } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import logoImage from '@/assets/k-trenz-logo.webp';
 
@@ -34,6 +34,7 @@ const SENTIMENT_COLORS: Record<string, string> = {
 const AgencyDashboardSample = () => {
   const [period, setPeriod] = useState('7');
   const [selectedArtistId, setSelectedArtistId] = useState<string>('all');
+  const [compareArtistId, setCompareArtistId] = useState<string>('none');
 
   // Fetch Tier 1 artists for dropdown
   const { data: tier1Artists } = useQuery({
@@ -154,6 +155,111 @@ const AgencyDashboardSample = () => {
 
   // Recent queries
   const recentQueries = rawIntents?.slice(0, 10) ?? [];
+
+  // ── Comparison artist data ──
+  const { data: compareIntents } = useQuery({
+    queryKey: ['agency-compare-intents', period, compareArtistId],
+    queryFn: async () => {
+      if (compareArtistId === 'none') return [];
+      const fromDate = new Date(Date.now() - parseInt(period) * 86400000).toISOString();
+      const { data, error } = await supabase
+        .from('ktrenz_agent_intents')
+        .select('*')
+        .eq('wiki_entry_id', compareArtistId)
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: compareArtistId !== 'none',
+  });
+
+  const compareArtistName = compareArtistId === 'none'
+    ? ''
+    : tier1Artists?.find(a => a.wiki_entry_id === compareArtistId)?.display_name ?? 'Unknown';
+
+  // Build comparison chart data
+  const comparisonChartData = (() => {
+    if (compareArtistId === 'none' || selectedArtistId === 'all') return [];
+    const allCats = Object.keys(INTENT_LABELS);
+    const aCats = rawIntents?.reduce((acc, i) => { acc[i.intent_category] = (acc[i.intent_category] || 0) + 1; return acc; }, {} as Record<string, number>) ?? {};
+    const bCats = compareIntents?.reduce((acc, i) => { acc[i.intent_category] = (acc[i.intent_category] || 0) + 1; return acc; }, {} as Record<string, number>) ?? {};
+    return allCats.map(cat => ({
+      category: INTENT_LABELS[cat]?.replace(/^.{2}\s/, '') || cat,
+      [selectedArtistName]: aCats[cat] || 0,
+      [compareArtistName]: bCats[cat] || 0,
+    })).filter(d => (d[selectedArtistName] as number) > 0 || (d[compareArtistName] as number) > 0);
+  })();
+
+  // ── Hourly Heatmap ──
+  const hourlyData = (() => {
+    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
+    rawIntents?.forEach(intent => {
+      const h = new Date(intent.created_at).getHours();
+      hours[h].count++;
+    });
+    return hours;
+  })();
+  const maxHourCount = Math.max(...hourlyData.map(h => h.count), 1);
+
+  // ── Gap Analysis ──
+  const allCategories = Object.keys(INTENT_LABELS);
+  const activeCategories = new Set(rawIntents?.map(i => i.intent_category) ?? []);
+  const gapCategories = allCategories.filter(c => !activeCategories.has(c));
+  const lowCategories = Object.entries(categoryStats)
+    .filter(([, count]) => count <= 2)
+    .map(([cat]) => cat);
+
+  // ── AI Action Items (rule-based from intent patterns) ──
+  const actionItems = (() => {
+    const items: { icon: string; priority: 'high' | 'medium' | 'low'; title: string; description: string }[] = [];
+
+    // High negative sentiment
+    const negRatio = sentimentTotals.negative / Math.max(totalQueries, 1);
+    if (negRatio > 0.2) {
+      items.push({ icon: '🚨', priority: 'high', title: 'Rising Negative Sentiment', description: `${(negRatio * 100).toFixed(0)}% of fan queries show negative sentiment. Investigate recent controversies or unmet expectations.` });
+    }
+
+    // High curiosity = information gap
+    const curiousRatio = sentimentTotals.curious / Math.max(totalQueries, 1);
+    if (curiousRatio > 0.4) {
+      items.push({ icon: '💡', priority: 'high', title: 'Fans Want More Information', description: `${(curiousRatio * 100).toFixed(0)}% of queries are curiosity-driven. Consider releasing official updates or teasers.` });
+    }
+
+    // Schedule is top category
+    if (categoryStats['schedule'] && categoryStats['schedule'] === Math.max(...Object.values(categoryStats))) {
+      items.push({ icon: '📅', priority: 'high', title: 'High Schedule Demand', description: 'Schedule-related queries dominate. Fans are eagerly awaiting event/comeback announcements.' });
+    }
+
+    // Streaming interest
+    if (categoryStats['streaming'] && categoryStats['streaming'] >= 3) {
+      items.push({ icon: '🎧', priority: 'medium', title: 'Streaming Campaign Opportunity', description: `${categoryStats['streaming']} streaming-related queries detected. Coordinate a fan streaming campaign.` });
+    }
+
+    // Gap categories
+    if (gapCategories.length >= 3) {
+      items.push({ icon: '📊', priority: 'medium', title: 'Untapped Content Areas', description: `No fan queries in: ${gapCategories.map(c => INTENT_LABELS[c]?.replace(/^.{2}\s/, '') || c).join(', ')}. Create content to fill these gaps.` });
+    }
+
+    // Peak hour insight
+    const peakHour = hourlyData.reduce((max, h) => h.count > max.count ? h : max, hourlyData[0]);
+    if (peakHour.count >= 3) {
+      items.push({ icon: '⏰', priority: 'low', title: `Peak Fan Activity: ${peakHour.hour}:00`, description: `Most fan queries happen at ${peakHour.hour}:00. Schedule content drops and announcements around this time.` });
+    }
+
+    // Sub-topic trend
+    if (topSubTopics.length > 0) {
+      const topTopic = topSubTopics[0];
+      items.push({ icon: '🔥', priority: 'medium', title: `Trending Topic: ${topTopic[0]}`, description: `"${topTopic[0]}" is the most discussed sub-topic with ${topTopic[1]} mentions. Leverage this in marketing.` });
+    }
+
+    if (items.length === 0) {
+      items.push({ icon: '✅', priority: 'low', title: 'All Looking Good', description: 'No urgent action items detected. Keep monitoring fan sentiment and engagement.' });
+    }
+
+    return items.sort((a, b) => { const p = { high: 0, medium: 1, low: 2 }; return p[a.priority] - p[b.priority]; });
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#0f0f2e] to-[#1a0a2e] text-white">
@@ -457,6 +563,226 @@ const AgencyDashboardSample = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* ══════ Section: Artist Comparison ══════ */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-white/80 flex items-center gap-2">
+              <GitCompareArrows className="w-4 h-4 text-cyan-400" /> Artist Comparison
+            </CardTitle>
+            <CardDescription className="text-xs text-white/40">
+              Compare fan interest distribution between two artists
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {selectedArtistId === 'all' ? (
+              <div className="text-center text-white/30 text-sm py-8">
+                Select a specific artist above to enable comparison
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xs text-white/50">Compare with:</span>
+                  <Select value={compareArtistId} onValueChange={setCompareArtistId}>
+                    <SelectTrigger className="w-56 bg-white/5 border-white/10 text-white">
+                      <SelectValue placeholder="Select artist..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— None —</SelectItem>
+                      {tier1Artists?.filter(a => a.wiki_entry_id !== selectedArtistId).map(a => (
+                        <SelectItem key={a.wiki_entry_id} value={a.wiki_entry_id}>
+                          {a.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {compareArtistId !== 'none' && comparisonChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={comparisonChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="category" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} />
+                      <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
+                      <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'white' }} />
+                      <Bar dataKey={selectedArtistName} fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={compareArtistName} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : compareArtistId !== 'none' ? (
+                  <div className="text-center text-white/30 text-sm py-8">No comparison data available yet</div>
+                ) : (
+                  <div className="text-center text-white/30 text-sm py-8">Select a comparison artist to see side-by-side analysis</div>
+                )}
+                {compareArtistId !== 'none' && (
+                  <div className="flex items-center gap-4 mt-3 justify-center">
+                    <div className="flex items-center gap-1.5 text-xs text-white/60"><div className="w-3 h-3 rounded bg-purple-500" />{selectedArtistName}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-white/60"><div className="w-3 h-3 rounded bg-blue-500" />{compareArtistName}</div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ══════ Section: Hourly Activity Heatmap ══════ */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-white/80 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400" /> Fan Activity Heatmap
+            </CardTitle>
+            <CardDescription className="text-xs text-white/40">
+              When are fans most active? (hours in KST)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {totalQueries > 0 ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-24 gap-0.5">
+                  {hourlyData.map(h => {
+                    const intensity = h.count / maxHourCount;
+                    const bg = h.count === 0
+                      ? 'bg-white/5'
+                      : intensity > 0.75 ? 'bg-purple-500' : intensity > 0.5 ? 'bg-purple-500/70' : intensity > 0.25 ? 'bg-purple-500/40' : 'bg-purple-500/20';
+                    return (
+                      <div
+                        key={h.hour}
+                        className={`aspect-square rounded-sm ${bg} flex items-center justify-center group relative cursor-default`}
+                        title={`${h.hour}:00 — ${h.count} queries`}
+                      >
+                        <span className="text-[8px] text-white/40">{h.hour}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-white/30">
+                  <span>0:00</span>
+                  <span>6:00</span>
+                  <span>12:00</span>
+                  <span>18:00</span>
+                  <span>23:00</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-white/40 justify-end">
+                  <span>Low</span>
+                  <div className="flex gap-0.5">
+                    <div className="w-3 h-3 rounded-sm bg-white/5" />
+                    <div className="w-3 h-3 rounded-sm bg-purple-500/20" />
+                    <div className="w-3 h-3 rounded-sm bg-purple-500/40" />
+                    <div className="w-3 h-3 rounded-sm bg-purple-500/70" />
+                    <div className="w-3 h-3 rounded-sm bg-purple-500" />
+                  </div>
+                  <span>High</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[100px] text-white/30 text-sm">No data yet</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ══════ Section: Gap Analysis ══════ */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-white/80 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-orange-400" /> Content Gap Analysis
+            </CardTitle>
+            <CardDescription className="text-xs text-white/40">
+              What fans want but you're not addressing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {totalQueries > 0 ? (
+              <div className="space-y-4">
+                {gapCategories.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-orange-400 mb-2">🔴 No Fan Interest Detected</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {gapCategories.map(cat => (
+                        <Badge key={cat} variant="outline" className="border-orange-500/30 text-orange-300 text-xs">
+                          {INTENT_LABELS[cat] || cat}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-white/30 mt-1">These areas have zero fan queries — consider creating content to stimulate interest.</p>
+                  </div>
+                )}
+                {lowCategories.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-yellow-400 mb-2">🟡 Low Engagement Areas</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {lowCategories.map(cat => (
+                        <Badge key={cat} variant="outline" className="border-yellow-500/30 text-yellow-300 text-xs">
+                          {INTENT_LABELS[cat] || cat} ({categoryStats[cat]})
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-white/30 mt-1">Low query volume suggests fans aren't engaging with these topics yet.</p>
+                  </div>
+                )}
+                {gapCategories.length === 0 && lowCategories.length === 0 && (
+                  <div className="text-center py-4">
+                    <span className="text-emerald-400 text-sm">✅ Great coverage!</span>
+                    <p className="text-xs text-white/40 mt-1">Fans are actively engaging across all content categories.</p>
+                  </div>
+                )}
+                {/* Category coverage bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs text-white/50 mb-1">
+                    <span>Category Coverage</span>
+                    <span>{activeCategories.size}/{allCategories.length} categories</span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-500 via-yellow-500 to-emerald-500 rounded-full transition-all"
+                      style={{ width: `${(activeCategories.size / allCategories.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[100px] text-white/30 text-sm">No data yet — gap analysis requires fan query data</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ══════ Section: AI Action Items ══════ */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-white/80 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-yellow-400" /> AI-Powered Action Items
+            </CardTitle>
+            <CardDescription className="text-xs text-white/40">
+              Recommendations based on fan intent patterns
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {actionItems.map((item, i) => {
+                const priorityColors = {
+                  high: 'border-l-red-500 bg-red-500/5',
+                  medium: 'border-l-yellow-500 bg-yellow-500/5',
+                  low: 'border-l-emerald-500 bg-emerald-500/5',
+                };
+                const priorityBadge = {
+                  high: 'bg-red-500/20 text-red-300 border-red-500/30',
+                  medium: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+                  low: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                };
+                return (
+                  <div key={i} className={`p-4 rounded-lg border-l-4 ${priorityColors[item.priority]}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span>{item.icon}</span>
+                      <span className="text-sm font-semibold text-white/90">{item.title}</span>
+                      <Badge variant="outline" className={`text-[10px] ml-auto ${priorityBadge[item.priority]}`}>
+                        {item.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-white/50 pl-6">{item.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* CTA / Paywall Teaser */}
         <Card className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border-purple-500/20 backdrop-blur-sm">
