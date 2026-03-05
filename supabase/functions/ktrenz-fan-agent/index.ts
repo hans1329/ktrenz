@@ -1279,6 +1279,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Check daily usage limit & deduct points if needed ──
+    const { data: usageResult } = await adminClient.rpc("ktrenz_check_agent_usage", { _user_id: userId });
+    if (usageResult && !usageResult.allowed) {
+      return new Response(JSON.stringify({
+        error: "daily_limit_exceeded",
+        usage: usageResult,
+        message: "일일 무료 한도를 초과했어요. 포인트가 부족합니다.",
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Save user message
     const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg?.role === "user") {

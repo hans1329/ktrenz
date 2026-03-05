@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -159,6 +159,9 @@ async function streamChat({
 
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+    if (resp.status === 429 && err.error === "daily_limit_exceeded") {
+      throw new Error("LIMIT_EXCEEDED");
+    }
     if (resp.status === 429) throw new Error("Too many requests. Please try again shortly.");
     if (resp.status === 402) throw new Error("Insufficient credits.");
     throw new Error(err.error || `Error ${resp.status}`);
@@ -300,6 +303,18 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       return data ?? [];
     },
     enabled: !!user?.id,
+  });
+
+  // Agent daily usage
+  const { data: agentUsage, refetch: refetchUsage } = useQuery({
+    queryKey: ["ktrenz-agent-usage", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.rpc("ktrenz_get_agent_usage" as any, { _user_id: user.id });
+      return data as { used: number; daily_limit: number; remaining: number; tier: string } | null;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 30,
   });
 
   const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
@@ -485,15 +500,20 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           setIsStreaming(false);
           setStreamingStatus("");
           queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
+          refetchUsage();
         },
       });
     } catch (e: any) {
       setIsStreaming(false);
       setStreamingStatus("");
-      toast.error(e.message || "Failed to send message");
+      if (e.message === "LIMIT_EXCEEDED") {
+        toast.error(t("agent.limitExceeded") || "일일 무료 한도를 초과했어요. 포인트가 부족합니다.");
+      } else {
+        toast.error(e.message || "Failed to send message");
+      }
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, hasAlertOn]);
+  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, hasAlertOn, refetchUsage]);
 
   const handleQuickAction = (action: QuickAction) => {
     handleSend(action.prompt);
@@ -536,10 +556,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between h-14 px-4">
-        <div className="flex items-center min-w-[72px]">
+        <div className="flex items-center gap-1.5 min-w-[72px]">
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
+          {agentUsage && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/80 text-xs font-medium text-muted-foreground">
+              <MessageCircle className="w-3 h-3" />
+              <span className={cn(
+                agentUsage.remaining <= 5 && agentUsage.remaining > 0 && "text-amber-500",
+                agentUsage.remaining === 0 && "text-destructive"
+              )}>
+                {agentUsage.remaining}/{agentUsage.daily_limit}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2.5">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
