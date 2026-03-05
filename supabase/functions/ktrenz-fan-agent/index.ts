@@ -1239,7 +1239,7 @@ Deno.serve(async (req) => {
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
     // Collect structured data from tool calls for inline card rendering
-    const collectedMeta: { guideData?: any[]; rankingData?: any[] } = {};
+    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string } = {};
 
     // ── Briefing Mode (unchanged logic) ──
     if (isBriefingMode) {
@@ -1462,7 +1462,20 @@ Deno.serve(async (req) => {
 
       // If no tool calls, this is the final response — stream it
       if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
-        const finalContent = assistantMessage.content ?? "";
+        let finalContent = assistantMessage.content ?? "";
+
+        // Bias registration response must stay concise: cards are rendered via structured meta on frontend
+        if (collectedMeta.quickActions && collectedMeta.quickActions.length > 0 && collectedMeta.biasArtist) {
+          if (userLang === "ko") {
+            finalContent = `✨ **${collectedMeta.biasArtist}**을(를) 최애 아티스트로 설정했어요!\n\n이제 팬활동을 시작해 볼까요? 💜\n\n아래 카드를 눌러 바로 시작해보세요!`;
+          } else if (userLang === "ja") {
+            finalContent = `✨ **${collectedMeta.biasArtist}** を推しアーティストに設定しました！\n\nファン活動を始めましょうか？💜\n\n下のカードをタップしてすぐ始められます！`;
+          } else if (userLang === "zh") {
+            finalContent = `✨ 已将 **${collectedMeta.biasArtist}** 设为你的本命艺人！\n\n现在开始粉丝活动吧？💜\n\n点击下方卡片即可马上开始！`;
+          } else {
+            finalContent = `✨ **${collectedMeta.biasArtist}** is now set as your bias artist!\n\nReady to start fan activities? 💜\n\nTap the cards below to begin right away!`;
+          }
+        }
 
         // Save assistant message
         if (finalContent) {
