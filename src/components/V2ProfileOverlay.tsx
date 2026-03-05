@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { LogOut, ChevronRight, Settings, Coins, Globe, Check } from "lucide-reac
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LANGUAGES } from "@/i18n/translations";
 import { cn } from "@/lib/utils";
+import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import {
   Drawer,
   DrawerContent,
@@ -24,6 +26,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const { user, profile, signOut, kPoints } = useAuth();
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
+  const [showPointsDrawer, setShowPointsDrawer] = useState(false);
 
   const { data: kpassInfo } = useQuery({
     queryKey: ["kpass-current", user?.id],
@@ -49,19 +52,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: dailyLoginPoints } = useQuery({
-    queryKey: ["daily-login-points-setting"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("ktrenz_point_settings" as any)
-        .select("points")
-        .eq("reward_type", "daily_login")
-        .eq("is_enabled", true)
-        .maybeSingle();
-      return (data as any)?.points ?? 10;
-    },
-    staleTime: 1000 * 60 * 30,
-  });
+
 
   if (!user) return null;
 
@@ -94,6 +85,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const g = tierGradients[tierName] || tierGradients.Free;
 
   return (
+    <>
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="bg-background border-border max-h-[80vh] mx-auto md:max-w-md">
         <DrawerHeader className="pb-1">
@@ -120,7 +112,10 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           </div>
 
           {/* K-Points Card */}
-          <div className="rounded-xl bg-card border border-border p-4">
+          <button
+            onClick={() => setShowPointsDrawer(true)}
+            className="w-full text-left rounded-xl bg-card border border-border p-4 hover:border-primary/40 hover:bg-primary/5 transition-all"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -135,11 +130,9 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                매일 로그인 +{dailyLoginPoints ?? 10}
-              </span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
-          </div>
+          </button>
 
           {/* K-Pass Ticket */}
           <button
@@ -251,6 +244,8 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
         </div>
       </DrawerContent>
     </Drawer>
+    <KPointsPurchaseDrawer open={showPointsDrawer} onOpenChange={setShowPointsDrawer} />
+    </>
   );
 };
 
