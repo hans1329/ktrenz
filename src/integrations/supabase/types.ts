@@ -2044,6 +2044,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_agent_daily_usage: {
+        Row: {
+          created_at: string
+          id: string
+          message_count: number
+          points_spent: number
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          points_spent?: number
+          updated_at?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          points_spent?: number
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_agent_profiles: {
         Row: {
           avatar_url: string | null
@@ -7419,7 +7449,12 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
+      ktrenz_check_agent_usage: {
+        Args: { _cost_per_message?: number; _user_id: string }
+        Returns: Json
+      }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
+      ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_record_contribution: {
         Args: { _platform: string; _user_id: string; _wiki_entry_id: string }
         Returns: undefined
