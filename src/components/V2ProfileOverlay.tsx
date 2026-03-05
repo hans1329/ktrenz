@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +27,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [showPointsDrawer, setShowPointsDrawer] = useState(false);
+  const [showLangDrawer, setShowLangDrawer] = useState(false);
 
   const { data: kpassInfo } = useQuery({
     queryKey: ["kpass-current", user?.id],
@@ -202,11 +203,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              const codes = LANGUAGES.map(l => l.code);
-              const idx = codes.indexOf(language);
-              setLanguage(codes[(idx + 1) % codes.length]);
-            }}
+            onClick={() => setShowLangDrawer(true)}
           >
             <Globe className="w-4 h-4" />
             <span className="text-sm">{language.toUpperCase()}</span>
@@ -233,6 +230,33 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
       </DrawerContent>
     </Drawer>
     <KPointsPurchaseDrawer open={showPointsDrawer} onOpenChange={setShowPointsDrawer} />
+
+    {/* Language selector drawer */}
+    <Drawer open={showLangDrawer} onOpenChange={setShowLangDrawer}>
+      <DrawerContent className="bg-background border-border mx-auto md:max-w-md">
+        <DrawerHeader className="pb-2">
+          <DrawerTitle className="text-center text-base font-semibold">Language</DrawerTitle>
+        </DrawerHeader>
+        <div className="px-5 pb-6 space-y-1">
+          {LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => { setLanguage(lang.code); setShowLangDrawer(false); }}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left",
+                language === lang.code
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground hover:bg-muted"
+              )}
+            >
+              <span className="text-lg">{lang.flag}</span>
+              <span className="text-sm font-medium flex-1">{lang.label}</span>
+              {language === lang.code && <Check className="w-4 h-4 text-primary" />}
+            </button>
+          ))}
+        </div>
+      </DrawerContent>
+    </Drawer>
     </>
   );
 };
