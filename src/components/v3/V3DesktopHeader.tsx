@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell } from "lucide-react";
+import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,11 +177,11 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
             {/* Language */}
             <Button
               variant="ghost"
-              size="sm"
-              className="w-9 h-9 rounded-full text-xs font-semibold text-muted-foreground"
+              size="icon"
+              className="w-9 h-9 rounded-full"
               onClick={() => setShowLangDrawer(true)}
             >
-              {language.toUpperCase()}
+              <Globe className="w-4 h-4" />
             </Button>
 
             {/* Notifications */}

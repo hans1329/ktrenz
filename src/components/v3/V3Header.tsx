@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Search, X, Loader2, Star } from "lucide-react";
+import { Bell, Search, X, Loader2, Star, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -119,10 +119,10 @@ const V3Header = () => {
             </Link>
             <div className="flex items-center gap-1">
               <button
-                className="px-2 py-1 text-xs font-semibold text-muted-foreground active:opacity-60 transition-opacity"
+                className="p-1 active:opacity-60 transition-opacity"
                 onClick={() => setShowLangDrawer(true)}
               >
-                {language.toUpperCase()}
+                <Globe className="w-5 h-5 text-foreground/80" />
               </button>
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
