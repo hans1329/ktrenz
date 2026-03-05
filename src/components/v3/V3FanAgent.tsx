@@ -1011,11 +1011,60 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             <DialogDescription>{t("agent.addAgentDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            {/* Slot info */}
+            {/* Visual slot grid */}
             {slotLimit && (
-              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-muted/50 text-sm">
-                <span className="text-muted-foreground">{t("agent.currentSlots")}</span>
-                <span className="font-semibold text-foreground">{slots.length} / {slotLimit.total_slots}</span>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground px-1">{t("agent.currentSlots")}</p>
+                <div className="flex flex-wrap gap-2 px-1">
+                  {Array.from({ length: slotLimit.total_slots }).map((_, i) => {
+                    const slot = slots[i];
+                    const isActive = slot?.id === activeSlot?.id;
+                    if (slot) {
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() => {
+                            if (!isActive) {
+                              switchSlot(slot.id);
+                              setShowAddAgentDialog(false);
+                              setMessages([]);
+                              setHasStarted(false);
+                              setWelcomeSent(false);
+                              setBriefingTriggered(false);
+                            }
+                          }}
+                          className={cn(
+                            "w-14 h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all",
+                            isActive
+                              ? "border-primary bg-primary/10 shadow-sm"
+                              : "border-border hover:border-primary/40 bg-card"
+                          )}
+                        >
+                          <div className="w-7 h-7 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                            {slot.avatar_url ? (
+                              <img src={slot.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Bot className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="text-[9px] leading-tight text-muted-foreground truncate max-w-[48px]">
+                            {slot.artist_name && slot.artist_name !== "New Agent" ? slot.artist_name : `Agent ${i + 1}`}
+                          </span>
+                        </button>
+                      );
+                    }
+                    // Empty slot
+                    return (
+                      <div
+                        key={`empty-${i}`}
+                        className="w-14 h-14 rounded-xl border-2 border-dashed border-border/50 flex items-center justify-center"
+                      >
+                        <Plus className="w-4 h-4 text-muted-foreground/30" />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -1024,15 +1073,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 className="w-full rounded-xl h-11"
                 onClick={async () => {
                   setShowAddAgentDialog(false);
-                  // Create a new agent slot (without artist yet — will be set via chat)
                   const newSlot = await createSlot("New Agent");
                   if (newSlot) {
-                    // Reset chat for new agent
                     setMessages([]);
                     setHasStarted(false);
                     setWelcomeSent(false);
                     setBriefingTriggered(false);
-                    // Show prompt asking for artist name
                     const promptMsg: ChatMessage = {
                       role: "assistant",
                       content: t("agent.newAgentPrompt"),
