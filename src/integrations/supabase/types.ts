@@ -2077,6 +2077,110 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_agent_intent_summaries: {
+        Row: {
+          id: string
+          intent_category: string
+          query_count: number | null
+          sample_queries: Json | null
+          sentiment_distribution: Json | null
+          summary_date: string
+          trending_score: number | null
+          unique_users: number | null
+          updated_at: string | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          id?: string
+          intent_category: string
+          query_count?: number | null
+          sample_queries?: Json | null
+          sentiment_distribution?: Json | null
+          summary_date?: string
+          trending_score?: number | null
+          unique_users?: number | null
+          updated_at?: string | null
+          wiki_entry_id: string
+        }
+        Update: {
+          id?: string
+          intent_category?: string
+          query_count?: number | null
+          sample_queries?: Json | null
+          sentiment_distribution?: Json | null
+          summary_date?: string
+          trending_score?: number | null
+          unique_users?: number | null
+          updated_at?: string | null
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_agent_intent_summaries_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_agent_intents: {
+        Row: {
+          agent_slot_id: string | null
+          created_at: string | null
+          entities: Json | null
+          id: string
+          intent_category: string
+          sentiment: string | null
+          source_query: string
+          sub_topic: string | null
+          tools_used: string[] | null
+          user_id: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          agent_slot_id?: string | null
+          created_at?: string | null
+          entities?: Json | null
+          id?: string
+          intent_category?: string
+          sentiment?: string | null
+          source_query: string
+          sub_topic?: string | null
+          tools_used?: string[] | null
+          user_id: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          agent_slot_id?: string | null
+          created_at?: string | null
+          entities?: Json | null
+          id?: string
+          intent_category?: string
+          sentiment?: string | null
+          source_query?: string
+          sub_topic?: string | null
+          tools_used?: string[] | null
+          user_id?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_agent_intents_agent_slot_id_fkey"
+            columns: ["agent_slot_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_agent_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_agent_intents_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_agent_knowledge_cache: {
         Row: {
           citations: string[] | null
