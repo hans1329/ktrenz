@@ -106,7 +106,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
           {tabs.map((tab) => {
             if (tab.isCenter) {
               return (
-                <button key={tab.id} onClick={() => navigate("/agent")} className="flex flex-col items-center justify-center -mt-6 relative">
+                <button key={tab.id} onClick={() => navigate("/agent")} className="flex items-center justify-center -mt-6 relative">
                   {showAgentBadge && (
                     <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse z-10" />
                   )}
