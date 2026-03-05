@@ -186,6 +186,82 @@ const TOOLS = [
   },
 ];
 
+// ── Intent Extraction (fire-and-forget after response) ──────────
+const INTENT_CATEGORIES = ["news", "schedule", "streaming", "music_performance", "sns", "comparison", "fan_activity", "general"] as const;
+
+async function extractAndStoreIntent(
+  adminClient: any,
+  openaiKey: string,
+  userId: string,
+  userQuery: string,
+  wikiEntryId: string | null,
+  agentSlotId: string | null,
+  toolsUsed: string[]
+) {
+  try {
+    // Use lightweight structured output to classify intent
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are an intent classifier for K-Pop fan queries. Extract structured intent data from the user's message.
+Return ONLY valid JSON with these fields:
+- intent_category: one of [news, schedule, streaming, music_performance, sns, comparison, fan_activity, general]
+- sub_topic: specific topic within the category (e.g., "comeback_date", "album_sales", "concert_info", "chart_ranking", "streaming_strategy")
+- entities: object with extracted entities like { "artists": ["BTS"], "platforms": ["Spotify"], "dates": ["2026-03"], "events": ["comeback"] }
+- sentiment: one of [positive, neutral, negative, curious]
+
+Examples:
+User: "방탄 컴백 언제야?" → {"intent_category":"schedule","sub_topic":"comeback_date","entities":{"artists":["BTS"]},"sentiment":"curious"}
+User: "에스파 멜론 순위 올랐어?" → {"intent_category":"music_performance","sub_topic":"chart_ranking","entities":{"artists":["aespa"],"platforms":["Melon"]},"sentiment":"curious"}
+User: "스밍 가이드 보여줘" → {"intent_category":"streaming","sub_topic":"streaming_strategy","entities":{},"sentiment":"neutral"}`
+          },
+          { role: "user", content: userQuery }
+        ],
+        max_tokens: 200,
+        temperature: 0,
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error("[IntentExtract] OpenAI error:", resp.status);
+      return;
+    }
+
+    const data = await resp.json();
+    const raw = data.choices?.[0]?.message?.content ?? "";
+    
+    // Parse JSON from response (handle markdown code blocks)
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("[IntentExtract] No JSON found in response:", raw);
+      return;
+    }
+
+    const intent = JSON.parse(jsonMatch[0]);
+
+    await adminClient.from("ktrenz_agent_intents").insert({
+      user_id: userId,
+      wiki_entry_id: wikiEntryId || null,
+      intent_category: INTENT_CATEGORIES.includes(intent.intent_category) ? intent.intent_category : "general",
+      sub_topic: intent.sub_topic || null,
+      entities: intent.entities || {},
+      sentiment: ["positive", "neutral", "negative", "curious"].includes(intent.sentiment) ? intent.sentiment : "neutral",
+      source_query: userQuery.slice(0, 500),
+      tools_used: toolsUsed,
+      agent_slot_id: agentSlotId || null,
+    });
+
+    console.log("[IntentExtract] Stored intent:", intent.intent_category, intent.sub_topic);
+  } catch (e) {
+    console.error("[IntentExtract] Failed:", e);
+  }
+}
+
 // ── Tool Handlers ──────────────────────────────────
 async function handleTool(
   name: string,
@@ -1845,6 +1921,18 @@ Deno.serve(async (req) => {
 
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
+
+              // ── Fire-and-forget: Extract and store user intent ──
+              const usedToolNames = openaiMessages
+                .filter((m: any) => m.role === "tool")
+                .map((m: any) => m.name || "unknown");
+              const userQuery = lastUserMsg?.content || "";
+              
+              extractAndStoreIntent(
+                adminClient, OPENAI_API_KEY, userId, userQuery,
+                activeSlotWikiEntryId, activeSlotId, usedToolNames
+              ).catch((e: any) => console.error("[IntentExtract] Error:", e));
+
               return;
             }
 
