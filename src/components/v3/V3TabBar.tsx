@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { TrendingUp, Bot, Power, Activity, Settings } from "lucide-react";
+import { TrendingUp, Bot, Power, Activity, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
+import { useAgentSlots } from "@/hooks/useAgentSlots";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -44,6 +45,28 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
     return () => { document.head.removeChild(link); };
   }, [profile?.avatar_url]);
 
+  // Agent slots for avatar
+  const { activeSlot } = useAgentSlots();
+  
+  // Legacy agent avatar fallback
+  const { data: legacyAgentAvatarUrl } = useQuery({
+    queryKey: ["ktrenz-agent-legacy-avatar", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.storage
+        .from("agent-avatars")
+        .getPublicUrl(`${user.id}/avatar.webp`);
+      // Check if file exists by trying to fetch
+      try {
+        const res = await fetch(data.publicUrl, { method: "HEAD" });
+        return res.ok ? data.publicUrl : null;
+      } catch { return null; }
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 10,
+  });
+  const agentAvatarUrl = activeSlot?.avatar_url || (activeSlot?.slot_index === 0 ? legacyAgentAvatarUrl : null) || null;
+
   // 관심 아티스트 유무 체크 → 없으면 알림 뱃지 표시
   const { data: watchedArtists } = useQuery({
     queryKey: ["ktrenz-watched-artists", user?.id],
@@ -67,8 +90,8 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   const tabs = [
     { id: "rankings" as const, labelKey: "nav.trendz", icon: TrendingUp },
     { id: "activity" as const, labelKey: "nav.activity", icon: Activity },
-    { id: "profile" as const, labelKey: "nav.profile", icon: null, isCenter: true },
-    { id: "agent" as const, labelKey: "nav.agent", icon: Bot },
+    { id: "agent" as const, labelKey: "nav.agent", icon: null, isCenter: true },
+    { id: "profile" as const, labelKey: "nav.profile", icon: User },
     { id: "settings" as const, labelKey: "nav.settings", icon: Settings },
   ];
 
@@ -83,23 +106,17 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
           {tabs.map((tab) => {
             if (tab.isCenter) {
               return (
-                <button key={tab.id} onClick={handleProfileClick} className="flex flex-col items-center justify-center -mt-6">
+                <button key={tab.id} onClick={() => navigate("/agent")} className="flex flex-col items-center justify-center -mt-6 relative">
+                  {showAgentBadge && (
+                    <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse z-10" />
+                  )}
                   <div className={cn("w-16 h-16 rounded-full border-4 transition-all duration-200 overflow-hidden bg-black",
-                    profileOpen ? "border-primary shadow-lg shadow-primary/30" : "border-background shadow-md")}>
-                    {user ? (
-                      <Avatar className="w-full h-full">
-                        <AvatarImage
-                          src={profile?.avatar_url || undefined}
-                          loading="eager"
-                          fetchPriority="high"
-                        />
-                        <AvatarFallback delayMs={600} className="bg-black text-primary text-lg font-medium">
-                          {profile?.username?.[0]?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
+                    "border-background shadow-md")}>
+                    {agentAvatarUrl ? (
+                      <img src={agentAvatarUrl} alt="Agent" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                     ) : (
                       <div className="w-full h-full bg-black flex items-center justify-center">
-                        <Power className="w-6 h-6 text-muted-foreground" />
+                        <Bot className="w-6 h-6 text-primary" />
                       </div>
                     )}
                   </div>
@@ -111,14 +128,11 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             const Icon = tab.icon!;
 
             return (
-              <button key={tab.id} onClick={() => (tab.id === "agent" ? navigate("/agent") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "settings" ? navigate("/settings") : onTabChange(tab.id as V3Tab))}
+              <button key={tab.id} onClick={() => (tab.id === "profile" ? handleProfileClick() : tab.id === "activity" ? navigate("/dashboard") : tab.id === "settings" ? navigate("/settings") : onTabChange(tab.id as V3Tab))}
                 className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
                 <span className={cn("text-[8px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
-                {tab.id === "agent" && showAgentBadge && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse" />
-                )}
               </button>
             );
           })}
