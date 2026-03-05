@@ -732,7 +732,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   const isTop3 = rectIndex <= 2;
                   const baseCount = isTop3
                     ? Math.max(30, Math.round((absChange / maxAbsChange) * 65))
-                    : Math.max(5, Math.round((absChange / maxAbsChange) * 40));
+                    : Math.max(3, Math.round((absChange / maxAbsChange) * 18));
                   return (
                     <BoxParticles
                       count={baseCount}
