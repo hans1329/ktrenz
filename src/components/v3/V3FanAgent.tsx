@@ -844,11 +844,14 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("agent.pointPurchaseTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("agent.pointPurchaseDesc")}
-              <span className="inline-flex items-center gap-1 ml-1.5 text-[#2dd4bf] font-semibold">
-                {kPoints.toLocaleString()}P
-              </span>
+            <AlertDialogDescription asChild>
+              <div className="space-y-1.5">
+                <p>{t("agent.pointPurchaseLine1")}</p>
+                <p>{t("agent.pointPurchaseLine2")}</p>
+                <p className="text-[#2dd4bf] font-semibold">
+                  {t("agent.pointPurchaseBalance")}: {kPoints.toLocaleString()}P
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-2 py-2">
