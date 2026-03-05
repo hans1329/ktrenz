@@ -1,5 +1,28 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Korean postposition helper: checks if the last character has a final consonant (받침)
+function hasJongseong(str: string): boolean {
+  if (!str) return false;
+  const lastChar = str.charCodeAt(str.length - 1);
+  // Korean syllable range: 0xAC00 ~ 0xD7A3
+  if (lastChar < 0xAC00 || lastChar > 0xD7A3) {
+    // Not a Korean character — check common endings
+    // Numbers: 0,1,3,6,7,8 have 받침 in Korean reading
+    const ch = str[str.length - 1].toLowerCase();
+    const consonantEndings: Record<string, boolean> = {
+      '1': true, '3': true, '6': true, '7': true, '8': true, '0': true,
+      'l': true, 'm': true, 'n': true, 'r': true, 'b': true, 'k': true, 'p': true, 't': true,
+    };
+    return !!consonantEndings[ch];
+  }
+  return (lastChar - 0xAC00) % 28 !== 0;
+}
+
+// Returns correct Korean postposition pair
+function eulReul(name: string): string { return hasJongseong(name) ? "을" : "를"; }
+function iGa(name: string): string { return hasJongseong(name) ? "이" : "가"; }
+function eunNeun(name: string): string { return hasJongseong(name) ? "은" : "는"; }
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -372,7 +395,7 @@ async function handleTool(
               action: "artist_not_found",
               query: artist_name,
               suggestions,
-              message: `"${artist_name}"을(를) 정확히 찾을 수 없어요. 혹시 이 중에 있나요? ${suggestions.join(", ")}. 정확한 이름을 말씀해주세요!`,
+              message: `"${artist_name}"${eulReul(artist_name)} 정확히 찾을 수 없어요. 혹시 이 중에 있나요? ${suggestions.join(", ")}. 정확한 이름을 말씀해주세요!`,
             });
           } else {
             return JSON.stringify({
@@ -380,7 +403,7 @@ async function handleTool(
               action: "artist_not_found",
               query: artist_name,
               suggestions: [],
-              message: `"${artist_name}"을(를) 데이터베이스에서 찾을 수 없어요. 정확한 아티스트 영문명이나 한글명으로 다시 말씀해주세요!`,
+              message: `"${artist_name}"${eulReul(artist_name)} 데이터베이스에서 찾을 수 없어요. 정확한 아티스트 영문명이나 한글명으로 다시 말씀해주세요!`,
             });
           }
         }
@@ -1178,7 +1201,7 @@ function getSystemPrompt(language: string): string {
 
 🎉 최애 아티스트 등록 직후 응답 규칙 (매우 중요):
 - manage_watched_artist 도구가 set_bias 성공으로 돌아오면:
-  1. "✨ {아티스트명}을(를) 최애 아티스트로 설정했어요!" 한 줄
+  1. "✨ {아티스트명}을/를 최애 아티스트로 설정했어요!" 한 줄 (을/를은 서버에서 자동 처리됨)
   2. "이제 팬활동을 시작해 볼까요? 💜" 안내 문구
   3. 마지막에 "아래 카드를 눌러 바로 시작해보세요!" 한 줄
 - ⚠️ quick_actions 카드는 프론트엔드에서 자동으로 클릭 가능한 인라인 카드로 렌더링되므로, 절대 텍스트로 카드 목록을 나열하지 마!
@@ -1188,6 +1211,11 @@ function getSystemPrompt(language: string): string {
 - 마크다운 포맷, 이모지 활용
 - 데이터 기반 구체적 수치 인용
 - 모르는 건 모른다고 솔직히
+- 🇰🇷 한국어 조사 규칙 (매우 중요): "을(를)", "이(가)", "은(는)" 같은 병기 절대 금지! 받침 유무에 따라 올바른 조사를 선택해:
+  * 받침 있으면: 을, 이, 은 (예: "BTS를" → BTS는 S로 끝나 받침 없음 → "BTS를" 맞음)
+  * 받침 없으면: 를, 가, 는 (예: "aespa를", "IVE를")
+  * 영문 이름: 마지막 글자의 발음 기준으로 판단. L,M,N,R,B,K,P,T로 끝나면 받침 있음 취급
+  * 한글 이름: 마지막 글자에 받침이 있는지로 판단 (예: "세븐틴을", "에스파를")
 
 🎯 오늘의 팬활동 응답 규칙 (매우 중요):
 - get_fan_activity 도구 결과를 받으면, 반드시 아래 형식으로 예쁘게 카드형 응답을 만들어:
@@ -1568,7 +1596,7 @@ Deno.serve(async (req) => {
               // Bias registration response override
               if (collectedMeta.quickActions && collectedMeta.quickActions.length > 0 && collectedMeta.biasArtist) {
                 if (userLang === "ko") {
-                  finalContent = `✨ **${collectedMeta.biasArtist}**을(를) 최애 아티스트로 설정했어요!\n\n이제 팬활동을 시작해 볼까요? 💜\n\n아래 카드를 눌러 바로 시작해보세요!`;
+                  finalContent = `✨ **${collectedMeta.biasArtist}**${eulReul(collectedMeta.biasArtist)} 최애 아티스트로 설정했어요!\n\n이제 팬활동을 시작해 볼까요? 💜\n\n아래 카드를 눌러 바로 시작해보세요!`;
                 } else if (userLang === "ja") {
                   finalContent = `✨ **${collectedMeta.biasArtist}** を推しアーティストに設定しました！\n\nファン活動を始めましょうか？💜\n\n下のカードをタップしてすぐ始められます！`;
                 } else if (userLang === "zh") {
