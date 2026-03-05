@@ -753,7 +753,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // ── Chat messages ──
   const renderMessages = () => (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 max-w-[800px] mx-auto w-full">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 max-w-[800px] mx-auto w-full scrollbar-hide">
       {messages.map((msg, i) => (
         <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
