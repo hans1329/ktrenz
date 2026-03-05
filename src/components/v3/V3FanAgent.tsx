@@ -768,6 +768,23 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
+
+                {/* Add Agent button at bottom */}
+                {canAddSlot && (
+                  <div className="border-t border-border/50 mt-1 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowAddAgentDialog(true);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-primary hover:bg-primary/10 transition-colors font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t("agent.addAgent")}
+                    </button>
+                  </div>
+                )}
           </PopoverContent>
         </Popover>
 
