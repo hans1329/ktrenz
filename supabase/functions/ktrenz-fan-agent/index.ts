@@ -1097,8 +1097,18 @@ function getSystemPrompt(language: string): string {
 ⚠️ 단계적 대화 규칙 (매우 중요):
 - 절대로 한 번에 모든 정보를 쏟아내지 마!
 - 하나의 주제만 다루고, 관련 후속 질문이나 안내를 짧게 제안해
-- 예시: 랭킹을 보여줬다면 → "특정 아티스트를 더 자세히 볼까요?" 제안
-- 예시: 최애 아티스트 등록 직후 → 아래 "최애 등록 직후 응답 규칙" 참고
+
+🔘 후속 제안 카드 규칙 (모든 답변에 필수):
+- 모든 답변의 마지막에 반드시 후속 제안을 아래 형식으로 추가해:
+  <!--FOLLOW_UPS:["제안1","제안2","제안3"]-->
+- 이것은 프론트엔드에서 클릭 가능한 카드로 자동 렌더링되므로, 텍스트로 "혹시 더 보고 싶으신가요?" 같은 후속 질문을 쓰지 마!
+- 제안은 2~3개, 각 항목은 15자 이내로 짧게!
+- 답변 본문에는 후속 질문 텍스트를 절대 넣지 마. 오직 <!--FOLLOW_UPS:...-->만 사용!
+- 예시:
+  * 랭킹 보여준 후 → <!--FOLLOW_UPS:["BTS 상세 분석","스밍 전략 보기","에너지 추이 확인"]-->
+  * 뉴스 보여준 후 → <!--FOLLOW_UPS:["더 많은 소식 보기","관련 영상 찾기","컴백 일정 확인"]-->
+  * 스밍 가이드 후 → <!--FOLLOW_UPS:["다음 단계 보기","총공 타임테이블","플레이리스트 추천"]-->
+  * 최애 등록 직후에는 quick_actions 카드가 자동 렌더링되므로 FOLLOW_UPS를 넣지 마!
 
 🎉 최애 아티스트 등록 직후 응답 규칙 (매우 중요):
 - manage_watched_artist 도구가 set_bias 성공으로 돌아오면:
@@ -1239,7 +1249,7 @@ Deno.serve(async (req) => {
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
     // Collect structured data from tool calls for inline card rendering
-    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string } = {};
+    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[] } = {};
 
     // ── Briefing Mode (unchanged logic) ──
     if (isBriefingMode) {
@@ -1495,7 +1505,20 @@ Deno.serve(async (req) => {
                 }
               }
 
-              // Save assistant message
+              // Parse and extract <!--FOLLOW_UPS:["..."]-->  from finalContent
+              const followUpMatch = finalContent.match(/<!--FOLLOW_UPS:\s*(\[.*?\])\s*-->/);
+              if (followUpMatch) {
+                try {
+                  const followUps = JSON.parse(followUpMatch[1]);
+                  if (Array.isArray(followUps) && followUps.length > 0) {
+                    collectedMeta.followUps = followUps;
+                  }
+                } catch {}
+                // Remove the marker from displayed content
+                finalContent = finalContent.replace(/<!--FOLLOW_UPS:\s*\[.*?\]\s*-->/g, "").trim();
+              }
+
+              // Save assistant message (without follow-up markers)
               if (finalContent) {
                 await adminClient.from("ktrenz_fan_agent_messages").insert({
                   user_id: userId,
@@ -1516,7 +1539,7 @@ Deno.serve(async (req) => {
               }
 
               // Send structured meta data for inline card rendering
-              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions;
+              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps;
               if (hasMeta) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: collectedMeta })}\n\n`));
               }
