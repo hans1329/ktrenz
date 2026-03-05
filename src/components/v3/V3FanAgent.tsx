@@ -403,6 +403,18 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     enabled: !!user?.id,
   });
 
+  // Reset chat state when active slot changes
+  const prevSlotIdRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (prevSlotIdRef.current !== undefined && prevSlotIdRef.current !== activeSlot?.id) {
+      setMessages([]);
+      setHasStarted(false);
+      setWelcomeSent(false);
+      setBriefingTriggered(false);
+    }
+    prevSlotIdRef.current = activeSlot?.id ?? null;
+  }, [activeSlot?.id]);
+
   useEffect(() => {
     if (chatHistory && chatHistory.length > 0 && messages.length === 0 && !hasStarted) {
       setMessages(chatHistory);
