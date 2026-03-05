@@ -638,6 +638,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
         {/* Center: avatar (popover trigger) + name */}
         <Popover
+          modal={false}
           open={showMenu}
           onOpenChange={(open) => {
             setShowMenu(open);
