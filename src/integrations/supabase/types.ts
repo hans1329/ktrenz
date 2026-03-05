@@ -2046,6 +2046,7 @@ export type Database = {
       }
       ktrenz_agent_daily_usage: {
         Row: {
+          bonus_remaining: number
           created_at: string
           id: string
           message_count: number
@@ -2055,6 +2056,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bonus_remaining?: number
           created_at?: string
           id?: string
           message_count?: number
@@ -2064,6 +2066,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bonus_remaining?: number
           created_at?: string
           id?: string
           message_count?: number
@@ -7452,6 +7455,10 @@ export type Database = {
       ktrenz_check_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
       ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
+      ktrenz_purchase_agent_messages: {
+        Args: { _bundle: number; _user_id: string }
+        Returns: Json
+      }
       ktrenz_record_contribution: {
         Args: { _platform: string; _user_id: string; _wiki_entry_id: string }
         Returns: undefined
