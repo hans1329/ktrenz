@@ -1490,8 +1490,33 @@ Deno.serve(async (req) => {
         // Stream the final response as SSE (for frontend compatibility)
         const encoder = new TextEncoder();
         const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions;
+        // Map tool names to user-facing status labels
+        const toolStatusMap: Record<string, Record<string, string>> = {
+          get_rankings: { en: "Checking rankings…", ko: "순위를 확인하고 있어요…", ja: "ランキングを確認中…", zh: "正在查看排名…" },
+          lookup_artist: { en: "Looking up artist data…", ko: "아티스트 데이터를 조회 중…", ja: "アーティストデータを検索中…", zh: "正在查询艺人数据…" },
+          compare_artists: { en: "Comparing artists…", ko: "아티스트를 비교하고 있어요…", ja: "アーティストを比較中…", zh: "正在比较艺人…" },
+          search_artist: { en: "Searching for artist…", ko: "아티스트를 검색하고 있어요…", ja: "アーティストを検索中…", zh: "正在搜索艺人…" },
+          manage_watched_artist: { en: "Updating your artist…", ko: "아티스트를 설정하고 있어요…", ja: "アーティストを設定中…", zh: "正在设置艺人…" },
+          get_streaming_guide: { en: "Building streaming guide…", ko: "스트리밍 가이드를 만들고 있어요…", ja: "ストリーミングガイドを作成中…", zh: "正在创建流媒体指南…" },
+          get_artist_news: { en: "Fetching latest news…", ko: "최신 뉴스를 가져오고 있어요…", ja: "最新ニュースを取得中…", zh: "正在获取最新新闻…" },
+        };
+
+        const toolsUsed: string[] = (collectedMeta as any).toolsUsed ?? [];
+
         const stream = new ReadableStream({
           start(controller) {
+            // Send tool execution status events so frontend shows step-by-step progress
+            for (const toolName of toolsUsed) {
+              const labels = toolStatusMap[toolName];
+              if (labels) {
+                const statusEvent = JSON.stringify({ status: labels[userLang] || labels.en });
+                controller.enqueue(encoder.encode(`data: ${statusEvent}\n\n`));
+              }
+            }
+            // Signal writing phase
+            const writingLabels: Record<string, string> = { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: writingLabels[userLang] || writingLabels.en })}\n\n`));
+
             // Send the content in chunks to simulate streaming
             const chunkSize = 20;
             for (let i = 0; i < finalContent.length; i += chunkSize) {
@@ -1521,12 +1546,16 @@ Deno.serve(async (req) => {
       // Process tool calls
       openaiMessages.push(assistantMessage);
 
+      // Collect tool names for status events
+      if (!collectedMeta.toolsUsed) (collectedMeta as any).toolsUsed = [];
+
       for (const toolCall of assistantMessage.tool_calls) {
         const fnName = toolCall.function.name;
         let fnArgs: any = {};
         try { fnArgs = JSON.parse(toolCall.function.arguments); } catch {}
 
         console.log(`[FanAgent] Tool call: ${fnName}`, fnArgs);
+        (collectedMeta as any).toolsUsed.push(fnName);
 
         const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache);
 
