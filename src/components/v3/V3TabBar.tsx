@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, Bot, Power, Activity, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -18,9 +18,19 @@ interface V3TabBarProps {
 
 const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
   const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // Auto-open profile drawer when navigating back from settings/kpass
+  useEffect(() => {
+    if ((location.state as any)?.openProfile) {
+      setProfileOpen(true);
+      // Clear state to prevent re-opening on subsequent renders
+      window.history.replaceState({}, "");
+    }
+  }, [location.state]);
 
   // 프로필 이미지 preload
   useEffect(() => {

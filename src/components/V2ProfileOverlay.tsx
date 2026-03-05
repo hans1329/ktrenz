@@ -137,7 +137,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
           {/* K-Pass Ticket */}
           <button
-            onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
+            onClick={() => { onOpenChange(false); navigate("/k-pass", { state: { fromProfile: true } }); }}
             className="w-full group text-left"
           >
             <div className="relative rounded-xl" style={{ boxShadow: g.glow }}>
@@ -214,7 +214,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
-              onClick={() => { onOpenChange(false); navigate("/settings"); }}
+              onClick={() => { onOpenChange(false); navigate("/settings", { state: { fromProfile: true } }); }}
             >
               <Settings className="w-4 h-4" /> <span className="text-sm">{t("common.settings")}</span>
             </Button>
