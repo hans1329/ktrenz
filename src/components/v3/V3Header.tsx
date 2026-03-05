@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGES } from "@/i18n/translations";
 
 interface SearchResult {
   id: string;
@@ -18,7 +19,7 @@ interface SearchResult {
 
 const V3Header = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -115,6 +116,15 @@ const V3Header = () => {
               />
             </Link>
             <div className="flex items-center gap-1">
+              <button
+                className="px-2 py-1 text-xs font-semibold text-muted-foreground active:opacity-60 transition-opacity"
+                onClick={() => {
+                  const codes = LANGUAGES.map(l => l.code);
+                  setLanguage(codes[(codes.indexOf(language) + 1) % codes.length]);
+                }}
+              >
+                {language.toUpperCase()}
+              </button>
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
               </button>
