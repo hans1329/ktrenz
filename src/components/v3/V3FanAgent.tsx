@@ -620,6 +620,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           setIsStreaming(false);
           setStreamingStatus("");
           queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
+          queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user?.id] });
           refetchUsage();
         },
       });
