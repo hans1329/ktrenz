@@ -359,7 +359,24 @@ async function handleTool(
         if (insertErr) {
           return JSON.stringify({ success: false, message: `Failed to set bias artist: ${insertErr.message}` });
         }
-        return JSON.stringify({ success: true, action: "set_bias", artist: resolvedName, message: `"${resolvedName}" has been set as your bias artist.` });
+
+        // Gather quick action data for post-registration cards
+        const encodedName = encodeURIComponent(resolvedName);
+        const quickActions = [
+          { emoji: "❤️", label: "오늘의 팬활동", description: "매일 달라지는 맞춤 팬활동 추천", prompt_hint: "fan_activity" },
+          { emoji: "📊", label: "실시간 순위", description: `${resolvedName}의 현재 랭킹 & 에너지 점수`, prompt_hint: "rankings" },
+          { emoji: "🎵", label: "스밍 가이드", description: "플랫폼별 스트리밍 전략 & 총공 안내", prompt_hint: "streaming" },
+          { emoji: "📰", label: "최신 소식", description: `${resolvedName}의 최근 뉴스 & 활동`, prompt_hint: "news" },
+        ];
+
+        return JSON.stringify({
+          success: true,
+          action: "set_bias",
+          artist: resolvedName,
+          message: `"${resolvedName}" has been set as your bias artist.`,
+          quick_actions: quickActions,
+          post_registration_instruction: "최애 아티스트 등록 완료! 아래 quick_actions 배열을 사용해서 유저에게 '이제 팬활동을 시작해 볼까요?' 메시지와 함께 퀵액션 카드들을 보여줘. 각 카드는 이모지 + 라벨 + 설명을 포함한 인라인 카드 형태로 예쁘게 나열해.",
+        });
       } else {
         const { error: delErr, count } = await adminClient
           .from("ktrenz_watched_artists")
@@ -1081,7 +1098,20 @@ function getSystemPrompt(language: string): string {
 - 절대로 한 번에 모든 정보를 쏟아내지 마!
 - 하나의 주제만 다루고, 관련 후속 질문이나 안내를 짧게 제안해
 - 예시: 랭킹을 보여줬다면 → "특정 아티스트를 더 자세히 볼까요?" 제안
-- 예시: 최애 아티스트 등록 직후 → 환영 + 간단한 현재 순위만. 스밍 가이드나 뉴스는 요청 시에만.
+- 예시: 최애 아티스트 등록 직후 → 아래 "최애 등록 직후 응답 규칙" 참고
+
+🎉 최애 아티스트 등록 직후 응답 규칙 (매우 중요):
+- manage_watched_artist 도구가 set_bias 성공으로 돌아오면, 반드시 아래 형식으로 응답해:
+  1. "✨ {아티스트명}을(를) 최애 아티스트로 설정했어요!" 한 줄
+  2. "이제 팬활동을 시작해 볼까요? 💜" 안내 문구
+  3. quick_actions 배열의 각 항목을 아래 형식의 인라인 카드로 나열:
+
+{emoji} **{label}**
+{description}
+
+  4. 각 카드 사이에 빈 줄 하나씩 넣어서 깔끔하게 구분
+  5. 마지막에 "궁금한 게 있으면 언제든 물어봐 주세요!" 격려 한마디
+- 절대 순위 데이터를 추가로 조회하거나 다른 정보를 덧붙이지 마. 이 순간은 환영 + 퀵액션 소개에 집중!
 - 답변 길이: 최대 5~8줄 이내. 더 필요하면 유저가 물어보게 유도해.
 - 마크다운 포맷, 이모지 활용
 - 데이터 기반 구체적 수치 인용
