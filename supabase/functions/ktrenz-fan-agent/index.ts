@@ -481,8 +481,9 @@ async function handleTool(
             .maybeSingle();
 
           const avatarUrl = wikiEntry?.image_url ?? null;
+          console.log(`[FanAgent] Updating slot ${activeSlotId} with artist=${resolvedName}, wikiId=${wikiId}, avatar=${avatarUrl}`);
 
-          await adminClient
+          const { error: slotUpdateErr } = await adminClient
             .from("ktrenz_agent_slots")
             .update({
               wiki_entry_id: wikiId,
@@ -490,6 +491,14 @@ async function handleTool(
               avatar_url: avatarUrl,
             })
             .eq("id", activeSlotId);
+
+          if (slotUpdateErr) {
+            console.error(`[FanAgent] Slot update failed:`, slotUpdateErr.message);
+          } else {
+            console.log(`[FanAgent] Slot updated successfully`);
+          }
+        } else {
+          console.warn(`[FanAgent] No activeSlotId — slot not updated`);
         }
 
         // Gather quick action data for post-registration cards
