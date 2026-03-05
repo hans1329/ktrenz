@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { LANGUAGES } from "@/i18n/translations";
+import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 
 interface SearchResult {
   id: string;
@@ -19,7 +19,8 @@ interface SearchResult {
 
 const V3Header = () => {
   const navigate = useNavigate();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language } = useLanguage();
+  const [showLangDrawer, setShowLangDrawer] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -70,6 +71,7 @@ const V3Header = () => {
   };
 
   return (
+    <>
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between h-14 px-4 max-w-screen-lg mx-auto">
         {isSearchOpen ? (
@@ -118,10 +120,7 @@ const V3Header = () => {
             <div className="flex items-center gap-1">
               <button
                 className="px-2 py-1 text-xs font-semibold text-muted-foreground active:opacity-60 transition-opacity"
-                onClick={() => {
-                  const codes = LANGUAGES.map(l => l.code);
-                  setLanguage(codes[(codes.indexOf(language) + 1) % codes.length]);
-                }}
+                onClick={() => setShowLangDrawer(true)}
               >
                 {language.toUpperCase()}
               </button>
@@ -133,6 +132,8 @@ const V3Header = () => {
         )}
       </div>
     </header>
+    <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
+    </>
   );
 };
 

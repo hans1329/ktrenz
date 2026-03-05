@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { LANGUAGES } from "@/i18n/translations";
+import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +37,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language } = useLanguage();
+  const [showLangDrawer, setShowLangDrawer] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   // Auto-open profile drawer when navigating back from settings/kpass
@@ -178,10 +179,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
               variant="ghost"
               size="sm"
               className="w-9 h-9 rounded-full text-xs font-semibold text-muted-foreground"
-              onClick={() => {
-                const codes = LANGUAGES.map(l => l.code);
-                setLanguage(codes[(codes.indexOf(language) + 1) % codes.length]);
-              }}
+              onClick={() => setShowLangDrawer(true)}
             >
               {language.toUpperCase()}
             </Button>
@@ -211,6 +209,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
         </div>
       </header>
       <V2ProfileOverlay open={profileOpen} onOpenChange={setProfileOpen} />
+      <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
 };
