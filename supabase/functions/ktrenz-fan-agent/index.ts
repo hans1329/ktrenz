@@ -1191,11 +1191,13 @@ Deno.serve(async (req) => {
 
     let activeSlotId: string | null = null;
     let activeSlotIndex: number | null = null;
+    let activeSlotWikiEntryId: string | null = null;
+    let activeSlotArtistName: string | null = null;
 
     if (typeof agent_slot_id === "string" && agent_slot_id.length > 0) {
       const { data: ownedSlot, error: slotError } = await adminClient
         .from("ktrenz_agent_slots")
-        .select("id, slot_index")
+        .select("id, slot_index, wiki_entry_id, artist_name")
         .eq("id", agent_slot_id)
         .eq("user_id", userId)
         .maybeSingle();
@@ -1209,6 +1211,8 @@ Deno.serve(async (req) => {
 
       activeSlotId = ownedSlot.id;
       activeSlotIndex = ownedSlot.slot_index;
+      activeSlotWikiEntryId = ownedSlot.wiki_entry_id ?? null;
+      activeSlotArtistName = ownedSlot.artist_name ?? null;
     }
 
     if (isClearChatMode) {
@@ -1405,14 +1409,17 @@ Deno.serve(async (req) => {
     }
 
     // Fetch watched artists to inject into system prompt context
-    const { data: watchedForContext } = await adminClient
-      .from("ktrenz_watched_artists")
-      .select("artist_name, wiki_entry_id")
-      .eq("user_id", userId);
-
-    const watchedContext = (watchedForContext && watchedForContext.length > 0)
-      ? `\n\n🎯 이 유저의 최애 아티스트: ${watchedForContext[0].artist_name}\n- 모든 답변에서 이 아티스트를 우선으로 언급하고, 이 아티스트의 팬 입장에서 응원·전략·소식을 제공해\n- 아티스트 이름을 다시 물어보지 마. 이미 알고 있으니까.\n- 유저가 특정 아티스트를 지정하지 않으면 최애 아티스트 기준으로 답변해\n- "관심 아티스트 목록"이라는 표현 절대 쓰지 마. 이 에이전트는 하나의 최애만 담당해`
-      : "";
+    // Only inject if the active slot already has an artist assigned.
+    // If the slot has no wiki_entry_id, the user hasn't set a bias for this slot yet —
+    // don't inject global watched artists to avoid the AI auto-assuming a bias.
+    let watchedContext = "";
+    if (activeSlotWikiEntryId && activeSlotArtistName) {
+      // Slot has an artist — use slot's artist as the bias context
+      watchedContext = `\n\n🎯 이 에이전트 슬롯의 최애 아티스트: ${activeSlotArtistName}\n- 모든 답변에서 이 아티스트를 우선으로 언급하고, 이 아티스트의 팬 입장에서 응원·전략·소식을 제공해\n- 아티스트 이름을 다시 물어보지 마. 이미 알고 있으니까.\n- 유저가 특정 아티스트를 지정하지 않으면 최애 아티스트 기준으로 답변해\n- "관심 아티스트 목록"이라는 표현 절대 쓰지 마. 이 에이전트는 하나의 최애만 담당해`;
+    } else {
+      // No artist on this slot — tell AI to ask which artist to set
+      watchedContext = `\n\n⚠️ 이 에이전트 슬롯에는 아직 최애 아티스트가 설정되지 않았어.\n- 유저가 최애를 설정하겠다고 하면, 반드시 "어떤 아티스트를 최애로 설정할까요?" 라고 물어봐.\n- 절대 다른 슬롯이나 이전 데이터를 참고해서 임의로 아티스트를 설정하지 마!\n- 유저가 명시적으로 아티스트 이름을 말할 때까지 manage_watched_artist 도구를 호출하지 마.`;
+    }
 
     // Build OpenAI messages
     const openaiMessages: any[] = [
