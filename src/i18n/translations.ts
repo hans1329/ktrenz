@@ -103,7 +103,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.prompt.trendAnalysis": { en: "Analyze today's most notable trend changes", ko: "오늘 가장 주목할 만한 트렌드 변화를 분석해줘", ja: "今日の最も注目すべきトレンド変化を分析して", zh: "分析今天最值得关注的趋势变化" },
   "agent.prompt.streamingGuide": { en: "I want a streaming guide for my bias artist.", ko: "내 최애 아티스트 스밍 가이드를 보고 싶어.", ja: "推しアーティストのストリーミングガイドが見たい。", zh: "我想看最爱艺人的流媒体指南。" },
   "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for my bias artist. Guide me on how to set it up.", ko: "최애 아티스트의 랭킹 변동 알림을 설정하고 싶어. 방법을 안내해줘.", ja: "推しアーティストのランキング変動アラートを設定したい。方法を教えて。", zh: "我想为最爱的艺人设置排名变动提醒。请指导我如何设置。" },
-  "agent.prompt.alertSetup": { en: "I want to set my bias artist. Please guide me.", ko: "최애 아티스트를 설정하고 싶어요. 안내해주세요.", ja: "推しアーティストを設定したい。教えてください。", zh: "我想设置最爱的艺人。请指导我。" },
+  "agent.prompt.alertSetup": { en: "I want to set my bias artist. Guide me.", ko: "최애 아티스트 설정하고 싶어. 방법 알려줘.", ja: "推しアーティストを設定したい。教えて。", zh: "我想设置最爱的艺人。告诉我怎么做。" },
   "agent.registerBias": { en: "Register My Bias Artist", ko: "최애 아티스트 등록하기", ja: "推しアーティストを登録", zh: "注册最爱艺人" },
   "agent.registerBiasDesc": { en: "Set your favorite artist to get personalized support", ko: "나만의 맞춤 팬활동을 시작해보세요", ja: "パーソナライズされたサポートを受けましょう", zh: "设置您最喜欢的艺人以获得个性化支持" },
   "agent.fanActivity": { en: "Today's Activity", ko: "오늘의 팬활동", ja: "今日のファン活動", zh: "今日粉丝活动" },
