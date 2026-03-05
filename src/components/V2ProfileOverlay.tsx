@@ -139,10 +139,10 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             onClick={() => { onOpenChange(false); navigate("/k-pass"); }}
             className="w-full group text-left"
           >
-            <div className="relative rounded-xl overflow-hidden" style={{ boxShadow: g.glow }}>
+            <div className="relative rounded-xl" style={{ boxShadow: g.glow }}>
               {/* Top half */}
               <div
-                className="relative px-4 py-3.5 overflow-hidden"
+                className="relative px-4 py-3.5 overflow-hidden rounded-t-xl"
                 style={{ background: g.top }}
               >
                 <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-30"
@@ -179,7 +179,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
 
               {/* Bottom half */}
-              <div className="px-4 py-3.5 flex items-center justify-between"
+              <div className="px-4 py-3.5 flex items-center justify-between rounded-b-xl"
                 style={{ background: g.bottom }}>
                 <p className="text-xs text-muted-foreground">
                   View plans & upgrade →
