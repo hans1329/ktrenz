@@ -115,6 +115,9 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.deleteAgent": { en: "Remove agent", ko: "에이전트 삭제", ja: "エージェント削除", zh: "删除助手" },
   "agent.upgradeForSlots": { en: "Upgrade K-Pass for more slots", ko: "K-Pass 업그레이드로 슬롯 추가", ja: "K-Passアップグレードでスロット追加", zh: "升级K-Pass获得更多槽位" },
   "agent.newAgentPrompt": { en: "Which artist should this new agent focus on? Tell me the name!", ko: "새 에이전트가 담당할 아티스트를 알려주세요!", ja: "新しいエージェントが担当するアーティスト名を教えて！", zh: "请告诉我新助手要关注的艺人名字！" },
+  "agent.addAgentDesc": { en: "Create a dedicated agent for another artist. Each agent has its own chat history.", ko: "다른 아티스트 전담 에이전트를 만들어요. 각 에이전트는 독립된 대화 기록을 가져요.", ja: "別のアーティスト専用エージェントを作成します。各エージェントは独立したチャット履歴を持ちます。", zh: "为其他艺人创建专属助手。每个助手都有独立的聊天记录。" },
+  "agent.addNewAgent": { en: "Create New Agent", ko: "새 에이전트 만들기", ja: "新しいエージェントを作成", zh: "创建新助手" },
+  "agent.currentSlots": { en: "Slots used", ko: "사용 중 슬롯", ja: "使用中スロット", zh: "已用槽位" },
 
   // ── Profile Overlay ──
   "profile.viewPlans": { en: "View plans & upgrade →", ko: "플랜 보기 및 업그레이드 →", ja: "プランを見る →", zh: "查看方案和升级 →" },
