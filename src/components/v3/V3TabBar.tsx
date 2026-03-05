@@ -83,7 +83,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
                           loading="eager"
                           fetchPriority="high"
                         />
-                        <AvatarFallback className="bg-black text-primary text-lg font-medium">
+                        <AvatarFallback delayMs={600} className="bg-black text-primary text-lg font-medium">
                           {profile?.username?.[0]?.toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>

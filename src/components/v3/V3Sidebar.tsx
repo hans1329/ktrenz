@@ -88,7 +88,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
               className={cn("flex items-center gap-3 p-2 rounded-xl hover:bg-muted transition-colors w-full text-left", collapsed && "justify-center")}>
               <Avatar className="w-9 h-9 shrink-0">
                 <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                <AvatarFallback delayMs={600} className="bg-primary/10 text-primary text-sm font-medium">
                   {profile?.username?.[0]?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
