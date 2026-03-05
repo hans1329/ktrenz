@@ -1574,7 +1574,8 @@ Deno.serve(async (req) => {
             }
 
             // Loop continues — model will see tool results and decide next action
-            sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
+            const generatingLabels: Record<string, string> = { en: "Generating answer…", ko: "답변을 생성하고 있어요…", ja: "回答を生成中…", zh: "正在生成回答…" };
+            sendStatus(controller, generatingLabels[userLang] || generatingLabels.en);
           }
 
           // Max rounds exceeded
