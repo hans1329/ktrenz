@@ -1281,10 +1281,18 @@ Deno.serve(async (req) => {
 
     // ── Check daily usage limit & deduct points if needed ──
     const { data: usageResult, error: usageError } = await adminClient.rpc("ktrenz_check_agent_usage", { _user_id: userId });
-    console.log("[usage-check]", JSON.stringify({ usageResult, usageError }));
+
     if (usageError) {
       console.error("[usage-check-error]", usageError);
+      return new Response(JSON.stringify({
+        error: "usage_check_failed",
+        message: "사용량 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
     if (usageResult && !usageResult.allowed) {
       return new Response(JSON.stringify({
         error: "daily_limit_exceeded",
