@@ -540,7 +540,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setChatInput("");
     setTimeout(() => inputRef.current?.focus(), 0);
     setIsStreaming(true);
-    setStreamingStatus(t("agent.status.thinking"));
+    setStreamingStatus(t("agent.status.thinking")); // initial status until server sends real-time updates
     setHasStarted(true);
 
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
