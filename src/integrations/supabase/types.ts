@@ -7449,12 +7449,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
-      ktrenz_check_agent_usage:
-        | { Args: { _user_id: string }; Returns: Json }
-        | {
-            Args: { _cost_per_message?: number; _user_id: string }
-            Returns: Json
-          }
+      ktrenz_check_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
       ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_record_contribution: {
