@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const [showPointsDrawer, setShowPointsDrawer] = useState(false);
   const [showLangDrawer, setShowLangDrawer] = useState(false);
 
-  const { data: kpassInfo } = useQuery({
+  const { data: kpassInfo, refetch: refetchKpass } = useQuery({
     queryKey: ["kpass-current", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -52,6 +52,11 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Refetch kpass data when drawer opens
+  useEffect(() => {
+    if (open && user?.id) refetchKpass();
+  }, [open]);
 
 
 
