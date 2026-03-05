@@ -146,14 +146,14 @@ const KPassPage = () => {
                 {/* Ticket body */}
                 <div
                   className={cn(
-                    "relative rounded-2xl border overflow-hidden transition-all",
+                    "relative rounded-2xl border transition-all",
                     isActive
                       ? "border-primary shadow-lg shadow-primary/15"
                       : "border-border"
                   )}
                 >
                   {/* Top section – gradient bg */}
-                  <div className={cn("bg-gradient-to-br p-5 pb-4", gradient)}>
+                  <div className={cn("bg-gradient-to-br p-5 pb-4 rounded-t-2xl overflow-hidden", gradient)}>
                     {isActive && (
                       <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full">
                         {t("common.current")}
@@ -190,7 +190,7 @@ const KPassPage = () => {
                   </div>
 
                   {/* Bottom section – features */}
-                  <div className="p-5 pt-4 bg-card/50">
+                  <div className="p-5 pt-4 bg-card/50 rounded-b-2xl overflow-hidden">
                     <div className="space-y-2.5">
                       {features.map((f, i) => (
                         <div key={i} className="flex items-center gap-2.5">
