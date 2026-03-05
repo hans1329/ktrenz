@@ -45,6 +45,7 @@ type ChatMessage = {
   rankingData?: RankingEntry[] | null;
   briefingData?: BriefingData | null;
   quickActions?: QuickActionCard[] | null;
+  followUps?: string[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -595,6 +596,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   guideData: meta.guideData ?? m.guideData,
                   rankingData: meta.rankingData ?? m.rankingData,
                   quickActions: meta.quickActions ?? m.quickActions,
+                  followUps: meta.followUps ?? m.followUps,
                 } : m
               );
             }
@@ -1019,6 +1021,22 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Follow-up suggestion cards */}
+            {msg.role === "assistant" && msg.followUps && msg.followUps.length > 0 && !isStreaming && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {msg.followUps.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSend(suggestion)}
+                    className="px-3 py-1.5 rounded-full text-[13px] font-medium border border-primary/25 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/40 transition-all active:scale-[0.97]"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
               </div>
             )}
 
