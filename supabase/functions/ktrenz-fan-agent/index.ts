@@ -1280,7 +1280,11 @@ Deno.serve(async (req) => {
     }
 
     // ── Check daily usage limit & deduct points if needed ──
-    const { data: usageResult } = await adminClient.rpc("ktrenz_check_agent_usage", { _user_id: userId });
+    const { data: usageResult, error: usageError } = await adminClient.rpc("ktrenz_check_agent_usage", { _user_id: userId });
+    console.log("[usage-check]", JSON.stringify({ usageResult, usageError }));
+    if (usageError) {
+      console.error("[usage-check-error]", usageError);
+    }
     if (usageResult && !usageResult.allowed) {
       return new Response(JSON.stringify({
         error: "daily_limit_exceeded",
