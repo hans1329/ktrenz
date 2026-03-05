@@ -557,7 +557,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Guide/Ranking data fetching removed — now handled via tool calling in the edge function
 
   const track = useTrackEvent();
-  const handleSend = useCallback(async (overrideText?: string, bypassPurchaseConfirm = false, silent = false) => {
+  const handleSend = useCallback(async (overrideText?: string, bypassPurchaseConfirm = false) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
 
@@ -571,21 +571,19 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     setChatInput("");
     setTimeout(() => inputRef.current?.focus(), 0);
     setIsStreaming(true);
-    setStreamingStatus(t("agent.status.thinking"));
+    setStreamingStatus(t("agent.status.thinking")); // initial status until server sends real-time updates
     setHasStarted(true);
 
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
-    const updatedMessages = silent ? [...messages] : [...messages, userMsg];
-    if (!silent) setMessages(updatedMessages);
-    // Even in silent mode, include user message in the API payload so the agent knows the request
-    const apiMessages = silent ? [...messages, userMsg] : updatedMessages;
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     requestAnimationFrame(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }));
 
     let assistantContent = "";
 
     try {
       await streamChat({
-        messages: apiMessages,
+        messages: updatedMessages,
         token: session.access_token,
         agentSlotId: activeSlot?.id,
         onDelta: (chunk) => {
@@ -673,7 +671,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
-    handleSend(action.prompt, false, true);
+    handleSend(action.prompt);
   };
 
   // ── Sub-header ──
@@ -800,7 +798,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               onClick={async () => {
                 setShowMenu(false);
                 if (!hasAlertOn) {
-                  handleSend(t("agent.prompt.alertSetup"), false, true);
+                  handleSend(t("agent.prompt.alertSetup"));
                 } else if (user?.id) {
                   await supabase
                     .from("ktrenz_watched_artists")
@@ -940,7 +938,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {/* Register bias artist — prominent CTA */}
       <button
-        onClick={() => handleSend(t("agent.prompt.alertSetup"), false, true)}
+        onClick={() => handleSend(t("agent.prompt.alertSetup"))}
         disabled={isStreaming}
         className="w-full max-w-sm mb-3 flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 hover:border-primary/50 hover:from-primary/20 hover:to-primary/10 transition-all text-left group active:scale-[0.98]"
       >
@@ -1040,7 +1038,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                       key={qa.prompt_hint}
                       type="button"
                       disabled={isStreaming}
-                      onClick={() => handleSend(promptMap[qa.prompt_hint] || qa.label, false, true)}
+                      onClick={() => handleSend(promptMap[qa.prompt_hint] || qa.label)}
                       className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 hover:border-primary/40 hover:from-primary/15 hover:to-primary/10 transition-all text-left group active:scale-[0.98]"
                     >
                       <span className="text-xl shrink-0">{qa.emoji}</span>
@@ -1062,7 +1060,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => handleSend(suggestion, false, true)}
+                    onClick={() => handleSend(suggestion)}
                     className="px-3 py-1.5 rounded-full text-[13px] font-medium border border-primary/25 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/40 transition-all active:scale-[0.97]"
                   >
                     {suggestion}
