@@ -119,6 +119,11 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.addNewAgent": { en: "Create New Agent", ko: "새 에이전트 만들기", ja: "新しいエージェントを作成", zh: "创建新助手" },
   "agent.currentSlots": { en: "Slots used", ko: "사용 중 슬롯", ja: "使用中スロット", zh: "已用槽位" },
 
+  // ── K-Points Purchase ──
+  "points.purchaseTitle": { en: "Get K-Points", ko: "K-Points 충전", ja: "K-Points チャージ", zh: "充值K-Points" },
+  "points.purchaseDesc": { en: "Purchase K-Points to unlock more features.", ko: "K-Points를 충전해서 다양한 기능을 이용하세요.", ja: "K-Pointsを購入して機能をアンロックしましょう。", zh: "购买K-Points解锁更多功能。" },
+  "points.buyPoints": { en: "Buy K-Points", ko: "K-Points 충전", ja: "K-Points 購入", zh: "购买K-Points" },
+
   // ── Profile Overlay ──
   "profile.viewPlans": { en: "View plans & upgrade →", ko: "플랜 보기 및 업그레이드 →", ja: "プランを見る →", zh: "查看方案和升级 →" },
 
