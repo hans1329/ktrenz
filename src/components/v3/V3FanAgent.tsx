@@ -254,7 +254,7 @@ interface V3FanAgentProps {
 
 const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const navigate = useNavigate();
-  const { user, session } = useAuth();
+  const { user, session, kPoints } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [chatInput, setChatInput] = useState("");
@@ -844,7 +844,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("agent.pointPurchaseTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("agent.pointPurchaseDesc")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {t("agent.pointPurchaseDesc")}
+              <span className="inline-flex items-center gap-1 ml-1.5 text-[#2dd4bf] font-semibold">
+                {kPoints.toLocaleString()}P
+              </span>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-2 py-2">
             {[5, 10, 20].map((bundle) => (
