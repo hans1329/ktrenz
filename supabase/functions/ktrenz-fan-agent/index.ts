@@ -76,12 +76,12 @@ const TOOLS = [
     type: "function",
     function: {
       name: "manage_watched_artist",
-      description: "Add or remove an artist from the user's watched (favorite) artist list. Only call this when the user explicitly asks to add/remove/register/delete a watched artist.",
+      description: "Set or remove the user's bias (최애) artist for this agent. Each agent supports exactly ONE bias artist. When setting a new bias artist, it replaces any existing one. Only call this when the user explicitly wants to set/change/remove their bias artist.",
       parameters: {
         type: "object",
         properties: {
-          action: { type: "string", enum: ["add", "remove"], description: "Whether to add or remove the artist" },
-          artist_name: { type: "string", description: "Artist name to add or remove" },
+          action: { type: "string", enum: ["add", "remove"], description: "Whether to set (add) or remove the bias artist" },
+          artist_name: { type: "string", description: "Artist name to set as bias or remove" },
         },
         required: ["action", "artist_name"],
         additionalProperties: false,
@@ -92,7 +92,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "get_watched_artists",
-      description: "Get the user's current watched (favorite) artist list with their latest scores and status.",
+      description: "Get the user's current bias (최애) artist with their latest scores and status.",
       parameters: {
         type: "object",
         properties: {},
@@ -346,17 +346,20 @@ async function handleTool(
         const wikiId = wikiMatch?.[0]?.id ?? null;
         const resolvedName = wikiMatch?.[0]?.title ?? artist_name;
 
+        // Remove any existing bias artist first (single bias per user)
+        await adminClient
+          .from("ktrenz_watched_artists")
+          .delete()
+          .eq("user_id", userId);
+
         const { error: insertErr } = await adminClient
           .from("ktrenz_watched_artists")
           .insert({ user_id: userId, artist_name: resolvedName, wiki_entry_id: wikiId });
 
         if (insertErr) {
-          if (insertErr.code === "23505") {
-            return JSON.stringify({ success: false, message: `"${resolvedName}" is already in your watched list.` });
-          }
-          return JSON.stringify({ success: false, message: `Failed to add: ${insertErr.message}` });
+          return JSON.stringify({ success: false, message: `Failed to set bias artist: ${insertErr.message}` });
         }
-        return JSON.stringify({ success: true, action: "added", artist: resolvedName });
+        return JSON.stringify({ success: true, action: "set_bias", artist: resolvedName, message: `"${resolvedName}" has been set as your bias artist.` });
       } else {
         const { error: delErr, count } = await adminClient
           .from("ktrenz_watched_artists")
@@ -365,7 +368,7 @@ async function handleTool(
           .ilike("artist_name", artist_name);
 
         if (delErr) return JSON.stringify({ success: false, message: delErr.message });
-        if (count === 0) return JSON.stringify({ success: false, message: `"${artist_name}" is not in your watched list.` });
+        if (count === 0) return JSON.stringify({ success: false, message: `"${artist_name}" is not your current bias artist.` });
         return JSON.stringify({ success: true, action: "removed", artist: artist_name });
       }
     }
@@ -377,25 +380,25 @@ async function handleTool(
         .eq("user_id", userId);
 
       if (!watched || watched.length === 0) {
-        return JSON.stringify({ watched_artists: [], message: "No watched artists registered." });
+        return JSON.stringify({ bias_artist: null, message: "No bias artist set yet." });
       }
 
       const all = await getAllScores();
-      const result = watched.map((w: any) => {
-        const found = all.find((a: any) => {
-          const title = (a.wiki_entries as any)?.title?.toLowerCase() ?? "";
-          return title === w.artist_name.toLowerCase();
-        });
-        return {
+      const w = watched[0];
+      const found = all.find((a: any) => {
+        const title = (a.wiki_entries as any)?.title?.toLowerCase() ?? "";
+        return title === w.artist_name.toLowerCase();
+      });
+      return JSON.stringify({
+        bias_artist: {
           artist: w.artist_name,
           rank: found?._rank ?? null,
           energy_score: found ? Math.round(found.energy_score ?? 0) : null,
           energy_change_24h: found ? +(found.energy_change_24h ?? 0).toFixed(1) : null,
           total_score: found ? Math.round(found.total_score ?? 0) : null,
           in_rankings: !!found,
-        };
+        },
       });
-      return JSON.stringify({ watched_artists: result });
     }
 
     case "get_streaming_guide": {
@@ -1014,33 +1017,40 @@ const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
 
 function getSystemPrompt(language: string): string {
   const langRule = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS["ko"];
-  return `너는 유저의 전담 팬 매니저 캐릭터야. 이름은 "KTrenZ Agent". 유저의 관심 아티스트를 함께 응원하는 동료 팬이자 전략가로서, 팬 활동 전반을 돕는 페르소나야.
+  return `너는 유저의 전담 팬 매니저 캐릭터야. 이름은 "KTrenZ Agent". 유저의 최애 아티스트 한 명을 깊이 있게 서포트하는 동료 팬이자 전략가로서, 팬 활동 전반을 돕는 페르소나야.
 
 언어 규칙: ${langRule}
 
+⚡ 최애 아티스트 개념 (매우 중요):
+- 이 에이전트는 "관심 아티스트 목록"이 아니라, 하나의 "최애 아티스트"에 집중하는 에이전트야
+- 유저가 아티스트를 등록하면 "최애 아티스트로 설정했어요!"라고 안내해 (절대 "목록에 추가했어요"라고 하지 마)
+- 유저가 다른 아티스트로 바꾸고 싶다면 기존 최애를 변경하는 것이지, 추가하는 게 아님
+- "관심 아티스트가 누구야?", "목록을 보여줘" 같은 표현 대신 "주인님의 최애 아티스트는 ○○이에요!" 형태로 답변해
+- 최애가 없을 때: "아직 최애 아티스트가 설정되지 않았어요. 누구를 최애로 모실까요? 💜"
+
 성격 & 톤:
 - 같은 아티스트를 좋아하는 열정적인 동료 팬처럼 말해
-- 관심 아티스트를 "우리 ○○", "우리 애들" 등 애칭으로 부르며 팬심을 공유해
+- 최애 아티스트를 "우리 ○○", "우리 애들" 등 애칭으로 부르며 팬심을 공유해
 - 존댓말 쓰되 친근하고 에너지 넘치는 톤 유지 ("같이 힘내봐요! 💪", "오늘도 우리 ○○ 화이팅이에요! 🔥")
 - 좋은 소식엔 함께 기뻐하고, 순위 하락 시엔 격려하며 전략 제안
 
-핵심 역할 – 팬 활동 전방위 지원:
+핵심 역할 – 최애 아티스트 팬 활동 전방위 지원:
 - 🔥 FES 랭킹 변동 브리핑 & 트렌드 분석
 - 📊 아티스트별 Energy, YouTube, Buzz, Music, Album 스코어 해석
 - 🎵 스트리밍 전략/가이드/총공 안내 (get_streaming_guide)
 - 📰 아티스트 근황/뉴스/컴백/콘서트 소식 (get_artist_news, search_web)
-- ⭐ 관심 아티스트 관리 (추가/삭제)
+- ⭐ 최애 아티스트 설정/변경
 - 💡 팬 활동 팁: 투표, 해시태그 트렌딩, 음원 총공 타이밍, SNS 서포트 등 안내
 - 🏆 마일스톤 축하: 순위 상승, 신기록 등 함께 기뻐하기
 
 도구 사용 규칙:
 - 유저가 랭킹, 순위, 특정 아티스트 정보를 물으면 반드시 도구를 호출해서 최신 데이터를 가져와
 - 추측하지 말고 항상 도구로 확인한 데이터를 기반으로 답변해
-- 유저가 "관심 아티스트 추가/등록" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
-- 유저가 관심 아티스트 목록/현황을 물으면 get_watched_artists 도구 사용
-- 유저가 "관심 아티스트"라고 말하면 먼저 get_watched_artists를 호출하고, 목록이 있으면 절대 아티스트명을 다시 묻지 말고 그 목록 기준으로 바로 답변해
+- 유저가 "최애 설정/변경" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
+- 유저가 최애 아티스트를 물으면 get_watched_artists 도구 사용
+- 유저가 "최애" 또는 "내 아티스트"라고 말하면 먼저 get_watched_artists를 호출하고, 최애가 있으면 절대 아티스트명을 다시 묻지 말고 그 아티스트 기준으로 바로 답변해
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
-- 스밍 요청이면서 "관심 아티스트" 표현이 있으면 get_watched_artists 호출 후 관심 아티스트들(최대 3명)에 대해 get_streaming_guide를 호출해 통합 요약해
+- 스밍 요청이면서 최애 아티스트가 있으면 get_watched_artists 호출 후 최애 아티스트에 대해 get_streaming_guide를 호출해
 - 아티스트 근황/최근 소식/뉴스/활동 질문 시 get_artist_news 도구 사용. 결과를 자연스럽게 요약해서 전달해
 - 뉴스 기사에 thumbnail 필드가 있으면 반드시 인라인 카드 형식으로: [![기사제목](thumbnail_url)](기사링크)
 - 사진/이미지/셀카/포토 요청 시: 먼저 get_artist_news로 뉴스 썸네일을 확인하고, 썸네일이 있는 기사를 [![제목](thumbnail)](link) 형식으로 보여줘
@@ -1071,7 +1081,7 @@ function getSystemPrompt(language: string): string {
 - 절대로 한 번에 모든 정보를 쏟아내지 마!
 - 하나의 주제만 다루고, 관련 후속 질문이나 안내를 짧게 제안해
 - 예시: 랭킹을 보여줬다면 → "특정 아티스트를 더 자세히 볼까요?" 제안
-- 예시: 아티스트 등록 직후 → 환영 + 간단한 현재 순위만. 스밍 가이드나 뉴스는 요청 시에만.
+- 예시: 최애 아티스트 등록 직후 → 환영 + 간단한 현재 순위만. 스밍 가이드나 뉴스는 요청 시에만.
 - 답변 길이: 최대 5~8줄 이내. 더 필요하면 유저가 물어보게 유도해.
 - 마크다운 포맷, 이모지 활용
 - 데이터 기반 구체적 수치 인용
@@ -1277,8 +1287,8 @@ Deno.serve(async (req) => {
       let summary: string | null = null;
       if (OPENAI_KEY) {
         try {
-          const briefingPrompt = `너는 KTRENZ Fan Agent야. 주인님의 관심 아티스트 데이터를 분석해서 짧고 임팩트 있는 오늘의 브리핑을 작성해.
-말투: "주인님"이라 부르고, 관심 아티스트를 "주인님의 최애"로 표현. 친근하고 귀여운 톤.
+          const briefingPrompt = `너는 KTRENZ Fan Agent야. 주인님의 최애 아티스트 데이터를 분석해서 짧고 임팩트 있는 오늘의 브리핑을 작성해.
+말투: "주인님"이라 부르고, 최애 아티스트를 "주인님의 최애"로 표현. 친근하고 귀여운 톤.
 데이터: ${JSON.stringify(briefingData)}
 규칙:
 - 3~5문장 이내로 핵심만 (카드에 이미 상세 수치가 있으므로 숫자 나열 X)
@@ -1363,7 +1373,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId);
 
     const watchedContext = (watchedForContext && watchedForContext.length > 0)
-      ? `\n\n🎯 이 유저의 관심 아티스트: ${watchedForContext.map(w => w.artist_name).join(", ")}\n- 모든 답변에서 이 아티스트들을 우선으로 언급하고, 이들의 팬 입장에서 응원·전략·소식을 제공해\n- 아티스트 이름을 다시 물어보지 마. 이미 알고 있으니까.\n- 유저가 특정 아티스트를 지정하지 않으면 관심 아티스트 기준으로 답변해`
+      ? `\n\n🎯 이 유저의 최애 아티스트: ${watchedForContext[0].artist_name}\n- 모든 답변에서 이 아티스트를 우선으로 언급하고, 이 아티스트의 팬 입장에서 응원·전략·소식을 제공해\n- 아티스트 이름을 다시 물어보지 마. 이미 알고 있으니까.\n- 유저가 특정 아티스트를 지정하지 않으면 최애 아티스트 기준으로 답변해\n- "관심 아티스트 목록"이라는 표현 절대 쓰지 마. 이 에이전트는 하나의 최애만 담당해`
       : "";
 
     // Build OpenAI messages
