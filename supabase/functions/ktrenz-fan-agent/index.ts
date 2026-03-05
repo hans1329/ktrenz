@@ -501,6 +501,24 @@ async function handleTool(
           console.warn(`[FanAgent] No activeSlotId — slot not updated`);
         }
 
+        // Auto-promote T2 artist to T1 when a user registers them
+        try {
+          const { data: tierRow } = await adminClient
+            .from("v3_artist_tiers")
+            .select("id, tier")
+            .eq("wiki_entry_id", wikiId)
+            .maybeSingle();
+          if (tierRow && tierRow.tier === 2) {
+            await adminClient
+              .from("v3_artist_tiers")
+              .update({ tier: 1, manual_override: true })
+              .eq("id", tierRow.id);
+            console.log(`[FanAgent] Auto-promoted artist ${resolvedName} from T2 to T1`);
+          }
+        } catch (tierErr: any) {
+          console.error(`[FanAgent] Tier promotion failed:`, tierErr.message);
+        }
+
         // Gather quick action data for post-registration cards
         const quickActions = [
           { emoji: "❤️", label: "오늘의 팬활동", description: "매일 달라지는 맞춤 팬활동 추천", prompt_hint: "fan_activity" },
