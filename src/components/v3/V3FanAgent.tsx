@@ -14,6 +14,7 @@ import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // ── Types ──────────────────────────────────────────────
 type ChatMessage = {
@@ -216,54 +217,28 @@ async function streamChat({
 const AgentAvatar = ({
   avatarUrl,
   size = "sm",
-  onUpload,
 }: {
   avatarUrl: string | null | undefined;
   size?: "sm" | "lg";
-  onUpload?: (file: File) => void;
 }) => {
-  const fileRef = useRef<HTMLInputElement>(null);
   const sizeClasses = size === "lg"
     ? "w-10 h-10 rounded-xl"
     : "w-9 h-9 rounded-xl";
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => onUpload && fileRef.current?.click()}
-        className={cn(
-          sizeClasses,
-          "relative overflow-hidden shrink-0 flex items-center justify-center",
-          "bg-primary/10 border border-primary/20",
-          onUpload && "cursor-pointer hover:border-primary/40 transition-colors group"
-        )}
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
-        ) : (
-          <Bot className={cn("text-primary", size === "lg" ? "w-5 h-5" : "w-3.5 h-3.5")} />
-        )}
-        {onUpload && (
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Camera className="w-3.5 h-3.5 text-white" />
-          </div>
-        )}
-      </button>
-      {onUpload && (
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onUpload(f);
-            e.target.value = "";
-          }}
-        />
+    <div
+      className={cn(
+        sizeClasses,
+        "relative overflow-hidden shrink-0 flex items-center justify-center",
+        "bg-primary/10 border border-primary/20",
       )}
-    </>
+    >
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
+      ) : (
+        <Bot className={cn("text-primary", size === "lg" ? "w-5 h-5" : "w-3.5 h-3.5")} />
+      )}
+    </div>
   );
 };
 
@@ -289,6 +264,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [briefingTriggered, setBriefingTriggered] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [streamingStatus, setStreamingStatus] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
 
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
@@ -556,6 +533,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between h-14 px-4">
+        {/* Left: back + usage */}
         <div className="flex items-center gap-1.5 min-w-[72px]">
           <Button variant="ghost" size="icon" className="rounded-full w-9 h-9" onClick={() => (onBack ? onBack() : navigate(-1))}>
             <ArrowLeft className="w-5 h-5" />
@@ -572,47 +550,87 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2.5">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-          <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
-          <h1 className="text-base font-bold text-foreground">
-            {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title")}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 min-w-[72px] justify-end">
-          {hasStarted && messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-muted-foreground hover:text-destructive" onClick={handleClearChat} disabled={isClearing} title={t("agent.clearChat")}>
-              {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            </Button>
-          )}
-          {hasAlertOn && <BellRing className="w-4 h-4 text-amber-400" />}
-          <button
-            type="button"
-            onClick={async () => {
-              if (!hasAlertOn) {
-                handleSend(t("agent.prompt.alertSetup"));
-              } else if (user?.id) {
-                await supabase
-                  .from("ktrenz_watched_artists")
-                  .delete()
-                  .eq("user_id", user.id);
-                queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                toast.success(t("agent.alertsOff"));
-              }
-            }}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
-              hasAlertOn ? "bg-primary" : "bg-muted"
+
+        {/* Center: avatar (popover trigger) + title */}
+        <Popover open={showMenu} onOpenChange={setShowMenu}>
+          <PopoverTrigger asChild>
+            <button type="button" className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+              <AgentAvatar avatarUrl={avatarUrl} size="lg" />
+              <h1 className="text-base font-bold text-foreground">
+                {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title")}
+              </h1>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-56 p-1.5 rounded-xl" sideOffset={8}>
+            {/* Change profile photo */}
+            <button
+              type="button"
+              onClick={() => { setShowMenu(false); avatarFileRef.current?.click(); }}
+              className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <Camera className="w-4 h-4 text-muted-foreground" />
+              {t("agent.changePhoto") || "프로필 사진 변경"}
+            </button>
+            {/* Alert toggle */}
+            <button
+              type="button"
+              onClick={async () => {
+                setShowMenu(false);
+                if (!hasAlertOn) {
+                  handleSend(t("agent.prompt.alertSetup"));
+                } else if (user?.id) {
+                  await supabase
+                    .from("ktrenz_watched_artists")
+                    .delete()
+                    .eq("user_id", user.id);
+                  queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
+                  toast.success(t("agent.alertsOff"));
+                }
+              }}
+              className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Bell className="w-4 h-4 text-muted-foreground" />
+                <span>{t("agent.alertSettings") || "알림 설정"}</span>
+              </div>
+              <div className={cn(
+                "w-8 h-4.5 rounded-full flex items-center px-0.5 transition-colors",
+                hasAlertOn ? "bg-primary justify-end" : "bg-muted-foreground/30 justify-start"
+              )}>
+                <div className="w-3.5 h-3.5 rounded-full bg-background shadow-sm" />
+              </div>
+            </button>
+            {/* Clear chat */}
+            {hasStarted && messages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { setShowMenu(false); handleClearChat(); }}
+                disabled={isClearing}
+                className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {t("agent.clearChat") || "대화 기록 삭제"}
+              </button>
             )}
-          >
-            <span
-              className={cn(
-                "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform",
-                hasAlertOn ? "translate-x-4" : "translate-x-0"
-              )}
-            />
-          </button>
-        </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Right: spacer for balance */}
+        <div className="min-w-[72px]" />
+
+        {/* Hidden file input for avatar upload */}
+        <input
+          ref={avatarFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) uploadAvatar(f);
+            e.target.value = "";
+          }}
+        />
       </div>
     </header>
   );
@@ -636,7 +654,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // ── Welcome / Empty state ──
   const renderWelcome = () => (
     <div className="flex flex-col items-center justify-center h-full px-4 py-8">
-      <AgentAvatar avatarUrl={avatarUrl} size="lg" onUpload={uploadAvatar} />
+      <AgentAvatar avatarUrl={avatarUrl} size="lg" />
       <h2 className="text-lg font-bold text-foreground mb-1 mt-4">KTRENZ {t("agent.title")}</h2>
       <p className="text-sm text-muted-foreground text-center max-w-[280px] mb-6">
         {t("agent.subtitle")}
