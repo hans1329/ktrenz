@@ -361,14 +361,61 @@ async function handleTool(
     case "manage_watched_artist": {
       const { action, artist_name } = args;
       if (action === "add") {
-        // Try exact match first
+        // Step 1: Try exact title match
         let { data: wikiMatch } = await adminClient
           .from("wiki_entries")
           .select("id, title")
           .ilike("title", artist_name)
           .limit(1);
 
-        // If no exact match, try fuzzy search and ask user to clarify
+        // Step 2: Try exact Korean name match
+        if (!wikiMatch || wikiMatch.length === 0) {
+          const { data: koExact } = await adminClient
+            .from("v3_artist_tiers")
+            .select("wiki_entry_id, display_name, name_ko")
+            .ilike("name_ko", artist_name)
+            .limit(1);
+          if (koExact && koExact.length > 0) {
+            wikiMatch = [{ id: koExact[0].wiki_entry_id, title: koExact[0].display_name }];
+          }
+        }
+
+        // Step 3: Try partial title match (e.g., "All Day" matches "All Day Project")
+        if (!wikiMatch || wikiMatch.length === 0) {
+          const { data: partialMatch } = await adminClient
+            .from("wiki_entries")
+            .select("id, title")
+            .ilike("title", `%${artist_name}%`)
+            .limit(1);
+          if (partialMatch && partialMatch.length === 1) {
+            // Only auto-match if exactly one result
+            wikiMatch = partialMatch;
+          }
+        }
+
+        // Step 4: Try partial Korean name match
+        if (!wikiMatch || wikiMatch.length === 0) {
+          const { data: koPartial } = await adminClient
+            .from("v3_artist_tiers")
+            .select("wiki_entry_id, display_name, name_ko")
+            .ilike("name_ko", `%${artist_name}%`)
+            .limit(5);
+          if (koPartial && koPartial.length === 1) {
+            wikiMatch = [{ id: koPartial[0].wiki_entry_id, title: koPartial[0].display_name }];
+          } else if (koPartial && koPartial.length > 1) {
+            // Multiple matches — ask user to clarify
+            const suggestions = koPartial.map((km: any) => `${km.display_name} (${km.name_ko})`);
+            return JSON.stringify({
+              success: false,
+              action: "artist_not_found",
+              query: artist_name,
+              suggestions,
+              message: `"${artist_name}"${eulReul(artist_name)} 정확히 찾을 수 없어요. 혹시 이 중에 있나요? ${suggestions.join(", ")}. 정확한 이름을 말씀해주세요!`,
+            });
+          }
+        }
+
+        // Step 5: Broader fuzzy search as last resort
         if (!wikiMatch || wikiMatch.length === 0) {
           const { data: fuzzyMatches } = await adminClient
             .from("wiki_entries")
@@ -376,7 +423,6 @@ async function handleTool(
             .ilike("title", `%${artist_name}%`)
             .limit(5);
 
-          // Also try Korean name match
           const { data: koMatches } = await adminClient
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko")
@@ -400,10 +446,10 @@ async function handleTool(
           } else {
             return JSON.stringify({
               success: false,
-              action: "artist_not_found",
+              action: "artist_not_in_system",
               query: artist_name,
               suggestions: [],
-              message: `"${artist_name}"${eulReul(artist_name)} 데이터베이스에서 찾을 수 없어요. 정확한 아티스트 영문명이나 한글명으로 다시 말씀해주세요!`,
+              message: `"${artist_name}"${eunNeun(artist_name)} K-TrenZ에 등록되지 않은 아티스트예요. 현재 등록된 아티스트만 최애로 설정할 수 있어요.`,
             });
           }
         }
@@ -1150,6 +1196,8 @@ function getSystemPrompt(language: string): string {
 - 추측하지 말고 항상 도구로 확인한 데이터를 기반으로 답변해
 - 유저가 "최애 설정/변경" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
 - ⚠️ manage_watched_artist가 artist_not_found를 반환하면, suggestions 목록을 보여주고 "이 중에 있나요?"라고 물어봐. 절대 실패한 이름으로 재시도하지 마!
+- ⚠️ manage_watched_artist가 artist_not_in_system을 반환하면, "K-TrenZ에 등록되지 않은 아티스트"라고 안내하고, 아티스트 등록 요청 기능을 제안해
+- 💡 유저가 약칭/줄임말로 아티스트를 말하면 (예: "올데프", "방탄" 등), 먼저 search_artist 도구로 검색해서 정확한 이름을 확인한 후 manage_watched_artist를 호출해!
 - 유저가 최애 아티스트를 물으면 get_watched_artists 도구 사용
 - 유저가 "최애" 또는 "내 아티스트"라고 말하면 먼저 get_watched_artists를 호출하고, 최애가 있으면 절대 아티스트명을 다시 묻지 말고 그 아티스트 기준으로 바로 답변해
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
