@@ -68,12 +68,12 @@ function getTrendLabel(change: number, sparkline: number[]): TrendLabel {
 }
 
 function getTileColor(change: number): string {
-  if (change >= 30) return "hsla(0, 85%, 50%, 0.9)";
-  if (change >= 15) return "hsla(5, 75%, 45%, 0.8)";
-  if (change >= 5) return "hsla(10, 60%, 40%, 0.7)";
-  if (change > -5) return "hsla(160, 50%, 40%, 0.75)";
-  if (change > -15) return "hsla(220, 55%, 35%, 0.7)";
-  return "hsla(230, 60%, 28%, 0.8)";
+  if (change >= 30) return "hsla(330, 80%, 55%, 0.9)";
+  if (change >= 15) return "hsla(335, 70%, 48%, 0.8)";
+  if (change >= 5) return "hsla(340, 55%, 42%, 0.7)";
+  if (change > -5) return "hsla(150, 35%, 45%, 0.75)";
+  if (change > -15) return "hsla(270, 45%, 38%, 0.7)";
+  return "hsla(275, 50%, 30%, 0.8)";
 }
 
 function isSurging(change: number): boolean {
