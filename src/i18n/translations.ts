@@ -107,6 +107,8 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.registerBias": { en: "Register My Bias Artist", ko: "최애 아티스트 등록하기", ja: "推しアーティストを登録", zh: "注册最爱艺人" },
   "agent.registerBiasDesc": { en: "Set your favorite artist to get personalized support", ko: "나만의 맞춤 팬활동을 시작해보세요", ja: "パーソナライズされたサポートを受けましょう", zh: "设置您最喜欢的艺人以获得个性化支持" },
   "agent.fanActivity": { en: "Today's Activity", ko: "오늘의 팬활동", ja: "今日のファン活動", zh: "今日粉丝活动" },
+  "agent.newsBriefing": { en: "Latest News", ko: "최신 뉴스 브리핑", ja: "最新ニュース", zh: "最新新闻" },
+  "agent.prompt.newsBriefing": { en: "Show me the latest news about my bias artist!", ko: "내 최애 아티스트의 최신 뉴스를 알려줘!", ja: "推しアーティストの最新ニュースを教えて！", zh: "告诉我最爱艺人的最新新闻！" },
   "agent.prompt.fanActivity": { en: "Recommend one fan activity I can do right now for my bias artist!", ko: "지금 바로 할 수 있는 팬활동 하나 추천해줘!", ja: "今すぐできるファン活動を1つ推薦して！", zh: "推荐一个我现在可以做的粉丝活动！" },
   "agent.welcomeNoArtist": { en: "Hello! 🎵\n\nYou haven't set your bias artist yet.\n**Who is your bias?** 💜\n\nTell me their name and I'll become your dedicated fan agent with real-time trend alerts and personalized analysis!", ko: "안녕하세요, 주인님! 🎵\n\n아직 최애 아티스트가 설정되지 않았어요.\n**주인님의 최애는 누구인가요?** 💜\n\n아티스트 이름을 알려주시면 전담 팬 에이전트로서 실시간 트렌드 알림과 맞춤 분석을 시작할게요!", ja: "こんにちは！🎵\n\nまだ推しアーティストが設定されていません。\n**あなたの推しは誰ですか？** 💜\n\nアーティスト名を教えていただければ、専属ファンエージェントとしてリアルタイムトレンドアラートとパーソナル分析を始めます！", zh: "你好！🎵\n\n还没有设置最爱的艺人。\n**你的最爱是谁？** 💜\n\n告诉我名字，我将成为你的专属粉丝助手，提供实时趋势提醒和个性化分析！" },
   "agent.addAgent": { en: "Add Agent", ko: "에이전트 추가", ja: "エージェント追加", zh: "添加助手" },
