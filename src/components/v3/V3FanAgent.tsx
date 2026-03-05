@@ -1042,14 +1042,14 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                           )}
                         >
                           <div className="w-7 h-7 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                            {slot.avatar_url ? (
-                              <img src={slot.avatar_url} alt="" className="w-full h-full object-cover" />
+                            {(slot.avatar_url || (slot.slot_index === 0 && legacyAgentAvatarUrl)) ? (
+                              <img src={slot.avatar_url || legacyAgentAvatarUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <Bot className="w-3.5 h-3.5 text-muted-foreground" />
                             )}
                           </div>
                           <span className="text-[9px] leading-tight text-muted-foreground truncate max-w-[48px]">
-                            {slot.artist_name && slot.artist_name !== "New Agent" ? slot.artist_name : `Agent ${i + 1}`}
+                            {getSlotDisplayName(slot, watchedArtists, hasAlertOn).replace(" Agent", "")}
                           </span>
                         </button>
                       );
