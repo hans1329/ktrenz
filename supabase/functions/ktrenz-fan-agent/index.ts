@@ -1131,7 +1131,7 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     const body = await req.json();
-    const { messages, mode, language } = body;
+    const { messages, mode, language, agent_slot_id } = body;
     const userLang = language || "ko";
     const isBriefingMode = mode === "briefing";
     const isClearChatMode = mode === "clear_chat";
@@ -1141,13 +1141,54 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    if (isClearChatMode) {
-      const { error } = await adminClient
-        .from("ktrenz_fan_agent_messages")
-        .delete()
-        .eq("user_id", userId);
+    let activeSlotId: string | null = null;
+    let activeSlotIndex: number | null = null;
 
-      if (error) {
+    if (typeof agent_slot_id === "string" && agent_slot_id.length > 0) {
+      const { data: ownedSlot, error: slotError } = await adminClient
+        .from("ktrenz_agent_slots")
+        .select("id, slot_index")
+        .eq("id", agent_slot_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (slotError || !ownedSlot) {
+        return new Response(JSON.stringify({ error: "Invalid agent slot" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      activeSlotId = ownedSlot.id;
+      activeSlotIndex = ownedSlot.slot_index;
+    }
+
+    if (isClearChatMode) {
+      let clearError = null;
+
+      if (activeSlotId && activeSlotIndex === 0) {
+        const { error } = await adminClient
+          .from("ktrenz_fan_agent_messages")
+          .delete()
+          .eq("user_id", userId)
+          .or(`agent_slot_id.eq.${activeSlotId},agent_slot_id.is.null`);
+        clearError = error;
+      } else if (activeSlotId) {
+        const { error } = await adminClient
+          .from("ktrenz_fan_agent_messages")
+          .delete()
+          .eq("user_id", userId)
+          .eq("agent_slot_id", activeSlotId);
+        clearError = error;
+      } else {
+        const { error } = await adminClient
+          .from("ktrenz_fan_agent_messages")
+          .delete()
+          .eq("user_id", userId);
+        clearError = error;
+      }
+
+      if (clearError) {
         return new Response(JSON.stringify({ error: "Failed to clear chat history" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1309,6 +1350,7 @@ Deno.serve(async (req) => {
     if (lastUserMsg?.role === "user") {
       await adminClient.from("ktrenz_fan_agent_messages").insert({
         user_id: userId,
+        agent_slot_id: activeSlotId,
         role: "user",
         content: lastUserMsg.content,
       });
@@ -1390,6 +1432,7 @@ Deno.serve(async (req) => {
         if (finalContent) {
           await adminClient.from("ktrenz_fan_agent_messages").insert({
             user_id: userId,
+            agent_slot_id: activeSlotId,
             role: "assistant",
             content: finalContent,
           });

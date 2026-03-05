@@ -60,10 +60,14 @@ const getQuickActions = (t: (key: string) => string): QuickAction[] => [
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
 
 // ── Avatar Upload Hook (per-slot) ─────────────────────
-function useAgentAvatar(activeSlot: { id: string; avatar_url: string | null } | null, userId?: string) {
+function useAgentAvatar(
+  activeSlot: { id: string; avatar_url: string | null } | null,
+  userId?: string,
+  fallbackAvatarUrl?: string | null,
+) {
   const queryClient = useQueryClient();
 
-  const avatarUrl = activeSlot?.avatar_url ?? null;
+  const avatarUrl = activeSlot?.avatar_url ?? fallbackAvatarUrl ?? null;
 
   const uploadAvatar = useCallback(async (file: File) => {
     if (!userId || !activeSlot?.id) return;
@@ -136,12 +140,14 @@ async function convertToWebp(file: File): Promise<Blob> {
 async function streamChat({
   messages,
   token,
+  agentSlotId,
   onDelta,
   onMeta,
   onDone,
 }: {
   messages: ChatMessage[];
   token: string;
+  agentSlotId?: string | null;
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
   onDone: () => void;
@@ -152,7 +158,11 @@ async function streamChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ messages, language: (window as any).__ktrenz_lang || "ko" }),
+    body: JSON.stringify({
+      messages,
+      language: (window as any).__ktrenz_lang || "ko",
+      agent_slot_id: agentSlotId ?? null,
+    }),
   });
 
   if (!resp.ok) {
@@ -258,7 +268,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { slots, slotLimit, activeSlot, canAddSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
-  const { avatarUrl, uploadAvatar } = useAgentAvatar(activeSlot, user?.id);
+  const { data: legacyAgentAvatarUrl } = useQuery({
+    queryKey: ["ktrenz-agent-legacy-avatar", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await (supabase as any)
+        .from("ktrenz_agent_profiles")
+        .select("avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data?.avatar_url ?? null;
+    },
+    enabled: !!user?.id,
+  });
+  const activeSlotFallbackAvatar = activeSlot?.slot_index === 0 ? legacyAgentAvatarUrl ?? null : null;
+  const { avatarUrl, uploadAvatar } = useAgentAvatar(activeSlot, user?.id, activeSlotFallbackAvatar);
   const [briefingTriggered, setBriefingTriggered] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [streamingStatus, setStreamingStatus] = useState("");
@@ -310,7 +334,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         .order("created_at", { ascending: true })
         .limit(50);
       if (activeSlot?.id) {
-        queryBuilder.eq("agent_slot_id", activeSlot.id);
+        if (activeSlot.slot_index === 0) {
+          queryBuilder.or(`agent_slot_id.eq.${activeSlot.id},agent_slot_id.is.null`);
+        } else {
+          queryBuilder.eq("agent_slot_id", activeSlot.id);
+        }
       }
       const { data, error } = await queryBuilder;
       if (error) {
@@ -461,6 +489,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       await streamChat({
         messages: updatedMessages,
         token: session.access_token,
+        agentSlotId: activeSlot?.id,
         onDelta: (chunk) => {
           if (assistantContent === "") setStreamingStatus(t("agent.status.writing"));
           assistantContent += chunk;
@@ -502,7 +531,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       }
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, refetchUsage, agentUsage, t]);
+  }, [chatInput, isStreaming, session, messages, user?.id, activeSlot?.id, queryClient, refetchUsage, agentUsage, t]);
 
   const handleBundlePurchase = useCallback(async (bundle: number) => {
     if (!user?.id || isPurchasing) return;
@@ -555,7 +584,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ mode: "clear_chat" }),
+        body: JSON.stringify({ mode: "clear_chat", agent_slot_id: activeSlot?.id ?? null }),
       });
 
       if (!resp.ok) {
@@ -567,15 +596,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       setHasStarted(false);
       setWelcomeSent(false);
       setBriefingTriggered(false);
-      queryClient.setQueryData(["ktrenz-agent-chat", user.id], []);
-      queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user.id] });
+      queryClient.setQueryData(["ktrenz-agent-chat", user.id, activeSlot?.id], []);
+      queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user.id, activeSlot?.id] });
       toast.success(t("agent.chatCleared"));
     } catch (e: any) {
       toast.error(e?.message || "Failed to clear chat");
     } finally {
       setIsClearing(false);
     }
-  }, [user?.id, session?.access_token, queryClient, t, isClearing]);
+  }, [user?.id, session?.access_token, activeSlot?.id, queryClient, t, isClearing]);
 
   const renderSubHeader = () => (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
@@ -637,7 +666,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <AgentAvatar avatarUrl={slot.avatar_url} size="sm" />
+                    <AgentAvatar avatarUrl={slot.avatar_url ?? (slot.slot_index === 0 ? legacyAgentAvatarUrl : null)} size="sm" />
                     <span className="truncate flex-1 text-left">{slot.artist_name || "Agent"}</span>
                     {slot.is_active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                   </button>
