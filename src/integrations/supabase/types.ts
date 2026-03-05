@@ -2079,6 +2079,7 @@ export type Database = {
       }
       ktrenz_agent_profiles: {
         Row: {
+          agent_slot_id: string | null
           avatar_url: string | null
           created_at: string
           id: string
@@ -2086,6 +2087,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_slot_id?: string | null
           avatar_url?: string | null
           created_at?: string
           id?: string
@@ -2093,13 +2095,87 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_slot_id?: string | null
           avatar_url?: string | null
           created_at?: string
           id?: string
           updated_at?: string
           user_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_agent_profiles_agent_slot_id_fkey"
+            columns: ["agent_slot_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_agent_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_agent_slot_purchases: {
+        Row: {
+          created_at: string
+          id: string
+          point_cost: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          point_cost?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          point_cost?: number
+          user_id?: string
+        }
         Relationships: []
+      }
+      ktrenz_agent_slots: {
+        Row: {
+          artist_name: string | null
+          avatar_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          slot_index: number
+          updated_at: string
+          user_id: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          artist_name?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slot_index?: number
+          updated_at?: string
+          user_id: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          artist_name?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slot_index?: number
+          updated_at?: string
+          user_id?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_agent_slots_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ktrenz_collection_config: {
         Row: {
@@ -2293,6 +2369,7 @@ export type Database = {
       }
       ktrenz_fan_agent_messages: {
         Row: {
+          agent_slot_id: string | null
           content: string
           created_at: string | null
           id: string
@@ -2301,6 +2378,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_slot_id?: string | null
           content: string
           created_at?: string | null
           id?: string
@@ -2309,6 +2387,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_slot_id?: string | null
           content?: string
           created_at?: string | null
           id?: string
@@ -2316,7 +2395,15 @@ export type Database = {
           role?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_fan_agent_messages_agent_slot_id_fkey"
+            columns: ["agent_slot_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_agent_slots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ktrenz_fan_contributions: {
         Row: {
@@ -7454,11 +7541,13 @@ export type Database = {
       is_admin: { Args: { user_id: string }; Returns: boolean }
       ktrenz_check_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
+      ktrenz_get_agent_slot_limit: { Args: { _user_id: string }; Returns: Json }
       ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
       ktrenz_purchase_agent_messages: {
         Args: { _bundle: number; _user_id: string }
         Returns: Json
       }
+      ktrenz_purchase_agent_slot: { Args: { _user_id: string }; Returns: Json }
       ktrenz_record_contribution: {
         Args: { _platform: string; _user_id: string; _wiki_entry_id: string }
         Returns: undefined
