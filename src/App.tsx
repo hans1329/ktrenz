@@ -26,6 +26,7 @@ import AdminV3Artists from "./pages/admin/AdminV3Artists";
 import AdminRankings from "./pages/admin/AdminRankings";
 import AdminPoints from "./pages/admin/AdminPoints";
 import AdminDataHealth from "./pages/admin/AdminDataHealth";
+import AdminProducts from "./pages/admin/AdminProducts";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="entries" element={<AdminEntries />} />
               <Route path="v3-artists" element={<AdminV3Artists />} />
               <Route path="data-health" element={<AdminDataHealth />} />
+              <Route path="products" element={<AdminProducts />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
