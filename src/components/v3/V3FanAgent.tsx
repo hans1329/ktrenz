@@ -273,7 +273,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { avatarUrl, uploadAvatar } = useAgentAvatar(user?.id);
-  const { slots, slotLimit, activeSlot, canAddSlot, switchSlot, purchaseSlot, deleteSlot } = useAgentSlots();
+  const { slots, slotLimit, activeSlot, canAddSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
   const [briefingTriggered, setBriefingTriggered] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [streamingStatus, setStreamingStatus] = useState("");
@@ -315,20 +315,24 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
 
   const { data: chatHistory } = useQuery({
-    queryKey: ["ktrenz-agent-chat", user?.id],
+    queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      const queryBuilder = (supabase as any)
         .from("ktrenz_fan_agent_messages")
         .select("role, content, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
         .limit(50);
+      if (activeSlot?.id) {
+        queryBuilder.eq("agent_slot_id", activeSlot.id);
+      }
+      const { data, error } = await queryBuilder;
       if (error) {
         console.warn("Chat history load failed:", error.message);
         return [];
       }
-      return (data || []).map((d) => ({ role: d.role as "user" | "assistant", content: d.content, timestamp: d.created_at }));
+      return (data || []).map((d: any) => ({ role: d.role as "user" | "assistant", content: d.content, timestamp: d.created_at }));
     },
     enabled: !!user?.id,
   });
@@ -606,11 +610,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <AgentAvatar avatarUrl={avatarUrl} size="lg" />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="center" className="w-56 p-1.5 rounded-xl" sideOffset={8}>
+          <PopoverContent align="center" className="w-60 p-1.5 rounded-xl" sideOffset={8}>
             {/* Agent name + "+" button */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 mb-1">
               <span className="text-sm font-bold text-foreground truncate">
-                {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title")}
+                {activeSlot?.artist_name ? `${activeSlot.artist_name} Agent` : (hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title"))}
               </span>
               <button
                 type="button"
@@ -624,6 +628,42 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 <Plus className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Agent slots for switching */}
+            {slots.length > 1 && (
+              <div className="px-1 pb-1 space-y-0.5 border-b border-border/50 mb-1">
+                {slots.map((slot) => (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    onClick={() => {
+                      switchSlot(slot.id);
+                      setShowMenu(false);
+                      // Reset chat state to load new agent's history
+                      setMessages([]);
+                      setHasStarted(false);
+                      setWelcomeSent(false);
+                      setBriefingTriggered(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors",
+                      slot.is_active
+                        ? "bg-primary/10 text-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded-md flex items-center justify-center shrink-0",
+                      slot.is_active ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                    )}>
+                      <Bot className="w-3 h-3" />
+                    </div>
+                    <span className="truncate flex-1 text-left">{slot.artist_name || "Agent"}</span>
+                    {slot.is_active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Menu items */}
                 <button
@@ -922,23 +962,27 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             {canAddSlot ? (
               <Button
                 className="w-full rounded-xl h-11"
-                onClick={() => {
+                onClick={async () => {
                   setShowAddAgentDialog(false);
-                  // Clear current chat and start fresh for new agent
-                  setMessages([]);
-                  setHasStarted(false);
-                  setWelcomeSent(false);
-                  setBriefingTriggered(false);
-                  // Show the new agent prompt as an assistant message
-                  const promptMsg: ChatMessage = {
-                    role: "assistant",
-                    content: t("agent.newAgentPrompt"),
-                    timestamp: new Date().toISOString(),
-                  };
-                  setTimeout(() => {
-                    setMessages([promptMsg]);
-                    setHasStarted(true);
-                  }, 100);
+                  // Create a new agent slot (without artist yet — will be set via chat)
+                  const newSlot = await createSlot("New Agent");
+                  if (newSlot) {
+                    // Reset chat for new agent
+                    setMessages([]);
+                    setHasStarted(false);
+                    setWelcomeSent(false);
+                    setBriefingTriggered(false);
+                    // Show prompt asking for artist name
+                    const promptMsg: ChatMessage = {
+                      role: "assistant",
+                      content: t("agent.newAgentPrompt"),
+                      timestamp: new Date().toISOString(),
+                    };
+                    setTimeout(() => {
+                      setMessages([promptMsg]);
+                      setHasStarted(true);
+                    }, 100);
+                  }
                 }}
               >
                 <Plus className="w-4 h-4 mr-1.5" />
