@@ -59,6 +59,25 @@ const getQuickActions = (t: (key: string) => string): QuickAction[] => [
 
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
 
+// Helper to get display name for a slot with watched artist fallback
+function getSlotDisplayName(
+  slot: { slot_index: number; artist_name: string | null } | null | undefined,
+  watchedArtists: any[] | undefined,
+  hasAlertOn: boolean,
+): string {
+  if (!slot) return "Agent";
+  // For slot 0, if name is generic "New Agent", fall back to watched artist
+  if (slot.slot_index === 0 && (!slot.artist_name || slot.artist_name === "New Agent")) {
+    if (hasAlertOn && watchedArtists && watchedArtists.length > 0) {
+      return `${watchedArtists[0].artist_name} Agent`;
+    }
+  }
+  if (slot.artist_name && slot.artist_name !== "New Agent") {
+    return `${slot.artist_name} Agent`;
+  }
+  return "Agent";
+}
+
 // ── Avatar Upload Hook (per-slot) ─────────────────────
 function useAgentAvatar(
   activeSlot: { id: string; avatar_url: string | null } | null,
@@ -616,19 +635,22 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </Button>
         </div>
 
-        {/* Center: avatar (popover trigger) + title */}
+        {/* Center: avatar (popover trigger) + name */}
         <Popover open={showMenu} onOpenChange={setShowMenu}>
           <PopoverTrigger asChild>
             <button type="button" className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
               <AgentAvatar avatarUrl={avatarUrl} size="lg" />
+              <span className="text-sm font-semibold text-foreground truncate max-w-[120px]">
+                {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
+              </span>
             </button>
           </PopoverTrigger>
           <PopoverContent align="center" className="w-60 p-1.5 rounded-xl" sideOffset={8}>
             {/* Agent name + "+" button */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 mb-1">
               <span className="text-sm font-bold text-foreground truncate">
-                {activeSlot?.artist_name ? `${activeSlot.artist_name} Agent` : (hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title"))}
+                {t("agent.title")}
               </span>
               <button
                 type="button"
@@ -643,36 +665,33 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               </button>
             </div>
 
-            {/* Agent slots for switching */}
-            {slots.length > 1 && (
-              <div className="px-1 pb-1 space-y-0.5 border-b border-border/50 mb-1">
-                {slots.map((slot) => (
-                  <button
-                    key={slot.id}
-                    type="button"
-                    onClick={() => {
-                      switchSlot(slot.id);
-                      setShowMenu(false);
-                      // Reset chat state to load new agent's history
-                      setMessages([]);
-                      setHasStarted(false);
-                      setWelcomeSent(false);
-                      setBriefingTriggered(false);
-                    }}
-                    className={cn(
-                      "flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors",
-                      slot.is_active
-                        ? "bg-primary/10 text-foreground font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <AgentAvatar avatarUrl={slot.avatar_url ?? (slot.slot_index === 0 ? legacyAgentAvatarUrl : null)} size="sm" />
-                    <span className="truncate flex-1 text-left">{slot.artist_name || "Agent"}</span>
-                    {slot.is_active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Agent slots */}
+            <div className="px-1 pb-1 space-y-0.5 border-b border-border/50 mb-1">
+              {slots.map((slot) => (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => {
+                    switchSlot(slot.id);
+                    setShowMenu(false);
+                    setMessages([]);
+                    setHasStarted(false);
+                    setWelcomeSent(false);
+                    setBriefingTriggered(false);
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors",
+                    slot.is_active
+                      ? "bg-primary/10 text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <AgentAvatar avatarUrl={slot.avatar_url ?? (slot.slot_index === 0 ? legacyAgentAvatarUrl : null)} size="sm" />
+                  <span className="truncate flex-1 text-left">{getSlotDisplayName(slot, watchedArtists, hasAlertOn)}</span>
+                  {slot.is_active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+                </button>
+              ))}
+            </div>
 
             {/* Menu items */}
                 <button
