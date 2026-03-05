@@ -115,7 +115,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
                     {agentAvatarUrl ? (
                       <img src={agentAvatarUrl} alt="Agent" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                     ) : (
-                      <Bot className="w-6 h-6 text-primary" />
+                      <Bot className="w-6 h-6 text-primary -translate-y-px" />
                     )}
                   </div>
                 </button>
