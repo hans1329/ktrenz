@@ -26,6 +26,7 @@ const translations: Record<string, Record<Language, string>> = {
   "nav.activity": { en: "Activity", ko: "활동", ja: "アクティビティ", zh: "活动" },
   "nav.fanAgent": { en: "Fan Agent", ko: "팬 에이전트", ja: "ファンエージェント", zh: "粉丝助手" },
   "nav.collapse": { en: "Collapse", ko: "접기", ja: "折りたたむ", zh: "折叠" },
+  "nav.settings": { en: "Settings", ko: "설정", ja: "設定", zh: "设置" },
   "nav.myActivity": { en: "My Activity", ko: "나의 활동", ja: "マイ活動", zh: "我的活动" },
   "nav.profile": { en: "Profile", ko: "프로필", ja: "プロフィール", zh: "个人资料" },
 
