@@ -29,6 +29,7 @@ import AdminDataHealth from "./pages/admin/AdminDataHealth";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminIntents from "./pages/admin/AdminIntents";
 import AgencyDashboardSample from "./pages/AgencyDashboardSample";
+import AdminIntentMonitor from "./pages/admin/AdminIntentMonitor";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="data-health" element={<AdminDataHealth />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="intents" element={<AdminIntents />} />
+              <Route path="intent-monitor" element={<AdminIntentMonitor />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
