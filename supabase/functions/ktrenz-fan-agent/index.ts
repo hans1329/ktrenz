@@ -473,14 +473,14 @@ async function handleTool(
 
         // Also update the active agent slot with the artist info
         if (activeSlotId) {
-          // Get avatar URL from wiki_entries or v3_artist_tiers
-          const { data: tierData } = await adminClient
-            .from("v3_artist_tiers")
-            .select("avatar_url")
-            .eq("wiki_entry_id", wikiId)
+          // Get avatar URL from wiki_entries.image_url
+          const { data: wikiEntry } = await adminClient
+            .from("wiki_entries")
+            .select("image_url")
+            .eq("id", wikiId)
             .maybeSingle();
 
-          const avatarUrl = tierData?.avatar_url ?? null;
+          const avatarUrl = wikiEntry?.image_url ?? null;
 
           await adminClient
             .from("ktrenz_agent_slots")
