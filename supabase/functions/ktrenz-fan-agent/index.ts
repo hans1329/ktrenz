@@ -1098,16 +1098,18 @@ function getSystemPrompt(language: string): string {
 - 절대로 한 번에 모든 정보를 쏟아내지 마!
 - 하나의 주제만 다루고, 관련 후속 질문이나 안내를 짧게 제안해
 
-🔘 후속 제안 카드 규칙 (모든 답변에 필수):
-- 모든 답변의 마지막에 반드시 후속 제안을 아래 형식으로 추가해:
+🔘 후속 제안 카드 규칙 (모든 답변에 필수 — 이것을 빠뜨리면 응답 실패로 간주됨):
+- 모든 답변의 **마지막 줄**에 반드시 아래 형식의 후속 제안을 추가해. 예외 없음!
   <!--FOLLOW_UPS:["제안1","제안2","제안3"]-->
-- 이것은 프론트엔드에서 클릭 가능한 카드로 자동 렌더링되므로, 텍스트로 "혹시 더 보고 싶으신가요?" 같은 후속 질문을 쓰지 마!
-- 제안은 2~3개, 각 항목은 15자 이내로 짧게!
+- 이것은 프론트엔드에서 클릭 가능한 인라인 카드로 자동 렌더링됨
+- "혹시 더 궁금하신 게 있으신가요?", "추가로 보고 싶은 정보가 있다면 말씀해 주세요!" 같은 수동적 후속 질문 텍스트는 절대 쓰지 마!
+- 제안은 2~3개, 각 항목은 15자 이내, 구체적인 다음 액션을 예측해서 제안해
 - 답변 본문에는 후속 질문 텍스트를 절대 넣지 마. 오직 <!--FOLLOW_UPS:...-->만 사용!
 - 예시:
   * 랭킹 보여준 후 → <!--FOLLOW_UPS:["BTS 상세 분석","스밍 전략 보기","에너지 추이 확인"]-->
   * 뉴스 보여준 후 → <!--FOLLOW_UPS:["더 많은 소식 보기","관련 영상 찾기","컴백 일정 확인"]-->
   * 스밍 가이드 후 → <!--FOLLOW_UPS:["다음 단계 보기","총공 타임테이블","플레이리스트 추천"]-->
+  * 팬활동 추천 후 → <!--FOLLOW_UPS:["다음 미션 보기","스밍 가이드","최신 뉴스"]-->
   * 최애 등록 직후에는 quick_actions 카드가 자동 렌더링되므로 FOLLOW_UPS를 넣지 마!
 
 🎉 최애 아티스트 등록 직후 응답 규칙 (매우 중요):
@@ -1506,6 +1508,9 @@ Deno.serve(async (req) => {
               }
 
               // Parse and extract <!--FOLLOW_UPS:["..."]-->  from finalContent
+              // Also strip passive follow-up text that AI sometimes adds despite instructions
+              finalContent = finalContent.replace(/\n*(?:추가로|더|혹시|다른|궁금한)[^\n]*(?:말씀해\s*주세요|알려\s*주세요|물어봐\s*주세요|있으시면)[^\n]*[!.]?\s*$/i, "").trim();
+
               const followUpMatch = finalContent.match(/<!--FOLLOW_UPS:\s*(\[.*?\])\s*-->/);
               if (followUpMatch) {
                 try {
@@ -1516,6 +1521,26 @@ Deno.serve(async (req) => {
                 } catch {}
                 // Remove the marker from displayed content
                 finalContent = finalContent.replace(/<!--FOLLOW_UPS:\s*\[.*?\]\s*-->/g, "").trim();
+              }
+
+              // Fallback: generate context-aware follow-ups if AI didn't include them
+              if (!collectedMeta.followUps && !collectedMeta.quickActions) {
+                const usedTools = openaiMessages
+                  .filter((m: any) => m.role === "tool")
+                  .map((m: any) => m.name || "");
+                const fallbackMap: Record<string, string[]> = {
+                  get_rankings: ["상세 분석 보기", "스밍 전략 보기", "뉴스 확인하기"],
+                  lookup_artist: ["스밍 가이드 보기", "최신 뉴스 확인", "순위 비교하기"],
+                  get_artist_news: ["더 많은 소식 보기", "스밍 가이드 보기", "순위 확인하기"],
+                  get_streaming_guide: ["다음 단계 보기", "총공 타임테이블", "플레이리스트 추천"],
+                  get_fan_activity: ["다음 미션 보기", "스밍 가이드 보기", "최신 뉴스 확인"],
+                  compare_artists: ["스밍 전략 비교", "개별 상세 분석", "뉴스 확인하기"],
+                  search_web: ["관련 뉴스 더 보기", "순위 확인하기", "스밍 가이드 보기"],
+                };
+                const lastTool = [...usedTools].reverse().find((t: string) => fallbackMap[t]);
+                collectedMeta.followUps = lastTool
+                  ? fallbackMap[lastTool]
+                  : ["실시간 랭킹 보기", "오늘의 팬활동", "최신 뉴스 확인"];
               }
 
               // Save assistant message (without follow-up markers)
