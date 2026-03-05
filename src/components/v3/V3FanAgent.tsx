@@ -271,6 +271,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [streamingStatus, setStreamingStatus] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showPointPurchaseDialog, setShowPointPurchaseDialog] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [pendingPurchaseText, setPendingPurchaseText] = useState<string | null>(null);
   const avatarFileRef = useRef<HTMLInputElement>(null);
 
@@ -504,13 +505,40 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [chatInput, isStreaming, session, messages, user?.id, queryClient, refetchUsage, agentUsage, t]);
 
-  const handleConfirmPointPurchase = useCallback(() => {
-    if (!pendingPurchaseText || isStreaming) return;
-    const textToSend = pendingPurchaseText;
-    setShowPointPurchaseDialog(false);
-    setPendingPurchaseText(null);
-    handleSend(textToSend, true);
-  }, [pendingPurchaseText, isStreaming, handleSend]);
+  const handleBundlePurchase = useCallback(async (bundle: number) => {
+    if (!user?.id || isPurchasing) return;
+    setIsPurchasing(true);
+    try {
+      const { data, error } = await supabase.rpc("ktrenz_purchase_agent_messages" as any, {
+        _user_id: user.id,
+        _bundle: bundle,
+      });
+      if (error) throw error;
+      if (data && !data.success) {
+        if (data.reason === "insufficient_points") {
+          toast.error(t("agent.insufficientPoints"));
+        } else {
+          toast.error("구매에 실패했습니다.");
+        }
+        return;
+      }
+      toast.success(`${bundle}${t("agent.purchaseSuccess")}`);
+      await refetchUsage();
+      // 대기 중인 메시지가 있으면 바로 전송
+      if (pendingPurchaseText) {
+        const textToSend = pendingPurchaseText;
+        setShowPointPurchaseDialog(false);
+        setPendingPurchaseText(null);
+        setTimeout(() => handleSend(textToSend, true), 100);
+      } else {
+        setShowPointPurchaseDialog(false);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Purchase failed");
+    } finally {
+      setIsPurchasing(false);
+    }
+  }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
     handleSend(action.prompt);
@@ -813,16 +841,29 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         setShowPointPurchaseDialog(open);
         if (!open) setPendingPurchaseText(null);
       }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("agent.pointPurchaseTitle")}</AlertDialogTitle>
             <AlertDialogDescription>{t("agent.pointPurchaseDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="grid gap-2 py-2">
+            {[5, 10, 20].map((bundle) => (
+              <button
+                key={bundle}
+                disabled={isPurchasing}
+                onClick={() => handleBundlePurchase(bundle)}
+                className="flex items-center justify-between w-full px-4 py-3 rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
+              >
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-foreground">{bundle}{t("agent.bundleMessages")}</span>
+                  <span className="text-xs text-muted-foreground">{bundle * 5}P</span>
+                </div>
+                <span className="text-xs font-medium text-primary">{t("agent.bundleBuy")}</span>
+              </button>
+            ))}
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("agent.clearChatCancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmPointPurchase}>
-              {t("agent.pointPurchaseConfirm")}
-            </AlertDialogAction>
+            <AlertDialogCancel disabled={isPurchasing}>{t("agent.clearChatCancel")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
