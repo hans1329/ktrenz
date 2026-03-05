@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight } from "lucide-react";
 import { useAgentSlots } from "@/hooks/useAgentSlots";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -311,6 +311,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [pendingPurchaseText, setPendingPurchaseText] = useState<string | null>(null);
   const [isPurchasingSlot, setIsPurchasingSlot] = useState(false);
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
+  const [showSlotList, setShowSlotList] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [showKPointsDrawer, setShowKPointsDrawer] = useState(false);
   // Check if user has watched artists (alert ON)
