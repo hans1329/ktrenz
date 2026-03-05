@@ -88,7 +88,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.pointPurchaseTitle": { en: "Get more messages", ko: "추가 대화 구매", ja: "追加メッセージを購入", zh: "购买更多消息" },
   "agent.pointPurchaseDesc": { en: "Your free daily limit is exhausted. Purchase extra messages with points.", ko: "무료 일일 한도를 모두 사용했어요. 포인트로 추가 대화를 구매하세요.", ja: "無料の日次上限を使い切りました。ポイントで追加メッセージを購入してください。", zh: "今日免费额度已用完，请用积分购买更多消息。" },
   "agent.pointPurchaseLine1": { en: "Your free daily limit is exhausted.", ko: "무료 일일 한도를 모두 사용했어요.", ja: "無料の日次上限を使い切りました。", zh: "今日免费额度已用完。" },
-  "agent.pointPurchaseLine2": { en: "Purchase extra messages with points.", ko: "포인트로 추가 대화를 구매하세요.", ja: "ポイントで追加メッセージを購入してください。", zh: "请用积分购买更多消息。" },
+  
   "agent.pointPurchaseBalance": { en: "Available Points", ko: "보유 포인트", ja: "保有ポイント", zh: "可用积分" },
   "agent.bundleMessages": { en: " messages", ko: "건 추가", ja: "件追加", zh: "条消息" },
   "agent.bundleBuy": { en: "Buy", ko: "구매", ja: "購入", zh: "购买" },
