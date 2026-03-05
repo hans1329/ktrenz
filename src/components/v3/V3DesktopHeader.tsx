@@ -176,7 +176,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                 className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted transition-colors">
                 <Avatar className="w-8 h-8">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                  <AvatarFallback delayMs={600} className="bg-primary/10 text-primary text-sm font-medium">
                     {profile?.username?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
