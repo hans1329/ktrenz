@@ -15,6 +15,11 @@ import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCard
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // ── Types ──────────────────────────────────────────────
 type ChatMessage = {
@@ -592,15 +597,33 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </button>
             {/* Clear chat */}
             {hasStarted && messages.length > 0 && (
-              <button
-                type="button"
-                onClick={() => { setShowMenu(false); handleClearChat(); }}
-                disabled={isClearing}
-                className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                {t("agent.clearChat") || "대화 기록 삭제"}
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    {isClearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {t("agent.clearChat")}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("agent.clearChatConfirmTitle")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("agent.clearChatConfirmDesc")}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("agent.clearChatCancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => { setShowMenu(false); handleClearChat(); }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isClearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                      {t("agent.clearChatConfirm")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </PopoverContent>
         </Popover>
