@@ -59,32 +59,18 @@ const getQuickActions = (t: (key: string) => string): QuickAction[] => [
 
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
 
-// ── Avatar Upload Hook ─────────────────────────────────
-function useAgentAvatar(userId?: string) {
+// ── Avatar Upload Hook (per-slot) ─────────────────────
+function useAgentAvatar(activeSlot: { id: string; avatar_url: string | null } | null, userId?: string) {
   const queryClient = useQueryClient();
 
-  const { data: avatarUrl } = useQuery({
-    queryKey: ["ktrenz-agent-avatar", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const { data } = await (supabase as any)
-        .from("ktrenz_agent_profiles")
-        .select("avatar_url")
-        .eq("user_id", userId)
-        .maybeSingle();
-      return data?.avatar_url ?? null;
-    },
-    enabled: !!userId,
-  });
+  const avatarUrl = activeSlot?.avatar_url ?? null;
 
   const uploadAvatar = useCallback(async (file: File) => {
-    if (!userId) return;
+    if (!userId || !activeSlot?.id) return;
 
-    // Convert to webp using canvas
     const webpBlob = await convertToWebp(file);
-    const filePath = `${userId}/agent-avatar.webp`;
+    const filePath = `${userId}/${activeSlot.id}.webp`;
 
-    // Upload to storage
     const { error: uploadErr } = await supabase.storage
       .from("agent-avatars")
       .upload(filePath, webpBlob, {
@@ -103,22 +89,20 @@ function useAgentAvatar(userId?: string) {
 
     const publicUrl = urlData.publicUrl + `?t=${Date.now()}`;
 
-    // Upsert profile
+    // Update the slot's avatar_url directly
     const { error: dbErr } = await (supabase as any)
-      .from("ktrenz_agent_profiles")
-      .upsert(
-        { user_id: userId, avatar_url: publicUrl, updated_at: new Date().toISOString() } as any,
-        { onConflict: "user_id" }
-      );
+      .from("ktrenz_agent_slots")
+      .update({ avatar_url: publicUrl })
+      .eq("id", activeSlot.id);
 
     if (dbErr) {
       toast.error("Profile save failed: " + dbErr.message);
       return;
     }
 
-    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-avatar", userId] });
+    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", userId] });
     toast.success("Agent profile image updated!");
-  }, [userId, queryClient]);
+  }, [userId, activeSlot?.id, queryClient]);
 
   return { avatarUrl, uploadAvatar };
 }
@@ -273,8 +257,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { avatarUrl, uploadAvatar } = useAgentAvatar(user?.id);
   const { slots, slotLimit, activeSlot, canAddSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
+  const { avatarUrl, uploadAvatar } = useAgentAvatar(activeSlot, user?.id);
   const [briefingTriggered, setBriefingTriggered] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [streamingStatus, setStreamingStatus] = useState("");
@@ -653,12 +637,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <div className={cn(
-                      "w-5 h-5 rounded-md flex items-center justify-center shrink-0",
-                      slot.is_active ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                    )}>
-                      <Bot className="w-3 h-3" />
-                    </div>
+                    <AgentAvatar avatarUrl={slot.avatar_url} size="sm" />
                     <span className="truncate flex-1 text-left">{slot.artist_name || "Agent"}</span>
                     {slot.is_active && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
                   </button>
