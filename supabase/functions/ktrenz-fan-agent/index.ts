@@ -744,7 +744,7 @@ JSON 구조:
 
       if (!newsSnapshots || newsSnapshots.length === 0) {
         // Fallback to Perplexity web search
-        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`);
+        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
           return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
         }
@@ -810,7 +810,7 @@ JSON 구조:
 
       // If snapshots exist but no articles extracted, fallback to Perplexity
       if (trimmed.length === 0) {
-        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`);
+        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
           return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
         }
@@ -1130,7 +1130,7 @@ JSON 구조:
     case "search_web": {
       const query = args.query;
       const recency = args.recency || "week";
-      const result = await searchWithPerplexity(query, recency);
+      const result = await searchWithPerplexity(query, recency, adminClient, "general");
       if (!result) {
         return JSON.stringify({ error: "web_search_failed", message: "웹 검색에 실패했습니다. 잠시 후 다시 시도해주세요." });
       }
@@ -1142,8 +1142,100 @@ JSON 구조:
   }
 }
 
-// ── Perplexity Web Search Helper ──────────────────
-async function searchWithPerplexity(query: string, recency: string = "week"): Promise<{ content: string; citations: string[] } | null> {
+// ── Knowledge Cache Helpers ───────────────────────
+function md5Hash(str: string): string {
+  // Simple hash for cache key (deterministic, not crypto)
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + ch;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+async function getCachedKnowledge(
+  adminClient: any,
+  query: string,
+  topicType: string,
+): Promise<{ content: string; citations: string[]; structured: any } | null> {
+  const queryHash = md5Hash(query.toLowerCase().trim());
+  const { data } = await adminClient
+    .from("ktrenz_agent_knowledge_cache")
+    .select("id, content_raw, citations, content_structured, hit_count")
+    .eq("query_hash", queryHash)
+    .eq("topic_type", topicType)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (!data) return null;
+
+  // Increment hit count
+  await adminClient
+    .from("ktrenz_agent_knowledge_cache")
+    .update({ hit_count: data.hit_count + 1 })
+    .eq("id", data.id);
+
+  console.log(`[KnowledgeCache] HIT for "${query}" (topic=${topicType}, hits=${data.hit_count + 1})`);
+  return {
+    content: data.content_raw ?? "",
+    citations: data.citations ?? [],
+    structured: data.content_structured ?? {},
+  };
+}
+
+async function cacheKnowledge(
+  adminClient: any,
+  query: string,
+  topicType: string,
+  content: string,
+  citations: string[],
+  wikiEntryId: string | null,
+  recency: string,
+  structured: any = {},
+): Promise<void> {
+  const queryHash = md5Hash(query.toLowerCase().trim());
+  // TTL: news=12h, schedule=6h, general=24h
+  const ttlHours = topicType === "news" ? 12 : topicType === "schedule" ? 6 : 24;
+  const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString();
+
+  try {
+    await adminClient
+      .from("ktrenz_agent_knowledge_cache")
+      .upsert({
+        query_hash: queryHash,
+        topic_type: topicType,
+        query_text: query,
+        content_raw: content,
+        citations,
+        content_structured: structured,
+        wiki_entry_id: wikiEntryId,
+        recency_filter: recency,
+        fetched_at: new Date().toISOString(),
+        expires_at: expiresAt,
+        hit_count: 1,
+      }, { onConflict: "query_hash,topic_type" });
+    console.log(`[KnowledgeCache] STORED "${query}" (topic=${topicType}, ttl=${ttlHours}h)`);
+  } catch (e: any) {
+    console.error(`[KnowledgeCache] Store failed:`, e.message);
+  }
+}
+
+// ── Perplexity Web Search Helper (with cache) ─────
+async function searchWithPerplexity(
+  query: string,
+  recency: string = "week",
+  adminClient?: any,
+  topicType: string = "general",
+  wikiEntryId: string | null = null,
+): Promise<{ content: string; citations: string[] } | null> {
+  // 1. Check cache first
+  if (adminClient) {
+    const cached = await getCachedKnowledge(adminClient, query, topicType);
+    if (cached) return { content: cached.content, citations: cached.citations };
+  }
+
+  // 2. Call Perplexity
   const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
   if (!PERPLEXITY_API_KEY) {
     console.error("PERPLEXITY_API_KEY not configured");
@@ -1175,6 +1267,12 @@ async function searchWithPerplexity(query: string, recency: string = "week"): Pr
     const data = await resp.json();
     const content = data.choices?.[0]?.message?.content ?? "";
     const citations = data.citations ?? [];
+
+    // 3. Store in cache
+    if (adminClient && content) {
+      await cacheKnowledge(adminClient, query, topicType, content, citations, wikiEntryId, recency);
+    }
+
     return { content, citations };
   } catch (e) {
     console.error("Perplexity search error:", e);
