@@ -1236,9 +1236,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   className="w-full rounded-xl h-11 gap-2"
                   onClick={async () => {
                     setIsPurchasingSlot(true);
-                    const ok = await purchaseSlot();
+                    await purchaseSlot();
                     setIsPurchasingSlot(false);
-                    if (ok) setShowAddAgentDialog(false);
                   }}
                   disabled={isPurchasingSlot}
                 >
