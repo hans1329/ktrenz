@@ -1,9 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGES } from "@/i18n/translations";
 import SEO from "@/components/SEO";
 
-import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, User } from "lucide-react";
+import { ArrowLeft, CreditCard, Globe, Moon, Bell, Shield, LogOut, ChevronRight, Loader2, Camera, User, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,7 @@ const SettingsPage = () => {
   const location = useLocation();
   const fromProfile = (location.state as any)?.fromProfile;
   const { user, profile, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const queryClient = useQueryClient();
 
   const [displayName, setDisplayName] = useState("");
@@ -161,9 +162,8 @@ const SettingsPage = () => {
       ],
     },
     {
-      title: "앱 설정",
+title: "앱 설정",
       items: [
-        { icon: Globe, label: t("common.settings"), desc: "프로필 메뉴에서 변경 가능" },
         { icon: Bell, label: "알림", desc: "푸시 알림 설정", comingSoon: true },
         { icon: Moon, label: "다크 모드", desc: "자동 (시스템 설정 따름)", comingSoon: true },
       ],
@@ -289,7 +289,31 @@ const SettingsPage = () => {
             </div>
           ))}
 
-          {/* Sign Out */}
+          {/* Language */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">
+              Language
+            </p>
+            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => setLanguage(lang.code)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 text-base">
+                    {lang.flag}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{lang.label}</p>
+                    <p className="text-[11px] text-muted-foreground">{lang.code.toUpperCase()}</p>
+                  </div>
+                  {language === lang.code && <Check className="w-4 h-4 text-primary shrink-0" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             onClick={handleSignOut}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/5 transition-colors text-sm font-medium"
