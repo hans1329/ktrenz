@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock } from "lucide-react";
 import { useAgentSlots } from "@/hooks/useAgentSlots";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -286,7 +286,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { slots, slotLimit, activeSlot, canAddSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
+  const { slots, slotLimit, activeSlot, canAddSlot, canPurchaseSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
   const { data: legacyAgentAvatarUrl } = useQuery({
     queryKey: ["ktrenz-agent-legacy-avatar", user?.id],
     queryFn: async () => {
@@ -1054,16 +1054,22 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                         </button>
                       );
                     }
-                    // Empty slot
+                    // Empty available slot (purchased but unused) — orange plus
                     return (
                       <div
                         key={`empty-${i}`}
-                        className="w-14 h-14 rounded-xl border-2 border-dashed border-border/50 flex items-center justify-center"
+                        className="w-14 h-14 rounded-xl border-2 border-dashed border-orange-400/60 flex items-center justify-center bg-orange-50/30 dark:bg-orange-950/20"
                       >
-                        <Plus className="w-4 h-4 text-muted-foreground/30" />
+                        <Plus className="w-4 h-4 text-orange-500" />
                       </div>
                     );
                   })}
+                  {/* Next locked slot — not yet purchased */}
+                  {canPurchaseSlot && (
+                    <div className="w-14 h-14 rounded-xl border-2 border-dashed border-border/30 flex items-center justify-center bg-muted/30 opacity-60">
+                      <Lock className="w-4 h-4 text-muted-foreground/40" />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
