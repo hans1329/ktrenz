@@ -850,7 +850,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             <DrawerDescription asChild>
               <div className="space-y-1.5">
                 <p>{t("agent.pointPurchaseLine1")}</p>
-                <p>{t("agent.pointPurchaseLine2")}</p>
+                
                 <p className="text-[#2dd4bf] font-semibold">
                   {t("agent.pointPurchaseBalance")}: {kPoints.toLocaleString()}P
                 </p>
