@@ -2443,6 +2443,48 @@ export type Database = {
           },
         ]
       }
+      ktrenz_point_purchases: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          package_key: string
+          points_amount: number
+          price_cents: number
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          package_key: string
+          points_amount: number
+          price_cents: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          package_key?: string
+          points_amount?: number
+          price_cents?: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_point_settings: {
         Row: {
           description: string | null

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
+import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
@@ -284,7 +285,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [isPurchasingSlot, setIsPurchasingSlot] = useState(false);
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
-
+  const [showKPointsDrawer, setShowKPointsDrawer] = useState(false);
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
     queryKey: ["ktrenz-watched-artists", user?.id],
@@ -703,6 +704,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     <div className="w-3.5 h-3.5 rounded-full bg-background shadow-sm" />
                   </div>
                 </button>
+                {/* Buy K-Points */}
+                <button
+                  type="button"
+                  onClick={() => { setShowMenu(false); setShowKPointsDrawer(true); }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
+                >
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  {t("points.buyPoints")}
+                </button>
                 {/* Clear chat */}
                 {hasStarted && messages.length > 0 && (
                   <AlertDialog>
@@ -1018,6 +1028,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <KPointsPurchaseDrawer open={showKPointsDrawer} onOpenChange={setShowKPointsDrawer} />
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
