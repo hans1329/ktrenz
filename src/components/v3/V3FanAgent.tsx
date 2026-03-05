@@ -270,6 +270,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [isClearing, setIsClearing] = useState(false);
   const [streamingStatus, setStreamingStatus] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+  const [showPointPurchaseDialog, setShowPointPurchaseDialog] = useState(false);
+  const [pendingPurchaseText, setPendingPurchaseText] = useState<string | null>(null);
   const avatarFileRef = useRef<HTMLInputElement>(null);
 
   // Check if user has watched artists (alert ON)
@@ -431,9 +433,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Guide/Ranking data fetching removed — now handled via tool calling in the edge function
 
   const track = useTrackEvent();
-  const handleSend = useCallback(async (overrideText?: string) => {
+  const handleSend = useCallback(async (overrideText?: string, bypassPurchaseConfirm = false) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
+
+    if (!bypassPurchaseConfirm && (agentUsage?.remaining ?? 0) === 0) {
+      setPendingPurchaseText(text);
+      setShowPointPurchaseDialog(true);
+      return;
+    }
 
     track("agent_chat", { mode: "chat" });
     setChatInput("");
@@ -445,7 +453,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     const userMsg: ChatMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
-    // Ensure scroll after input
     requestAnimationFrame(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }));
 
     let assistantContent = "";
@@ -468,7 +475,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           });
         },
         onMeta: (meta) => {
-          // Attach structured data (guideData, rankingData) to the last assistant message
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
             if (lastIdx >= 0 && prev[lastIdx]?.role === "assistant") {
@@ -490,13 +496,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       setIsStreaming(false);
       setStreamingStatus("");
       if (e.message === "LIMIT_EXCEEDED") {
-        toast.error(t("agent.limitExceeded") || "일일 무료 한도를 초과했어요. 포인트가 부족합니다.");
+        toast.error(t("agent.limitExceeded"));
       } else {
         toast.error(e.message || "Failed to send message");
       }
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, hasAlertOn, refetchUsage]);
+  }, [chatInput, isStreaming, session, messages, user?.id, queryClient, refetchUsage, agentUsage, t]);
+
+  const handleConfirmPointPurchase = useCallback(() => {
+    if (!pendingPurchaseText || isStreaming) return;
+    const textToSend = pendingPurchaseText;
+    setShowPointPurchaseDialog(false);
+    setPendingPurchaseText(null);
+    handleSend(textToSend, true);
+  }, [pendingPurchaseText, isStreaming, handleSend]);
 
   const handleQuickAction = (action: QuickAction) => {
     handleSend(action.prompt);
@@ -794,6 +808,24 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       {renderSubHeader()}
 
       {!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages()}
+
+      <AlertDialog open={showPointPurchaseDialog} onOpenChange={(open) => {
+        setShowPointPurchaseDialog(open);
+        if (!open) setPendingPurchaseText(null);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("agent.pointPurchaseTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("agent.pointPurchaseDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("agent.clearChatCancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmPointPurchase}>
+              {t("agent.pointPurchaseConfirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
