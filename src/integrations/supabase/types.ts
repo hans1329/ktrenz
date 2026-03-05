@@ -2077,6 +2077,62 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_agent_knowledge_cache: {
+        Row: {
+          citations: string[] | null
+          content_raw: string | null
+          content_structured: Json
+          created_at: string
+          expires_at: string
+          fetched_at: string
+          hit_count: number
+          id: string
+          query_hash: string
+          query_text: string
+          recency_filter: string | null
+          topic_type: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          citations?: string[] | null
+          content_raw?: string | null
+          content_structured?: Json
+          created_at?: string
+          expires_at?: string
+          fetched_at?: string
+          hit_count?: number
+          id?: string
+          query_hash: string
+          query_text: string
+          recency_filter?: string | null
+          topic_type?: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          citations?: string[] | null
+          content_raw?: string | null
+          content_structured?: Json
+          created_at?: string
+          expires_at?: string
+          fetched_at?: string
+          hit_count?: number
+          id?: string
+          query_hash?: string
+          query_text?: string
+          recency_filter?: string | null
+          topic_type?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_agent_knowledge_cache_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_agent_profiles: {
         Row: {
           agent_slot_id: string | null
@@ -7627,6 +7683,7 @@ export type Database = {
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       ktrenz_check_agent_usage: { Args: { _user_id: string }; Returns: Json }
+      ktrenz_cleanup_knowledge_cache: { Args: never; Returns: undefined }
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
       ktrenz_get_agent_slot_limit: { Args: { _user_id: string }; Returns: Json }
       ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
