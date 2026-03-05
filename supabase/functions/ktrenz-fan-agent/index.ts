@@ -1111,6 +1111,7 @@ function getSystemPrompt(language: string): string {
   * 스밍 가이드 후 → <!--FOLLOW_UPS:["다음 단계 보기","총공 타임테이블","플레이리스트 추천"]-->
   * 팬활동 추천 후 → <!--FOLLOW_UPS:["다음 미션 보기","스밍 가이드","최신 뉴스"]-->
   * 최애 등록 직후에는 quick_actions 카드가 자동 렌더링되므로 FOLLOW_UPS를 넣지 마!
+  * 유저에게 "어떤 아티스트를 최애로 설정할까요?" 라고 물어보는 응답에도 FOLLOW_UPS를 넣지 마! 유저가 아티스트 이름을 직접 입력해야 하는 상황이므로 다른 제안 버튼이 방해가 됨.
 
 🎉 최애 아티스트 등록 직후 응답 규칙 (매우 중요):
 - manage_watched_artist 도구가 set_bias 성공으로 돌아오면:
@@ -1531,7 +1532,9 @@ Deno.serve(async (req) => {
               }
 
               // Fallback: generate context-aware follow-ups if AI didn't include them
-              if (!collectedMeta.followUps && !collectedMeta.quickActions) {
+              // BUT skip if the slot has no artist (user is being asked which artist to set)
+              const isAskingForBias = !activeSlotWikiEntryId && !collectedMeta.quickActions;
+              if (!collectedMeta.followUps && !collectedMeta.quickActions && !isAskingForBias) {
                 const usedTools = openaiMessages
                   .filter((m: any) => m.role === "tool")
                   .map((m: any) => m.name || "");
