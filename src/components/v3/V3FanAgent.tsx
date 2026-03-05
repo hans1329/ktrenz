@@ -924,7 +924,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 className="w-full rounded-xl h-11"
                 onClick={() => {
                   setShowAddAgentDialog(false);
-                  handleSend(t("agent.newAgentPrompt"));
+                  // Clear current chat and start fresh for new agent
+                  setMessages([]);
+                  setHasStarted(false);
+                  setWelcomeSent(false);
+                  setBriefingTriggered(false);
+                  // Show the new agent prompt as an assistant message
+                  const promptMsg: ChatMessage = {
+                    role: "assistant",
+                    content: t("agent.newAgentPrompt"),
+                    timestamp: new Date().toISOString(),
+                  };
+                  setTimeout(() => {
+                    setMessages([promptMsg]);
+                    setHasStarted(true);
+                  }, 100);
                 }}
               >
                 <Plus className="w-4 h-4 mr-1.5" />
