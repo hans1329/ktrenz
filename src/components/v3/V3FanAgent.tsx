@@ -935,6 +935,22 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         {t("agent.subtitle")}
       </p>
 
+      {/* Register bias artist — prominent CTA */}
+      <button
+        onClick={() => handleSend(t("agent.prompt.alertSetup"))}
+        disabled={isStreaming}
+        className="w-full max-w-sm mb-3 flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 hover:border-primary/50 hover:from-primary/20 hover:to-primary/10 transition-all text-left group active:scale-[0.98]"
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+          <Heart className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold text-foreground">{t("agent.registerBias")}</div>
+          <div className="text-[12px] text-muted-foreground leading-tight">{t("agent.registerBiasDesc")}</div>
+        </div>
+        <Sparkles className="w-4 h-4 text-primary/50 group-hover:text-primary/80 transition-colors shrink-0" />
+      </button>
+
       <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
         {QUICK_ACTIONS.map((action) => {
           const Icon = action.icon;
