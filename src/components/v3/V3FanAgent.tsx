@@ -659,15 +659,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 <span className="truncate flex-1 text-left text-sm font-medium">
                   {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowSlotList((prev) => !prev)}
-                  className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
-                  title={t("agent.manageAgents")}
-                >
-                  <ArrowLeftRight className="w-4 h-4" />
-                  <span className="sr-only">{t("agent.manageAgents")}</span>
-                </button>
+                {slots.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSlotList((prev) => !prev)}
+                    className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
+                    title={t("agent.manageAgents")}
+                  >
+                    <ArrowLeftRight className="w-4 h-4" />
+                    <span className="sr-only">{t("agent.manageAgents")}</span>
+                  </button>
+                )}
               </div>
             </div>
 
