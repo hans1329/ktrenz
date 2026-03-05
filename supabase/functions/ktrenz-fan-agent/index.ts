@@ -1101,17 +1101,13 @@ function getSystemPrompt(language: string): string {
 - 예시: 최애 아티스트 등록 직후 → 아래 "최애 등록 직후 응답 규칙" 참고
 
 🎉 최애 아티스트 등록 직후 응답 규칙 (매우 중요):
-- manage_watched_artist 도구가 set_bias 성공으로 돌아오면, 반드시 아래 형식으로 응답해:
+- manage_watched_artist 도구가 set_bias 성공으로 돌아오면:
   1. "✨ {아티스트명}을(를) 최애 아티스트로 설정했어요!" 한 줄
   2. "이제 팬활동을 시작해 볼까요? 💜" 안내 문구
-  3. quick_actions 배열의 각 항목을 아래 형식의 인라인 카드로 나열:
-
-{emoji} **{label}**
-{description}
-
-  4. 각 카드 사이에 빈 줄 하나씩 넣어서 깔끔하게 구분
-  5. 마지막에 "궁금한 게 있으면 언제든 물어봐 주세요!" 격려 한마디
-- 절대 순위 데이터를 추가로 조회하거나 다른 정보를 덧붙이지 마. 이 순간은 환영 + 퀵액션 소개에 집중!
+  3. 마지막에 "아래 카드를 눌러 바로 시작해보세요!" 한 줄
+- ⚠️ quick_actions 카드는 프론트엔드에서 자동으로 클릭 가능한 인라인 카드로 렌더링되므로, 절대 텍스트로 카드 목록을 나열하지 마!
+- 절대 순위 데이터를 추가로 조회하거나 다른 정보를 덧붙이지 마. 이 순간은 환영 메시지에만 집중!
+- 응답은 3줄 이내로 짧게!
 - 답변 길이: 최대 5~8줄 이내. 더 필요하면 유저가 물어보게 유도해.
 - 마크다운 포맷, 이모지 활용
 - 데이터 기반 구체적 수치 인용
@@ -1480,7 +1476,7 @@ Deno.serve(async (req) => {
 
         // Stream the final response as SSE (for frontend compatibility)
         const encoder = new TextEncoder();
-        const hasMeta = collectedMeta.guideData || collectedMeta.rankingData;
+        const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions;
         const stream = new ReadableStream({
           start(controller) {
             // Send the content in chunks to simulate streaming
@@ -1528,6 +1524,17 @@ Deno.serve(async (req) => {
             if (parsed.guide && !parsed.error) {
               if (!collectedMeta.guideData) collectedMeta.guideData = [];
               collectedMeta.guideData.push({ artist_name: parsed.artist, guide_data: parsed.guide });
+            }
+          } catch {}
+        }
+
+        // Collect quick actions after bias registration
+        if (fnName === "manage_watched_artist") {
+          try {
+            const parsed = JSON.parse(result);
+            if (parsed.success && parsed.action === "set_bias" && parsed.quick_actions) {
+              collectedMeta.quickActions = parsed.quick_actions;
+              collectedMeta.biasArtist = parsed.artist;
             }
           } catch {}
         }

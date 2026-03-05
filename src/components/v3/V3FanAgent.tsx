@@ -30,6 +30,13 @@ import {
 } from "@/components/ui/drawer";
 
 // ── Types ──────────────────────────────────────────────
+type QuickActionCard = {
+  emoji: string;
+  label: string;
+  description: string;
+  prompt_hint: string;
+};
+
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -37,6 +44,7 @@ type ChatMessage = {
   guideData?: any[] | null;
   rankingData?: RankingEntry[] | null;
   briefingData?: BriefingData | null;
+  quickActions?: QuickActionCard[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -558,7 +566,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             const lastIdx = prev.length - 1;
             if (lastIdx >= 0 && prev[lastIdx]?.role === "assistant") {
               return prev.map((m, i) =>
-                i === lastIdx ? { ...m, guideData: meta.guideData ?? m.guideData, rankingData: meta.rankingData ?? m.rankingData } : m
+                i === lastIdx ? {
+                  ...m,
+                  guideData: meta.guideData ?? m.guideData,
+                  rankingData: meta.rankingData ?? m.rankingData,
+                  quickActions: meta.quickActions ?? m.quickActions,
+                } : m
               );
             }
             return prev;
@@ -954,6 +967,35 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
             {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
               <V3StreamingGuideCards guides={msg.guideData} />
+            )}
+
+            {msg.role === "assistant" && msg.quickActions && msg.quickActions.length > 0 && (
+              <div className="grid grid-cols-1 gap-2 mt-2 w-full">
+                {msg.quickActions.map((qa) => {
+                  const promptMap: Record<string, string> = {
+                    fan_activity: t("agent.prompt.fanActivity"),
+                    rankings: t("agent.prompt.liveRankings"),
+                    streaming: t("agent.prompt.streamingGuide"),
+                    news: t("agent.prompt.trendAnalysis"),
+                  };
+                  return (
+                    <button
+                      key={qa.prompt_hint}
+                      type="button"
+                      disabled={isStreaming}
+                      onClick={() => handleSend(promptMap[qa.prompt_hint] || qa.label)}
+                      className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 hover:border-primary/40 hover:from-primary/15 hover:to-primary/10 transition-all text-left group active:scale-[0.98]"
+                    >
+                      <span className="text-xl shrink-0">{qa.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-foreground">{qa.label}</div>
+                        <div className="text-[12px] text-muted-foreground leading-tight">{qa.description}</div>
+                      </div>
+                      <Sparkles className="w-3.5 h-3.5 text-primary/40 group-hover:text-primary/70 transition-colors shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
             )}
 
             {msg.timestamp && (
