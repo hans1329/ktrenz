@@ -107,6 +107,14 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.fanActivity": { en: "Today's Activity", ko: "오늘의 팬활동", ja: "今日のファン活動", zh: "今日粉丝活动" },
   "agent.prompt.fanActivity": { en: "Recommend one fan activity I can do right now for my favorite artist!", ko: "지금 바로 할 수 있는 팬활동 하나 추천해줘!", ja: "今すぐできるファン活動を1つ推薦して！", zh: "推荐一个我现在可以做的粉丝活动！" },
   "agent.welcomeNoArtist": { en: "Hello! 🎵\n\nYou haven't registered any favorite artists yet.\n**Who is your favorite artist?** 💜\n\nTell me their name and I'll start providing real-time trend alerts and personalized analysis!", ko: "안녕하세요, 주인님! 🎵\n\n아직 관심 아티스트가 등록되지 않았어요.\n**당신의 최애 아티스트는 누구인가요?** 💜\n\n아티스트 이름을 알려주시면 실시간 트렌드 알림과 맞춤 분석을 시작할게요!", ja: "こんにちは！🎵\n\nまだお気に入りアーティストが登録されていません。\n**あなたの推しアーティストは誰ですか？** 💜\n\nアーティスト名を教えていただければ、リアルタイムトレンドアラートとパーソナル分析を始めます！", zh: "你好！🎵\n\n还没有注册任何关注的艺人。\n**你最喜欢的艺人是谁？** 💜\n\n告诉我名字，我将开始提供实时趋势提醒和个性化分析！" },
+  "agent.addAgent": { en: "Add Agent", ko: "에이전트 추가", ja: "エージェント追加", zh: "添加助手" },
+  "agent.manageAgents": { en: "My Agents", ko: "내 에이전트", ja: "マイエージェント", zh: "我的助手" },
+  "agent.slotsFull": { en: "All slots used", ko: "슬롯을 모두 사용했어요", ja: "全スロット使用中", zh: "所有槽位已用完" },
+  "agent.purchaseSlot": { en: "Buy slot (1,000P)", ko: "슬롯 구매 (1,000P)", ja: "スロット購入 (1,000P)", zh: "购买槽位 (1,000P)" },
+  "agent.purchaseSlotDesc": { en: "Add an extra agent slot for 1,000 points", ko: "1,000 포인트로 에이전트 슬롯을 추가해요", ja: "1,000ポイントでエージェントスロットを追加", zh: "用1,000积分增加一个助手槽位" },
+  "agent.deleteAgent": { en: "Remove agent", ko: "에이전트 삭제", ja: "エージェント削除", zh: "删除助手" },
+  "agent.upgradeForSlots": { en: "Upgrade K-Pass for more slots", ko: "K-Pass 업그레이드로 슬롯 추가", ja: "K-Passアップグレードでスロット追加", zh: "升级K-Pass获得更多槽位" },
+  "agent.newAgentPrompt": { en: "Which artist should this new agent focus on? Tell me the name!", ko: "새 에이전트가 담당할 아티스트를 알려주세요!", ja: "新しいエージェントが担当するアーティスト名を教えて！", zh: "请告诉我新助手要关注的艺人名字！" },
 
   // ── Profile Overlay ──
   "profile.viewPlans": { en: "View plans & upgrade →", ko: "플랜 보기 및 업그레이드 →", ja: "プランを見る →", zh: "查看方案和升级 →" },
