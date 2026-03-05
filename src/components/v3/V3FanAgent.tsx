@@ -597,12 +597,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             <button type="button" className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
               <AgentAvatar avatarUrl={avatarUrl} size="lg" />
-              <h1 className="text-base font-bold text-foreground">
-                {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title")}
-              </h1>
             </button>
           </PopoverTrigger>
           <PopoverContent align="center" className="w-56 p-1.5 rounded-xl" sideOffset={8}>
+            {/* Agent name */}
+            <div className="px-3 py-2 text-sm font-bold text-foreground border-b border-border/50 mb-1">
+              {hasAlertOn ? `${(watchedArtists as any[])[0]?.artist_name} Agent` : t("agent.title")}
+            </div>
             {/* Change profile photo */}
             <button
               type="button"
