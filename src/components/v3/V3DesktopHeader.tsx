@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,9 +34,18 @@ interface V3DesktopHeaderProps {
 
 const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
   const { t } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // Auto-open profile drawer when navigating back from settings/kpass
+  useEffect(() => {
+    if ((location.state as any)?.openProfile) {
+      setProfileOpen(true);
+      window.history.replaceState({}, "");
+    }
+  }, [location.state]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);

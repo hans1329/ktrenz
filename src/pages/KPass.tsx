@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +62,8 @@ const tierGradients: Record<number, string> = {
 
 const KPassPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromProfile = (location.state as any)?.fromProfile;
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
 
@@ -115,7 +117,7 @@ const KPassPage = () => {
         {/* Header */}
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
           <div className="flex items-center h-14 px-4 max-w-lg mx-auto">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
+            <button onClick={() => fromProfile ? navigate("/", { state: { openProfile: true } }) : navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="flex-1 text-center font-bold text-lg">{t("kpass.title")}</h1>
