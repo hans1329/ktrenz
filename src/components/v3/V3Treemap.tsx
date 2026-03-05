@@ -71,7 +71,7 @@ function getTileColor(change: number): string {
   if (change >= 30) return "hsla(330, 80%, 55%, 0.9)";
   if (change >= 15) return "hsla(335, 70%, 48%, 0.8)";
   if (change >= 5) return "hsla(340, 55%, 42%, 0.7)";
-  if (change > -5) return "hsla(160, 65%, 55%, 0.75)";
+  if (change > -5) return "hsla(180, 100%, 40%, 0.75)";
   if (change > -15) return "hsla(270, 40%, 50%, 0.7)";
   return "hsla(275, 35%, 42%, 0.75)";
 }
