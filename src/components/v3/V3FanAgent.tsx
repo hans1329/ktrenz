@@ -437,6 +437,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
     track("agent_chat", { mode: "chat" });
     setChatInput("");
+    setTimeout(() => inputRef.current?.focus(), 0);
     setIsStreaming(true);
     setStreamingStatus(t("agent.status.thinking"));
     setHasStarted(true);
