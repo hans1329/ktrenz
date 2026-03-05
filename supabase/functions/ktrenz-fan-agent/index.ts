@@ -169,7 +169,8 @@ async function handleTool(
   args: any,
   adminClient: any,
   userId: string,
-  rankingCache: { data: any[] | null }
+  rankingCache: { data: any[] | null },
+  activeSlotId?: string | null
 ): Promise<string> {
   // Helper: get all latest scores (cached per request)
   async function getAllScores(): Promise<any[]> {
@@ -337,14 +338,55 @@ async function handleTool(
     case "manage_watched_artist": {
       const { action, artist_name } = args;
       if (action === "add") {
-        const { data: wikiMatch } = await adminClient
+        // Try exact match first
+        let { data: wikiMatch } = await adminClient
           .from("wiki_entries")
           .select("id, title")
           .ilike("title", artist_name)
           .limit(1);
 
-        const wikiId = wikiMatch?.[0]?.id ?? null;
-        const resolvedName = wikiMatch?.[0]?.title ?? artist_name;
+        // If no exact match, try fuzzy search and ask user to clarify
+        if (!wikiMatch || wikiMatch.length === 0) {
+          const { data: fuzzyMatches } = await adminClient
+            .from("wiki_entries")
+            .select("id, title")
+            .ilike("title", `%${artist_name}%`)
+            .limit(5);
+
+          // Also try Korean name match
+          const { data: koMatches } = await adminClient
+            .from("v3_artist_tiers")
+            .select("wiki_entry_id, display_name, name_ko")
+            .ilike("name_ko", `%${artist_name}%`)
+            .limit(5);
+
+          const suggestions: string[] = [];
+          for (const m of fuzzyMatches ?? []) suggestions.push(m.title);
+          for (const km of koMatches ?? []) {
+            if (!suggestions.includes(km.display_name)) suggestions.push(`${km.display_name} (${km.name_ko})`);
+          }
+
+          if (suggestions.length > 0) {
+            return JSON.stringify({
+              success: false,
+              action: "artist_not_found",
+              query: artist_name,
+              suggestions,
+              message: `"${artist_name}"을(를) 정확히 찾을 수 없어요. 혹시 이 중에 있나요? ${suggestions.join(", ")}. 정확한 이름을 말씀해주세요!`,
+            });
+          } else {
+            return JSON.stringify({
+              success: false,
+              action: "artist_not_found",
+              query: artist_name,
+              suggestions: [],
+              message: `"${artist_name}"을(를) 데이터베이스에서 찾을 수 없어요. 정확한 아티스트 영문명이나 한글명으로 다시 말씀해주세요!`,
+            });
+          }
+        }
+
+        const wikiId = wikiMatch[0].id;
+        const resolvedName = wikiMatch[0].title;
 
         // Remove any existing bias artist first (single bias per user)
         await adminClient
@@ -360,8 +402,28 @@ async function handleTool(
           return JSON.stringify({ success: false, message: `Failed to set bias artist: ${insertErr.message}` });
         }
 
+        // Also update the active agent slot with the artist info
+        if (activeSlotId) {
+          // Get avatar URL from wiki_entries or v3_artist_tiers
+          const { data: tierData } = await adminClient
+            .from("v3_artist_tiers")
+            .select("avatar_url")
+            .eq("wiki_entry_id", wikiId)
+            .maybeSingle();
+
+          const avatarUrl = tierData?.avatar_url ?? null;
+
+          await adminClient
+            .from("ktrenz_agent_slots")
+            .update({
+              wiki_entry_id: wikiId,
+              artist_name: resolvedName,
+              avatar_url: avatarUrl,
+            })
+            .eq("id", activeSlotId);
+        }
+
         // Gather quick action data for post-registration cards
-        const encodedName = encodeURIComponent(resolvedName);
         const quickActions = [
           { emoji: "❤️", label: "오늘의 팬활동", description: "매일 달라지는 맞춤 팬활동 추천", prompt_hint: "fan_activity" },
           { emoji: "📊", label: "실시간 순위", description: `${resolvedName}의 현재 랭킹 & 에너지 점수`, prompt_hint: "rankings" },
@@ -1064,6 +1126,7 @@ function getSystemPrompt(language: string): string {
 - 유저가 랭킹, 순위, 특정 아티스트 정보를 물으면 반드시 도구를 호출해서 최신 데이터를 가져와
 - 추측하지 말고 항상 도구로 확인한 데이터를 기반으로 답변해
 - 유저가 "최애 설정/변경" 또는 "삭제/제거"를 요청하면 manage_watched_artist 도구 사용
+- ⚠️ manage_watched_artist가 artist_not_found를 반환하면, suggestions 목록을 보여주고 "이 중에 있나요?"라고 물어봐. 절대 실패한 이름으로 재시도하지 마!
 - 유저가 최애 아티스트를 물으면 get_watched_artists 도구 사용
 - 유저가 "최애" 또는 "내 아티스트"라고 말하면 먼저 get_watched_artists를 호출하고, 최애가 있으면 절대 아티스트명을 다시 묻지 말고 그 아티스트 기준으로 바로 답변해
 - 스밍/스트리밍 전략/가이드/플레이리스트/총공 요청 시 get_streaming_guide 도구 사용
@@ -1600,7 +1663,7 @@ Deno.serve(async (req) => {
                 sendStatus(controller, labels[userLang] || labels.en);
               }
 
-              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache);
+              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId);
 
               // Collect structured data for inline cards
               if (fnName === "get_streaming_guide") {
