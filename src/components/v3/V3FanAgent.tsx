@@ -638,19 +638,16 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         {/* Center: avatar (popover trigger) + name */}
         <Popover open={showMenu} onOpenChange={setShowMenu}>
           <PopoverTrigger asChild>
-            <button type="button" className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity">
+            <button type="button" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
               <AgentAvatar avatarUrl={avatarUrl} size="lg" />
-              <span className="text-sm font-semibold text-foreground truncate max-w-[120px]">
-                {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
-              </span>
             </button>
           </PopoverTrigger>
           <PopoverContent align="center" className="w-60 p-1.5 rounded-xl" sideOffset={8}>
             {/* Agent name + "+" button */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 mb-1">
               <span className="text-sm font-bold text-foreground truncate">
-                {t("agent.title")}
+                {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
               </span>
               <button
                 type="button"
