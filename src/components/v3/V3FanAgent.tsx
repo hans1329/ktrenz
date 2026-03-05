@@ -170,6 +170,7 @@ async function streamChat({
   agentSlotId,
   onDelta,
   onMeta,
+  onStatus,
   onDone,
 }: {
   messages: ChatMessage[];
@@ -177,6 +178,7 @@ async function streamChat({
   agentSlotId?: string | null;
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
+  onStatus?: (status: string) => void;
   onDone: () => void;
 }) {
   const resp = await fetch(CHAT_URL, {
@@ -215,6 +217,11 @@ async function streamChat({
     if (jsonStr === "[DONE]") return true;
     try {
       const parsed = JSON.parse(jsonStr);
+      // Check for status event (step-by-step progress)
+      if (parsed.status && onStatus) {
+        onStatus(parsed.status);
+        return false;
+      }
       // Check for meta event (structured card data)
       if (parsed.meta && onMeta) {
         onMeta(parsed.meta);
@@ -549,7 +556,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         token: session.access_token,
         agentSlotId: activeSlot?.id,
         onDelta: (chunk) => {
-          if (assistantContent === "") setStreamingStatus(t("agent.status.writing"));
           assistantContent += chunk;
           setMessages((prev) => {
             const last = prev[prev.length - 1];
@@ -561,6 +567,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             return [...prev, { role: "assistant" as const, content: assistantContent, timestamp: new Date().toISOString() }];
           });
         },
+        onStatus: (status) => setStreamingStatus(status),
         onMeta: (meta) => {
           setMessages((prev) => {
             const lastIdx = prev.length - 1;
@@ -1018,7 +1025,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               </div>
             </div>
             {streamingStatus && (
-              <span className="text-[11px] text-muted-foreground/60 px-1 animate-pulse">
+              <span className="text-[11px] text-muted-foreground px-1 animate-pulse">
                 {streamingStatus}
               </span>
             )}
