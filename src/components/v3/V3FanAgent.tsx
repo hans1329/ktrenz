@@ -20,6 +20,9 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose,
+} from "@/components/ui/drawer";
 
 // ── Types ──────────────────────────────────────────────
 type ChatMessage = {
@@ -837,14 +840,14 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages()}
 
-      <AlertDialog open={showPointPurchaseDialog} onOpenChange={(open) => {
+      <Drawer open={showPointPurchaseDialog} onOpenChange={(open) => {
         setShowPointPurchaseDialog(open);
         if (!open) setPendingPurchaseText(null);
       }}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("agent.pointPurchaseTitle")}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
+        <DrawerContent className="mx-4 mb-4 rounded-2xl bg-background border-border md:max-w-sm md:mx-auto">
+          <DrawerHeader className="pb-1">
+            <DrawerTitle>{t("agent.pointPurchaseTitle")}</DrawerTitle>
+            <DrawerDescription asChild>
               <div className="space-y-1.5">
                 <p>{t("agent.pointPurchaseLine1")}</p>
                 <p>{t("agent.pointPurchaseLine2")}</p>
@@ -852,9 +855,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   {t("agent.pointPurchaseBalance")}: {kPoints.toLocaleString()}P
                 </p>
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid gap-2 py-2">
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="grid gap-2 px-4 py-2">
             {[5, 10, 20].map((bundle) => (
               <button
                 key={bundle}
@@ -870,11 +873,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               </button>
             ))}
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPurchasing}>{t("agent.clearChatCancel")}</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <Button variant="outline" disabled={isPurchasing}>{t("agent.clearChatCancel")}</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
