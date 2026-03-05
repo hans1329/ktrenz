@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, ShieldCheck, ShieldOff, Pencil, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface KtrenzUser {
@@ -24,6 +26,8 @@ interface KtrenzUser {
 
 const AdminUsers = () => {
   const queryClient = useQueryClient();
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editPoints, setEditPoints] = useState<string>('');
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-ktrenz-users'],
@@ -104,6 +108,41 @@ const AdminUsers = () => {
     onError: (err: any) => toast.error('권한 변경 실패: ' + err.message),
   });
 
+  const updatePoints = useMutation({
+    mutationFn: async ({ userId, newPoints }: { userId: string; newPoints: number }) => {
+      const { error } = await supabase
+        .from('ktrenz_user_points')
+        .update({ points: newPoints } as any)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ktrenz-users'] });
+      toast.success('포인트가 수정되었습니다');
+      setEditingUserId(null);
+    },
+    onError: (err: any) => toast.error('포인트 수정 실패: ' + err.message),
+  });
+
+  const startEditing = (userId: string, currentPoints: number) => {
+    setEditingUserId(userId);
+    setEditPoints(String(currentPoints));
+  };
+
+  const confirmEdit = (userId: string) => {
+    const newPoints = parseInt(editPoints, 10);
+    if (isNaN(newPoints) || newPoints < 0) {
+      toast.error('유효한 숫자를 입력해주세요');
+      return;
+    }
+    updatePoints.mutate({ userId, newPoints });
+  };
+
+  const cancelEdit = () => {
+    setEditingUserId(null);
+    setEditPoints('');
+  };
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   }
@@ -133,6 +172,7 @@ const AdminUsers = () => {
             {users.map((u) => {
               const isAdmin = u.role === 'admin';
               const isMod = u.role === 'moderator';
+              const isEditing = editingUserId === u.user_id;
               return (
                 <TableRow key={u.user_id}>
                   <TableCell>
@@ -176,7 +216,49 @@ const AdminUsers = () => {
                       {isAdmin ? '해제' : '부여'}
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">{u.points.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    {isEditing ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <Input
+                          type="number"
+                          value={editPoints}
+                          onChange={(e) => setEditPoints(e.target.value)}
+                          className="w-20 h-7 text-xs text-right font-mono"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') confirmEdit(u.user_id);
+                            if (e.key === 'Escape') cancelEdit();
+                          }}
+                          autoFocus
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => confirmEdit(u.user_id)}
+                          disabled={updatePoints.isPending}
+                        >
+                          {updatePoints.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 text-green-500" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={cancelEdit}
+                        >
+                          <X className="w-3 h-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startEditing(u.user_id, u.points)}
+                        className="inline-flex items-center gap-1 font-mono text-sm hover:text-primary transition-colors group"
+                        title="클릭하여 포인트 수정"
+                      >
+                        {u.points.toLocaleString()}
+                        <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                      </button>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.agent_msg_count}</TableCell>
                   <TableCell className="text-right font-mono text-xs text-muted-foreground">{u.login_count}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(u.last_login_at).toLocaleDateString()}</TableCell>
