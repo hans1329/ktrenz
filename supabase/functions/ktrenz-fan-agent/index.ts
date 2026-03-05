@@ -1408,193 +1408,195 @@ Deno.serve(async (req) => {
       ...messages.slice(-15).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    // ── Tool Calling Loop (non-streaming) ──
-    // We do tool calls in a loop until the model produces a final text response.
-    // Then we stream the final response.
+    // ── Tool Calling Loop with Real-Time Status Streaming ──
+    // We stream SSE from the start so the frontend gets live status updates as tools execute.
 
-    let toolCallRound = 0;
-    const MAX_TOOL_ROUNDS = 5;
+    const encoder = new TextEncoder();
 
-    while (toolCallRound < MAX_TOOL_ROUNDS) {
-      toolCallRound++;
+    // Tool status labels per language
+    const toolStatusMap: Record<string, Record<string, string>> = {
+      get_rankings: { en: "Checking rankings…", ko: "순위를 확인하고 있어요…", ja: "ランキングを確認中…", zh: "正在查看排名…" },
+      lookup_artist: { en: "Looking up artist data…", ko: "아티스트 데이터를 조회 중…", ja: "アーティストデータを検索中…", zh: "正在查询艺人数据…" },
+      compare_artists: { en: "Comparing artists…", ko: "아티스트를 비교하고 있어요…", ja: "アーティストを比較中…", zh: "正在比较艺人…" },
+      search_artist: { en: "Searching for artist…", ko: "아티스트를 검색하고 있어요…", ja: "アーティストを検索中…", zh: "正在搜索艺人…" },
+      manage_watched_artist: { en: "Updating your artist…", ko: "아티스트를 설정하고 있어요…", ja: "アーティストを設定中…", zh: "正在设置艺人…" },
+      get_streaming_guide: { en: "Building streaming guide…", ko: "스트리밍 가이드를 만들고 있어요…", ja: "ストリーミングガイドを作成中…", zh: "正在创建流媒体指南…" },
+      get_artist_news: { en: "Fetching latest news…", ko: "최신 뉴스를 가져오고 있어요…", ja: "最新ニュースを取得中…", zh: "正在获取最新新闻…" },
+    };
+    const thinkingLabels: Record<string, string> = { en: "Analyzing your question…", ko: "질문을 분석하고 있어요…", ja: "質問を分析中…", zh: "正在分析您的问题…" };
+    const writingLabels: Record<string, string> = { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" };
 
-      const toolResp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: openaiMessages,
-          tools: TOOLS,
-          tool_choice: "auto",
-          max_tokens: 1024,
-        }),
-      });
-
-      if (!toolResp.ok) {
-        const errBody = await toolResp.text();
-        console.error("OpenAI tool call error:", toolResp.status, errBody);
-        if (toolResp.status === 429) {
-          return new Response(JSON.stringify({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }), {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ error: "AI 응답 실패" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const toolData = await toolResp.json();
-      const choice = toolData.choices?.[0];
-
-      if (!choice) {
-        return new Response(JSON.stringify({ error: "Empty AI response" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const assistantMessage = choice.message;
-
-      // If no tool calls, this is the final response — stream it
-      if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
-        let finalContent = assistantMessage.content ?? "";
-
-        // Bias registration response must stay concise: cards are rendered via structured meta on frontend
-        if (collectedMeta.quickActions && collectedMeta.quickActions.length > 0 && collectedMeta.biasArtist) {
-          if (userLang === "ko") {
-            finalContent = `✨ **${collectedMeta.biasArtist}**을(를) 최애 아티스트로 설정했어요!\n\n이제 팬활동을 시작해 볼까요? 💜\n\n아래 카드를 눌러 바로 시작해보세요!`;
-          } else if (userLang === "ja") {
-            finalContent = `✨ **${collectedMeta.biasArtist}** を推しアーティストに設定しました！\n\nファン活動を始めましょうか？💜\n\n下のカードをタップしてすぐ始められます！`;
-          } else if (userLang === "zh") {
-            finalContent = `✨ 已将 **${collectedMeta.biasArtist}** 设为你的本命艺人！\n\n现在开始粉丝活动吧？💜\n\n点击下方卡片即可马上开始！`;
-          } else {
-            finalContent = `✨ **${collectedMeta.biasArtist}** is now set as your bias artist!\n\nReady to start fan activities? 💜\n\nTap the cards below to begin right away!`;
-          }
-        }
-
-        // Save assistant message
-        if (finalContent) {
-          await adminClient.from("ktrenz_fan_agent_messages").insert({
-            user_id: userId,
-            agent_slot_id: activeSlotId,
-            role: "assistant",
-            content: finalContent,
-          });
-        }
-
-        // Stream the final response as SSE (for frontend compatibility)
-        const encoder = new TextEncoder();
-        const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions;
-        // Map tool names to user-facing status labels
-        const toolStatusMap: Record<string, Record<string, string>> = {
-          get_rankings: { en: "Checking rankings…", ko: "순위를 확인하고 있어요…", ja: "ランキングを確認中…", zh: "正在查看排名…" },
-          lookup_artist: { en: "Looking up artist data…", ko: "아티스트 데이터를 조회 중…", ja: "アーティストデータを検索中…", zh: "正在查询艺人数据…" },
-          compare_artists: { en: "Comparing artists…", ko: "아티스트를 비교하고 있어요…", ja: "アーティストを比較中…", zh: "正在比较艺人…" },
-          search_artist: { en: "Searching for artist…", ko: "아티스트를 검색하고 있어요…", ja: "アーティストを検索中…", zh: "正在搜索艺人…" },
-          manage_watched_artist: { en: "Updating your artist…", ko: "아티스트를 설정하고 있어요…", ja: "アーティストを設定中…", zh: "正在设置艺人…" },
-          get_streaming_guide: { en: "Building streaming guide…", ko: "스트리밍 가이드를 만들고 있어요…", ja: "ストリーミングガイドを作成中…", zh: "正在创建流媒体指南…" },
-          get_artist_news: { en: "Fetching latest news…", ko: "최신 뉴스를 가져오고 있어요…", ja: "最新ニュースを取得中…", zh: "正在获取最新新闻…" },
-        };
-
-        const toolsUsed: string[] = (collectedMeta as any).toolsUsed ?? [];
-
-        const stream = new ReadableStream({
-          start(controller) {
-            // Send tool execution status events so frontend shows step-by-step progress
-            for (const toolName of toolsUsed) {
-              const labels = toolStatusMap[toolName];
-              if (labels) {
-                const statusEvent = JSON.stringify({ status: labels[userLang] || labels.en });
-                controller.enqueue(encoder.encode(`data: ${statusEvent}\n\n`));
-              }
-            }
-            // Signal writing phase
-            const writingLabels: Record<string, string> = { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: writingLabels[userLang] || writingLabels.en })}\n\n`));
-
-            // Send the content in chunks to simulate streaming
-            const chunkSize = 20;
-            for (let i = 0; i < finalContent.length; i += chunkSize) {
-              const chunk = finalContent.slice(i, i + chunkSize);
-              const sseData = JSON.stringify({ choices: [{ delta: { content: chunk } }] });
-              controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-            }
-            // Send structured meta data for inline card rendering
-            if (hasMeta) {
-              const metaEvent = JSON.stringify({ meta: collectedMeta });
-              controller.enqueue(encoder.encode(`data: ${metaEvent}\n\n`));
-            }
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            controller.close();
-          },
-        });
-
-        return new Response(stream, {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-          },
-        });
-      }
-
-      // Process tool calls
-      openaiMessages.push(assistantMessage);
-
-      // Collect tool names for status events
-      if (!collectedMeta.toolsUsed) (collectedMeta as any).toolsUsed = [];
-
-      for (const toolCall of assistantMessage.tool_calls) {
-        const fnName = toolCall.function.name;
-        let fnArgs: any = {};
-        try { fnArgs = JSON.parse(toolCall.function.arguments); } catch {}
-
-        console.log(`[FanAgent] Tool call: ${fnName}`, fnArgs);
-        (collectedMeta as any).toolsUsed.push(fnName);
-
-        const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache);
-
-        // Collect structured data for inline cards
-        if (fnName === "get_streaming_guide") {
-          try {
-            const parsed = JSON.parse(result);
-            if (parsed.guide && !parsed.error) {
-              if (!collectedMeta.guideData) collectedMeta.guideData = [];
-              collectedMeta.guideData.push({ artist_name: parsed.artist, guide_data: parsed.guide });
-            }
-          } catch {}
-        }
-
-        // Collect quick actions after bias registration
-        if (fnName === "manage_watched_artist") {
-          try {
-            const parsed = JSON.parse(result);
-            if (parsed.success && parsed.action === "set_bias" && parsed.quick_actions) {
-              collectedMeta.quickActions = parsed.quick_actions;
-              collectedMeta.biasArtist = parsed.artist;
-            }
-          } catch {}
-        }
-
-        openaiMessages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: result,
-        });
-      }
-
-      // Loop continues — model will see tool results and decide next action
+    function sendStatus(controller: ReadableStreamDefaultController, label: string) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: label })}\n\n`));
     }
 
-    // If we exceed max rounds, return what we have
-    return new Response(JSON.stringify({ error: "Tool call limit reached" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Initial "thinking" status
+          sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
+
+          let toolCallRound = 0;
+          const MAX_TOOL_ROUNDS = 5;
+
+          while (toolCallRound < MAX_TOOL_ROUNDS) {
+            toolCallRound++;
+
+            const toolResp = await fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: openaiMessages,
+                tools: TOOLS,
+                tool_choice: "auto",
+                max_tokens: 1024,
+              }),
+            });
+
+            if (!toolResp.ok) {
+              const errBody = await toolResp.text();
+              console.error("OpenAI tool call error:", toolResp.status, errBody);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "AI 응답 실패" })}\n\n`));
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            const toolData = await toolResp.json();
+            const choice = toolData.choices?.[0];
+
+            if (!choice) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Empty AI response" })}\n\n`));
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            const assistantMessage = choice.message;
+
+            // If no tool calls, this is the final response — stream content
+            if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
+              let finalContent = assistantMessage.content ?? "";
+
+              // Bias registration response override
+              if (collectedMeta.quickActions && collectedMeta.quickActions.length > 0 && collectedMeta.biasArtist) {
+                if (userLang === "ko") {
+                  finalContent = `✨ **${collectedMeta.biasArtist}**을(를) 최애 아티스트로 설정했어요!\n\n이제 팬활동을 시작해 볼까요? 💜\n\n아래 카드를 눌러 바로 시작해보세요!`;
+                } else if (userLang === "ja") {
+                  finalContent = `✨ **${collectedMeta.biasArtist}** を推しアーティストに設定しました！\n\nファン活動を始めましょうか？💜\n\n下のカードをタップしてすぐ始められます！`;
+                } else if (userLang === "zh") {
+                  finalContent = `✨ 已将 **${collectedMeta.biasArtist}** 设为你的本命艺人！\n\n现在开始粉丝活动吧？💜\n\n点击下方卡片即可马上开始！`;
+                } else {
+                  finalContent = `✨ **${collectedMeta.biasArtist}** is now set as your bias artist!\n\nReady to start fan activities? 💜\n\nTap the cards below to begin right away!`;
+                }
+              }
+
+              // Save assistant message
+              if (finalContent) {
+                await adminClient.from("ktrenz_fan_agent_messages").insert({
+                  user_id: userId,
+                  agent_slot_id: activeSlotId,
+                  role: "assistant",
+                  content: finalContent,
+                });
+              }
+
+              // Signal writing phase
+              sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+
+              // Stream content in chunks
+              const chunkSize = 20;
+              for (let i = 0; i < finalContent.length; i += chunkSize) {
+                const chunk = finalContent.slice(i, i + chunkSize);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+              }
+
+              // Send structured meta data for inline card rendering
+              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions;
+              if (hasMeta) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: collectedMeta })}\n\n`));
+              }
+
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            // Process tool calls — send real-time status for each tool
+            openaiMessages.push(assistantMessage);
+
+            for (const toolCall of assistantMessage.tool_calls) {
+              const fnName = toolCall.function.name;
+              let fnArgs: any = {};
+              try { fnArgs = JSON.parse(toolCall.function.arguments); } catch {}
+
+              console.log(`[FanAgent] Tool call: ${fnName}`, fnArgs);
+
+              // Send real-time status to frontend
+              const labels = toolStatusMap[fnName];
+              if (labels) {
+                sendStatus(controller, labels[userLang] || labels.en);
+              }
+
+              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache);
+
+              // Collect structured data for inline cards
+              if (fnName === "get_streaming_guide") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.guide && !parsed.error) {
+                    if (!collectedMeta.guideData) collectedMeta.guideData = [];
+                    collectedMeta.guideData.push({ artist_name: parsed.artist, guide_data: parsed.guide });
+                  }
+                } catch {}
+              }
+
+              // Collect quick actions after bias registration
+              if (fnName === "manage_watched_artist") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.success && parsed.action === "set_bias" && parsed.quick_actions) {
+                    collectedMeta.quickActions = parsed.quick_actions;
+                    collectedMeta.biasArtist = parsed.artist;
+                  }
+                } catch {}
+              }
+
+              openaiMessages.push({
+                role: "tool",
+                tool_call_id: toolCall.id,
+                content: result,
+              });
+            }
+
+            // Loop continues — model will see tool results and decide next action
+            sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
+          }
+
+          // Max rounds exceeded
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Tool call limit reached" })}\n\n`));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+
+        } catch (e) {
+          console.error("[FanAgent] Stream error:", e);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Internal error" })}\n\n`));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+      },
     });
 
   } catch (e) {
