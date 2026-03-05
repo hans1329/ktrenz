@@ -1281,6 +1281,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
         {hasStarted && messages.length > 0 && !isStreaming && (
           <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
+            {!hasAlertOn && (
+              <button
+                onClick={() => handleSend(t("agent.prompt.alertSetup"))}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary font-medium hover:bg-primary/20 transition-all shrink-0"
+              >
+                <Heart className="w-3 h-3" />
+                {t("agent.registerBias")}
+              </button>
+            )}
             {QUICK_ACTIONS.map((action) => {
               const Icon = action.icon;
               return (
