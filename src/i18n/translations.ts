@@ -79,6 +79,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.alertsOff": { en: "Alerts turned off", ko: "알림이 해제되었습니다", ja: "アラートがオフになりました", zh: "提醒已关闭" },
   "agent.uploadSuccess": { en: "Agent profile image updated!", ko: "에이전트 프로필 이미지가 업데이트되었습니다!", ja: "エージェントのプロフィール画像が更新されました！", zh: "助手头像已更新！" },
   "agent.clearChat": { en: "Clear chat", ko: "대화 초기화", ja: "チャットをクリア", zh: "清除聊天" },
+  "agent.changePhoto": { en: "Change profile photo", ko: "프로필 사진 변경", ja: "プロフィール写真を変更", zh: "更改头像" },
   "agent.chatCleared": { en: "Chat history cleared", ko: "대화 기록이 초기화되었습니다", ja: "チャット履歴がクリアされました", zh: "聊天记录已清除" },
   "agent.status.thinking": { en: "Analyzing your question…", ko: "질문을 분석하고 있어요…", ja: "質問を分析中…", zh: "正在分析您的问题…" },
   "agent.status.writing": { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" },
