@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGES } from "@/i18n/translations";
 import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +37,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
 
   // Auto-open profile drawer when navigating back from settings/kpass
@@ -172,7 +173,18 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
               )}
             </div>
 
-            
+            {/* Language */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-9 h-9 rounded-full text-xs font-semibold text-muted-foreground"
+              onClick={() => {
+                const codes = LANGUAGES.map(l => l.code);
+                setLanguage(codes[(codes.indexOf(language) + 1) % codes.length]);
+              }}
+            >
+              {language.toUpperCase()}
+            </Button>
 
             {/* Notifications */}
             <Button variant="ghost" size="icon" onClick={() => navigate("/notifications")} className="w-9 h-9 rounded-full">
