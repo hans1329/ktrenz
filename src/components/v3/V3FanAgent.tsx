@@ -181,6 +181,23 @@ async function streamChat({
   onStatus?: (status: string) => void;
   onDone: () => void;
 }) {
+  // Queue status updates with minimum display time so rapid SSE events don't overwrite each other
+  const statusQueue: string[] = [];
+  let statusDraining = false;
+  const STATUS_MIN_MS = 600;
+
+  function enqueueStatus(status: string) {
+    statusQueue.push(status);
+    if (!statusDraining) drainStatus();
+  }
+
+  function drainStatus() {
+    if (statusQueue.length === 0) { statusDraining = false; return; }
+    statusDraining = true;
+    const next = statusQueue.shift()!;
+    onStatus?.(next);
+    setTimeout(() => drainStatus(), STATUS_MIN_MS);
+  }
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
@@ -219,7 +236,7 @@ async function streamChat({
       const parsed = JSON.parse(jsonStr);
       // Check for status event (step-by-step progress)
       if (parsed.status && onStatus) {
-        onStatus(parsed.status);
+        enqueueStatus(parsed.status);
         return false;
       }
       // Check for meta event (structured card data)
