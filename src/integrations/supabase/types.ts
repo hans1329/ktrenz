@@ -2455,6 +2455,7 @@ export type Database = {
       ktrenz_daily_missions: {
         Row: {
           completed_at: string
+          content_id: string | null
           id: string
           mission_date: string
           mission_key: string
@@ -2464,6 +2465,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string
+          content_id?: string | null
           id?: string
           mission_date?: string
           mission_key: string
@@ -2473,6 +2475,7 @@ export type Database = {
         }
         Update: {
           completed_at?: string
+          content_id?: string | null
           id?: string
           mission_date?: string
           mission_key?: string
