@@ -101,6 +101,7 @@ const UserDashboard = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedArtistTag, setSelectedArtistTag] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
@@ -189,6 +190,7 @@ const UserDashboard = () => {
 
   // ── 최애 아티스트 + 기여도 ──
   const favoriteArtistName = useMemo(() => {
+    if (selectedArtistTag) return selectedArtistTag;
     if (!events?.length) return null;
     const counts = new Map<string, number>();
     for (const e of events) {
@@ -197,7 +199,7 @@ const UserDashboard = () => {
     }
     if (counts.size === 0) return null;
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
-  }, [events]);
+  }, [events, selectedArtistTag]);
 
   const { data: favoriteArtist } = useQuery({
     queryKey: ["favorite-artist-detail", favoriteArtistName, viewUserId],
@@ -341,7 +343,11 @@ const UserDashboard = () => {
   });
 
   const stats = useMemo(() => {
-    if (!events?.length) return {
+    const filtered = selectedArtistTag
+      ? (events || []).filter((e: any) => (e.event_data as any)?.artist_name === selectedArtistTag)
+      : (events || []);
+
+    if (!filtered.length) return {
       totalEvents: 0, treemapClicks: 0, listClicks: 0,
       detailViews: 0, agentChats: 0, externalClicks: 0,
       topArtists: [] as { name: string; count: number }[],
@@ -354,7 +360,7 @@ const UserDashboard = () => {
     const platformCounts = new Map<string, number>();
     let treemapClicks = 0, listClicks = 0, detailViews = 0, agentChats = 0, externalClicks = 0;
 
-    for (const e of events) {
+    for (const e of filtered) {
       const name = (e.event_data as any)?.artist_name;
       if (name) artistCounts.set(name, (artistCounts.get(name) || 0) + 1);
 
@@ -373,7 +379,13 @@ const UserDashboard = () => {
       }
     }
 
-    const topArtists = Array.from(artistCounts.entries())
+    // topArtists는 항상 전체 events 기준 (태그 클라우드 용)
+    const allArtistCounts = new Map<string, number>();
+    for (const e of (events || [])) {
+      const name = (e.event_data as any)?.artist_name;
+      if (name) allArtistCounts.set(name, (allArtistCounts.get(name) || 0) + 1);
+    }
+    const topArtists = Array.from(allArtistCounts.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
@@ -387,10 +399,12 @@ const UserDashboard = () => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
-    return { totalEvents: events.length, treemapClicks, listClicks, detailViews, agentChats, externalClicks, topArtists, externalArtists, platformBreakdown };
-  }, [events]);
+    return { totalEvents: filtered.length, treemapClicks, listClicks, detailViews, agentChats, externalClicks, topArtists, externalArtists, platformBreakdown };
+  }, [events, selectedArtistTag]);
 
-  const recentEvents = (events || []).slice(0, 30);
+  const recentEvents = selectedArtistTag
+    ? (events || []).filter((e: any) => (e.event_data as any)?.artist_name === selectedArtistTag).slice(0, 30)
+    : (events || []).slice(0, 30);
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
@@ -447,29 +461,39 @@ const UserDashboard = () => {
             {stats.topArtists.length > 0 && (
               <div className="mb-6 mt-2">
                 <h3 className="text-sm font-bold text-foreground mb-3">나의 관심 아티스트</h3>
-                <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
+                  {selectedArtistTag && (
+                    <button
+                      onClick={() => setSelectedArtistTag(null)}
+                      className="px-3 py-1.5 rounded-full border border-border bg-muted/50 text-muted-foreground text-xs font-bold hover:bg-muted transition-colors"
+                    >
+                      ✕ All
+                    </button>
+                  )}
                   {stats.topArtists.map((artist, idx) => {
                     const maxCount = stats.topArtists[0]?.count || 1;
                     const ratio = artist.count / maxCount;
-                    // Scale: font size 12~22px, opacity 60~100%
                     const fontSize = Math.round(11 + ratio * 6);
-                    const opacity = 0.6 + ratio * 0.4;
+                    const opacity = selectedArtistTag && selectedArtistTag !== artist.name ? 0.4 : (0.6 + ratio * 0.4);
+                    const isSelected = selectedArtistTag === artist.name;
                     const isTop3 = idx < 3;
                     return (
-                      <Link
+                      <button
                         key={artist.name}
-                        to={`/artist/${encodeURIComponent(artist.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                        onClick={() => setSelectedArtistTag(isSelected ? null : artist.name)}
                         className={cn(
                           "px-3 py-1.5 rounded-full border transition-all hover:scale-105",
-                          isTop3
-                            ? "bg-primary/10 border-primary/30 text-primary font-bold"
-                            : "bg-muted/50 border-border text-foreground/80 font-medium"
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary font-bold ring-2 ring-primary/30"
+                            : isTop3
+                              ? "bg-primary/10 border-primary/30 text-primary font-bold"
+                              : "bg-muted/50 border-border text-foreground/80 font-medium"
                         )}
                         style={{ fontSize: `${fontSize}px`, opacity }}
                       >
                         {artist.name}
                         <span className="ml-1.5 text-[10px] opacity-60">{artist.count}</span>
-                      </Link>
+                      </button>
                     );
                   })}
                 </div>
