@@ -1367,7 +1367,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </DrawerHeader>
           <div className="flex flex-col items-center gap-4 px-6 pb-6">
             {/* Large Avatar */}
-            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+            <div className="w-36 h-36 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
               ) : (
