@@ -307,7 +307,8 @@ export default function V3MissionCards({
   });
 
   const musicCharts = metadata?.music_charts;
-  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts, t);
+  const excludeSet = new Set(recentContentIds);
+  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts, t, excludeSet);
   const completedSet = new Set(completedMissions);
   const completedCount = missions.filter(m => completedSet.has(m.key)).length;
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
@@ -341,6 +342,7 @@ export default function V3MissionCards({
         wiki_entry_id: wikiEntryId,
         mission_key: mission.key,
         points_awarded: mission.points,
+        content_id: mission.contentId || null,
       });
       if (missionError) {
         if (missionError.code === "23505") return; // duplicate
