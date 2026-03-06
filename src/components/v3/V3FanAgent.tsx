@@ -1364,31 +1364,40 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             <DrawerDescription className="sr-only">Agent profile</DrawerDescription>
           </DrawerHeader>
           <div className="flex flex-col items-center gap-4 px-6 pb-6 pt-3">
-            {/* Large Avatar */}
-            <div className="w-48 h-48 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+            {/* Large Avatar — tappable to change photo */}
+            <button
+              type="button"
+              onClick={() => avatarFileRef.current?.click()}
+              className="relative group w-48 h-48 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center hover:border-primary/40 transition-colors"
+            >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
               ) : (
                 <Bot className="w-14 h-14 text-primary" />
               )}
-            </div>
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+            </button>
+            <p className="text-[11px] text-muted-foreground">{t("agent.profile.tapToChange")}</p>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
               <div className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border/50 p-3">
                 <MessageCircle className="w-4 h-4 text-primary" />
                 <span className="text-lg font-bold text-foreground">{agentUsage?.used ?? 0}</span>
-                <span className="text-[10px] text-muted-foreground">Chats Today</span>
+                <span className="text-[10px] text-muted-foreground">{t("agent.profile.chatsToday")}</span>
               </div>
               <div className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border/50 p-3">
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span className="text-lg font-bold text-foreground">{agentUsage?.remaining ?? 0}</span>
-                <span className="text-[10px] text-muted-foreground">Remaining</span>
+                <span className="text-[10px] text-muted-foreground">{t("agent.profile.remaining")}</span>
               </div>
               <div className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border/50 p-3">
                 <Crown className="w-4 h-4 text-purple-400" />
                 <span className="text-lg font-bold text-foreground capitalize">{agentUsage?.tier ?? "basic"}</span>
-                <span className="text-[10px] text-muted-foreground">Tier</span>
+                <span className="text-[10px] text-muted-foreground">{t("agent.profile.tier")}</span>
               </div>
             </div>
 
@@ -1403,7 +1412,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               >
                 <Heart className="w-4 h-4 text-pink-400 shrink-0" />
                 <div className="flex-1 text-left">
-                  <p className="text-xs text-muted-foreground">Bias Artist</p>
+                  <p className="text-xs text-muted-foreground">{t("agent.profile.biasArtist")}</p>
                   <p className="text-sm font-semibold text-foreground">{activeSlot.artist_name}</p>
                 </div>
                 <TrendingUp className="w-4 h-4 text-muted-foreground" />
@@ -1415,13 +1424,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               variant="outline"
               size="sm"
               className="rounded-full gap-1.5"
-              onClick={() => {
-                setShowAgentProfileModal(false);
-                avatarFileRef.current?.click();
-              }}
+              onClick={() => avatarFileRef.current?.click()}
             >
               <Camera className="w-3.5 h-3.5" />
-              Change Photo
+              {t("agent.changePhoto")}
             </Button>
           </div>
         </DrawerContent>
