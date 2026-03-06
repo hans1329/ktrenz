@@ -434,16 +434,16 @@ export default function V3MissionCards({
                   {/* Content row: thumbnail + title */}
                   <div className="flex items-start gap-2.5 w-full">
                     {mission.thumbnail && (
-                      <img
-                        src={mission.thumbnail}
-                        alt=""
-                        className="shrink-0 w-20 h-11 rounded-md object-cover bg-muted"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    )}
+                       <img
+                         src={mission.thumbnail}
+                         alt=""
+                         className="shrink-0 w-24 h-14 rounded-md object-cover bg-muted"
+                         loading="lazy"
+                         onError={(e) => {
+                           (e.currentTarget as HTMLImageElement).style.display = "none";
+                         }}
+                       />
+                     )}
                     <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
                   </div>
 
