@@ -16,6 +16,7 @@ interface Mission {
   points: number;
   icon: React.ReactNode;
   thumbnail?: string | null;
+  contentId?: string;
 }
 
 const CATEGORY_CONFIG = {
@@ -38,11 +39,12 @@ function generateMissions(
   newsItems: Array<{ title: string; url: string; og_image?: string | null }>,
   musicCharts: any,
   t: (key: string) => string,
+  excludeContentIds: Set<string> = new Set(),
 ): Mission[] {
   const missions: Mission[] = [];
 
-  // YouTube missions — 최신 영상 시청만, 최대 4개
-  videos.slice(0, 4).forEach((video, i) => {
+  // YouTube missions — 최신 영상 시청만, 최대 4개 (exclude recently completed)
+  videos.filter(v => !excludeContentIds.has(`yt:${v.id}`)).slice(0, 4).forEach((video, i) => {
     missions.push({
       key: `yt_${i}_watch`,
       category: "youtube",
@@ -52,11 +54,12 @@ function generateMissions(
       points: 10,
       icon: CATEGORY_CONFIG.youtube.icon,
       thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+      contentId: `yt:${video.id}`,
     });
   });
 
-  // News missions — each with different article + thumbnail
-  newsItems.slice(0, 4).forEach((item, i) => {
+  // News missions — each with different article + thumbnail (exclude recently completed)
+  newsItems.filter(item => !excludeContentIds.has(`news:${item.url}`)).slice(0, 4).forEach((item, i) => {
     missions.push({
       key: `news_${i}`,
       category: "news",
@@ -66,6 +69,7 @@ function generateMissions(
       points: 8,
       icon: CATEGORY_CONFIG.news.icon,
       thumbnail: item.og_image || null,
+      contentId: `news:${item.url}`,
     });
   });
 
