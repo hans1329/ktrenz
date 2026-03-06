@@ -99,9 +99,20 @@ function useAgentAvatar(
   const avatarUrl = activeSlot?.avatar_url ?? fallbackAvatarUrl ?? null;
 
   const uploadAvatar = useCallback(async (file: File) => {
-    if (!userId || !activeSlot?.id) return;
+    if (!userId || !activeSlot?.id) {
+      toast.error("Cannot upload: missing user or agent slot");
+      return;
+    }
 
-    const webpBlob = await convertToWebp(file);
+    let webpBlob: Blob;
+    try {
+      webpBlob = await convertToWebp(file);
+    } catch (err) {
+      console.error("WebP conversion error:", err);
+      toast.error("Image conversion failed. Please try a different image.");
+      return;
+    }
+
     const filePath = `${userId}/${activeSlot.id}.webp`;
 
     const { error: uploadErr } = await supabase.storage
@@ -112,6 +123,7 @@ function useAgentAvatar(
       });
 
     if (uploadErr) {
+      console.error("Storage upload error:", uploadErr);
       toast.error("Image upload failed: " + uploadErr.message);
       return;
     }
@@ -129,6 +141,7 @@ function useAgentAvatar(
       .eq("id", activeSlot.id);
 
     if (dbErr) {
+      console.error("DB update error:", dbErr);
       toast.error("Profile save failed: " + dbErr.message);
       return;
     }
