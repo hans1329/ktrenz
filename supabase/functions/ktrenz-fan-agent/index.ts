@@ -1349,11 +1349,11 @@ async function searchWithPerplexity(
   adminClient?: any,
   topicType: string = "general",
   wikiEntryId: string | null = null,
-): Promise<{ content: string; citations: string[] } | null> {
+): Promise<{ content: string; citations: string[]; archiveId: string | null } | null> {
   // 1. Check cache first
   if (adminClient) {
     const cached = await getCachedKnowledge(adminClient, query, topicType);
-    if (cached) return { content: cached.content, citations: cached.citations };
+    if (cached) return { content: cached.content, citations: cached.citations, archiveId: null };
   }
 
   // 2. Call Perplexity
@@ -1389,12 +1389,13 @@ async function searchWithPerplexity(
     const content = data.choices?.[0]?.message?.content ?? "";
     const citations = data.citations ?? [];
 
-    // 3. Store in cache
+    // 3. Store in cache + archive
+    let archiveId: string | null = null;
     if (adminClient && content) {
-      await cacheKnowledge(adminClient, query, topicType, content, citations, wikiEntryId, recency);
+      archiveId = await cacheKnowledge(adminClient, query, topicType, content, citations, wikiEntryId, recency);
     }
 
-    return { content, citations };
+    return { content, citations, archiveId };
   } catch (e) {
     console.error("Perplexity search error:", e);
     return null;
