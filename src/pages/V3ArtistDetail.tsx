@@ -113,7 +113,10 @@ const V3ArtistDetail = () => {
   const { data: entry, isLoading: entryLoading } = useQuery({
     queryKey: ["v3-artist", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("wiki_entries").select("id, title, slug, image_url, metadata, schema_type").eq("slug", slug!).single();
+      // Support both slug and UUID lookups
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug!);
+      const col = isUuid ? "id" : "slug";
+      const { data, error } = await supabase.from("wiki_entries").select("id, title, slug, image_url, metadata, schema_type").eq(col, slug!).single();
       if (error) throw error;
       return data;
     },
