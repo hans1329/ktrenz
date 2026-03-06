@@ -97,7 +97,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
   return (
     <>
-      <nav className="fixed bottom-2 left-3 right-3 z-50 bg-background/95 backdrop-blur-md border border-purple-500/30 rounded-full overflow-visible"
+      <nav className="fixed bottom-2 left-3 right-3 z-50 bg-tabbar-background/95 backdrop-blur-md border border-purple-500/30 rounded-full overflow-visible"
         style={{
           transform: 'translate3d(0,0,0)',
           boxShadow: '0 0 30px 12px rgba(168, 85, 247, 0.15), 0 0 60px 25px rgba(168, 85, 247, 0.08)',
