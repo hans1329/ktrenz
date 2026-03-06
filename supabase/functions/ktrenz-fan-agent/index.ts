@@ -1228,7 +1228,7 @@ JSON 구조:
       if (!result) {
         return JSON.stringify({ error: "web_search_failed", message: "웹 검색에 실패했습니다. 잠시 후 다시 시도해주세요." });
       }
-      return JSON.stringify({ content: result.content, citations: result.citations, source: "perplexity" });
+      return JSON.stringify({ content: result.content, citations: result.citations, source: "perplexity", _archiveId: result.archiveId });
     }
 
     default:
