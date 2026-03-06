@@ -196,7 +196,8 @@ async function extractAndStoreIntent(
   userQuery: string,
   wikiEntryId: string | null,
   agentSlotId: string | null,
-  toolsUsed: string[]
+  toolsUsed: string[],
+  knowledgeArchiveIds: string[] = [],
 ) {
   try {
     // Use lightweight structured output to classify intent
