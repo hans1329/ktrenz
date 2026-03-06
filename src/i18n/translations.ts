@@ -123,6 +123,11 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.addAgentDesc": { en: "Create a dedicated agent for another artist. Each agent has its own chat history.", ko: "다른 아티스트 전담 에이전트를 만들어요. 각 에이전트는 독립된 대화 기록을 가져요.", ja: "別のアーティスト専用エージェントを作成します。各エージェントは独立したチャット履歴を持ちます。", zh: "为其他艺人创建专属助手。每个助手都有独立的聊天记录。" },
   "agent.addNewAgent": { en: "Create New Agent", ko: "새 에이전트 만들기", ja: "新しいエージェントを作成", zh: "创建新助手" },
   "agent.currentSlots": { en: "Slots used", ko: "사용 중 슬롯", ja: "使用中スロット", zh: "已用槽位" },
+  "agent.profile.chatsToday": { en: "Chats Today", ko: "오늘 대화", ja: "今日のチャット", zh: "今日聊天" },
+  "agent.profile.remaining": { en: "Remaining", ko: "남은 횟수", ja: "残り", zh: "剩余" },
+  "agent.profile.tier": { en: "Tier", ko: "등급", ja: "ティア", zh: "等级" },
+  "agent.profile.biasArtist": { en: "Bias Artist", ko: "최애 아티스트", ja: "推しアーティスト", zh: "最爱艺人" },
+  "agent.profile.tapToChange": { en: "Tap photo to change", ko: "사진을 눌러 변경", ja: "写真をタップして変更", zh: "点击照片更改" },
 
   // ── K-Points Purchase ──
   "points.purchaseTitle": { en: "Get K-Points", ko: "K-Points 충전", ja: "K-Points チャージ", zh: "充值K-Points" },
