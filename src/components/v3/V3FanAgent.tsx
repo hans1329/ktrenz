@@ -391,7 +391,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
 
-  const { data: chatHistory } = useQuery({
+  const { data: chatHistory, isLoading: isChatHistoryLoading } = useQuery({
     queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -1135,7 +1135,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     <div className="flex flex-col h-full">
       {renderSubHeader()}
 
-      {!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages()}
+      {isChatHistoryLoading ? null : (!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages())}
 
       <Drawer open={showPointPurchaseDialog} onOpenChange={(open) => {
         setShowPointPurchaseDialog(open);
