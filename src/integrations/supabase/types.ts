@@ -2131,6 +2131,7 @@ export type Database = {
           entities: Json | null
           id: string
           intent_category: string
+          knowledge_archive_ids: string[] | null
           sentiment: string | null
           source_query: string
           sub_topic: string | null
@@ -2144,6 +2145,7 @@ export type Database = {
           entities?: Json | null
           id?: string
           intent_category?: string
+          knowledge_archive_ids?: string[] | null
           sentiment?: string | null
           source_query: string
           sub_topic?: string | null
@@ -2157,6 +2159,7 @@ export type Database = {
           entities?: Json | null
           id?: string
           intent_category?: string
+          knowledge_archive_ids?: string[] | null
           sentiment?: string | null
           source_query?: string
           sub_topic?: string | null
@@ -2174,6 +2177,56 @@ export type Database = {
           },
           {
             foreignKeyName: "ktrenz_agent_intents_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_agent_knowledge_archive: {
+        Row: {
+          citations: string[] | null
+          content_raw: string | null
+          content_structured: Json | null
+          created_at: string
+          fetched_at: string
+          id: string
+          query_hash: string
+          query_text: string
+          recency_filter: string | null
+          topic_type: string
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          citations?: string[] | null
+          content_raw?: string | null
+          content_structured?: Json | null
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          query_hash: string
+          query_text: string
+          recency_filter?: string | null
+          topic_type?: string
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          citations?: string[] | null
+          content_raw?: string | null
+          content_structured?: Json | null
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          query_hash?: string
+          query_text?: string
+          recency_filter?: string | null
+          topic_type?: string
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_agent_knowledge_archive_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
             isOneToOne: false
             referencedRelation: "wiki_entries"

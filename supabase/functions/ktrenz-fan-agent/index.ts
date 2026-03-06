@@ -196,7 +196,8 @@ async function extractAndStoreIntent(
   userQuery: string,
   wikiEntryId: string | null,
   agentSlotId: string | null,
-  toolsUsed: string[]
+  toolsUsed: string[],
+  knowledgeArchiveIds: string[] = [],
 ) {
   try {
     // Use lightweight structured output to classify intent
@@ -254,6 +255,7 @@ User: "스밍 가이드 보여줘" → {"intent_category":"streaming","sub_topic
       source_query: userQuery.slice(0, 500),
       tools_used: toolsUsed,
       agent_slot_id: agentSlotId || null,
+      knowledge_archive_ids: knowledgeArchiveIds.length > 0 ? knowledgeArchiveIds : [],
     });
 
     console.log("[IntentExtract] Stored intent:", intent.intent_category, intent.sub_topic);
@@ -838,7 +840,7 @@ JSON 구조:
         // Fallback to Perplexity web search
         const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
-          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
+          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.`, _archiveId: perplexityResult.archiveId });
         }
         return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
       }
@@ -904,7 +906,7 @@ JSON 구조:
       if (trimmed.length === 0) {
         const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
-          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
+          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.`, _archiveId: perplexityResult.archiveId });
         }
         return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
       }
@@ -1226,7 +1228,7 @@ JSON 구조:
       if (!result) {
         return JSON.stringify({ error: "web_search_failed", message: "웹 검색에 실패했습니다. 잠시 후 다시 시도해주세요." });
       }
-      return JSON.stringify({ content: result.content, citations: result.citations, source: "perplexity" });
+      return JSON.stringify({ content: result.content, citations: result.citations, source: "perplexity", _archiveId: result.archiveId });
     }
 
     default:
@@ -1285,13 +1287,40 @@ async function cacheKnowledge(
   wikiEntryId: string | null,
   recency: string,
   structured: any = {},
-): Promise<void> {
+): Promise<string | null> {
   const queryHash = md5Hash(query.toLowerCase().trim());
   // TTL: news=12h, schedule=6h, general=24h
   const ttlHours = topicType === "news" ? 12 : topicType === "schedule" ? 6 : 24;
   const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+
+  let archiveId: string | null = null;
 
   try {
+    // 1. 누적 아카이브에 항상 insert
+    const { data: archiveRow } = await adminClient
+      .from("ktrenz_agent_knowledge_archive")
+      .insert({
+        query_hash: queryHash,
+        query_text: query,
+        topic_type: topicType,
+        wiki_entry_id: wikiEntryId,
+        content_raw: content,
+        content_structured: structured,
+        citations,
+        recency_filter: recency,
+        fetched_at: now,
+      })
+      .select("id")
+      .single();
+    archiveId = archiveRow?.id ?? null;
+    console.log(`[KnowledgeArchive] STORED archive_id=${archiveId}`);
+  } catch (e: any) {
+    console.error(`[KnowledgeArchive] Store failed:`, e.message);
+  }
+
+  try {
+    // 2. 기존 캐시 upsert (빠른 조회용)
     await adminClient
       .from("ktrenz_agent_knowledge_cache")
       .upsert({
@@ -1303,7 +1332,7 @@ async function cacheKnowledge(
         content_structured: structured,
         wiki_entry_id: wikiEntryId,
         recency_filter: recency,
-        fetched_at: new Date().toISOString(),
+        fetched_at: now,
         expires_at: expiresAt,
         hit_count: 1,
       }, { onConflict: "query_hash,topic_type" });
@@ -1311,6 +1340,8 @@ async function cacheKnowledge(
   } catch (e: any) {
     console.error(`[KnowledgeCache] Store failed:`, e.message);
   }
+
+  return archiveId;
 }
 
 // ── Perplexity Web Search Helper (with cache) ─────
@@ -1320,11 +1351,11 @@ async function searchWithPerplexity(
   adminClient?: any,
   topicType: string = "general",
   wikiEntryId: string | null = null,
-): Promise<{ content: string; citations: string[] } | null> {
+): Promise<{ content: string; citations: string[]; archiveId: string | null } | null> {
   // 1. Check cache first
   if (adminClient) {
     const cached = await getCachedKnowledge(adminClient, query, topicType);
-    if (cached) return { content: cached.content, citations: cached.citations };
+    if (cached) return { content: cached.content, citations: cached.citations, archiveId: null };
   }
 
   // 2. Call Perplexity
@@ -1360,12 +1391,13 @@ async function searchWithPerplexity(
     const content = data.choices?.[0]?.message?.content ?? "";
     const citations = data.citations ?? [];
 
-    // 3. Store in cache
+    // 3. Store in cache + archive
+    let archiveId: string | null = null;
     if (adminClient && content) {
-      await cacheKnowledge(adminClient, query, topicType, content, citations, wikiEntryId, recency);
+      archiveId = await cacheKnowledge(adminClient, query, topicType, content, citations, wikiEntryId, recency);
     }
 
-    return { content, citations };
+    return { content, citations, archiveId };
   } catch (e) {
     console.error("Perplexity search error:", e);
     return null;
@@ -1612,7 +1644,7 @@ Deno.serve(async (req) => {
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
     // Collect structured data from tool calls for inline card rendering
-    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[] } = {};
+    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[]; knowledgeArchiveIds: string[] } = { knowledgeArchiveIds: [] };
 
     // ── Briefing Mode (unchanged logic) ──
     if (isBriefingMode) {
@@ -1946,7 +1978,8 @@ Deno.serve(async (req) => {
               
               extractAndStoreIntent(
                 adminClient, OPENAI_API_KEY, userId, userQuery,
-                activeSlotWikiEntryId, activeSlotId, usedToolNames
+                activeSlotWikiEntryId, activeSlotId, usedToolNames,
+                collectedMeta.knowledgeArchiveIds
               ).catch((e: any) => console.error("[IntentExtract] Error:", e));
 
               return;
@@ -1969,6 +2002,14 @@ Deno.serve(async (req) => {
               }
 
               const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId);
+
+              // Extract _archiveId from Perplexity-powered tool results
+              try {
+                const parsed = JSON.parse(result);
+                if (parsed._archiveId) {
+                  collectedMeta.knowledgeArchiveIds.push(parsed._archiveId);
+                }
+              } catch {}
 
               // Collect structured data for inline cards
               if (fnName === "get_streaming_guide") {
