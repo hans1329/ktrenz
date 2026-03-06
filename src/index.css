@@ -47,7 +47,7 @@ html {
     --sidebar-accent-foreground: 210 20% 92%;
     --sidebar-border: 220 14% 16%;
     --sidebar-ring: 11 100% 46%;
-    --tabbar-background: 270 60% 18%;
+    --tabbar-background: 270 60% 10%;
   }
 
   /* V3 theme is the default — always dark + orange accent */
