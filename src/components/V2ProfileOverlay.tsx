@@ -144,7 +144,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             onClick={() => { onOpenChange(false); navigate("/k-pass", { state: { fromProfile: true } }); }}
             className="w-full group text-left"
           >
-            <div className="relative rounded-xl" style={{ boxShadow: g.glow }}>
+            <div className="relative rounded-xl">
               {/* Top half */}
               <div
                 className="relative px-4 py-3.5 overflow-hidden rounded-t-xl"
