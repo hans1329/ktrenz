@@ -236,10 +236,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           <div className="p-4 space-y-5 overflow-hidden">
             {/* Surging Location Box */}
             {surging && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30">
-                <MapPin className="w-4 h-4 text-destructive shrink-0" />
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-pink-500/10 border border-pink-500/30">
+                <MapPin className="w-4 h-4 text-pink-400 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-destructive">{t("drawer.surgingLocation")}</p>
+                  <p className="text-sm font-bold text-pink-400">{t("drawer.surgingLocation")}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
                     {(() => {
                       const surgingCats = channels.filter(ch => ch.change >= 15);
