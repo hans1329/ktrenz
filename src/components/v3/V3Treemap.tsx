@@ -717,7 +717,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
-                  "absolute border transition-all duration-200 flex flex-col items-center justify-center p-1.5 overflow-hidden",
+                  "absolute border flex flex-col items-center justify-center p-1.5 overflow-hidden transition-[filter] duration-200",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
                 style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(catChange) }}>
