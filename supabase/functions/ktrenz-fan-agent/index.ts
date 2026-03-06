@@ -1285,13 +1285,40 @@ async function cacheKnowledge(
   wikiEntryId: string | null,
   recency: string,
   structured: any = {},
-): Promise<void> {
+): Promise<string | null> {
   const queryHash = md5Hash(query.toLowerCase().trim());
   // TTL: news=12h, schedule=6h, general=24h
   const ttlHours = topicType === "news" ? 12 : topicType === "schedule" ? 6 : 24;
   const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+
+  let archiveId: string | null = null;
 
   try {
+    // 1. 누적 아카이브에 항상 insert
+    const { data: archiveRow } = await adminClient
+      .from("ktrenz_agent_knowledge_archive")
+      .insert({
+        query_hash: queryHash,
+        query_text: query,
+        topic_type: topicType,
+        wiki_entry_id: wikiEntryId,
+        content_raw: content,
+        content_structured: structured,
+        citations,
+        recency_filter: recency,
+        fetched_at: now,
+      })
+      .select("id")
+      .single();
+    archiveId = archiveRow?.id ?? null;
+    console.log(`[KnowledgeArchive] STORED archive_id=${archiveId}`);
+  } catch (e: any) {
+    console.error(`[KnowledgeArchive] Store failed:`, e.message);
+  }
+
+  try {
+    // 2. 기존 캐시 upsert (빠른 조회용)
     await adminClient
       .from("ktrenz_agent_knowledge_cache")
       .upsert({
@@ -1303,7 +1330,7 @@ async function cacheKnowledge(
         content_structured: structured,
         wiki_entry_id: wikiEntryId,
         recency_filter: recency,
-        fetched_at: new Date().toISOString(),
+        fetched_at: now,
         expires_at: expiresAt,
         hit_count: 1,
       }, { onConflict: "query_hash,topic_type" });
@@ -1311,6 +1338,8 @@ async function cacheKnowledge(
   } catch (e: any) {
     console.error(`[KnowledgeCache] Store failed:`, e.message);
   }
+
+  return archiveId;
 }
 
 // ── Perplexity Web Search Helper (with cache) ─────
