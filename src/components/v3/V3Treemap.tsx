@@ -701,10 +701,13 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const isFirst = rectIndex === 0;
 
             // 박스 크기에 비례한 동적 폰트 크기 계산
-            const boxArea = width * height;
-            const sizeFactor = Math.sqrt(boxArea) / 10;
-            const titleSize = Math.max(9, Math.min(26, sizeFactor * 3.2));
-            const scoreSize = Math.max(10, Math.min(34, sizeFactor * 3.8));
+             const boxArea = width * height;
+             const sizeFactor = Math.sqrt(boxArea) / 10;
+             const isTopThree = rectIndex < 3;
+             const titleSize = isTopThree 
+               ? Math.max(12, Math.min(32, sizeFactor * 4.2))
+               : Math.max(9, Math.min(26, sizeFactor * 3.2));
+             const scoreSize = Math.max(10, Math.min(34, sizeFactor * 3.8));
             const badgeFontSize = Math.max(9, Math.min(16, sizeFactor * 2.0));
             const badgePx = Math.max(6, Math.min(16, sizeFactor * 1.8));
             const badgePy = Math.max(1, Math.min(4, sizeFactor * 0.6));
