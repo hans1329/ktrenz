@@ -533,6 +533,22 @@ async function handleTool(
         const wikiId = wikiMatch[0].id;
         const resolvedName = wikiMatch[0].title;
 
+        // Tier gate: only allow Tier 1 or Tier 2 artists
+        const { data: tierRow } = await adminClient
+          .from("v3_artist_tiers")
+          .select("tier")
+          .eq("wiki_entry_id", wikiId)
+          .maybeSingle();
+
+        if (!tierRow) {
+          return JSON.stringify({
+            success: false,
+            action: "artist_not_in_tier",
+            query: artist_name,
+            message: `"${resolvedName}"${eunNeun(resolvedName)} 현재 K-TrenZ 랭킹에 등록되지 않은 아티스트예요. Tier 1 또는 Tier 2 아티스트만 최애로 설정할 수 있어요.`,
+          });
+        }
+
         // Remove any existing bias artist first (single bias per user)
         await adminClient
           .from("ktrenz_watched_artists")
