@@ -16,6 +16,7 @@ interface Mission {
   points: number;
   icon: React.ReactNode;
   thumbnail?: string | null;
+  contentId?: string;
 }
 
 const CATEGORY_CONFIG = {
@@ -38,11 +39,12 @@ function generateMissions(
   newsItems: Array<{ title: string; url: string; og_image?: string | null }>,
   musicCharts: any,
   t: (key: string) => string,
+  excludeContentIds: Set<string> = new Set(),
 ): Mission[] {
   const missions: Mission[] = [];
 
-  // YouTube missions — 최신 영상 시청만, 최대 4개
-  videos.slice(0, 4).forEach((video, i) => {
+  // YouTube missions — 최신 영상 시청만, 최대 4개 (exclude recently completed)
+  videos.filter(v => !excludeContentIds.has(`yt:${v.id}`)).slice(0, 4).forEach((video, i) => {
     missions.push({
       key: `yt_${i}_watch`,
       category: "youtube",
@@ -52,11 +54,12 @@ function generateMissions(
       points: 10,
       icon: CATEGORY_CONFIG.youtube.icon,
       thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+      contentId: `yt:${video.id}`,
     });
   });
 
-  // News missions — each with different article + thumbnail
-  newsItems.slice(0, 4).forEach((item, i) => {
+  // News missions — each with different article + thumbnail (exclude recently completed)
+  newsItems.filter(item => !excludeContentIds.has(`news:${item.url}`)).slice(0, 4).forEach((item, i) => {
     missions.push({
       key: `news_${i}`,
       category: "news",
@@ -66,6 +69,7 @@ function generateMissions(
       points: 8,
       icon: CATEGORY_CONFIG.news.icon,
       thumbnail: item.og_image || null,
+      contentId: `news:${item.url}`,
     });
   });
 
@@ -283,8 +287,28 @@ export default function V3MissionCards({
     staleTime: 1000 * 60,
   });
 
+  // Fetch recently completed content_ids (last 7 days) to exclude from missions
+  const { data: recentContentIds = [] } = useQuery({
+    queryKey: ["recent-mission-content", wikiEntryId],
+    queryFn: async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return [];
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("ktrenz_daily_missions" as any)
+        .select("content_id")
+        .eq("user_id", authData.user.id)
+        .eq("wiki_entry_id", wikiEntryId)
+        .gte("mission_date", sevenDaysAgo)
+        .not("content_id", "is", null);
+      return (data || []).map((d: any) => d.content_id as string);
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   const musicCharts = metadata?.music_charts;
-  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts, t);
+  const excludeSet = new Set(recentContentIds);
+  const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts, t, excludeSet);
   const completedSet = new Set(completedMissions);
   const completedCount = missions.filter(m => completedSet.has(m.key)).length;
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
@@ -318,6 +342,7 @@ export default function V3MissionCards({
         wiki_entry_id: wikiEntryId,
         mission_key: mission.key,
         points_awarded: mission.points,
+        content_id: mission.contentId || null,
       });
       if (missionError) {
         if (missionError.code === "23505") return; // duplicate

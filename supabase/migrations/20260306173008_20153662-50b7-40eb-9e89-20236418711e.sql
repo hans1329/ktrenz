@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_daily_missions ADD COLUMN IF NOT EXISTS content_id text;
