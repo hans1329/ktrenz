@@ -1419,16 +1419,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               </button>
             )}
 
-            {/* Change Photo Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full gap-1.5"
-              onClick={() => avatarFileRef.current?.click()}
-            >
-              <Camera className="w-3.5 h-3.5" />
-              {t("agent.changePhoto")}
-            </Button>
           </div>
         </DrawerContent>
       </Drawer>
