@@ -193,6 +193,7 @@ const AdminIntents = () => {
                       <TableHead className="w-20">Sentiment</TableHead>
                       <TableHead className="w-44">Entities</TableHead>
                       <TableHead className="w-32">Tools Used</TableHead>
+                      <TableHead className="w-24">Knowledge</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -222,6 +223,13 @@ const AdminIntents = () => {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {(intent.tools_used as string[] | null)?.join(', ') || '-'}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {intent.knowledge_archive_ids && (intent.knowledge_archive_ids as string[]).length > 0 ? (
+                            <Badge variant="outline" className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-[10px]">
+                              📚 {(intent.knowledge_archive_ids as string[]).length}
+                            </Badge>
+                          ) : '-'}
                         </TableCell>
                       </TableRow>
                     ))}
