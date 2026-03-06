@@ -1357,28 +1357,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       {/* Agent Profile Modal */}
       <Drawer open={showAgentProfileModal} onOpenChange={setShowAgentProfileModal}>
         <DrawerContent className="max-h-[85dvh] mx-2 rounded-t-2xl">
-          <DrawerHeader className="pb-2">
-            <DrawerTitle className="text-center">{t("agent.title")}</DrawerTitle>
-            <DrawerDescription className="text-center text-xs text-muted-foreground">
-              {activeSlot?.artist_name && activeSlot.artist_name !== "New Agent"
-                ? `${activeSlot.artist_name} Agent`
-                : getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
-            </DrawerDescription>
+          <DrawerHeader className="pb-0">
+            <DrawerTitle className="text-center text-base">
+              {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
+            </DrawerTitle>
+            <DrawerDescription className="sr-only">Agent profile</DrawerDescription>
           </DrawerHeader>
-          <div className="flex flex-col items-center gap-4 px-6 pb-6">
+          <div className="flex flex-col items-center gap-4 px-6 pb-6 pt-3">
             {/* Large Avatar */}
-            <div className="w-36 h-36 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+            <div className="w-48 h-48 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
               ) : (
-                <Bot className="w-10 h-10 text-primary" />
+                <Bot className="w-14 h-14 text-primary" />
               )}
             </div>
-
-            {/* Agent Name */}
-            <h3 className="text-lg font-bold text-foreground">
-              {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
-            </h3>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
