@@ -1978,7 +1978,8 @@ Deno.serve(async (req) => {
               
               extractAndStoreIntent(
                 adminClient, OPENAI_API_KEY, userId, userQuery,
-                activeSlotWikiEntryId, activeSlotId, usedToolNames
+                activeSlotWikiEntryId, activeSlotId, usedToolNames,
+                collectedMeta.knowledgeArchiveIds
               ).catch((e: any) => console.error("[IntentExtract] Error:", e));
 
               return;
