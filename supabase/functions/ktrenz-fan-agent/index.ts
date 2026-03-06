@@ -840,7 +840,7 @@ JSON 구조:
         // Fallback to Perplexity web search
         const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
-          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.` });
+          return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.`, _archiveId: perplexityResult.archiveId });
         }
         return JSON.stringify({ artist: resolvedName, articles: [], message: "수집된 뉴스가 없습니다." });
       }
