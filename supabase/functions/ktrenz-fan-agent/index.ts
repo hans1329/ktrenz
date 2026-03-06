@@ -590,6 +590,17 @@ async function handleTool(
             console.error(`[FanAgent] Slot update failed:`, slotUpdateErr.message);
           } else {
             console.log(`[FanAgent] Slot updated successfully`);
+
+            // Clear old chat history for this slot when bias artist changes
+            const deleteFilter = activeSlotIndex === 0
+              ? adminClient.from("ktrenz_fan_agent_messages").delete().eq("user_id", userId).or(`agent_slot_id.eq.${activeSlotId},agent_slot_id.is.null`)
+              : adminClient.from("ktrenz_fan_agent_messages").delete().eq("user_id", userId).eq("agent_slot_id", activeSlotId);
+            const { error: clearErr } = await deleteFilter;
+            if (clearErr) {
+              console.error(`[FanAgent] Chat clear on bias change failed:`, clearErr.message);
+            } else {
+              console.log(`[FanAgent] Cleared old chat history for slot ${activeSlotId} on bias change`);
+            }
           }
         } else {
           console.warn(`[FanAgent] No activeSlotId — slot not updated`);
