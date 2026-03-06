@@ -545,7 +545,7 @@ async function handleTool(
             success: false,
             action: "artist_not_in_tier",
             query: artist_name,
-            message: `"${resolvedName}"${eunNeun(resolvedName)} 현재 K-TrenZ 랭킹에 등록되지 않은 아티스트예요. Tier 1 또는 Tier 2 아티스트만 최애로 설정할 수 있어요.`,
+            message: `아쉽지만 ${resolvedName}${eunNeun(resolvedName)} 아직 전용 에이전트가 없어요 😢 현재는 K-TrenZ 랭킹에 등록된 아티스트만 최애로 설정할 수 있어요. 곧 더 많은 아티스트를 지원할 예정이니 기대해주세요! 💜`,
           });
         }
 
