@@ -343,6 +343,7 @@ export default function V3MissionCards({
       await supabase.from("ktrenz_point_transactions" as any).insert({
         user_id: userId,
         amount: mission.points,
+        reason: "mission_reward",
         description: `${t("mission.completed")}${mission.title} (${artistName})`,
       });
 
