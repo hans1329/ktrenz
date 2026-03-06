@@ -474,7 +474,7 @@ export default function V3MissionCards({
               "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-300",
               "bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl",
               celebration.closing
-                ? "scale-95 opacity-0"
+                ? "scale-150 opacity-0"
                 : "animate-in zoom-in-95 duration-200"
             )}
               style={{
