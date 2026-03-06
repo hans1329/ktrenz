@@ -2002,6 +2002,14 @@ Deno.serve(async (req) => {
 
               const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId);
 
+              // Extract _archiveId from Perplexity-powered tool results
+              try {
+                const parsed = JSON.parse(result);
+                if (parsed._archiveId) {
+                  collectedMeta.knowledgeArchiveIds.push(parsed._archiveId);
+                }
+              } catch {}
+
               // Collect structured data for inline cards
               if (fnName === "get_streaming_guide") {
                 try {
