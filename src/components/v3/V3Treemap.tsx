@@ -763,9 +763,9 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
                 <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                    style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 6px rgba(0,0,0,0.3), 0 3px 8px rgba(0,0,0,0.15)' }}>{rect.item.title}</span>
+                    style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                   <span className="font-black text-white drop-shadow-lg"
-                    style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 6px rgba(0,0,0,0.3), 0 3px 8px rgba(0,0,0,0.15)' }}>{Math.round(catScore)}</span>
+                    style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}</span>
                   {isLarge && (
                     <span className={cn("font-bold rounded-full backdrop-blur-sm",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
