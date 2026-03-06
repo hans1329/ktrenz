@@ -416,6 +416,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       return (data || []).map((d: any) => ({ role: d.role as "user" | "assistant", content: d.content, timestamp: d.created_at }));
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 10,
+    refetchOnWindowFocus: true,
   });
 
   // Auto-create default slot if user has none
@@ -442,11 +444,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [activeSlot?.id]);
 
   useEffect(() => {
-    if (chatHistory && chatHistory.length > 0 && messages.length === 0 && !hasStarted) {
+    if (chatHistory && chatHistory.length > 0 && !hasStarted) {
       setMessages(chatHistory);
       setHasStarted(true);
     }
-  }, [chatHistory, messages.length, hasStarted]);
+  }, [chatHistory, hasStarted]);
 
   const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
