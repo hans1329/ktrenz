@@ -283,6 +283,25 @@ export default function V3MissionCards({
     staleTime: 1000 * 60,
   });
 
+  // Fetch recently completed content_ids (last 7 days) to exclude from missions
+  const { data: recentContentIds = [] } = useQuery({
+    queryKey: ["recent-mission-content", wikiEntryId],
+    queryFn: async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return [];
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("ktrenz_daily_missions" as any)
+        .select("content_id")
+        .eq("user_id", authData.user.id)
+        .eq("wiki_entry_id", wikiEntryId)
+        .gte("mission_date", sevenDaysAgo)
+        .not("content_id", "is", null);
+      return (data || []).map((d: any) => d.content_id as string);
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   const musicCharts = metadata?.music_charts;
   const missions = generateMissions(artistName, encodedName, ytVideos, channelId, newsItems, musicCharts, t);
   const completedSet = new Set(completedMissions);
