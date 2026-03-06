@@ -194,8 +194,8 @@ export default function V3MissionCards({
     setCelebration({ title: mission.title, points: mission.points, category: mission.category });
     setTimeout(() => {
       setCelebration(prev => prev ? { ...prev, closing: true } : null);
-      setTimeout(() => setCelebration(null), 800);
-    }, 4000);
+      setTimeout(() => setCelebration(null), 400);
+    }, 2500);
   }, []);
 
   const consumePendingMission = useCallback(() => {
@@ -467,17 +467,15 @@ export default function V3MissionCards({
         const categoryLabel = t(`mission.category.${celebration.category}`);
         return (
           <div className={cn(
-            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500",
-            celebration.closing ? "opacity-0" : "animate-in fade-in duration-300"
-          )}
-            style={{ transitionDelay: celebration.closing ? "0.2s" : "0s" }}
-          >
+            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300",
+            celebration.closing ? "opacity-0" : "animate-in fade-in duration-200"
+          )}>
             <div className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-500",
+              "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-300",
               "bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl",
               celebration.closing
-                ? "animate-celebration-burst"
-                : "animate-in zoom-in-95 duration-300"
+                ? "scale-95 opacity-0"
+                : "animate-in zoom-in-95 duration-200"
             )}
               style={{
                 maskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
@@ -501,60 +499,9 @@ export default function V3MissionCards({
 
               {/* 타이머 바 */}
               <div className="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
-                <div className="h-full bg-amber-500 rounded-full animate-shrink-bar" />
+                <div className="h-full bg-amber-500 rounded-full" style={{ animation: "shrink-bar 2.5s linear forwards" }} />
               </div>
             </div>
-
-            {/* 터지는 파티클 + 스파크 + 링 */}
-            {celebration.closing && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {/* 화면 전체 플래시 (부드러운 원형) */}
-                <div className="absolute inset-0 animate-burst-flash" style={{
-                  background: "radial-gradient(circle at 50% 50%, hsla(40,100%,70%,0.35) 0%, transparent 70%)",
-                }} />
-
-                {/* 확산 링 */}
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={`ring-${i}`}
-                    className="absolute left-1/2 top-1/2 rounded-full border-amber-500/60 animate-burst-ring"
-                    style={{
-                      width: `${140 + i * 100}px`,
-                      height: `${140 + i * 100}px`,
-                      animationDelay: `${i * 0.15}s`,
-                    }}
-                  />
-                ))}
-                {/* 메인 파티클 (큰 원) */}
-                {[...Array(20)].map((_, i) => (
-                  <div
-                    key={`p-${i}`}
-                    className="absolute left-1/2 top-1/2 rounded-full animate-burst-particle"
-                    style={{
-                      width: `${10 + Math.random() * 10}px`,
-                      height: `${10 + Math.random() * 10}px`,
-                      background: ["#f59e0b", "#ef4444", "#8b5cf6", "#10b981", "#3b82f6", "#ec4899", "#f97316", "#06b6d4"][i % 8],
-                      "--burst-angle": `${i * 18}deg`,
-                      "--burst-distance": `${140 + Math.random() * 140}px`,
-                      animationDelay: `${Math.random() * 0.2}s`,
-                    } as React.CSSProperties}
-                  />
-                ))}
-                {/* 스파크 (가느다란 선) */}
-                {[...Array(16)].map((_, i) => (
-                  <div
-                    key={`s-${i}`}
-                    className="absolute left-1/2 top-1/2 rounded-full animate-burst-spark"
-                    style={{
-                      background: ["#fbbf24", "#fde68a", "#ffffff"][i % 3],
-                      "--spark-angle": `${i * 22.5}deg`,
-                      "--spark-distance": `${100 + Math.random() * 80}px`,
-                      animationDelay: `${Math.random() * 0.15}s`,
-                    } as React.CSSProperties}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         );
       })()}
