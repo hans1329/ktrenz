@@ -359,6 +359,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [isPurchasingSlot, setIsPurchasingSlot] = useState(false);
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const [showSlotList, setShowSlotList] = useState(false);
+  const [showAgentProfileModal, setShowAgentProfileModal] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [showKPointsDrawer, setShowKPointsDrawer] = useState(false);
   // Check if user has watched artists (alert ON)
@@ -1004,7 +1005,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       {messages.map((msg, i) => (
         <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
-            <AgentAvatar avatarUrl={avatarUrl} size="sm" />
+            <button type="button" onClick={() => setShowAgentProfileModal(true)} className="shrink-0 hover:opacity-80 transition-opacity">
+              <AgentAvatar avatarUrl={avatarUrl} size="sm" />
+            </button>
           )}
           <div className={cn("flex flex-col max-w-[85%] min-w-0", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
             <div
@@ -1351,6 +1354,85 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </Button>
         </div>
       </div>
+      {/* Agent Profile Modal */}
+      <Drawer open={showAgentProfileModal} onOpenChange={setShowAgentProfileModal}>
+        <DrawerContent className="max-h-[85dvh] mx-2 rounded-t-2xl">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="text-center">{t("agent.title")}</DrawerTitle>
+            <DrawerDescription className="text-center text-xs text-muted-foreground">
+              {activeSlot?.artist_name && activeSlot.artist_name !== "New Agent"
+                ? `${activeSlot.artist_name} Agent`
+                : getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="flex flex-col items-center gap-4 px-6 pb-6">
+            {/* Large Avatar */}
+            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Agent" className="w-full h-full object-cover" />
+              ) : (
+                <Bot className="w-10 h-10 text-primary" />
+              )}
+            </div>
+
+            {/* Agent Name */}
+            <h3 className="text-lg font-bold text-foreground">
+              {getSlotDisplayName(activeSlot, watchedArtists, hasAlertOn)}
+            </h3>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
+              <div className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border/50 p-3">
+                <MessageCircle className="w-4 h-4 text-primary" />
+                <span className="text-lg font-bold text-foreground">{agentUsage?.used ?? 0}</span>
+                <span className="text-[10px] text-muted-foreground">Chats Today</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border/50 p-3">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-lg font-bold text-foreground">{agentUsage?.remaining ?? 0}</span>
+                <span className="text-[10px] text-muted-foreground">Remaining</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 rounded-xl bg-card border border-border/50 p-3">
+                <Crown className="w-4 h-4 text-purple-400" />
+                <span className="text-lg font-bold text-foreground capitalize">{agentUsage?.tier ?? "basic"}</span>
+                <span className="text-[10px] text-muted-foreground">Tier</span>
+              </div>
+            </div>
+
+            {/* Bias Artist Info */}
+            {activeSlot?.wiki_entry_id && (
+              <button
+                onClick={() => {
+                  setShowAgentProfileModal(false);
+                  navigate(`/artist/${activeSlot.wiki_entry_id}`);
+                }}
+                className="w-full max-w-sm flex items-center gap-3 rounded-xl bg-primary/5 border border-primary/20 p-3 hover:bg-primary/10 transition-colors"
+              >
+                <Heart className="w-4 h-4 text-pink-400 shrink-0" />
+                <div className="flex-1 text-left">
+                  <p className="text-xs text-muted-foreground">Bias Artist</p>
+                  <p className="text-sm font-semibold text-foreground">{activeSlot.artist_name}</p>
+                </div>
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
+
+            {/* Change Photo Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full gap-1.5"
+              onClick={() => {
+                setShowAgentProfileModal(false);
+                avatarFileRef.current?.click();
+              }}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              Change Photo
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };
