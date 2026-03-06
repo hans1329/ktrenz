@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const entryIds = batch.map((s: any) => s.wiki_entry_id);
+    const entryIds = batch;
     const { data: artists } = await sb
       .from("wiki_entries")
       .select("id, title, metadata")
