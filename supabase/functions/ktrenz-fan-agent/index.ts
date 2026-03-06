@@ -255,6 +255,7 @@ User: "스밍 가이드 보여줘" → {"intent_category":"streaming","sub_topic
       source_query: userQuery.slice(0, 500),
       tools_used: toolsUsed,
       agent_slot_id: agentSlotId || null,
+      knowledge_archive_ids: knowledgeArchiveIds.length > 0 ? knowledgeArchiveIds : [],
     });
 
     console.log("[IntentExtract] Stored intent:", intent.intent_category, intent.sub_topic);
