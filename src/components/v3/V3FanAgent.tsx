@@ -333,7 +333,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { slots, slotLimit, activeSlot, canAddSlot, canPurchaseSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
+  const { slots, slotsLoading, slotLimit, activeSlot, canAddSlot, canPurchaseSlot, switchSlot, createSlot, purchaseSlot, deleteSlot } = useAgentSlots();
   const { data: legacyAgentAvatarUrl } = useQuery({
     queryKey: ["ktrenz-agent-legacy-avatar", user?.id],
     queryFn: async () => {
@@ -415,10 +415,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       }
       return (data || []).map((d: any) => ({ role: d.role as "user" | "assistant", content: d.content, timestamp: d.created_at }));
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !slotsLoading,
     staleTime: 1000 * 10,
     refetchOnWindowFocus: true,
   });
+
+  const shouldShowWelcome = !slotsLoading && !isChatHistoryLoading && !hasStarted && messages.length === 0 && (chatHistory?.length ?? 0) === 0;
 
   // Auto-create default slot if user has none
   const autoCreatingRef = useRef(false);
@@ -1135,7 +1137,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     <div className="flex flex-col h-full">
       {renderSubHeader()}
 
-      {isChatHistoryLoading ? null : (!hasStarted || messages.length === 0 ? renderWelcome() : renderMessages())}
+      {slotsLoading || isChatHistoryLoading ? null : (shouldShowWelcome ? renderWelcome() : renderMessages())}
 
       <Drawer open={showPointPurchaseDialog} onOpenChange={(open) => {
         setShowPointPurchaseDialog(open);
