@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import KPass from "./pages/KPass";
 import Settings from "./pages/Settings";
 import PitchDeck from "./pages/PitchDeck";
+import Deck from "./pages/Deck";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
+            <Route path="/deck" element={<Deck />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
