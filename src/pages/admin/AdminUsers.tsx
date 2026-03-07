@@ -15,6 +15,7 @@ interface KtrenzUser {
   display_name: string | null;
   profile_avatar: string | null;
   agent_avatar: string | null;
+  agent_artist: string | null;
   points: number;
   lifetime_points: number;
   first_login_at: string;
@@ -41,12 +42,13 @@ const AdminUsers = () => {
 
       const userIds = logins.map(l => l.user_id);
 
-      const [profilesRes, agentsRes, pointsRes, msgRes, rolesRes] = await Promise.all([
+      const [profilesRes, agentsRes, pointsRes, msgRes, rolesRes, slotsRes] = await Promise.all([
         supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', userIds),
         supabase.from('ktrenz_agent_profiles').select('user_id, avatar_url').in('user_id', userIds),
         supabase.from('ktrenz_user_points').select('user_id, points, lifetime_points').in('user_id', userIds),
         supabase.from('ktrenz_fan_agent_messages').select('user_id').in('user_id', userIds),
         supabase.from('user_roles').select('user_id, role').in('user_id', userIds),
+        (supabase as any).from('ktrenz_agent_slots').select('user_id, artist_name, is_active').in('user_id', userIds),
       ]);
 
       const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
@@ -56,6 +58,17 @@ const AdminUsers = () => {
       (rolesRes.data || []).forEach((r: any) => {
         const existing = roleMap.get(r.user_id);
         if (!existing || r.role === 'admin') roleMap.set(r.user_id, r.role);
+      });
+
+      // Build active agent artist map
+      const slotArtistMap = new Map<string, string>();
+      (slotsRes.data || []).forEach((s: any) => {
+        // Prefer active slot, otherwise first with a name
+        if (s.is_active && s.artist_name && s.artist_name !== 'New Agent') {
+          slotArtistMap.set(s.user_id, s.artist_name);
+        } else if (!slotArtistMap.has(s.user_id) && s.artist_name && s.artist_name !== 'New Agent') {
+          slotArtistMap.set(s.user_id, s.artist_name);
+        }
       });
 
       const msgCountMap = new Map<string, number>();
@@ -73,6 +86,7 @@ const AdminUsers = () => {
           display_name: profile?.display_name ?? null,
           profile_avatar: profile?.avatar_url ?? null,
           agent_avatar: agent?.avatar_url ?? null,
+          agent_artist: slotArtistMap.get(l.user_id) ?? null,
           points: pts?.points ?? 0,
           lifetime_points: pts?.lifetime_points ?? 0,
           first_login_at: l.first_login_at,
@@ -192,12 +206,17 @@ const AdminUsers = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {u.agent_avatar && (
-                      <Avatar className="w-7 h-7 rounded-lg">
-                        <AvatarImage src={u.agent_avatar} className="object-cover" />
-                        <AvatarFallback className="rounded-lg text-[10px]">AG</AvatarFallback>
-                      </Avatar>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {u.agent_avatar && (
+                        <Avatar className="w-7 h-7 rounded-lg">
+                          <AvatarImage src={u.agent_avatar} className="object-cover" />
+                          <AvatarFallback className="rounded-lg text-[10px]">AG</AvatarFallback>
+                        </Avatar>
+                      )}
+                      {u.agent_artist && (
+                        <span className="text-xs text-muted-foreground truncate max-w-[100px]">{u.agent_artist}</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <Button

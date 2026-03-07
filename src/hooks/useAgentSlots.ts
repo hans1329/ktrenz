@@ -58,21 +58,39 @@ export function useAgentSlots() {
 
   const switchSlot = useCallback(async (slotId: string) => {
     if (!user?.id) return;
-    // Deactivate all, activate selected
-    await (supabase as any)
+    // Optimistic update: mark the target slot active locally
+    queryClient.setQueryData(["ktrenz-agent-slots", user.id], (old: AgentSlot[] | undefined) =>
+      (old ?? []).map((s) => ({ ...s, is_active: s.id === slotId }))
+    );
+    // Single batch: deactivate all, then activate selected
+    const { error: deactivateErr } = await (supabase as any)
       .from("ktrenz_agent_slots")
       .update({ is_active: false })
-      .eq("user_id", user.id);
-    await (supabase as any)
+      .eq("user_id", user.id)
+      .neq("id", slotId);
+    if (deactivateErr) console.error("deactivate error:", deactivateErr);
+
+    const { error: activateErr } = await (supabase as any)
       .from("ktrenz_agent_slots")
       .update({ is_active: true })
       .eq("id", slotId);
+    if (activateErr) console.error("activate error:", activateErr);
+
     queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user.id] });
   }, [user?.id, queryClient]);
 
   const createSlot = useCallback(async (artistName: string, wikiEntryId?: string) => {
     if (!user?.id) return null;
     const nextIndex = slots.length;
+
+    // First deactivate all existing slots
+    if (slots.length > 0) {
+      await (supabase as any)
+        .from("ktrenz_agent_slots")
+        .update({ is_active: false })
+        .eq("user_id", user.id);
+    }
+
     const { data, error } = await (supabase as any)
       .from("ktrenz_agent_slots")
       .insert({
@@ -88,12 +106,6 @@ export function useAgentSlots() {
       toast.error(error.message);
       return null;
     }
-    // Deactivate others
-    await (supabase as any)
-      .from("ktrenz_agent_slots")
-      .update({ is_active: false })
-      .eq("user_id", user.id)
-      .neq("id", data.id);
     queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user.id] });
     return data as AgentSlot;
   }, [user?.id, slots.length, queryClient]);
