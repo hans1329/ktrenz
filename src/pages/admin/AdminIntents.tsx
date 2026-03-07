@@ -212,7 +212,7 @@ const AdminIntents = () => {
                           {intent.source_query}
                         </TableCell>
                         <TableCell className="text-center">
-                          <span title={intent.sentiment || 'neutral'}>
+                          <span title={intent.sentiment || 'neutral'} className="text-2xl">
                             {SENTIMENT_EMOJI[intent.sentiment || 'neutral'] || '😐'}
                           </span>
                         </TableCell>

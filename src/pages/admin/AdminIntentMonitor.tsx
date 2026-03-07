@@ -191,7 +191,7 @@ const AdminIntentMonitor = () => {
                         {intent.intent_category}
                       </Badge>
                       <span className="text-sm truncate flex-1">{intent.source_query}</span>
-                      <span title={intent.sentiment || 'neutral'} className="shrink-0">
+                      <span title={intent.sentiment || 'neutral'} className="shrink-0 text-2xl">
                         {SENTIMENT_EMOJI[intent.sentiment || 'neutral'] || '😐'}
                       </span>
                       <Badge variant="outline" className="bg-cyan-500/10 text-cyan-500 border-cyan-500/20 text-[10px] shrink-0">
