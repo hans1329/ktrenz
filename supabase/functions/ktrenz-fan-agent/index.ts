@@ -1840,7 +1840,7 @@ Deno.serve(async (req) => {
 
     // Build OpenAI messages
     const openaiMessages: any[] = [
-      { role: "system", content: getSystemPrompt(userLang) + watchedContext },
+      { role: "system", content: getSystemPrompt(userLang, activeSlotArtistName) + watchedContext },
       ...messages.slice(-15).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
