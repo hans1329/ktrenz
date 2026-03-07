@@ -20,12 +20,14 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
+        id: "/ktrenz-lovable-pwa",
         name: "KTrenZ - Live K-Pop Trend Rankings",
         short_name: "KTrenZ",
         description: "Real-time K-Pop trend rankings powered by YouTube, X, and music data",
         theme_color: "#0d1017",
         background_color: "#0d1017",
         display: "standalone",
+        scope: "/",
         start_url: "/",
         icons: [
           { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
@@ -36,6 +38,8 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        cacheId: "ktrenz-lovable",
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2}"],
       },
