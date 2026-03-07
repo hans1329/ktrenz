@@ -849,7 +849,7 @@ JSON 구조:
 
       if (!newsSnapshots || newsSnapshots.length === 0) {
         // Fallback to Perplexity web search
-        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
+        const perplexityResult = await searchWithPerplexity(`${resolvedName} K-Pop 아이돌 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
           return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.`, _archiveId: perplexityResult.archiveId });
         }
@@ -1233,8 +1233,15 @@ JSON 구조:
     }
 
     case "search_web": {
-      const query = args.query;
+      let query = args.query;
       const recency = args.recency || "week";
+      // Ensure K-Pop context to prevent unrelated results (e.g., "TWICE" → ICE news)
+      const kpopKeywords = ["kpop", "k-pop", "케이팝", "아이돌", "idol", "컴백", "comeback", "앨범", "album", "콘서트", "concert"];
+      const queryLower = query.toLowerCase();
+      const hasKpopContext = kpopKeywords.some(k => queryLower.includes(k));
+      if (!hasKpopContext) {
+        query = `${query} K-Pop 아이돌`;
+      }
       const result = await searchWithPerplexity(query, recency, adminClient, "general");
       if (!result) {
         return JSON.stringify({ error: "web_search_failed", message: "웹 검색에 실패했습니다. 잠시 후 다시 시도해주세요." });
@@ -1386,7 +1393,7 @@ async function searchWithPerplexity(
       body: JSON.stringify({
         model: "sonar",
         messages: [
-          { role: "system", content: "K-Pop 관련 최신 뉴스와 정보를 검색하여 한국어로 간결하게 요약해줘. 핵심 사실만 5-8줄 이내로." },
+          { role: "system", content: "너는 K-Pop 전문 검색 에이전트야. 오직 K-Pop 아이돌, 한국 음악 산업, 엔터테인먼트 관련 정보만 검색하고 요약해. 동음이의어나 관련 없는 결과(예: 'TWICE'를 검색할 때 미국 ICE 뉴스 등)는 절대 포함하지 마. 항상 K-Pop 아티스트 맥락으로 해석해. 한국어로 간결하게 핵심 사실만 5-8줄 이내로 요약해줘." },
           { role: "user", content: query },
         ],
         search_recency_filter: recency,
