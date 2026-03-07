@@ -107,6 +107,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.prompt.alertSetup": { en: "I want to set my bias artist. Guide me.", ko: "최애 아티스트 설정하고 싶어. 방법 알려줘.", ja: "推しアーティストを設定したい。教えて。", zh: "我想设置最爱的艺人。告诉我怎么做。" },
   "agent.registerBias": { en: "Register My Bias Artist", ko: "최애 아티스트 등록하기", ja: "推しアーティストを登録", zh: "注册最爱艺人" },
   "agent.registerBiasDesc": { en: "Set your favorite artist to get personalized support", ko: "나만의 맞춤 팬활동을 시작해보세요", ja: "パーソナライズされたサポートを受けましょう", zh: "设置您最喜欢的艺人以获得个性化支持" },
+  "agent.inputBlockedNoArtist": { en: "Register your bias artist first to start chatting 💜", ko: "대화를 시작하려면 먼저 최애 아티스트를 등록해주세요 💜", ja: "チャットを始めるには推しアーティストを登録してください 💜", zh: "请先注册最爱的艺人才能开始聊天 💜" },
   "agent.fanActivity": { en: "Today's Activity", ko: "오늘의 팬활동", ja: "今日のファン活動", zh: "今日粉丝活动" },
   "agent.newsBriefing": { en: "Latest News", ko: "최신 뉴스 브리핑", ja: "最新ニュース", zh: "最新新闻" },
   "agent.prompt.newsBriefing": { en: "Show me the latest news about my bias artist!", ko: "내 최애 아티스트의 최신 뉴스를 알려줘!", ja: "推しアーティストの最新ニュースを教えて！", zh: "告诉我最爱艺人的最新新闻！" },
