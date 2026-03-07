@@ -58,6 +58,7 @@ const App = () => (
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
+            <Route path="/deck" element={<Deck />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
