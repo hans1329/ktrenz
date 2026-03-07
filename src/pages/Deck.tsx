@@ -1,4 +1,5 @@
 import SEO from "@/components/SEO";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useNavigate } from "react-router-dom";
 import {
   Flame, Activity, BarChart3, Zap, Bot, Sparkles,
@@ -84,6 +85,10 @@ const Deck = () => {
       <SEO title="K·TRENZ – Service Deck" description="AI-Powered Fan Energy Intelligence Platform for K-POP" />
 
       <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+        {/* Language switcher */}
+        <div className="fixed top-4 right-4 z-50">
+          <LanguageSwitcher />
+        </div>
         {/* ═══════════ HERO ═══════════ */}
         <section className="relative min-h-[85vh] flex items-center justify-center px-5 py-20">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(11_100%_46%/0.08)_0%,transparent_70%)]" />
