@@ -1233,8 +1233,15 @@ JSON 구조:
     }
 
     case "search_web": {
-      const query = args.query;
+      let query = args.query;
       const recency = args.recency || "week";
+      // Ensure K-Pop context to prevent unrelated results (e.g., "TWICE" → ICE news)
+      const kpopKeywords = ["kpop", "k-pop", "케이팝", "아이돌", "idol", "컴백", "comeback", "앨범", "album", "콘서트", "concert"];
+      const queryLower = query.toLowerCase();
+      const hasKpopContext = kpopKeywords.some(k => queryLower.includes(k));
+      if (!hasKpopContext) {
+        query = `${query} K-Pop 아이돌`;
+      }
       const result = await searchWithPerplexity(query, recency, adminClient, "general");
       if (!result) {
         return JSON.stringify({ error: "web_search_failed", message: "웹 검색에 실패했습니다. 잠시 후 다시 시도해주세요." });
