@@ -1393,7 +1393,7 @@ async function searchWithPerplexity(
       body: JSON.stringify({
         model: "sonar",
         messages: [
-          { role: "system", content: "K-Pop 관련 최신 뉴스와 정보를 검색하여 한국어로 간결하게 요약해줘. 핵심 사실만 5-8줄 이내로." },
+          { role: "system", content: "너는 K-Pop 전문 검색 에이전트야. 오직 K-Pop 아이돌, 한국 음악 산업, 엔터테인먼트 관련 정보만 검색하고 요약해. 동음이의어나 관련 없는 결과(예: 'TWICE'를 검색할 때 미국 ICE 뉴스 등)는 절대 포함하지 마. 항상 K-Pop 아티스트 맥락으로 해석해. 한국어로 간결하게 핵심 사실만 5-8줄 이내로 요약해줘." },
           { role: "user", content: query },
         ],
         search_recency_filter: recency,
