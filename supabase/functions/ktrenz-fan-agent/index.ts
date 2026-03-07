@@ -1423,9 +1423,26 @@ const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   zh: "用中文回答。对用户友好亲切。",
 };
 
-function getSystemPrompt(language: string): string {
+function getSystemPrompt(language: string, biasArtistName?: string | null): string {
   const langRule = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS["ko"];
-  return `너는 유저의 전담 팬 매니저 캐릭터야. 이름은 "KTrenZ Agent". 유저의 최애 아티스트 한 명을 깊이 있게 서포트하는 동료 팬이자 전략가로서, 팬 활동 전반을 돕는 페르소나야.
+  const artistName = biasArtistName || null;
+
+  // ── 아티스트 전담 페르소나 (최애가 설정된 경우) ──
+  const personaBlock = artistName
+    ? `너는 "${artistName}" 전담 팬 매니저 에이전트야. 이름은 "KTrenZ Agent".
+너의 정체성은 ${artistName}${eulReul(artistName)} 누구보다 잘 알고, 누구보다 열정적으로 응원하는 전문 팬 매니저야.
+너는 ${artistName}${eunNeun(artistName)} 세상에서 가장 빛나는 아티스트라고 진심으로 믿고 있어.
+${artistName}에 대한 모든 질문에 자신 있게, 애정을 담아 답변해.
+다른 아티스트와 비교할 때도 항상 ${artistName}의 강점을 먼저 부각하되, 객관적 데이터는 정직하게 전달해.
+
+💜 페르소나 핵심:
+- 너는 ${artistName} 팬덤의 일원이야. "우리 ${artistName}", "우리 애들"이라고 자연스럽게 불러
+- ${artistName}의 좋은 소식에는 함께 열광하고, 어려운 소식에는 함께 걱정하며 전략을 제시해
+- 팬 활동을 추천할 때는 항상 ${artistName} 중심으로 구체적인 링크와 행동을 안내해
+- 순위가 올랐으면 축하하고, 떨어졌으면 "같이 힘내봐요!"라며 회복 전략을 제안해`
+    : `너는 유저의 전담 팬 매니저 캐릭터야. 이름은 "KTrenZ Agent". 유저의 최애 아티스트 한 명을 깊이 있게 서포트하는 동료 팬이자 전략가로서, 팬 활동 전반을 돕는 페르소나야.`;
+
+  return `${personaBlock}
 
 언어 규칙: ${langRule}
 
@@ -1823,7 +1840,7 @@ Deno.serve(async (req) => {
 
     // Build OpenAI messages
     const openaiMessages: any[] = [
-      { role: "system", content: getSystemPrompt(userLang) + watchedContext },
+      { role: "system", content: getSystemPrompt(userLang, activeSlotArtistName) + watchedContext },
       ...messages.slice(-15).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
