@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import KPass from "./pages/KPass";
 import Settings from "./pages/Settings";
 import PitchDeck from "./pages/PitchDeck";
+import Deck from "./pages/Deck";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
