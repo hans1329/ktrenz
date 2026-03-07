@@ -849,7 +849,7 @@ JSON 구조:
 
       if (!newsSnapshots || newsSnapshots.length === 0) {
         // Fallback to Perplexity web search
-        const perplexityResult = await searchWithPerplexity(`${resolvedName} 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
+        const perplexityResult = await searchWithPerplexity(`${resolvedName} K-Pop 아이돌 최근 소식 뉴스 활동`, "week", adminClient, "news", wikiId);
         if (perplexityResult) {
           return JSON.stringify({ artist: resolvedName, web_search_result: perplexityResult.content, citations: perplexityResult.citations, source: "perplexity", message: `웹 검색으로 ${resolvedName}의 최근 소식을 찾았습니다.`, _archiveId: perplexityResult.archiveId });
         }
