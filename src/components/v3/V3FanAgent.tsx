@@ -830,7 +830,19 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               onClick={async () => {
                 setShowMenu(false);
                 if (!hasAlertOn) {
-                  handleSend(t("agent.prompt.alertSetup"));
+                  if (activeSlot?.wiki_entry_id && activeSlot?.artist_name && user?.id) {
+                    await supabase
+                      .from("ktrenz_watched_artists")
+                      .upsert({
+                        user_id: user.id,
+                        artist_name: activeSlot.artist_name,
+                        wiki_entry_id: activeSlot.wiki_entry_id,
+                      }, { onConflict: "user_id" });
+                    queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
+                    toast.success(t("agent.alertsOn"));
+                  } else {
+                    handleSend(t("agent.prompt.alertSetup"));
+                  }
                 } else if (user?.id) {
                   await supabase
                     .from("ktrenz_watched_artists")

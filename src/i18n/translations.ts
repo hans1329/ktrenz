@@ -77,6 +77,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.inputPlaceholder": { en: "Ask about artists, trends, streaming...", ko: "아티스트, 트렌드, 스트리밍에 대해 물어보세요...", ja: "アーティスト、トレンド、ストリーミングについて質問...", zh: "询问有关艺人、趋势、流媒体的问题..." },
   "agent.signInNotice": { en: "Sign In Required", ko: "로그인 필요", ja: "ログインが必要です", zh: "需要登录" },
   "agent.signInNoticeDesc": { en: "Please sign in to activate Fan Agent", ko: "팬 에이전트를 활성화하려면 로그인하세요", ja: "ファンエージェントを有効にするにはログインしてください", zh: "请登录以激活粉丝助手" },
+  "agent.alertsOn": { en: "Alerts turned on", ko: "알림이 설정되었습니다", ja: "アラートがオンになりました", zh: "提醒已开启" },
   "agent.alertsOff": { en: "Alerts turned off", ko: "알림이 해제되었습니다", ja: "アラートがオフになりました", zh: "提醒已关闭" },
   "agent.uploadSuccess": { en: "Agent profile image updated!", ko: "에이전트 프로필 이미지가 업데이트되었습니다!", ja: "エージェントのプロフィール画像が更新されました！", zh: "助手头像已更新！" },
   "agent.clearChat": { en: "Clear chat", ko: "대화 초기화", ja: "チャットをクリア", zh: "清除聊天" },
