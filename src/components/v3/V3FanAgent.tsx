@@ -390,6 +390,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   });
 
   const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
+  // Bias registration is determined by the active slot having a wiki_entry_id
+  const hasBiasRegistered = !!activeSlot?.wiki_entry_id;
 
   const { data: chatHistory, isLoading: isChatHistoryLoading } = useQuery({
     queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id],
