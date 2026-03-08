@@ -3036,6 +3036,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          dau_recorded_at: string | null
           id: string
           onchain_batch_hash: string | null
           onchain_tx_hash: string | null
@@ -3050,6 +3051,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          dau_recorded_at?: string | null
           id?: string
           onchain_batch_hash?: string | null
           onchain_tx_hash?: string | null
@@ -3064,6 +3066,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          dau_recorded_at?: string | null
           id?: string
           onchain_batch_hash?: string | null
           onchain_tx_hash?: string | null
