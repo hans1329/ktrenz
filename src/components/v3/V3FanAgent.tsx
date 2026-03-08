@@ -884,13 +884,18 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 setShowMenu(false);
                 if (!hasAlertOn) {
                   if (activeSlot?.wiki_entry_id && activeSlot?.artist_name && user?.id) {
+                    // Delete existing then insert fresh to avoid conflict issues
                     await supabase
                       .from("ktrenz_watched_artists")
-                      .upsert({
+                      .delete()
+                      .eq("user_id", user.id);
+                    await supabase
+                      .from("ktrenz_watched_artists")
+                      .insert({
                         user_id: user.id,
                         artist_name: activeSlot.artist_name,
                         wiki_entry_id: activeSlot.wiki_entry_id,
-                      }, { onConflict: "user_id" });
+                      });
                     queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
                     // Mark daily news as pending for red dot
                     localStorage.removeItem(`ktrenz-daily-news-seen-${user.id}`);
