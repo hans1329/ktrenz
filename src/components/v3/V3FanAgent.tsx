@@ -839,7 +839,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                         wiki_entry_id: activeSlot.wiki_entry_id,
                       }, { onConflict: "user_id" });
                     queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                    toast.success(t("agent.alertsOn"));
+                    // Mark daily news as pending for red dot
+                    localStorage.removeItem(`ktrenz-daily-news-seen-${user.id}`);
+                    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
+                    // Add confirmation message from agent
+                    const confirmMsg: ChatMessage = {
+                      role: "assistant",
+                      content: t("agent.alertsOnMessage").replace("{artist}", activeSlot.artist_name),
+                      timestamp: new Date().toISOString(),
+                    };
+                    setMessages((prev) => [...prev, confirmMsg]);
+                    setHasStarted(true);
                   } else {
                     handleSend(t("agent.prompt.alertSetup"));
                   }
@@ -849,7 +859,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     .delete()
                     .eq("user_id", user.id);
                   queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                  toast.success(t("agent.alertsOff"));
+                  const offMsg: ChatMessage = {
+                    role: "assistant",
+                    content: t("agent.alertsOffMessage"),
+                    timestamp: new Date().toISOString(),
+                  };
+                  setMessages((prev) => [...prev, offMsg]);
                 }
               }}
               className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"
