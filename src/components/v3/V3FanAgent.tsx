@@ -530,7 +530,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     if (
       user?.id &&
       watchedArtists !== undefined &&
-      !hasAlertOn &&
+      !hasBiasRegistered &&
       !welcomeSent &&
       !isStreaming &&
       chatHistory !== undefined
@@ -544,7 +544,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       setMessages((prev) => [...prev, welcomeMsg]);
       setHasStarted(true);
     }
-  }, [user?.id, watchedArtists, hasAlertOn, welcomeSent, isStreaming, chatHistory]);
+  }, [user?.id, watchedArtists, hasBiasRegistered, welcomeSent, isStreaming, chatHistory]);
 
   // --- 관심 아티스트 등록 시 에이전트 슬롯 이름/이미지 동기화 & 프로필 메뉴 열기 ---
   const prevWatchedCountRef = useRef<number | null>(null);
@@ -1313,7 +1313,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
-        {!hasAlertOn ? (
+        {!hasBiasRegistered ? (
           /* Blocked state — no artist registered */
           <button
             onClick={() => handleSend(t("agent.prompt.alertSetup"))}
