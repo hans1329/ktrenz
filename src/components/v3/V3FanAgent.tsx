@@ -585,6 +585,59 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [hasAlertOn, session?.access_token, briefingTriggered, isStreaming, fetchBriefing]);
 
+  // --- 알림 ON일 때 하루 1회 최신 뉴스 자동 전달 ---
+  const [dailyNewsSent, setDailyNewsSent] = useState(false);
+  useEffect(() => {
+    if (!hasAlertOn || !activeSlot?.wiki_entry_id || !user?.id || dailyNewsSent || isStreaming) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const seenKey = `ktrenz-daily-news-seen-${user.id}`;
+    if (localStorage.getItem(seenKey) === today) return;
+
+    setDailyNewsSent(true);
+    // Fetch latest news snapshot for the bias artist
+    (async () => {
+      try {
+        const { data: snapshots } = await (supabase as any)
+          .from("ktrenz_data_snapshots")
+          .select("raw_response, collected_at")
+          .eq("wiki_entry_id", activeSlot.wiki_entry_id)
+          .eq("platform", "naver_news")
+          .order("collected_at", { ascending: false })
+          .limit(1);
+
+        const snapshot = snapshots?.[0];
+        if (!snapshot?.raw_response) return;
+
+        const topItems = snapshot.raw_response?.top_items ?? snapshot.raw_response?.items ?? [];
+        if (topItems.length === 0) return;
+
+        // Pick the first news item
+        const newsItem = topItems[0];
+        const title = (newsItem.title || "").replace(/<[^>]*>/g, "").replace(/\[.*?\]/g, "").trim();
+        const link = newsItem.link || newsItem.originallink || "";
+        const desc = (newsItem.description || "").replace(/<[^>]*>/g, "").trim();
+
+        if (!title) return;
+
+        const newsMsg: ChatMessage = {
+          role: "assistant",
+          content: t("agent.dailyNewsIntro").replace("{artist}", activeSlot.artist_name || "") +
+            `\n\n📰 **${title}**\n${desc ? desc.slice(0, 100) + "..." : ""}` +
+            (link ? `\n\n🔗 [${t("agent.readMore")}](${link})` : ""),
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, newsMsg]);
+        setHasStarted(true);
+
+        // Mark as seen
+        localStorage.setItem(seenKey, today);
+        queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
+      } catch (e) {
+        console.error("Daily news fetch error:", e);
+      }
+    })();
+  }, [hasAlertOn, activeSlot?.wiki_entry_id, activeSlot?.artist_name, user?.id, dailyNewsSent, isStreaming, queryClient, t]);
+
   // Guide/Ranking data fetching removed — now handled via tool calling in the edge function
 
   const track = useTrackEvent();
@@ -839,7 +892,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                         wiki_entry_id: activeSlot.wiki_entry_id,
                       }, { onConflict: "user_id" });
                     queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                    toast.success(t("agent.alertsOn"));
+                    // Mark daily news as pending for red dot
+                    localStorage.removeItem(`ktrenz-daily-news-seen-${user.id}`);
+                    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
+                    // Add confirmation message from agent
+                    const confirmMsg: ChatMessage = {
+                      role: "assistant",
+                      content: t("agent.alertsOnMessage").replace("{artist}", activeSlot.artist_name),
+                      timestamp: new Date().toISOString(),
+                    };
+                    setMessages((prev) => [...prev, confirmMsg]);
+                    setHasStarted(true);
                   } else {
                     handleSend(t("agent.prompt.alertSetup"));
                   }
@@ -849,7 +912,12 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     .delete()
                     .eq("user_id", user.id);
                   queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
-                  toast.success(t("agent.alertsOff"));
+                  const offMsg: ChatMessage = {
+                    role: "assistant",
+                    content: t("agent.alertsOffMessage"),
+                    timestamp: new Date().toISOString(),
+                  };
+                  setMessages((prev) => [...prev, offMsg]);
                 }
               }}
               className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-muted transition-colors"

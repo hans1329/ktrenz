@@ -53,7 +53,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // 관심 아티스트 유무 체크
+  // Check for unread daily news notification (red dot)
   const { data: watchedArtists } = useQuery({
     queryKey: ["ktrenz-watched-artists", user?.id],
     queryFn: async () => {
@@ -66,7 +66,23 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
     },
     enabled: !!user?.id,
   });
-  const showAgentBadge = user && (watchedArtists?.length ?? 0) === 0;
+  const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
+
+  const { data: hasUnread } = useQuery({
+    queryKey: ["ktrenz-agent-has-unread", user?.id],
+    queryFn: () => {
+      if (!user?.id) return false;
+      if (hasAlertOn) {
+        const today = new Date().toISOString().slice(0, 10);
+        const seen = localStorage.getItem(`ktrenz-daily-news-seen-${user.id}`);
+        return seen !== today;
+      }
+      return false;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 30,
+  });
+  const showAgentBadge = user && hasUnread;
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
