@@ -7880,6 +7880,10 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      purchase_agent_messages_stars: {
+        Args: { _bundle: number; _user_id: string }
+        Returns: Json
+      }
       revert_usdc_withdrawal: {
         Args: { p_transaction_id: string; p_user_id: string }
         Returns: boolean
