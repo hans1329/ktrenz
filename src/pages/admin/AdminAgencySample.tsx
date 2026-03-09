@@ -376,9 +376,9 @@ Provide strategic insights and action items for the agency managing this artist.
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Building2 className="w-6 h-6" /> Agency Dashboard
+            <Building2 className="w-6 h-6" /> 에이전시 대시보드
           </h1>
-          <p className="text-sm text-muted-foreground">Comprehensive Artist Intelligence — Sample Mode</p>
+          <p className="text-sm text-muted-foreground">종합 아티스트 인텔리전스 — 샘플 모드</p>
         </div>
         <Badge variant="outline" className="text-xs">🧪 Beta</Badge>
       </div>
@@ -386,10 +386,10 @@ Provide strategic insights and action items for the agency managing this artist.
       {/* Artist Selector */}
       <Card>
         <CardContent className="p-4 flex items-center gap-4 flex-wrap">
-          <span className="text-sm font-medium text-muted-foreground shrink-0">Artist:</span>
+          <span className="text-sm font-medium text-muted-foreground shrink-0">아티스트:</span>
           <Select value={selectedArtistId} onValueChange={setSelectedArtistId}>
             <SelectTrigger className="w-72">
-              <SelectValue placeholder="Select an artist..." />
+              <SelectValue placeholder="아티스트를 선택하세요..." />
             </SelectTrigger>
             <SelectContent>
               {artists?.map((a: any) => (
@@ -402,7 +402,7 @@ Provide strategic insights and action items for the agency managing this artist.
           {selectedArtistId && (
             <Button size="sm" variant="outline" onClick={() => analyzeMutation.mutate()} disabled={analyzeMutation.isPending}>
               {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
-              Analyze YT Comments
+              YT 댓글 분석
             </Button>
           )}
           {selectedArtist && (
@@ -414,7 +414,7 @@ Provide strategic insights and action items for the agency managing this artist.
       {!selectedArtistId && (
         <div className="text-center py-24 text-muted-foreground">
           <BarChart3 className="w-14 h-14 mx-auto mb-4 opacity-20" />
-          <p>Select an artist to view the full intelligence dashboard</p>
+          <p>아티스트를 선택하면 전체 인텔리전스 대시보드를 확인할 수 있습니다</p>
         </div>
       )}
 
@@ -425,7 +425,7 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* FES */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> FES Score</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> FES 점수</p>
                 <p className="text-2xl font-bold mt-1">{Math.round(fesScore).toLocaleString()}</p>
                 <div className={`text-xs mt-0.5 flex items-center gap-0.5 ${fesDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {fesDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -436,17 +436,17 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* Rank */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground">Ranking</p>
+                <p className="text-[11px] text-muted-foreground">순위</p>
                 <p className="text-2xl font-bold mt-1">#{rankingData?.rank ?? '-'}</p>
-                <p className="text-[11px] text-muted-foreground">of {rankingData?.total ?? '-'}</p>
+                <p className="text-[11px] text-muted-foreground">{rankingData?.total ?? '-'}명 중</p>
               </CardContent>
             </Card>
             {/* Buzz */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageSquare className="w-3 h-3 text-purple-500" /> Buzz Score</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageSquare className="w-3 h-3 text-purple-500" /> 버즈 점수</p>
                 <p className="text-2xl font-bold mt-1">{scoreData?.buzz_score?.toLocaleString() ?? '-'}</p>
-                <p className="text-[11px] text-muted-foreground">{latestBuzz?.total_mentions ?? 0} mentions</p>
+                <p className="text-[11px] text-muted-foreground">{latestBuzz?.total_mentions ?? 0}건 언급</p>
               </CardContent>
             </Card>
             {/* YouTube */}
@@ -454,13 +454,13 @@ Provide strategic insights and action items for the agency managing this artist.
               <CardContent className="p-4">
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Youtube className="w-3 h-3 text-red-500" /> YouTube</p>
                 <p className="text-2xl font-bold mt-1">{latestYt?.subscriberCount ? (latestYt.subscriberCount / 1e6).toFixed(2) + 'M' : '-'}</p>
-                <p className="text-[11px] text-muted-foreground">subscribers</p>
+                <p className="text-[11px] text-muted-foreground">구독자</p>
               </CardContent>
             </Card>
             {/* Sentiment */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ThumbsUp className="w-3 h-3 text-emerald-500" /> Sentiment</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ThumbsUp className="w-3 h-3 text-emerald-500" /> 감성</p>
                 <p className="text-2xl font-bold mt-1">{sentimentMetrics?.overall_score ?? '-'}</p>
                 {sentimentMetrics?.overall_label && (
                   <Badge className={`text-[10px] mt-0.5 ${
@@ -477,7 +477,7 @@ Provide strategic insights and action items for the agency managing this artist.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> FES Trend (14 days)</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> FES 추이 (14일)</CardTitle>
               </CardHeader>
               <CardContent>
                 {fesTrendData.length > 1 ? (
@@ -497,14 +497,14 @@ Provide strategic insights and action items for the agency managing this artist.
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">Insufficient data</div>
+                  <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">데이터 부족</div>
                 )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Energy Category Breakdown</CardTitle>
+                <CardTitle className="text-sm">에너지 카테고리 분석</CardTitle>
                 <CardDescription className="text-xs">YouTube / Buzz / Music / Album</CardDescription>
               </CardHeader>
               <CardContent>
@@ -524,7 +524,7 @@ Provide strategic insights and action items for the agency managing this artist.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> Buzz Score Trend (7 days)</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> 버즈 점수 추이 (7일)</CardTitle>
               </CardHeader>
               <CardContent>
                 {buzzTrend.length > 1 ? (
@@ -538,15 +538,15 @@ Provide strategic insights and action items for the agency managing this artist.
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">데이터 없음</div>
                 )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Buzz Source Distribution</CardTitle>
-                <CardDescription className="text-xs">Where mentions come from</CardDescription>
+                <CardTitle className="text-sm">버즈 소스 분포</CardTitle>
+                <CardDescription className="text-xs">언급 출처 분석</CardDescription>
               </CardHeader>
               <CardContent>
                 {buzzBreakdown.length > 0 ? (
@@ -572,7 +572,7 @@ Provide strategic insights and action items for the agency managing this artist.
                     })}
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">데이터 없음</div>
                 )}
               </CardContent>
             </Card>
@@ -581,7 +581,7 @@ Provide strategic insights and action items for the agency managing this artist.
           {/* ═══ Row 4: YouTube Trend ═══ */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" /> YouTube Performance (7 days)</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" /> YouTube 성과 (7일)</CardTitle>
             </CardHeader>
             <CardContent>
               {ytTrend.length > 1 ? (
@@ -595,7 +595,7 @@ Provide strategic insights and action items for the agency managing this artist.
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">데이터 없음</div>
               )}
             </CardContent>
           </Card>
@@ -603,10 +603,10 @@ Provide strategic insights and action items for the agency managing this artist.
           {/* ═══ Row 5: Sentiment Analysis ═══ */}
           <Separator />
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <ThumbsUp className="w-5 h-5" /> YouTube Comment Sentiment
+            <ThumbsUp className="w-5 h-5" /> YouTube 댓글 감성 분석
             {sentimentSnapshot?.collected_at && (
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                Last: {format(new Date(sentimentSnapshot.collected_at), 'yyyy-MM-dd HH:mm')}
+                최근: {format(new Date(sentimentSnapshot.collected_at), 'yyyy-MM-dd HH:mm')}
               </span>
             )}
           </h2>
@@ -614,8 +614,8 @@ Provide strategic insights and action items for the agency managing this artist.
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Comment Sentiment Distribution</CardTitle>
-                  <CardDescription className="text-xs">{sentimentMetrics.total_comments_analyzed} comments from {sentimentMetrics.videos_analyzed} videos</CardDescription>
+                  <CardTitle className="text-sm">댓글 감성 분포</CardTitle>
+                  <CardDescription className="text-xs">{sentimentMetrics.videos_analyzed}개 영상의 {sentimentMetrics.total_comments_analyzed}개 댓글 분석</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={220}>
@@ -639,7 +639,7 @@ Provide strategic insights and action items for the agency managing this artist.
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Sentiment by Video</CardTitle>
+                  <CardTitle className="text-sm">영상별 감성 분석</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {sentimentVideos.length > 0 ? (
@@ -660,7 +660,7 @@ Provide strategic insights and action items for the agency managing this artist.
                       ))}
                     </div>
                   ) : (
-                    <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No video data</div>
+                    <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">영상 데이터 없음</div>
                   )}
                 </CardContent>
               </Card>
@@ -668,7 +668,7 @@ Provide strategic insights and action items for the agency managing this artist.
           ) : (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
-                <p className="text-sm">No sentiment data yet. Click "Analyze YT Comments" above.</p>
+                <p className="text-sm">감성 분석 데이터가 없습니다. 상단의 "YT 댓글 분석" 버튼을 클릭하세요.</p>
               </CardContent>
             </Card>
           )}
@@ -678,8 +678,8 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* Naver News */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Newspaper className="w-4 h-4 text-green-500" /> Naver News</CardTitle>
-                <CardDescription className="text-xs">{naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count ?? 0} articles (24h)</CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><Newspaper className="w-4 h-4 text-green-500" /> 네이버 뉴스</CardTitle>
+                <CardDescription className="text-xs">{naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count ?? 0}건 (24시간)</CardDescription>
               </CardHeader>
               <CardContent>
                 {naverArticles.length > 0 ? (
@@ -695,7 +695,7 @@ Provide strategic insights and action items for the agency managing this artist.
                     ))}
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No recent articles</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">최근 기사 없음</div>
                 )}
               </CardContent>
             </Card>
@@ -703,9 +703,9 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* External Videos */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Disc3 className="w-4 h-4 text-purple-500" /> External Channel Appearances</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Disc3 className="w-4 h-4 text-purple-500" /> 외부 채널 노출</CardTitle>
                 <CardDescription className="text-xs">
-                  {extVideoData?.metrics?.total_views ? `${(extVideoData.metrics.total_views / 1e3).toFixed(0)}K views` : 'No data'} across reference channels
+                  레퍼런스 채널 기준 {extVideoData?.metrics?.total_views ? `${(extVideoData.metrics.total_views / 1e3).toFixed(0)}K 조회` : '데이터 없음'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -723,7 +723,7 @@ Provide strategic insights and action items for the agency managing this artist.
                     ))}
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No external appearances</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">외부 노출 없음</div>
                 )}
               </CardContent>
             </Card>
@@ -733,8 +733,8 @@ Provide strategic insights and action items for the agency managing this artist.
           {fanIntents && fanIntents.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> Fan Intent Snapshot (7 days)</CardTitle>
-                <CardDescription className="text-xs">{fanIntents.length} fan queries analyzed</CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> 팬 의도 분석 (7일)</CardTitle>
+                <CardDescription className="text-xs">{fanIntents.length}건의 팬 질의 분석</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -766,19 +766,19 @@ Provide strategic insights and action items for the agency managing this artist.
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <GitCompareArrows className="w-4 h-4 text-cyan-500" /> Competitor Comparison
+                <GitCompareArrows className="w-4 h-4 text-cyan-500" /> 경쟁 아티스트 비교
               </CardTitle>
-              <CardDescription className="text-xs">Compare key metrics side-by-side</CardDescription>
+              <CardDescription className="text-xs">주요 지표를 나란히 비교합니다</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs text-muted-foreground">Compare with:</span>
+                <span className="text-xs text-muted-foreground">비교 대상:</span>
                 <Select value={compareArtistId} onValueChange={setCompareArtistId}>
                   <SelectTrigger className="w-56">
-                    <SelectValue placeholder="Select..." />
+                    <SelectValue placeholder="선택..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— None —</SelectItem>
+                    <SelectItem value="none">— 선택 안함 —</SelectItem>
                     {artists?.filter((a: any) => a.wiki_entry_id !== selectedArtistId).map((a: any) => (
                       <SelectItem key={a.wiki_entry_id} value={a.wiki_entry_id}>
                         {a.display_name}
@@ -806,7 +806,7 @@ Provide strategic insights and action items for the agency managing this artist.
                 </>
               ) : (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  {compareArtistId === 'none' ? 'Select a competitor to compare' : 'Loading comparison data...'}
+                  {compareArtistId === 'none' ? '비교할 아티스트를 선택하세요' : '비교 데이터 로딩 중...'}
                 </div>
               )}
             </CardContent>
@@ -816,9 +816,9 @@ Provide strategic insights and action items for the agency managing this artist.
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-amber-500" /> Milestone Timeline
+                <Trophy className="w-4 h-4 text-amber-500" /> 마일스톤 타임라인
               </CardTitle>
-              <CardDescription className="text-xs">Key achievements and records</CardDescription>
+              <CardDescription className="text-xs">주요 성과 및 기록</CardDescription>
             </CardHeader>
             <CardContent>
               {milestones && milestones.length > 0 ? (
@@ -846,7 +846,7 @@ Provide strategic insights and action items for the agency managing this artist.
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground text-sm">No milestones recorded yet</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">기록된 마일스톤이 없습니다</div>
               )}
             </CardContent>
           </Card>
@@ -857,13 +857,13 @@ Provide strategic insights and action items for the agency managing this artist.
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-500" /> AI Strategic Insights
+                    <Brain className="w-4 h-4 text-purple-500" /> AI 전략 인사이트
                   </CardTitle>
-                  <CardDescription className="text-xs">GPT-powered analysis based on all collected data</CardDescription>
+                  <CardDescription className="text-xs">수집된 전체 데이터 기반 GPT 분석</CardDescription>
                 </div>
                 <Button size="sm" variant="outline" onClick={generateInsight} disabled={aiLoading}>
                   {aiLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                  Generate
+                  생성
                 </Button>
               </div>
             </CardHeader>
@@ -871,7 +871,7 @@ Provide strategic insights and action items for the agency managing this artist.
               {aiLoading && (
                 <div className="text-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-500" />
-                  <p className="text-sm text-muted-foreground">Analyzing all data points...</p>
+                  <p className="text-sm text-muted-foreground">전체 데이터 분석 중...</p>
                 </div>
               )}
               {!aiLoading && aiInsight && (
@@ -881,7 +881,7 @@ Provide strategic insights and action items for the agency managing this artist.
               )}
               {!aiLoading && !aiInsight && (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  Click "Generate" to get AI-powered strategic recommendations
+                  "생성" 버튼을 클릭하면 AI 기반 전략 추천을 받을 수 있습니다
                 </div>
               )}
             </CardContent>
@@ -889,7 +889,7 @@ Provide strategic insights and action items for the agency managing this artist.
 
           <Separator />
           <p className="text-center text-xs text-muted-foreground pb-4">
-            K-Trendz Agency Intelligence — Sample Dashboard Preview
+            K-Trendz 에이전시 인텔리전스 — 샘플 대시보드 미리보기
           </p>
         </>
       )}
