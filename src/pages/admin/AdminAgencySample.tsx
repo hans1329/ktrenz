@@ -545,8 +545,8 @@ Provide strategic insights and action items for the agency managing this artist.
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Buzz Source Distribution</CardTitle>
-                <CardDescription className="text-xs">Where mentions come from</CardDescription>
+                <CardTitle className="text-sm">버즈 소스 분포</CardTitle>
+                <CardDescription className="text-xs">언급 출처 분석</CardDescription>
               </CardHeader>
               <CardContent>
                 {buzzBreakdown.length > 0 ? (
