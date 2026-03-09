@@ -5968,6 +5968,9 @@ export type Database = {
           music_score: number | null
           music_velocity: number | null
           snapshot_at: string
+          social_intensity: number | null
+          social_score: number | null
+          social_velocity: number | null
           wiki_entry_id: string
           youtube_intensity: number | null
           youtube_score: number | null
@@ -5990,6 +5993,9 @@ export type Database = {
           music_score?: number | null
           music_velocity?: number | null
           snapshot_at?: string
+          social_intensity?: number | null
+          social_score?: number | null
+          social_velocity?: number | null
           wiki_entry_id: string
           youtube_intensity?: number | null
           youtube_score?: number | null
@@ -6012,6 +6018,9 @@ export type Database = {
           music_score?: number | null
           music_velocity?: number | null
           snapshot_at?: string
+          social_intensity?: number | null
+          social_score?: number | null
+          social_velocity?: number | null
           wiki_entry_id?: string
           youtube_intensity?: number | null
           youtube_score?: number | null
@@ -6276,6 +6285,8 @@ export type Database = {
           music_change_24h: number | null
           music_score: number | null
           scored_at: string
+          social_change_24h: number | null
+          social_score: number | null
           total_score: number | null
           wiki_entry_id: string
           youtube_change_24h: number | null
@@ -6295,6 +6306,8 @@ export type Database = {
           music_change_24h?: number | null
           music_score?: number | null
           scored_at?: string
+          social_change_24h?: number | null
+          social_score?: number | null
           total_score?: number | null
           wiki_entry_id: string
           youtube_change_24h?: number | null
@@ -6314,6 +6327,8 @@ export type Database = {
           music_change_24h?: number | null
           music_score?: number | null
           scored_at?: string
+          social_change_24h?: number | null
+          social_score?: number | null
           total_score?: number | null
           wiki_entry_id?: string
           youtube_change_24h?: number | null
