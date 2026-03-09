@@ -31,6 +31,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminIntents from "./pages/admin/AdminIntents";
 import AgencyDashboardSample from "./pages/AgencyDashboardSample";
 import AdminIntentMonitor from "./pages/admin/AdminIntentMonitor";
+import AdminWatchedChannels from "./pages/admin/AdminWatchedChannels";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="products" element={<AdminProducts />} />
               <Route path="intents" element={<AdminIntents />} />
               <Route path="intent-monitor" element={<AdminIntentMonitor />} />
+              <Route path="watched-channels" element={<AdminWatchedChannels />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
