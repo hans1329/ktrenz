@@ -846,7 +846,7 @@ Provide strategic insights and action items for the agency managing this artist.
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground text-sm">No milestones recorded yet</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">기록된 마일스톤이 없습니다</div>
               )}
             </CardContent>
           </Card>
