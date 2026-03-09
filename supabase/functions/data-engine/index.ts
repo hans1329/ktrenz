@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "buzz", "energy"] as const;
+const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "social", "buzz", "energy"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -24,7 +24,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   external_videos: 10,
   music: 10,
   hanteo: 10,
-  buzz: 120, // 12배치 × 5아티스트 완료 대기 (fire-and-forget이므로 충분한 여유 필요)
+  social: 30,
+  buzz: 120,
   energy: 0,
 };
 
@@ -235,6 +236,16 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
+  social: (url, key) => {
+    console.log("[data-engine] Launching social followers (fire-and-forget)...");
+    const p = fetch(`${url}/functions/v1/collect-social-followers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    }).catch((e) => console.warn("[data-engine] social fire error:", e.message));
+    fireAndForget(p);
+    return Promise.resolve({ status: "launched", module: "social" });
+  },
   buzz: runBuzz,
   energy: (url, key) => runEnergy(url, key, false),
   naver_news: runNaverNews,
