@@ -27,21 +27,21 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
   {
     name: "news",
     weight: 2.0,
     buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com -site:tiktok.com`,
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
   {
     name: "reddit",
     weight: 1.2,
     buildQuery: (name) => `"${name}" site:reddit.com kpop`,
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
   // YouTube 소스 제거됨 — YouTube는 독립 데이터 소스(40%)로 이미 수집 중
   // Naver 소스 제거됨 — crawl-naver-news 별도 API로 수집 후 가상 소스로 반영
@@ -54,7 +54,7 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
 ];
 
@@ -120,7 +120,7 @@ async function firecrawlSearch(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, limit, tbs, scrapeOptions: { formats: ["markdown"] } }),
+      body: JSON.stringify({ query, limit, tbs }),
     });
 
     if (!response.ok) {
