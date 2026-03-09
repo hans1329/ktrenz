@@ -614,8 +614,8 @@ Provide strategic insights and action items for the agency managing this artist.
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Comment Sentiment Distribution</CardTitle>
-                  <CardDescription className="text-xs">{sentimentMetrics.total_comments_analyzed} comments from {sentimentMetrics.videos_analyzed} videos</CardDescription>
+                  <CardTitle className="text-sm">댓글 감성 분포</CardTitle>
+                  <CardDescription className="text-xs">{sentimentMetrics.videos_analyzed}개 영상의 {sentimentMetrics.total_comments_analyzed}개 댓글 분석</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={220}>
