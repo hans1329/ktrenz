@@ -572,7 +572,7 @@ Provide strategic insights and action items for the agency managing this artist.
                     })}
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">데이터 없음</div>
                 )}
               </CardContent>
             </Card>
