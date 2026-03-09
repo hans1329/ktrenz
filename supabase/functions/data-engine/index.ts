@@ -411,6 +411,8 @@ Deno.serve(async (req) => {
         result = await runEnergy(supabaseUrl, serviceKey, true);
       } else if (mod === "youtube") {
         result = await runYouTube(supabaseUrl, serviceKey, waitForCompletion);
+      } else if (mod === "external_videos") {
+        result = await runExternalVideos(supabaseUrl, serviceKey, waitForCompletion);
       } else if (mod === "music") {
         result = await runMusic(supabaseUrl, serviceKey, waitForCompletion);
       } else if (mod === "hanteo") {
