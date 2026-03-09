@@ -863,7 +863,7 @@ Provide strategic insights and action items for the agency managing this artist.
                 </div>
                 <Button size="sm" variant="outline" onClick={generateInsight} disabled={aiLoading}>
                   {aiLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                  Generate
+                  생성
                 </Button>
               </div>
             </CardHeader>
