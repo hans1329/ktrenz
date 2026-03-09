@@ -695,7 +695,7 @@ Provide strategic insights and action items for the agency managing this artist.
                     ))}
                   </div>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No recent articles</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">최근 기사 없음</div>
                 )}
               </CardContent>
             </Card>
