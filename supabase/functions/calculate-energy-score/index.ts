@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       if (
         (Number(snap.youtube_score) || 0) > 0 || (Number(snap.buzz_score) || 0) > 0 ||
         (Number(snap.album_score) || 0) > 0 || (Number(snap.music_score) || 0) > 0 ||
-        (Number(snap.fan_score) || 0) > 0
+        (Number(snap.social_score) || 0) > 0 || (Number(snap.fan_score) || 0) > 0
       ) {
         prevMap.set(snap.wiki_entry_id, snap);
       }
