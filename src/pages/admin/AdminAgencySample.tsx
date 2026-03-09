@@ -603,7 +603,7 @@ Provide strategic insights and action items for the agency managing this artist.
           {/* ═══ Row 5: Sentiment Analysis ═══ */}
           <Separator />
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <ThumbsUp className="w-5 h-5" /> YouTube Comment Sentiment
+            <ThumbsUp className="w-5 h-5" /> YouTube 댓글 감성 분석
             {sentimentSnapshot?.collected_at && (
               <span className="text-xs font-normal text-muted-foreground ml-2">
                 Last: {format(new Date(sentimentSnapshot.collected_at), 'yyyy-MM-dd HH:mm')}
