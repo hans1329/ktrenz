@@ -136,7 +136,7 @@ const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) =>
                 {/* Event cards for this date */}
                 <div className="space-y-1.5">
                   {(events as any[]).map((schedule: any) => {
-                    const cat = CATEGORY_CONFIG[schedule.category] || CATEGORY_CONFIG.others;
+                    const cat = CATEGORY_KEYS[schedule.category] || CATEGORY_KEYS.others;
                     const dotColor = DOT_COLORS[schedule.category] || DOT_COLORS.others;
                     const catColor = CATEGORY_COLORS[schedule.category] || CATEGORY_COLORS.others;
 
