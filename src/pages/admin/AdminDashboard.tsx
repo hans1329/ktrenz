@@ -45,19 +45,26 @@ const AdminDashboard = () => {
   const { data: collectionStats } = useQuery({
     queryKey: ['admin-collection-stats'],
     queryFn: async () => {
+      // Fetch from collection_log
       const { data } = await supabase
         .from('ktrenz_collection_log' as any)
         .select('platform, status, collected_at')
         .order('collected_at', { ascending: false })
         .limit(500);
-      if (!data) return { platforms: {}, total24h: 0 };
+
+      // Fetch latest snapshot per platform as fallback
+      const { data: snapshots } = await supabase
+        .from('ktrenz_data_snapshots' as any)
+        .select('platform, collected_at')
+        .order('collected_at', { ascending: false })
+        .limit(1000);
 
       const now = Date.now();
       const h24 = 24 * 3600000;
       const platforms: Record<string, { success: number; fail: number; latest: string }> = {};
       let total24h = 0;
 
-      for (const row of data as any[]) {
+      for (const row of (data || []) as any[]) {
         const age = now - new Date(row.collected_at).getTime();
         if (!platforms[row.platform]) {
           platforms[row.platform] = { success: 0, fail: 0, latest: row.collected_at };
@@ -68,7 +75,16 @@ const AdminDashboard = () => {
           total24h++;
         }
       }
-      return { platforms, total24h };
+
+      // Build snapshot latest map for platforms not in collection_log
+      const snapshotLatest: Record<string, string> = {};
+      for (const s of (snapshots || []) as any[]) {
+        if (!snapshotLatest[s.platform]) {
+          snapshotLatest[s.platform] = s.collected_at;
+        }
+      }
+
+      return { platforms, total24h, snapshotLatest };
     },
     staleTime: 1000 * 60 * 2,
   });
