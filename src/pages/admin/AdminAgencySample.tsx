@@ -606,7 +606,7 @@ Provide strategic insights and action items for the agency managing this artist.
             <ThumbsUp className="w-5 h-5" /> YouTube 댓글 감성 분석
             {sentimentSnapshot?.collected_at && (
               <span className="text-xs font-normal text-muted-foreground ml-2">
-                Last: {format(new Date(sentimentSnapshot.collected_at), 'yyyy-MM-dd HH:mm')}
+                최근: {format(new Date(sentimentSnapshot.collected_at), 'yyyy-MM-dd HH:mm')}
               </span>
             )}
           </h2>
