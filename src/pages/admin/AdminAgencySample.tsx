@@ -48,6 +48,20 @@ const AdminAgencySample = () => {
     },
   });
 
+  // ── Real-time Energy Coordinates ──
+  const { data: coordData, isLoading: coordLoading } = useQuery({
+    queryKey: ['agency-coordinates', selectedArtistId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('query-artist-energy', {
+        body: { wiki_entry_id: selectedArtistId },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   // ── Energy Score ──
   const { data: energyData } = useQuery({
     queryKey: ['agency-energy', selectedArtistId],
