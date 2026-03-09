@@ -504,7 +504,7 @@ Provide strategic insights and action items for the agency managing this artist.
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Energy Category Breakdown</CardTitle>
+                <CardTitle className="text-sm">에너지 카테고리 분석</CardTitle>
                 <CardDescription className="text-xs">YouTube / Buzz / Music / Album</CardDescription>
               </CardHeader>
               <CardContent>
