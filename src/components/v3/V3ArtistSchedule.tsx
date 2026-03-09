@@ -40,11 +40,11 @@ const DOT_COLORS: Record<string, string> = {
   others: "bg-muted-foreground",
 };
 
-function getDateInfo(dateStr: string): { label: string; sublabel: string; highlight: boolean; daysAway: number } {
+function getDateInfo(dateStr: string, t: (key: string) => string): { label: string; sublabel: string; highlight: boolean; daysAway: number } {
   const d = parseISO(dateStr);
   const days = differenceInDays(d, new Date());
-  if (isToday(d)) return { label: "TODAY", sublabel: format(d, "MMM d"), highlight: true, daysAway: 0 };
-  if (isTomorrow(d)) return { label: "TOMORROW", sublabel: format(d, "MMM d"), highlight: true, daysAway: 1 };
+  if (isToday(d)) return { label: t("artist.today"), sublabel: format(d, "MMM d"), highlight: true, daysAway: 0 };
+  if (isTomorrow(d)) return { label: t("artist.tomorrow"), sublabel: format(d, "MMM d"), highlight: true, daysAway: 1 };
   if (isThisWeek(d)) return { label: format(d, "EEE").toUpperCase(), sublabel: format(d, "MMM d"), highlight: false, daysAway: days };
   return { label: format(d, "MMM d"), sublabel: `D-${days}`, highlight: false, daysAway: days };
 }
