@@ -93,7 +93,7 @@ const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) =>
       {/* Timeline */}
       <div className="relative ml-1">
         {dateGroups.map(([date, events], groupIdx) => {
-          const dateInfo = getDateInfo(date);
+          const dateInfo = getDateInfo(date, t);
           const isLast = groupIdx === dateGroups.length - 1;
 
           return (
