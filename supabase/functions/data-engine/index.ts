@@ -111,6 +111,31 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
   return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
 }
 
+async function runExternalVideos(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
+  if (!waitForCompletion) {
+    console.log(`[data-engine] Launching external_videos (fire-and-forget)...`);
+    const p = fetch(`${supabaseUrl}/functions/v1/scan-external-videos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({}),
+    }).catch((e) => console.warn(`[data-engine] external_videos fire error:`, e.message));
+    fireAndForget(p);
+    return { status: "launched", module: "external_videos" };
+  }
+
+  console.log(`[data-engine] Running external_videos and waiting for completion...`);
+  const resp = await fetch(`${supabaseUrl}/functions/v1/scan-external-videos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+    body: JSON.stringify({}),
+  });
+  const text = await resp.text();
+  let parsed: any = null;
+  try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text.slice(0, 300) }; }
+  if (!resp.ok) throw new Error(`[external_videos] ${text.slice(0, 500)}`);
+  return { status: "completed", module: "external_videos", ...parsed };
+}
+
 async function runEnergy(supabaseUrl: string, serviceKey: string, isBaseline: boolean = false): Promise<any> {
   console.log(`[data-engine] Running Energy module... (isBaseline=${isBaseline})`);
   const resp = await fetch(`${supabaseUrl}/functions/v1/calculate-energy-score`, {
