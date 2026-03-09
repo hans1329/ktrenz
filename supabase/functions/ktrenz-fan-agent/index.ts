@@ -171,6 +171,22 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "get_artist_schedule",
+      description: "Get upcoming schedule/events for a specific artist from the ktrenz_schedules database. Returns events like releases, broadcasts, celebrations, concerts, and purchases. Call this when the user asks about 일정, 스케줄, 컴백, schedule, upcoming events, or what's coming up.",
+      parameters: {
+        type: "object",
+        properties: {
+          artist_name: { type: "string", description: "Artist name to get schedule for" },
+          limit: { type: "number", description: "Number of events to return (default 10, max 20)" },
+        },
+        required: ["artist_name"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "search_web",
       description: "Search the web in real-time using Perplexity AI for any K-Pop related question that cannot be answered from the database alone. Use this for latest news, comeback schedules, concert info, social media trends, or any question requiring up-to-date web information. Also use as fallback when get_artist_news returns no results.",
       parameters: {
