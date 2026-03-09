@@ -2862,6 +2862,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_schedules: {
+        Row: {
+          artist_name: string
+          category: string | null
+          created_at: string | null
+          event_date: string
+          event_time: string | null
+          id: string
+          source: string | null
+          source_url: string | null
+          title: string
+          updated_at: string | null
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          artist_name: string
+          category?: string | null
+          created_at?: string | null
+          event_date: string
+          event_time?: string | null
+          id?: string
+          source?: string | null
+          source_url?: string | null
+          title: string
+          updated_at?: string | null
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          artist_name?: string
+          category?: string | null
+          created_at?: string | null
+          event_date?: string
+          event_time?: string | null
+          id?: string
+          source?: string | null
+          source_url?: string | null
+          title?: string
+          updated_at?: string | null
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_schedules_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_streaming_guides: {
         Row: {
           artist_name: string
