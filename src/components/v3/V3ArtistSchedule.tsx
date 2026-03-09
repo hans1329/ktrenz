@@ -10,14 +10,14 @@ interface V3ArtistScheduleProps {
   artistName: string;
 }
 
-const CATEGORY_CONFIG: Record<string, { icon: any; gradient: string; glow: string; label: string; emoji: string }> = {
-  release: { icon: Music, gradient: "from-primary/20 to-primary/5", glow: "shadow-primary/20", label: "Release", emoji: "💿" },
-  celebration: { icon: PartyPopper, gradient: "from-amber-500/20 to-amber-500/5", glow: "shadow-amber-500/20", label: "Celebration", emoji: "🎉" },
-  broadcast: { icon: Radio, gradient: "from-blue-500/20 to-blue-500/5", glow: "shadow-blue-500/20", label: "Broadcast", emoji: "📡" },
-  purchase: { icon: ShoppingBag, gradient: "from-emerald-500/20 to-emerald-500/5", glow: "shadow-emerald-500/20", label: "Purchase", emoji: "🛍️" },
-  event: { icon: Sparkles, gradient: "from-pink-500/20 to-pink-500/5", glow: "shadow-pink-500/20", label: "Event", emoji: "✨" },
-  sns: { icon: MessageCircle, gradient: "from-violet-500/20 to-violet-500/5", glow: "shadow-violet-500/20", label: "SNS", emoji: "💬" },
-  others: { icon: Calendar, gradient: "from-muted/40 to-muted/10", glow: "shadow-muted/20", label: "Schedule", emoji: "📅" },
+const CATEGORY_KEYS: Record<string, { icon: any; gradient: string; glow: string; i18nKey: string; emoji: string }> = {
+  release: { icon: Music, gradient: "from-primary/20 to-primary/5", glow: "shadow-primary/20", i18nKey: "schedule.release", emoji: "💿" },
+  celebration: { icon: PartyPopper, gradient: "from-amber-500/20 to-amber-500/5", glow: "shadow-amber-500/20", i18nKey: "schedule.celebration", emoji: "🎉" },
+  broadcast: { icon: Radio, gradient: "from-blue-500/20 to-blue-500/5", glow: "shadow-blue-500/20", i18nKey: "schedule.broadcast", emoji: "📡" },
+  purchase: { icon: ShoppingBag, gradient: "from-emerald-500/20 to-emerald-500/5", glow: "shadow-emerald-500/20", i18nKey: "schedule.purchase", emoji: "🛍️" },
+  event: { icon: Sparkles, gradient: "from-pink-500/20 to-pink-500/5", glow: "shadow-pink-500/20", i18nKey: "schedule.event", emoji: "✨" },
+  sns: { icon: MessageCircle, gradient: "from-violet-500/20 to-violet-500/5", glow: "shadow-violet-500/20", i18nKey: "schedule.sns", emoji: "💬" },
+  others: { icon: Calendar, gradient: "from-muted/40 to-muted/10", glow: "shadow-muted/20", i18nKey: "schedule.others", emoji: "📅" },
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
