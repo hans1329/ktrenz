@@ -460,7 +460,7 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* Sentiment */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ThumbsUp className="w-3 h-3 text-emerald-500" /> Sentiment</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ThumbsUp className="w-3 h-3 text-emerald-500" /> 감성</p>
                 <p className="text-2xl font-bold mt-1">{sentimentMetrics?.overall_score ?? '-'}</p>
                 {sentimentMetrics?.overall_label && (
                   <Badge className={`text-[10px] mt-0.5 ${
