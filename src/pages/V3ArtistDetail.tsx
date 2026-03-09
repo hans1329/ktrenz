@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Home, Youtube, Eye, ThumbsUp, MessageSquare, Film, Users, TrendingUp, ExternalLink, Play, Hash, Smile, Zap, Music, Disc3, Headphones, Newspaper } from "lucide-react";
 import V3EnergyChart from "@/components/v3/V3EnergyChart";
 import V3ArtistMilestones from "@/components/v3/V3ArtistMilestones";
+import V3ArtistSchedule from "@/components/v3/V3ArtistSchedule";
 import AdminDataSourcePanel from "@/components/v3/AdminDataSourcePanel";
 import DataRunDialog from "@/components/v3/DataRunDialog";
 import { useToast } from "@/hooks/use-toast";
