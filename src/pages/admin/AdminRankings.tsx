@@ -1142,6 +1142,11 @@ const AdminRankings = () => {
                   ({finalElapsed !== null ? `${finalElapsed}s 소요` : `${elapsed}s 경과`})
                 </span>
               )}
+              {pipelineRun?.started_at && (
+                <span className="text-[10px] text-muted-foreground ml-1">
+                  · 시작: {new Date(pipelineRun.started_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
             </div>
             <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setPipelineRunId(null); setPipelineStartTime(null); setRunningSource(null); }}>
               <X className="w-3 h-3" />
@@ -1154,9 +1159,10 @@ const AdminRankings = () => {
               {(pipelineRun.modules_requested as string[]).map((mod: string, i: number) => {
                 const isCurrent = pipelineRun.current_module === mod;
                 const results = pipelineRun.results as Record<string, any> | null;
-                const isDone = results && mod in results;
-                const isFailed = pipelineRun.status === 'failed' && isCurrent;
                 const modResult = results?.[mod];
+                const hasError = modResult && typeof modResult === 'object' && 'error' in modResult;
+                const isDone = results && mod in results && !hasError;
+                const isFailed = (pipelineRun.status === 'failed' && isCurrent) || hasError;
 
                 const moduleLabel: Record<string, string> = {
                   youtube: 'YouTube 데이터',
@@ -1223,6 +1229,9 @@ const AdminRankings = () => {
                       )}
                       {buzzDetail && (
                         <p className="text-[10px] mt-0.5 text-muted-foreground">🔍 {buzzDetail}</p>
+                      )}
+                      {hasError && modResult?.error && (
+                        <p className="text-[10px] mt-0.5 text-destructive">⚠️ {String(modResult.error).slice(0, 120)}</p>
                       )}
                       {isCurrent && pipelineRun.status === 'running' && !liveCount && (
                         <p className="text-[10px] text-primary/70 mt-0.5 animate-pulse">처리 중...</p>
