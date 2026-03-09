@@ -56,7 +56,7 @@ const AdminAgencySample = () => {
         .from('v3_energy_snapshots_v2' as any)
         .select('*')
         .eq('wiki_entry_id', selectedArtistId)
-        .order('snapshot_date', { ascending: false })
+        .order('snapshot_at', { ascending: false })
         .limit(14);
       return (data ?? []) as any[];
     },
