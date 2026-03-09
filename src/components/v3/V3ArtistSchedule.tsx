@@ -85,8 +85,8 @@ const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) =>
           <Calendar className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground">Upcoming Schedule</h3>
-          <p className="text-[10px] text-muted-foreground">{schedules.length} events coming up</p>
+          <h3 className="text-sm font-bold text-foreground">{t("artist.upcomingSchedule")}</h3>
+          <p className="text-[10px] text-muted-foreground">{schedules.length} {t("artist.eventsComingUp")}</p>
         </div>
       </div>
 
