@@ -1095,6 +1095,145 @@ Artist: ${context.artist}
             </CardContent>
           </Card>
 
+          {/* ═══ Row 9.7: Event × FES Correlation ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-500" /> 이벤트 × FES 점수 상관 분석
+              </CardTitle>
+              <CardDescription className="text-xs">컴백/이벤트 시점과 FES 변동을 시간축으로 연계합니다 (최근 30일)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const trend = energyData?.slice().reverse().map((e: any) => ({
+                  date: e.snapshot_at?.slice(0, 10) ?? '',
+                  dateLabel: e.snapshot_at?.slice(5, 10) ?? '',
+                  score: Math.round(e.energy_score ?? 0),
+                })) ?? [];
+                const events = correlationEvents ?? [];
+                const eventTypeEmoji: Record<string, string> = {
+                  release: '💿', celebration: '🎉', broadcast: '📡', purchase: '🛒',
+                  event: '🎪', sns: '📱', others: '📌',
+                };
+
+                const eventDates = new Set(events.map((e: any) => e.event_date));
+                const merged = trend.map((t: any) => ({
+                  ...t,
+                  hasEvent: eventDates.has(t.date),
+                  eventScore: eventDates.has(t.date) ? t.score : null,
+                }));
+
+                if (trend.length === 0) {
+                  return <div className="text-center py-6 text-muted-foreground text-sm">에너지 데이터가 부족합니다</div>;
+                }
+
+                const avgAll = trend.reduce((s: number, t: any) => s + t.score, 0) / trend.length;
+                const eventDays = merged.filter((m: any) => m.hasEvent);
+                const avgEvent = eventDays.length > 0
+                  ? eventDays.reduce((s: number, d: any) => s + d.score, 0) / eventDays.length
+                  : null;
+
+                let maxSpike: { date: string; delta: number; event: string } | null = null;
+                events.forEach((ev: any) => {
+                  const idx = trend.findIndex((t: any) => t.date === ev.event_date);
+                  if (idx > 0) {
+                    const delta = trend[idx].score - trend[idx - 1].score;
+                    if (!maxSpike || Math.abs(delta) > Math.abs(maxSpike.delta)) {
+                      maxSpike = { date: ev.event_date, delta, event: ev.title };
+                    }
+                  }
+                });
+
+                return (
+                  <div className="space-y-3">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <ComposedChart data={merged}>
+                        <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                        <XAxis dataKey="dateLabel" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 20', 'dataMax + 20']} />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.[0]) return null;
+                            const d = payload[0].payload;
+                            const dayEvents = events.filter((e: any) => e.event_date === d.date);
+                            return (
+                              <div className="bg-popover border border-border rounded-lg p-2 shadow-lg text-xs">
+                                <p className="font-mono font-bold">{d.date}</p>
+                                <p>FES: <span className="font-bold">{d.score}</span></p>
+                                {dayEvents.length > 0 && (
+                                  <div className="mt-1 pt-1 border-t border-border space-y-0.5">
+                                    {dayEvents.map((e: any, i: number) => (
+                                      <p key={i}>{eventTypeEmoji[e.event_type] ?? '📌'} {e.title}</p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }}
+                        />
+                        <Area type="monotone" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.1)" strokeWidth={2} />
+                        {events.map((ev: any, i: number) => (
+                          <ReferenceLine
+                            key={i}
+                            x={ev.event_date.slice(5, 10)}
+                            stroke="#f59e0b"
+                            strokeDasharray="4 2"
+                            strokeWidth={1.5}
+                            label={{ value: eventTypeEmoji[ev.event_type] ?? '📌', position: 'top', fontSize: 14 }}
+                          />
+                        ))}
+                        <Scatter dataKey="eventScore" fill="#f59e0b" r={5} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                        <p className="text-[10px] text-muted-foreground">평균 FES (전체)</p>
+                        <p className="text-lg font-bold">{Math.round(avgAll)}</p>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                        <p className="text-[10px] text-muted-foreground">평균 FES (이벤트일)</p>
+                        <p className="text-lg font-bold">
+                          {avgEvent != null ? Math.round(avgEvent) : '—'}
+                          {avgEvent != null && (
+                            <span className={`text-xs ml-1 ${avgEvent > avgAll ? 'text-emerald-500' : 'text-red-500'}`}>
+                              ({avgEvent > avgAll ? '+' : ''}{Math.round(avgEvent - avgAll)})
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-2.5 text-center">
+                        <p className="text-[10px] text-muted-foreground">최대 이벤트 영향</p>
+                        {maxSpike ? (
+                          <>
+                            <p className={`text-lg font-bold ${maxSpike.delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {maxSpike.delta >= 0 ? '+' : ''}{Math.round(maxSpike.delta)}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate">{maxSpike.event}</p>
+                          </>
+                        ) : (
+                          <p className="text-lg font-bold">—</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {events.length > 0 && (
+                      <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+                        <span className="font-medium">이벤트 목록:</span>
+                        {events.slice(0, 8).map((ev: any, i: number) => (
+                          <span key={i} className="bg-muted px-1.5 py-0.5 rounded">
+                            {ev.event_date.slice(5)} {eventTypeEmoji[ev.event_type] ?? '📌'} {ev.title}
+                          </span>
+                        ))}
+                        {events.length > 8 && <span>+{events.length - 8}건</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
           {/* ═══ Row 10: AI Strategic Insights ═══ */}
           <Card>
             <CardHeader className="pb-2">
