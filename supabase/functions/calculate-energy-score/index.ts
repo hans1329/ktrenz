@@ -1,5 +1,5 @@
-// Fan Energy Score (FES) v5.3 — Fan Activity 카테고리 추가
-// YouTube 37%, Buzz 23%, Music 18%, Album 14%, Fan 8%
+// Fan Energy Score (FES) v5.4 — Social 카테고리 추가
+// YouTube 37%, Buzz 23%, Music 18%, Album 14%, Social 5%, Fan 3%
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
