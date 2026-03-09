@@ -268,7 +268,7 @@ const AdminAgencySample = () => {
   const latestYt = ytSnapshots?.[ytSnapshots.length - 1]?.metrics;
 
   const radarData = [
-    { cat: 'YouTube', value: latestEnergy?.yt_velocity != null ? Math.round((latestEnergy.yt_velocity * 0.6 + (latestEnergy.yt_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'YouTube', value: latestEnergy?.youtube_velocity != null ? Math.round((latestEnergy.youtube_velocity * 0.6 + (latestEnergy.youtube_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Buzz', value: latestEnergy?.buzz_velocity != null ? Math.round((latestEnergy.buzz_velocity * 0.6 + (latestEnergy.buzz_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Music', value: latestEnergy?.music_velocity != null ? Math.round((latestEnergy.music_velocity * 0.6 + (latestEnergy.music_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Album', value: latestEnergy?.album_velocity != null ? Math.round((latestEnergy.album_velocity * 0.6 + (latestEnergy.album_intensity ?? 0) * 0.4) * 100) : 0 },
