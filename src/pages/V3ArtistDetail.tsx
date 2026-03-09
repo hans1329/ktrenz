@@ -429,7 +429,7 @@ const V3ArtistDetail = () => {
             </div>
             {ytData.summary && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">최근 영상 요약</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-3"><div className="h-px flex-1 bg-border" /><span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">최근 영상 요약</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="grid grid-cols-3 gap-2">
                   <MetricCard icon={Eye} label="최근 조회" value={formatNumber(ytData.summary.totalRecentViews || 0)} color="bg-green-500" />
                   <MetricCard icon={ThumbsUp} label="좋아요" value={formatNumber(ytData.summary.totalRecentLikes || 0)} color="bg-pink-500" />
