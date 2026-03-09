@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calendar, PartyPopper, Music, Radio, ShoppingBag, Sparkles, MessageCircle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isToday, isTomorrow, isThisWeek, parseISO, differenceInDays } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface V3ArtistScheduleProps {
   wikiEntryId: string;
