@@ -581,7 +581,7 @@ Provide strategic insights and action items for the agency managing this artist.
           {/* ═══ Row 4: YouTube Trend ═══ */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" /> YouTube Performance (7 days)</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" /> YouTube 성과 (7일)</CardTitle>
             </CardHeader>
             <CardContent>
               {ytTrend.length > 1 ? (
