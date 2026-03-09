@@ -24,7 +24,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   external_videos: 10,
   music: 10,
   hanteo: 10,
-  buzz: 120, // 12배치 × 5아티스트 완료 대기 (fire-and-forget이므로 충분한 여유 필요)
+  social: 30,
+  buzz: 120,
   energy: 0,
 };
 
