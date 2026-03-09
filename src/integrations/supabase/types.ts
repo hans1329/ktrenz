@@ -6044,6 +6044,7 @@ export type Database = {
           album_sales_data: Json | null
           album_sales_score: number | null
           album_sales_updated_at: string | null
+          buzz_data: Json | null
           buzz_mentions: number | null
           buzz_score: number | null
           buzz_sentiment: string | null
@@ -6067,6 +6068,7 @@ export type Database = {
           album_sales_data?: Json | null
           album_sales_score?: number | null
           album_sales_updated_at?: string | null
+          buzz_data?: Json | null
           buzz_mentions?: number | null
           buzz_score?: number | null
           buzz_sentiment?: string | null
@@ -6090,6 +6092,7 @@ export type Database = {
           album_sales_data?: Json | null
           album_sales_score?: number | null
           album_sales_updated_at?: string | null
+          buzz_data?: Json | null
           buzz_mentions?: number | null
           buzz_score?: number | null
           buzz_sentiment?: string | null
@@ -7443,6 +7446,39 @@ export type Database = {
           status?: string
           stripe_account_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      youtube_external_channels: {
+        Row: {
+          category: string
+          channel_id: string
+          channel_title: string
+          created_at: string
+          id: string
+          is_active: boolean
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          channel_id: string
+          channel_title: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          channel_id?: string
+          channel_title?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
