@@ -524,7 +524,7 @@ Provide strategic insights and action items for the agency managing this artist.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> Buzz Score Trend (7 days)</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> 버즈 점수 추이 (7일)</CardTitle>
               </CardHeader>
               <CardContent>
                 {buzzTrend.length > 1 ? (
