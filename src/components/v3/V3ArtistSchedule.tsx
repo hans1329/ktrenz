@@ -175,7 +175,7 @@ const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) =>
                             "text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0",
                             catColor
                           )}>
-                            {cat.emoji} {cat.label}
+                            {cat.emoji} {t(cat.i18nKey)}
                           </span>
                         </div>
 
