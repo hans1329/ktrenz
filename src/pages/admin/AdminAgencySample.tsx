@@ -323,6 +323,7 @@ const AdminAgencySample = () => {
     { cat: 'Buzz', value: latestEnergy?.buzz_velocity != null ? Math.round((latestEnergy.buzz_velocity * 0.6 + (latestEnergy.buzz_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Music', value: latestEnergy?.music_velocity != null ? Math.round((latestEnergy.music_velocity * 0.6 + (latestEnergy.music_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Album', value: latestEnergy?.album_velocity != null ? Math.round((latestEnergy.album_velocity * 0.6 + (latestEnergy.album_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'Social', value: latestEnergy?.social_velocity != null ? Math.round((latestEnergy.social_velocity * 0.6 + (latestEnergy.social_intensity ?? 0) * 0.4) * 100) : 0 },
   ];
 
   const naverArticles = naverData?.raw_response?.top_items ?? [];
