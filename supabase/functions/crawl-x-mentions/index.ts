@@ -54,7 +54,7 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
 ];
 
