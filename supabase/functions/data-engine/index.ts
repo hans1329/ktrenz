@@ -236,6 +236,7 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
+  social: (url, key) => runCollectorModule(url, key, "social" as any, false),
   buzz: runBuzz,
   energy: (url, key) => runEnergy(url, key, false),
   naver_news: runNaverNews,
