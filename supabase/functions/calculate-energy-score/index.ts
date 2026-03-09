@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 6) DB writes (배치 최적화) ──
-    console.log(`[FES-v5.3] Writing ${results.length} results... (isBaseline=${isBaseline})`);
+    console.log(`[FES-v5.4] Writing ${results.length} results... (isBaseline=${isBaseline})`);
 
     // 스냅샷 배치 insert
     const snapshotRows = results.map(r => ({
@@ -307,6 +307,7 @@ Deno.serve(async (req) => {
       buzz_score: r.buzzCurrent,
       album_score: r.albumCurrent,
       music_score: r.musicCurrent,
+      social_score: r.socialCurrent,
       youtube_velocity: r.ytVelocity,
       youtube_intensity: r.ytIntensity,
       buzz_velocity: r.buzzVelocity,
@@ -315,6 +316,8 @@ Deno.serve(async (req) => {
       album_intensity: r.albumIntensity,
       music_velocity: r.musicVelocity,
       music_intensity: r.musicIntensity,
+      social_velocity: r.socialVelocity,
+      social_intensity: r.socialIntensity,
       fan_score: r.fanCurrent,
       fan_velocity: r.fanVelocity,
       fan_intensity: r.fanIntensity,
@@ -322,7 +325,7 @@ Deno.serve(async (req) => {
     }));
 
     const { error: snapErr } = await sb.from("v3_energy_snapshots_v2").insert(snapshotRows);
-    if (snapErr) console.error("[FES-v5.2] Snapshot insert error:", snapErr.message);
+    if (snapErr) console.error("[FES-v5.4] Snapshot insert error:", snapErr.message);
 
     // scores 업데이트 (10개씩 배치)
     const BATCH_SIZE = 10;
@@ -336,6 +339,8 @@ Deno.serve(async (req) => {
           buzz_change_24h: r.buzzChange,
           album_change_24h: r.albumChange,
           music_change_24h: r.musicChange,
+          social_score: r.socialCurrent,
+          social_change_24h: r.socialChange,
           fan_score: r.fanCurrent,
           fan_change_24h: r.fanChange,
           scored_at: new Date().toISOString(),
