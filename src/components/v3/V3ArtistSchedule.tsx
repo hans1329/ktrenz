@@ -50,6 +50,7 @@ function getDateInfo(dateStr: string): { label: string; sublabel: string; highli
 }
 
 const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) => {
+  const { t } = useLanguage();
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["artist-schedules", wikiEntryId],
     queryFn: async () => {
