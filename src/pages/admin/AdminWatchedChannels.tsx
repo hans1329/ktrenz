@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2, Youtube, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Youtube, Loader2, ExternalLink, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
@@ -19,11 +19,18 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
+type ResolvedChannel = {
+  channel_id: string;
+  channel_name: string;
+  channel_url: string;
+  thumbnail_url: string | null;
+};
+
 const AdminWatchedChannels = () => {
   const queryClient = useQueryClient();
-  const [newChannelId, setNewChannelId] = useState("");
-  const [newChannelName, setNewChannelName] = useState("");
+  const [handleInput, setHandleInput] = useState("");
   const [newCategory, setNewCategory] = useState("variety");
+  const [resolved, setResolved] = useState<ResolvedChannel | null>(null);
 
   const { data: channels, isLoading } = useQuery({
     queryKey: ["admin-watched-channels"],
@@ -37,23 +44,42 @@ const AdminWatchedChannels = () => {
     },
   });
 
+  const resolveMutation = useMutation({
+    mutationFn: async (input: string) => {
+      const { data, error } = await supabase.functions.invoke("resolve-youtube-channel", {
+        body: { input },
+      });
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      return data as ResolvedChannel;
+    },
+    onSuccess: (data) => {
+      setResolved(data);
+      toast.success(`Found: ${data.channel_name}`);
+    },
+    onError: (e: any) => {
+      setResolved(null);
+      toast.error(e.message || "Channel not found");
+    },
+  });
+
   const addMutation = useMutation({
     mutationFn: async () => {
-      if (!newChannelId.trim() || !newChannelName.trim()) throw new Error("Fill all fields");
+      if (!resolved) throw new Error("Resolve a channel first");
       const { error } = await supabase
         .from("ktrenz_watched_channels" as any)
         .insert({
-          channel_id: newChannelId.trim(),
-          channel_name: newChannelName.trim(),
-          channel_url: `https://www.youtube.com/channel/${newChannelId.trim()}`,
+          channel_id: resolved.channel_id,
+          channel_name: resolved.channel_name,
+          channel_url: resolved.channel_url,
           category: newCategory,
         } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-watched-channels"] });
-      setNewChannelId("");
-      setNewChannelName("");
+      setHandleInput("");
+      setResolved(null);
       toast.success("Channel added");
     },
     onError: (e: any) => toast.error(e.message),
@@ -103,6 +129,12 @@ const AdminWatchedChannels = () => {
     },
   });
 
+  const handleResolve = () => {
+    if (!handleInput.trim()) return;
+    setResolved(null);
+    resolveMutation.mutate(handleInput.trim());
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -116,23 +148,32 @@ const AdminWatchedChannels = () => {
       <Card className="p-4">
         <h3 className="text-sm font-semibold mb-3">Add Channel</h3>
         <div className="flex flex-wrap gap-2 items-end">
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Channel ID</label>
-            <Input
-              placeholder="UCxxxxxx..."
-              value={newChannelId}
-              onChange={(e) => setNewChannelId(e.target.value)}
-              className="w-52"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Channel Name</label>
-            <Input
-              placeholder="노빠꾸탁재훈"
-              value={newChannelName}
-              onChange={(e) => setNewChannelName(e.target.value)}
-              className="w-44"
-            />
+          <div className="space-y-1 flex-1 min-w-[240px]">
+            <label className="text-xs text-muted-foreground">YouTube Handle or URL</label>
+            <div className="flex gap-1.5">
+              <Input
+                placeholder="@handle or youtube.com/@handle"
+                value={handleInput}
+                onChange={(e) => {
+                  setHandleInput(e.target.value);
+                  setResolved(null);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handleResolve()}
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleResolve}
+                disabled={resolveMutation.isPending || !handleInput.trim()}
+              >
+                {resolveMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Category</label>
@@ -149,13 +190,34 @@ const AdminWatchedChannels = () => {
           </div>
           <Button
             onClick={() => addMutation.mutate()}
-            disabled={addMutation.isPending || !newChannelId.trim() || !newChannelName.trim()}
+            disabled={addMutation.isPending || !resolved}
             size="sm"
           >
             {addMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
             Add
           </Button>
         </div>
+
+        {/* Resolved preview */}
+        {resolved && (
+          <div className="mt-3 flex items-center gap-3 p-2.5 rounded-md bg-muted/50 border border-border">
+            {resolved.thumbnail_url && (
+              <img src={resolved.thumbnail_url} alt="" className="w-8 h-8 rounded-full" />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium truncate">{resolved.channel_name}</div>
+              <div className="text-xs text-muted-foreground font-mono truncate">{resolved.channel_id}</div>
+            </div>
+            <a
+              href={resolved.channel_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-primary"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
       </Card>
 
       {/* Channel list */}
