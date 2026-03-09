@@ -639,7 +639,7 @@ Provide strategic insights and action items for the agency managing this artist.
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Sentiment by Video</CardTitle>
+                  <CardTitle className="text-sm">영상별 감성 분석</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {sentimentVideos.length > 0 ? (
