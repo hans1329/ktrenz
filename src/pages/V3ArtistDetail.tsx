@@ -448,7 +448,7 @@ const V3ArtistDetail = () => {
             {/* MV Category Metrics */}
             {(ytData.musicVideoViews > 0 || ytData.musicVideoCount > 0) && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3 text-primary" /> 뮤직비디오</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Music className="w-4 h-4 text-primary" /> 뮤직비디오</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="grid grid-cols-2 gap-2">
                   <MetricCard icon={Play} label="MV 조회수" value={formatNumber(ytData.musicVideoViews)} subValue={`${ytData.musicVideoCount}개 뮤직비디오`} color="bg-primary" />
                   <MetricCard icon={Film} label="MV 수" value={String(ytData.musicVideoCount)} subValue="카테고리: 음악" color="bg-primary" />
