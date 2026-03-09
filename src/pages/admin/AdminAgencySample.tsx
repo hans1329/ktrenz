@@ -806,7 +806,7 @@ Provide strategic insights and action items for the agency managing this artist.
                 </>
               ) : (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  {compareArtistId === 'none' ? 'Select a competitor to compare' : 'Loading comparison data...'}
+                  {compareArtistId === 'none' ? '비교할 아티스트를 선택하세요' : '비교 데이터 로딩 중...'}
                 </div>
               )}
             </CardContent>
