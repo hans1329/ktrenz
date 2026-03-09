@@ -194,6 +194,38 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Milestones ──
+  const { data: milestones } = useQuery({
+    queryKey: ['agency-milestones', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('v3_artist_milestones' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Competitor scores ──
+  const { data: compareScoreData } = useQuery({
+    queryKey: ['agency-compare-scores', compareArtistId],
+    queryFn: async () => {
+      if (compareArtistId === 'none') return null;
+      const [scoresRes, energyRes] = await Promise.all([
+        supabase.from('v3_scores_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).maybeSingle(),
+        supabase.from('v3_energy_snapshots_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).order('snapshot_date', { ascending: false }).limit(1),
+      ]);
+      return {
+        scores: scoresRes.data as any,
+        energy: (energyRes.data as any)?.[0],
+      };
+    },
+    enabled: compareArtistId !== 'none',
+  });
+
   // ── Analyze mutation ──
   const analyzeMutation = useMutation({
     mutationFn: async () => {
@@ -210,6 +242,58 @@ const AdminAgencySample = () => {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  // ── AI Insight generation ──
+  const generateInsight = useCallback(async () => {
+    if (!selectedArtistId || !selectedArtist) return;
+    setAiLoading(true);
+    setAiInsight('');
+    try {
+      const context = {
+        artist: selectedArtist.display_name,
+        fesScore: Math.round(fesScore),
+        fesDelta: Math.round(fesDelta),
+        rank: rankingData?.rank,
+        totalArtists: rankingData?.total,
+        buzzScore: scoreData?.buzz_score,
+        buzzMentions: latestBuzz?.total_mentions,
+        sentimentLabel: sentimentMetrics?.overall_label,
+        sentimentScore: sentimentMetrics?.overall_score,
+        ytSubscribers: latestYt?.subscriberCount,
+        naverArticles: naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count,
+        recentMilestones: milestones?.slice(0, 5).map((m: any) => m.milestone_type),
+        fanIntentCount: fanIntents?.length,
+        topIntentCategories: Object.entries(
+          fanIntents?.reduce((a: any, i: any) => { a[i.intent_category] = (a[i.intent_category] || 0) + 1; return a; }, {}) ?? {}
+        ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3).map(([k]) => k),
+      };
+
+      const { data, error } = await supabase.functions.invoke('ktrenz-fan-agent', {
+        body: {
+          message: `You are an entertainment agency analyst. Based on the following K-pop artist data, provide a concise strategic insight report (3-5 bullet points) in English. Focus on actionable recommendations for the agency.
+
+Artist: ${context.artist}
+- FES Score: ${context.fesScore} (${context.fesDelta >= 0 ? '+' : ''}${context.fesDelta} vs yesterday)
+- Ranking: #${context.rank} of ${context.totalArtists}
+- Buzz Score: ${context.buzzScore} (${context.buzzMentions} mentions)
+- YouTube Subscribers: ${context.ytSubscribers ? (context.ytSubscribers / 1e6).toFixed(2) + 'M' : 'N/A'}
+- Naver News (24h): ${context.naverArticles ?? 0} articles
+- Fan Sentiment: ${context.sentimentLabel ?? 'unknown'} (score: ${context.sentimentScore ?? 'N/A'})
+- Fan Queries (7d): ${context.fanIntentCount} queries, top categories: ${context.topIntentCategories.join(', ')}
+- Recent Milestones: ${context.recentMilestones?.join(', ') || 'none'}
+
+Provide strategic insights and action items for the agency managing this artist.`,
+          skipSave: true,
+        },
+      });
+      if (error) throw error;
+      setAiInsight(data?.reply || data?.message || 'No insight generated.');
+    } catch (err: any) {
+      toast.error(`AI insight failed: ${err.message}`);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [selectedArtistId, selectedArtist, fesScore, fesDelta, rankingData, scoreData, latestBuzz, sentimentMetrics, latestYt, naverData, milestones, fanIntents]);
 
   const selectedArtist = artists?.find((a: any) => a.wiki_entry_id === selectedArtistId);
 
