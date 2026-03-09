@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
     // 일괄 조회: 24시간 전 이전의 최신 스냅샷들을 한번에 가져옴
     const { data: allPrevSnaps } = await sb
       .from("v3_energy_snapshots_v2")
-      .select("wiki_entry_id, youtube_score, buzz_score, album_score, music_score, fan_score, snapshot_at")
+      .select("wiki_entry_id, youtube_score, buzz_score, album_score, music_score, social_score, fan_score, snapshot_at")
       .in("wiki_entry_id", entryIds)
       .lte("snapshot_at", cutoff24h)
       .order("snapshot_at", { ascending: false })
