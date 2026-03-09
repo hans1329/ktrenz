@@ -678,8 +678,8 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* Naver News */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Newspaper className="w-4 h-4 text-green-500" /> Naver News</CardTitle>
-                <CardDescription className="text-xs">{naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count ?? 0} articles (24h)</CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><Newspaper className="w-4 h-4 text-green-500" /> 네이버 뉴스</CardTitle>
+                <CardDescription className="text-xs">{naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count ?? 0}건 (24시간)</CardDescription>
               </CardHeader>
               <CardContent>
                 {naverArticles.length > 0 ? (
