@@ -439,7 +439,7 @@ const V3ArtistDetail = () => {
             )}
             {(ytData.topEngagement?.length > 0 || ytData.recentVideos?.length > 0) && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">인기 영상</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold">🎬 인기 영상</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="space-y-1.5">
                   {(ytData.topEngagement || ytData.recentVideos || []).slice(0, 10).map((video: any, idx: number) => <VideoRow key={video.videoId} video={video} rank={idx + 1} onExternalClick={trackExternalClick} />)}
                 </div>
