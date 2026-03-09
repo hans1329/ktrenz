@@ -775,10 +775,10 @@ Provide strategic insights and action items for the agency managing this artist.
                 <span className="text-xs text-muted-foreground">비교 대상:</span>
                 <Select value={compareArtistId} onValueChange={setCompareArtistId}>
                   <SelectTrigger className="w-56">
-                    <SelectValue placeholder="Select..." />
+                    <SelectValue placeholder="선택..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— None —</SelectItem>
+                    <SelectItem value="none">— 선택 안함 —</SelectItem>
                     {artists?.filter((a: any) => a.wiki_entry_id !== selectedArtistId).map((a: any) => (
                       <SelectItem key={a.wiki_entry_id} value={a.wiki_entry_id}>
                         {a.display_name}
