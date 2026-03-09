@@ -63,7 +63,7 @@ const AdminAgencySample = () => {
     refetchInterval: 5 * 60 * 1000,
   });
 
-  // ── Energy Score ──
+  // ── Energy Score (30 days for correlation) ──
   const { data: energyData } = useQuery({
     queryKey: ['agency-energy', selectedArtistId],
     queryFn: async () => {
@@ -72,7 +72,23 @@ const AdminAgencySample = () => {
         .select('*')
         .eq('wiki_entry_id', selectedArtistId)
         .order('snapshot_at', { ascending: false })
-        .limit(14);
+        .limit(30);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Calendar events for correlation (past 30d + future) ──
+  const { data: correlationEvents } = useQuery({
+    queryKey: ['agency-correlation-events', selectedArtistId],
+    queryFn: async () => {
+      const from = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+      const { data } = await supabase
+        .from('calendar_events')
+        .select('event_date, event_type, title')
+        .eq('wiki_entry_id', selectedArtistId)
+        .gte('event_date', from)
+        .order('event_date', { ascending: true });
       return (data ?? []) as any[];
     },
     enabled: !!selectedArtistId,
