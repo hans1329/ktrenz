@@ -5,33 +5,146 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Youtube, ThumbsUp, ThumbsDown, Minus, RefreshCw, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Separator } from '@/components/ui/separator';
+import {
+  Loader2, Youtube, ThumbsUp, ThumbsDown, Minus, RefreshCw,
+  TrendingUp, TrendingDown, Zap, Music, Disc3, Newspaper,
+  MessageSquare, BarChart3, Building2, ExternalLink,
+} from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, RadarChart, Radar, PolarGrid,
+  PolarAngleAxis, PolarRadiusAxis, AreaChart, Area,
+} from 'recharts';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const SENTIMENT_COLORS = { positive: '#10b981', neutral: '#6b7280', negative: '#ef4444' };
+const CATEGORY_COLORS: Record<string, string> = {
+  youtube: '#ef4444', buzz: '#8b5cf6', music: '#3b82f6', album: '#f59e0b', fan: '#ec4899',
+};
+const BUZZ_SOURCE_COLORS: Record<string, string> = {
+  x_twitter: '#1DA1F2', news: '#f59e0b', reddit: '#FF4500', tiktok: '#00f2ea',
+  yt_comments: '#ef4444', naver: '#03C75A', ext_videos: '#8b5cf6',
+};
 
 const AdminAgencySample = () => {
   const [selectedArtistId, setSelectedArtistId] = useState<string>('');
 
-  // Fetch all artists with YouTube channel
+  // ── Artists list ──
   const { data: artists } = useQuery({
     queryKey: ['agency-artists'],
     queryFn: async () => {
       const { data } = await supabase
         .from('v3_artist_tiers')
-        .select('wiki_entry_id, display_name, name_ko, youtube_channel_id')
+        .select('wiki_entry_id, display_name, name_ko, youtube_channel_id, tier')
         .not('youtube_channel_id', 'is', null)
         .order('display_name');
       return (data ?? []).filter((a: any) => a.youtube_channel_id);
     },
   });
 
-  // Fetch latest sentiment snapshot
-  const { data: latestSnapshot, refetch: refetchSnapshot } = useQuery({
-    queryKey: ['yt-sentiment-snapshot', selectedArtistId],
+  // ── Energy Score ──
+  const { data: energyData } = useQuery({
+    queryKey: ['agency-energy', selectedArtistId],
     queryFn: async () => {
-      if (!selectedArtistId) return null;
+      const { data } = await supabase
+        .from('v3_energy_snapshots_v2' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('snapshot_date', { ascending: false })
+        .limit(14);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Score data ──
+  const { data: scoreData } = useQuery({
+    queryKey: ['agency-scores', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('v3_scores_v2' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Buzz snapshots (last 7 days) ──
+  const { data: buzzSnapshots } = useQuery({
+    queryKey: ['agency-buzz-history', selectedArtistId],
+    queryFn: async () => {
+      const fromDate = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await supabase
+        .from('ktrenz_data_snapshots' as any)
+        .select('metrics, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('platform', 'buzz_multi')
+        .gte('collected_at', fromDate)
+        .order('collected_at', { ascending: true });
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── YouTube snapshots (last 7 days) ──
+  const { data: ytSnapshots } = useQuery({
+    queryKey: ['agency-yt-history', selectedArtistId],
+    queryFn: async () => {
+      const fromDate = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await supabase
+        .from('ktrenz_data_snapshots' as any)
+        .select('metrics, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('platform', 'youtube')
+        .gte('collected_at', fromDate)
+        .order('collected_at', { ascending: true });
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Naver news latest ──
+  const { data: naverData } = useQuery({
+    queryKey: ['agency-naver', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_data_snapshots' as any)
+        .select('metrics, raw_response, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('platform', 'naver_news')
+        .order('collected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── External videos latest ──
+  const { data: extVideoData } = useQuery({
+    queryKey: ['agency-ext-videos', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_data_snapshots' as any)
+        .select('metrics, raw_response, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('platform', 'external_videos')
+        .order('collected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Sentiment snapshot ──
+  const { data: sentimentSnapshot, refetch: refetchSentiment } = useQuery({
+    queryKey: ['agency-sentiment', selectedArtistId],
+    queryFn: async () => {
       const { data } = await supabase
         .from('ktrenz_data_snapshots' as any)
         .select('metrics, raw_response, collected_at')
@@ -45,55 +158,124 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
-  // Run sentiment analysis
+  // ── Fan intents ──
+  const { data: fanIntents } = useQuery({
+    queryKey: ['agency-intents', selectedArtistId],
+    queryFn: async () => {
+      const fromDate = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await supabase
+        .from('ktrenz_agent_intents' as any)
+        .select('intent_category, sentiment, source_query, sub_topic, created_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Ranking position ──
+  const { data: rankingData } = useQuery({
+    queryKey: ['agency-ranking', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('v3_scores_v2' as any)
+        .select('wiki_entry_id, total_score')
+        .order('total_score', { ascending: false });
+      const all = (data ?? []) as any[];
+      const idx = all.findIndex((a: any) => a.wiki_entry_id === selectedArtistId);
+      return { rank: idx + 1, total: all.length };
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Analyze mutation ──
   const analyzeMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('ktrenz-yt-sentiment', {
         body: { wikiEntryId: selectedArtistId },
       });
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Analysis failed');
+      if (!data?.success) throw new Error(data?.error || 'Failed');
       return data;
     },
-    onSuccess: (data) => {
-      toast.success(`Sentiment analysis complete: ${data.overallLabel} (${data.overallScore})`);
-      refetchSnapshot();
+    onSuccess: (d) => {
+      toast.success(`Sentiment: ${d.overallLabel} (${d.overallScore})`);
+      refetchSentiment();
     },
-    onError: (err: any) => {
-      toast.error(`Analysis failed: ${err.message}`);
-    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const selectedArtist = artists?.find((a: any) => a.wiki_entry_id === selectedArtistId);
-  const metrics = latestSnapshot?.metrics as any;
-  const rawResponse = latestSnapshot?.raw_response as any;
 
-  const pieData = metrics ? [
-    { name: 'Positive', value: metrics.positive, color: SENTIMENT_COLORS.positive },
-    { name: 'Neutral', value: metrics.neutral, color: SENTIMENT_COLORS.neutral },
-    { name: 'Negative', value: metrics.negative, color: SENTIMENT_COLORS.negative },
-  ].filter(d => d.value > 0) : [];
+  // ── Derived data ──
+  const latestEnergy = energyData?.[0];
+  const fesScore = latestEnergy?.energy_score ?? 0;
+  const prevFes = energyData?.[1]?.energy_score ?? fesScore;
+  const fesDelta = fesScore - prevFes;
 
-  const videoBarData = rawResponse?.videos?.map((v: any) => ({
-    title: v.title?.slice(0, 25) + (v.title?.length > 25 ? '...' : ''),
-    positive: v.sentiment?.positive || 0,
-    negative: v.sentiment?.negative || 0,
-    neutral: v.sentiment?.neutral || 0,
+  const buzzTrend = buzzSnapshots?.map((s: any) => ({
+    date: format(new Date(s.collected_at), 'MM/dd HH:mm'),
+    score: s.metrics?.buzz_score ?? 0,
+    mentions: s.metrics?.total_mentions ?? 0,
+  })) ?? [];
+
+  const latestBuzz = buzzSnapshots?.[buzzSnapshots.length - 1]?.metrics;
+  const buzzBreakdown = latestBuzz?.source_breakdown ?? [];
+
+  const ytTrend = ytSnapshots?.map((s: any) => ({
+    date: format(new Date(s.collected_at), 'MM/dd'),
+    views: s.metrics?.recentTotalViews ?? 0,
+    subs: s.metrics?.subscriberCount ?? 0,
+  })) ?? [];
+  const latestYt = ytSnapshots?.[ytSnapshots.length - 1]?.metrics;
+
+  const radarData = [
+    { cat: 'YouTube', value: latestEnergy?.yt_velocity != null ? Math.round((latestEnergy.yt_velocity * 0.6 + (latestEnergy.yt_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'Buzz', value: latestEnergy?.buzz_velocity != null ? Math.round((latestEnergy.buzz_velocity * 0.6 + (latestEnergy.buzz_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'Music', value: latestEnergy?.music_velocity != null ? Math.round((latestEnergy.music_velocity * 0.6 + (latestEnergy.music_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'Album', value: latestEnergy?.album_velocity != null ? Math.round((latestEnergy.album_velocity * 0.6 + (latestEnergy.album_intensity ?? 0) * 0.4) * 100) : 0 },
+  ];
+
+  const naverArticles = naverData?.raw_response?.top_items ?? [];
+  const extVideos = extVideoData?.raw_response?.videos ?? [];
+
+  const sentimentMetrics = sentimentSnapshot?.metrics as any;
+  const sentimentVideos = sentimentSnapshot?.raw_response?.videos ?? [];
+  const sentimentPie = sentimentMetrics ? [
+    { name: 'Positive', value: sentimentMetrics.positive, color: SENTIMENT_COLORS.positive },
+    { name: 'Neutral', value: sentimentMetrics.neutral, color: SENTIMENT_COLORS.neutral },
+    { name: 'Negative', value: sentimentMetrics.negative, color: SENTIMENT_COLORS.negative },
+  ].filter((d: any) => d.value > 0) : [];
+
+  // Fan intent sentiment
+  const intentSentiment = fanIntents?.reduce((acc: any, i: any) => {
+    acc[i.sentiment || 'neutral'] = (acc[i.sentiment || 'neutral'] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>) ?? {};
+
+  const fesTrendData = energyData?.slice().reverse().map((e: any) => ({
+    date: e.snapshot_date?.slice(5) ?? '',
+    score: Math.round(e.energy_score ?? 0),
   })) ?? [];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Agency Dashboard (Sample)</h1>
-          <p className="text-sm text-muted-foreground">YouTube Comment Sentiment Analysis — Test Mode</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Building2 className="w-6 h-6" /> Agency Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">Comprehensive Artist Intelligence — Sample Mode</p>
         </div>
         <Badge variant="outline" className="text-xs">🧪 Beta</Badge>
       </div>
 
       {/* Artist Selector */}
       <Card>
-        <CardContent className="p-4 flex items-center gap-4">
+        <CardContent className="p-4 flex items-center gap-4 flex-wrap">
           <span className="text-sm font-medium text-muted-foreground shrink-0">Artist:</span>
           <Select value={selectedArtistId} onValueChange={setSelectedArtistId}>
             <SelectTrigger className="w-72">
@@ -107,194 +289,372 @@ const AdminAgencySample = () => {
               ))}
             </SelectContent>
           </Select>
-
           {selectedArtistId && (
-            <Button
-              size="sm"
-              onClick={() => analyzeMutation.mutate()}
-              disabled={analyzeMutation.isPending}
-            >
-              {analyzeMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-1" />
-              ) : (
-                <RefreshCw className="w-4 h-4 mr-1" />
-              )}
-              Analyze Comments
+            <Button size="sm" variant="outline" onClick={() => analyzeMutation.mutate()} disabled={analyzeMutation.isPending}>
+              {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+              Analyze YT Comments
             </Button>
+          )}
+          {selectedArtist && (
+            <Badge className="ml-auto" variant="secondary">Tier {selectedArtist.tier}</Badge>
           )}
         </CardContent>
       </Card>
 
       {!selectedArtistId && (
-        <div className="text-center py-20 text-muted-foreground">
-          <Youtube className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Select an artist above to view YouTube comment sentiment analysis</p>
+        <div className="text-center py-24 text-muted-foreground">
+          <BarChart3 className="w-14 h-14 mx-auto mb-4 opacity-20" />
+          <p>Select an artist to view the full intelligence dashboard</p>
         </div>
       )}
 
-      {selectedArtistId && !metrics && !analyzeMutation.isPending && (
-        <div className="text-center py-16 text-muted-foreground">
-          <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No sentiment data yet. Click "Analyze Comments" to start.</p>
-        </div>
-      )}
-
-      {analyzeMutation.isPending && (
-        <div className="text-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-          <p className="text-sm text-muted-foreground">Fetching and analyzing YouTube comments...</p>
-          <p className="text-xs text-muted-foreground mt-1">This uses ~6 YouTube API units</p>
-        </div>
-      )}
-
-      {metrics && (
+      {selectedArtistId && (
         <>
-          {/* Overview KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          {/* ═══ Row 1: Key Metrics ═══ */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {/* FES */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Overall Score</p>
-                <p className="text-3xl font-bold">{metrics.overall_score}</p>
-                <Badge className={`mt-1 text-xs ${
-                  metrics.overall_label === 'positive' ? 'bg-emerald-100 text-emerald-700' :
-                  metrics.overall_label === 'negative' ? 'bg-red-100 text-red-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {metrics.overall_label}
-                </Badge>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> FES Score</p>
+                <p className="text-2xl font-bold mt-1">{Math.round(fesScore).toLocaleString()}</p>
+                <div className={`text-xs mt-0.5 flex items-center gap-0.5 ${fesDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {fesDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {fesDelta >= 0 ? '+' : ''}{Math.round(fesDelta)}
+                </div>
               </CardContent>
             </Card>
+            {/* Rank */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  <ThumbsUp className="w-3 h-3 text-emerald-500" /> Positive
-                </p>
-                <p className="text-3xl font-bold text-emerald-600">{metrics.positive}</p>
+                <p className="text-[11px] text-muted-foreground">Ranking</p>
+                <p className="text-2xl font-bold mt-1">#{rankingData?.rank ?? '-'}</p>
+                <p className="text-[11px] text-muted-foreground">of {rankingData?.total ?? '-'}</p>
               </CardContent>
             </Card>
+            {/* Buzz */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  <Minus className="w-3 h-3" /> Neutral
-                </p>
-                <p className="text-3xl font-bold">{metrics.neutral}</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageSquare className="w-3 h-3 text-purple-500" /> Buzz Score</p>
+                <p className="text-2xl font-bold mt-1">{scoreData?.buzz_score?.toLocaleString() ?? '-'}</p>
+                <p className="text-[11px] text-muted-foreground">{latestBuzz?.total_mentions ?? 0} mentions</p>
               </CardContent>
             </Card>
+            {/* YouTube */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                  <ThumbsDown className="w-3 h-3 text-red-500" /> Negative
-                </p>
-                <p className="text-3xl font-bold text-red-600">{metrics.negative}</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Youtube className="w-3 h-3 text-red-500" /> YouTube</p>
+                <p className="text-2xl font-bold mt-1">{latestYt?.subscriberCount ? (latestYt.subscriberCount / 1e6).toFixed(2) + 'M' : '-'}</p>
+                <p className="text-[11px] text-muted-foreground">subscribers</p>
+              </CardContent>
+            </Card>
+            {/* Sentiment */}
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ThumbsUp className="w-3 h-3 text-emerald-500" /> Sentiment</p>
+                <p className="text-2xl font-bold mt-1">{sentimentMetrics?.overall_score ?? '-'}</p>
+                {sentimentMetrics?.overall_label && (
+                  <Badge className={`text-[10px] mt-0.5 ${
+                    sentimentMetrics.overall_label === 'positive' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                    sentimentMetrics.overall_label === 'negative' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
+                    'bg-muted text-muted-foreground'
+                  }`} variant="outline">{sentimentMetrics.overall_label}</Badge>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Charts */}
+          {/* ═══ Row 2: FES Trend + Radar ═══ */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Pie Chart */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Sentiment Distribution</CardTitle>
-                <CardDescription className="text-xs">
-                  {metrics.total_comments_analyzed} comments analyzed across {metrics.videos_analyzed} videos
-                </CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> FES Trend (14 days)</CardTitle>
               </CardHeader>
               <CardContent>
-                {pieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
+                {fesTrendData.length > 1 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <AreaChart data={fesTrendData}>
+                      <defs>
+                        <linearGradient id="fesFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="score" stroke="#f59e0b" fill="url(#fesFill)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">Insufficient data</div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Energy Category Breakdown</CardTitle>
+                <CardDescription className="text-xs">YouTube / Buzz / Music / Album</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={220}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="cat" tick={{ fontSize: 11 }} />
+                    <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
+                    <Radar dataKey="value" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} strokeWidth={2} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ═══ Row 3: Buzz Trend + Source Breakdown ═══ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-purple-500" /> Buzz Score Trend (7 days)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {buzzTrend.length > 1 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={buzzTrend}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                      <XAxis dataKey="date" tick={{ fontSize: 9 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Buzz Source Distribution</CardTitle>
+                <CardDescription className="text-xs">Where mentions come from</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {buzzBreakdown.length > 0 ? (
+                  <div className="space-y-2">
+                    {buzzBreakdown.map((s: any) => {
+                      const maxW = Math.max(...buzzBreakdown.map((b: any) => b.weighted || 0), 1);
+                      const pct = ((s.weighted || 0) / maxW) * 100;
+                      return (
+                        <div key={s.source} className="flex items-center gap-2">
+                          <span className="text-xs w-20 shrink-0 text-muted-foreground">{s.source}</span>
+                          <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
+                            <div
+                              className="h-full rounded transition-all"
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: BUZZ_SOURCE_COLORS[s.source] || '#6b7280',
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground w-10 text-right">{s.mentions}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ═══ Row 4: YouTube Trend ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" /> YouTube Performance (7 days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ytTrend.length > 1 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={ytTrend}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="views" stroke="#ef4444" strokeWidth={2} name="Views" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ═══ Row 5: Sentiment Analysis ═══ */}
+          <Separator />
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <ThumbsUp className="w-5 h-5" /> YouTube Comment Sentiment
+            {sentimentSnapshot?.collected_at && (
+              <span className="text-xs font-normal text-muted-foreground ml-2">
+                Last: {format(new Date(sentimentSnapshot.collected_at), 'yyyy-MM-dd HH:mm')}
+              </span>
+            )}
+          </h2>
+          {sentimentMetrics ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Comment Sentiment Distribution</CardTitle>
+                  <CardDescription className="text-xs">{sentimentMetrics.total_comments_analyzed} comments from {sentimentMetrics.videos_analyzed} videos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
-                      <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3}>
-                        {pieData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
+                      <Pie data={sentimentPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3}>
+                        {sentimentPie.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
+                  <div className="flex justify-center gap-4">
+                    {sentimentPie.map((d: any) => (
+                      <span key={d.name} className="flex items-center gap-1 text-xs">
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: d.color }} />
+                        {d.name}: {d.value}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Sentiment by Video</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {sentimentVideos.length > 0 ? (
+                    <div className="space-y-3">
+                      {sentimentVideos.map((v: any) => (
+                        <div key={v.videoId} className="p-3 rounded-lg bg-muted/50">
+                          <a href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer"
+                            className="text-xs font-medium hover:underline flex items-center gap-1">
+                            <Youtube className="w-3 h-3 text-red-500" /> {v.title?.slice(0, 50)}{v.title?.length > 50 ? '...' : ''}
+                            <ExternalLink className="w-3 h-3 ml-1 opacity-40" />
+                          </a>
+                          <div className="flex gap-3 mt-1.5 text-xs">
+                            <span className="text-emerald-500">👍 {v.sentiment?.positive ?? 0}</span>
+                            <span className="text-muted-foreground">😐 {v.sentiment?.neutral ?? 0}</span>
+                            <span className="text-red-500">👎 {v.sentiment?.negative ?? 0}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No video data</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <p className="text-sm">No sentiment data yet. Click "Analyze YT Comments" above.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ═══ Row 6: Naver News + External Videos ═══ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Naver News */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><Newspaper className="w-4 h-4 text-green-500" /> Naver News</CardTitle>
+                <CardDescription className="text-xs">{naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count ?? 0} articles (24h)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {naverArticles.length > 0 ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {naverArticles.slice(0, 8).map((a: any, i: number) => (
+                      <a key={i} href={a.link} target="_blank" rel="noopener noreferrer"
+                        className="block p-2 rounded bg-muted/40 hover:bg-muted transition-colors">
+                        <p className="text-xs font-medium line-clamp-2">{a.title?.replace(/<[^>]+>/g, '')}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                          {a.description?.replace(/<[^>]+>/g, '')?.slice(0, 80)}
+                        </p>
+                      </a>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No recent articles</div>
                 )}
-                <div className="flex justify-center gap-4 mt-2">
-                  {pieData.map(d => (
-                    <div key={d.name} className="flex items-center gap-1.5 text-xs">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                      {d.name}: {d.value}
+              </CardContent>
+            </Card>
+
+            {/* External Videos */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><Disc3 className="w-4 h-4 text-purple-500" /> External Channel Appearances</CardTitle>
+                <CardDescription className="text-xs">
+                  {extVideoData?.metrics?.total_views ? `${(extVideoData.metrics.total_views / 1e3).toFixed(0)}K views` : 'No data'} across reference channels
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {extVideos.length > 0 ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {extVideos.slice(0, 6).map((v: any, i: number) => (
+                      <a key={i} href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer"
+                        className="block p-2 rounded bg-muted/40 hover:bg-muted transition-colors">
+                        <p className="text-xs font-medium line-clamp-1">{v.title}</p>
+                        <div className="flex gap-3 mt-0.5 text-[10px] text-muted-foreground">
+                          <span>{v.channelTitle}</span>
+                          {v.viewCount && <span>{Number(v.viewCount).toLocaleString()} views</span>}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">No external appearances</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ═══ Row 7: Fan Intent Summary ═══ */}
+          {fanIntents && fanIntents.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> Fan Intent Snapshot (7 days)</CardTitle>
+                <CardDescription className="text-xs">{fanIntents.length} fan queries analyzed</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {Object.entries(intentSentiment).map(([s, count]) => (
+                    <div key={s} className="p-2 rounded bg-muted/40 text-center">
+                      <p className="text-lg">
+                        {s === 'positive' ? '😊' : s === 'negative' ? '😟' : s === 'curious' ? '🤔' : '😐'}
+                      </p>
+                      <p className="text-sm font-semibold">{count as number}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize">{s}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                  {fanIntents.slice(0, 10).map((q: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 p-2 rounded bg-muted/30 text-xs">
+                      <Badge variant="outline" className="text-[9px] shrink-0 mt-0.5">{q.intent_category}</Badge>
+                      <span className="text-muted-foreground line-clamp-1 flex-1">{q.source_query}</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{format(new Date(q.created_at), 'MM/dd')}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Per-video stacked bar */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Sentiment by Video</CardTitle>
-                <CardDescription className="text-xs">Most recent videos analyzed</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {videoBarData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={videoBarData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="title" type="category" width={120} tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Bar dataKey="positive" stackId="a" fill={SENTIMENT_COLORS.positive} />
-                      <Bar dataKey="neutral" stackId="a" fill={SENTIMENT_COLORS.neutral} />
-                      <Bar dataKey="negative" stackId="a" fill={SENTIMENT_COLORS.negative} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Top Comments Table */}
-          {rawResponse?.videos?.map((video: any) => (
-            <Card key={video.videoId}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Youtube className="w-4 h-4 text-red-500" />
-                  {video.title}
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  <a
-                    href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    Watch on YouTube ↗
-                  </a>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                {/* We don't store individual comments in snapshot raw_response to save space.
-                    Show summary instead. */}
-                <div className="px-4 pb-4 flex items-center gap-4 text-sm">
-                  <span className="text-emerald-500 font-semibold">
-                    ✓ {video.sentiment?.positive || 0} positive
-                  </span>
-                  <span className="text-muted-foreground">
-                    {video.sentiment?.neutral || 0} neutral
-                  </span>
-                  <span className="text-red-500 font-semibold">
-                    ✗ {video.sentiment?.negative || 0} negative
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {/* Last analyzed */}
-          {latestSnapshot?.collected_at && (
-            <p className="text-xs text-muted-foreground text-center">
-              Last analyzed: {new Date(latestSnapshot.collected_at).toLocaleString()}
-            </p>
           )}
+
+          <Separator />
+          <p className="text-center text-xs text-muted-foreground pb-4">
+            K-Trendz Agency Intelligence — Sample Dashboard Preview
+          </p>
         </>
       )}
     </div>
