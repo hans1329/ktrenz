@@ -2585,9 +2585,12 @@ export type Database = {
       }
       ktrenz_external_video_matches: {
         Row: {
+          category: string | null
           channel_id: string
           collected_at: string
+          comment_count: number | null
           id: string
+          like_count: number | null
           matched_name: string | null
           published_at: string | null
           video_id: string
@@ -2596,9 +2599,12 @@ export type Database = {
           wiki_entry_id: string
         }
         Insert: {
+          category?: string | null
           channel_id: string
           collected_at?: string
+          comment_count?: number | null
           id?: string
+          like_count?: number | null
           matched_name?: string | null
           published_at?: string | null
           video_id: string
@@ -2607,9 +2613,12 @@ export type Database = {
           wiki_entry_id: string
         }
         Update: {
+          category?: string | null
           channel_id?: string
           collected_at?: string
+          comment_count?: number | null
           id?: string
+          like_count?: number | null
           matched_name?: string | null
           published_at?: string | null
           video_id?: string

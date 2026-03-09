@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "music", "hanteo", "buzz", "energy"] as const;
+const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "buzz", "energy"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -21,6 +21,7 @@ type Module = PipelineModule | BuzzSourceModule;
 // 모듈 완료 후 다음 모듈 시작까지 대기 시간 (초)
 const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
+  external_videos: 10,
   music: 10,
   hanteo: 10,
   buzz: 120, // 12배치 × 5아티스트 완료 대기 (fire-and-forget이므로 충분한 여유 필요)
@@ -108,6 +109,31 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
   }
   console.log(`[data-engine] Buzz: launched ${launched} batches`);
   return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
+}
+
+async function runExternalVideos(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
+  if (!waitForCompletion) {
+    console.log(`[data-engine] Launching external_videos (fire-and-forget)...`);
+    const p = fetch(`${supabaseUrl}/functions/v1/scan-external-videos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({}),
+    }).catch((e) => console.warn(`[data-engine] external_videos fire error:`, e.message));
+    fireAndForget(p);
+    return { status: "launched", module: "external_videos" };
+  }
+
+  console.log(`[data-engine] Running external_videos and waiting for completion...`);
+  const resp = await fetch(`${supabaseUrl}/functions/v1/scan-external-videos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+    body: JSON.stringify({}),
+  });
+  const text = await resp.text();
+  let parsed: any = null;
+  try { parsed = text ? JSON.parse(text) : null; } catch { parsed = { raw: text.slice(0, 300) }; }
+  if (!resp.ok) throw new Error(`[external_videos] ${text.slice(0, 500)}`);
+  return { status: "completed", module: "external_videos", ...parsed };
 }
 
 async function runEnergy(supabaseUrl: string, serviceKey: string, isBaseline: boolean = false): Promise<any> {
@@ -206,6 +232,7 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 // energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
+  external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
   buzz: runBuzz,
@@ -384,6 +411,8 @@ Deno.serve(async (req) => {
         result = await runEnergy(supabaseUrl, serviceKey, true);
       } else if (mod === "youtube") {
         result = await runYouTube(supabaseUrl, serviceKey, waitForCompletion);
+      } else if (mod === "external_videos") {
+        result = await runExternalVideos(supabaseUrl, serviceKey, waitForCompletion);
       } else if (mod === "music") {
         result = await runMusic(supabaseUrl, serviceKey, waitForCompletion);
       } else if (mod === "hanteo") {
