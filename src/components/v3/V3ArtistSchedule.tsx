@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calendar, PartyPopper, Music, Radio, ShoppingBag, Sparkles, MessageCircle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isToday, isTomorrow, isThisWeek, parseISO, differenceInDays } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface V3ArtistScheduleProps {
   wikiEntryId: string;
@@ -49,6 +50,7 @@ function getDateInfo(dateStr: string): { label: string; sublabel: string; highli
 }
 
 const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) => {
+  const { t } = useLanguage();
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["artist-schedules", wikiEntryId],
     queryFn: async () => {
@@ -83,8 +85,8 @@ const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) =>
           <Calendar className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground">Upcoming Schedule</h3>
-          <p className="text-[10px] text-muted-foreground">{schedules.length} events coming up</p>
+          <h3 className="text-sm font-bold text-foreground">{t("artist.upcomingSchedule")}</h3>
+          <p className="text-[10px] text-muted-foreground">{schedules.length} {t("artist.eventsComingUp")}</p>
         </div>
       </div>
 

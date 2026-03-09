@@ -366,7 +366,7 @@ const V3ArtistDetail = () => {
     const totalTrendScore = Math.round(ytScore * ytWeight + bzScore * bzWeight + msScore * msWeight);
 
     return (
-      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 pb-24 space-y-3 overflow-x-hidden">
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 pb-24 space-y-5 overflow-x-hidden">
         <div className="flex items-center gap-3">
           <Avatar className="w-14 h-14">
             <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} />
@@ -429,7 +429,7 @@ const V3ArtistDetail = () => {
             </div>
             {ytData.summary && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">최근 영상 요약</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-3"><div className="h-px flex-1 bg-border" /><span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">최근 영상 요약</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="grid grid-cols-3 gap-2">
                   <MetricCard icon={Eye} label="최근 조회" value={formatNumber(ytData.summary.totalRecentViews || 0)} color="bg-green-500" />
                   <MetricCard icon={ThumbsUp} label="좋아요" value={formatNumber(ytData.summary.totalRecentLikes || 0)} color="bg-pink-500" />
@@ -439,7 +439,7 @@ const V3ArtistDetail = () => {
             )}
             {(ytData.topEngagement?.length > 0 || ytData.recentVideos?.length > 0) && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">인기 영상</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold">🎬 인기 영상</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="space-y-1.5">
                   {(ytData.topEngagement || ytData.recentVideos || []).slice(0, 10).map((video: any, idx: number) => <VideoRow key={video.videoId} video={video} rank={idx + 1} onExternalClick={trackExternalClick} />)}
                 </div>
@@ -448,7 +448,7 @@ const V3ArtistDetail = () => {
             {/* MV Category Metrics */}
             {(ytData.musicVideoViews > 0 || ytData.musicVideoCount > 0) && (
               <>
-                <div className="flex items-center gap-2 mt-2"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3 text-primary" /> 뮤직비디오</span><div className="h-px flex-1 bg-border" /></div>
+                <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Music className="w-4 h-4 text-primary" /> 뮤직비디오</span><div className="h-px flex-1 bg-border" /></div>
                 <div className="grid grid-cols-2 gap-2">
                   <MetricCard icon={Play} label="MV 조회수" value={formatNumber(ytData.musicVideoViews)} subValue={`${ytData.musicVideoCount}개 뮤직비디오`} color="bg-primary" />
                   <MetricCard icon={Film} label="MV 수" value={String(ytData.musicVideoCount)} subValue="카테고리: 음악" color="bg-primary" />
@@ -461,7 +461,7 @@ const V3ArtistDetail = () => {
         {/* YouTube Music Topic Channel */}
         {ytMusicData && ytMusicData.topicTotalViews > 0 && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Headphones className="w-3 h-3" /> YouTube Music</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Headphones className="w-4 h-4 text-primary" /> YouTube Music</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
               <MetricCard icon={Headphones} label="스트림" value={formatNumber(ytMusicData.topicTotalViews)} subValue="토픽 채널" color="bg-destructive" />
               <MetricCard icon={Users} label="구독자" value={formatNumber(ytMusicData.topicSubscribers)} subValue="토픽 채널" color="bg-destructive" />
@@ -473,7 +473,7 @@ const V3ArtistDetail = () => {
         {/* 네이버 뉴스 */}
         {naverNews && naverNews.items.length > 0 && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Newspaper className="w-3 h-3 text-emerald-500" /> 네이버 뉴스</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Newspaper className="w-4 h-4 text-emerald-500" /> 네이버 뉴스</span><div className="h-px flex-1 bg-border" /></div>
             <div className="space-y-1.5">
               {naverNews.items.map((item: any, idx: number) => (
                 <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer"
@@ -499,7 +499,7 @@ const V3ArtistDetail = () => {
 
         {buzzData && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> X 버즈</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Zap className="w-4 h-4 text-amber-500" /> X Buzz</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
               <MetricCard icon={Zap} label="버즈 스코어" value={String(buzzData.buzzScore || 0)} color="bg-amber-500" />
               <MetricCard icon={Hash} label="멘션" value={String(buzzData.mentionCount || 0)} subValue="24시간" color="bg-sky-500" />
@@ -521,7 +521,7 @@ const V3ArtistDetail = () => {
 
         {musicData && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3" /> 음악 데이터</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Music className="w-4 h-4 text-primary" /> 음악 데이터</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
               {musicData.lastfm && (<><MetricCard icon={Headphones} label="리스너" value={formatNumber(musicData.lastfm.listeners)} subValue="Last.fm" color="bg-red-600" /><MetricCard icon={Music} label="재생수" value={formatNumber(musicData.lastfm.playcount)} subValue="Last.fm" color="bg-red-600" /></>)}
               {musicData.deezer && <MetricCard icon={Users} label="팬" value={formatNumber(musicData.deezer.fans)} subValue="Deezer" color="bg-purple-600" />}
