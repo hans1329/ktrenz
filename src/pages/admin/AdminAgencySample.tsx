@@ -881,7 +881,7 @@ Provide strategic insights and action items for the agency managing this artist.
               )}
               {!aiLoading && !aiInsight && (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  Click "Generate" to get AI-powered strategic recommendations
+                  "생성" 버튼을 클릭하면 AI 기반 전략 추천을 받을 수 있습니다
                 </div>
               )}
             </CardContent>
