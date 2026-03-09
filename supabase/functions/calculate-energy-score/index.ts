@@ -8,7 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const WEIGHTS = { youtube: 0.37, buzz: 0.23, music: 0.18, album: 0.14, fan: 0.08 };
+const WEIGHTS = { youtube: 0.37, buzz: 0.23, music: 0.18, album: 0.14, social: 0.05, fan: 0.03 };
 const MAX_SCORE = 250;
 
 function clamp(v: number, min: number, max: number) {
