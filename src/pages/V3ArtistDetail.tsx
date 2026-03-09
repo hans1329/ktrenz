@@ -473,7 +473,7 @@ const V3ArtistDetail = () => {
         {/* 네이버 뉴스 */}
         {naverNews && naverNews.items.length > 0 && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Newspaper className="w-3 h-3 text-emerald-500" /> 네이버 뉴스</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Newspaper className="w-4 h-4 text-emerald-500" /> 네이버 뉴스</span><div className="h-px flex-1 bg-border" /></div>
             <div className="space-y-1.5">
               {naverNews.items.map((item: any, idx: number) => (
                 <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer"
