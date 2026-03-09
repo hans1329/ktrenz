@@ -357,14 +357,11 @@ Artist: ${context.artist}
 
 Provide strategic insights and action items for the agency managing this artist.`;
 
-      const { data, error } = await supabase.functions.invoke('ktrenz-fan-agent', {
-        body: {
-          messages: [{ role: 'user', content: prompt }],
-          skipSave: true,
-        },
+      const { data, error } = await supabase.functions.invoke('ktrenz-agency-insight', {
+        body: { prompt },
       });
       if (error) throw error;
-      setAiInsight(data?.reply || data?.message || 'No insight generated.');
+      setAiInsight(data?.reply || 'No insight generated.');
     } catch (err: any) {
       toast.error(`AI insight failed: ${err.message}`);
     } finally {
