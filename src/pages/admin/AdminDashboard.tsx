@@ -6,11 +6,12 @@ import { Users, MessageSquare, Database, CheckCircle, AlertTriangle, Clock } fro
 import { cn } from '@/lib/utils';
 
 const PLATFORMS = [
-  { key: 'buzz_multi', label: 'Buzz' },
-  { key: 'hanteo', label: 'Hanteo' },
-  { key: 'music', label: 'Music' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'naver_news', label: 'Naver News' },
+  { key: 'buzz_multi', label: 'Buzz', snapshotKey: 'buzz_multi' },
+  { key: 'hanteo', label: 'Hanteo', snapshotKey: 'hanteo' },
+  { key: 'music', label: 'Music', snapshotKey: 'lastfm' },
+  { key: 'youtube', label: 'YouTube', snapshotKey: 'youtube' },
+  { key: 'naver_news', label: 'Naver News', snapshotKey: 'naver_news' },
+  { key: 'external_videos', label: 'External Videos', snapshotKey: 'external_videos' },
 ];
 
 const formatAge = (dateStr: string): string => {
