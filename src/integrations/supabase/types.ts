@@ -2583,6 +2583,50 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_external_video_matches: {
+        Row: {
+          channel_id: string
+          collected_at: string
+          id: string
+          matched_name: string | null
+          published_at: string | null
+          video_id: string
+          video_title: string
+          view_count: number | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          channel_id: string
+          collected_at?: string
+          id?: string
+          matched_name?: string | null
+          published_at?: string | null
+          video_id: string
+          video_title: string
+          view_count?: number | null
+          wiki_entry_id: string
+        }
+        Update: {
+          channel_id?: string
+          collected_at?: string
+          id?: string
+          matched_name?: string | null
+          published_at?: string | null
+          video_id?: string
+          video_title?: string
+          view_count?: number | null
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_external_video_matches_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_fan_agent_messages: {
         Row: {
           agent_slot_id: string | null
@@ -2953,6 +2997,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ktrenz_watched_channels: {
+        Row: {
+          category: string | null
+          channel_id: string
+          channel_name: string
+          channel_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          channel_id: string
+          channel_name: string
+          channel_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          channel_id?: string
+          channel_name?: string
+          channel_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       levels: {
         Row: {
