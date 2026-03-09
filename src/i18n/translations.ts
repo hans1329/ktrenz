@@ -368,6 +368,15 @@ const translations: Record<string, Record<Language, string>> = {
   "artist.musicData": { en: "Music Data", ko: "음악 데이터", ja: "音楽データ", zh: "音乐数据" },
   "artist.upcomingSchedule": { en: "Upcoming Schedule", ko: "다가오는 일정", ja: "今後のスケジュール", zh: "近期日程" },
   "artist.eventsComingUp": { en: "events coming up", ko: "개의 일정", ja: "件の予定", zh: "个日程" },
+  "artist.today": { en: "TODAY", ko: "오늘", ja: "今日", zh: "今天" },
+  "artist.tomorrow": { en: "TOMORROW", ko: "내일", ja: "明日", zh: "明天" },
+  "schedule.release": { en: "Release", ko: "발매", ja: "リリース", zh: "发行" },
+  "schedule.celebration": { en: "Celebration", ko: "기념일", ja: "記念日", zh: "纪念日" },
+  "schedule.broadcast": { en: "Broadcast", ko: "방송", ja: "放送", zh: "播出" },
+  "schedule.purchase": { en: "Purchase", ko: "구매", ja: "購入", zh: "购买" },
+  "schedule.event": { en: "Event", ko: "이벤트", ja: "イベント", zh: "活动" },
+  "schedule.sns": { en: "SNS", ko: "SNS", ja: "SNS", zh: "SNS" },
+  "schedule.others": { en: "Schedule", ko: "일정", ja: "スケジュール", zh: "日程" },
 };
 
 export default translations;
