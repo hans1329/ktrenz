@@ -135,16 +135,19 @@ const AdminDashboard = () => {
           <CardTitle className="text-base">최근 데이터 집계 현황</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {PLATFORMS.map(({ key, label }) => {
+          {PLATFORMS.map(({ key, label, snapshotKey }) => {
             const p = collectionStats?.platforms?.[key];
-            const isStale = p?.latest
-              ? Date.now() - new Date(p.latest).getTime() > 26 * 3600000
+            const snapshotDate = collectionStats?.snapshotLatest?.[snapshotKey];
+            const latestDate = p?.latest || snapshotDate;
+            const isStale = latestDate
+              ? Date.now() - new Date(latestDate).getTime() > 26 * 3600000
               : true;
+            const hasLogData = !!p;
 
             return (
               <div key={key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
                 <div className="flex items-center gap-2">
-                  {!p ? (
+                  {!latestDate ? (
                     <Clock className="w-4 h-4 text-muted-foreground" />
                   ) : isStale ? (
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -154,11 +157,16 @@ const AdminDashboard = () => {
                   <span className="text-sm font-medium">{label}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {p ? (
+                  {latestDate ? (
                     <>
-                      <span className="text-green-500 font-semibold">{p.success} ok</span>
-                      {p.fail > 0 && <span className="text-red-500 font-semibold">{p.fail} fail</span>}
-                      <span>{formatAge(p.latest)}</span>
+                      {hasLogData && (
+                        <>
+                          <span className="text-green-500 font-semibold">{p.success} ok</span>
+                          {p.fail > 0 && <span className="text-red-500 font-semibold">{p.fail} fail</span>}
+                        </>
+                      )}
+                      {!hasLogData && <span className="text-blue-400 text-[10px]">snapshot</span>}
+                      <span>{formatAge(latestDate)}</span>
                     </>
                   ) : (
                     <span>데이터 없음</span>
