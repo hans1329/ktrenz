@@ -497,7 +497,7 @@ Provide strategic insights and action items for the agency managing this artist.
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">Insufficient data</div>
+                  <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">데이터 부족</div>
                 )}
               </CardContent>
             </Card>
