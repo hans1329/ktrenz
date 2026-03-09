@@ -1265,6 +1265,113 @@ JSON 구조:
       return JSON.stringify({ content: result.content, citations: result.citations, source: "perplexity", _archiveId: result.archiveId });
     }
 
+    case "get_artist_schedule": {
+      const artistName = args.artist_name;
+      const limit = Math.min(args.limit || 10, 20);
+
+      // Find wiki_entry_id (try exact, then Korean name, then partial)
+      let wikiId: string | null = null;
+      let resolvedName = artistName;
+
+      const { data: wikiMatch } = await adminClient
+        .from("wiki_entries")
+        .select("id, title")
+        .ilike("title", artistName)
+        .limit(1);
+
+      if (wikiMatch && wikiMatch.length > 0) {
+        wikiId = wikiMatch[0].id;
+        resolvedName = wikiMatch[0].title;
+      } else {
+        // Try Korean name
+        const { data: koMatch } = await adminClient
+          .from("v3_artist_tiers")
+          .select("wiki_entry_id, display_name")
+          .ilike("name_ko", artistName)
+          .limit(1);
+        if (koMatch && koMatch.length > 0) {
+          wikiId = koMatch[0].wiki_entry_id;
+          resolvedName = koMatch[0].display_name;
+        } else {
+          // Partial match
+          const { data: partialMatch } = await adminClient
+            .from("wiki_entries")
+            .select("id, title")
+            .ilike("title", `%${artistName}%`)
+            .limit(1);
+          if (partialMatch && partialMatch.length > 0) {
+            wikiId = partialMatch[0].id;
+            resolvedName = partialMatch[0].title;
+          }
+        }
+      }
+
+      // Query ktrenz_schedules by wiki_entry_id or artist_name
+      const today = new Date().toISOString().split("T")[0];
+      let scheduleQuery = adminClient
+        .from("ktrenz_schedules")
+        .select("*")
+        .gte("event_date", today)
+        .order("event_date", { ascending: true })
+        .limit(limit);
+
+      if (wikiId) {
+        scheduleQuery = scheduleQuery.eq("wiki_entry_id", wikiId);
+      } else {
+        scheduleQuery = scheduleQuery.ilike("artist_name", `%${artistName}%`);
+      }
+
+      const { data: schedules } = await scheduleQuery;
+
+      if (!schedules || schedules.length === 0) {
+        // Fallback: search web for schedule info
+        const perplexityResult = await searchWithPerplexity(
+          `${resolvedName} K-Pop 아이돌 다가오는 일정 스케줄 컴백`,
+          "week",
+          adminClient,
+          "schedule",
+          wikiId,
+        );
+        if (perplexityResult) {
+          return JSON.stringify({
+            artist: resolvedName,
+            schedules: [],
+            web_search_result: perplexityResult.content,
+            citations: perplexityResult.citations,
+            source: "perplexity",
+            message: `DB에 등록된 일정은 없지만, 웹 검색으로 ${resolvedName}의 일정 정보를 찾았습니다.`,
+            _archiveId: perplexityResult.archiveId,
+          });
+        }
+        return JSON.stringify({
+          artist: resolvedName,
+          schedules: [],
+          message: `${resolvedName}의 다가오는 일정이 아직 등록되지 않았어요.`,
+        });
+      }
+
+      const events = schedules.map((s: any) => ({
+        title: s.title,
+        date: s.event_date,
+        time: s.event_time ?? null,
+        category: s.category,
+      }));
+
+      // Category emoji map for display
+      const catEmoji: Record<string, string> = {
+        release: "💿", celebration: "🎉", broadcast: "📡",
+        purchase: "🛍️", event: "✨", sns: "💬", others: "📅",
+      };
+
+      return JSON.stringify({
+        artist: resolvedName,
+        schedules: events,
+        total: events.length,
+        category_emoji: catEmoji,
+        message: `${resolvedName}의 다가오는 일정 ${events.length}건을 찾았습니다.`,
+      });
+    }
+
     default:
       return JSON.stringify({ error: "unknown_tool" });
   }
