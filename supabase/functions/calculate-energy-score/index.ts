@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 5) 퍼센타일 기반 에너지 스코어 계산 ──
-    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; fan: number; prev: any; current: any }[] = [];
+    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; social: number; fan: number; prev: any; current: any }[] = [];
     for (const eid of entryIds) {
       const current = scoreMap.get(eid)!;
       rawData.push({
@@ -257,6 +257,7 @@ Deno.serve(async (req) => {
         buzz: Number(current.buzz_score) || 0,
         album: Number(current.album_sales_score) || 0,
         music: Number(current.music_score) || 0,
+        social: Number(current.social_score) || 0,
         fan: fanScoreMap.get(eid) || 0,
         prev: prevMap.get(eid) || null,
         current,
@@ -267,6 +268,7 @@ Deno.serve(async (req) => {
     const buzzPcts = toPercentiles(rawData.map(d => d.buzz));
     const albumPcts = toPercentiles(rawData.map(d => d.album));
     const musicPcts = toPercentiles(rawData.map(d => d.music));
+    const socialPcts = toPercentiles(rawData.map(d => d.social));
     const fanPcts = toPercentiles(rawData.map(d => d.fan));
 
     // ── 5) 결과 생성 ──
@@ -275,22 +277,22 @@ Deno.serve(async (req) => {
       try {
         const r = rawData[i];
         const calc = calculateArtistEnergy(
-          { yt: r.yt, buzz: r.buzz, album: r.album, music: r.music, fan: r.fan },
+          { yt: r.yt, buzz: r.buzz, album: r.album, music: r.music, social: r.social, fan: r.fan },
           r.prev,
-          { yt: ytPcts[i], buzz: buzzPcts[i], album: albumPcts[i], music: musicPcts[i], fan: fanPcts[i] },
+          { yt: ytPcts[i], buzz: buzzPcts[i], album: albumPcts[i], music: musicPcts[i], social: socialPcts[i], fan: fanPcts[i] },
         );
 
         results.push({
           eid: r.eid,
           ...calc,
           ytCurrent: r.yt, buzzCurrent: r.buzz, albumCurrent: r.album, musicCurrent: r.music,
-          fanCurrent: r.fan,
+          socialCurrent: r.social, fanCurrent: r.fan,
           scoreId: r.current.id,
           baseline: baselineMap.get(r.eid),
           prevSnapshotAt: r.prev?.snapshot_at || null,
         });
       } catch (e) {
-        console.error(`[FES-v5.3] Error for ${rawData[i].eid}:`, e);
+        console.error(`[FES-v5.4] Error for ${rawData[i].eid}:`, e);
       }
     }
 
