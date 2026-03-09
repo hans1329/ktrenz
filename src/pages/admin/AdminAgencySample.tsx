@@ -56,7 +56,7 @@ const AdminAgencySample = () => {
         .from('v3_energy_snapshots_v2' as any)
         .select('*')
         .eq('wiki_entry_id', selectedArtistId)
-        .order('snapshot_date', { ascending: false })
+        .order('snapshot_at', { ascending: false })
         .limit(14);
       return (data ?? []) as any[];
     },
@@ -216,7 +216,7 @@ const AdminAgencySample = () => {
       if (compareArtistId === 'none') return null;
       const [scoresRes, energyRes] = await Promise.all([
         supabase.from('v3_scores_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).maybeSingle(),
-        supabase.from('v3_energy_snapshots_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).order('snapshot_date', { ascending: false }).limit(1),
+        supabase.from('v3_energy_snapshots_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).order('snapshot_at', { ascending: false }).limit(1),
       ]);
       return {
         scores: scoresRes.data as any,
@@ -268,7 +268,7 @@ const AdminAgencySample = () => {
   const latestYt = ytSnapshots?.[ytSnapshots.length - 1]?.metrics;
 
   const radarData = [
-    { cat: 'YouTube', value: latestEnergy?.yt_velocity != null ? Math.round((latestEnergy.yt_velocity * 0.6 + (latestEnergy.yt_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'YouTube', value: latestEnergy?.youtube_velocity != null ? Math.round((latestEnergy.youtube_velocity * 0.6 + (latestEnergy.youtube_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Buzz', value: latestEnergy?.buzz_velocity != null ? Math.round((latestEnergy.buzz_velocity * 0.6 + (latestEnergy.buzz_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Music', value: latestEnergy?.music_velocity != null ? Math.round((latestEnergy.music_velocity * 0.6 + (latestEnergy.music_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Album', value: latestEnergy?.album_velocity != null ? Math.round((latestEnergy.album_velocity * 0.6 + (latestEnergy.album_intensity ?? 0) * 0.4) * 100) : 0 },
@@ -292,7 +292,7 @@ const AdminAgencySample = () => {
   }, {} as Record<string, number>) ?? {};
 
   const fesTrendData = energyData?.slice().reverse().map((e: any) => ({
-    date: e.snapshot_date?.slice(5) ?? '',
+    date: e.snapshot_at?.slice(5, 10) ?? '',
     score: Math.round(e.energy_score ?? 0),
   })) ?? [];
 
