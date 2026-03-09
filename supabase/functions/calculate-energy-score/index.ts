@@ -40,20 +40,22 @@ function toPercentiles(values: number[]): number[] {
 
 /** 단일 아티스트의 Velocity/Intensity/Energy 계산 (공용 함수) */
 export function calculateArtistEnergy(
-  current: { yt: number; buzz: number; album: number; music: number; fan: number },
-  prev24h: { youtube_score: number; buzz_score: number; album_score: number; music_score: number; fan_score?: number } | null,
-  percentiles: { yt: number; buzz: number; album: number; music: number; fan: number },
+  current: { yt: number; buzz: number; album: number; music: number; social: number; fan: number },
+  prev24h: { youtube_score: number; buzz_score: number; album_score: number; music_score: number; social_score?: number; fan_score?: number } | null,
+  percentiles: { yt: number; buzz: number; album: number; music: number; social: number; fan: number },
 ) {
   const ytPrev = prev24h ? Number(prev24h.youtube_score) || 0 : null;
   const buzzPrev = prev24h ? Number(prev24h.buzz_score) || 0 : null;
   const albumPrev = prev24h ? Number(prev24h.album_score) || 0 : null;
   const musicPrev = prev24h ? Number(prev24h.music_score) || 0 : null;
+  const socialPrev = prev24h ? Number(prev24h.social_score) || 0 : null;
   const fanPrev = prev24h ? Number(prev24h.fan_score) || 0 : null;
 
   const ytChange = pctChange(current.yt, ytPrev);
   const buzzChange = pctChange(current.buzz, buzzPrev);
   const albumChange = pctChange(current.album, albumPrev);
   const musicChange = pctChange(current.music, musicPrev);
+  const socialChange = pctChange(current.social, socialPrev);
   const fanChange = pctChange(current.fan, fanPrev);
 
   // 비교 가능한 항목만으로 가중 변동률 계산
@@ -64,6 +66,7 @@ export function calculateArtistEnergy(
     if (buzzChange != null) parts.push({ weight: WEIGHTS.buzz, change: buzzChange });
     if (musicChange != null) parts.push({ weight: WEIGHTS.music, change: musicChange });
     if (albumChange != null) parts.push({ weight: WEIGHTS.album, change: albumChange });
+    if (socialChange != null) parts.push({ weight: WEIGHTS.social, change: socialChange });
     if (fanChange != null) parts.push({ weight: WEIGHTS.fan, change: fanChange });
     if (parts.length > 0) {
       const totalWeight = parts.reduce((s, p) => s + p.weight, 0);
@@ -76,6 +79,7 @@ export function calculateArtistEnergy(
   const buzzVelocity = buzzChange != null ? changeToScore(buzzChange) : null;
   const albumVelocity = albumChange != null ? changeToScore(albumChange) : null;
   const musicVelocity = musicChange != null ? changeToScore(musicChange) : null;
+  const socialVelocity = socialChange != null ? changeToScore(socialChange) : null;
   const fanVelocity = fanChange != null ? changeToScore(fanChange) : null;
 
   // ── Intensity (각 카테고리별) ──
@@ -83,10 +87,10 @@ export function calculateArtistEnergy(
   const buzzIntensity = clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE);
   const albumIntensity = clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE);
   const musicIntensity = clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE);
+  const socialIntensity = clamp(Math.round(percentiles.social * MAX_SCORE), 0, MAX_SCORE);
   const fanIntensity = clamp(Math.round(percentiles.fan * MAX_SCORE), 0, MAX_SCORE);
 
   // ── Energy Score: 60% Velocity + 40% Intensity ──
-  // Velocity가 없는(베이스라인 없음) 카테고리는 Intensity만 사용
   const VELOCITY_WEIGHT = 0.6;
   const INTENSITY_WEIGHT = 0.4;
 
@@ -96,18 +100,18 @@ export function calculateArtistEnergy(
     { w: WEIGHTS.buzz, vel: buzzVelocity, int: buzzIntensity, raw: current.buzz },
     { w: WEIGHTS.music, vel: musicVelocity, int: musicIntensity, raw: current.music },
     { w: WEIGHTS.album, vel: albumVelocity, int: albumIntensity, raw: current.album },
+    { w: WEIGHTS.social, vel: socialVelocity, int: socialIntensity, raw: current.social },
     { w: WEIGHTS.fan, vel: fanVelocity, int: fanIntensity, raw: current.fan },
   ];
 
   for (const cat of categories) {
-    // 원점수 0인 카테고리: 가중치 유지 + 에너지 0 → 전체 점수를 끌어내림
     if (cat.raw <= 0) {
       categoryEnergies.push({ weight: cat.w, energy: 0 });
       continue;
     }
     const catEnergy = cat.vel != null
       ? cat.vel * VELOCITY_WEIGHT + cat.int * INTENSITY_WEIGHT
-      : cat.int; // Velocity 없으면 Intensity만
+      : cat.int;
     categoryEnergies.push({ weight: cat.w, energy: catEnergy });
   }
 
@@ -115,19 +119,20 @@ export function calculateArtistEnergy(
   const rawEnergy = categoryEnergies.reduce((s, c) => s + c.energy * (c.weight / totalCatWeight), 0);
   const energyScore = clamp(Math.round(rawEnergy), 10, MAX_SCORE);
 
-
   return {
     energyScore,
     ytVelocity, ytIntensity,
     buzzVelocity, buzzIntensity,
     albumVelocity, albumIntensity,
     musicVelocity, musicIntensity,
+    socialVelocity, socialIntensity,
     fanVelocity, fanIntensity,
     change24h: overallChange != null ? Math.round(overallChange * 10) / 10 : null,
     ytChange: ytChange != null ? Math.round(ytChange * 10) / 10 : null,
     buzzChange: buzzChange != null ? Math.round(buzzChange * 10) / 10 : null,
     albumChange: albumChange != null ? Math.round(albumChange * 10) / 10 : null,
     musicChange: musicChange != null ? Math.round(musicChange * 10) / 10 : null,
+    socialChange: socialChange != null ? Math.round(socialChange * 10) / 10 : null,
     fanChange: fanChange != null ? Math.round(fanChange * 10) / 10 : null,
   };
 }
