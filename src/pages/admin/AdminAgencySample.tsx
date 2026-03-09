@@ -343,9 +343,7 @@ const AdminAgencySample = () => {
         ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3).map(([k]) => k),
       };
 
-      const { data, error } = await supabase.functions.invoke('ktrenz-fan-agent', {
-        body: {
-          message: `You are an entertainment agency analyst. Based on the following K-pop artist data, provide a concise strategic insight report (3-5 bullet points) in English. Focus on actionable recommendations for the agency.
+      const prompt = `You are an entertainment agency analyst. Based on the following K-pop artist data, provide a concise strategic insight report (3-5 bullet points) in Korean. Focus on actionable recommendations for the agency.
 
 Artist: ${context.artist}
 - FES Score: ${context.fesScore} (${context.fesDelta >= 0 ? '+' : ''}${context.fesDelta} vs yesterday)
@@ -357,12 +355,13 @@ Artist: ${context.artist}
 - Fan Queries (7d): ${context.fanIntentCount} queries, top categories: ${context.topIntentCategories.join(', ')}
 - Recent Milestones: ${context.recentMilestones?.join(', ') || 'none'}
 
-Provide strategic insights and action items for the agency managing this artist.`,
-          skipSave: true,
-        },
+Provide strategic insights and action items for the agency managing this artist.`;
+
+      const { data, error } = await supabase.functions.invoke('ktrenz-agency-insight', {
+        body: { prompt },
       });
       if (error) throw error;
-      setAiInsight(data?.reply || data?.message || 'No insight generated.');
+      setAiInsight(data?.reply || 'No insight generated.');
     } catch (err: any) {
       toast.error(`AI insight failed: ${err.message}`);
     } finally {

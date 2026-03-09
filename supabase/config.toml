@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.ktrenz-stripe-webhook]
 verify_jwt = false
+
+[functions.ktrenz-agency-insight]
+verify_jwt = false
