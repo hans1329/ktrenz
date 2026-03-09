@@ -376,9 +376,9 @@ Provide strategic insights and action items for the agency managing this artist.
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Building2 className="w-6 h-6" /> Agency Dashboard
+            <Building2 className="w-6 h-6" /> 에이전시 대시보드
           </h1>
-          <p className="text-sm text-muted-foreground">Comprehensive Artist Intelligence — Sample Mode</p>
+          <p className="text-sm text-muted-foreground">종합 아티스트 인텔리전스 — 샘플 모드</p>
         </div>
         <Badge variant="outline" className="text-xs">🧪 Beta</Badge>
       </div>
@@ -386,10 +386,10 @@ Provide strategic insights and action items for the agency managing this artist.
       {/* Artist Selector */}
       <Card>
         <CardContent className="p-4 flex items-center gap-4 flex-wrap">
-          <span className="text-sm font-medium text-muted-foreground shrink-0">Artist:</span>
+          <span className="text-sm font-medium text-muted-foreground shrink-0">아티스트:</span>
           <Select value={selectedArtistId} onValueChange={setSelectedArtistId}>
             <SelectTrigger className="w-72">
-              <SelectValue placeholder="Select an artist..." />
+              <SelectValue placeholder="아티스트를 선택하세요..." />
             </SelectTrigger>
             <SelectContent>
               {artists?.map((a: any) => (
@@ -402,7 +402,7 @@ Provide strategic insights and action items for the agency managing this artist.
           {selectedArtistId && (
             <Button size="sm" variant="outline" onClick={() => analyzeMutation.mutate()} disabled={analyzeMutation.isPending}>
               {analyzeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
-              Analyze YT Comments
+              YT 댓글 분석
             </Button>
           )}
           {selectedArtist && (
@@ -414,7 +414,7 @@ Provide strategic insights and action items for the agency managing this artist.
       {!selectedArtistId && (
         <div className="text-center py-24 text-muted-foreground">
           <BarChart3 className="w-14 h-14 mx-auto mb-4 opacity-20" />
-          <p>Select an artist to view the full intelligence dashboard</p>
+          <p>아티스트를 선택하면 전체 인텔리전스 대시보드를 확인할 수 있습니다</p>
         </div>
       )}
 
