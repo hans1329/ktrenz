@@ -766,9 +766,9 @@ Provide strategic insights and action items for the agency managing this artist.
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <GitCompareArrows className="w-4 h-4 text-cyan-500" /> Competitor Comparison
+                <GitCompareArrows className="w-4 h-4 text-cyan-500" /> 경쟁 아티스트 비교
               </CardTitle>
-              <CardDescription className="text-xs">Compare key metrics side-by-side</CardDescription>
+              <CardDescription className="text-xs">주요 지표를 나란히 비교합니다</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3 mb-4">
