@@ -668,7 +668,7 @@ Provide strategic insights and action items for the agency managing this artist.
           ) : (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
-                <p className="text-sm">No sentiment data yet. Click "Analyze YT Comments" above.</p>
+                <p className="text-sm">감성 분석 데이터가 없습니다. 상단의 "YT 댓글 분석" 버튼을 클릭하세요.</p>
               </CardContent>
             </Card>
           )}
