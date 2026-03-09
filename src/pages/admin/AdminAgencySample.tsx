@@ -343,7 +343,7 @@ const AdminAgencySample = () => {
         ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3).map(([k]) => k),
       };
 
-      const prompt = `You are an entertainment agency analyst. Based on the following K-pop artist data, provide exactly 4 strategic insights as a JSON array. Each item must have: "emoji" (single emoji), "title" (short Korean title, max 20 chars), "body" (1-2 sentence actionable insight in Korean), "priority" ("high"|"medium"|"low"). Return ONLY the JSON array, no markdown.
+      const prompt = `You are a senior K-pop entertainment agency strategist. Based on the following artist data, provide exactly 5 strategic insights as a JSON array. Each item must have: "emoji" (single emoji), "title" (short Korean title, max 20 chars), "body" (detailed actionable insight in Korean, 3-5 sentences including specific numbers from the data, root cause analysis, and concrete action items with expected outcomes), "priority" ("high"|"medium"|"low"). Be data-driven: reference exact metrics, compare trends, and suggest specific campaigns or strategies. Return ONLY the JSON array, no markdown.
 
 Artist: ${context.artist}
 - FES Score: ${context.fesScore} (${context.fesDelta >= 0 ? '+' : ''}${context.fesDelta} vs yesterday)
