@@ -31,6 +31,9 @@ const BUZZ_SOURCE_COLORS: Record<string, string> = {
 
 const AdminAgencySample = () => {
   const [selectedArtistId, setSelectedArtistId] = useState<string>('');
+  const [compareArtistId, setCompareArtistId] = useState<string>('none');
+  const [aiInsight, setAiInsight] = useState<string>('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   // ── Artists list ──
   const { data: artists } = useQuery({
