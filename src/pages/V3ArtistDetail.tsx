@@ -521,7 +521,7 @@ const V3ArtistDetail = () => {
 
         {musicData && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Music className="w-3 h-3" /> 음악 데이터</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Music className="w-4 h-4 text-primary" /> 음악 데이터</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
               {musicData.lastfm && (<><MetricCard icon={Headphones} label="리스너" value={formatNumber(musicData.lastfm.listeners)} subValue="Last.fm" color="bg-red-600" /><MetricCard icon={Music} label="재생수" value={formatNumber(musicData.lastfm.playcount)} subValue="Last.fm" color="bg-red-600" /></>)}
               {musicData.deezer && <MetricCard icon={Users} label="팬" value={formatNumber(musicData.deezer.fans)} subValue="Deezer" color="bg-purple-600" />}

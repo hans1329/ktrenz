@@ -357,6 +357,17 @@ const translations: Record<string, Record<Language, string>> = {
   "deck.confidential": { en: "Confidential — K·TRENZ Service Deck v1.0 · March 2026", ko: "기밀 — K·TRENZ 서비스 덱 v1.0 · 2026년 3월", ja: "機密 — K·TRENZサービスデッキ v1.0 · 2026年3月", zh: "机密 — K·TRENZ服务甲板 v1.0 · 2026年3月" },
   "deck.goal": { en: "Goal:", ko: "목표:", ja: "目標:", zh: "目标:" },
   "deck.features": { en: "Features:", ko: "주요 기능:", ja: "機能:", zh: "功能:" },
+
+  // ── Artist Detail Sections ──
+  "artist.popularVideos": { en: "Popular Videos", ko: "인기 영상", ja: "人気動画", zh: "热门视频" },
+  "artist.recentVideoSummary": { en: "Recent Video Summary", ko: "최근 영상 요약", ja: "最近の動画まとめ", zh: "近期视频概要" },
+  "artist.musicVideos": { en: "Music Videos", ko: "뮤직비디오", ja: "ミュージックビデオ", zh: "音乐视频" },
+  "artist.youtubeMusic": { en: "YouTube Music", ko: "YouTube Music", ja: "YouTube Music", zh: "YouTube Music" },
+  "artist.naverNews": { en: "Naver News", ko: "네이버 뉴스", ja: "Naverニュース", zh: "Naver新闻" },
+  "artist.xBuzz": { en: "X Buzz", ko: "X 버즈", ja: "Xバズ", zh: "X热度" },
+  "artist.musicData": { en: "Music Data", ko: "음악 데이터", ja: "音楽データ", zh: "音乐数据" },
+  "artist.upcomingSchedule": { en: "Upcoming Schedule", ko: "다가오는 일정", ja: "今後のスケジュール", zh: "近期日程" },
+  "artist.eventsComingUp": { en: "events coming up", ko: "개의 일정", ja: "件の予定", zh: "个日程" },
 };
 
 export default translations;
