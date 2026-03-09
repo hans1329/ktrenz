@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +16,7 @@ const navItems = [
   { label: 'Intents', path: '/admin/intents', icon: Brain },
   { label: 'Intent Monitor', path: '/admin/intent-monitor', icon: Activity },
   { label: 'Ref. YouTube List', path: '/admin/watched-channels', icon: MonitorPlay },
+  { label: 'Agency Sample', path: '/admin/agency-sample', icon: Building2 },
   { label: 'Wiki Entries', path: '/admin/entries', icon: FileText },
 ];
 
