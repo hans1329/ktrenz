@@ -41,7 +41,7 @@ const SOURCES: SourceConfig[] = [
     weight: 1.2,
     buildQuery: (name) => `"${name}" site:reddit.com kpop`,
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
   // YouTube 소스 제거됨 — YouTube는 독립 데이터 소스(40%)로 이미 수집 중
   // Naver 소스 제거됨 — crawl-naver-news 별도 API로 수집 후 가상 소스로 반영
