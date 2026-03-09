@@ -536,6 +536,7 @@ const V3ArtistDetail = () => {
           </>
         )}
 
+        {entry?.id && <V3ArtistSchedule wikiEntryId={entry.id} artistName={entry.title} />}
         {entry?.id && <V3ArtistMilestones wikiEntryId={entry.id} />}
       </div>
     );
