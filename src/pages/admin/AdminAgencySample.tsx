@@ -703,9 +703,9 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* External Videos */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Disc3 className="w-4 h-4 text-purple-500" /> External Channel Appearances</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Disc3 className="w-4 h-4 text-purple-500" /> 외부 채널 노출</CardTitle>
                 <CardDescription className="text-xs">
-                  {extVideoData?.metrics?.total_views ? `${(extVideoData.metrics.total_views / 1e3).toFixed(0)}K views` : 'No data'} across reference channels
+                  레퍼런스 채널 기준 {extVideoData?.metrics?.total_views ? `${(extVideoData.metrics.total_views / 1e3).toFixed(0)}K 조회` : '데이터 없음'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
