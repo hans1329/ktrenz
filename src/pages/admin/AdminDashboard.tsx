@@ -6,11 +6,12 @@ import { Users, MessageSquare, Database, CheckCircle, AlertTriangle, Clock } fro
 import { cn } from '@/lib/utils';
 
 const PLATFORMS = [
-  { key: 'buzz_multi', label: 'Buzz' },
-  { key: 'hanteo', label: 'Hanteo' },
-  { key: 'music', label: 'Music' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'naver_news', label: 'Naver News' },
+  { key: 'buzz_multi', label: 'Buzz', snapshotKey: 'buzz_multi' },
+  { key: 'hanteo', label: 'Hanteo', snapshotKey: 'hanteo' },
+  { key: 'music', label: 'Music', snapshotKey: 'lastfm' },
+  { key: 'youtube', label: 'YouTube', snapshotKey: 'youtube' },
+  { key: 'naver_news', label: 'Naver News', snapshotKey: 'naver_news' },
+  { key: 'external_videos', label: 'External Videos', snapshotKey: 'external_videos' },
 ];
 
 const formatAge = (dateStr: string): string => {
@@ -44,19 +45,26 @@ const AdminDashboard = () => {
   const { data: collectionStats } = useQuery({
     queryKey: ['admin-collection-stats'],
     queryFn: async () => {
+      // Fetch from collection_log
       const { data } = await supabase
         .from('ktrenz_collection_log' as any)
         .select('platform, status, collected_at')
         .order('collected_at', { ascending: false })
         .limit(500);
-      if (!data) return { platforms: {}, total24h: 0 };
+
+      // Fetch latest snapshot per platform as fallback
+      const { data: snapshots } = await supabase
+        .from('ktrenz_data_snapshots' as any)
+        .select('platform, collected_at')
+        .order('collected_at', { ascending: false })
+        .limit(1000);
 
       const now = Date.now();
       const h24 = 24 * 3600000;
       const platforms: Record<string, { success: number; fail: number; latest: string }> = {};
       let total24h = 0;
 
-      for (const row of data as any[]) {
+      for (const row of (data || []) as any[]) {
         const age = now - new Date(row.collected_at).getTime();
         if (!platforms[row.platform]) {
           platforms[row.platform] = { success: 0, fail: 0, latest: row.collected_at };
@@ -67,7 +75,16 @@ const AdminDashboard = () => {
           total24h++;
         }
       }
-      return { platforms, total24h };
+
+      // Build snapshot latest map for platforms not in collection_log
+      const snapshotLatest: Record<string, string> = {};
+      for (const s of (snapshots || []) as any[]) {
+        if (!snapshotLatest[s.platform]) {
+          snapshotLatest[s.platform] = s.collected_at;
+        }
+      }
+
+      return { platforms, total24h, snapshotLatest };
     },
     staleTime: 1000 * 60 * 2,
   });
@@ -118,16 +135,19 @@ const AdminDashboard = () => {
           <CardTitle className="text-base">최근 데이터 집계 현황</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {PLATFORMS.map(({ key, label }) => {
+          {PLATFORMS.map(({ key, label, snapshotKey }) => {
             const p = collectionStats?.platforms?.[key];
-            const isStale = p?.latest
-              ? Date.now() - new Date(p.latest).getTime() > 26 * 3600000
+            const snapshotDate = collectionStats?.snapshotLatest?.[snapshotKey];
+            const latestDate = p?.latest || snapshotDate;
+            const isStale = latestDate
+              ? Date.now() - new Date(latestDate).getTime() > 26 * 3600000
               : true;
+            const hasLogData = !!p;
 
             return (
               <div key={key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
                 <div className="flex items-center gap-2">
-                  {!p ? (
+                  {!latestDate ? (
                     <Clock className="w-4 h-4 text-muted-foreground" />
                   ) : isStale ? (
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -137,11 +157,16 @@ const AdminDashboard = () => {
                   <span className="text-sm font-medium">{label}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {p ? (
+                  {latestDate ? (
                     <>
-                      <span className="text-green-500 font-semibold">{p.success} ok</span>
-                      {p.fail > 0 && <span className="text-red-500 font-semibold">{p.fail} fail</span>}
-                      <span>{formatAge(p.latest)}</span>
+                      {hasLogData && (
+                        <>
+                          <span className="text-green-500 font-semibold">{p.success} ok</span>
+                          {p.fail > 0 && <span className="text-red-500 font-semibold">{p.fail} fail</span>}
+                        </>
+                      )}
+                      {!hasLogData && <span className="text-blue-400 text-[10px]">snapshot</span>}
+                      <span>{formatAge(latestDate)}</span>
                     </>
                   ) : (
                     <span>데이터 없음</span>
