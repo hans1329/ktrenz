@@ -871,7 +871,7 @@ Provide strategic insights and action items for the agency managing this artist.
               {aiLoading && (
                 <div className="text-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-500" />
-                  <p className="text-sm text-muted-foreground">Analyzing all data points...</p>
+                  <p className="text-sm text-muted-foreground">전체 데이터 분석 중...</p>
                 </div>
               )}
               {!aiLoading && aiInsight && (
