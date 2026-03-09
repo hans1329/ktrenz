@@ -16,6 +16,7 @@ const navItems = [
   { label: 'Intents', path: '/admin/intents', icon: Brain },
   { label: 'Intent Monitor', path: '/admin/intent-monitor', icon: Activity },
   { label: 'Ref. YouTube List', path: '/admin/watched-channels', icon: MonitorPlay },
+  { label: 'Agency Sample', path: '/admin/agency-sample', icon: Building2 },
   { label: 'Wiki Entries', path: '/admin/entries', icon: FileText },
 ];
 
