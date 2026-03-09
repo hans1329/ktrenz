@@ -34,7 +34,7 @@ const SOURCES: SourceConfig[] = [
     weight: 2.0,
     buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com -site:tiktok.com`,
     tbs: "qdr:d",
-    limit: 100,
+    limit: 30,
   },
   {
     name: "reddit",
