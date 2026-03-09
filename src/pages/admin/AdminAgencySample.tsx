@@ -772,7 +772,7 @@ Provide strategic insights and action items for the agency managing this artist.
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs text-muted-foreground">Compare with:</span>
+                <span className="text-xs text-muted-foreground">비교 대상:</span>
                 <Select value={compareArtistId} onValueChange={setCompareArtistId}>
                   <SelectTrigger className="w-56">
                     <SelectValue placeholder="Select..." />
