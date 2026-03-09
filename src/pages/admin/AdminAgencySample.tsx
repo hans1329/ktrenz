@@ -9,7 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import {
   Loader2, Youtube, ThumbsUp, ThumbsDown, Minus, RefreshCw,
   TrendingUp, TrendingDown, Zap, Music, Disc3, Newspaper,
-  MessageSquare, BarChart3, Building2, ExternalLink,
+  MessageSquare, BarChart3, Building2, ExternalLink, GitCompareArrows,
+  Trophy, Calendar, Sparkles, Brain,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
