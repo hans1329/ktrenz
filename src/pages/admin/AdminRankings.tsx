@@ -1142,6 +1142,11 @@ const AdminRankings = () => {
                   ({finalElapsed !== null ? `${finalElapsed}s 소요` : `${elapsed}s 경과`})
                 </span>
               )}
+              {pipelineRun?.started_at && (
+                <span className="text-[10px] text-muted-foreground ml-1">
+                  · 시작: {new Date(pipelineRun.started_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
             </div>
             <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setPipelineRunId(null); setPipelineStartTime(null); setRunningSource(null); }}>
               <X className="w-3 h-3" />
