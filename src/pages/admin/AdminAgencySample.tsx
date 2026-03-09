@@ -484,6 +484,109 @@ Artist: ${context.artist}
             </Card>
           </div>
 
+          {/* ═══ 🔥 Hot Coordinates — 지금 어디서 터지고 있나? ═══ */}
+          <Card className="border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" /> 🔥 Hot Coordinates — 지금 어디서 터지고 있나?
+              </CardTitle>
+              <CardDescription className="text-xs">실시간 채널별 활동 강도 · 24h 변동률 기준</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {coordLoading ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> 좌표 분석 중...
+                </div>
+              ) : coordData?.categories ? (() => {
+                const cats = coordData.categories;
+                const entries = [
+                  { key: 'youtube', label: 'YouTube', icon: <Youtube className="w-4 h-4" />, color: '#ef4444', data: cats.youtube },
+                  { key: 'buzz', label: 'Buzz / Social', icon: <MessageSquare className="w-4 h-4" />, color: '#8b5cf6', data: cats.buzz },
+                  { key: 'music', label: 'Music Streaming', icon: <Music className="w-4 h-4" />, color: '#3b82f6', data: cats.music },
+                  { key: 'album', label: 'Album Sales', icon: <Disc3 className="w-4 h-4" />, color: '#f59e0b', data: cats.album },
+                ].filter(e => e.data);
+
+                // Sort by absolute change to highlight hottest
+                const sorted = [...entries].sort((a, b) => Math.abs(b.data.change_pct) - Math.abs(a.data.change_pct));
+                const hottest = sorted[0];
+
+                return (
+                  <div className="space-y-3">
+                    {/* Hottest alert */}
+                    {hottest && Math.abs(hottest.data.change_pct) > 5 && (
+                      <div className={`rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-2 ${
+                        hottest.data.change_pct > 0
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      }`}>
+                        {hottest.data.change_pct > 0 ? '🚀' : '⚠️'}
+                        <span>
+                          <strong>{hottest.label}</strong>에서 {hottest.data.change_pct > 0 ? '급등' : '급락'} 중!
+                          {' '}({hottest.data.change_pct > 0 ? '+' : ''}{hottest.data.change_pct}% · 24h)
+                          {hottest.data.percentile != null && ` — 상위 ${100 - hottest.data.percentile}%`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Source bars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {sorted.map(({ key, label, icon, color, data }) => {
+                        const isHot = Math.abs(data.change_pct) > 5;
+                        const isPositive = data.change_pct > 0;
+                        const barWidth = Math.min(Math.abs(data.change_pct), 100);
+                        return (
+                          <div key={key} className={`rounded-lg border p-3 transition-all ${
+                            isHot ? (isPositive ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-red-500/40 bg-red-500/5') : 'border-border/50 bg-card/50'
+                          }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2 text-sm font-medium" style={{ color }}>
+                                {icon} {label}
+                                {isHot && <span className="text-[10px] animate-pulse">{isPositive ? '🔥' : '📉'}</span>}
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-sm font-bold ${isPositive ? 'text-emerald-400' : data.change_pct < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
+                                  {isPositive ? '+' : ''}{data.change_pct}%
+                                </span>
+                              </div>
+                            </div>
+                            {/* Visual bar */}
+                            <div className="w-full h-2 bg-muted/30 rounded-full overflow-hidden mb-1.5">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                  width: `${Math.max(barWidth, 2)}%`,
+                                  backgroundColor: isPositive ? '#10b981' : data.change_pct < 0 ? '#ef4444' : '#6b7280',
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-muted-foreground">
+                              <span>Score: {data.current?.toLocaleString()}</span>
+                              <span>Velocity: {data.velocity}</span>
+                              <span>Top {100 - (data.percentile ?? 0)}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Overall energy summary */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/30 pt-2">
+                      <span>종합 Energy: <strong className="text-foreground">{coordData.energy_score}</strong> (Rank #{coordData.energy_rank})</span>
+                      <span>24h 종합 변동: <strong className={coordData.change_24h >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                        {coordData.change_24h >= 0 ? '+' : ''}{coordData.change_24h}%
+                      </strong></span>
+                      {coordData.prev_snapshot_at && (
+                        <span>기준: {format(new Date(coordData.prev_snapshot_at), 'MM/dd HH:mm')}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })() : (
+                <div className="text-center py-6 text-muted-foreground text-sm">좌표 데이터 없음</div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* ═══ Row 2: FES Trend + Radar ═══ */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
