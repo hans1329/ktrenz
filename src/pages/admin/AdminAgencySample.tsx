@@ -292,7 +292,7 @@ const AdminAgencySample = () => {
   }, {} as Record<string, number>) ?? {};
 
   const fesTrendData = energyData?.slice().reverse().map((e: any) => ({
-    date: e.snapshot_date?.slice(5) ?? '',
+    date: e.snapshot_at?.slice(5, 10) ?? '',
     score: Math.round(e.energy_score ?? 0),
   })) ?? [];
 
