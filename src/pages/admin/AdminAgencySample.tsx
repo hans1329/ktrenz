@@ -216,7 +216,7 @@ const AdminAgencySample = () => {
       if (compareArtistId === 'none') return null;
       const [scoresRes, energyRes] = await Promise.all([
         supabase.from('v3_scores_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).maybeSingle(),
-        supabase.from('v3_energy_snapshots_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).order('snapshot_date', { ascending: false }).limit(1),
+        supabase.from('v3_energy_snapshots_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).order('snapshot_at', { ascending: false }).limit(1),
       ]);
       return {
         scores: scoresRes.data as any,
