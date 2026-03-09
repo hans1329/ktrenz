@@ -761,6 +761,132 @@ Provide strategic insights and action items for the agency managing this artist.
             </Card>
           )}
 
+          {/* ═══ Row 8: Competitor Comparison ═══ */}
+          <Separator />
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <GitCompareArrows className="w-4 h-4 text-cyan-500" /> Competitor Comparison
+              </CardTitle>
+              <CardDescription className="text-xs">Compare key metrics side-by-side</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs text-muted-foreground">Compare with:</span>
+                <Select value={compareArtistId} onValueChange={setCompareArtistId}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None —</SelectItem>
+                    {artists?.filter((a: any) => a.wiki_entry_id !== selectedArtistId).map((a: any) => (
+                      <SelectItem key={a.wiki_entry_id} value={a.wiki_entry_id}>
+                        {a.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {comparisonData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={comparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                      <XAxis dataKey="metric" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey={selectedArtist?.display_name ?? 'A'} fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={compareArtistName} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex items-center gap-4 mt-2 justify-center text-xs">
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-purple-500 inline-block" /> {selectedArtist?.display_name}</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-500 inline-block" /> {compareArtistName}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  {compareArtistId === 'none' ? 'Select a competitor to compare' : 'Loading comparison data...'}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ═══ Row 9: Milestone Timeline ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-amber-500" /> Milestone Timeline
+              </CardTitle>
+              <CardDescription className="text-xs">Key achievements and records</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {milestones && milestones.length > 0 ? (
+                <div className="relative pl-6 space-y-3">
+                  <div className="absolute left-2 top-1 bottom-1 w-px bg-border" />
+                  {milestones.slice(0, 12).map((m: any, i: number) => (
+                    <div key={m.id || i} className="relative flex items-start gap-3">
+                      <div className="absolute -left-4 top-0.5 w-3 h-3 rounded-full bg-background border-2 border-amber-500 z-10" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{milestoneIcon(m.milestone_type)}</span>
+                          <span className="text-xs font-medium">{m.milestone_type?.replace(/_/g, ' ')}</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {m.created_at ? format(new Date(m.created_at), 'yyyy-MM-dd') : ''}
+                          </span>
+                        </div>
+                        {m.description && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{m.description}</p>
+                        )}
+                        {m.value != null && (
+                          <Badge variant="secondary" className="text-[9px] mt-1">Score: {Math.round(m.value)}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">No milestones recorded yet</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ═══ Row 10: AI Strategic Insights ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Brain className="w-4 h-4 text-purple-500" /> AI Strategic Insights
+                  </CardTitle>
+                  <CardDescription className="text-xs">GPT-powered analysis based on all collected data</CardDescription>
+                </div>
+                <Button size="sm" variant="outline" onClick={generateInsight} disabled={aiLoading}>
+                  {aiLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  Generate
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {aiLoading && (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-500" />
+                  <p className="text-sm text-muted-foreground">Analyzing all data points...</p>
+                </div>
+              )}
+              {!aiLoading && aiInsight && (
+                <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap bg-muted/40 rounded-lg p-4">
+                  {aiInsight}
+                </div>
+              )}
+              {!aiLoading && !aiInsight && (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  Click "Generate" to get AI-powered strategic recommendations
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Separator />
           <p className="text-center text-xs text-muted-foreground pb-4">
             K-Trendz Agency Intelligence — Sample Dashboard Preview
