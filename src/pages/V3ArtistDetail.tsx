@@ -499,7 +499,7 @@ const V3ArtistDetail = () => {
 
         {buzzData && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> X 버즈</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Zap className="w-4 h-4 text-amber-500" /> X Buzz</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
               <MetricCard icon={Zap} label="버즈 스코어" value={String(buzzData.buzzScore || 0)} color="bg-amber-500" />
               <MetricCard icon={Hash} label="멘션" value={String(buzzData.mentionCount || 0)} subValue="24시간" color="bg-sky-500" />
