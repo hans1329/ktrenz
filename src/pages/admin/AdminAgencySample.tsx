@@ -425,7 +425,7 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* FES */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> FES Score</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> FES 점수</p>
                 <p className="text-2xl font-bold mt-1">{Math.round(fesScore).toLocaleString()}</p>
                 <div className={`text-xs mt-0.5 flex items-center gap-0.5 ${fesDelta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {fesDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -436,17 +436,17 @@ Provide strategic insights and action items for the agency managing this artist.
             {/* Rank */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground">Ranking</p>
+                <p className="text-[11px] text-muted-foreground">순위</p>
                 <p className="text-2xl font-bold mt-1">#{rankingData?.rank ?? '-'}</p>
-                <p className="text-[11px] text-muted-foreground">of {rankingData?.total ?? '-'}</p>
+                <p className="text-[11px] text-muted-foreground">{rankingData?.total ?? '-'}명 중</p>
               </CardContent>
             </Card>
             {/* Buzz */}
             <Card>
               <CardContent className="p-4">
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageSquare className="w-3 h-3 text-purple-500" /> Buzz Score</p>
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1"><MessageSquare className="w-3 h-3 text-purple-500" /> 버즈 점수</p>
                 <p className="text-2xl font-bold mt-1">{scoreData?.buzz_score?.toLocaleString() ?? '-'}</p>
-                <p className="text-[11px] text-muted-foreground">{latestBuzz?.total_mentions ?? 0} mentions</p>
+                <p className="text-[11px] text-muted-foreground">{latestBuzz?.total_mentions ?? 0}건 언급</p>
               </CardContent>
             </Card>
             {/* YouTube */}
@@ -454,7 +454,7 @@ Provide strategic insights and action items for the agency managing this artist.
               <CardContent className="p-4">
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Youtube className="w-3 h-3 text-red-500" /> YouTube</p>
                 <p className="text-2xl font-bold mt-1">{latestYt?.subscriberCount ? (latestYt.subscriberCount / 1e6).toFixed(2) + 'M' : '-'}</p>
-                <p className="text-[11px] text-muted-foreground">subscribers</p>
+                <p className="text-[11px] text-muted-foreground">구독자</p>
               </CardContent>
             </Card>
             {/* Sentiment */}
