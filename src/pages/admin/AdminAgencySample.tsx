@@ -477,7 +477,7 @@ Provide strategic insights and action items for the agency managing this artist.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> FES Trend (14 days)</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> FES 추이 (14일)</CardTitle>
               </CardHeader>
               <CardContent>
                 {fesTrendData.length > 1 ? (
