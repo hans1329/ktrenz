@@ -733,8 +733,8 @@ Provide strategic insights and action items for the agency managing this artist.
           {fanIntents && fanIntents.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> Fan Intent Snapshot (7 days)</CardTitle>
-                <CardDescription className="text-xs">{fanIntents.length} fan queries analyzed</CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> 팬 의도 분석 (7일)</CardTitle>
+                <CardDescription className="text-xs">{fanIntents.length}건의 팬 질의 분석</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
