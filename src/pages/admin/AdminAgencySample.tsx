@@ -889,7 +889,7 @@ Provide strategic insights and action items for the agency managing this artist.
 
           <Separator />
           <p className="text-center text-xs text-muted-foreground pb-4">
-            K-Trendz Agency Intelligence — Sample Dashboard Preview
+            K-Trendz 에이전시 인텔리전스 — 샘플 대시보드 미리보기
           </p>
         </>
       )}
