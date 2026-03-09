@@ -985,6 +985,99 @@ Artist: ${context.artist}
             </CardContent>
           </Card>
 
+          {/* ═══ Row 9.5: Competitor Schedule Monitor ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-500" /> 경쟁 아티스트 일정 모니터링
+              </CardTitle>
+              <CardDescription className="text-xs">내 아티스트와 경쟁사의 예정 이벤트를 비교합니다</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Competitor selector (multi) */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-muted-foreground shrink-0">비교 대상:</span>
+                <Select
+                  value=""
+                  onValueChange={(v) => {
+                    if (v && v !== selectedArtistId && !scheduleCompareIds.includes(v)) {
+                      setScheduleCompareIds(prev => [...prev, v].slice(0, 4));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <SelectValue placeholder="아티스트 추가..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {artists?.filter((a: any) => a.wiki_entry_id !== selectedArtistId && !scheduleCompareIds.includes(a.wiki_entry_id)).map((a: any) => (
+                      <SelectItem key={a.wiki_entry_id} value={a.wiki_entry_id}>
+                        {a.name_ko || a.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {scheduleCompareIds.map(id => {
+                  const a = artists?.find((x: any) => x.wiki_entry_id === id);
+                  return (
+                    <Badge key={id} variant="secondary" className="text-[10px] gap-1 cursor-pointer hover:bg-destructive/20"
+                      onClick={() => setScheduleCompareIds(prev => prev.filter(x => x !== id))}
+                    >
+                      {a?.name_ko || a?.display_name || id.slice(0, 8)} ✕
+                    </Badge>
+                  );
+                })}
+              </div>
+
+              {/* Schedule timeline */}
+              {(() => {
+                const events = competitorSchedules ?? [];
+                if (events.length === 0) {
+                  return <div className="text-center py-6 text-muted-foreground text-sm">예정된 일정이 없습니다</div>;
+                }
+                const eventTypeEmoji: Record<string, string> = {
+                  release: '💿', celebration: '🎉', broadcast: '📡', purchase: '🛒',
+                  event: '🎪', sns: '📱', others: '📌',
+                };
+                const grouped = events.reduce((acc: Record<string, any[]>, ev: any) => {
+                  (acc[ev.event_date] ??= []).push(ev);
+                  return acc;
+                }, {});
+
+                return (
+                  <div className="space-y-3">
+                    {Object.entries(grouped).map(([date, dayEvents]) => (
+                      <div key={date}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded">{date}</span>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                        <div className="grid gap-1.5 pl-2">
+                          {(dayEvents as any[]).map((ev: any) => {
+                            const isOwn = ev.wiki_entry_id === selectedArtistId;
+                            const artistInfo = artists?.find((a: any) => a.wiki_entry_id === ev.wiki_entry_id);
+                            const artistLabel = artistInfo?.name_ko || artistInfo?.display_name || '—';
+                            return (
+                              <div key={ev.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs border ${
+                                isOwn ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/30'
+                              }`}>
+                                <span className="text-sm">{eventTypeEmoji[ev.event_type] ?? '📌'}</span>
+                                <span className={`font-medium shrink-0 ${isOwn ? 'text-primary' : 'text-muted-foreground'}`}>
+                                  {artistLabel}
+                                </span>
+                                <span className="truncate">{ev.title}</span>
+                                {isOwn && <Badge variant="outline" className="text-[9px] ml-auto shrink-0">MY</Badge>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
           {/* ═══ Row 10: AI Strategic Insights ═══ */}
           <Card>
             <CardHeader className="pb-2">
