@@ -232,6 +232,7 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 // energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
+  external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
   buzz: runBuzz,
