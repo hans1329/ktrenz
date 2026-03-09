@@ -223,6 +223,26 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Competitor schedule monitoring ──
+  const [scheduleCompareIds, setScheduleCompareIds] = useState<string[]>([]);
+  const allScheduleIds = [selectedArtistId, ...scheduleCompareIds].filter(Boolean);
+
+  const { data: competitorSchedules } = useQuery({
+    queryKey: ['agency-competitor-schedules', allScheduleIds],
+    queryFn: async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .in('wiki_entry_id', allScheduleIds)
+        .gte('event_date', today)
+        .order('event_date', { ascending: true })
+        .limit(50);
+      return (data ?? []) as any[];
+    },
+    enabled: allScheduleIds.length > 0,
+  });
+
   // ── Competitor scores ──
   const { data: compareScoreData } = useQuery({
     queryKey: ['agency-compare-scores', compareArtistId],
