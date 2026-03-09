@@ -816,9 +816,9 @@ Provide strategic insights and action items for the agency managing this artist.
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-amber-500" /> Milestone Timeline
+                <Trophy className="w-4 h-4 text-amber-500" /> 마일스톤 타임라인
               </CardTitle>
-              <CardDescription className="text-xs">Key achievements and records</CardDescription>
+              <CardDescription className="text-xs">주요 성과 및 기록</CardDescription>
             </CardHeader>
             <CardContent>
               {milestones && milestones.length > 0 ? (
