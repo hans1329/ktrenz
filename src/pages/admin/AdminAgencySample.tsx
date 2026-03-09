@@ -871,11 +871,37 @@ Artist: ${context.artist}
                   <p className="text-sm text-muted-foreground">전체 데이터 분석 중...</p>
                 </div>
               )}
-              {!aiLoading && aiInsight && (
-                <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap bg-muted/40 rounded-lg p-4">
-                  {aiInsight}
-                </div>
-              )}
+              {!aiLoading && aiInsight && (() => {
+                let items: any[] = [];
+                try { items = JSON.parse(aiInsight); } catch { items = []; }
+                const priorityColors: Record<string, string> = {
+                  high: 'border-l-red-500 bg-red-500/5',
+                  medium: 'border-l-amber-500 bg-amber-500/5',
+                  low: 'border-l-emerald-500 bg-emerald-500/5',
+                };
+                const priorityLabels: Record<string, string> = { high: '긴급', medium: '권장', low: '참고' };
+                if (items.length === 0) {
+                  return <div className="text-sm whitespace-pre-wrap bg-muted/40 rounded-lg p-4">{aiInsight}</div>;
+                }
+                return (
+                  <div className="grid gap-3">
+                    {items.map((item: any, i: number) => (
+                      <div key={i} className={`border-l-4 rounded-lg p-3 ${priorityColors[item.priority] || priorityColors.medium}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">{item.emoji}</span>
+                          <span className="font-semibold text-sm">{item.title}</span>
+                          <span className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                            item.priority === 'high' ? 'bg-red-500/10 text-red-600' :
+                            item.priority === 'medium' ? 'bg-amber-500/10 text-amber-600' :
+                            'bg-emerald-500/10 text-emerald-600'
+                          }`}>{priorityLabels[item.priority] || '참고'}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
               {!aiLoading && !aiInsight && (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   "생성" 버튼을 클릭하면 AI 기반 전략 추천을 받을 수 있습니다
