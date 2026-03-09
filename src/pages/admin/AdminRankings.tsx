@@ -1159,9 +1159,10 @@ const AdminRankings = () => {
               {(pipelineRun.modules_requested as string[]).map((mod: string, i: number) => {
                 const isCurrent = pipelineRun.current_module === mod;
                 const results = pipelineRun.results as Record<string, any> | null;
-                const isDone = results && mod in results;
-                const isFailed = pipelineRun.status === 'failed' && isCurrent;
                 const modResult = results?.[mod];
+                const hasError = modResult && typeof modResult === 'object' && 'error' in modResult;
+                const isDone = results && mod in results && !hasError;
+                const isFailed = (pipelineRun.status === 'failed' && isCurrent) || hasError;
 
                 const moduleLabel: Record<string, string> = {
                   youtube: 'YouTube 데이터',
