@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,7 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import {
   Loader2, Youtube, ThumbsUp, ThumbsDown, Minus, RefreshCw,
   TrendingUp, TrendingDown, Zap, Music, Disc3, Newspaper,
-  MessageSquare, BarChart3, Building2, ExternalLink,
+  MessageSquare, BarChart3, Building2, ExternalLink, GitCompareArrows,
+  Trophy, Calendar, Sparkles, Brain,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -30,6 +31,9 @@ const BUZZ_SOURCE_COLORS: Record<string, string> = {
 
 const AdminAgencySample = () => {
   const [selectedArtistId, setSelectedArtistId] = useState<string>('');
+  const [compareArtistId, setCompareArtistId] = useState<string>('none');
+  const [aiInsight, setAiInsight] = useState<string>('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   // ── Artists list ──
   const { data: artists } = useQuery({
@@ -190,6 +194,38 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Milestones ──
+  const { data: milestones } = useQuery({
+    queryKey: ['agency-milestones', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('v3_artist_milestones' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Competitor scores ──
+  const { data: compareScoreData } = useQuery({
+    queryKey: ['agency-compare-scores', compareArtistId],
+    queryFn: async () => {
+      if (compareArtistId === 'none') return null;
+      const [scoresRes, energyRes] = await Promise.all([
+        supabase.from('v3_scores_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).maybeSingle(),
+        supabase.from('v3_energy_snapshots_v2' as any).select('*').eq('wiki_entry_id', compareArtistId).order('snapshot_date', { ascending: false }).limit(1),
+      ]);
+      return {
+        scores: scoresRes.data as any,
+        energy: (energyRes.data as any)?.[0],
+      };
+    },
+    enabled: compareArtistId !== 'none',
+  });
+
   // ── Analyze mutation ──
   const analyzeMutation = useMutation({
     mutationFn: async () => {
@@ -259,6 +295,80 @@ const AdminAgencySample = () => {
     date: e.snapshot_date?.slice(5) ?? '',
     score: Math.round(e.energy_score ?? 0),
   })) ?? [];
+
+  // Competitor derived data
+  const compareArtistName = compareArtistId === 'none'
+    ? '' : artists?.find((a: any) => a.wiki_entry_id === compareArtistId)?.display_name ?? '';
+  const compareEnergy = compareScoreData?.energy?.energy_score ?? 0;
+  const comparisonData = compareArtistId !== 'none' && selectedArtistId && compareScoreData ? [
+    { metric: 'FES Score', [selectedArtist?.display_name ?? 'A']: Math.round(fesScore), [compareArtistName]: Math.round(compareEnergy) },
+    { metric: 'Buzz', [selectedArtist?.display_name ?? 'A']: scoreData?.buzz_score ?? 0, [compareArtistName]: compareScoreData.scores?.buzz_score ?? 0 },
+    { metric: 'YouTube', [selectedArtist?.display_name ?? 'A']: scoreData?.youtube_score ?? 0, [compareArtistName]: compareScoreData.scores?.youtube_score ?? 0 },
+    { metric: 'Music', [selectedArtist?.display_name ?? 'A']: scoreData?.music_score ?? 0, [compareArtistName]: compareScoreData.scores?.music_score ?? 0 },
+    { metric: 'Album', [selectedArtist?.display_name ?? 'A']: scoreData?.album_score ?? 0, [compareArtistName]: compareScoreData.scores?.album_score ?? 0 },
+  ] : [];
+
+  // Milestone icons
+  const milestoneIcon = (type: string) => {
+    if (type.includes('rank_1')) return '🥇';
+    if (type.includes('rank_3')) return '🏆';
+    if (type.includes('tier')) return '⭐';
+    if (type.includes('energy') || type.includes('fes')) return '⚡';
+    if (type.includes('buzz')) return '📢';
+    return '🎯';
+  };
+
+  // ── AI Insight generation ──
+  const generateInsight = useCallback(async () => {
+    if (!selectedArtistId || !selectedArtist) return;
+    setAiLoading(true);
+    setAiInsight('');
+    try {
+      const context = {
+        artist: selectedArtist.display_name,
+        fesScore: Math.round(fesScore),
+        fesDelta: Math.round(fesDelta),
+        rank: rankingData?.rank,
+        totalArtists: rankingData?.total,
+        buzzScore: scoreData?.buzz_score,
+        buzzMentions: latestBuzz?.total_mentions,
+        sentimentLabel: sentimentMetrics?.overall_label,
+        sentimentScore: sentimentMetrics?.overall_score,
+        ytSubscribers: latestYt?.subscriberCount,
+        naverArticles: naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count,
+        recentMilestones: milestones?.slice(0, 5).map((m: any) => m.milestone_type),
+        fanIntentCount: fanIntents?.length,
+        topIntentCategories: Object.entries(
+          fanIntents?.reduce((a: any, i: any) => { a[i.intent_category] = (a[i.intent_category] || 0) + 1; return a; }, {}) ?? {}
+        ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3).map(([k]) => k),
+      };
+
+      const { data, error } = await supabase.functions.invoke('ktrenz-fan-agent', {
+        body: {
+          message: `You are an entertainment agency analyst. Based on the following K-pop artist data, provide a concise strategic insight report (3-5 bullet points) in English. Focus on actionable recommendations for the agency.
+
+Artist: ${context.artist}
+- FES Score: ${context.fesScore} (${context.fesDelta >= 0 ? '+' : ''}${context.fesDelta} vs yesterday)
+- Ranking: #${context.rank} of ${context.totalArtists}
+- Buzz Score: ${context.buzzScore} (${context.buzzMentions} mentions)
+- YouTube Subscribers: ${context.ytSubscribers ? (context.ytSubscribers / 1e6).toFixed(2) + 'M' : 'N/A'}
+- Naver News (24h): ${context.naverArticles ?? 0} articles
+- Fan Sentiment: ${context.sentimentLabel ?? 'unknown'} (score: ${context.sentimentScore ?? 'N/A'})
+- Fan Queries (7d): ${context.fanIntentCount} queries, top categories: ${context.topIntentCategories.join(', ')}
+- Recent Milestones: ${context.recentMilestones?.join(', ') || 'none'}
+
+Provide strategic insights and action items for the agency managing this artist.`,
+          skipSave: true,
+        },
+      });
+      if (error) throw error;
+      setAiInsight(data?.reply || data?.message || 'No insight generated.');
+    } catch (err: any) {
+      toast.error(`AI insight failed: ${err.message}`);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [selectedArtistId, selectedArtist, fesScore, fesDelta, rankingData, scoreData, latestBuzz, sentimentMetrics, latestYt, naverData, milestones, fanIntents]);
 
   return (
     <div className="space-y-6">
@@ -650,6 +760,132 @@ const AdminAgencySample = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* ═══ Row 8: Competitor Comparison ═══ */}
+          <Separator />
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <GitCompareArrows className="w-4 h-4 text-cyan-500" /> Competitor Comparison
+              </CardTitle>
+              <CardDescription className="text-xs">Compare key metrics side-by-side</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs text-muted-foreground">Compare with:</span>
+                <Select value={compareArtistId} onValueChange={setCompareArtistId}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— None —</SelectItem>
+                    {artists?.filter((a: any) => a.wiki_entry_id !== selectedArtistId).map((a: any) => (
+                      <SelectItem key={a.wiki_entry_id} value={a.wiki_entry_id}>
+                        {a.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {comparisonData.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={comparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                      <XAxis dataKey="metric" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey={selectedArtist?.display_name ?? 'A'} fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={compareArtistName} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex items-center gap-4 mt-2 justify-center text-xs">
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-purple-500 inline-block" /> {selectedArtist?.display_name}</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-500 inline-block" /> {compareArtistName}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  {compareArtistId === 'none' ? 'Select a competitor to compare' : 'Loading comparison data...'}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ═══ Row 9: Milestone Timeline ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-amber-500" /> Milestone Timeline
+              </CardTitle>
+              <CardDescription className="text-xs">Key achievements and records</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {milestones && milestones.length > 0 ? (
+                <div className="relative pl-6 space-y-3">
+                  <div className="absolute left-2 top-1 bottom-1 w-px bg-border" />
+                  {milestones.slice(0, 12).map((m: any, i: number) => (
+                    <div key={m.id || i} className="relative flex items-start gap-3">
+                      <div className="absolute -left-4 top-0.5 w-3 h-3 rounded-full bg-background border-2 border-amber-500 z-10" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{milestoneIcon(m.milestone_type)}</span>
+                          <span className="text-xs font-medium">{m.milestone_type?.replace(/_/g, ' ')}</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {m.created_at ? format(new Date(m.created_at), 'yyyy-MM-dd') : ''}
+                          </span>
+                        </div>
+                        {m.description && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{m.description}</p>
+                        )}
+                        {m.value != null && (
+                          <Badge variant="secondary" className="text-[9px] mt-1">Score: {Math.round(m.value)}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">No milestones recorded yet</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ═══ Row 10: AI Strategic Insights ═══ */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Brain className="w-4 h-4 text-purple-500" /> AI Strategic Insights
+                  </CardTitle>
+                  <CardDescription className="text-xs">GPT-powered analysis based on all collected data</CardDescription>
+                </div>
+                <Button size="sm" variant="outline" onClick={generateInsight} disabled={aiLoading}>
+                  {aiLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  Generate
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {aiLoading && (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-500" />
+                  <p className="text-sm text-muted-foreground">Analyzing all data points...</p>
+                </div>
+              )}
+              {!aiLoading && aiInsight && (
+                <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap bg-muted/40 rounded-lg p-4">
+                  {aiInsight}
+                </div>
+              )}
+              {!aiLoading && !aiInsight && (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  Click "Generate" to get AI-powered strategic recommendations
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Separator />
           <p className="text-center text-xs text-muted-foreground pb-4">
