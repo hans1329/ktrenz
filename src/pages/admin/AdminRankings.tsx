@@ -1230,6 +1230,9 @@ const AdminRankings = () => {
                       {buzzDetail && (
                         <p className="text-[10px] mt-0.5 text-muted-foreground">🔍 {buzzDetail}</p>
                       )}
+                      {hasError && modResult?.error && (
+                        <p className="text-[10px] mt-0.5 text-destructive">⚠️ {String(modResult.error).slice(0, 120)}</p>
+                      )}
                       {isCurrent && pipelineRun.status === 'running' && !liveCount && (
                         <p className="text-[10px] text-primary/70 mt-0.5 animate-pulse">처리 중...</p>
                       )}
