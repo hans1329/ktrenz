@@ -343,7 +343,7 @@ const AdminAgencySample = () => {
         ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3).map(([k]) => k),
       };
 
-      const prompt = `You are an entertainment agency analyst. Based on the following K-pop artist data, provide a concise strategic insight report (3-5 bullet points) in Korean. Focus on actionable recommendations for the agency.
+      const prompt = `You are an entertainment agency analyst. Based on the following K-pop artist data, provide exactly 4 strategic insights as a JSON array. Each item must have: "emoji" (single emoji), "title" (short Korean title, max 20 chars), "body" (1-2 sentence actionable insight in Korean), "priority" ("high"|"medium"|"low"). Return ONLY the JSON array, no markdown.
 
 Artist: ${context.artist}
 - FES Score: ${context.fesScore} (${context.fesDelta >= 0 ? '+' : ''}${context.fesDelta} vs yesterday)
@@ -353,9 +353,7 @@ Artist: ${context.artist}
 - Naver News (24h): ${context.naverArticles ?? 0} articles
 - Fan Sentiment: ${context.sentimentLabel ?? 'unknown'} (score: ${context.sentimentScore ?? 'N/A'})
 - Fan Queries (7d): ${context.fanIntentCount} queries, top categories: ${context.topIntentCategories.join(', ')}
-- Recent Milestones: ${context.recentMilestones?.join(', ') || 'none'}
-
-Provide strategic insights and action items for the agency managing this artist.`;
+- Recent Milestones: ${context.recentMilestones?.join(', ') || 'none'}`;
 
       const { data, error } = await supabase.functions.invoke('ktrenz-agency-insight', {
         body: { prompt },
