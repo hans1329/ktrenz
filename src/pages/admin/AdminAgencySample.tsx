@@ -857,9 +857,9 @@ Provide strategic insights and action items for the agency managing this artist.
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-500" /> AI Strategic Insights
+                    <Brain className="w-4 h-4 text-purple-500" /> AI 전략 인사이트
                   </CardTitle>
-                  <CardDescription className="text-xs">GPT-powered analysis based on all collected data</CardDescription>
+                  <CardDescription className="text-xs">수집된 전체 데이터 기반 GPT 분석</CardDescription>
                 </div>
                 <Button size="sm" variant="outline" onClick={generateInsight} disabled={aiLoading}>
                   {aiLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
