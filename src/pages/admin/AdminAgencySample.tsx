@@ -296,6 +296,80 @@ const AdminAgencySample = () => {
     score: Math.round(e.energy_score ?? 0),
   })) ?? [];
 
+  // Competitor derived data
+  const compareArtistName = compareArtistId === 'none'
+    ? '' : artists?.find((a: any) => a.wiki_entry_id === compareArtistId)?.display_name ?? '';
+  const compareEnergy = compareScoreData?.energy?.energy_score ?? 0;
+  const comparisonData = compareArtistId !== 'none' && selectedArtistId && compareScoreData ? [
+    { metric: 'FES Score', [selectedArtist?.display_name ?? 'A']: Math.round(fesScore), [compareArtistName]: Math.round(compareEnergy) },
+    { metric: 'Buzz', [selectedArtist?.display_name ?? 'A']: scoreData?.buzz_score ?? 0, [compareArtistName]: compareScoreData.scores?.buzz_score ?? 0 },
+    { metric: 'YouTube', [selectedArtist?.display_name ?? 'A']: scoreData?.youtube_score ?? 0, [compareArtistName]: compareScoreData.scores?.youtube_score ?? 0 },
+    { metric: 'Music', [selectedArtist?.display_name ?? 'A']: scoreData?.music_score ?? 0, [compareArtistName]: compareScoreData.scores?.music_score ?? 0 },
+    { metric: 'Album', [selectedArtist?.display_name ?? 'A']: scoreData?.album_score ?? 0, [compareArtistName]: compareScoreData.scores?.album_score ?? 0 },
+  ] : [];
+
+  // Milestone icons
+  const milestoneIcon = (type: string) => {
+    if (type.includes('rank_1')) return '🥇';
+    if (type.includes('rank_3')) return '🏆';
+    if (type.includes('tier')) return '⭐';
+    if (type.includes('energy') || type.includes('fes')) return '⚡';
+    if (type.includes('buzz')) return '📢';
+    return '🎯';
+  };
+
+  // ── AI Insight generation ──
+  const generateInsight = useCallback(async () => {
+    if (!selectedArtistId || !selectedArtist) return;
+    setAiLoading(true);
+    setAiInsight('');
+    try {
+      const context = {
+        artist: selectedArtist.display_name,
+        fesScore: Math.round(fesScore),
+        fesDelta: Math.round(fesDelta),
+        rank: rankingData?.rank,
+        totalArtists: rankingData?.total,
+        buzzScore: scoreData?.buzz_score,
+        buzzMentions: latestBuzz?.total_mentions,
+        sentimentLabel: sentimentMetrics?.overall_label,
+        sentimentScore: sentimentMetrics?.overall_score,
+        ytSubscribers: latestYt?.subscriberCount,
+        naverArticles: naverData?.metrics?.article_count_24h ?? naverData?.metrics?.mention_count,
+        recentMilestones: milestones?.slice(0, 5).map((m: any) => m.milestone_type),
+        fanIntentCount: fanIntents?.length,
+        topIntentCategories: Object.entries(
+          fanIntents?.reduce((a: any, i: any) => { a[i.intent_category] = (a[i.intent_category] || 0) + 1; return a; }, {}) ?? {}
+        ).sort((a: any, b: any) => b[1] - a[1]).slice(0, 3).map(([k]) => k),
+      };
+
+      const { data, error } = await supabase.functions.invoke('ktrenz-fan-agent', {
+        body: {
+          message: `You are an entertainment agency analyst. Based on the following K-pop artist data, provide a concise strategic insight report (3-5 bullet points) in English. Focus on actionable recommendations for the agency.
+
+Artist: ${context.artist}
+- FES Score: ${context.fesScore} (${context.fesDelta >= 0 ? '+' : ''}${context.fesDelta} vs yesterday)
+- Ranking: #${context.rank} of ${context.totalArtists}
+- Buzz Score: ${context.buzzScore} (${context.buzzMentions} mentions)
+- YouTube Subscribers: ${context.ytSubscribers ? (context.ytSubscribers / 1e6).toFixed(2) + 'M' : 'N/A'}
+- Naver News (24h): ${context.naverArticles ?? 0} articles
+- Fan Sentiment: ${context.sentimentLabel ?? 'unknown'} (score: ${context.sentimentScore ?? 'N/A'})
+- Fan Queries (7d): ${context.fanIntentCount} queries, top categories: ${context.topIntentCategories.join(', ')}
+- Recent Milestones: ${context.recentMilestones?.join(', ') || 'none'}
+
+Provide strategic insights and action items for the agency managing this artist.`,
+          skipSave: true,
+        },
+      });
+      if (error) throw error;
+      setAiInsight(data?.reply || data?.message || 'No insight generated.');
+    } catch (err: any) {
+      toast.error(`AI insight failed: ${err.message}`);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [selectedArtistId, selectedArtist, fesScore, fesDelta, rankingData, scoreData, latestBuzz, sentimentMetrics, latestYt, naverData, milestones, fanIntents]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
