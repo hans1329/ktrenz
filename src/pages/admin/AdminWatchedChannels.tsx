@@ -106,7 +106,7 @@ const AdminWatchedChannels = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Watched Channels</h1>
+        <h1 className="text-2xl font-bold text-foreground">Reference YouTube List</h1>
         <p className="text-sm text-muted-foreground mt-1">
           External YouTube channels to monitor for artist appearances (variety shows, music shows, etc.)
         </p>
