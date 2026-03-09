@@ -277,6 +277,39 @@ Deno.serve(async (req) => {
         texts: [],
         topMentions: [],
       });
+
+      // External Video Views 가상 소스 추가 (scan-external-videos에서 수집된 데이터)
+      const { data: extSnap } = await sb
+        .from("ktrenz_data_snapshots")
+        .select("metrics")
+        .eq("wiki_entry_id", wikiEntryId)
+        .eq("platform", "external_videos")
+        .order("collected_at", { ascending: false })
+        .limit(1)
+        .maybeSingle() as { data: any };
+
+      const extViews = extSnap?.metrics?.total_views || 0;
+      const extComments = extSnap?.metrics?.total_comments || 0;
+      // 조회수를 10만 단위로 정규화, 가중치 1.2x
+      const normalizedExtViews = extViews > 0 ? Math.min(100, Math.round(extViews / 100_000)) : 0;
+      sourceResults.push({
+        name: "ext_videos",
+        weight: 1.2,
+        count: normalizedExtViews,
+        totalFetched: extViews,
+        texts: [],
+        topMentions: [],
+      });
+
+      // 외부 영상 댓글은 기존 yt_comments에 합산
+      if (extComments > 0) {
+        const ytCommentsSource = sourceResults.find(s => s.name === "yt_comments");
+        if (ytCommentsSource) {
+          const additionalNormalized = Math.min(50, Math.round(extComments / 100));
+          ytCommentsSource.count += additionalNormalized;
+          ytCommentsSource.totalFetched += extComments;
+        }
+      }
     }
 
     // 전체 텍스트 감성 분석
