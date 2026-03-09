@@ -461,7 +461,7 @@ const V3ArtistDetail = () => {
         {/* YouTube Music Topic Channel */}
         {ytMusicData && ytMusicData.topicTotalViews > 0 && (
           <>
-            <div className="flex items-center gap-2 mt-4"><div className="h-px flex-1 bg-border" /><span className="text-[10px] text-primary font-semibold uppercase tracking-widest flex items-center gap-1"><Headphones className="w-3 h-3" /> YouTube Music</span><div className="h-px flex-1 bg-border" /></div>
+            <div className="flex items-center gap-2 mt-5"><div className="h-px flex-1 bg-border" /><span className="text-sm text-foreground font-bold flex items-center gap-1.5"><Headphones className="w-4 h-4 text-primary" /> YouTube Music</span><div className="h-px flex-1 bg-border" /></div>
             <div className="grid grid-cols-3 gap-2">
               <MetricCard icon={Headphones} label="스트림" value={formatNumber(ytMusicData.topicTotalViews)} subValue="토픽 채널" color="bg-destructive" />
               <MetricCard icon={Users} label="구독자" value={formatNumber(ytMusicData.topicSubscribers)} subValue="토픽 채널" color="bg-destructive" />
