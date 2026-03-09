@@ -10,15 +10,16 @@ import {
   Loader2, Youtube, ThumbsUp, ThumbsDown, Minus, RefreshCw,
   TrendingUp, TrendingDown, Zap, Music, Disc3, Newspaper,
   MessageSquare, BarChart3, Building2, ExternalLink, GitCompareArrows,
-  Trophy, Calendar, Sparkles, Brain,
+  Trophy, Calendar, Sparkles, Brain, Activity,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, AreaChart, Area,
+  PolarAngleAxis, PolarRadiusAxis, AreaChart, Area, ReferenceLine, ComposedChart,
+  Scatter,
 } from 'recharts';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 const SENTIMENT_COLORS = { positive: '#10b981', neutral: '#6b7280', negative: '#ef4444' };
 const CATEGORY_COLORS: Record<string, string> = {
