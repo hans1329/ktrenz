@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ktrenz-agency-insight]
 verify_jwt = false
+
+[functions.crawl-blip-schedule]
+verify_jwt = false
