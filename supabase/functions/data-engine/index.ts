@@ -236,7 +236,16 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
-  social: (url, key) => runCollectorModule(url, key, "social" as any, false),
+  social: (url, key) => {
+    console.log("[data-engine] Launching social followers (fire-and-forget)...");
+    const p = fetch(`${url}/functions/v1/collect-social-followers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    }).catch((e) => console.warn("[data-engine] social fire error:", e.message));
+    fireAndForget(p);
+    return Promise.resolve({ status: "launched", module: "social" });
+  },
   buzz: runBuzz,
   energy: (url, key) => runEnergy(url, key, false),
   naver_news: runNaverNews,
