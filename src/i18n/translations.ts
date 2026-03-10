@@ -172,6 +172,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   "drawer.fesLabel": { en: "Fan Energy Score", ko: "팬 에너지 스코어", ja: "ファンエネルギースコア", zh: "粉丝能量分数" },
   "drawer.change24h": { en: "24h Change", ko: "24시간 변동률", ja: "24時間変動率", zh: "24小时变动率" },
+  "drawer.upcomingSchedule": { en: "Upcoming", ko: "다가오는 일정", ja: "今後の予定", zh: "即将到来" },
 
   // ── Missions ──
   "mission.todaysMission": { en: "Today's Mission", ko: "오늘의 미션", ja: "今日のミッション", zh: "今日任务" },
