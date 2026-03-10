@@ -406,7 +406,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               metadata={item.metadata}
             />
 
-            <V3NextScheduleCard wikiEntryId={item.id} />
+            <V3NextScheduleCard wikiEntryId={item.id} artistImage={item.imageUrl} artistName={item.title} />
 
             <button onClick={() => navigate(`/artist/${item.slug}`)}
               className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-3.5 rounded-full transition-colors">
