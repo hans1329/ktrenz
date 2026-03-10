@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
+import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
 
 // ── Types ──
 export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music" | "fan";
