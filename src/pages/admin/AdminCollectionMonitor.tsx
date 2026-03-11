@@ -336,7 +336,7 @@ const AdminCollectionMonitor = () => {
           <p className="text-2xl font-bold text-emerald-500">{activeSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Stale (>{STALE_HOURS}h)</p>
+          <p className="text-xs text-muted-foreground">{"Stale (>"}{STALE_HOURS}{"h)"}</p>
           <p className="text-2xl font-bold text-amber-500">{staleSources}</p>
         </Card>
         <Card className="p-4">
