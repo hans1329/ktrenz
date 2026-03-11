@@ -39,6 +39,8 @@ export function useAgentSlots() {
       return (data ?? []) as AgentSlot[];
     },
     enabled: !!user?.id,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const { data: slotLimit } = useQuery({
