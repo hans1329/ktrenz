@@ -490,7 +490,7 @@ const AdminCollectionMonitor = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" /> Recent Collection Logs
+              <Activity className="w-4 h-4 text-primary" /> 최근 수집 로그
             </CardTitle>
             <CardDescription className="text-xs">최근 50건 수집 로그</CardDescription>
           </CardHeader>
@@ -499,10 +499,10 @@ const AdminCollectionMonitor = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs w-40">Time</TableHead>
-                    <TableHead className="text-xs">Platform</TableHead>
-                    <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-xs">Artist</TableHead>
+                    <TableHead className="text-xs w-40">시간</TableHead>
+                    <TableHead className="text-xs">플랫폼</TableHead>
+                    <TableHead className="text-xs">상태</TableHead>
+                    <TableHead className="text-xs">아티스트</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
