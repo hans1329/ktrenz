@@ -81,7 +81,7 @@ const AdminIntents = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Brain className="w-6 h-6" /> Intent Monitor
+            <Brain className="w-6 h-6" /> 인텐트 분석
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Fan Agent 대화에서 추출된 사용자 의도 데이터를 실시간으로 확인합니다
