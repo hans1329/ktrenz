@@ -255,7 +255,7 @@ const translations: Record<string, Record<Language, string>> = {
   "deck.step2Desc": { en: "YouTube watch, X like, Spotify stream", ko: "YouTube 시청, X 좋아요, Spotify 스트리밍", ja: "YouTube視聴、Xいいね、Spotifyストリーミング", zh: "YouTube观看、X点赞、Spotify流媒体" },
   "deck.step3Label": { en: "Complete on platform", ko: "플랫폼에서 완료", ja: "プラットフォームで完了", zh: "在平台上完成" },
   "deck.step3Desc": { en: "Redirected to real content — your engagement counts", ko: "실제 콘텐츠로 이동 — 당신의 참여가 반영됩니다", ja: "実際のコンテンツにリダイレクト — あなたのエンゲージメントがカウント", zh: "跳转到真实内容 — 你的参与会被计入" },
-  "deck.step4Label": { en: "Earn K-Points", ko: "K-Points 획득", ja: "K-Pointsを獲得", zh: "获得K-Points" },
+  "deck.step4Label": { en: "Earn K-Tokens", ko: "K-Tokens 획득", ja: "K-Pointsを獲得", zh: "获得K-Points" },
   "deck.step4Desc": { en: "Return to K·TRENZ & earn rewards", ko: "K·TRENZ로 돌아와서 보상 획득", ja: "K·TRENZに戻りリワードを獲得", zh: "返回K·TRENZ获得奖励" },
   "deck.aiAgent": { en: "AI Fan Agent", ko: "AI 팬 에이전트", ja: "AIファンエージェント", zh: "AI粉丝助手" },
   "deck.aiAgentDesc": { en: "A dedicated AI chatbot for your bias artist. Ask questions, get real-time trend alerts, and receive personalized analysis.", ko: "최애 아티스트 전용 AI 챗봇. 질문하고, 실시간 트렌드 알림을 받고, 맞춤 분석을 제공받으세요.", ja: "推しアーティスト専用AIチャットボット。質問して、リアルタイムトレンドアラートを受け取り、パーソナライズされた分析を取得。", zh: "为你最爱的艺人定制的AI聊天机器人。提问、获取实时趋势提醒和个性化分析。" },
