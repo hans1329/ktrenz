@@ -23,16 +23,8 @@ const V3DesktopHero = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: stats } = useQuery({
-    queryKey: ["hero-stats"],
-    queryFn: async () => {
-      const { count: artistCount } = await supabase
-        .from("ktrenz_artists" as any)
-        .select("id", { count: "exact", head: true });
-      return { artistCount: artistCount ?? 0 };
-    },
-    staleTime: 1000 * 60 * 10,
-  });
+
+
 
   return (
     <section className="relative overflow-hidden border-b border-border/30">
