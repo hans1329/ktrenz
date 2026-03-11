@@ -514,6 +514,18 @@ const V3TrendRankings = () => {
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
   }, [rankings, energyCategory]);
 
+  // Pinned agent artists - extract from rankings
+  const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
+  const pinnedAgentItems = useMemo(() => {
+    if (!agentWikiIds.size || !sortedRankings?.length) return [];
+    return sortedRankings
+      .filter(item => agentWikiIds.has(item.wiki_entry_id))
+      .map(item => {
+        const globalRank = sortedRankings.indexOf(item) + 1;
+        return { ...item, globalRank };
+      });
+  }, [sortedRankings, agentWikiIds]);
+
   const top3Ids = (sortedRankings || []).slice(0, 3).map((r) => r.wiki_entry_id).filter(Boolean);
   const { data: energySnapshots } = useQuery({
     queryKey: ["v3-top3-energy", top3Ids],
