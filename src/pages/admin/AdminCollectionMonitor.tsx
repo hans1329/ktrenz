@@ -442,9 +442,9 @@ const AdminCollectionMonitor = () => {
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-foreground">
-                      {stats?.last ? formatDistanceToNow(new Date(stats.last), { addSuffix: true }) : 'Never'}
+                      {stats?.last ? formatDistanceToNow(new Date(stats.last), { addSuffix: true }) : '없음'}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">Last Run</p>
+                    <p className="text-[10px] text-muted-foreground">최근 수집</p>
                   </div>
                 </div>
 
