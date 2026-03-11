@@ -523,6 +523,8 @@ const AdminCollectionMonitor = () => {
               { step: 'External Videos', color: '#8b5cf6' },
               { step: 'Music', color: '#3b82f6' },
               { step: 'Hanteo', color: '#f59e0b' },
+              { step: 'Apple Music', color: '#fc3c44' },
+              { step: 'Billboard', color: '#000000' },
               { step: 'Naver News', color: '#03C75A' },
               { step: 'Buzz', color: '#8b5cf6' },
               { step: 'Social', color: '#ec4899' },
