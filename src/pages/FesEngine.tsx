@@ -7,7 +7,7 @@ import V3Sidebar from "@/components/v3/V3Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3 } from "lucide-react";
+import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SectionHeader = ({ icon: Icon, title, color }: { icon: any; title: string; color: string }) => (
@@ -55,10 +55,17 @@ const FesEngine = () => {
       <Card className="p-4 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 border-primary/20">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center"><Gauge className="w-6 h-6 text-primary" /></div>
-          <div><h1 className="text-lg font-black text-foreground">KTRENDZ Scoring Engine</h1><p className="text-xs text-muted-foreground mt-0.5">How artist trend scores and fan energy are calculated</p></div>
+          <div><h1 className="text-lg font-black text-foreground">KTRENDZ Scoring Engine</h1><p className="text-xs text-muted-foreground mt-0.5">FES v5.4 — How artist trend scores and fan energy are calculated</p></div>
         </div>
       </Card>
 
+      {/* ── Data Pipeline ── */}
+      <SectionHeader icon={Server} title="Data Pipeline & Collection Cycle" color="bg-slate-600" />
+      <p className="text-xs text-muted-foreground">Every <strong>6 hours</strong> (00:05, 06:05, 12:05, 18:05 UTC), the pipeline runs in dependency order:</p>
+      <FormulaCard title="Pipeline Execution Order" formula={`youtube → external_videos → music → hanteo
+→ naver_news → buzz → social → fan_activity → energy`} description="Each module runs as an independent Edge Function to avoid the 60s timeout. Dependencies (e.g., Buzz needs YouTube comments & Naver news) are resolved by sequential ordering." />
+
+      {/* ── Total Trend Score ── */}
       <SectionHeader icon={TrendingUp} title="Total Trend Score" color="bg-primary" />
       <p className="text-xs text-muted-foreground">The main ranking score. Each sub-score is <strong>normalized to 0–100</strong> then weighted (max 10,000).</p>
       <FormulaCard title="Normalized Weighted Sum" formula={`TotalTrendScore =
@@ -74,8 +81,9 @@ const FesEngine = () => {
         <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">20%</p><p className="text-[9px] text-muted-foreground">Music</p></Card>
       </div>
 
+      {/* ── YouTube Score ── */}
       <SectionHeader icon={Youtube} title="YouTube Score (v2 Delta Model)" color="bg-destructive" />
-      <p className="text-xs text-muted-foreground">30% 절대 규모(log scale) + 70% 24시간 변동분. 누적 메트릭은 <strong>delta-over-delta(증가량 가속도)</strong>를 적용.</p>
+      <p className="text-xs text-muted-foreground">30% absolute magnitude (log scale) + 70% 24h delta. Cumulative metrics use <strong>delta-over-delta (acceleration)</strong>.</p>
       <FormulaCard title="Formula" formula={`YouTubeScore = baseScore × 0.30 + deltaScore × 0.70
 
 baseScore  = log10(subscribers) × 50 + log10(totalViews) × 30
@@ -84,7 +92,7 @@ deltaScore = recentViewsDelta + likesDelta + totalViewDelta
 recentViewsDelta = (current − prev24h) / 100K × 100
 totalViewDelta   = incrementDeltaScore(current, prev24h, prev48h, scale=50)
                  → log10(increment) × scale × acceleration`}
-        description="totalViewCount는 누적 메트릭이므로, 오늘 증가량과 어제 증가량을 비교(delta-over-delta)하여 가속도를 0.3x~5.0x로 반영합니다." />
+        description="totalViewCount is cumulative, so acceleration = today's increment / yesterday's increment (0.3x~5.0x). deltaScore is clamped to max(baseScore × 5, 500) to prevent spikes." />
       <VarTable rows={[
         { name: "subscriberCount", desc: "Channel subscriber count", source: "YouTube Data API v3" },
         { name: "totalViewCount", desc: "Channel total view count (cumulative)", source: "YouTube Data API v3" },
@@ -93,6 +101,7 @@ totalViewDelta   = incrementDeltaScore(current, prev24h, prev48h, scale=50)
         { name: "prev48hSnapshot", desc: "48h ago snapshot for acceleration calc", source: "ktrenz_data_snapshots" },
       ]} />
 
+      {/* ── YouTube Music ── */}
       <SectionHeader icon={Headphones} title="YouTube Music (Topic Channel)" color="bg-rose-600" />
       <p className="text-xs text-muted-foreground">Official audio/streaming data from auto-generated <strong>"Artist - Topic"</strong> channels on YouTube.</p>
       <FormulaCard title="Data Collection" formula={`1. Initial: search "Artist - Topic" → save channel ID (100 units, once)
@@ -101,23 +110,31 @@ totalViewDelta   = incrementDeltaScore(current, prev24h, prev48h, scale=50)
       <FormulaCard title="Contribution to Music Score" formula={`topicViewScore = log10(topicTotalViews + 1) × 10
 topicSubScore  = log10(topicSubscribers + 1) × 8
 mvViewScore    = log10(musicVideoViews + 1) × 12`} description="Topic channel views/subs and MV-specific views are weighted via log10 into the overall music_score." />
-      <VarTable rows={[
-        { name: "topicTotalViews", desc: "Topic channel total views (streaming count)", source: "YouTube Data API v3" },
-        { name: "topicSubscribers", desc: "Topic channel subscriber count", source: "YouTube Data API v3" },
-        { name: "topMusicTracks", desc: "Recent audio tracks (up to 5)", source: "YouTube Data API v3" },
-      ]} />
 
-      <SectionHeader icon={Zap} title="X (Twitter) Buzz Score" color="bg-amber-500" />
-      <FormulaCard title="Formula" formula={`BuzzScore = mentionScore + sentimentBonus\n\nmentionScore   = min(800, log10(mentionCount) × 200)\nsentimentBonus = (sentimentScore − 50) × 4`} />
+      {/* ── Buzz Score ── */}
+      <SectionHeader icon={Zap} title="Buzz Score (Multi-Source)" color="bg-amber-500" />
+      <p className="text-xs text-muted-foreground">Aggregated from 7 sources with weighted mentions. Firecrawl Search crawls X, Reddit, TikTok, News; YouTube comments and Naver News are collected separately.</p>
+      <FormulaCard title="Formula" formula={`BuzzScore = mentionScore + sentimentBonus
+
+mentionScore   = min(800, log10(totalWeightedMentions) × 200)
+sentimentBonus = (sentimentScore − 50) × 4`} />
       <Card className="p-3 bg-card border-border/50">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">Source Weights</p>
-        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`News: 2.0 | X/Twitter: 1.5 | TikTok: 1.4
-Naver: 1.3 | Reddit: 1.2 | YouTube: 1.0`}</code>
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">Source Weights (7 sources)</p>
+        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`News:        2.0x  ← highest signal quality
+X/Twitter:   1.5x  ← social buzz indicator
+YouTube Comments: 1.5x  ← direct fan engagement
+TikTok:      1.4x  ← viral momentum
+Naver:       1.3x  ← Korean media coverage
+Reddit:      1.2x  ← community discussion
+Ext Videos:  1.2x  ← external channel appearances`}</code>
+        <p className="text-[10px] text-muted-foreground mt-1.5">Naver News collection runs before Buzz to ensure Korean media data is available for aggregation.</p>
       </Card>
 
+      {/* ── Album Sales ── */}
       <SectionHeader icon={BarChart3} title="Album Sales Score" color="bg-emerald-600" />
-      <p className="text-xs text-muted-foreground">Album/physical sales data sourced from <strong>Hanteo Chart</strong>.</p>
+      <p className="text-xs text-muted-foreground">Album/physical sales data sourced from <strong>Hanteo Chart API</strong>.</p>
 
+      {/* ── Music Score ── */}
       <SectionHeader icon={Music} title="Music Score (v2 Delta-over-Delta)" color="bg-purple-600" />
       <FormulaCard title="Formula" formula={`MusicScore = baseScore × 0.30 + deltaScore × 0.70
 
@@ -130,63 +147,114 @@ deltaScore = Σ incrementDeltaScore(metric, prev24h, prev48h, scale)
   └─ Deezer fans (scale=20)
   └─ YT Music topicViews (scale=40)
   └─ MV views (scale=50)`}
-        description="모든 누적 메트릭에 delta-over-delta 적용: 오늘 증가량 vs 어제 증가량의 비율(acceleration 0.3x~5.0x)을 곱해 실제 성장 가속도를 반영합니다." />
+        description="All cumulative metrics use delta-over-delta: today's increment vs yesterday's increment ratio (acceleration 0.3x~5.0x). deltaScore clamped to max(baseScore × 5, 500)." />
 
       <Card className="p-3 bg-primary/5 border-primary/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">incrementDeltaScore 함수</p>
+        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">incrementDeltaScore Function</p>
         <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`increment = current − prev24h
 prevIncrement = prev24h − prev48h
 
 score = log10(increment) × scale
-acceleration = increment / prevIncrement  // 1.0=동일, 5.0=5배↑
+acceleration = increment / prevIncrement  // 1.0=same, 5.0=5x↑
 multiplier = clamp(acceleration, 0.3, 5.0)
 finalScore = score × multiplier`}</code>
-        <p className="text-[10px] text-muted-foreground mt-1.5">예: topicViews 45억→45.2억→46억이면 오늘 증가량(8천만) / 어제 증가량(2천만) = <strong>4.0x acceleration</strong></p>
+        <p className="text-[10px] text-muted-foreground mt-1.5">Example: topicViews 4.5B→4.52B→4.6B → today +80M / yesterday +20M = <strong>4.0x acceleration</strong></p>
       </Card>
 
-      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v5.3" color="bg-red-600" />
-      <p className="text-xs text-muted-foreground">카테고리별 독립 Velocity/Intensity 계산 + Fan Activity 카테고리 추가. <Badge variant="outline" className="text-[9px] ml-1">Min 10 · Max 250</Badge></p>
+      <VarTable rows={[
+        { name: "playcount", desc: "Last.fm total play count", source: "Last.fm API" },
+        { name: "listeners", desc: "Last.fm unique listeners", source: "Last.fm API" },
+        { name: "fans", desc: "Deezer fan count", source: "Deezer API" },
+        { name: "topicTotalViews", desc: "YT Topic channel total views", source: "YouTube Data API v3" },
+        { name: "topicSubscribers", desc: "YT Topic channel subscribers", source: "YouTube Data API v3" },
+        { name: "musicVideoViews", desc: "MV category video views", source: "YouTube Data API v3" },
+      ]} />
+
+      {/* ── Social Score (NEW in v5.4) ── */}
+      <SectionHeader icon={Users} title="Social Score (v5.4)" color="bg-pink-600" />
+      <p className="text-xs text-muted-foreground">Cross-platform follower data scraped from <strong>kpop-radar.com</strong> (4 Firecrawl credits per run). Uses 30% base (log-scale) + 70% delta model.</p>
+      <FormulaCard title="Formula" formula={`SocialScore = avg(platformScores)
+
+platformScore = (baseScore × 0.3 + deltaScore × 0.7) × weight
+  baseScore  = log10(followers) × 100
+  deltaScore = max(growthRate × 1000, baseScore × 0.1)
+  growthRate = (current − prev24h) / prev24h`} description="If no previous snapshot exists, deltaScore falls back to 10% of baseScore as minimum momentum." />
+      <Card className="p-3 bg-card border-border/50">
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">Platform Weights</p>
+        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Spotify:   1.5x  ← streaming relevance
+TikTok:    1.3x  ← viral reach
+Instagram: 1.2x  ← visual engagement
+Twitter/X: 1.0x  ← baseline`}</code>
+      </Card>
+      <VarTable rows={[
+        { name: "instagram_followers", desc: "Instagram follower count", source: "kpop-radar.com" },
+        { name: "tiktok_followers", desc: "TikTok follower count", source: "kpop-radar.com" },
+        { name: "spotify_followers", desc: "Spotify follower count", source: "kpop-radar.com" },
+        { name: "twitter_followers", desc: "X/Twitter follower count", source: "kpop-radar.com" },
+      ]} />
+
+      {/* ── Fan Activity Score ── */}
+      <SectionHeader icon={Heart} title="Fan Activity Score" color="bg-blue-600" />
+      <p className="text-xs text-muted-foreground">Internal platform user engagement aggregated over a rolling 24h window.</p>
+      <Card className="p-3 bg-card border-border/50">
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">Event Weights</p>
+        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`External Link Click: 1.5x  ← highest intent signal
+Agent Chat:          1.0x  ← active engagement
+Artist Detail View:  0.5x  ← passive interest
+Treemap Click:       0.3x  ← casual browse
+List Click:          0.3x  ← casual browse`}</code>
+        <p className="text-[10px] text-muted-foreground mt-1.5">Events collected from ktrenz_user_events table. Fan score = Σ(event_weight) per artist over 24h.</p>
+      </Card>
+
+      {/* ── FES v5.4 ── */}
+      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v5.4" color="bg-red-600" />
+      <p className="text-xs text-muted-foreground">6-category weighted energy with independent Velocity/Intensity per category. <Badge variant="outline" className="text-[9px] ml-1">Min 10 · Max 250</Badge></p>
 
       <Card className="p-3 bg-primary/5 border-primary/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">v5.3 Key Changes</p>
+        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">v5.4 Architecture</p>
         <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
-          <li><strong className="text-foreground">Category Weights:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Fan 8%</li>
-          <li><strong className="text-foreground">Per-Category Velocity/Intensity:</strong> 각 카테고리별 독립 계산 후 가중 합산</li>
-          <li><strong className="text-foreground">Energy = Velocity 60% + Intensity 40%:</strong> 성장 가속도와 절대 수준의 균형</li>
-          <li><strong className="text-foreground">Percentile Intensity:</strong> 모든 아티스트 간 상대 순위로 밀도 점수화</li>
-          <li><strong className="text-foreground">Sigmoid Velocity:</strong> 24h 변동률을 sigmoid 함수로 20~250 변환</li>
-          <li><strong className="text-foreground">Fan Activity (8%):</strong> 유저 이벤트(외부링크 1.5, 챗 1.0, 상세조회 0.5 등) 24시간 집계</li>
-          <li><strong className="text-foreground">Rolling Window:</strong> 고정 베이스라인 대신 now-24h 기준 롤링 비교</li>
+          <li><strong className="text-foreground">6 Categories:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Social 5% | Fan 3%</li>
+          <li><strong className="text-foreground">Per-Category Velocity/Intensity:</strong> Each category independently scored, then weighted sum</li>
+          <li><strong className="text-foreground">Energy = Velocity 60% + Intensity 40%:</strong> Growth momentum vs absolute standing</li>
+          <li><strong className="text-foreground">Percentile Intensity:</strong> Rank among all tier-1 artists → 0~250 scale</li>
+          <li><strong className="text-foreground">Sigmoid Velocity:</strong> 24h % change → sigmoid(x/100×3) → 20~250 scale</li>
+          <li><strong className="text-foreground">Social (5%):</strong> kpop-radar.com follower data (Instagram, TikTok, Spotify, Twitter)</li>
+          <li><strong className="text-foreground">Fan Activity (3%):</strong> Platform user events (link clicks 1.5x, chat 1.0x, views 0.5x) — reduced from 8% after Social introduction</li>
+          <li><strong className="text-foreground">Rolling Window:</strong> Compares against closest valid snapshot before now-24h</li>
+          <li><strong className="text-foreground">Zero Penalty:</strong> Categories with score 0 keep their weight but contribute energy 0, penalizing data gaps</li>
         </ul>
       </Card>
 
-      <FormulaCard title="Core Formula (v5.3)" formula={`energy_score = Σ(category_energy × weight) / Σ(weights)
+      <FormulaCard title="Core Formula (v5.4)" formula={`energy_score = Σ(category_energy × weight) / Σ(weights)
 
 category_energy =
-  velocity × 0.60 + intensity × 0.40  (velocity 있을 때)
-  intensity                             (velocity 없을 때)
+  velocity × 0.60 + intensity × 0.40  (when velocity available)
+  intensity                             (when no 24h comparison)
 
 velocity  = sigmoid(change_24h / 100 × 3) → 20~250
 intensity = percentile_rank × 250 → 0~250
-change_24h = (current_score − prev24h_score) / prev24h_score × 100`}
-        description="원점수 0인 카테고리는 가중치를 유지하되 에너지 0 → 전체 점수를 끌어내려 데이터 누락을 페널티화합니다." />
+change_24h = (current − prev24h) / prev24h × 100
 
-      <div className="grid grid-cols-5 gap-1.5">
+Weights: yt=0.37, buzz=0.23, music=0.18, album=0.14, social=0.05, fan=0.03`}
+        description="Null changes (no valid 24h comparison) exclude that category from velocity but still include intensity. Zero-score categories contribute energy 0 with full weight." />
+
+      <div className="grid grid-cols-6 gap-1.5">
         <Card className="p-2 bg-card border-border/50 text-center"><Youtube className="w-3.5 h-3.5 mx-auto text-destructive" /><p className="text-[10px] font-bold text-foreground mt-1">37%</p><p className="text-[8px] text-muted-foreground">YouTube</p></Card>
         <Card className="p-2 bg-card border-border/50 text-center"><Zap className="w-3.5 h-3.5 mx-auto text-amber-500" /><p className="text-[10px] font-bold text-foreground mt-1">23%</p><p className="text-[8px] text-muted-foreground">Buzz</p></Card>
         <Card className="p-2 bg-card border-border/50 text-center"><Music className="w-3.5 h-3.5 mx-auto text-purple-500" /><p className="text-[10px] font-bold text-foreground mt-1">18%</p><p className="text-[8px] text-muted-foreground">Music</p></Card>
         <Card className="p-2 bg-card border-border/50 text-center"><Disc3 className="w-3.5 h-3.5 mx-auto text-emerald-500" /><p className="text-[10px] font-bold text-foreground mt-1">14%</p><p className="text-[8px] text-muted-foreground">Album</p></Card>
-        <Card className="p-2 bg-card border-border/50 text-center"><Activity className="w-3.5 h-3.5 mx-auto text-blue-500" /><p className="text-[10px] font-bold text-foreground mt-1">8%</p><p className="text-[8px] text-muted-foreground">Fan</p></Card>
+        <Card className="p-2 bg-card border-border/50 text-center"><Users className="w-3.5 h-3.5 mx-auto text-pink-500" /><p className="text-[10px] font-bold text-foreground mt-1">5%</p><p className="text-[8px] text-muted-foreground">Social</p></Card>
+        <Card className="p-2 bg-card border-border/50 text-center"><Heart className="w-3.5 h-3.5 mx-auto text-blue-500" /><p className="text-[10px] font-bold text-foreground mt-1">3%</p><p className="text-[8px] text-muted-foreground">Fan</p></Card>
       </div>
 
-      <FormulaCard title="energy_change_24h (Rolling Window)" formula={`overallChange = Σ(change_i × weight_i / totalWeight)
-  (비교 가능한 카테고리만 포함, null 제외)
+      <FormulaCard title="energy_change_24h (Rolling Window)" formula={`overallChange = Σ(change_i × weight_i) / Σ(weight_i)
+  (only categories with valid 24h comparison included)
 
-비교 대상: now − 24h 에 가장 가까운 유효 스냅샷`}
-        description="코인 거래소 리더보드처럼 리셋 없이 연속적인 24시간 변동 수치를 제공합니다." />
+Comparison target: most recent valid snapshot before now − 24h`}
+        description="Like crypto exchange leaderboards — continuous 24h rolling change without resets." />
 
-      <FormulaCard title="EMA Baseline Update (unchanged)" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
-avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="베이스라인은 여전히 EMA로 관리되며, 에너지 스냅샷의 장기 추세 추적에 사용됩니다." />
+      <FormulaCard title="EMA Baseline Update" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
+avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Baselines managed via EMA for long-term trend tracking in energy snapshots." />
 
       <div className="grid grid-cols-4 gap-2">
         <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💤</span><p className="text-xs font-bold text-foreground mt-1">&lt; 80</p><p className="text-[10px] text-muted-foreground">Low</p></Card>
@@ -195,33 +263,27 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="베이스라�
         <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">200+</p><p className="text-[10px] text-muted-foreground">Explosive</p></Card>
       </div>
 
-      <VarTable rows={[
-        { name: "totalMentions", desc: "Buzz mentions in last collection", source: "ktrenz_data_snapshots" },
-        { name: "buzzScore", desc: "Weighted buzz score", source: "ktrenz_data_snapshots" },
-        { name: "recentTotalViews", desc: "Recent video total views", source: "ktrenz_data_snapshots" },
-        { name: "qualityMentions", desc: "mentions × sentimentMultiplier", source: "Calculated" },
-        { name: "prevDayEnergy", desc: "Yesterday's latest energy_score snapshot", source: "v3_energy_snapshots_v2" },
-        { name: "avg_energy_7d", desc: "Energy EMA (α=0.15)", source: "v3_energy_baselines_v2" },
-        { name: "avg_energy_30d", desc: "Energy EMA (α=0.05)", source: "v3_energy_baselines_v2" },
-      ]} />
-
+      {/* ── API & Data Sources ── */}
       <SectionHeader icon={Server} title="API & Data Sources" color="bg-slate-600" />
       <div className="space-y-2">
-        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Batch-collects YouTube + X/Buzz + Music data and stores in ktrenz_data_snapshots." params={["— (all artists)"]} />
-        <ApiCard method="POST" endpoint="calculate-energy-score" description="Calculates FES using ktrenz_data_snapshots data vs EMA baselines." params={["wikiEntryId?", "batchSize?", "batchOffset?", "resetBaselines?"]} />
-        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Fetches YouTube channel stats + recent video data. Use source='youtube'." params={["source: 'youtube'", "wikiEntryId"]} />
-        <ApiCard method="POST" endpoint="crawl-x-mentions" description="Searches X/web mentions and calculates buzz + sentiment." params={["artistName", "wikiEntryId"]} />
-        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Collects Last.fm, Deezer data. Use source='music'." params={["source: 'music'", "wikiEntryId"]} />
+        <ApiCard method="POST" endpoint="data-engine" description="Orchestrates the full pipeline. Triggers each module sequentially via fire-and-forget chaining." params={["module: 'all' | module name", "wikiEntryId?", "triggerSource?"]} />
+        <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Collects YouTube + Music + Hanteo + Buzz data per source." params={["source: 'youtube' | 'music' | 'hanteo' | 'buzz'", "wikiEntryId?"]} />
+        <ApiCard method="POST" endpoint="collect-social-followers" description="Scrapes kpop-radar.com for Instagram/TikTok/Spotify/Twitter follower data. ~4 Firecrawl credits." params={["— (all tier-1 artists)"]} />
+        <ApiCard method="POST" endpoint="calculate-energy-score" description="Calculates FES v5.4 using percentile + sigmoid model across 6 categories." params={["isBaseline?"]} />
+        <ApiCard method="POST" endpoint="query-artist-energy" description="Realtime per-artist energy query endpoint (user-facing)." params={["wiki_entry_id", "sources?"]} />
+        <ApiCard method="POST" endpoint="crawl-naver-news" description="Collects Naver news articles for Korean media coverage." params={["artistName", "wikiEntryId"]} />
       </div>
 
       <VarTable rows={[
-        { name: "v3_scores_v2", desc: "Latest total score + FES per artist", source: "Supabase" },
-        { name: "v3_energy_snapshots_v2", desc: "FES history snapshots (velocity, intensity, energy)", source: "Supabase" },
+        { name: "v3_scores_v2", desc: "Latest total score + FES + social/fan scores per artist", source: "Supabase" },
+        { name: "v3_energy_snapshots_v2", desc: "FES history (velocity, intensity per category, social, fan)", source: "Supabase" },
         { name: "v3_energy_baselines_v2", desc: "EMA baselines for FES calculation", source: "Supabase" },
-        { name: "ktrenz_data_snapshots", desc: "Raw platform collection data", source: "Supabase" },
+        { name: "ktrenz_data_snapshots", desc: "Raw platform collection data (all sources)", source: "Supabase" },
+        { name: "ktrenz_user_events", desc: "User activity events for fan score", source: "Supabase" },
         { name: "wiki_entries.metadata", desc: "Cached raw data (YouTube/Buzz/Music)", source: "Supabase JSONB" },
       ]} />
 
+      {/* ── Energy Map ── */}
       <SectionHeader icon={Activity} title="Energy Map (Treemap) Structure" color="bg-emerald-600" />
       <p className="text-xs text-muted-foreground">The home screen <strong>⚡ Energy Map</strong> visualizes the top 10 FES artists as a treemap.</p>
 
@@ -255,13 +317,13 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="베이스라�
 
       <FormulaCard title="Squarify Algorithm Summary" formula={`1. Sum total energy → calculate area ratio per artist\n2. Place rows minimizing Worst Aspect Ratio\n3. Split along longer axis repeatedly\n4. Result: near-square tile layout → readability ↑`} description="Reference: finviz.com/map, kaito.ai style heatmap layout" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Mar 4, 2026 · KTRENDZ FES Engine v5.3 (Delta-over-Delta)</p>
+      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Mar 11, 2026 · KTRENDZ FES Engine v5.4 (6-Category Weighted Energy)</p>
     </div>
   );
 
   if (isMobile) {
     return (
-      <><SEO title="FES Scoring Engine – KTrenZ" description="How KTrenZ calculates K-Pop energy scores using YouTube views, X buzz mentions, music chart data, and damped EMA baselines." path="/fes-engine" />
+      <><SEO title="FES Scoring Engine – KTrenZ" description="How KTrenZ calculates K-Pop energy scores using YouTube, Buzz, Music, Album, Social followers, and fan activity data." path="/fes-engine" />
         <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center h-14 px-2 max-w-screen-lg mx-auto">
             <div className="flex items-center gap-1 w-20">
@@ -278,7 +340,7 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="베이스라�
   }
 
   return (
-    <><SEO title="FES Scoring Engine – KTrenZ" description="How KTrenZ calculates K-Pop energy scores using YouTube views, X buzz mentions, music chart data, and damped EMA baselines." path="/fes-engine" />
+    <><SEO title="FES Scoring Engine – KTrenZ" description="How KTrenZ calculates K-Pop energy scores using YouTube, Buzz, Music, Album, Social followers, and fan activity data." path="/fes-engine" />
       <SidebarProvider defaultOpen={true}>
         <div className="h-screen flex w-full overflow-hidden">
           <V3Sidebar activeTab="rankings" onTabChange={() => navigate('/')} />
