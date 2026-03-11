@@ -1,11 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Zap } from "lucide-react";
+import { Zap, TrendingUp, TrendingDown, MapPin } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import heroVisual from "@/assets/hero-visual.webp";
+
+const FLAG_EMOJI: Record<string, string> = {
+  US: "🇺🇸", KR: "🇰🇷", JP: "🇯🇵", BR: "🇧🇷", MX: "🇲🇽", IN: "🇮🇳", ID: "🇮🇩",
+  TH: "🇹🇭", PH: "🇵🇭", DE: "🇩🇪", FR: "🇫🇷", GB: "🇬🇧", TR: "🇹🇷", VN: "🇻🇳",
+  AR: "🇦🇷", CL: "🇨🇱", CO: "🇨🇴", PL: "🇵🇱", IT: "🇮🇹", ES: "🇪🇸", CA: "🇨🇦",
+  AU: "🇦🇺", RU: "🇷🇺", SA: "🇸🇦", EG: "🇪🇬", NG: "🇳🇬", MY: "🇲🇾", SG: "🇸🇬",
+  TW: "🇹🇼", HK: "🇭🇰", CN: "🇨🇳", NL: "🇳🇱", SE: "🇸🇪", PE: "🇵🇪",
+};
 
 const V3DesktopHero = () => {
   const { t } = useLanguage();
@@ -23,8 +31,24 @@ const V3DesktopHero = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-
-
+  // Fetch latest geo spike signals for the #1 artist
+  const topArtistId = topArtists?.[0]?.id;
+  const { data: hotSpots } = useQuery({
+    queryKey: ["hero-hot-spots", topArtistId],
+    queryFn: async () => {
+      if (!topArtistId) return [];
+      const { data } = await supabase
+        .from("ktrenz_geo_change_signals" as any)
+        .select("country_code, country_name, change_rate, spike_direction, source, detected_at")
+        .eq("wiki_entry_id", topArtistId)
+        .eq("is_spike", true)
+        .order("detected_at", { ascending: false })
+        .limit(4);
+      return (data ?? []) as any[];
+    },
+    enabled: !!topArtistId,
+    staleTime: 1000 * 60 * 5,
+  });
 
   return (
     <section className="relative overflow-hidden border-b border-border/30">
@@ -41,7 +65,7 @@ const V3DesktopHero = () => {
 
       <div className="relative max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-2 gap-12 items-center">
-          {/* Left: Copy */}
+          {/* Left: Copy + Hot Spots */}
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
               <Zap className="w-3.5 h-3.5 text-primary" />
@@ -58,8 +82,51 @@ const V3DesktopHero = () => {
               {t("hero.subtitle")}
             </p>
 
-
-
+            {/* Hot Spots Cards */}
+            {hotSpots && hotSpots.length > 0 && topArtists?.[0] && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {t("hero.hotSpots")}
+                  </span>
+                  <span className="text-xs font-bold text-foreground">{topArtists[0].name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {hotSpots.map((spot: any, i: number) => {
+                    const isSurge = spot.spike_direction === "surge";
+                    const flag = FLAG_EMOJI[spot.country_code] || "🌍";
+                    const rate = Math.abs(spot.change_rate ?? 0);
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-xl border backdrop-blur-sm transition-colors",
+                          isSurge
+                            ? "bg-emerald-500/5 border-emerald-500/20"
+                            : "bg-red-500/5 border-red-500/20"
+                        )}
+                      >
+                        <span className="text-lg shrink-0">{flag}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {spot.country_name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground capitalize">{spot.source}</p>
+                        </div>
+                        <div className={cn(
+                          "flex items-center gap-0.5 text-xs font-bold shrink-0",
+                          isSurge ? "text-emerald-500" : "text-red-500"
+                        )}>
+                          {isSurge ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {rate > 0 ? `${rate.toFixed(0)}%` : "NEW"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right: Top artists showcase */}
@@ -121,8 +188,5 @@ const V3DesktopHero = () => {
     </section>
   );
 };
-
-
-
 
 export default V3DesktopHero;
