@@ -1139,7 +1139,69 @@ Artist: ${context.artist}
                                     <span className={s.rank_change > 0 ? 'text-emerald-500' : 'text-red-500'}>
                                       Rank {s.rank_change > 0 ? '↑' : '↓'}{Math.abs(s.rank_change)}
                                     </span>
-                                  )}
+                  )}
+
+                  {/* ── 24h Country Change Rates (ALL) ── */}
+                  {geoAllSignals && geoAllSignals.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] border-cyan-500/40 text-cyan-400">📊 24h Change Rates</Badge>
+                        <span className="text-xs text-muted-foreground">{geoAllSignals.length} country×source pairs</span>
+                        {geoAllSignals[0]?.detected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoAllSignals[0].detected_at), 'MM/dd HH:mm')}</span>}
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border/30 text-muted-foreground">
+                              <th className="text-left py-1.5 px-2 font-medium">Country</th>
+                              <th className="text-left py-1.5 px-1 font-medium">Source</th>
+                              <th className="text-right py-1.5 px-1 font-medium">Prev</th>
+                              <th className="text-right py-1.5 px-1 font-medium">Current</th>
+                              <th className="text-right py-1.5 px-2 font-medium">Change</th>
+                              <th className="text-right py-1.5 px-1 font-medium">Rank</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[...geoAllSignals]
+                              .sort((a: any, b: any) => Math.abs(b.change_rate ?? 0) - Math.abs(a.change_rate ?? 0))
+                              .slice(0, 30)
+                              .map((s: any, i: number) => {
+                                const cr = s.change_rate ?? 0;
+                                const isUp = cr > 0;
+                                const isSpike = s.is_spike;
+                                return (
+                                  <tr key={i} className={`border-b border-border/10 ${isSpike ? (isUp ? 'bg-emerald-500/5' : 'bg-red-500/5') : ''}`}>
+                                    <td className="py-1.5 px-2">
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <span className="text-sm">{countryFlag(s.country_code)}</span>
+                                        <span className="font-medium">{s.country_name}</span>
+                                      </span>
+                                    </td>
+                                    <td className="py-1.5 px-1">
+                                      <Badge variant="outline" className="text-[9px]">{s.source?.replace('_', ' ')}</Badge>
+                                    </td>
+                                    <td className="py-1.5 px-1 text-right text-muted-foreground">{s.previous_value ?? '—'}</td>
+                                    <td className="py-1.5 px-1 text-right font-medium">{s.current_value}</td>
+                                    <td className="py-1.5 px-2 text-right">
+                                      <span className={`font-bold ${cr === 0 ? 'text-muted-foreground' : isUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                                        {cr === 0 ? '—' : `${isUp ? '+' : ''}${cr}%`}
+                                      </span>
+                                      {isSpike && <span className="ml-1 text-[9px]">{isUp ? '🚀' : '⚠️'}</span>}
+                                    </td>
+                                    <td className="py-1.5 px-1 text-right text-muted-foreground">
+                                      {s.rank_change != null && s.rank_change !== 0 ? (
+                                        <span className={s.rank_change > 0 ? 'text-emerald-500' : 'text-red-500'}>
+                                          {s.rank_change > 0 ? '↑' : '↓'}{Math.abs(s.rank_change)}
+                                        </span>
+                                      ) : s.current_rank ? `#${s.current_rank}` : '—'}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                                 </div>
                               </div>
                               <span className={`text-sm font-bold ${isSurge ? 'text-emerald-500' : 'text-red-500'}`}>
