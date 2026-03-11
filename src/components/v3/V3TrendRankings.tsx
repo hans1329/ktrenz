@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2 } from "lucide-react";
+import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
@@ -12,6 +12,7 @@ import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 // 크론잡 실행 상태 확인 훅
