@@ -291,23 +291,100 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Geo Fan Data (YouTube Comments) ──
+  const { data: geoYtCommentsData } = useQuery({
+    queryKey: ['agency-geo-yt-comments', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_fan_data' as any)
+        .select('country_code, country_name, source, rank_position, listeners, interest_score, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('source', 'youtube_comments')
+        .order('collected_at', { ascending: false })
+        .limit(100);
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((d: any) => {
+        if (seen.has(d.country_code)) return false;
+        seen.add(d.country_code);
+        return true;
+      });
+      return unique.sort((a: any, b: any) => (b.interest_score ?? 0) - (a.interest_score ?? 0)) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Geo Fan Data (Deezer) ──
+  const { data: geoDeezerData } = useQuery({
+    queryKey: ['agency-geo-deezer', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_fan_data' as any)
+        .select('country_code, country_name, source, rank_position, listeners, interest_score, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('source', 'deezer')
+        .order('collected_at', { ascending: false })
+        .limit(100);
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((d: any) => {
+        if (seen.has(d.country_code)) return false;
+        seen.add(d.country_code);
+        return true;
+      });
+      return unique.sort((a: any, b: any) => (b.listeners ?? 0) - (a.listeners ?? 0)) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Geo Change Signals (spikes) ──
+  const { data: geoChangeSignals, refetch: refetchGeoSignals } = useQuery({
+    queryKey: ['agency-geo-signals', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_change_signals' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('is_spike', true)
+        .order('detected_at', { ascending: false })
+        .limit(50);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
   const geoCollectMutation = useMutation({
     mutationFn: async () => {
-      // Collect both Last.fm and Google Trends in parallel
-      const [lastfmRes, trendsRes] = await Promise.allSettled([
+      const [lastfmRes, trendsRes, deezerRes] = await Promise.allSettled([
         supabase.functions.invoke('collect-geo-fans', { body: { wiki_entry_id: selectedArtistId } }),
         supabase.functions.invoke('collect-geo-trends', { body: { wiki_entry_id: selectedArtistId } }),
+        supabase.functions.invoke('collect-geo-deezer', { body: { wiki_entry_id: selectedArtistId } }),
       ]);
       const lastfmData = lastfmRes.status === 'fulfilled' ? lastfmRes.value.data : null;
       const trendsData = trendsRes.status === 'fulfilled' ? trendsRes.value.data : null;
-      return { lastfm: lastfmData, trends: trendsData };
+      const deezerData = deezerRes.status === 'fulfilled' ? deezerRes.value.data : null;
+      return { lastfm: lastfmData, trends: trendsData, deezer: deezerData };
     },
     onSuccess: (d) => {
       const lastfmCount = d.lastfm?.matches_found ?? 0;
       const trendsCount = d.trends?.matches_found ?? 0;
-      toast.success(`Last.fm ${lastfmCount}개국 + Google Trends ${trendsCount}개국 수집 완료`);
+      const deezerCount = d.deezer?.matches_found ?? 0;
+      toast.success(`Last.fm ${lastfmCount} + Trends ${trendsCount} + Deezer ${deezerCount}개국 수집 완료`);
       refetchGeo();
       refetchGeoTrends();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const geoDetectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('detect-geo-changes', {
+        body: { wiki_entry_id: selectedArtistId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d) => {
+      toast.success(`변동 감지 완료: ${d?.total_spikes ?? 0} spikes`);
+      refetchGeoSignals();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -992,14 +1069,20 @@ Artist: ${context.artist}
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-cyan-500" /> 🌍 Global Fan Reach
+                    <Globe className="w-4 h-4 text-cyan-500" /> 🌍 Global Fan Reach & 국적 변동 감지
                   </CardTitle>
-                  <CardDescription className="text-xs">Last.fm listeners + Google Trends search interest</CardDescription>
+                  <CardDescription className="text-xs">4개 소스 (Last.fm · Google Trends · YouTube Comments · Deezer) + ±30% 스파이크 감지</CardDescription>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => geoCollectMutation.mutate()} disabled={geoCollectMutation.isPending}>
-                  {geoCollectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
-                  Collect All
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => geoDetectMutation.mutate()} disabled={geoDetectMutation.isPending}>
+                    {geoDetectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Activity className="w-4 h-4 mr-1" />}
+                    Detect
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => geoCollectMutation.mutate()} disabled={geoCollectMutation.isPending}>
+                    {geoCollectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                    Collect All
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -1007,8 +1090,47 @@ Artist: ${context.artist}
                 <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" /> Loading...
                 </div>
-              ) : (geoFanData && geoFanData.length > 0) || (geoTrendsData && geoTrendsData.length > 0) ? (
+              ) : (geoFanData && geoFanData.length > 0) || (geoTrendsData && geoTrendsData.length > 0) || (geoYtCommentsData && geoYtCommentsData.length > 0) || (geoDeezerData && geoDeezerData.length > 0) ? (
                 <div className="space-y-5">
+
+                  {/* ── Spike Alerts ── */}
+                  {geoChangeSignals && geoChangeSignals.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400">⚡ Spike Alerts</Badge>
+                        <span className="text-xs text-muted-foreground">{geoChangeSignals.length} signals (±30%+)</span>
+                        {geoChangeSignals[0]?.detected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoChangeSignals[0].detected_at), 'MM/dd HH:mm')}</span>}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {geoChangeSignals.slice(0, 8).map((s: any, i: number) => {
+                          const isSurge = s.spike_direction === 'surge';
+                          return (
+                            <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs ${isSurge ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+                              <span className="text-base">{countryFlag(s.country_code)}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium">{s.country_name}</span>
+                                  <Badge variant="outline" className="text-[9px]">{s.source?.replace('_', ' ')}</Badge>
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                  <span>{s.previous_value ?? 0} → {s.current_value}</span>
+                                  {s.rank_change != null && s.rank_change !== 0 && (
+                                    <span className={s.rank_change > 0 ? 'text-emerald-500' : 'text-red-500'}>
+                                      Rank {s.rank_change > 0 ? '↑' : '↓'}{Math.abs(s.rank_change)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className={`text-sm font-bold ${isSurge ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {s.change_rate > 0 ? '+' : ''}{s.change_rate}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── Last.fm Section ── */}
                   {geoFanData && geoFanData.length > 0 && (
                     <div className="space-y-3">
@@ -1032,7 +1154,7 @@ Artist: ${context.artist}
                         })}
                       </div>
                       <div className="space-y-1.5">
-                        {geoFanData.slice(0, 8).map((g: any, i: number) => {
+                        {geoFanData.slice(0, 5).map((g: any, i: number) => {
                           const maxL = geoFanData[0]?.listeners || 1;
                           const pct = ((g.listeners || 0) / maxL) * 100;
                           return (
@@ -1074,7 +1196,7 @@ Artist: ${context.artist}
                         })}
                       </div>
                       <div className="space-y-1.5">
-                        {geoTrendsData.slice(0, 8).map((g: any, i: number) => {
+                        {geoTrendsData.slice(0, 5).map((g: any, i: number) => {
                           const maxI = geoTrendsData[0]?.interest_score || 100;
                           const pct = ((g.interest_score || 0) / maxI) * 100;
                           return (
@@ -1092,19 +1214,105 @@ Artist: ${context.artist}
                     </div>
                   )}
 
+                  {/* ── YouTube Comments Section ── */}
+                  {geoYtCommentsData && geoYtCommentsData.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] border-red-500/40 text-red-400">YouTube Comments</Badge>
+                        <span className="text-xs text-muted-foreground">{geoYtCommentsData.length} languages detected</span>
+                        {geoYtCommentsData[0]?.collected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoYtCommentsData[0].collected_at), 'MM/dd HH:mm')}</span>}
+                      </div>
+                      <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                        {geoYtCommentsData.map((g: any) => {
+                          const maxScore = geoYtCommentsData[0]?.interest_score || 1;
+                          const intensity = Math.max(0.15, (g.interest_score || 0) / maxScore);
+                          const isTop3 = geoYtCommentsData.indexOf(g) < 3;
+                          return (
+                            <div key={g.country_code} className={`rounded-lg p-2 text-center transition-all cursor-default ${isTop3 ? 'ring-1 ring-red-500/50' : ''}`} style={{ backgroundColor: `hsla(0, 80%, 55%, ${intensity * 0.5})` }} title={`${g.country_name}: ${g.interest_score} comments`}>
+                              <p className="text-lg leading-none">{countryFlag(g.country_code)}</p>
+                              <p className="text-[9px] font-bold mt-0.5 text-foreground">{g.country_code}</p>
+                              <p className="text-[8px] text-muted-foreground">{g.interest_score ?? '-'}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-1.5">
+                        {geoYtCommentsData.slice(0, 5).map((g: any, i: number) => {
+                          const maxS = geoYtCommentsData[0]?.interest_score || 1;
+                          const pct = ((g.interest_score || 0) / maxS) * 100;
+                          return (
+                            <div key={g.country_code} className="flex items-center gap-2">
+                              <span className="text-sm w-5 text-center shrink-0">{countryFlag(g.country_code)}</span>
+                              <span className="text-xs w-14 shrink-0 text-muted-foreground">{g.country_name}</span>
+                              <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
+                                <div className="h-full rounded transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%`, background: i < 3 ? 'linear-gradient(90deg, hsl(0, 70%, 45%), hsl(0, 80%, 60%))' : 'hsl(var(--muted-foreground) / 0.3)' }} />
+                                <span className="absolute inset-y-0 right-1.5 flex items-center text-[10px] font-medium">{g.interest_score}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Deezer Section ── */}
+                  {geoDeezerData && geoDeezerData.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] border-purple-500/40 text-purple-400">Deezer</Badge>
+                        <span className="text-xs text-muted-foreground">{geoDeezerData.length} countries • Fan Count</span>
+                        {geoDeezerData[0]?.collected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoDeezerData[0].collected_at), 'MM/dd HH:mm')}</span>}
+                      </div>
+                      <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                        {geoDeezerData.map((g: any) => {
+                          const maxFans = geoDeezerData[0]?.listeners || 1;
+                          const intensity = Math.max(0.15, (g.listeners || 0) / maxFans);
+                          const isTop3 = geoDeezerData.indexOf(g) < 3;
+                          return (
+                            <div key={g.country_code} className={`rounded-lg p-2 text-center transition-all cursor-default ${isTop3 ? 'ring-1 ring-purple-500/50' : ''}`} style={{ backgroundColor: `hsla(270, 80%, 55%, ${intensity * 0.5})` }} title={`${g.country_name}: ${g.listeners?.toLocaleString()} fans`}>
+                              <p className="text-lg leading-none">{countryFlag(g.country_code)}</p>
+                              <p className="text-[9px] font-bold mt-0.5 text-foreground">{g.country_code}</p>
+                              <p className="text-[8px] text-muted-foreground">{g.listeners ? (g.listeners >= 1e6 ? (g.listeners / 1e6).toFixed(1) + 'M' : g.listeners >= 1e3 ? (g.listeners / 1e3).toFixed(0) + 'K' : g.listeners) : '-'}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-1.5">
+                        {geoDeezerData.slice(0, 5).map((g: any, i: number) => {
+                          const maxF = geoDeezerData[0]?.listeners || 1;
+                          const pct = ((g.listeners || 0) / maxF) * 100;
+                          return (
+                            <div key={g.country_code} className="flex items-center gap-2">
+                              <span className="text-sm w-5 text-center shrink-0">{countryFlag(g.country_code)}</span>
+                              <span className="text-xs w-14 shrink-0 text-muted-foreground">{g.country_name}</span>
+                              <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
+                                <div className="h-full rounded transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%`, background: i < 3 ? 'linear-gradient(90deg, hsl(270, 70%, 45%), hsl(270, 80%, 60%))' : 'hsl(var(--muted-foreground) / 0.3)' }} />
+                                <span className="absolute inset-y-0 right-1.5 flex items-center text-[10px] font-medium">#{g.rank_position}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground w-16 text-right shrink-0">{g.listeners?.toLocaleString()}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Combined Summary */}
                   <div className="flex flex-wrap gap-4 text-xs text-muted-foreground border-t border-border/30 pt-2">
                     {geoFanData && geoFanData.length > 0 && (
-                      <>
-                        <span>🎵 {geoFanData.length} countries (Last.fm)</span>
-                        <span>Total: {geoFanData.reduce((s: number, g: any) => s + (g.listeners || 0), 0).toLocaleString()} listeners</span>
-                      </>
+                      <span>🎵 {geoFanData.length} countries (Last.fm)</span>
                     )}
                     {geoTrendsData && geoTrendsData.length > 0 && (
-                      <>
-                        <span>🔍 {geoTrendsData.length} countries (Trends)</span>
-                        <span>Peak: {geoTrendsData[0] && `${countryFlag(geoTrendsData[0].country_code)} ${geoTrendsData[0].interest_score}/100`}</span>
-                      </>
+                      <span>🔍 {geoTrendsData.length} countries (Trends)</span>
+                    )}
+                    {geoYtCommentsData && geoYtCommentsData.length > 0 && (
+                      <span>💬 {geoYtCommentsData.length} languages (YT Comments)</span>
+                    )}
+                    {geoDeezerData && geoDeezerData.length > 0 && (
+                      <span>🎶 {geoDeezerData.length} countries (Deezer)</span>
+                    )}
+                    {geoChangeSignals && geoChangeSignals.length > 0 && (
+                      <span>⚡ {geoChangeSignals.filter((s: any) => s.spike_direction === 'surge').length} surges / {geoChangeSignals.filter((s: any) => s.spike_direction === 'drop').length} drops</span>
                     )}
                   </div>
                 </div>
