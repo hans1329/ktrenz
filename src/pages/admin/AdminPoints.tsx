@@ -102,7 +102,7 @@ const AdminPoints = () => {
               <TableRow>
                 <TableHead>항목</TableHead>
                 <TableHead>설명</TableHead>
-                <TableHead className="text-right w-28">포인트</TableHead>
+                <TableHead className="text-right w-28">토큰</TableHead>
                 <TableHead className="text-center w-20">활성</TableHead>
                 <TableHead className="w-20" />
               </TableRow>

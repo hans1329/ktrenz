@@ -128,7 +128,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                    K-Points
+                    K-Tokens
                   </p>
                   <p className="text-lg font-bold text-foreground leading-tight">
                     {kPoints.toLocaleString()}
