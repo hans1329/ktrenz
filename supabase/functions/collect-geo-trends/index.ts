@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { wiki_entry_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    // Support single wiki_entry_id OR batch wiki_entry_ids
+    const { wiki_entry_id, wiki_entry_ids } = body;
 
     const SERPAPI_API_KEY = Deno.env.get("SERPAPI_API_KEY");
     if (!SERPAPI_API_KEY) {
@@ -64,24 +66,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Get artist(s) to collect
+    // Resolve artist list
     let artists: { id: string; title: string }[] = [];
 
-    if (wiki_entry_id) {
-      const { data: entry } = await adminClient
+    // Case 1: batch of IDs (from cron)
+    const targetIds: string[] = wiki_entry_ids
+      ? wiki_entry_ids
+      : wiki_entry_id
+        ? [wiki_entry_id]
+        : [];
+
+    if (targetIds.length > 0) {
+      const { data: entries } = await adminClient
         .from("wiki_entries")
         .select("id, title")
-        .eq("id", wiki_entry_id)
-        .maybeSingle();
+        .in("id", targetIds);
 
-      if (!entry) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Artist not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      artists = [{ id: entry.id, title: entry.title }];
+      artists = (entries ?? []).map((e: any) => ({ id: e.id, title: e.title }));
     } else {
+      // Fallback: all tiered artists (should not happen with new cron)
       const { data: tiers } = await adminClient
         .from("v3_artist_tiers")
         .select("wiki_entry_id, display_name, tier")
@@ -120,7 +123,6 @@ Deno.serve(async (req) => {
         const regions = await fetchTrendsViaSerpAPI(SERPAPI_API_KEY, artist.title);
 
         if (regions.length > 0) {
-          // Sort by interest descending for rank_position
           regions.sort((a, b) => b.interest - a.interest);
 
           const rows = regions.map((r, idx) => ({
@@ -150,7 +152,7 @@ Deno.serve(async (req) => {
 
         results.push({ id: artist.id, name: artist.title, countries: regions.length });
 
-        // SerpAPI rate limit: respect 1 req/sec on free plan
+        // SerpAPI rate limit: 1.5s between requests
         if (artists.length > 1) {
           await new Promise((r) => setTimeout(r, 1500));
         }
