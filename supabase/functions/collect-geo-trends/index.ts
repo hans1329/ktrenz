@@ -56,11 +56,12 @@ async function fetchTrendsInterest(
   }
 
   const data = await res.json();
-  // Firecrawl v1 nests data inside `data`
-  const json = data?.data?.json || data?.json;
+  // Firecrawl v1 extract format nests inside data.data.extract
+  const extract = data?.data?.extract || data?.extract;
+  const json = extract?.regions || (Array.isArray(extract) ? extract : null);
 
   if (!Array.isArray(json)) {
-    console.warn("No valid JSON array from Firecrawl:", JSON.stringify(json)?.slice(0, 300));
+    console.warn("No valid regions from Firecrawl extract:", JSON.stringify(extract)?.slice(0, 300));
     return [];
   }
 
