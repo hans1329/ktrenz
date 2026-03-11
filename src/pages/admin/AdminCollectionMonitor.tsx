@@ -386,19 +386,19 @@ const AdminCollectionMonitor = () => {
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Total Sources</p>
+          <p className="text-xs text-muted-foreground">전체 소스</p>
           <p className="text-2xl font-bold text-foreground">{totalSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Active (≤{STALE_HOURS}h)</p>
+          <p className="text-xs text-muted-foreground">정상 (≤{STALE_HOURS}h)</p>
           <p className="text-2xl font-bold text-emerald-500">{activeSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">{"Stale (>"}{STALE_HOURS}{"h)"}</p>
+          <p className="text-xs text-muted-foreground">{"지연 (>"}{STALE_HOURS}{"h)"}</p>
           <p className="text-2xl font-bold text-amber-500">{staleSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Never Collected</p>
+          <p className="text-xs text-muted-foreground">미수집</p>
           <p className="text-2xl font-bold text-red-500">{totalSources - activeSources - staleSources}</p>
         </Card>
       </div>
