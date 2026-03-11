@@ -383,9 +383,7 @@ const translations: Record<string, Record<Language, string>> = {
   "hero.badge": { en: "Live Trend Engine", ko: "실시간 트렌드 엔진", ja: "ライブトレンドエンジン", zh: "实时趋势引擎" },
   "hero.title": { en: "Feel the Pulse\nof K-Pop, Live", ko: "K-Pop의 맥박을\n실시간으로 느끼세요", ja: "K-Popの鼓動を\nリアルタイムで感じる", zh: "实时感受\nK-Pop的脉搏" },
   "hero.subtitle": { en: "See which artists are surging right now.\nThe KTrenZ engine captures the energy fans create across the globe.", ko: "지금 급상승 중인 아티스트를 확인하세요.\nKTrenZ 엔진이 전 세계 팬들이 만들어내는 에너지를 포착합니다.", ja: "今急上昇中のアーティストをチェック。\nKTrenZエンジンが世界中のファンが生み出すエネルギーをキャッチします。", zh: "查看哪些艺人正在飙升。\nKTrenZ引擎捕捉全球粉丝创造的能量。" },
-  "hero.statArtists": { en: "Artists", ko: "아티스트", ja: "アーティスト", zh: "艺人" },
-  "hero.statInterval": { en: "Always Fresh", ko: "항상 최신", ja: "常に最新", zh: "始终最新" },
-  "hero.statEngine": { en: "AI-Powered", ko: "AI 기반", ja: "AI駆動", zh: "AI驱动" },
+  "hero.hotSpots": { en: "Hot Spots", ko: "핫 스팟", ja: "ホットスポット", zh: "热点地区" },
 };
 
 export default translations;
