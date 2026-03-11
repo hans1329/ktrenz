@@ -6,6 +6,7 @@ import V3Header from "@/components/v3/V3Header";
 import V3TabBar, { type V3Tab } from "@/components/v3/V3TabBar";
 import V3TrendRankings from "@/components/v3/V3TrendRankings";
 import V3FanAgent from "@/components/v3/V3FanAgent";
+import V3DesktopHero from "@/components/v3/V3DesktopHero";
 
 const V3Home = () => {
   const [activeTab, setActiveTab] = useState<V3Tab>("rankings");
