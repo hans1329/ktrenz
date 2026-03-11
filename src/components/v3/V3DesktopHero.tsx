@@ -10,46 +10,6 @@ import heroVisual from "@/assets/hero-visual.webp";
 const V3DesktopHero = () => {
   const { t } = useLanguage();
 
-  const { data: topArtists } = useQuery({
-    queryKey: ["hero-top-artists-v2"],
-    queryFn: async () => {
-      const { data: tiers } = await supabase
-        .from("v3_artist_tiers" as any)
-        .select("wiki_entry_id")
-        .eq("tier", 1);
-      const tierIds = new Set((tiers ?? []).map((t: any) => t.wiki_entry_id));
-
-      const { data: scores } = await supabase
-        .from("v3_scores_v2" as any)
-        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
-          wiki_entries:wiki_entry_id (id, title, slug, image_url)`)
-        .order("scored_at", { ascending: false });
-
-      if (!scores?.length) return [];
-
-      const seen = new Map<string, any>();
-      for (const s of scores as any[]) {
-        if (tierIds.has(s.wiki_entry_id) && !seen.has(s.wiki_entry_id)) {
-          seen.set(s.wiki_entry_id, s);
-        }
-      }
-
-      return Array.from(seen.values())
-        .sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0))
-        .slice(0, 5)
-        .map((s) => ({
-          wiki_entry_id: s.wiki_entry_id,
-          name: s.wiki_entries?.title ?? "—",
-          slug: s.wiki_entries?.slug ?? "",
-          image_url: s.wiki_entries?.image_url,
-          total_score: s.total_score,
-          energy_score: s.energy_score,
-          energy_change: s.energy_change_24h,
-        }));
-    },
-    staleTime: 1000 * 60 * 5,
-  });
-
   // Hot movers: top 4 by absolute energy_change_24h
   const hotMovers = useQuery({
     queryKey: ["hero-hot-movers"],
