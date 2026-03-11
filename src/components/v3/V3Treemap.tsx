@@ -393,9 +393,17 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                     ema7d={item.ema7d} ema30d={item.ema30d} />
                 </div>
               </div>
-            )}
+                )}
 
-            
+                {/* Agent artist blue inner glow */}
+                {isAgentArtist && !isTopThree && (
+                  <div className="absolute inset-0 z-[1] pointer-events-none" style={{
+                    boxShadow: 'inset 0 0 20px 6px hsla(210, 80%, 60%, 0.5), inset 0 0 40px 12px hsla(210, 80%, 60%, 0.25)',
+                    background: 'radial-gradient(ellipse at center, hsla(210, 80%, 70%, 0.15) 0%, transparent 60%)',
+                  }} />
+                )}
+
+
 
             {/* Today's Mission */}
             <V3MissionCards
