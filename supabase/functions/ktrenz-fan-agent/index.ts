@@ -287,7 +287,8 @@ async function handleTool(
   adminClient: any,
   userId: string,
   rankingCache: { data: any[] | null },
-  activeSlotId?: string | null
+  activeSlotId?: string | null,
+  activeSlotIndex?: number | null
 ): Promise<string> {
   // Helper: get all latest scores (cached per request)
   async function getAllScores(): Promise<any[]> {
@@ -1831,7 +1832,7 @@ Deno.serve(async (req) => {
 
       // Get all scores
       const allScores = await (async () => {
-        const result = await handleTool("get_rankings", { limit: 50 }, adminClient, userId, rankingCache);
+        const result = await handleTool("get_rankings", { limit: 50 }, adminClient, userId, rankingCache, activeSlotId, activeSlotIndex);
         return JSON.parse(result).rankings ?? [];
       })();
 
@@ -2171,7 +2172,7 @@ Deno.serve(async (req) => {
                 sendStatus(controller, labels[userLang] || labels.en);
               }
 
-              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId);
+              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId, activeSlotIndex);
 
               // Extract _archiveId from Perplexity-powered tool results
               try {
