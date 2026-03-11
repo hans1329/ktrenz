@@ -537,10 +537,10 @@ const AdminCollectionMonitor = () => {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-500" /> Pipeline Execution Order
-          </CardTitle>
-          <CardDescription className="text-xs">6시간 주기 수집 파이프라인 실행 순서 (데이터 의존성 기반)</CardDescription>
-        </CardHeader>
+              <Zap className="w-4 h-4 text-amber-500" /> 파이프라인 실행 순서
+            </CardTitle>
+            <CardDescription className="text-xs">6시간 주기 수집 파이프라인 실행 순서 (데이터 의존성 기반)</CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             {[
