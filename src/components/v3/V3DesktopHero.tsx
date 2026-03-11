@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { TrendingUp, TrendingDown, Flame, MapPin } from "lucide-react";
+import { TrendingUp, TrendingDown, Flame, MapPin, Youtube, MessageCircle, Music, Disc3 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,13 @@ const FLAG_EMOJI: Record<string, string> = {
   IN: "🇮🇳", AU: "🇦🇺", CA: "🇨🇦", SG: "🇸🇬", HK: "🇭🇰", TW: "🇹🇼",
   VN: "🇻🇳", CL: "🇨🇱", MO: "🇲🇴", ES: "🇪🇸", IT: "🇮🇹", TR: "🇹🇷",
   AR: "🇦🇷", CO: "🇨🇴", PE: "🇵🇪", NL: "🇳🇱", PL: "🇵🇱", RU: "🇷🇺",
+};
+
+const CATEGORY_META: Record<string, { label: string; icon: typeof Youtube; color: string }> = {
+  youtube: { label: "YouTube", icon: Youtube, color: "text-red-400" },
+  buzz: { label: "Buzz", icon: MessageCircle, color: "text-sky-400" },
+  music: { label: "Music", icon: Music, color: "text-violet-400" },
+  album: { label: "Album", icon: Disc3, color: "text-amber-400" },
 };
 
 const V3DesktopHero = () => {
@@ -31,6 +38,7 @@ const V3DesktopHero = () => {
       const { data: scores } = await supabase
         .from("v3_scores_v2" as any)
         .select(`wiki_entry_id, energy_change_24h, total_score,
+          youtube_change_24h, buzz_change_24h, music_change_24h, album_change_24h,
           wiki_entries:wiki_entry_id (title, slug, image_url)`)
         .order("scored_at", { ascending: false });
 
@@ -77,15 +85,29 @@ const V3DesktopHero = () => {
         }
       }
 
-      return movers.map((s) => ({
-        wiki_entry_id: s.wiki_entry_id,
-        name: s.wiki_entries?.title ?? "—",
-        slug: s.wiki_entries?.slug ?? "",
-        image_url: s.wiki_entries?.image_url,
-        change: s.energy_change_24h,
-        score: s.total_score,
-        geo: geoMap.get(s.wiki_entry_id) ?? null,
-      }));
+      return movers.map((s) => {
+        // Determine hottest category by highest absolute change
+        const categories = [
+          { key: "youtube" as const, change: s.youtube_change_24h },
+          { key: "buzz" as const, change: s.buzz_change_24h },
+          { key: "music" as const, change: s.music_change_24h },
+          { key: "album" as const, change: s.album_change_24h },
+        ].filter((c) => c.change != null);
+        const hotCategory = categories.length > 0
+          ? categories.sort((a, b) => Math.abs(b.change!) - Math.abs(a.change!))[0]
+          : null;
+
+        return {
+          wiki_entry_id: s.wiki_entry_id,
+          name: s.wiki_entries?.title ?? "—",
+          slug: s.wiki_entries?.slug ?? "",
+          image_url: s.wiki_entries?.image_url,
+          change: s.energy_change_24h,
+          score: s.total_score,
+          geo: geoMap.get(s.wiki_entry_id) ?? null,
+          hotCategory: hotCategory ? { key: hotCategory.key, change: hotCategory.change! } : null,
+        };
+      });
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -141,6 +163,18 @@ const V3DesktopHero = () => {
                           FES {mover.score?.toFixed(1)}
                         </p>
                       </div>
+                      {/* Hot category */}
+                      {mover.hotCategory && (() => {
+                        const meta = CATEGORY_META[mover.hotCategory.key];
+                        if (!meta) return null;
+                        const CatIcon = meta.icon;
+                        return (
+                          <div className="flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg bg-muted/40">
+                            <CatIcon className={cn("w-3 h-3", meta.color)} />
+                            <span className="text-[11px] text-muted-foreground font-medium">{meta.label}</span>
+                          </div>
+                        );
+                      })()}
                       {/* Geo target */}
                       {mover.geo && (
                         <div className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-muted/40">
