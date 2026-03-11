@@ -2390,6 +2390,51 @@ export type Database = {
           },
         ]
       }
+      ktrenz_category_trends: {
+        Row: {
+          avg_30d: number | null
+          avg_7d: number | null
+          calculated_at: string
+          category: string
+          change_30d: number | null
+          change_7d: number | null
+          id: string
+          momentum: number | null
+          stddev_30d: number | null
+          stddev_7d: number | null
+          trend_direction: string | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          avg_30d?: number | null
+          avg_7d?: number | null
+          calculated_at?: string
+          category: string
+          change_30d?: number | null
+          change_7d?: number | null
+          id?: string
+          momentum?: number | null
+          stddev_30d?: number | null
+          stddev_7d?: number | null
+          trend_direction?: string | null
+          wiki_entry_id: string
+        }
+        Update: {
+          avg_30d?: number | null
+          avg_7d?: number | null
+          calculated_at?: string
+          category?: string
+          change_30d?: number | null
+          change_7d?: number | null
+          id?: string
+          momentum?: number | null
+          stddev_30d?: number | null
+          stddev_7d?: number | null
+          trend_direction?: string | null
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_collection_config: {
         Row: {
           hanteo_chart_url: string
@@ -2712,6 +2757,63 @@ export type Database = {
           },
         ]
       }
+      ktrenz_fes_contributions: {
+        Row: {
+          album_contrib: number | null
+          album_z: number | null
+          buzz_contrib: number | null
+          buzz_z: number | null
+          created_at: string
+          id: string
+          leading_category: string | null
+          music_contrib: number | null
+          music_z: number | null
+          normalized_fes: number | null
+          snapshot_at: string
+          social_contrib: number | null
+          social_z: number | null
+          wiki_entry_id: string
+          youtube_contrib: number | null
+          youtube_z: number | null
+        }
+        Insert: {
+          album_contrib?: number | null
+          album_z?: number | null
+          buzz_contrib?: number | null
+          buzz_z?: number | null
+          created_at?: string
+          id?: string
+          leading_category?: string | null
+          music_contrib?: number | null
+          music_z?: number | null
+          normalized_fes?: number | null
+          snapshot_at?: string
+          social_contrib?: number | null
+          social_z?: number | null
+          wiki_entry_id: string
+          youtube_contrib?: number | null
+          youtube_z?: number | null
+        }
+        Update: {
+          album_contrib?: number | null
+          album_z?: number | null
+          buzz_contrib?: number | null
+          buzz_z?: number | null
+          created_at?: string
+          id?: string
+          leading_category?: string | null
+          music_contrib?: number | null
+          music_z?: number | null
+          normalized_fes?: number | null
+          snapshot_at?: string
+          social_contrib?: number | null
+          social_z?: number | null
+          wiki_entry_id?: string
+          youtube_contrib?: number | null
+          youtube_z?: number | null
+        }
+        Relationships: []
+      }
       ktrenz_geo_change_signals: {
         Row: {
           change_rate: number | null
@@ -2817,6 +2919,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ktrenz_normalization_stats: {
+        Row: {
+          calculated_at: string
+          category: string
+          id: string
+          mean_change: number | null
+          median_change: number | null
+          sample_count: number | null
+          stddev_change: number | null
+        }
+        Insert: {
+          calculated_at?: string
+          category: string
+          id?: string
+          mean_change?: number | null
+          median_change?: number | null
+          sample_count?: number | null
+          stddev_change?: number | null
+        }
+        Update: {
+          calculated_at?: string
+          category?: string
+          id?: string
+          mean_change?: number | null
+          median_change?: number | null
+          sample_count?: number | null
+          stddev_change?: number | null
+        }
+        Relationships: []
       }
       ktrenz_point_packages: {
         Row: {
@@ -2965,6 +3097,51 @@ export type Database = {
           metadata?: Json | null
           reason?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ktrenz_prediction_logs: {
+        Row: {
+          accuracy_score: number | null
+          created_at: string
+          features_used: Json | null
+          id: string
+          model_version: string | null
+          outcome: Json | null
+          predicted_at: string
+          prediction: Json
+          prediction_type: string
+          reasoning: string | null
+          verified_at: string | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          accuracy_score?: number | null
+          created_at?: string
+          features_used?: Json | null
+          id?: string
+          model_version?: string | null
+          outcome?: Json | null
+          predicted_at?: string
+          prediction?: Json
+          prediction_type: string
+          reasoning?: string | null
+          verified_at?: string | null
+          wiki_entry_id: string
+        }
+        Update: {
+          accuracy_score?: number | null
+          created_at?: string
+          features_used?: Json | null
+          id?: string
+          model_version?: string | null
+          outcome?: Json | null
+          predicted_at?: string
+          prediction?: Json
+          prediction_type?: string
+          reasoning?: string | null
+          verified_at?: string | null
+          wiki_entry_id?: string
         }
         Relationships: []
       }
