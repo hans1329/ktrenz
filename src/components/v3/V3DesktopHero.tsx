@@ -138,8 +138,8 @@ const V3DesktopHero = () => {
           {hotMovers.data && hotMovers.data.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Flame className="w-3.5 h-3.5 text-[hsl(170,80%,65%)]" />
+                <span className="text-xs font-semibold text-[hsl(170,80%,65%)] uppercase tracking-wide">
                   {t("hero.hotSpots")}
                 </span>
               </div>
@@ -186,7 +186,7 @@ const V3DesktopHero = () => {
                       {/* Change */}
                       <div className={cn(
                         "flex items-center gap-0.5 text-xs font-bold shrink-0",
-                        isUp ? "text-[hsl(170,80%,65%)]" : "text-[hsl(170,80%,65%)]"
+                        isUp ? "text-emerald-500" : "text-red-500"
                       )}>
                         {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                         {isUp ? "+" : ""}{mover.change.toFixed(1)}%
