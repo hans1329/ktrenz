@@ -147,12 +147,14 @@ async function fetchVideoComments(
     const snippet = item.snippet?.topLevelComment?.snippet;
     const text = snippet?.textDisplay || "";
     const { sentiment, score } = analyzeComment(text);
+    const lang = detectLanguage(text);
     return {
       text: text.slice(0, 200),
       sentiment,
       score,
       likeCount: snippet?.likeCount || 0,
       publishedAt: snippet?.publishedAt || "",
+      lang,
     };
   });
 }
