@@ -116,7 +116,7 @@ const V3DesktopHero = () => {
     <section className="relative overflow-hidden border-b border-border/30">
       {/* Background image */}
       <div className="absolute inset-0 pointer-events-none">
-        <img src={heroVisual} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+        <img src={heroVisual} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 blur-sm scale-105" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/40" />
       </div>
