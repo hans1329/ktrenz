@@ -631,8 +631,36 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       }
     }
 
+    // Ensure agent artists are included (replace last non-agent item if needed)
+    if (agentWikiIds.size > 0) {
+      for (const agentId of agentWikiIds) {
+        if (result.find(r => r.id === agentId)) continue; // already in list
+        const agentItem = base.find(item => item.id === agentId);
+        if (!agentItem) continue;
+        // Replace last non-agent item
+        const lastNonAgentIdx = [...result].reverse().findIndex(r => !agentWikiIds.has(r.id));
+        if (lastNonAgentIdx >= 0) {
+          result[result.length - 1 - lastNonAgentIdx] = agentItem;
+        } else {
+          result.push(agentItem);
+        }
+      }
+    }
+
+    // If agent artist is NOT in top 3, move it to the middle of the array
+    const agentInResult = result.filter(r => agentWikiIds.has(r.id));
+    for (const agentItem of agentInResult) {
+      const idx = result.indexOf(agentItem);
+      if (idx >= 3) {
+        // Remove from current position and insert at middle
+        result.splice(idx, 1);
+        const midIdx = Math.floor(result.length / 2);
+        result.splice(midIdx, 0, agentItem);
+      }
+    }
+
     return result;
-  }, [items, category]);
+  }, [items, category, agentWikiIds]);
 
   const containerWidth = isMobile ? 360 : 420;
   const containerHeight = isMobile ? 620 : 520;
