@@ -186,7 +186,7 @@ const V3DesktopHero = () => {
                       {/* Change */}
                       <div className={cn(
                         "flex items-center gap-0.5 text-xs font-bold shrink-0",
-                        isUp ? "text-emerald-500" : "text-red-500"
+                        isUp ? "text-[hsl(170,80%,65%)]" : "text-[hsl(170,80%,65%)]"
                       )}>
                         {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                         {isUp ? "+" : ""}{mover.change.toFixed(1)}%
