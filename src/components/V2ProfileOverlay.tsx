@@ -116,7 +116,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
-          {/* K-Points Card */}
+          {/* K-Tokens Card */}
           <button
             onClick={() => setShowPointsDrawer(true)}
             className="w-full text-left rounded-xl bg-card border border-border p-4 hover:border-primary/40 hover:bg-primary/5 transition-all"

@@ -118,9 +118,9 @@ const AdminProducts = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Package className="w-5 h-5" /> K-Points Products
+            <Package className="w-5 h-5" /> K-Tokens Products
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage point packages sold via Stripe</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage token packages sold via Stripe</p>
         </div>
         <Button onClick={() => setShowAdd(true)} size="sm">
           <Plus className="w-4 h-4 mr-1" /> Add Package
