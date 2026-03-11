@@ -285,7 +285,7 @@ const V3TrendRankings = () => {
     enabled: !!user?.id,
     staleTime: 60_000,
   });
-  const periodRef = useRef<HTMLDivElement>(null);
+  // periodRef already declared above
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
