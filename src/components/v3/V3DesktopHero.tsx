@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Zap, TrendingUp, TrendingDown, MapPin } from "lucide-react";
+import { Zap, MapPin, Globe } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -18,35 +18,108 @@ const FLAG_EMOJI: Record<string, string> = {
 const V3DesktopHero = () => {
   const { t } = useLanguage();
 
+  // Get top 5 from v3_scores_v2 (which has wiki_entry_id)
   const { data: topArtists } = useQuery({
-    queryKey: ["hero-top-artists"],
+    queryKey: ["hero-top-artists-v2"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ktrenz_artists" as any)
-        .select("id, name, slug, image_url, total_score, velocity_score, intensity_score")
-        .order("total_score", { ascending: false })
-        .limit(5);
-      return (data ?? []) as any[];
+      // Get tier 1 IDs first
+      const { data: tiers } = await supabase
+        .from("v3_artist_tiers" as any)
+        .select("wiki_entry_id")
+        .eq("tier", 1);
+      const tierIds = new Set((tiers ?? []).map((t: any) => t.wiki_entry_id));
+
+      const { data: scores } = await supabase
+        .from("v3_scores_v2" as any)
+        .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
+          wiki_entries:wiki_entry_id (id, title, slug, image_url)`)
+        .order("scored_at", { ascending: false });
+
+      if (!scores?.length) return [];
+
+      // Dedupe by wiki_entry_id, keep latest, filter tier 1
+      const seen = new Map<string, any>();
+      for (const s of scores as any[]) {
+        if (tierIds.has(s.wiki_entry_id) && !seen.has(s.wiki_entry_id)) {
+          seen.set(s.wiki_entry_id, s);
+        }
+      }
+
+      return Array.from(seen.values())
+        .sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0))
+        .slice(0, 5)
+        .map((s) => ({
+          wiki_entry_id: s.wiki_entry_id,
+          name: s.wiki_entries?.title ?? "—",
+          slug: s.wiki_entries?.slug ?? "",
+          image_url: s.wiki_entries?.image_url,
+          total_score: s.total_score,
+          energy_score: s.energy_score,
+          energy_change: s.energy_change_24h,
+        }));
     },
     staleTime: 1000 * 60 * 5,
   });
 
-  // Fetch latest geo spike signals for the #1 artist
-  const topArtistId = topArtists?.[0]?.id;
+  // Fetch top geo fan data for #1 artist
+  const topWikiId = topArtists?.[0]?.wiki_entry_id;
   const { data: hotSpots } = useQuery({
-    queryKey: ["hero-hot-spots", topArtistId],
+    queryKey: ["hero-hot-spots", topWikiId],
     queryFn: async () => {
-      if (!topArtistId) return [];
-      const { data } = await supabase
+      if (!topWikiId) return [];
+
+      // First try spike signals
+      const { data: spikes } = await supabase
         .from("ktrenz_geo_change_signals" as any)
-        .select("country_code, country_name, change_rate, spike_direction, source, detected_at")
-        .eq("wiki_entry_id", topArtistId)
+        .select("country_code, country_name, change_rate, spike_direction, source")
+        .eq("wiki_entry_id", topWikiId)
         .eq("is_spike", true)
         .order("detected_at", { ascending: false })
         .limit(4);
-      return (data ?? []) as any[];
+
+      if (spikes && spikes.length > 0) {
+        return (spikes as any[]).map((s) => ({
+          country_code: s.country_code,
+          country_name: s.country_name,
+          value: Math.abs(s.change_rate ?? 0),
+          label: s.change_rate ? `${s.change_rate > 0 ? "+" : ""}${s.change_rate.toFixed(0)}%` : "NEW",
+          source: s.source,
+          type: "spike" as const,
+        }));
+      }
+
+      // Fallback: show top listener countries
+      const { data: geoFans } = await supabase
+        .from("ktrenz_geo_fan_data" as any)
+        .select("country_code, country_name, listeners, source")
+        .eq("wiki_entry_id", topWikiId)
+        .not("listeners", "is", null)
+        .order("listeners", { ascending: false })
+        .limit(20);
+
+      if (!geoFans?.length) return [];
+
+      // Dedupe by country
+      const seen = new Set<string>();
+      const unique: any[] = [];
+      for (const g of geoFans as any[]) {
+        if (!seen.has(g.country_code)) {
+          seen.add(g.country_code);
+          unique.push(g);
+        }
+        if (unique.length >= 4) break;
+      }
+
+      return unique.map((g) => ({
+        country_code: g.country_code,
+        country_name: g.country_name,
+        value: g.listeners,
+        label: g.listeners >= 1000 ? `${(g.listeners / 1000).toFixed(0)}K` : `${g.listeners}`,
+        source: g.source,
+        type: "listeners" as const,
+      }));
     },
-    enabled: !!topArtistId,
+    enabled: !!topWikiId,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -54,11 +127,7 @@ const V3DesktopHero = () => {
     <section className="relative overflow-hidden border-b border-border/30">
       {/* Background image */}
       <div className="absolute inset-0 pointer-events-none">
-        <img
-          src={heroVisual}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
-        />
+        <img src={heroVisual} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/60" />
       </div>
@@ -93,19 +162,12 @@ const V3DesktopHero = () => {
                   <span className="text-xs font-bold text-foreground">{topArtists[0].name}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {hotSpots.map((spot: any, i: number) => {
-                    const isSurge = spot.spike_direction === "surge";
+                  {hotSpots.map((spot, i) => {
                     const flag = FLAG_EMOJI[spot.country_code] || "🌍";
-                    const rate = Math.abs(spot.change_rate ?? 0);
                     return (
                       <div
                         key={i}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl border backdrop-blur-sm transition-colors",
-                          isSurge
-                            ? "bg-emerald-500/5 border-emerald-500/20"
-                            : "bg-red-500/5 border-red-500/20"
-                        )}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm"
                       >
                         <span className="text-lg shrink-0">{flag}</span>
                         <div className="flex-1 min-w-0">
@@ -114,12 +176,11 @@ const V3DesktopHero = () => {
                           </p>
                           <p className="text-[10px] text-muted-foreground capitalize">{spot.source}</p>
                         </div>
-                        <div className={cn(
-                          "flex items-center gap-0.5 text-xs font-bold shrink-0",
-                          isSurge ? "text-emerald-500" : "text-red-500"
-                        )}>
-                          {isSurge ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {rate > 0 ? `${rate.toFixed(0)}%` : "NEW"}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Globe className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs font-bold text-primary tabular-nums">
+                            {spot.label}
+                          </span>
                         </div>
                       </div>
                     );
@@ -135,7 +196,7 @@ const V3DesktopHero = () => {
               <div className="space-y-3">
                 {topArtists?.slice(0, 5).map((artist, i) => (
                   <Link
-                    key={artist.id}
+                    key={artist.wiki_entry_id}
                     to={`/artist/${artist.slug}`}
                     className={cn(
                       "flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-sm transition-all duration-300 group",
@@ -163,10 +224,13 @@ const V3DesktopHero = () => {
                       </p>
                       <div className="flex items-center gap-3 mt-0.5">
                         <span className="text-xs text-muted-foreground">
-                          V {artist.velocity_score?.toFixed(1) ?? "—"}
+                          E {artist.energy_score?.toFixed(0) ?? "—"}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          I {artist.intensity_score?.toFixed(1) ?? "—"}
+                        <span className={cn(
+                          "text-xs font-medium",
+                          (artist.energy_change ?? 0) > 0 ? "text-emerald-500" : (artist.energy_change ?? 0) < 0 ? "text-red-500" : "text-muted-foreground"
+                        )}>
+                          {artist.energy_change != null ? `${artist.energy_change > 0 ? "+" : ""}${artist.energy_change.toFixed(1)}%` : "—"}
                         </span>
                       </div>
                     </div>
