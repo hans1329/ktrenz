@@ -62,7 +62,7 @@ const V3DesktopHero = () => {
               {t("hero.title")}
             </h1>
 
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-lg whitespace-pre-line">
               {t("hero.subtitle")}
             </p>
 
