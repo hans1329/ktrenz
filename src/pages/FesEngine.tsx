@@ -344,9 +344,9 @@ Each source × country pair compared independently`} description="Signals stored
       <VarTable rows={[
         { name: "ktrenz_geo_fan_data", desc: "Raw geographic data per source × country × artist", source: "Supabase" },
         { name: "ktrenz_geo_change_signals", desc: "Change rate signals with spike flags", source: "Supabase" },
-        { name: "interest_score", desc: "Google Trends interest value (0-100)", source: "SerpAPI" },
+        { name: "interest_score", desc: "Google Trends interest (0-100) / Apple Music (101−pos) / Billboard (201−pos)", source: "Multi-source" },
         { name: "listeners", desc: "Last.fm listener count per country", source: "Last.fm API" },
-        { name: "country_code", desc: "ISO country code (2-letter)", source: "All sources" },
+        { name: "country_code", desc: "ISO country code (2-letter) + GL/GX for Billboard global", source: "All sources" },
       ]} />
 
       {/* ── API & Data Sources ── */}
