@@ -434,11 +434,11 @@ const AdminCollectionMonitor = () => {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-lg font-bold text-foreground">{stats?.total?.toLocaleString() ?? '—'}</p>
-                    <p className="text-[10px] text-muted-foreground">Snapshots</p>
+                    <p className="text-[10px] text-muted-foreground">스냅샷</p>
                   </div>
                   <div>
                     <p className="text-lg font-bold text-foreground">{stats?.artists ?? '—'}</p>
-                    <p className="text-[10px] text-muted-foreground">Artists</p>
+                    <p className="text-[10px] text-muted-foreground">아티스트</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-foreground">
