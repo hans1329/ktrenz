@@ -78,15 +78,29 @@ const V3DesktopHero = () => {
         }
       }
 
-      return movers.map((s) => ({
-        wiki_entry_id: s.wiki_entry_id,
-        name: s.wiki_entries?.title ?? "—",
-        slug: s.wiki_entries?.slug ?? "",
-        image_url: s.wiki_entries?.image_url,
-        change: s.energy_change_24h,
-        score: s.total_score,
-        geo: geoMap.get(s.wiki_entry_id) ?? null,
-      }));
+      return movers.map((s) => {
+        // Determine hottest category by highest absolute change
+        const categories = [
+          { key: "youtube" as const, change: s.youtube_change_24h },
+          { key: "buzz" as const, change: s.buzz_change_24h },
+          { key: "music" as const, change: s.music_change_24h },
+          { key: "album" as const, change: s.album_change_24h },
+        ].filter((c) => c.change != null);
+        const hotCategory = categories.length > 0
+          ? categories.sort((a, b) => Math.abs(b.change!) - Math.abs(a.change!))[0]
+          : null;
+
+        return {
+          wiki_entry_id: s.wiki_entry_id,
+          name: s.wiki_entries?.title ?? "—",
+          slug: s.wiki_entries?.slug ?? "",
+          image_url: s.wiki_entries?.image_url,
+          change: s.energy_change_24h,
+          score: s.total_score,
+          geo: geoMap.get(s.wiki_entry_id) ?? null,
+          hotCategory: hotCategory ? { key: hotCategory.key, change: hotCategory.change! } : null,
+        };
+      });
     },
     staleTime: 1000 * 60 * 5,
   });
