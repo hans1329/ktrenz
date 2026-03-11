@@ -2712,6 +2712,68 @@ export type Database = {
           },
         ]
       }
+      ktrenz_geo_change_signals: {
+        Row: {
+          change_rate: number | null
+          country_code: string
+          country_name: string
+          current_rank: number | null
+          current_value: number
+          detected_at: string
+          id: string
+          is_spike: boolean
+          previous_rank: number | null
+          previous_value: number | null
+          rank_change: number | null
+          source: string
+          spike_direction: string | null
+          wiki_entry_id: string
+          window_hours: number
+        }
+        Insert: {
+          change_rate?: number | null
+          country_code: string
+          country_name: string
+          current_rank?: number | null
+          current_value?: number
+          detected_at?: string
+          id?: string
+          is_spike?: boolean
+          previous_rank?: number | null
+          previous_value?: number | null
+          rank_change?: number | null
+          source: string
+          spike_direction?: string | null
+          wiki_entry_id: string
+          window_hours?: number
+        }
+        Update: {
+          change_rate?: number | null
+          country_code?: string
+          country_name?: string
+          current_rank?: number | null
+          current_value?: number
+          detected_at?: string
+          id?: string
+          is_spike?: boolean
+          previous_rank?: number | null
+          previous_value?: number | null
+          rank_change?: number | null
+          source?: string
+          spike_direction?: string | null
+          wiki_entry_id?: string
+          window_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_geo_change_signals_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_geo_fan_data: {
         Row: {
           collected_at: string
