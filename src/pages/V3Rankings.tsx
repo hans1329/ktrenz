@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
+import V3DesktopHero from "@/components/v3/V3DesktopHero";
 import V3Header from "@/components/v3/V3Header";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
