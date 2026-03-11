@@ -291,23 +291,100 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Geo Fan Data (YouTube Comments) ──
+  const { data: geoYtCommentsData } = useQuery({
+    queryKey: ['agency-geo-yt-comments', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_fan_data' as any)
+        .select('country_code, country_name, source, rank_position, listeners, interest_score, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('source', 'youtube_comments')
+        .order('collected_at', { ascending: false })
+        .limit(100);
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((d: any) => {
+        if (seen.has(d.country_code)) return false;
+        seen.add(d.country_code);
+        return true;
+      });
+      return unique.sort((a: any, b: any) => (b.interest_score ?? 0) - (a.interest_score ?? 0)) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Geo Fan Data (Deezer) ──
+  const { data: geoDeezerData } = useQuery({
+    queryKey: ['agency-geo-deezer', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_fan_data' as any)
+        .select('country_code, country_name, source, rank_position, listeners, interest_score, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('source', 'deezer')
+        .order('collected_at', { ascending: false })
+        .limit(100);
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((d: any) => {
+        if (seen.has(d.country_code)) return false;
+        seen.add(d.country_code);
+        return true;
+      });
+      return unique.sort((a: any, b: any) => (b.listeners ?? 0) - (a.listeners ?? 0)) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Geo Change Signals (spikes) ──
+  const { data: geoChangeSignals, refetch: refetchGeoSignals } = useQuery({
+    queryKey: ['agency-geo-signals', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_change_signals' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('is_spike', true)
+        .order('detected_at', { ascending: false })
+        .limit(50);
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
   const geoCollectMutation = useMutation({
     mutationFn: async () => {
-      // Collect both Last.fm and Google Trends in parallel
-      const [lastfmRes, trendsRes] = await Promise.allSettled([
+      const [lastfmRes, trendsRes, deezerRes] = await Promise.allSettled([
         supabase.functions.invoke('collect-geo-fans', { body: { wiki_entry_id: selectedArtistId } }),
         supabase.functions.invoke('collect-geo-trends', { body: { wiki_entry_id: selectedArtistId } }),
+        supabase.functions.invoke('collect-geo-deezer', { body: { wiki_entry_id: selectedArtistId } }),
       ]);
       const lastfmData = lastfmRes.status === 'fulfilled' ? lastfmRes.value.data : null;
       const trendsData = trendsRes.status === 'fulfilled' ? trendsRes.value.data : null;
-      return { lastfm: lastfmData, trends: trendsData };
+      const deezerData = deezerRes.status === 'fulfilled' ? deezerRes.value.data : null;
+      return { lastfm: lastfmData, trends: trendsData, deezer: deezerData };
     },
     onSuccess: (d) => {
       const lastfmCount = d.lastfm?.matches_found ?? 0;
       const trendsCount = d.trends?.matches_found ?? 0;
-      toast.success(`Last.fm ${lastfmCount}개국 + Google Trends ${trendsCount}개국 수집 완료`);
+      const deezerCount = d.deezer?.matches_found ?? 0;
+      toast.success(`Last.fm ${lastfmCount} + Trends ${trendsCount} + Deezer ${deezerCount}개국 수집 완료`);
       refetchGeo();
       refetchGeoTrends();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const geoDetectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('detect-geo-changes', {
+        body: { wiki_entry_id: selectedArtistId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d) => {
+      toast.success(`변동 감지 완료: ${d?.total_spikes ?? 0} spikes`);
+      refetchGeoSignals();
     },
     onError: (e: any) => toast.error(e.message),
   });
