@@ -125,7 +125,7 @@ const V3DesktopHero = () => {
         <div className="grid grid-cols-2 gap-12 items-center">
           {/* Left: Copy */}
           <div className="space-y-6">
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground leading-tight tracking-tight whitespace-pre-line" style={{ fontFamily: "'Do Hyeon', sans-serif" }}>
+            <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground leading-tight tracking-tight whitespace-pre-line" style={{ fontFamily: "'Black Han Sans', sans-serif" }}>
               {t("hero.title")}
             </h1>
 
