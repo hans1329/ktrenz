@@ -381,11 +381,11 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Hero ──
   "hero.badge": { en: "Live Trend Engine", ko: "실시간 트렌드 엔진", ja: "ライブトレンドエンジン", zh: "实时趋势引擎" },
-  "hero.title": { en: "Discover K-Pop\nTrend Signals in Real Time", ko: "K-Pop 트렌드 시그널을\n실시간으로 발견하세요", ja: "K-Popトレンドシグナルを\nリアルタイムで発見", zh: "实时发现\nK-Pop趋势信号" },
-  "hero.subtitle": { en: "Track artist energy scores from YouTube, X, and music charts — updated every 6 hours with the FES engine.", ko: "YouTube, X, 음악 차트 데이터를 기반으로 아티스트 에너지 스코어를 추적합니다. FES 엔진이 6시간마다 업데이트합니다.", ja: "YouTube、X、音楽チャートからアーティストのエネルギースコアを追跡。FESエンジンが6時間ごとに更新。", zh: "追踪来自YouTube、X和音乐排行榜的艺人能量分数——FES引擎每6小时更新。" },
+  "hero.title": { en: "Feel the Pulse\nof K-Pop, Live", ko: "K-Pop의 맥박을\n실시간으로 느끼세요", ja: "K-Popの鼓動を\nリアルタイムで感じる", zh: "实时感受\nK-Pop的脉搏" },
+  "hero.subtitle": { en: "See which artists are surging right now. Our AI-powered engine captures the energy fans create across the globe — so you never miss a moment.", ko: "지금 급상승 중인 아티스트를 확인하세요. AI 기반 엔진이 전 세계 팬들이 만들어내는 에너지를 포착합니다.", ja: "今急上昇中のアーティストをチェック。AIエンジンが世界中のファンが生み出すエネルギーをキャッチします。", zh: "查看哪些艺人正在飙升。AI引擎捕捉全球粉丝创造的能量——不错过任何瞬间。" },
   "hero.statArtists": { en: "Artists", ko: "아티스트", ja: "アーティスト", zh: "艺人" },
-  "hero.statInterval": { en: "Update Cycle", ko: "업데이트 주기", ja: "更新周期", zh: "更新周期" },
-  "hero.statEngine": { en: "Score Engine", ko: "스코어 엔진", ja: "スコアエンジン", zh: "评分引擎" },
+  "hero.statInterval": { en: "Always Fresh", ko: "항상 최신", ja: "常に最新", zh: "始终最新" },
+  "hero.statEngine": { en: "AI-Powered", ko: "AI 기반", ja: "AI駆動", zh: "AI驱动" },
 };
 
 export default translations;
