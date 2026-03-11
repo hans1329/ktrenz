@@ -1045,16 +1045,18 @@ async function collectForSingleArtist(
           .maybeSingle();
         const prevDailySales = prevSnap?.metrics?.total_daily_sales ?? null;
         
-        const score = calculateAlbumScore(totalDailySales, prevDailySales);
+        // Chart bonus from Apple Music & Billboard
+        const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
+        const score = calculateAlbumScore(totalDailySales, prevDailySales, chartBonus);
         await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
         
         await adminClient.from("ktrenz_data_snapshots").insert({
           wiki_entry_id: wikiEntryId, platform: "hanteo_daily",
-          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales" },
+          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales", chart_bonus: chartBonus },
         });
         
-        results.hanteo = { type: "daily", albums: matchedDaily.length, score, totalDailySales, prevDailySales };
-        console.log(`[DataCollector] Hanteo Daily: ${artistTitle} → score=${score}, daily=${totalDailySales}, prev=${prevDailySales}`);
+        results.hanteo = { type: "daily", albums: matchedDaily.length, score, totalDailySales, prevDailySales, chartBonus };
+        console.log(`[DataCollector] Hanteo Daily: ${artistTitle} → score=${score}, daily=${totalDailySales}, prev=${prevDailySales}, chartBonus=${chartBonus}`);
       } else {
         // 일간 차트에 없으면 초동 fallback
         console.log(`[DataCollector] Hanteo Daily: ${artistTitle} not on daily chart, trying initial...`);
