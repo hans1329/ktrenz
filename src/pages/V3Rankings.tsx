@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
+import V3DesktopHero from "@/components/v3/V3DesktopHero";
 import V3Header from "@/components/v3/V3Header";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
@@ -168,6 +169,7 @@ const V3Rankings = () => {
     <>
       <SEO title="K-Pop Trend Rankings – KTrenZ" description="Full K-Pop artist trend rankings" path="/rankings" />
       {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
+      {!isMobile && <V3DesktopHero />}
       <main className={cn("max-w-3xl mx-auto px-4 pb-20", isMobile ? "pt-16" : "pt-4")}>
         <div className="flex items-center gap-3 py-4">
           <Link to="/" className="p-2 rounded-full hover:bg-muted transition-colors">
