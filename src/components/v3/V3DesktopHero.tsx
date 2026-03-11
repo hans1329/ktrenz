@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { TrendingUp, Zap, Globe, Users } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -23,16 +23,8 @@ const V3DesktopHero = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: stats } = useQuery({
-    queryKey: ["hero-stats"],
-    queryFn: async () => {
-      const { count: artistCount } = await supabase
-        .from("ktrenz_artists" as any)
-        .select("id", { count: "exact", head: true });
-      return { artistCount: artistCount ?? 0 };
-    },
-    staleTime: 1000 * 60 * 10,
-  });
+
+
 
   return (
     <section className="relative overflow-hidden border-b border-border/30">
@@ -66,12 +58,8 @@ const V3DesktopHero = () => {
               {t("hero.subtitle")}
             </p>
 
-            {/* Stats row */}
-            <div className="flex items-center gap-8 pt-2">
-              <StatItem icon={Users} value={`${stats?.artistCount ?? "—"}`} label={t("hero.statArtists")} />
-              <StatItem icon={Globe} value="6h" label={t("hero.statInterval")} />
-              <StatItem icon={TrendingUp} value="FES" label={t("hero.statEngine")} />
-            </div>
+
+
           </div>
 
           {/* Right: Top artists showcase */}
@@ -134,16 +122,7 @@ const V3DesktopHero = () => {
   );
 };
 
-const StatItem = ({ icon: Icon, value, label }: { icon: typeof TrendingUp; value: string; label: string }) => (
-  <div className="flex items-center gap-2.5">
-    <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-      <Icon className="w-4 h-4 text-muted-foreground" />
-    </div>
-    <div>
-      <p className="text-sm font-bold text-foreground">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  </div>
-);
+
+
 
 export default V3DesktopHero;
