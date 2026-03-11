@@ -1075,11 +1075,20 @@ async function collectForSingleArtist(
         
         if (matchedAlbums.length > 0) {
           const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
-          const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+          const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
+          const score = Math.round(Math.sqrt(totalSales / 10) * 10) + chartBonus;
           await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
-          results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales };
+          results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales, chartBonus };
         } else {
-          results.hanteo = { albums: 0, message: "No matching albums on daily or initial chart" };
+          // No Hanteo data at all — still check chart presence
+          const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
+          if (chartBonus > 0) {
+            await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: chartBonus });
+            results.hanteo = { type: "chart_only", albums: 0, score: chartBonus, chartBonus, message: "No Hanteo data, chart bonus only" };
+            console.log(`[DataCollector] Album: ${artistTitle} → chart-only score=${chartBonus}`);
+          } else {
+            results.hanteo = { albums: 0, message: "No matching albums on daily or initial chart, no chart bonus" };
+          }
         }
       }
     } catch (e) {
