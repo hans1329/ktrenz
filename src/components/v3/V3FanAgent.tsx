@@ -700,11 +700,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             return prev;
           });
         },
-        onDone: () => {
+        onDone: async () => {
           setIsStreaming(false);
           setStreamingStatus("");
-          queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] });
-          queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user?.id] });
+          // Await invalidation to ensure fresh data before next render
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] }),
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user?.id] }),
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id] }),
+          ]);
           refetchUsage();
         },
       });
