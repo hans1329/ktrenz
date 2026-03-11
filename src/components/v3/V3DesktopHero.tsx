@@ -163,6 +163,18 @@ const V3DesktopHero = () => {
                           FES {mover.score?.toFixed(1)}
                         </p>
                       </div>
+                      {/* Hot category */}
+                      {mover.hotCategory && (() => {
+                        const meta = CATEGORY_META[mover.hotCategory.key];
+                        if (!meta) return null;
+                        const CatIcon = meta.icon;
+                        return (
+                          <div className="flex items-center gap-1 shrink-0 px-2 py-1 rounded-lg bg-muted/40">
+                            <CatIcon className={cn("w-3 h-3", meta.color)} />
+                            <span className="text-[11px] text-muted-foreground font-medium">{meta.label}</span>
+                          </div>
+                        );
+                      })()}
                       {/* Geo target */}
                       {mover.geo && (
                         <div className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-muted/40">
