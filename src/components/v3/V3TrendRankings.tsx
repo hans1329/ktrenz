@@ -269,6 +269,24 @@ const V3TrendRankings = () => {
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
 
+  // Fetch user's agent slots for pinned section
+  const { data: agentSlots } = useQuery({
+    queryKey: ["my-agent-slots", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_agent_slots" as any)
+        .select("wiki_entry_id, slot_name, slot_image_url, updated_at")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null)
+        .order("updated_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+  const periodRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (periodRef.current && !periodRef.current.contains(e.target as Node)) setPeriodOpen(false);
