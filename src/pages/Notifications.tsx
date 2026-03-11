@@ -229,9 +229,9 @@ const Notifications = () => {
 
         {/* Points History Section */}
         <section>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3">📊 최근 포인트 내역</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3">📊 최근 토큰 내역</h2>
           {(recentPoints?.length ?? 0) === 0 ? (
-            <p className="text-xs text-muted-foreground/60 text-center py-4">포인트 기록이 없습니다</p>
+            <p className="text-xs text-muted-foreground/60 text-center py-4">토큰 기록이 없습니다</p>
           ) : (
             <div className="space-y-1.5">
               {(recentPoints ?? []).map((pt: any) => (

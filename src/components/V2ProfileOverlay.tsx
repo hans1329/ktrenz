@@ -116,7 +116,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
-          {/* K-Points Card */}
+          {/* K-Tokens Card */}
           <button
             onClick={() => setShowPointsDrawer(true)}
             className="w-full text-left rounded-xl bg-card border border-border p-4 hover:border-primary/40 hover:bg-primary/5 transition-all"
@@ -128,7 +128,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                    K-Points
+                    K-Tokens
                   </p>
                   <p className="text-lg font-bold text-foreground leading-tight">
                     {kPoints.toLocaleString()}

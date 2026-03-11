@@ -176,7 +176,7 @@ const AdminUsers = () => {
               <TableHead>User</TableHead>
               <TableHead>Agent</TableHead>
               <TableHead className="text-center">Role</TableHead>
-              <TableHead className="text-right">K-Points</TableHead>
+              <TableHead className="text-right">K-Tokens</TableHead>
               <TableHead className="text-right">채팅</TableHead>
               <TableHead className="text-right">로그인</TableHead>
               <TableHead>최근 접속</TableHead>

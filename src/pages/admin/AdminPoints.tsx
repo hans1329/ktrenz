@@ -87,9 +87,9 @@ const AdminPoints = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Coins className="w-5 h-5" /> K-Points 관리
+          <Coins className="w-5 h-5" /> K-Tokens 관리
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">포인트 보상 항목별 지급량과 활성 상태를 관리합니다.</p>
+        <p className="text-sm text-muted-foreground mt-1">토큰 보상 항목별 지급량과 활성 상태를 관리합니다.</p>
       </div>
 
       <Card>
@@ -102,7 +102,7 @@ const AdminPoints = () => {
               <TableRow>
                 <TableHead>항목</TableHead>
                 <TableHead>설명</TableHead>
-                <TableHead className="text-right w-28">포인트</TableHead>
+                <TableHead className="text-right w-28">토큰</TableHead>
                 <TableHead className="text-center w-20">활성</TableHead>
                 <TableHead className="w-20" />
               </TableRow>

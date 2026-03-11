@@ -10,7 +10,7 @@ const navItems = [
   { label: 'Rankings', path: '/admin/rankings', icon: Trophy },
   { label: 'V3 Artists', path: '/admin/v3-artists', icon: Music },
   { label: 'Data Health', path: '/admin/data-health', icon: HeartPulse },
-  { label: 'K-Points', path: '/admin/points', icon: Coins },
+  { label: 'K-Tokens', path: '/admin/points', icon: Coins },
   { label: 'Products', path: '/admin/products', icon: ShoppingBag },
   { label: 'Users', path: '/admin/users', icon: Users },
   { label: 'Intents', path: '/admin/intents', icon: Brain },
