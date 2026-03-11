@@ -352,7 +352,7 @@ const AdminCollectionMonitor = () => {
   if (statsLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-lg font-bold flex items-center gap-2"><Database className="w-5 h-5" /> Data Collection Monitor</h1>
+        <h1 className="text-lg font-bold flex items-center gap-2"><Database className="w-5 h-5" /> 데이터 수집 모니터</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
