@@ -12,6 +12,7 @@ import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
 export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music" | "fan";
@@ -392,9 +393,9 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                     ema7d={item.ema7d} ema30d={item.ema30d} />
                 </div>
               </div>
-            )}
+                )}
 
-            
+
 
             {/* Today's Mission */}
             <V3MissionCards
@@ -431,11 +432,31 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   // 상승 10 + 보합 5 + 하락 8 = 23 고정
   const RISING_COUNT = 10;
   const FLAT_COUNT = 5;
   const FALLING_COUNT = 8;
   const displayCount = RISING_COUNT + FLAT_COUNT + FALLING_COUNT;
+
+  // Fetch user's agent slots
+  const { data: agentSlots } = useQuery({
+    queryKey: ["treemap-agent-slots", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_agent_slots" as any)
+        .select("wiki_entry_id")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null)
+        .order("updated_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
@@ -610,8 +631,36 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       }
     }
 
+    // Ensure agent artists are included (replace last non-agent item if needed)
+    if (agentWikiIds.size > 0) {
+      for (const agentId of agentWikiIds) {
+        if (result.find(r => r.id === agentId)) continue; // already in list
+        const agentItem = base.find(item => item.id === agentId);
+        if (!agentItem) continue;
+        // Replace last non-agent item
+        const lastNonAgentIdx = [...result].reverse().findIndex(r => !agentWikiIds.has(r.id));
+        if (lastNonAgentIdx >= 0) {
+          result[result.length - 1 - lastNonAgentIdx] = agentItem;
+        } else {
+          result.push(agentItem);
+        }
+      }
+    }
+
+    // If agent artist is NOT in top 3, move it to the middle of the array
+    const agentInResult = result.filter(r => agentWikiIds.has(r.id));
+    for (const agentItem of agentInResult) {
+      const idx = result.indexOf(agentItem);
+      if (idx >= 3) {
+        // Remove from current position and insert at middle
+        result.splice(idx, 1);
+        const midIdx = Math.floor(result.length / 2);
+        result.splice(midIdx, 0, agentItem);
+      }
+    }
+
     return result;
-  }, [items, category]);
+  }, [items, category, agentWikiIds]);
 
   const containerWidth = isMobile ? 360 : 420;
   const containerHeight = isMobile ? 620 : 520;
@@ -702,6 +751,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const catScore = getCategoryScore(rect.item, category);
             const surging = isSurging(catChange);
             const isFirst = rectIndex === 0;
+            const isAgentArtist = agentWikiIds.has(rect.item.id);
 
             // 박스 크기에 비례한 동적 폰트 크기 계산
              const boxArea = width * height;
@@ -717,19 +767,32 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const titleOpacity = Math.max(0.6, Math.min(1, sizeFactor / 4));
             const scoreOpacity = Math.max(0.6, Math.min(0.95, sizeFactor / 4.5));
 
+            // Agent artist gets a distinct blue tile color
+            const tileColor = isAgentArtist && !isTopThree
+              ? "hsla(210, 80%, 50%, 0.85)"
+              : getTileColor(catChange);
+
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
                 className={cn(
                   "absolute border flex flex-col items-center justify-center p-1.5 overflow-hidden",
                   isSelected ? "border-primary ring-2 ring-primary/40 z-20 brightness-110" : "border-background/20 hover:brightness-125 hover:z-10"
                 )}
-                style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: getTileColor(catChange) }}>
+                style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: tileColor }}>
 
                 {/* 1등 박스 인너 글로우 */}
                 {isFirst && (
                   <div className="absolute inset-0 z-[1] pointer-events-none" style={{
                     boxShadow: 'inset 0 0 25px 8px hsla(0, 0%, 100%, 0.7), inset 0 0 50px 16px hsla(0, 0%, 100%, 0.4), inset 0 0 80px 25px hsla(0, 0%, 100%, 0.2)',
                     background: 'radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.15) 0%, transparent 60%)',
+                  }} />
+                )}
+
+                {/* Agent artist blue inner glow */}
+                {isAgentArtist && !isTopThree && (
+                  <div className="absolute inset-0 z-[1] pointer-events-none" style={{
+                    boxShadow: 'inset 0 0 20px 6px hsla(210, 80%, 60%, 0.5), inset 0 0 40px 12px hsla(210, 80%, 60%, 0.25)',
+                    background: 'radial-gradient(ellipse at center, hsla(210, 80%, 70%, 0.15) 0%, transparent 60%)',
                   }} />
                 )}
 
