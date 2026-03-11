@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.collect-geo-deezer]
 verify_jwt = false
+
+[functions.detect-geo-changes]
+verify_jwt = false
