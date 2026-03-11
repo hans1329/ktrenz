@@ -240,6 +240,44 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Geo Fan Data ──
+  const { data: geoFanData, refetch: refetchGeo, isLoading: geoLoading } = useQuery({
+    queryKey: ['agency-geo-fans', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_fan_data' as any)
+        .select('country_code, country_name, rank_position, listeners, interest_score, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('collected_at', { ascending: false })
+        .limit(100);
+      // Deduplicate by country_code (keep latest)
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((d: any) => {
+        if (seen.has(d.country_code)) return false;
+        seen.add(d.country_code);
+        return true;
+      });
+      return unique.sort((a: any, b: any) => (b.listeners ?? 0) - (a.listeners ?? 0)) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  const geoCollectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('collect-geo-fans', {
+        body: { wiki_entry_id: selectedArtistId },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed');
+      return data;
+    },
+    onSuccess: (d) => {
+      toast.success(`${d.matches_found}개 국가에서 데이터 수집 완료`);
+      refetchGeo();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // ── Competitor schedule monitoring ──
   const [scheduleCompareIds, setScheduleCompareIds] = useState<string[]>([]);
   const allScheduleIds = [selectedArtistId, ...scheduleCompareIds].filter(Boolean);
