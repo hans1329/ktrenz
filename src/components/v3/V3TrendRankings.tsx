@@ -749,6 +749,7 @@ const V3TrendRankings = () => {
             </div>
           </div>
           <div className="px-4 space-y-3 mb-4">
+            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             ))}
