@@ -7,7 +7,7 @@ import V3Sidebar from "@/components/v3/V3Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart } from "lucide-react";
+import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart, Globe, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SectionHeader = ({ icon: Icon, title, color }: { icon: any; title: string; color: string }) => (
