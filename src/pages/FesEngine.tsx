@@ -290,20 +290,21 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Baselines man
 
       {/* ── Geographic Detection Engine ── */}
       <SectionHeader icon={Globe} title="Geographic Detection Engine" color="bg-teal-600" />
-      <p className="text-xs text-muted-foreground">Identifies <strong>where fan reactions are heating up</strong> by tracking regional signals across 4 independent sources with change-rate detection.</p>
+      <p className="text-xs text-muted-foreground">Identifies <strong>where fan reactions are heating up</strong> by tracking regional signals across 6 independent sources with change-rate detection.</p>
 
       <Card className="p-3 bg-teal-500/5 border-teal-500/20">
         <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">Architecture</p>
         <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
           <li><strong className="text-foreground">Source-Specific Tracking:</strong> Each source tracked independently — no unified score, agencies see per-source signals</li>
           <li><strong className="text-foreground">Change Detection:</strong> 24h rolling window comparison, ±30% threshold → flagged as <code className="text-primary">surge</code> or <code className="text-primary">drop</code></li>
-          <li><strong className="text-foreground">Dual Trigger:</strong> Runs after every 6h pipeline (YouTube Comments + Last.fm) AND after daily geo-trends-cron (Google Trends)</li>
+          <li><strong className="text-foreground">Dual Trigger:</strong> Runs after every 6h pipeline (YouTube Comments + Last.fm + Apple Music + Billboard) AND after daily geo-trends-cron (Google Trends)</li>
+          <li><strong className="text-foreground">Chart → Geo Conversion:</strong> Apple Music & Billboard chart snapshots are automatically converted to geo signals before spike detection</li>
           <li><strong className="text-foreground">Disappearance Detection:</strong> Countries present in previous window but absent in current → automatically flagged as -100% drop</li>
         </ul>
       </Card>
 
       <Card className="p-3 bg-card border-border/50">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">4 Data Sources</p>
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">6 Data Sources</p>
         <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Google Trends (SerpAPI)  — Search interest 0-100 by country
   └ Schedule: 1x/day via geo-trends-cron
   └ Data: interest_by_region (GEO_MAP_0)
@@ -317,7 +318,17 @@ YouTube Comments        — Language detection → country mapping
   └ Data: Unicode range analysis (KR/JP/TH/ID/VN/...)
   └ Cost: Zero additional API calls
 
-Deezer                  — Fan count by country
+Apple Music Charts      — Chart position by country (10 countries)
+  └ Schedule: Every 6h (collect-apple-music-charts)
+  └ Data: Top 100 albums per country → interest_score = 101 − position
+  └ Countries: KR, US, JP, GB, DE, FR, ID, TH, PH, MX
+
+Billboard Charts        — Chart position (US + Global)
+  └ Schedule: Every 6h (collect-billboard-charts)
+  └ Data: Hot 100, Billboard 200, Global 200 → interest_score = 201 − position
+  └ Mapping: Hot 100/200 → US, Global 200 → GL, Global Excl. US → GX
+
+Deezer                  — Fan count by country (excluded from spike detection)
   └ Schedule: Every 6h (collect-geo-deezer)
   └ Data: Geographic fan distribution`}</code>
       </Card>
@@ -333,9 +344,9 @@ Each source × country pair compared independently`} description="Signals stored
       <VarTable rows={[
         { name: "ktrenz_geo_fan_data", desc: "Raw geographic data per source × country × artist", source: "Supabase" },
         { name: "ktrenz_geo_change_signals", desc: "Change rate signals with spike flags", source: "Supabase" },
-        { name: "interest_score", desc: "Google Trends interest value (0-100)", source: "SerpAPI" },
+        { name: "interest_score", desc: "Google Trends interest (0-100) / Apple Music (101−pos) / Billboard (201−pos)", source: "Multi-source" },
         { name: "listeners", desc: "Last.fm listener count per country", source: "Last.fm API" },
-        { name: "country_code", desc: "ISO country code (2-letter)", source: "All sources" },
+        { name: "country_code", desc: "ISO country code (2-letter) + GL/GX for Billboard global", source: "All sources" },
       ]} />
 
       {/* ── API & Data Sources ── */}
