@@ -26,7 +26,7 @@ const V3DesktopHero = () => {
     queryKey: ["hero-stats"],
     queryFn: async () => {
       const { count: artistCount } = await supabase
-        .from("ktrenz_artists")
+        .from("ktrenz_artists" as any)
         .select("id", { count: "exact", head: true });
       return { artistCount: artistCount ?? 0 };
     },

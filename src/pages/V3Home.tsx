@@ -53,6 +53,7 @@ const V3Home = () => {
       <div className="min-h-screen flex flex-col">
         <V3DesktopHeader activeTab={activeTab} onTabChange={setActiveTab} />
         <main className="flex-1">
+          {activeTab === "rankings" && <V3DesktopHero />}
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>
