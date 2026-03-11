@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2 } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
