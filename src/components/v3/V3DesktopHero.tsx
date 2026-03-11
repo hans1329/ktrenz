@@ -31,6 +31,7 @@ const V3DesktopHero = () => {
       const { data: scores } = await supabase
         .from("v3_scores_v2" as any)
         .select(`wiki_entry_id, energy_change_24h, total_score,
+          youtube_change_24h, buzz_change_24h, music_change_24h, album_change_24h,
           wiki_entries:wiki_entry_id (title, slug, image_url)`)
         .order("scored_at", { ascending: false });
 
