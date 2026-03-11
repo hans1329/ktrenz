@@ -1832,7 +1832,7 @@ Deno.serve(async (req) => {
 
       // Get all scores
       const allScores = await (async () => {
-        const result = await handleTool("get_rankings", { limit: 50 }, adminClient, userId, rankingCache);
+        const result = await handleTool("get_rankings", { limit: 50 }, adminClient, userId, rankingCache, activeSlotId, activeSlotIndex);
         return JSON.parse(result).rankings ?? [];
       })();
 
