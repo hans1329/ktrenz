@@ -152,13 +152,16 @@ Deno.serve(async (req) => {
     // Fetch each country
     for (const country of TARGET_COUNTRIES) {
       try {
-        // Fetch pages 1-2 (up to 400 artists per country)
-        const [page1, page2] = await Promise.all([
+        // Fetch pages 1-5 (up to 1000 artists per country)
+        const pages = await Promise.all([
           fetchLastfmGeo(country.lastfm, LASTFM_API_KEY, 1, 200),
           fetchLastfmGeo(country.lastfm, LASTFM_API_KEY, 2, 200),
+          fetchLastfmGeo(country.lastfm, LASTFM_API_KEY, 3, 200),
+          fetchLastfmGeo(country.lastfm, LASTFM_API_KEY, 4, 200),
+          fetchLastfmGeo(country.lastfm, LASTFM_API_KEY, 5, 200),
         ]);
 
-        const allArtists = [...page1, ...page2];
+        const allArtists = pages.flat();
         if (!allArtists.length) continue;
 
         // Check each of our artists against the country's top list
@@ -176,7 +179,7 @@ Deno.serve(async (req) => {
               source: "lastfm",
               rank_position: idx + 1,
               listeners: parseInt(matched.listeners) || 0,
-              interest_score: Math.max(0, Math.round((1 - idx / 400) * 100)),
+              interest_score: Math.max(0, Math.round((1 - idx / 1000) * 100)),
               collected_at: now,
             });
           }
