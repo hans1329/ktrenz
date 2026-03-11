@@ -32,7 +32,7 @@ const AdminFesAnalyst = () => {
         .from("ktrenz_fes_contributions" as any)
         .select("*")
         .order("snapshot_at", { ascending: false })
-        .limit(30);
+        .limit(30) as { data: any[] | null };
       // 아티스트별 최신 1건씩
       const byArtist = new Map<string, any>();
       for (const row of data || []) {
