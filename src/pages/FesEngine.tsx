@@ -63,8 +63,9 @@ const FesEngine = () => {
       <SectionHeader icon={Server} title="Data Pipeline & Collection Cycle" color="bg-slate-600" />
       <p className="text-xs text-muted-foreground">Every <strong>6 hours</strong> (00:05, 06:05, 12:05, 18:05 UTC), the pipeline runs in dependency order:</p>
       <FormulaCard title="Pipeline Execution Order" formula={`youtube → external_videos → music → hanteo
-→ naver_news → buzz → social → fan_activity → energy
-→ detect_geo_changes`} description="Each module runs as an independent Edge Function to avoid the 60s timeout. Dependencies are resolved by sequential ordering. Geographic change detection runs last to capture all fresh data from the current cycle." />
+→ apple_music_charts → billboard_charts
+→ naver_news → buzz → social → fan_activity
+→ energy → detect_geo_changes`} description="Each module runs as an independent Edge Function to avoid the 60s timeout. Dependencies are resolved by sequential ordering. Apple Music & Billboard chart data must be collected before album score calculation." />
       <FormulaCard title="Daily Geo Trends Pipeline (04:00 UTC)" formula={`geo-trends-cron (1x/day):
   collect-geo-trends (SerpAPI) → detect-geo-changes`} description="Google Trends data updates daily, so a separate cron runs once per day to collect interest_by_region data and immediately detect regional spikes." />
 
