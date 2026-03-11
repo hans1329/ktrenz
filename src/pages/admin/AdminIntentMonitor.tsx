@@ -137,10 +137,10 @@ const AdminIntentMonitor = () => {
       <div className="flex items-center gap-3">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by category" />
+            <SelectValue placeholder="카테고리 필터" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">전체 카테고리</SelectItem>
             <SelectItem value="news">News</SelectItem>
             <SelectItem value="schedule">Schedule</SelectItem>
             <SelectItem value="streaming">Streaming</SelectItem>
