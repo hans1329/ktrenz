@@ -117,7 +117,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <MessageSquare className="w-3.5 h-3.5" /> Total Intents
+              <MessageSquare className="w-3.5 h-3.5" /> 전체 인텐트
             </div>
             <p className="text-2xl font-bold text-foreground">{totalIntents}</p>
           </CardContent>
@@ -125,7 +125,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Users className="w-3.5 h-3.5" /> Unique Users
+              <Users className="w-3.5 h-3.5" /> 고유 유저
             </div>
             <p className="text-2xl font-bold text-foreground">{uniqueUsers}</p>
           </CardContent>
@@ -133,7 +133,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Brain className="w-3.5 h-3.5" /> Categories
+              <Brain className="w-3.5 h-3.5" /> 카테고리
             </div>
             <p className="text-2xl font-bold text-foreground">{uniqueCategories}</p>
           </CardContent>
@@ -141,7 +141,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <TrendingUp className="w-3.5 h-3.5" /> Top Category
+              <TrendingUp className="w-3.5 h-3.5" /> 최다 카테고리
             </div>
             <p className="text-lg font-bold text-foreground">{topCatName}</p>
           </CardContent>
