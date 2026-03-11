@@ -15,6 +15,13 @@ const FLAG_EMOJI: Record<string, string> = {
   AR: "🇦🇷", CO: "🇨🇴", PE: "🇵🇪", NL: "🇳🇱", PL: "🇵🇱", RU: "🇷🇺",
 };
 
+const CATEGORY_META: Record<string, { label: string; icon: typeof Youtube; color: string }> = {
+  youtube: { label: "YouTube", icon: Youtube, color: "text-red-400" },
+  buzz: { label: "Buzz", icon: MessageCircle, color: "text-sky-400" },
+  music: { label: "Music", icon: Music, color: "text-violet-400" },
+  album: { label: "Album", icon: Disc3, color: "text-amber-400" },
+};
+
 const V3DesktopHero = () => {
   const { t } = useLanguage();
 
