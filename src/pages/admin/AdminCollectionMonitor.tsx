@@ -262,7 +262,7 @@ const AdminCollectionMonitor = () => {
   const { data: geoStats } = useQuery({
     queryKey: ['collection-monitor-geo'],
     queryFn: async () => {
-      const sources = ['google_trends', 'lastfm', 'youtube_comments'];
+      const sources = ['google_trends', 'lastfm', 'youtube_comments', 'deezer'];
       const results: Record<string, { total: number; artists: number; last: string | null }> = {};
       for (const source of sources) {
         const { data, count } = await supabase
