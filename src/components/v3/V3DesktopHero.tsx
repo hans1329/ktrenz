@@ -5,6 +5,7 @@ import { TrendingUp, Zap, Globe, Users } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import heroVisual from "@/assets/hero-visual.webp";
 
 const V3DesktopHero = () => {
   const { t } = useLanguage();
@@ -35,10 +36,15 @@ const V3DesktopHero = () => {
 
   return (
     <section className="relative overflow-hidden border-b border-border/30">
-      {/* Background glow */}
+      {/* Background image */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/3 rounded-full blur-3xl" />
+        <img
+          src={heroVisual}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-20"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/80" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 py-16">
@@ -52,7 +58,7 @@ const V3DesktopHero = () => {
               </span>
             </div>
 
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
+            <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground leading-tight tracking-tight whitespace-pre-line">
               {t("hero.title")}
             </h1>
 
@@ -71,17 +77,16 @@ const V3DesktopHero = () => {
           {/* Right: Top artists showcase */}
           <div className="flex justify-center">
             <div className="relative w-full max-w-md">
-              {/* Stacked artist cards */}
               <div className="space-y-3">
                 {topArtists?.slice(0, 5).map((artist, i) => (
                   <Link
                     key={artist.id}
                     to={`/artist/${artist.slug}`}
                     className={cn(
-                      "flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group",
+                      "flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-sm transition-all duration-300 group",
                       i === 0
                         ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/5"
-                        : "bg-card/80 border-border/50 hover:border-primary/20 hover:bg-card"
+                        : "bg-card/60 border-border/50 hover:border-primary/20 hover:bg-card/80"
                     )}
                   >
                     <span className={cn(
