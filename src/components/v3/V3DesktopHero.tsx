@@ -66,12 +66,8 @@ const V3DesktopHero = () => {
               {t("hero.subtitle")}
             </p>
 
-            {/* Stats row */}
-            <div className="flex items-center gap-8 pt-2">
-              <StatItem icon={Users} value={`${stats?.artistCount ?? "—"}`} label={t("hero.statArtists")} />
-              <StatItem icon={Globe} value="6h" label={t("hero.statInterval")} />
-              <StatItem icon={TrendingUp} value="FES" label={t("hero.statEngine")} />
-            </div>
+
+
           </div>
 
           {/* Right: Top artists showcase */}
