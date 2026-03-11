@@ -375,7 +375,7 @@ Each source × country pair compared independently`} description="Signals stored
 
       <FormulaCard title="Squarify Algorithm Summary" formula={`1. Sum total energy → calculate area ratio per artist\n2. Place rows minimizing Worst Aspect Ratio\n3. Split along longer axis repeatedly\n4. Result: near-square tile layout → readability ↑`} description="Reference: finviz.com/map, kaito.ai style heatmap layout" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Mar 11, 2026 · KTRENDZ FES Engine v5.4 (6-Category Weighted Energy)</p>
+      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Mar 11, 2026 · KTRENDZ FES Engine v5.4 + Geographic Detection Engine v1.0</p>
     </div>
   );
 

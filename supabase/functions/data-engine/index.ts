@@ -249,6 +249,19 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
   },
   buzz: runBuzz,
   energy: (url, key) => runEnergy(url, key, false),
+  detect_geo_changes: async (url, key) => {
+    console.log("[data-engine] Running detect-geo-changes (post-pipeline)...");
+    const resp = await fetch(`${url}/functions/v1/detect-geo-changes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] detect-geo-changes: ${parsed?.total_spikes ?? 0} spikes detected`);
+    return { status: resp.ok ? "completed" : "error", module: "detect_geo_changes", ...parsed };
+  },
   naver_news: runNaverNews,
   // buzz 개별 소스
   ...Object.fromEntries(
