@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2 } from "lucide-react";
+import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
@@ -12,6 +12,7 @@ import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 // 크론잡 실행 상태 확인 훅
@@ -248,6 +249,63 @@ const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number
   );
 };
 
+const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any) => void }) => {
+  if (!items.length) return null;
+  return (
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2.5 px-1">
+        <Star className="w-3.5 h-3.5 text-primary fill-primary" />
+        <span className="text-xs font-bold text-primary uppercase tracking-wider">My Agent</span>
+        <div className="h-px flex-1 bg-primary/20" />
+      </div>
+      <div className="space-y-1.5">
+        {items.map((item) => {
+          const entry = item.wiki_entries as any;
+          if (!entry) return null;
+          const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
+          return (
+            <Link key={item.wiki_entry_id} to={`/artist/${entry.slug}`} onClick={() => onTrack?.(item)}>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98]">
+                <span className="w-6 text-center text-sm font-bold text-primary">#{item.globalRank}</span>
+                <div className="relative">
+                  <Avatar className="w-10 h-10 ring-2 ring-primary/30 ring-offset-1 ring-offset-background">
+                    <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{entry.title?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <Star className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-primary fill-primary drop-shadow-sm" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-bold text-foreground truncate">{entry.title}</p>
+                    {item.energy_score > 0 && (
+                      <span className={cn("text-[10px] font-bold shrink-0",
+                        item.energy_score >= 300 ? "text-red-500" : item.energy_score >= 150 ? "text-amber-500" : "text-muted-foreground")}>
+                        {item.energy_score >= 300 ? "🔥" : item.energy_score >= 150 ? "⚡" : ""}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 h-1 rounded-full bg-primary/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all" style={{ width: `${Math.min(displayScore / 5, 100)}%` }} />
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-foreground">{Math.round(displayScore)}</p>
+                  <ChangeIndicator change={item.changePercent ?? 0} />
+                  {item.energy_score > 0 && (
+                    <span className="text-[10px] text-primary flex items-center gap-0.5 justify-end mt-0.5">
+                      <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 type Period = "1D" | "1W" | "1M" | "3M";
 const periodDays: Record<Period, number> = { "1D": 1, "1W": 7, "1M": 30, "3M": 90 };
 
@@ -256,7 +314,9 @@ const V3TrendRankings = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const { isAdmin } = useAdminAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
@@ -265,6 +325,24 @@ const V3TrendRankings = () => {
   const { data: crawlStatus } = useCrawlStatus();
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user's agent slots for pinned section
+  const { data: agentSlots } = useQuery({
+    queryKey: ["my-agent-slots", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_agent_slots" as any)
+        .select("wiki_entry_id, slot_name, slot_image_url, updated_at")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null)
+        .order("updated_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+  // periodRef already declared above
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -493,6 +571,18 @@ const V3TrendRankings = () => {
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
   }, [rankings, energyCategory]);
 
+  // Pinned agent artists - extract from rankings
+  const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
+  const pinnedAgentItems = useMemo(() => {
+    if (!agentWikiIds.size || !sortedRankings?.length) return [];
+    return sortedRankings
+      .filter(item => agentWikiIds.has(item.wiki_entry_id))
+      .map(item => {
+        const globalRank = sortedRankings.indexOf(item) + 1;
+        return { ...item, globalRank };
+      });
+  }, [sortedRankings, agentWikiIds]);
+
   const top3Ids = (sortedRankings || []).slice(0, 3).map((r) => r.wiki_entry_id).filter(Boolean);
   const { data: energySnapshots } = useQuery({
     queryKey: ["v3-top3-energy", top3Ids],
@@ -583,6 +673,7 @@ const V3TrendRankings = () => {
                   </button>
                 ))}
             </div>
+            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             ))}
@@ -658,6 +749,7 @@ const V3TrendRankings = () => {
             </div>
           </div>
           <div className="px-4 space-y-3 mb-4">
+            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
             ))}
