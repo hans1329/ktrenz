@@ -1,28 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Zap, MapPin, Globe } from "lucide-react";
+import { TrendingUp, TrendingDown, Flame } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import heroVisual from "@/assets/hero-visual.webp";
 
-const FLAG_EMOJI: Record<string, string> = {
-  US: "🇺🇸", KR: "🇰🇷", JP: "🇯🇵", BR: "🇧🇷", MX: "🇲🇽", IN: "🇮🇳", ID: "🇮🇩",
-  TH: "🇹🇭", PH: "🇵🇭", DE: "🇩🇪", FR: "🇫🇷", GB: "🇬🇧", TR: "🇹🇷", VN: "🇻🇳",
-  AR: "🇦🇷", CL: "🇨🇱", CO: "🇨🇴", PL: "🇵🇱", IT: "🇮🇹", ES: "🇪🇸", CA: "🇨🇦",
-  AU: "🇦🇺", RU: "🇷🇺", SA: "🇸🇦", EG: "🇪🇬", NG: "🇳🇬", MY: "🇲🇾", SG: "🇸🇬",
-  TW: "🇹🇼", HK: "🇭🇰", CN: "🇨🇳", NL: "🇳🇱", SE: "🇸🇪", PE: "🇵🇪",
-};
-
 const V3DesktopHero = () => {
   const { t } = useLanguage();
 
-  // Get top 5 from v3_scores_v2 (which has wiki_entry_id)
   const { data: topArtists } = useQuery({
     queryKey: ["hero-top-artists-v2"],
     queryFn: async () => {
-      // Get tier 1 IDs first
       const { data: tiers } = await supabase
         .from("v3_artist_tiers" as any)
         .select("wiki_entry_id")
@@ -37,7 +27,6 @@ const V3DesktopHero = () => {
 
       if (!scores?.length) return [];
 
-      // Dedupe by wiki_entry_id, keep latest, filter tier 1
       const seen = new Map<string, any>();
       for (const s of scores as any[]) {
         if (tierIds.has(s.wiki_entry_id) && !seen.has(s.wiki_entry_id)) {
@@ -61,88 +50,59 @@ const V3DesktopHero = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Fetch top geo fan data for #1 artist
-  const topWikiId = topArtists?.[0]?.wiki_entry_id;
-  const { data: hotSpots } = useQuery({
-    queryKey: ["hero-hot-spots", topWikiId],
+  // Hot movers: top 4 by absolute energy_change_24h
+  const hotMovers = useQuery({
+    queryKey: ["hero-hot-movers"],
     queryFn: async () => {
-      if (!topWikiId) return [];
+      const { data: tiers } = await supabase
+        .from("v3_artist_tiers" as any)
+        .select("wiki_entry_id")
+        .eq("tier", 1);
+      const tierIds = new Set((tiers ?? []).map((t: any) => t.wiki_entry_id));
 
-      // First try spike signals
-      const { data: spikes } = await supabase
-        .from("ktrenz_geo_change_signals" as any)
-        .select("country_code, country_name, change_rate, spike_direction, source")
-        .eq("wiki_entry_id", topWikiId)
-        .eq("is_spike", true)
-        .order("detected_at", { ascending: false })
-        .limit(4);
+      const { data: scores } = await supabase
+        .from("v3_scores_v2" as any)
+        .select(`wiki_entry_id, energy_change_24h, total_score,
+          wiki_entries:wiki_entry_id (title, slug, image_url)`)
+        .order("scored_at", { ascending: false });
 
-      if (spikes && spikes.length > 0) {
-        return (spikes as any[]).map((s) => ({
-          country_code: s.country_code,
-          country_name: s.country_name,
-          value: Math.abs(s.change_rate ?? 0),
-          label: s.change_rate ? `${s.change_rate > 0 ? "+" : ""}${s.change_rate.toFixed(0)}%` : "NEW",
-          source: s.source,
-          type: "spike" as const,
-        }));
-      }
+      if (!scores?.length) return [];
 
-      // Fallback: show top listener countries
-      const { data: geoFans } = await supabase
-        .from("ktrenz_geo_fan_data" as any)
-        .select("country_code, country_name, listeners, source")
-        .eq("wiki_entry_id", topWikiId)
-        .not("listeners", "is", null)
-        .order("listeners", { ascending: false })
-        .limit(20);
-
-      if (!geoFans?.length) return [];
-
-      // Dedupe by country
-      const seen = new Set<string>();
-      const unique: any[] = [];
-      for (const g of geoFans as any[]) {
-        if (!seen.has(g.country_code)) {
-          seen.add(g.country_code);
-          unique.push(g);
+      const seen = new Map<string, any>();
+      for (const s of scores as any[]) {
+        if (tierIds.has(s.wiki_entry_id) && !seen.has(s.wiki_entry_id)) {
+          seen.set(s.wiki_entry_id, s);
         }
-        if (unique.length >= 4) break;
       }
 
-      return unique.map((g) => ({
-        country_code: g.country_code,
-        country_name: g.country_name,
-        value: g.listeners,
-        label: g.listeners >= 1000 ? `${(g.listeners / 1000).toFixed(0)}K` : `${g.listeners}`,
-        source: g.source,
-        type: "listeners" as const,
-      }));
+      return Array.from(seen.values())
+        .filter((s) => s.energy_change_24h != null && s.energy_change_24h !== 0)
+        .sort((a, b) => Math.abs(b.energy_change_24h) - Math.abs(a.energy_change_24h))
+        .slice(0, 4)
+        .map((s) => ({
+          name: s.wiki_entries?.title ?? "—",
+          slug: s.wiki_entries?.slug ?? "",
+          image_url: s.wiki_entries?.image_url,
+          change: s.energy_change_24h,
+          score: s.total_score,
+        }));
     },
-    enabled: !!topWikiId,
     staleTime: 1000 * 60 * 5,
   });
 
   return (
     <section className="relative overflow-hidden border-b border-border/30">
-      {/* Background image */}
+      {/* Background image — more visible */}
       <div className="absolute inset-0 pointer-events-none">
-        <img src={heroVisual} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/60" />
+        <img src={heroVisual} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/40" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-2 gap-12 items-center">
-          {/* Left: Copy + Hot Spots */}
+          {/* Left: Copy + Hot Movers */}
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-              <Zap className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-semibold text-primary tracking-wide uppercase">
-                {t("hero.badge")}
-              </span>
-            </div>
-
             <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground leading-tight tracking-tight whitespace-pre-line">
               {t("hero.title")}
             </h1>
@@ -151,38 +111,42 @@ const V3DesktopHero = () => {
               {t("hero.subtitle")}
             </p>
 
-            {/* Hot Spots Cards */}
-            {hotSpots && hotSpots.length > 0 && topArtists?.[0] && (
+            {/* Hot Movers Cards */}
+            {hotMovers.data && hotMovers.data.length > 0 && (
               <div className="space-y-3 pt-1">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <Flame className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     {t("hero.hotSpots")}
                   </span>
-                  <span className="text-xs font-bold text-foreground">{topArtists[0].name}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {hotSpots.map((spot, i) => {
-                    const flag = FLAG_EMOJI[spot.country_code] || "🌍";
+                  {hotMovers.data.map((mover, i) => {
+                    const isUp = mover.change > 0;
                     return (
-                      <div
+                      <Link
                         key={i}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm"
+                        to={`/artist/${mover.slug}`}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card/80 transition-colors"
                       >
-                        <span className="text-lg shrink-0">{flag}</span>
+                        <Avatar className="w-8 h-8 shrink-0">
+                          <AvatarImage src={mover.image_url || undefined} className="object-cover" />
+                          <AvatarFallback className="bg-muted text-[10px]">{mover.name?.slice(0, 2)}</AvatarFallback>
+                        </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">
-                            {spot.country_name}
+                          <p className="text-xs font-semibold text-foreground truncate">{mover.name}</p>
+                          <p className="text-[10px] text-muted-foreground tabular-nums">
+                            {mover.score?.toFixed(1)}
                           </p>
-                          <p className="text-[10px] text-muted-foreground capitalize">{spot.source}</p>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Globe className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-xs font-bold text-primary tabular-nums">
-                            {spot.label}
-                          </span>
+                        <div className={cn(
+                          "flex items-center gap-0.5 text-xs font-bold shrink-0",
+                          isUp ? "text-emerald-500" : "text-red-500"
+                        )}>
+                          {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {isUp ? "+" : ""}{mover.change.toFixed(1)}%
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
