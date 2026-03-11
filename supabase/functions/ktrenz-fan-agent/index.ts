@@ -2172,7 +2172,7 @@ Deno.serve(async (req) => {
                 sendStatus(controller, labels[userLang] || labels.en);
               }
 
-              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId);
+              const result = await handleTool(fnName, fnArgs, adminClient, userId, rankingCache, activeSlotId, activeSlotIndex);
 
               // Extract _archiveId from Perplexity-powered tool results
               try {
