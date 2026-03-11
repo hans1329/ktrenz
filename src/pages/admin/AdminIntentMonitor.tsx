@@ -103,7 +103,7 @@ const AdminIntentMonitor = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Brain className="w-3.5 h-3.5" /> Linked Intents
+              <Brain className="w-3.5 h-3.5" /> 연결된 인텐트
             </div>
             <p className="text-2xl font-bold text-foreground">{totalLinked}</p>
           </CardContent>
@@ -111,7 +111,7 @@ const AdminIntentMonitor = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Archive className="w-3.5 h-3.5" /> Unique Archives
+              <Archive className="w-3.5 h-3.5" /> 고유 아카이브
             </div>
             <p className="text-2xl font-bold text-foreground">{totalArchives}</p>
           </CardContent>
@@ -119,7 +119,7 @@ const AdminIntentMonitor = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Database className="w-3.5 h-3.5" /> Topic Types
+              <Database className="w-3.5 h-3.5" /> 토픽 유형
             </div>
             <div className="flex flex-wrap gap-1 mt-1">
               {Object.entries(topicTypes).map(([type, count]) => (
