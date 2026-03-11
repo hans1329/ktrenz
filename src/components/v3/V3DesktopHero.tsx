@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { TrendingUp, TrendingDown, Flame, MapPin } from "lucide-react";
+import { TrendingUp, TrendingDown, Flame, MapPin, Youtube, MessageCircle, Music, Disc3 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
