@@ -460,8 +460,8 @@ function parseHanteoDaily(markdown: string): Array<{ rank: number; album: string
   return results;
 }
 
-/** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) */
-function calculateAlbumScore(dailySales: number, previousDailySales: number | null): number {
+/** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
+function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0): number {
   const baseScore = dailySales > 0 ? Math.log10(dailySales) * 200 : 0;
 
   let deltaScore = 0;
@@ -474,9 +474,60 @@ function calculateAlbumScore(dailySales: number, previousDailySales: number | nu
 
   deltaScore = clampDelta(deltaScore, baseScore);
 
-  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
-  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + chartBonus);
+  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
   return finalScore;
+}
+
+/**
+ * Apple Music / Billboard 차트 진입 보너스 계산
+ * - Apple Music: 차트 순위 기반 (Top 10 = 150pt, Top 50 = 80pt, Top 100 = 30pt) × 국가 수
+ * - Billboard: 차트 순위 기반 (Top 10 = 300pt, Top 50 = 150pt, Top 100 = 60pt, Top 200 = 20pt)
+ */
+async function calculateChartBonus(adminClient: any, wikiEntryId: string): Promise<number> {
+  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  let bonus = 0;
+
+  // Apple Music chart entries (recent 6h)
+  const { data: appleEntries } = await adminClient
+    .from("ktrenz_data_snapshots")
+    .select("metrics")
+    .eq("wiki_entry_id", wikiEntryId)
+    .eq("platform", "apple_music_chart")
+    .gte("collected_at", sixHoursAgo);
+
+  if (appleEntries && appleEntries.length > 0) {
+    for (const entry of appleEntries) {
+      const pos = entry.metrics?.chart_position ?? 999;
+      if (pos <= 10) bonus += 150;
+      else if (pos <= 50) bonus += 80;
+      else if (pos <= 100) bonus += 30;
+    }
+    console.log(`[DataCollector] Chart Bonus: Apple Music ${appleEntries.length} entries → +${bonus}pt`);
+  }
+
+  // Billboard chart entries (recent 6h)
+  const { data: billboardEntries } = await adminClient
+    .from("ktrenz_data_snapshots")
+    .select("metrics")
+    .eq("wiki_entry_id", wikiEntryId)
+    .eq("platform", "billboard_chart")
+    .gte("collected_at", sixHoursAgo);
+
+  if (billboardEntries && billboardEntries.length > 0) {
+    let bbBonus = 0;
+    for (const entry of billboardEntries) {
+      const pos = entry.metrics?.position ?? 999;
+      if (pos <= 10) bbBonus += 300;
+      else if (pos <= 50) bbBonus += 150;
+      else if (pos <= 100) bbBonus += 60;
+      else if (pos <= 200) bbBonus += 20;
+    }
+    bonus += bbBonus;
+    console.log(`[DataCollector] Chart Bonus: Billboard ${billboardEntries.length} entries → +${bbBonus}pt`);
+  }
+
+  return bonus;
 }
 
 // ══════════════════════════════════════
@@ -994,16 +1045,18 @@ async function collectForSingleArtist(
           .maybeSingle();
         const prevDailySales = prevSnap?.metrics?.total_daily_sales ?? null;
         
-        const score = calculateAlbumScore(totalDailySales, prevDailySales);
+        // Chart bonus from Apple Music & Billboard
+        const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
+        const score = calculateAlbumScore(totalDailySales, prevDailySales, chartBonus);
         await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
         
         await adminClient.from("ktrenz_data_snapshots").insert({
           wiki_entry_id: wikiEntryId, platform: "hanteo_daily",
-          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales" },
+          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales", chart_bonus: chartBonus },
         });
         
-        results.hanteo = { type: "daily", albums: matchedDaily.length, score, totalDailySales, prevDailySales };
-        console.log(`[DataCollector] Hanteo Daily: ${artistTitle} → score=${score}, daily=${totalDailySales}, prev=${prevDailySales}`);
+        results.hanteo = { type: "daily", albums: matchedDaily.length, score, totalDailySales, prevDailySales, chartBonus };
+        console.log(`[DataCollector] Hanteo Daily: ${artistTitle} → score=${score}, daily=${totalDailySales}, prev=${prevDailySales}, chartBonus=${chartBonus}`);
       } else {
         // 일간 차트에 없으면 초동 fallback
         console.log(`[DataCollector] Hanteo Daily: ${artistTitle} not on daily chart, trying initial...`);
@@ -1022,11 +1075,20 @@ async function collectForSingleArtist(
         
         if (matchedAlbums.length > 0) {
           const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
-          const score = Math.round(Math.sqrt(totalSales / 10) * 10);
+          const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
+          const score = Math.round(Math.sqrt(totalSales / 10) * 10) + chartBonus;
           await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
-          results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales };
+          results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales, chartBonus };
         } else {
-          results.hanteo = { albums: 0, message: "No matching albums on daily or initial chart" };
+          // No Hanteo data at all — still check chart presence
+          const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
+          if (chartBonus > 0) {
+            await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: chartBonus });
+            results.hanteo = { type: "chart_only", albums: 0, score: chartBonus, chartBonus, message: "No Hanteo data, chart bonus only" };
+            console.log(`[DataCollector] Album: ${artistTitle} → chart-only score=${chartBonus}`);
+          } else {
+            results.hanteo = { albums: 0, message: "No matching albums on daily or initial chart, no chart bonus" };
+          }
         }
       }
     } catch (e) {
