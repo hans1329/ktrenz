@@ -13,37 +13,41 @@ async function fetchTrendsInterest(
 ): Promise<Array<{ country: string; countryCode: string; interest: number }>> {
   const trendsUrl = `https://trends.google.com/trends/explore?q=${encodeURIComponent(artistName)}&date=now%207-d`;
 
-  const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${firecrawlKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      url: trendsUrl,
-      formats: [
-        {
-          type: "json",
+    const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${firecrawlKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: trendsUrl,
+        formats: ["extract"],
+        extract: {
           prompt:
-            'Extract the "Interest by subregion" or "Interest by region" data from this Google Trends page. Return a JSON array of objects with fields: "country" (full country name in English), "countryCode" (ISO 3166-1 alpha-2 code like US, KR, JP), and "interest" (integer 0-100 representing relative search interest). Only include country-level data, not states/provinces. If no regional data is found, return an empty array.',
+            'Extract the "Interest by subregion" or "Interest by region" data from this Google Trends page. Return a JSON object with a "regions" field containing an array of objects with fields: "country" (full country name in English), "countryCode" (ISO 3166-1 alpha-2 code like US, KR, JP), and "interest" (integer 0-100 representing relative search interest). Only include country-level data, not states/provinces. If no regional data is found, return {"regions": []}.',
           schema: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                country: { type: "string" },
-                countryCode: { type: "string" },
-                interest: { type: "number" },
+            type: "object",
+            properties: {
+              regions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    country: { type: "string" },
+                    countryCode: { type: "string" },
+                    interest: { type: "number" },
+                  },
+                  required: ["country", "countryCode", "interest"],
+                },
               },
-              required: ["country", "countryCode", "interest"],
             },
+            required: ["regions"],
           },
         },
-      ],
-      waitFor: 5000,
-      onlyMainContent: false,
-    }),
-  });
+        waitFor: 5000,
+        onlyMainContent: false,
+      }),
+    });
 
   if (!res.ok) {
     const errText = await res.text();
