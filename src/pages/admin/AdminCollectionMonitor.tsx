@@ -48,6 +48,15 @@ const DATA_SOURCES = [
     description: 'X, Reddit, TikTok, News 멘션 + YT댓글/네이버 뉴스 합산',
     usedIn: ['Buzz Score (23%)', 'Sentiment Analysis'],
     collectFrequency: '6h',
+    subSources: [
+      { name: 'X (Twitter)', weight: '1.5x', icon: '𝕏' },
+      { name: 'Reddit', weight: '1.2x', icon: '🟠' },
+      { name: 'TikTok', weight: '1.4x', icon: '🎵' },
+      { name: 'News', weight: '2.0x', icon: '📰' },
+      { name: 'YT Comments', weight: '1.5x', icon: '💬' },
+      { name: 'Naver News', weight: '1.3x', icon: '🇰🇷' },
+      { name: 'External Videos', weight: '1.2x', icon: '📺' },
+    ],
   },
   {
     id: 'naver_news',
@@ -405,6 +414,22 @@ const AdminCollectionMonitor = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Sub-sources for Buzz */}
+                {'subSources' in source && (source as any).subSources && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">세부 소스:</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {(source as any).subSources.map((sub: { name: string; weight: string; icon: string }, i: number) => (
+                        <div key={i} className="flex items-center gap-1 text-[10px] bg-muted/50 rounded px-1.5 py-0.5">
+                          <span>{sub.icon}</span>
+                          <span className="text-foreground font-medium truncate">{sub.name}</span>
+                          <span className="text-muted-foreground ml-auto">{sub.weight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
