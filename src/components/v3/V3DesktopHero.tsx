@@ -138,8 +138,8 @@ const V3DesktopHero = () => {
           {hotMovers.data && hotMovers.data.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <Flame className="w-3.5 h-3.5 text-[hsl(170,80%,65%)]" />
+                <span className="text-xs font-semibold text-[hsl(170,80%,65%)] uppercase tracking-wide">
                   {t("hero.hotSpots")}
                 </span>
               </div>
