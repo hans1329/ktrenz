@@ -135,8 +135,29 @@ Ext Videos:  1.2x  ← external channel appearances`}</code>
       </Card>
 
       {/* ── Album Sales ── */}
-      <SectionHeader icon={BarChart3} title="Album Sales Score" color="bg-emerald-600" />
-      <p className="text-xs text-muted-foreground">Album/physical sales data sourced from <strong>Hanteo Chart API</strong>.</p>
+      <SectionHeader icon={BarChart3} title="Album Sales Score (Multi-Source)" color="bg-emerald-600" />
+      <p className="text-xs text-muted-foreground">Album/physical sales from <strong>Hanteo Chart</strong> + global chart presence from <strong>Apple Music RSS</strong> and <strong>Billboard</strong> (Firecrawl scrape).</p>
+      <FormulaCard title="Formula" formula={`AlbumScore = baseScore × 0.30 + deltaScore × 0.70 + chartBonus
+
+baseScore  = log10(dailySales) × 200
+deltaScore = (dailySales − prevDailySales) / 10K × 500
+chartBonus = appleBonus + billboardBonus`} description="Chart bonus is additive — artists charting globally get a significant uplift even without Hanteo sales data. If no Hanteo data exists, score = chartBonus only." />
+      <Card className="p-3 bg-card border-border/50">
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">Chart Bonus Points</p>
+        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Apple Music (per country, 10 countries):
+  Top 10:  +150pt    Top 50:  +80pt    Top 100: +30pt
+
+Billboard (per chart: 200, Hot 100, Global 200, Global Excl. US):
+  Top 10:  +300pt    Top 50:  +150pt
+  Top 100: +60pt     Top 200: +20pt`}</code>
+        <p className="text-[10px] text-muted-foreground mt-1.5">Example: Artist in Apple Music KR #3 + US #45 + Billboard Global 200 #80 → 150 + 80 + 60 = +290pt chart bonus</p>
+      </Card>
+      <VarTable rows={[
+        { name: "dailySales", desc: "Hanteo daily album sales", source: "Hanteo Chart API" },
+        { name: "appleChartPos", desc: "Album chart position per country (10 countries)", source: "Apple Music RSS" },
+        { name: "billboardPos", desc: "Chart position on 4 Billboard charts", source: "Firecrawl (billboard.com)" },
+        { name: "prevDailySales", desc: "24h ago sales for delta", source: "ktrenz_data_snapshots" },
+      ]} />
 
       {/* ── Music Score ── */}
       <SectionHeader icon={Music} title="Music Score (v2 Delta-over-Delta)" color="bg-purple-600" />
