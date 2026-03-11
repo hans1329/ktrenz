@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.geo-trends-cron]
 verify_jwt = false
+
+[functions.collect-apple-music-charts]
+verify_jwt = false
+
+[functions.collect-billboard-charts]
+verify_jwt = false
