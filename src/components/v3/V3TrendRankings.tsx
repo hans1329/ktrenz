@@ -257,7 +257,9 @@ const V3TrendRankings = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const { isAdmin } = useAdminAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>("1D");
   const [periodOpen, setPeriodOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "treemap">("treemap");
