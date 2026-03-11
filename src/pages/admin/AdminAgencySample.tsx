@@ -1139,6 +1139,17 @@ Artist: ${context.artist}
                                     <span className={s.rank_change > 0 ? 'text-emerald-500' : 'text-red-500'}>
                                       Rank {s.rank_change > 0 ? '↑' : '↓'}{Math.abs(s.rank_change)}
                                     </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className={`text-sm font-bold ${isSurge ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {s.change_rate > 0 ? '+' : ''}{s.change_rate}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
 
                   {/* ── 24h Country Change Rates (ALL) ── */}
@@ -1149,9 +1160,9 @@ Artist: ${context.artist}
                         <span className="text-xs text-muted-foreground">{geoAllSignals.length} country×source pairs</span>
                         {geoAllSignals[0]?.detected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoAllSignals[0].detected_at), 'MM/dd HH:mm')}</span>}
                       </div>
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                         <table className="w-full text-xs">
-                          <thead>
+                          <thead className="sticky top-0 bg-card">
                             <tr className="border-b border-border/30 text-muted-foreground">
                               <th className="text-left py-1.5 px-2 font-medium">Country</th>
                               <th className="text-left py-1.5 px-1 font-medium">Source</th>
@@ -1164,7 +1175,6 @@ Artist: ${context.artist}
                           <tbody>
                             {[...geoAllSignals]
                               .sort((a: any, b: any) => Math.abs(b.change_rate ?? 0) - Math.abs(a.change_rate ?? 0))
-                              .slice(0, 30)
                               .map((s: any, i: number) => {
                                 const cr = s.change_rate ?? 0;
                                 const isUp = cr > 0;
@@ -1200,16 +1210,6 @@ Artist: ${context.artist}
                               })}
                           </tbody>
                         </table>
-                      </div>
-                    </div>
-                                </div>
-                              </div>
-                              <span className={`text-sm font-bold ${isSurge ? 'text-emerald-500' : 'text-red-500'}`}>
-                                {s.change_rate > 0 ? '+' : ''}{s.change_rate}%
-                              </span>
-                            </div>
-                          );
-                        })}
                       </div>
                     </div>
                   )}
