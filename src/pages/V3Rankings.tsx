@@ -4,13 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronUp, ChevronDown, Flame, ArrowLeft, Crown, Medal, Youtube, Twitter, Music, Disc3, TrendingUp } from "lucide-react";
+import { ChevronUp, ChevronDown, Flame, ArrowLeft, Crown, Medal, Youtube, Twitter, Music, Disc3, TrendingUp, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import V3Header from "@/components/v3/V3Header";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
 import type { EnergyCategory } from "@/components/v3/V3Treemap";
 
 const ChangeIndicator = ({ change }: { change: number }) => {
@@ -46,12 +47,30 @@ const CATEGORY_CHIPS: { key: EnergyCategory; label: string; icon: React.ReactNod
 const V3Rankings = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const [category, setCategory] = useState<EnergyCategory>("all");
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
     return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
+
+  // Fetch user's agent slots
+  const { data: agentSlots } = useQuery({
+    queryKey: ["my-agent-slots-rankings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_agent_slots" as any)
+        .select("wiki_entry_id, slot_name, slot_image_url, updated_at")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null)
+        .order("updated_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
 
   const { data: rankings, isLoading } = useQuery({
     queryKey: ["v3-full-rankings"],
@@ -131,6 +150,18 @@ const V3Rankings = () => {
     return [...top5, ...middle, ...bottom5];
   }, [rankings, category]);
 
+  // Pinned agent artists
+  const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
+  const pinnedAgentItems = useMemo(() => {
+    if (!agentWikiIds.size || !sortedRankings?.length) return [];
+    return sortedRankings
+      .filter(item => agentWikiIds.has(item.wiki_entry_id))
+      .map(item => {
+        const globalRank = sortedRankings.indexOf(item) + 1;
+        return { ...item, globalRank };
+      });
+  }, [sortedRankings, agentWikiIds]);
+
   const maxScore = Math.max(...sortedRankings.map((item: any) => Number(item.displayScore ?? 0)), 1);
 
   return (
@@ -164,6 +195,58 @@ const V3Rankings = () => {
           </div>
         ) : (
           <div className="space-y-2">
+            {/* Pinned My Agent section */}
+            {pinnedAgentItems.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <Star className="w-3.5 h-3.5 text-primary fill-primary" />
+                  <span className="text-xs font-bold text-primary uppercase tracking-wider">My Agent</span>
+                  <div className="h-px flex-1 bg-primary/20" />
+                </div>
+                {pinnedAgentItems.map((item) => {
+                  const entry = item.wiki_entries as any;
+                  if (!entry) return null;
+                  const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
+                  const scorePercent = maxScore > 0 ? (displayScore / maxScore) * 100 : 0;
+                  return (
+                    <Link key={`pinned-${item.wiki_entry_id}`} to={`/artist/${entry.slug}`}>
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98] mb-1.5">
+                        <div className="w-7 flex justify-center shrink-0">
+                          <span className="text-sm font-bold text-primary">#{item.globalRank}</span>
+                        </div>
+                        <div className="relative">
+                          <Avatar className="w-12 h-12 ring-2 ring-primary/30 ring-offset-1 ring-offset-background">
+                            <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{entry.title?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <Star className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-primary fill-primary drop-shadow-sm" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-base font-bold text-foreground truncate">{entry.title}</p>
+                            {item.energy_score >= 300 && <span className="text-[10px] shrink-0">🔥</span>}
+                            {item.energy_score >= 150 && item.energy_score < 300 && <span className="text-[10px] shrink-0">⚡</span>}
+                          </div>
+                          <div className="mt-1 h-1 rounded-full bg-primary/10 overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all" style={{ width: `${scorePercent}%` }} />
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-base font-bold text-foreground">{Math.round(displayScore)}</p>
+                          <ChangeIndicator change={item.changePercent ?? 0} />
+                          {item.energy_score > 0 && (
+                            <span className="text-[10px] text-primary flex items-center gap-0.5 justify-end mt-0.5">
+                              <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
             {sortedRankings?.map((item, idx) => {
               const entry = item.wiki_entries as any;
               if (!entry) return null;
