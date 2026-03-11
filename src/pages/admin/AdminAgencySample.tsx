@@ -985,100 +985,133 @@ Artist: ${context.artist}
             </Card>
           )}
 
-          {/* ═══ Row 7.5: Global Fan Reach — 어디서 반응이 일어나고 있는가? ═══ */}
+          {/* ═══ Row 7.5: Global Fan Reach ═══ */}
           <Separator />
           <Card className="border-cyan-500/30 bg-gradient-to-r from-cyan-500/5 to-transparent">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-cyan-500" /> 🌍 Global Fan Reach — 어디서 반응이 일어나고 있는가?
+                    <Globe className="w-4 h-4 text-cyan-500" /> 🌍 Global Fan Reach
                   </CardTitle>
-                  <CardDescription className="text-xs">Last.fm 국가별 리스너 데이터 기반</CardDescription>
+                  <CardDescription className="text-xs">Last.fm listeners + Google Trends search interest</CardDescription>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => geoCollectMutation.mutate()} disabled={geoCollectMutation.isPending}>
                   {geoCollectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
-                  수집
+                  Collect All
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {geoLoading ? (
+              {(geoLoading || geoTrendsLoading) ? (
                 <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" /> 로딩 중...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading...
                 </div>
-              ) : geoFanData && geoFanData.length > 0 ? (
-                <div className="space-y-4">
-                  {/* World Heatmap Grid */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">🗺️ Interest Heatmap</p>
-                    <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
-                      {geoFanData.map((g: any) => {
-                        const maxListeners = geoFanData[0]?.listeners || 1;
-                        const intensity = Math.max(0.15, (g.listeners || 0) / maxListeners);
-                        const isTop3 = geoFanData.indexOf(g) < 3;
-                        return (
-                          <div
-                            key={g.country_code}
-                            className={`rounded-lg p-2 text-center transition-all cursor-default ${isTop3 ? 'ring-1 ring-cyan-500/50' : ''}`}
-                            style={{
-                              backgroundColor: `hsla(180, 80%, 50%, ${intensity * 0.6})`,
-                            }}
-                            title={`${g.country_name}: ${g.listeners?.toLocaleString()} listeners (Rank #${g.rank_position})`}
-                          >
-                            <p className="text-lg leading-none">{countryFlag(g.country_code)}</p>
-                            <p className="text-[9px] font-bold mt-0.5 text-foreground">{g.country_code}</p>
-                            <p className="text-[8px] text-muted-foreground">{g.listeners ? (g.listeners >= 1e6 ? (g.listeners / 1e6).toFixed(1) + 'M' : g.listeners >= 1e3 ? (g.listeners / 1e3).toFixed(0) + 'K' : g.listeners) : '-'}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Top Countries Bar Chart */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">📊 Top Countries by Listeners</p>
-                    <div className="space-y-1.5">
-                      {geoFanData.slice(0, 10).map((g: any, i: number) => {
-                        const maxL = geoFanData[0]?.listeners || 1;
-                        const pct = ((g.listeners || 0) / maxL) * 100;
-                        return (
-                          <div key={g.country_code} className="flex items-center gap-2">
-                            <span className="text-sm w-5 text-center shrink-0">{countryFlag(g.country_code)}</span>
-                            <span className="text-xs w-14 shrink-0 text-muted-foreground">{g.country_name}</span>
-                            <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
-                              <div
-                                className="h-full rounded transition-all duration-500"
-                                style={{
-                                  width: `${Math.max(pct, 2)}%`,
-                                  background: i < 3 ? 'linear-gradient(90deg, hsl(180, 70%, 40%), hsl(180, 80%, 55%))' : 'hsl(var(--muted-foreground) / 0.3)',
-                                }}
-                              />
-                              <span className="absolute inset-y-0 right-1.5 flex items-center text-[10px] font-medium">
-                                #{g.rank_position}
-                              </span>
+              ) : (geoFanData && geoFanData.length > 0) || (geoTrendsData && geoTrendsData.length > 0) ? (
+                <div className="space-y-5">
+                  {/* ── Last.fm Section ── */}
+                  {geoFanData && geoFanData.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] border-red-500/40 text-red-400">Last.fm</Badge>
+                        <span className="text-xs text-muted-foreground">{geoFanData.length} countries</span>
+                        {geoFanData[0]?.collected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoFanData[0].collected_at), 'MM/dd HH:mm')}</span>}
+                      </div>
+                      <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                        {geoFanData.map((g: any) => {
+                          const maxListeners = geoFanData[0]?.listeners || 1;
+                          const intensity = Math.max(0.15, (g.listeners || 0) / maxListeners);
+                          const isTop3 = geoFanData.indexOf(g) < 3;
+                          return (
+                            <div key={g.country_code} className={`rounded-lg p-2 text-center transition-all cursor-default ${isTop3 ? 'ring-1 ring-cyan-500/50' : ''}`} style={{ backgroundColor: `hsla(180, 80%, 50%, ${intensity * 0.6})` }} title={`${g.country_name}: ${g.listeners?.toLocaleString()} listeners (Rank #${g.rank_position})`}>
+                              <p className="text-lg leading-none">{countryFlag(g.country_code)}</p>
+                              <p className="text-[9px] font-bold mt-0.5 text-foreground">{g.country_code}</p>
+                              <p className="text-[8px] text-muted-foreground">{g.listeners ? (g.listeners >= 1e6 ? (g.listeners / 1e6).toFixed(1) + 'M' : g.listeners >= 1e3 ? (g.listeners / 1e3).toFixed(0) + 'K' : g.listeners) : '-'}</p>
                             </div>
-                            <span className="text-xs text-muted-foreground w-16 text-right shrink-0">
-                              {g.listeners?.toLocaleString()}
-                            </span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-1.5">
+                        {geoFanData.slice(0, 8).map((g: any, i: number) => {
+                          const maxL = geoFanData[0]?.listeners || 1;
+                          const pct = ((g.listeners || 0) / maxL) * 100;
+                          return (
+                            <div key={g.country_code} className="flex items-center gap-2">
+                              <span className="text-sm w-5 text-center shrink-0">{countryFlag(g.country_code)}</span>
+                              <span className="text-xs w-14 shrink-0 text-muted-foreground">{g.country_name}</span>
+                              <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
+                                <div className="h-full rounded transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%`, background: i < 3 ? 'linear-gradient(90deg, hsl(180, 70%, 40%), hsl(180, 80%, 55%))' : 'hsl(var(--muted-foreground) / 0.3)' }} />
+                                <span className="absolute inset-y-0 right-1.5 flex items-center text-[10px] font-medium">#{g.rank_position}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground w-16 text-right shrink-0">{g.listeners?.toLocaleString()}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Summary stats */}
-                  <div className="flex gap-4 text-xs text-muted-foreground border-t border-border/30 pt-2">
-                    <span>총 {geoFanData.length}개국 진입</span>
-                    <span>총 리스너: {geoFanData.reduce((s: number, g: any) => s + (g.listeners || 0), 0).toLocaleString()}</span>
-                    {geoFanData[0] && <span>최다: {countryFlag(geoFanData[0].country_code)} {geoFanData[0].country_name}</span>}
-                    {geoFanData[0]?.collected_at && <span className="ml-auto">수집: {format(new Date(geoFanData[0].collected_at), 'MM/dd HH:mm')}</span>}
+                  {/* ── Google Trends Section ── */}
+                  {geoTrendsData && geoTrendsData.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] border-blue-500/40 text-blue-400">Google Trends</Badge>
+                        <span className="text-xs text-muted-foreground">{geoTrendsData.length} countries • Search Interest (0–100)</span>
+                        {geoTrendsData[0]?.collected_at && <span className="text-[10px] text-muted-foreground ml-auto">{format(new Date(geoTrendsData[0].collected_at), 'MM/dd HH:mm')}</span>}
+                      </div>
+                      <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                        {geoTrendsData.map((g: any) => {
+                          const maxInterest = geoTrendsData[0]?.interest_score || 100;
+                          const intensity = Math.max(0.15, (g.interest_score || 0) / maxInterest);
+                          const isTop3 = geoTrendsData.indexOf(g) < 3;
+                          return (
+                            <div key={g.country_code} className={`rounded-lg p-2 text-center transition-all cursor-default ${isTop3 ? 'ring-1 ring-blue-500/50' : ''}`} style={{ backgroundColor: `hsla(220, 80%, 55%, ${intensity * 0.6})` }} title={`${g.country_name}: Interest ${g.interest_score}/100`}>
+                              <p className="text-lg leading-none">{countryFlag(g.country_code)}</p>
+                              <p className="text-[9px] font-bold mt-0.5 text-foreground">{g.country_code}</p>
+                              <p className="text-[8px] text-muted-foreground">{g.interest_score ?? '-'}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-1.5">
+                        {geoTrendsData.slice(0, 8).map((g: any, i: number) => {
+                          const maxI = geoTrendsData[0]?.interest_score || 100;
+                          const pct = ((g.interest_score || 0) / maxI) * 100;
+                          return (
+                            <div key={g.country_code} className="flex items-center gap-2">
+                              <span className="text-sm w-5 text-center shrink-0">{countryFlag(g.country_code)}</span>
+                              <span className="text-xs w-14 shrink-0 text-muted-foreground">{g.country_name}</span>
+                              <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
+                                <div className="h-full rounded transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%`, background: i < 3 ? 'linear-gradient(90deg, hsl(220, 70%, 45%), hsl(220, 80%, 60%))' : 'hsl(var(--muted-foreground) / 0.3)' }} />
+                                <span className="absolute inset-y-0 right-1.5 flex items-center text-[10px] font-medium">{g.interest_score}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Combined Summary */}
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground border-t border-border/30 pt-2">
+                    {geoFanData && geoFanData.length > 0 && (
+                      <>
+                        <span>🎵 {geoFanData.length} countries (Last.fm)</span>
+                        <span>Total: {geoFanData.reduce((s: number, g: any) => s + (g.listeners || 0), 0).toLocaleString()} listeners</span>
+                      </>
+                    )}
+                    {geoTrendsData && geoTrendsData.length > 0 && (
+                      <>
+                        <span>🔍 {geoTrendsData.length} countries (Trends)</span>
+                        <span>Peak: {geoTrendsData[0] && `${countryFlag(geoTrendsData[0].country_code)} ${geoTrendsData[0].interest_score}/100`}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   <Globe className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                  <p>지역별 데이터가 없습니다. "수집" 버튼을 클릭하세요.</p>
+                  <p>No regional data yet. Click "Collect All" to gather data.</p>
                 </div>
               )}
             </CardContent>
