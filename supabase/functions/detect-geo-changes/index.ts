@@ -79,6 +79,94 @@ Deno.serve(async (req) => {
 
     console.log(`[detect-geo-changes] Processing ${artistIds.length} artist(s)`);
 
+    // ── Step 0: Convert chart snapshots → ktrenz_geo_fan_data ──
+    // Apple Music & Billboard chart entries become geo signals
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    let chartGeoInserted = 0;
+
+    for (const artistId of artistIds) {
+      // Apple Music charts → geo rows
+      const { data: appleSnapshots } = await sb
+        .from("ktrenz_data_snapshots")
+        .select("wiki_entry_id, metrics, collected_at")
+        .eq("wiki_entry_id", artistId)
+        .eq("platform", "apple_music_chart")
+        .gte("collected_at", sixHoursAgo);
+
+      if (appleSnapshots?.length) {
+        // Group by country, take best (lowest) position
+        const countryBest = new Map<string, { position: number; collected_at: string }>();
+        for (const snap of appleSnapshots) {
+          const m = snap.metrics as any;
+          const cc = (m.country || "").toUpperCase();
+          const pos = m.chart_position || 100;
+          const existing = countryBest.get(cc);
+          if (!existing || pos < existing.position) {
+            countryBest.set(cc, { position: pos, collected_at: snap.collected_at });
+          }
+        }
+
+        const geoRows = Array.from(countryBest.entries()).map(([cc, data]) => ({
+          wiki_entry_id: artistId,
+          country_code: cc,
+          country_name: APPLE_MUSIC_COUNTRIES[cc.toLowerCase()] || cc,
+          source: "apple_music",
+          rank_position: data.position,
+          listeners: 0,
+          interest_score: Math.max(0, 101 - data.position), // position 1 → score 100
+          collected_at: data.collected_at,
+        }));
+
+        if (geoRows.length > 0) {
+          const { error } = await sb.from("ktrenz_geo_fan_data").insert(geoRows);
+          if (!error) chartGeoInserted += geoRows.length;
+        }
+      }
+
+      // Billboard charts → geo rows
+      const { data: billboardSnapshots } = await sb
+        .from("ktrenz_data_snapshots")
+        .select("wiki_entry_id, metrics, collected_at")
+        .eq("wiki_entry_id", artistId)
+        .eq("platform", "billboard_chart")
+        .gte("collected_at", sixHoursAgo);
+
+      if (billboardSnapshots?.length) {
+        const chartBest = new Map<string, { position: number; collected_at: string; chart_id: string }>();
+        for (const snap of billboardSnapshots) {
+          const m = snap.metrics as any;
+          const chartId = m.chart_id || "";
+          const mapping = BILLBOARD_COUNTRY_MAP[chartId];
+          if (!mapping) continue;
+          const key = mapping.code;
+          const pos = m.position || 200;
+          const existing = chartBest.get(key);
+          if (!existing || pos < existing.position) {
+            chartBest.set(key, { position: pos, collected_at: snap.collected_at, chart_id: chartId });
+          }
+        }
+
+        const geoRows = Array.from(chartBest.entries()).map(([cc, data]) => ({
+          wiki_entry_id: artistId,
+          country_code: cc,
+          country_name: BILLBOARD_COUNTRY_MAP[data.chart_id]?.name || cc,
+          source: "billboard",
+          rank_position: data.position,
+          listeners: 0,
+          interest_score: Math.max(0, 201 - data.position), // position 1 → score 200
+          collected_at: data.collected_at,
+        }));
+
+        if (geoRows.length > 0) {
+          const { error } = await sb.from("ktrenz_geo_fan_data").insert(geoRows);
+          if (!error) chartGeoInserted += geoRows.length;
+        }
+      }
+    }
+
+    console.log(`[detect-geo-changes] Chart → Geo: ${chartGeoInserted} rows inserted`);
+
+    // ── Step 1: Compare windows for spike detection ──
     const now = new Date();
     const windowAgo = new Date(now.getTime() - WINDOW_HOURS * 60 * 60 * 1000);
     const prevWindowStart = new Date(windowAgo.getTime() - WINDOW_HOURS * 60 * 60 * 1000);
