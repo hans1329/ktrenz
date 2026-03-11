@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "social", "buzz", "energy", "detect_geo_changes"] as const;
+const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -27,7 +27,9 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   social: 30,
   buzz: 120,
   energy: 5,
-  detect_geo_changes: 0,
+  detect_geo_changes: 5,
+  fes_analyst: 5,
+  fes_predictor: 0,
 };
 
 // ── 유틸: fire-and-forget ──
@@ -263,6 +265,32 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "detect_geo_changes", ...parsed };
   },
   naver_news: runNaverNews,
+  fes_analyst: async (url, key) => {
+    console.log("[data-engine] Running FES Analyst...");
+    const resp = await fetch(`${url}/functions/v1/ktrenz-fes-analyst`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] FES Analyst: ${parsed?.contributions_saved ?? 0} contributions, ${parsed?.trends_saved ?? 0} trends`);
+    return { status: resp.ok ? "completed" : "error", module: "fes_analyst", ...parsed };
+  },
+  fes_predictor: async (url, key) => {
+    console.log("[data-engine] Running FES Predictor...");
+    const resp = await fetch(`${url}/functions/v1/ktrenz-fes-predictor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] FES Predictor: ${parsed?.predictions?.length ?? 0} predictions`);
+    return { status: resp.ok ? "completed" : "error", module: "fes_predictor", ...parsed };
+  },
   // buzz 개별 소스
   ...Object.fromEntries(
     BUZZ_SOURCES.map(mod => [mod, (url: string, key: string) => runBuzzSource(url, key, mod)])
