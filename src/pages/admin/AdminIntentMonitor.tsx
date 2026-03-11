@@ -87,7 +87,7 @@ const AdminIntentMonitor = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Link2 className="w-6 h-6" /> Intent ↔ Knowledge Monitor
+            <Link2 className="w-6 h-6" /> 인텐트 ↔ 지식 모니터
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Intent와 Knowledge Archive 간의 관계를 시각화합니다
