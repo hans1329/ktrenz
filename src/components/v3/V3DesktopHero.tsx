@@ -13,11 +13,11 @@ const V3DesktopHero = () => {
     queryKey: ["hero-top-artists"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("ktrenz_artists")
+        .from("ktrenz_artists" as any)
         .select("id, name, slug, image_url, total_score, velocity_score, intensity_score")
         .order("total_score", { ascending: false })
         .limit(5);
-      return data ?? [];
+      return (data ?? []) as any[];
     },
     staleTime: 1000 * 60 * 5,
   });
