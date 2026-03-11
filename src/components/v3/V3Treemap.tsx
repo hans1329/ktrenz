@@ -751,6 +751,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const catScore = getCategoryScore(rect.item, category);
             const surging = isSurging(catChange);
             const isFirst = rectIndex === 0;
+            const isAgentArtist = agentWikiIds.has(rect.item.id);
 
             // 박스 크기에 비례한 동적 폰트 크기 계산
              const boxArea = width * height;
@@ -765,6 +766,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
             const badgePy = Math.max(1, Math.min(4, sizeFactor * 0.6));
             const titleOpacity = Math.max(0.6, Math.min(1, sizeFactor / 4));
             const scoreOpacity = Math.max(0.6, Math.min(0.95, sizeFactor / 4.5));
+
+            // Agent artist gets a distinct blue tile color
+            const tileColor = isAgentArtist && !isTopThree
+              ? "hsla(210, 80%, 50%, 0.85)"
+              : getTileColor(catChange);
 
             return (
               <button key={rect.item.id} onClick={() => handleTileClick(rect.item)}
