@@ -40,6 +40,7 @@ interface GeoRow {
 // 소스별 대표 값 추출
 function getValue(row: GeoRow): number {
   if (row.source === "lastfm") return row.listeners ?? 0;
+  if (row.source === "apple_music" || row.source === "billboard") return row.interest_score ?? 0;
   return row.interest_score ?? 0;
 }
 
