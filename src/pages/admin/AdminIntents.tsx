@@ -93,7 +93,7 @@ const AdminIntents = () => {
             size="sm"
             onClick={() => setViewMode('raw')}
           >
-            Raw Intents
+            Raw 인텐트
           </Button>
           <Button
             variant={viewMode === 'summary' ? 'default' : 'outline'}
