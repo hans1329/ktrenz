@@ -6,19 +6,19 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-  { label: 'Rankings', path: '/admin/rankings', icon: Trophy },
-  { label: 'V3 Artists', path: '/admin/v3-artists', icon: Music },
-  { label: 'Data Health', path: '/admin/data-health', icon: HeartPulse },
-  { label: 'Collection Monitor', path: '/admin/collection-monitor', icon: Database },
-  { label: 'K-Tokens', path: '/admin/points', icon: Coins },
-  { label: 'Products', path: '/admin/products', icon: ShoppingBag },
-  { label: 'Users', path: '/admin/users', icon: Users },
-  { label: 'Intents', path: '/admin/intents', icon: Brain },
-  { label: 'Intent Monitor', path: '/admin/intent-monitor', icon: Activity },
-  { label: 'Ref. YouTube List', path: '/admin/watched-channels', icon: MonitorPlay },
-  { label: 'Agency Sample', path: '/admin/agency-sample', icon: Building2 },
-  { label: 'Wiki Entries', path: '/admin/entries', icon: FileText },
+  { label: '대시보드', path: '/admin', icon: LayoutDashboard },
+  { label: '랭킹 관리', path: '/admin/rankings', icon: Trophy },
+  { label: '아티스트 관리', path: '/admin/v3-artists', icon: Music },
+  { label: '데이터 헬스', path: '/admin/data-health', icon: HeartPulse },
+  { label: '수집 모니터', path: '/admin/collection-monitor', icon: Database },
+  { label: 'K-토큰 설정', path: '/admin/points', icon: Coins },
+  { label: '상품 관리', path: '/admin/products', icon: ShoppingBag },
+  { label: '유저 관리', path: '/admin/users', icon: Users },
+  { label: '인텐트 분석', path: '/admin/intents', icon: Brain },
+  { label: '인텐트 모니터', path: '/admin/intent-monitor', icon: Activity },
+  { label: '참조 유튜브 목록', path: '/admin/watched-channels', icon: MonitorPlay },
+  { label: '에이전시 샘플', path: '/admin/agency-sample', icon: Building2 },
+  { label: 'Wiki 항목', path: '/admin/entries', icon: FileText },
 ];
 
 const AdminLayout = () => {
@@ -50,7 +50,7 @@ const AdminLayout = () => {
           <Link to="/" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ChevronLeft className="w-3 h-3" /> 사이트로
           </Link>
-          <span className="ml-auto text-sm font-bold text-foreground">Admin</span>
+          <span className="ml-auto text-sm font-bold text-foreground">관리자</span>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => {

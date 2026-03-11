@@ -87,7 +87,7 @@ const AdminIntentMonitor = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Link2 className="w-6 h-6" /> Intent ↔ Knowledge Monitor
+            <Link2 className="w-6 h-6" /> 인텐트 ↔ 지식 모니터
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Intent와 Knowledge Archive 간의 관계를 시각화합니다
@@ -103,7 +103,7 @@ const AdminIntentMonitor = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Brain className="w-3.5 h-3.5" /> Linked Intents
+              <Brain className="w-3.5 h-3.5" /> 연결된 인텐트
             </div>
             <p className="text-2xl font-bold text-foreground">{totalLinked}</p>
           </CardContent>
@@ -111,7 +111,7 @@ const AdminIntentMonitor = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Archive className="w-3.5 h-3.5" /> Unique Archives
+              <Archive className="w-3.5 h-3.5" /> 고유 아카이브
             </div>
             <p className="text-2xl font-bold text-foreground">{totalArchives}</p>
           </CardContent>
@@ -119,7 +119,7 @@ const AdminIntentMonitor = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Database className="w-3.5 h-3.5" /> Topic Types
+              <Database className="w-3.5 h-3.5" /> 토픽 유형
             </div>
             <div className="flex flex-wrap gap-1 mt-1">
               {Object.entries(topicTypes).map(([type, count]) => (
@@ -137,10 +137,10 @@ const AdminIntentMonitor = () => {
       <div className="flex items-center gap-3">
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by category" />
+            <SelectValue placeholder="카테고리 필터" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">전체 카테고리</SelectItem>
             <SelectItem value="news">News</SelectItem>
             <SelectItem value="schedule">Schedule</SelectItem>
             <SelectItem value="streaming">Streaming</SelectItem>

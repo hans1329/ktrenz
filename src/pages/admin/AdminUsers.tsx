@@ -164,7 +164,7 @@ const AdminUsers = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">KTrenZ Users</h1>
+        <h1 className="text-2xl font-bold">유저 관리</h1>
         <p className="text-sm text-muted-foreground mt-1">
           KTrenZ 로그인 이력 유저 · 총 {users.length}명
         </p>

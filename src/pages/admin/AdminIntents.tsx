@@ -81,7 +81,7 @@ const AdminIntents = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Brain className="w-6 h-6" /> Intent Monitor
+            <Brain className="w-6 h-6" /> 인텐트 분석
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Fan Agent 대화에서 추출된 사용자 의도 데이터를 실시간으로 확인합니다
@@ -93,14 +93,14 @@ const AdminIntents = () => {
             size="sm"
             onClick={() => setViewMode('raw')}
           >
-            Raw Intents
+            Raw 인텐트
           </Button>
           <Button
             variant={viewMode === 'summary' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('summary')}
           >
-            <BarChart3 className="w-4 h-4 mr-1" /> Summaries
+            <BarChart3 className="w-4 h-4 mr-1" /> 요약
           </Button>
           <Button
             variant="outline"
@@ -117,7 +117,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <MessageSquare className="w-3.5 h-3.5" /> Total Intents
+              <MessageSquare className="w-3.5 h-3.5" /> 전체 인텐트
             </div>
             <p className="text-2xl font-bold text-foreground">{totalIntents}</p>
           </CardContent>
@@ -125,7 +125,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Users className="w-3.5 h-3.5" /> Unique Users
+              <Users className="w-3.5 h-3.5" /> 고유 유저
             </div>
             <p className="text-2xl font-bold text-foreground">{uniqueUsers}</p>
           </CardContent>
@@ -133,7 +133,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Brain className="w-3.5 h-3.5" /> Categories
+              <Brain className="w-3.5 h-3.5" /> 카테고리
             </div>
             <p className="text-2xl font-bold text-foreground">{uniqueCategories}</p>
           </CardContent>
@@ -141,7 +141,7 @@ const AdminIntents = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <TrendingUp className="w-3.5 h-3.5" /> Top Category
+              <TrendingUp className="w-3.5 h-3.5" /> 최다 카테고리
             </div>
             <p className="text-lg font-bold text-foreground">{topCatName}</p>
           </CardContent>
@@ -154,10 +154,10 @@ const AdminIntents = () => {
           <div className="flex items-center gap-3">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+              <SelectValue placeholder="카테고리 필터" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 카테고리</SelectItem>
                 <SelectItem value="news">News</SelectItem>
                 <SelectItem value="schedule">Schedule</SelectItem>
                 <SelectItem value="streaming">Streaming</SelectItem>

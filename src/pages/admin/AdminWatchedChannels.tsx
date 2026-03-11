@@ -138,15 +138,15 @@ const AdminWatchedChannels = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Reference YouTube List</h1>
+        <h1 className="text-2xl font-bold text-foreground">참조 유튜브 채널 목록</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          External YouTube channels to monitor for artist appearances (variety shows, music shows, etc.)
+          아티스트 출연을 모니터링할 외부 YouTube 채널 (예능, 음악방송 등)
         </p>
       </div>
 
       {/* Add new channel */}
       <Card className="p-4">
-        <h3 className="text-sm font-semibold mb-3">Add Channel</h3>
+        <h3 className="text-sm font-semibold mb-3">채널 추가</h3>
         <div className="flex flex-wrap gap-2 items-end">
           <div className="space-y-1 flex-1 min-w-[240px]">
             <label className="text-xs text-muted-foreground">YouTube Handle or URL</label>

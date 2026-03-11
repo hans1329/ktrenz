@@ -352,7 +352,7 @@ const AdminCollectionMonitor = () => {
   if (statsLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-lg font-bold flex items-center gap-2"><Database className="w-5 h-5" /> Data Collection Monitor</h1>
+        <h1 className="text-lg font-bold flex items-center gap-2"><Database className="w-5 h-5" /> 데이터 수집 모니터</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
@@ -376,7 +376,7 @@ const AdminCollectionMonitor = () => {
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold flex items-center gap-2">
-          <Database className="w-5 h-5 text-primary" /> Data Collection Monitor
+          <Database className="w-5 h-5 text-primary" /> 데이터 수집 모니터
         </h1>
         <p className="text-xs text-muted-foreground mt-1">
           전체 외부 데이터 소스 현황 · 수집 주기 · 사용처 · 성공/실패 상태
@@ -386,19 +386,19 @@ const AdminCollectionMonitor = () => {
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Total Sources</p>
+          <p className="text-xs text-muted-foreground">전체 소스</p>
           <p className="text-2xl font-bold text-foreground">{totalSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Active (≤{STALE_HOURS}h)</p>
+          <p className="text-xs text-muted-foreground">정상 (≤{STALE_HOURS}h)</p>
           <p className="text-2xl font-bold text-emerald-500">{activeSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">{"Stale (>"}{STALE_HOURS}{"h)"}</p>
+          <p className="text-xs text-muted-foreground">{"지연 (>"}{STALE_HOURS}{"h)"}</p>
           <p className="text-2xl font-bold text-amber-500">{staleSources}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">Never Collected</p>
+          <p className="text-xs text-muted-foreground">미수집</p>
           <p className="text-2xl font-bold text-red-500">{totalSources - activeSources - staleSources}</p>
         </Card>
       </div>
@@ -434,17 +434,17 @@ const AdminCollectionMonitor = () => {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-lg font-bold text-foreground">{stats?.total?.toLocaleString() ?? '—'}</p>
-                    <p className="text-[10px] text-muted-foreground">Snapshots</p>
+                    <p className="text-[10px] text-muted-foreground">스냅샷</p>
                   </div>
                   <div>
                     <p className="text-lg font-bold text-foreground">{stats?.artists ?? '—'}</p>
-                    <p className="text-[10px] text-muted-foreground">Artists</p>
+                    <p className="text-[10px] text-muted-foreground">아티스트</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-medium text-foreground">
-                      {stats?.last ? formatDistanceToNow(new Date(stats.last), { addSuffix: true }) : 'Never'}
+                      {stats?.last ? formatDistanceToNow(new Date(stats.last), { addSuffix: true }) : '없음'}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">Last Run</p>
+                    <p className="text-[10px] text-muted-foreground">최근 수집</p>
                   </div>
                 </div>
 
@@ -490,7 +490,7 @@ const AdminCollectionMonitor = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" /> Recent Collection Logs
+              <Activity className="w-4 h-4 text-primary" /> 최근 수집 로그
             </CardTitle>
             <CardDescription className="text-xs">최근 50건 수집 로그</CardDescription>
           </CardHeader>
@@ -499,10 +499,10 @@ const AdminCollectionMonitor = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs w-40">Time</TableHead>
-                    <TableHead className="text-xs">Platform</TableHead>
-                    <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-xs">Artist</TableHead>
+                    <TableHead className="text-xs w-40">시간</TableHead>
+                    <TableHead className="text-xs">플랫폼</TableHead>
+                    <TableHead className="text-xs">상태</TableHead>
+                    <TableHead className="text-xs">아티스트</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -537,10 +537,10 @@ const AdminCollectionMonitor = () => {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-500" /> Pipeline Execution Order
-          </CardTitle>
-          <CardDescription className="text-xs">6시간 주기 수집 파이프라인 실행 순서 (데이터 의존성 기반)</CardDescription>
-        </CardHeader>
+              <Zap className="w-4 h-4 text-amber-500" /> 파이프라인 실행 순서
+            </CardTitle>
+            <CardDescription className="text-xs">6시간 주기 수집 파이프라인 실행 순서 (데이터 의존성 기반)</CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             {[
