@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.crawl-blip-schedule]
 verify_jwt = false
+
+[functions.collect-geo-fans]
+verify_jwt = false
