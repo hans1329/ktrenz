@@ -2712,6 +2712,50 @@ export type Database = {
           },
         ]
       }
+      ktrenz_geo_fan_data: {
+        Row: {
+          collected_at: string
+          country_code: string
+          country_name: string
+          id: string
+          interest_score: number | null
+          listeners: number | null
+          rank_position: number | null
+          source: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          collected_at?: string
+          country_code: string
+          country_name: string
+          id?: string
+          interest_score?: number | null
+          listeners?: number | null
+          rank_position?: number | null
+          source?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          collected_at?: string
+          country_code?: string
+          country_name?: string
+          id?: string
+          interest_score?: number | null
+          listeners?: number | null
+          rank_position?: number | null
+          source?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_geo_fan_data_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_point_packages: {
         Row: {
           bonus_label: string | null
