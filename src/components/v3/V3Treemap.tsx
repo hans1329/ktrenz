@@ -432,11 +432,31 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   const [selectedItem, setSelectedItem] = useState<TreemapItem | null>(null);
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   // 상승 10 + 보합 5 + 하락 8 = 23 고정
   const RISING_COUNT = 10;
   const FLAT_COUNT = 5;
   const FALLING_COUNT = 8;
   const displayCount = RISING_COUNT + FLAT_COUNT + FALLING_COUNT;
+
+  // Fetch user's agent slots
+  const { data: agentSlots } = useQuery({
+    queryKey: ["treemap-agent-slots", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_agent_slots" as any)
+        .select("wiki_entry_id")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null)
+        .order("updated_at", { ascending: false });
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["v3-treemap-data-v2", displayCount],
