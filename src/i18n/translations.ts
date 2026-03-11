@@ -135,10 +135,10 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.profile.biasArtist": { en: "Bias Artist", ko: "최애 아티스트", ja: "推しアーティスト", zh: "最爱艺人" },
   "agent.profile.tapToChange": { en: "Tap photo to change", ko: "사진을 눌러 변경", ja: "写真をタップして変更", zh: "点击照片更改" },
 
-  // ── K-Points Purchase ──
-  "points.purchaseTitle": { en: "Get K-Points", ko: "K-Points 충전", ja: "K-Points チャージ", zh: "充值K-Points" },
-  "points.purchaseDesc": { en: "Purchase K-Points to unlock more features.", ko: "K-Points를 충전해서 다양한 기능을 이용하세요.", ja: "K-Pointsを購入して機能をアンロックしましょう。", zh: "购买K-Points解锁更多功能。" },
-  "points.buyPoints": { en: "Buy K-Points", ko: "K-Points 충전", ja: "K-Points 購入", zh: "购买K-Points" },
+  // ── K-Tokens Purchase ──
+  "points.purchaseTitle": { en: "Get K-Tokens", ko: "K-Tokens 충전", ja: "K-Points チャージ", zh: "充值K-Points" },
+  "points.purchaseDesc": { en: "Purchase K-Tokens to unlock more features.", ko: "K-Tokens를 충전해서 다양한 기능을 이용하세요.", ja: "K-Pointsを購入して機能をアンロックしましょう。", zh: "购买K-Points解锁更多功能。" },
+  "points.buyPoints": { en: "Buy K-Tokens", ko: "K-Tokens 충전", ja: "K-Points 購入", zh: "购买K-Points" },
 
   // ── Profile Overlay ──
   "profile.viewPlans": { en: "View plans & upgrade →", ko: "플랜 보기 및 업그레이드 →", ja: "プランを見る →", zh: "查看方案和升级 →" },
