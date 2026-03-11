@@ -333,7 +333,7 @@ const V3TrendRankings = () => {
       if (!user?.id) return [];
       const { data } = await supabase
         .from("ktrenz_agent_slots" as any)
-        .select("wiki_entry_id, slot_name, slot_image_url, updated_at")
+        .select("wiki_entry_id, artist_name, avatar_url, updated_at")
         .eq("user_id", user.id)
         .not("wiki_entry_id", "is", null)
         .order("updated_at", { ascending: false });
