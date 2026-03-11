@@ -7,7 +7,7 @@ import V3Sidebar from "@/components/v3/V3Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart } from "lucide-react";
+import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart, Globe, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SectionHeader = ({ icon: Icon, title, color }: { icon: any; title: string; color: string }) => (
@@ -63,7 +63,10 @@ const FesEngine = () => {
       <SectionHeader icon={Server} title="Data Pipeline & Collection Cycle" color="bg-slate-600" />
       <p className="text-xs text-muted-foreground">Every <strong>6 hours</strong> (00:05, 06:05, 12:05, 18:05 UTC), the pipeline runs in dependency order:</p>
       <FormulaCard title="Pipeline Execution Order" formula={`youtube → external_videos → music → hanteo
-→ naver_news → buzz → social → fan_activity → energy`} description="Each module runs as an independent Edge Function to avoid the 60s timeout. Dependencies (e.g., Buzz needs YouTube comments & Naver news) are resolved by sequential ordering." />
+→ naver_news → buzz → social → fan_activity → energy
+→ detect_geo_changes`} description="Each module runs as an independent Edge Function to avoid the 60s timeout. Dependencies are resolved by sequential ordering. Geographic change detection runs last to capture all fresh data from the current cycle." />
+      <FormulaCard title="Daily Geo Trends Pipeline (04:00 UTC)" formula={`geo-trends-cron (1x/day):
+  collect-geo-trends (SerpAPI) → detect-geo-changes`} description="Google Trends data updates daily, so a separate cron runs once per day to collect interest_by_region data and immediately detect regional spikes." />
 
       {/* ── Total Trend Score ── */}
       <SectionHeader icon={TrendingUp} title="Total Trend Score" color="bg-primary" />
@@ -263,15 +266,68 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Baselines man
         <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">200+</p><p className="text-[10px] text-muted-foreground">Explosive</p></Card>
       </div>
 
+      {/* ── Geographic Detection Engine ── */}
+      <SectionHeader icon={Globe} title="Geographic Detection Engine" color="bg-teal-600" />
+      <p className="text-xs text-muted-foreground">Identifies <strong>where fan reactions are heating up</strong> by tracking regional signals across 4 independent sources with change-rate detection.</p>
+
+      <Card className="p-3 bg-teal-500/5 border-teal-500/20">
+        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">Architecture</p>
+        <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
+          <li><strong className="text-foreground">Source-Specific Tracking:</strong> Each source tracked independently — no unified score, agencies see per-source signals</li>
+          <li><strong className="text-foreground">Change Detection:</strong> 24h rolling window comparison, ±30% threshold → flagged as <code className="text-primary">surge</code> or <code className="text-primary">drop</code></li>
+          <li><strong className="text-foreground">Dual Trigger:</strong> Runs after every 6h pipeline (YouTube Comments + Last.fm) AND after daily geo-trends-cron (Google Trends)</li>
+          <li><strong className="text-foreground">Disappearance Detection:</strong> Countries present in previous window but absent in current → automatically flagged as -100% drop</li>
+        </ul>
+      </Card>
+
+      <Card className="p-3 bg-card border-border/50">
+        <p className="text-[11px] text-muted-foreground font-medium mb-1">4 Data Sources</p>
+        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Google Trends (SerpAPI)  — Search interest 0-100 by country
+  └ Schedule: 1x/day via geo-trends-cron
+  └ Data: interest_by_region (GEO_MAP_0)
+
+Last.fm                 — Listener count by country
+  └ Schedule: Every 6h (collect-geo-fans)
+  └ Data: top listeners by country ranking
+
+YouTube Comments        — Language detection → country mapping
+  └ Schedule: Every 6h (ktrenz-yt-sentiment)
+  └ Data: Unicode range analysis (KR/JP/TH/ID/VN/...)
+  └ Cost: Zero additional API calls
+
+Deezer                  — Fan count by country
+  └ Schedule: Every 6h (collect-geo-deezer)
+  └ Data: Geographic fan distribution`}</code>
+      </Card>
+
+      <FormulaCard title="Change Detection Logic" formula={`changeRate = (currentValue − previousValue) / previousValue × 100
+
+isSpike = |changeRate| ≥ 30%  (SPIKE_THRESHOLD)
+spikeDirection = changeRate > 0 ? "surge" : "drop"
+
+Window: current (now − 24h ~ now) vs previous (now − 48h ~ now − 24h)
+Each source × country pair compared independently`} description="Signals stored in ktrenz_geo_change_signals table with full history for trend analysis." />
+
+      <VarTable rows={[
+        { name: "ktrenz_geo_fan_data", desc: "Raw geographic data per source × country × artist", source: "Supabase" },
+        { name: "ktrenz_geo_change_signals", desc: "Change rate signals with spike flags", source: "Supabase" },
+        { name: "interest_score", desc: "Google Trends interest value (0-100)", source: "SerpAPI" },
+        { name: "listeners", desc: "Last.fm listener count per country", source: "Last.fm API" },
+        { name: "country_code", desc: "ISO country code (2-letter)", source: "All sources" },
+      ]} />
+
       {/* ── API & Data Sources ── */}
       <SectionHeader icon={Server} title="API & Data Sources" color="bg-slate-600" />
       <div className="space-y-2">
-        <ApiCard method="POST" endpoint="data-engine" description="Orchestrates the full pipeline. Triggers each module sequentially via fire-and-forget chaining." params={["module: 'all' | module name", "wikiEntryId?", "triggerSource?"]} />
+        <ApiCard method="POST" endpoint="data-engine" description="Orchestrates the full pipeline. Triggers each module sequentially via fire-and-forget chaining. Includes detect_geo_changes as final step." params={["module: 'all' | module name", "wikiEntryId?", "triggerSource?"]} />
         <ApiCard method="POST" endpoint="ktrenz-data-collector" description="Collects YouTube + Music + Hanteo + Buzz data per source." params={["source: 'youtube' | 'music' | 'hanteo' | 'buzz'", "wikiEntryId?"]} />
         <ApiCard method="POST" endpoint="collect-social-followers" description="Scrapes kpop-radar.com for Instagram/TikTok/Spotify/Twitter follower data. ~4 Firecrawl credits." params={["— (all tier-1 artists)"]} />
         <ApiCard method="POST" endpoint="calculate-energy-score" description="Calculates FES v5.4 using percentile + sigmoid model across 6 categories." params={["isBaseline?"]} />
         <ApiCard method="POST" endpoint="query-artist-energy" description="Realtime per-artist energy query endpoint (user-facing)." params={["wiki_entry_id", "sources?"]} />
         <ApiCard method="POST" endpoint="crawl-naver-news" description="Collects Naver news articles for Korean media coverage." params={["artistName", "wikiEntryId"]} />
+        <ApiCard method="POST" endpoint="geo-trends-cron" description="Daily orchestrator: collect-geo-trends → detect-geo-changes. Chains Google Trends collection with spike detection." params={["wiki_entry_id?"]} />
+        <ApiCard method="POST" endpoint="collect-geo-trends" description="Fetches Google Trends interest_by_region data via SerpAPI for all tier 1-3 artists." params={["wiki_entry_id?"]} />
+        <ApiCard method="POST" endpoint="detect-geo-changes" description="Compares 24h windows to detect ±30% regional spikes across all geo sources." params={["wiki_entry_id?"]} />
       </div>
 
       <VarTable rows={[
@@ -280,6 +336,8 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Baselines man
         { name: "v3_energy_baselines_v2", desc: "EMA baselines for FES calculation", source: "Supabase" },
         { name: "ktrenz_data_snapshots", desc: "Raw platform collection data (all sources)", source: "Supabase" },
         { name: "ktrenz_user_events", desc: "User activity events for fan score", source: "Supabase" },
+        { name: "ktrenz_geo_fan_data", desc: "Geographic fan data per source × country", source: "Supabase" },
+        { name: "ktrenz_geo_change_signals", desc: "Regional change signals with spike detection", source: "Supabase" },
         { name: "wiki_entries.metadata", desc: "Cached raw data (YouTube/Buzz/Music)", source: "Supabase JSONB" },
       ]} />
 
@@ -317,7 +375,7 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="Baselines man
 
       <FormulaCard title="Squarify Algorithm Summary" formula={`1. Sum total energy → calculate area ratio per artist\n2. Place rows minimizing Worst Aspect Ratio\n3. Split along longer axis repeatedly\n4. Result: near-square tile layout → readability ↑`} description="Reference: finviz.com/map, kaito.ai style heatmap layout" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Mar 11, 2026 · KTRENDZ FES Engine v5.4 (6-Category Weighted Energy)</p>
+      <p className="text-[10px] text-muted-foreground text-center mt-6">Last updated: Mar 11, 2026 · KTRENDZ FES Engine v5.4 + Geographic Detection Engine v1.0</p>
     </div>
   );
 
