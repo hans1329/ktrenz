@@ -26,7 +26,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   hanteo: 10,
   social: 30,
   buzz: 120,
-  energy: 0,
+  energy: 5,
+  detect_geo_changes: 0,
 };
 
 // ── 유틸: fire-and-forget ──
