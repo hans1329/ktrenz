@@ -30,6 +30,13 @@ const BUZZ_SOURCE_COLORS: Record<string, string> = {
   yt_comments: '#ef4444', naver: '#03C75A', ext_videos: '#8b5cf6',
 };
 
+// Convert country code to flag emoji
+const countryFlag = (code: string) => {
+  if (!code || code.length !== 2) return '🏳️';
+  const offset = 127397;
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => c.charCodeAt(0) + offset));
+};
+
 const AdminAgencySample = () => {
   const [selectedArtistId, setSelectedArtistId] = useState<string>('');
   const [compareArtistId, setCompareArtistId] = useState<string>('none');
