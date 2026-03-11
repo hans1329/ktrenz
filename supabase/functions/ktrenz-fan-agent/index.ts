@@ -287,7 +287,8 @@ async function handleTool(
   adminClient: any,
   userId: string,
   rankingCache: { data: any[] | null },
-  activeSlotId?: string | null
+  activeSlotId?: string | null,
+  activeSlotIndex?: number | null
 ): Promise<string> {
   // Helper: get all latest scores (cached per request)
   async function getAllScores(): Promise<any[]> {
