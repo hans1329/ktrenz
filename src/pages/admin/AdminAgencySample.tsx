@@ -247,17 +247,17 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
-  // ── Geo Fan Data ──
+  // ── Geo Fan Data (Last.fm) ──
   const { data: geoFanData, refetch: refetchGeo, isLoading: geoLoading } = useQuery({
     queryKey: ['agency-geo-fans', selectedArtistId],
     queryFn: async () => {
       const { data } = await supabase
         .from('ktrenz_geo_fan_data' as any)
-        .select('country_code, country_name, rank_position, listeners, interest_score, collected_at')
+        .select('country_code, country_name, source, rank_position, listeners, interest_score, collected_at')
         .eq('wiki_entry_id', selectedArtistId)
+        .eq('source', 'lastfm')
         .order('collected_at', { ascending: false })
         .limit(100);
-      // Deduplicate by country_code (keep latest)
       const seen = new Set<string>();
       const unique = (data ?? []).filter((d: any) => {
         if (seen.has(d.country_code)) return false;
@@ -269,18 +269,45 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Geo Fan Data (Google Trends) ──
+  const { data: geoTrendsData, refetch: refetchGeoTrends, isLoading: geoTrendsLoading } = useQuery({
+    queryKey: ['agency-geo-trends', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_fan_data' as any)
+        .select('country_code, country_name, source, rank_position, listeners, interest_score, collected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .eq('source', 'google_trends')
+        .order('collected_at', { ascending: false })
+        .limit(100);
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((d: any) => {
+        if (seen.has(d.country_code)) return false;
+        seen.add(d.country_code);
+        return true;
+      });
+      return unique.sort((a: any, b: any) => (b.interest_score ?? 0) - (a.interest_score ?? 0)) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
   const geoCollectMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('collect-geo-fans', {
-        body: { wiki_entry_id: selectedArtistId },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Failed');
-      return data;
+      // Collect both Last.fm and Google Trends in parallel
+      const [lastfmRes, trendsRes] = await Promise.allSettled([
+        supabase.functions.invoke('collect-geo-fans', { body: { wiki_entry_id: selectedArtistId } }),
+        supabase.functions.invoke('collect-geo-trends', { body: { wiki_entry_id: selectedArtistId } }),
+      ]);
+      const lastfmData = lastfmRes.status === 'fulfilled' ? lastfmRes.value.data : null;
+      const trendsData = trendsRes.status === 'fulfilled' ? trendsRes.value.data : null;
+      return { lastfm: lastfmData, trends: trendsData };
     },
     onSuccess: (d) => {
-      toast.success(`${d.matches_found}개 국가에서 데이터 수집 완료`);
+      const lastfmCount = d.lastfm?.matches_found ?? 0;
+      const trendsCount = d.trends?.matches_found ?? 0;
+      toast.success(`Last.fm ${lastfmCount}개국 + Google Trends ${trendsCount}개국 수집 완료`);
       refetchGeo();
+      refetchGeoTrends();
     },
     onError: (e: any) => toast.error(e.message),
   });
