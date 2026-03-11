@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.collect-geo-trends]
 verify_jwt = false
+
+[functions.collect-geo-deezer]
+verify_jwt = false

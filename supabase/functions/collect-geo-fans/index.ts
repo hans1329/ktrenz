@@ -189,24 +189,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Always add KR as #1 for K-pop artists (Last.fm has near-zero Korean users)
-    for (const artist of artists) {
-      const hasKR = results.some((r) => r.wiki_entry_id === artist.id && r.country_code === "KR");
-      if (!hasKR) {
-        results.push({
-          wiki_entry_id: artist.id,
-          country_code: "KR",
-          country_name: "South Korea",
-          source: "lastfm",
-          rank_position: 1,
-          listeners: 0,
-          interest_score: 100,
-          collected_at: now,
-        });
-      }
-    }
-
-    console.log(`[GeoFans] Found ${results.length} geo matches (incl. KR baseline)`);
+    console.log(`[GeoFans] Found ${results.length} geo matches from Last.fm`);
 
     // Batch insert
     if (results.length > 0) {
