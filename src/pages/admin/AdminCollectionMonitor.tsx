@@ -414,6 +414,22 @@ const AdminCollectionMonitor = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Sub-sources for Buzz */}
+                {'subSources' in source && (source as any).subSources && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">세부 소스:</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {(source as any).subSources.map((sub: { name: string; weight: string; icon: string }, i: number) => (
+                        <div key={i} className="flex items-center gap-1 text-[10px] bg-muted/50 rounded px-1.5 py-0.5">
+                          <span>{sub.icon}</span>
+                          <span className="text-foreground font-medium truncate">{sub.name}</span>
+                          <span className="text-muted-foreground ml-auto">{sub.weight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
