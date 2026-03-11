@@ -27,7 +27,9 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   social: 30,
   buzz: 120,
   energy: 5,
-  detect_geo_changes: 0,
+  detect_geo_changes: 5,
+  fes_analyst: 5,
+  fes_predictor: 0,
 };
 
 // ── 유틸: fire-and-forget ──
