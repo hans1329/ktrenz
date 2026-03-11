@@ -10,7 +10,21 @@ const corsHeaders = {
 
 const SPIKE_THRESHOLD = 30; // ±30% 이상이면 spike
 const WINDOW_HOURS = 24;
-const SOURCES = ["google_trends", "lastfm", "youtube_comments"] as const;
+const SOURCES = ["google_trends", "lastfm", "youtube_comments", "apple_music", "billboard"] as const;
+
+// Apple Music country code mapping
+const APPLE_MUSIC_COUNTRIES: Record<string, string> = {
+  kr: "South Korea", us: "United States", jp: "Japan", gb: "United Kingdom",
+  de: "Germany", fr: "France", id: "Indonesia", th: "Thailand", ph: "Philippines", mx: "Mexico",
+};
+
+// Billboard chart → country mapping
+const BILLBOARD_COUNTRY_MAP: Record<string, { code: string; name: string }> = {
+  "billboard-hot-100": { code: "US", name: "United States" },
+  "billboard-200": { code: "US", name: "United States" },
+  "billboard-global-200": { code: "GL", name: "Global" },
+  "billboard-global-excl-us": { code: "GX", name: "Global Excl. US" },
+};
 
 interface GeoRow {
   wiki_entry_id: string;
