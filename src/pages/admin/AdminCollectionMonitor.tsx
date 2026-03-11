@@ -191,7 +191,7 @@ const AdminCollectionMonitor = () => {
         results[platform] = {
           total: count ?? 0,
           artists: uniqueArtists.size,
-          last: data?.[0]?.collected_at ?? null,
+          last: (data as any)?.[0]?.collected_at ?? null,
           first: null,
         };
       }
