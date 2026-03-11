@@ -122,7 +122,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.manageAgents": { en: "My Agents", ko: "내 에이전트", ja: "マイエージェント", zh: "我的助手" },
   "agent.slotsFull": { en: "All slots used", ko: "슬롯을 모두 사용했어요", ja: "全スロット使用中", zh: "所有槽位已用完" },
   "agent.purchaseSlot": { en: "Buy slot (1,000P)", ko: "슬롯 구매 (1,000P)", ja: "スロット購入 (1,000P)", zh: "购买槽位 (1,000P)" },
-  "agent.purchaseSlotDesc": { en: "Add an extra agent slot for 1,000 points", ko: "1,000 포인트로 에이전트 슬롯을 추가해요", ja: "1,000ポイントでエージェントスロットを追加", zh: "用1,000积分增加一个助手槽位" },
+  "agent.purchaseSlotDesc": { en: "Add an extra agent slot for 1,000 tokens", ko: "1,000 토큰으로 에이전트 슬롯을 추가해요", ja: "1,000ポイントでエージェントスロットを追加", zh: "用1,000积分增加一个助手槽位" },
   "agent.deleteAgent": { en: "Remove agent", ko: "에이전트 삭제", ja: "エージェント削除", zh: "删除助手" },
   "agent.upgradeForSlots": { en: "Upgrade K-Pass for more slots", ko: "K-Pass 업그레이드로 슬롯 추가", ja: "K-Passアップグレードでスロット追加", zh: "升级K-Pass获得更多槽位" },
   "agent.newAgentPrompt": { en: "Which artist should this new agent focus on? Tell me the name!", ko: "새 에이전트가 담당할 아티스트를 알려주세요!", ja: "新しいエージェントが担当するアーティスト名を教えて！", zh: "请告诉我新助手要关注的艺人名字！" },
