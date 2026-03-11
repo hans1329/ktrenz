@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     const { data: tiers } = await sb
       .from("v3_artist_tiers")
       .select("wiki_entry_id")
-      .in("tier", [1, 2, 3]);
+      .eq("tier", 1);
 
     if (!tiers?.length) {
       return new Response(

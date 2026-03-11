@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       const { data: tiers } = await adminClient
         .from("v3_artist_tiers")
         .select("wiki_entry_id, display_name, tier")
-        .in("tier", [1, 2, 3])
+        .eq("tier", 1)
         .order("tier");
 
       if (!tiers?.length) {
