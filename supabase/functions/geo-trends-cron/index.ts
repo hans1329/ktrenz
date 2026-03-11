@@ -1,5 +1,6 @@
-// geo-trends-cron: 1일 1회 Google Trends 수집 → 변동률 감지 체이닝
-// collect-geo-trends (SerpAPI) → detect-geo-changes 순차 실행
+// geo-trends-cron: batch-split Google Trends collection
+// Splits artists into batches of 5, fires collect-geo-trends per batch (fire-and-forget)
+// Then chains detect-geo-changes after a wait period
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const BATCH_SIZE = 5; // 5 artists × 1.5s delay ≈ 7.5s per batch (well within 60s)
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,62 +22,93 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json().catch(() => ({}));
-    const wiki_entry_id: string | undefined = body.wiki_entry_id;
+    const singleId: string | undefined = body.wiki_entry_id;
 
-    console.log("[geo-trends-cron] Starting: collect-geo-trends → detect-geo-changes");
+    // Single artist mode: call directly and chain detect
+    if (singleId) {
+      console.log(`[geo-trends-cron] Single artist mode: ${singleId}`);
 
-    // Step 1: collect-geo-trends (SerpAPI Google Trends)
-    const collectResp = await fetch(`${supabaseUrl}/functions/v1/collect-geo-trends`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify(wiki_entry_id ? { wiki_entry_id } : {}),
-    });
+      const collectResp = await fetch(`${supabaseUrl}/functions/v1/collect-geo-trends`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ wiki_entry_id: singleId }),
+      });
+      const collectResult = await collectResp.json().catch(() => ({}));
 
-    const collectText = await collectResp.text();
-    let collectResult: any;
-    try { collectResult = JSON.parse(collectText); } catch { collectResult = { raw: collectText.slice(0, 300) }; }
+      // Chain detect-geo-changes
+      const detectResp = await fetch(`${supabaseUrl}/functions/v1/detect-geo-changes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ wiki_entry_id: singleId }),
+      });
+      const detectResult = await detectResp.json().catch(() => ({}));
 
-    if (!collectResp.ok) {
-      console.error("[geo-trends-cron] collect-geo-trends failed:", collectText.slice(0, 500));
       return new Response(
-        JSON.stringify({ success: false, step: "collect-geo-trends", error: collectText.slice(0, 500) }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ success: true, mode: "single", collect: collectResult, detect: detectResult }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    console.log(`[geo-trends-cron] collect-geo-trends done: ${collectResult.matches_found ?? 0} matches`);
+    // Batch mode: get all tiered artists
+    console.log("[geo-trends-cron] Batch mode: splitting artists into batches");
 
-    // Step 2: detect-geo-changes (변동률 감지)
-    const detectResp = await fetch(`${supabaseUrl}/functions/v1/detect-geo-changes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify(wiki_entry_id ? { wiki_entry_id } : {}),
-    });
+    const { data: tiers } = await sb
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id")
+      .in("tier", [1, 2, 3]);
 
-    const detectText = await detectResp.text();
-    let detectResult: any;
-    try { detectResult = JSON.parse(detectText); } catch { detectResult = { raw: detectText.slice(0, 300) }; }
-
-    if (!detectResp.ok) {
-      console.error("[geo-trends-cron] detect-geo-changes failed:", detectText.slice(0, 500));
-    } else {
-      console.log(`[geo-trends-cron] detect-geo-changes done: ${detectResult.total_spikes ?? 0} spikes`);
+    if (!tiers?.length) {
+      return new Response(
+        JSON.stringify({ success: false, error: "No tiered artists found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+
+    const allIds = tiers.map((t: any) => t.wiki_entry_id);
+    const batches: string[][] = [];
+    for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
+      batches.push(allIds.slice(i, i + BATCH_SIZE));
+    }
+
+    console.log(`[geo-trends-cron] ${allIds.length} artists → ${batches.length} batches of ≤${BATCH_SIZE}`);
+
+    // Fire-and-forget: launch all batches without waiting
+    let launched = 0;
+    for (const batch of batches) {
+      fetch(`${supabaseUrl}/functions/v1/collect-geo-trends`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ wiki_entry_ids: batch }),
+      }).catch((err) => console.error("[geo-trends-cron] batch fire error:", err));
+      launched++;
+    }
+
+    // Fire-and-forget: detect-geo-changes (will run on whatever data exists)
+    // Delay slightly so batches have time to land
+    setTimeout(() => {
+      fetch(`${supabaseUrl}/functions/v1/detect-geo-changes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({}),
+      }).catch((err) => console.error("[geo-trends-cron] detect fire error:", err));
+    }, 3000);
 
     // Log to collection log
     await sb.from("ktrenz_collection_log").insert({
       platform: "geo_trends_cron",
       status: "success",
-      records_collected: collectResult.matches_found ?? 0,
+      records_collected: allIds.length,
       error_message: null,
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        pipeline: "collect-geo-trends → detect-geo-changes",
-        collect: collectResult,
-        detect: detectResult,
+        mode: "batch",
+        total_artists: allIds.length,
+        batches_launched: launched,
+        batch_size: BATCH_SIZE,
+        pipeline: "collect-geo-trends (batched) → detect-geo-changes (delayed)",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
