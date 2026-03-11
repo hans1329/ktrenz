@@ -31,12 +31,90 @@ const NEGATIVE = [
   "👎", "😡", "🤮", "💩",
 ];
 
+// ── Language → Country mapping (only high-confidence 1:1 mappings) ──
+const LANG_TO_COUNTRY: Record<string, { code: string; name: string }> = {
+  ko: { code: "KR", name: "South Korea" },
+  ja: { code: "JP", name: "Japan" },
+  th: { code: "TH", name: "Thailand" },
+  id: { code: "ID", name: "Indonesia" },
+  vi: { code: "VN", name: "Vietnam" },
+  tl: { code: "PH", name: "Philippines" },  // Tagalog
+  ms: { code: "MY", name: "Malaysia" },
+  tr: { code: "TR", name: "Turkey" },
+  pl: { code: "PL", name: "Poland" },
+  ar: { code: "SA", name: "Saudi Arabia" },  // approximate
+  de: { code: "DE", name: "Germany" },
+  fr: { code: "FR", name: "France" },
+  it: { code: "IT", name: "Italy" },
+  pt: { code: "BR", name: "Brazil" },  // approximate (could be PT)
+  es: { code: "ES", name: "Spain" },   // approximate (could be MX/AR)
+};
+
+// Unicode range-based language detection (no API needed)
+function detectLanguage(text: string): string {
+  const clean = text.replace(/[\s\d\p{Emoji_Presentation}\p{Extended_Pictographic}.,!?@#$%^&*()_+\-=\[\]{};':"\\|<>\/~`]/gu, "");
+  if (!clean) return "unknown";
+
+  let ko = 0, ja = 0, th = 0, ar = 0, vi = 0, latin = 0, total = 0;
+
+  for (const ch of clean) {
+    const cp = ch.codePointAt(0)!;
+    total++;
+    if (cp >= 0xAC00 && cp <= 0xD7AF) ko++;           // Hangul syllables
+    else if (cp >= 0x3131 && cp <= 0x318E) ko++;       // Hangul Jamo
+    else if (cp >= 0x3040 && cp <= 0x309F) ja++;       // Hiragana
+    else if (cp >= 0x30A0 && cp <= 0x30FF) ja++;       // Katakana
+    else if (cp >= 0x4E00 && cp <= 0x9FFF) ja++;       // CJK (could be zh, but in k-pop context mostly ja)
+    else if (cp >= 0x0E01 && cp <= 0x0E5B) th++;       // Thai
+    else if (cp >= 0x0600 && cp <= 0x06FF) ar++;       // Arabic
+    else if (cp >= 0x0041 && cp <= 0x024F) latin++;    // Latin
+  }
+
+  if (total === 0) return "unknown";
+
+  // Check non-Latin scripts first (high confidence)
+  if (ko / total > 0.3) return "ko";
+  if (ja / total > 0.3) return "ja";
+  if (th / total > 0.3) return "th";
+  if (ar / total > 0.3) return "ar";
+
+  // For Latin-based text, use keyword/character patterns
+  if (latin / total > 0.5) {
+    const lower = text.toLowerCase();
+    // Vietnamese diacritics
+    if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(lower)) return "vi";
+    // Tagalog common patterns
+    if (/\b(ang|mga|naman|talaga|sobrang|grabe|sana|niya|ko|po|opo)\b/.test(lower)) return "tl";
+    // Indonesian/Malay
+    if (/\b(yang|dan|ini|itu|sangat|banget|keren|gak|tidak|sudah|bisa|sama|juga)\b/.test(lower)) return "id";
+    // Turkish
+    if (/[çğıöşü]/.test(lower) && /\b(bir|ve|bu|çok|için|ile)\b/.test(lower)) return "tr";
+    // Polish
+    if (/[ąćęłńóśźż]/.test(lower)) return "pl";
+    // Portuguese
+    if (/[ãõç]/.test(lower) && /\b(que|não|muito|para|com|uma)\b/.test(lower)) return "pt";
+    // Spanish
+    if (/[ñ¿¡]/.test(lower) || /\b(que|los|las|una|por|pero|muy|como|esta)\b/.test(lower)) return "es";
+    // French
+    if (/[àâæçéèêëïîôœùûüÿ]/.test(lower) && /\b(les|des|une|que|est|dans|pour)\b/.test(lower)) return "fr";
+    // German
+    if (/[äöüß]/.test(lower) && /\b(und|der|die|das|ist|ein|nicht)\b/.test(lower)) return "de";
+    // Italian
+    if (/\b(che|della|sono|questo|quella|molto|anche|perché)\b/.test(lower)) return "it";
+    // Default Latin = English (no country mapping)
+    return "en";
+  }
+
+  return "unknown";
+}
+
 interface CommentSentiment {
   text: string;
   sentiment: "positive" | "negative" | "neutral";
   score: number;
   likeCount: number;
   publishedAt: string;
+  lang: string;
 }
 
 function analyzeComment(text: string): { sentiment: "positive" | "negative" | "neutral"; score: number } {
