@@ -913,7 +913,7 @@ const AdminRankings = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Artist Rankings</h1>
+          <h1 className="text-2xl font-bold">아티스트 랭킹</h1>
           <p className="text-sm text-muted-foreground mt-1">데이터 엔진에 연결된 아티스트 티어 및 스코어 관리</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

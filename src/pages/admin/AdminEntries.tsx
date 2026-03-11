@@ -24,16 +24,16 @@ const AdminEntries = () => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Wiki Entries</h1>
+      <h1 className="text-2xl font-bold">Wiki 항목</h1>
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Votes</TableHead>
-              <TableHead>Views</TableHead>
-              <TableHead>Score</TableHead>
+              <TableHead>제목</TableHead>
+              <TableHead>유형</TableHead>
+              <TableHead>투표</TableHead>
+              <TableHead>조회수</TableHead>
+              <TableHead>점수</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

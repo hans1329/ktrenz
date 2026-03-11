@@ -376,7 +376,7 @@ const AdminCollectionMonitor = () => {
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold flex items-center gap-2">
-          <Database className="w-5 h-5 text-primary" /> Data Collection Monitor
+          <Database className="w-5 h-5 text-primary" /> 데이터 수집 모니터
         </h1>
         <p className="text-xs text-muted-foreground mt-1">
           전체 외부 데이터 소스 현황 · 수집 주기 · 사용처 · 성공/실패 상태

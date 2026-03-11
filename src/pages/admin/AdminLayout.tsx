@@ -50,7 +50,7 @@ const AdminLayout = () => {
           <Link to="/" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ChevronLeft className="w-3 h-3" /> 사이트로
           </Link>
-          <span className="ml-auto text-sm font-bold text-foreground">Admin</span>
+          <span className="ml-auto text-sm font-bold text-foreground">관리자</span>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => {
