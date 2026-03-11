@@ -76,6 +76,7 @@ const App = () => (
               <Route path="intent-monitor" element={<AdminIntentMonitor />} />
               <Route path="watched-channels" element={<AdminWatchedChannels />} />
               <Route path="agency-sample" element={<AdminAgencySample />} />
+              <Route path="collection-monitor" element={<AdminCollectionMonitor />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
