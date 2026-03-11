@@ -351,6 +351,27 @@ const AdminAgencySample = () => {
     enabled: !!selectedArtistId,
   });
 
+  // ── Geo Change Signals (ALL — for change rate table) ──
+  const { data: geoAllSignals } = useQuery({
+    queryKey: ['agency-geo-all-signals', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_geo_change_signals' as any)
+        .select('country_code, country_name, source, current_value, previous_value, change_rate, is_spike, spike_direction, current_rank, previous_rank, rank_change, detected_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('detected_at', { ascending: false })
+        .limit(500);
+      // 최신 detected_at 기준으로 source+country 별 최신 1개만 유지
+      const latest = new Map<string, any>();
+      for (const s of (data ?? []) as any[]) {
+        const key = `${s.source}::${s.country_code}`;
+        if (!latest.has(key)) latest.set(key, s);
+      }
+      return Array.from(latest.values());
+    },
+    enabled: !!selectedArtistId,
+  });
+
   const geoCollectMutation = useMutation({
     mutationFn: async () => {
       const [lastfmRes, trendsRes, deezerRes] = await Promise.allSettled([
