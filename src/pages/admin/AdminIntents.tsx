@@ -100,7 +100,7 @@ const AdminIntents = () => {
             size="sm"
             onClick={() => setViewMode('summary')}
           >
-            <BarChart3 className="w-4 h-4 mr-1" /> Summaries
+            <BarChart3 className="w-4 h-4 mr-1" /> 요약
           </Button>
           <Button
             variant="outline"
