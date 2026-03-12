@@ -15,11 +15,15 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
 
-/** Calculate % change — previous=0 시 current>0이면 +100% 반환 (null 대신) */
+/** Calculate % change — low-base effect 방지: 이전값 < 5이면 ±100% 캡 */
+const LOW_BASE_THRESHOLD = 5;
 function pctChange(current: number, previous: number | null): number | null {
   if (previous == null) return null;
   if (previous <= 0) return current > 0 ? 100 : 0;
-  return ((current - previous) / previous) * 100;
+  const raw = ((current - previous) / previous) * 100;
+  // 기저값이 낮으면 변동률을 ±100%로 제한 (low-base effect 방지)
+  if (previous < LOW_BASE_THRESHOLD) return Math.max(-100, Math.min(100, raw));
+  return raw;
 }
 
 /** 
