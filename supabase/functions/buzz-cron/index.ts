@@ -47,6 +47,13 @@ Deno.serve(async (req) => {
       .in("id", entryIds)
       .eq("schema_type", "artist");
 
+    // name_ko 매핑
+    const { data: tierKoData } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").in("wiki_entry_id", entryIds);
+    const koNameMap = new Map<string, string>();
+    for (const t of tierKoData || []) {
+      if (t.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
+    }
+
     if (!artists?.length) {
       return new Response(
         JSON.stringify({ success: true, message: "No matching artists", batchOffset, batchSize }),
@@ -73,6 +80,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             artistName: artist.title,
+            koreanName: koNameMap.get(artist.id) || null,
             wikiEntryId: artist.id,
           }),
         });
