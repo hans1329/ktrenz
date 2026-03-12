@@ -384,7 +384,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
             {item.sparkline.length >= 2 && (
               <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("drawer.scoreMomentum")}</p>
+                <p className="text-base text-foreground mb-1 uppercase tracking-wider font-extrabold">{t("drawer.scoreMomentum")}</p>
                 <div className="flex items-center gap-3 mb-1">
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
                   <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
