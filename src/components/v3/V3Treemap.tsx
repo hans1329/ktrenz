@@ -828,13 +828,13 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   </span>
                 )}
 
-                <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px` }}>
+                <div className="relative z-10 flex flex-col items-center w-full px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px`, overflow: 'visible' }}>
                   {isTopThree && (
                     <span style={{
-                      fontSize: `${Math.max(18, sizeFactor * 2)}px`,
+                      fontSize: `${Math.max(18, sizeFactor * (rectIndex === 0 ? 2.8 : 2))}px`,
                       lineHeight: 1,
-                      display: 'block',
-                      transform: `translateY(-${Math.max(8, sizeFactor * 1.1)}px)`,
+                      transform: `translateY(-${Math.max(6, sizeFactor * 0.8)}px)`,
+                      marginBottom: `-${Math.max(6, sizeFactor * 0.8)}px`,
                       filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))',
                       animation: `pulse 2s cubic-bezier(0.4,0,0.6,1) infinite`,
                       animationDelay: `${rectIndex * 0.7}s`,
