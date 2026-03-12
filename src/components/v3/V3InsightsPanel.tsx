@@ -239,9 +239,9 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
               prediction.prediction === "falling" && "bg-red-500/15 text-red-400",
               prediction.prediction === "stable" && "bg-muted text-muted-foreground",
             )}>
-              {prediction.prediction === "rising" ? "📈 Rising" :
-               prediction.prediction === "spike" ? "🚀 Spike" :
-               prediction.prediction === "falling" ? "📉 Falling" : "→ Stable"}
+              {prediction.prediction === "rising" ? t("insights.predRising") :
+               prediction.prediction === "spike" ? t("insights.predSpike") :
+               prediction.prediction === "falling" ? t("insights.predFalling") : t("insights.predStable")}
             </span>
             <span className="text-[10px] text-muted-foreground">
               {t("insights.next48h")}
