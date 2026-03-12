@@ -70,11 +70,16 @@ function parseBillboardMarkdown(markdown: string): Array<{ position: number; tit
     if (titleMatch && currentPosition !== null && (i - positionLineIdx) < 15) {
       const title = titleMatch[1].trim();
       
-      // Skip non-song titles (these are section headers)
-      if (title === "Debut Position" || title === "Peak Position" || title === "Share" || 
-          title === "Credits" || title === "Awards" || title === "Chart History" ||
-          title.startsWith("Songwriter") || title.startsWith("Producer") ||
-          title === "Gains in Weekly Performance" || title === "Additional Awards") {
+      // Skip non-song titles (section headers and metadata)
+      const SKIP_TITLES = new Set([
+        "debut position", "peak position", "share", "credits", "awards",
+        "chart history", "gains in weekly performance", "additional awards",
+        "weeks", "peak", "lw", "new", "re", "re-entry",
+      ]);
+      const titleLower = title.toLowerCase();
+      if (SKIP_TITLES.has(titleLower) || 
+          titleLower.startsWith("songwriter") || titleLower.startsWith("producer") ||
+          /^\d+$/.test(title) || title.length <= 2) {
         continue;
       }
 
