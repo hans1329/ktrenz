@@ -383,11 +383,11 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="에너지 스
 
       {/* ── 지리적 감지 엔진 ── */}
       <SectionHeader icon={Globe} title="지리적 감지 엔진" color="bg-teal-600" />
-      <p className="text-xs text-muted-foreground">6개 독립 소스에서 지역별 시그널을 추적하고 변동률 감지를 통해 <strong>팬 반응이 뜨거워지는 지역</strong>을 식별합니다.</p>
+      <p className="text-sm text-muted-foreground">6개 독립 소스에서 지역별 시그널을 추적하고 변동률 감지를 통해 <strong>팬 반응이 뜨거워지는 지역</strong>을 식별합니다.</p>
 
-      <Card className="p-3 bg-teal-500/5 border-teal-500/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">아키텍처</p>
-        <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
+      <Card className="p-4 bg-teal-500/5 border-teal-500/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">아키텍처</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li><strong className="text-foreground">소스별 독립 추적:</strong> 각 소스가 독립적으로 추적됨 — 통합 점수 없이 에이전시에게 소스별 시그널 제공</li>
           <li><strong className="text-foreground">변동 감지:</strong> 24시간 롤링 윈도우 비교, ±30% 임계값 → <code className="text-primary">surge</code> 또는 <code className="text-primary">drop</code>으로 플래그</li>
           <li><strong className="text-foreground">이중 트리거:</strong> 6시간 파이프라인 후 (YouTube 댓글 + Last.fm + Apple Music + Billboard) 및 일일 geo-trends-cron (Google Trends) 후 실행</li>
@@ -396,9 +396,9 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="에너지 스
         </ul>
       </Card>
 
-      <Card className="p-3 bg-card border-border/50">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">6개 데이터 소스</p>
-        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Google Trends (SerpAPI)  — 국가별 검색 관심도 0-100
+      <Card className="p-4 bg-card border-border/50">
+        <p className="text-sm text-muted-foreground font-medium mb-1.5">6개 데이터 소스</p>
+        <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`Google Trends (SerpAPI)  — 국가별 검색 관심도 0-100
   └ 스케줄: 1회/일 (geo-trends-cron)
   └ 데이터: interest_by_region (GEO_MAP_0)
 
