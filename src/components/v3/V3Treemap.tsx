@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, forwardRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Flame } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
@@ -116,21 +116,24 @@ const CATEGORY_CONFIG: Record<EnergyCategory, { label: string; icon: React.React
 };
 
 // ── Sparkline ──
-function MiniSparkline({ data, width, height, color = "rgba(255,255,255,0.5)", ema7d, ema30d }: { data: number[]; width: number; height: number; color?: string; ema7d?: number | null; ema30d?: number | null }) {
-  if (data.length < 2) return null;
-  const min = Math.min(...data, ema7d ?? Infinity, ema30d ?? Infinity); const max = Math.max(...data, ema7d ?? -Infinity, ema30d ?? -Infinity); const range = max - min || 1; const padding = 2;
-  const points = data.map((v, i) => { const x = (i / (data.length - 1)) * width; const y = height - padding - ((v - min) / range) * (height - padding * 2); return `${x},${y}`; }).join(" ");
-  const areaPoints = `0,${height} ${points} ${width},${height}`;
-  const emaY = (val: number) => height - padding - ((val - min) / range) * (height - padding * 2);
-  return (
-    <svg width={width} height={height} className="absolute bottom-0 left-0 opacity-50 pointer-events-none">
-      <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0.05" /></linearGradient></defs>
-      <polygon points={areaPoints} fill="url(#sparkFill)" /><polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
-      {ema7d != null && <line x1={0} y1={emaY(ema7d)} x2={width} y2={emaY(ema7d)} stroke="hsl(0, 80%, 65%)" strokeWidth="1" strokeDasharray="3,2" opacity="0.8" />}
-      {ema30d != null && <line x1={0} y1={emaY(ema30d)} x2={width} y2={emaY(ema30d)} stroke="hsl(210, 80%, 65%)" strokeWidth="1" strokeDasharray="5,3" opacity="0.7" />}
-    </svg>
-  );
-}
+const MiniSparkline = forwardRef<SVGSVGElement, { data: number[]; width: number; height: number; color?: string; ema7d?: number | null; ema30d?: number | null }>(
+  ({ data, width, height, color = "rgba(255,255,255,0.5)", ema7d, ema30d }, ref) => {
+    if (data.length < 2) return null;
+    const min = Math.min(...data, ema7d ?? Infinity, ema30d ?? Infinity); const max = Math.max(...data, ema7d ?? -Infinity, ema30d ?? -Infinity); const range = max - min || 1; const padding = 2;
+    const points = data.map((v, i) => { const x = (i / (data.length - 1)) * width; const y = height - padding - ((v - min) / range) * (height - padding * 2); return `${x},${y}`; }).join(" ");
+    const areaPoints = `0,${height} ${points} ${width},${height}`;
+    const emaY = (val: number) => height - padding - ((val - min) / range) * (height - padding * 2);
+    return (
+      <svg ref={ref} width={width} height={height} className="absolute bottom-0 left-0 opacity-50 pointer-events-none">
+        <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0.05" /></linearGradient></defs>
+        <polygon points={areaPoints} fill="url(#sparkFill)" /><polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
+        {ema7d != null && <line x1={0} y1={emaY(ema7d)} x2={width} y2={emaY(ema7d)} stroke="hsl(0, 80%, 65%)" strokeWidth="1" strokeDasharray="3,2" opacity="0.8" />}
+        {ema30d != null && <line x1={0} y1={emaY(ema30d)} x2={width} y2={emaY(ema30d)} stroke="hsl(210, 80%, 65%)" strokeWidth="1" strokeDasharray="5,3" opacity="0.7" />}
+      </svg>
+    );
+  }
+);
+MiniSparkline.displayName = "MiniSparkline";
 
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; }
@@ -829,18 +832,26 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   </span>
                 )}
 
-                <div className="relative z-10 flex flex-col items-center w-full px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px`, overflow: 'visible' }}>
-                  {isTopThree && (
-                    <span style={{
+                {isTopThree && (
+                  <span
+                    className="absolute z-30"
+                    style={{
+                      top: `${Math.max(2, sizeFactor * 0.25)}px`,
+                      left: "50%",
+                      transform: "translateX(-50%)",
                       fontSize: `${Math.max(18, sizeFactor * (rectIndex === 0 ? 4 : 2))}px`,
                       lineHeight: 1,
-                      transform: `translateY(-${Math.max(6, sizeFactor * 0.8)}px)`,
-                      marginBottom: `-${Math.max(6, sizeFactor * 0.8)}px`,
-                      filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))',
-                      animation: `pulse 2s cubic-bezier(0.4,0,0.6,1) infinite`,
+                      filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
+                      animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
                       animationDelay: `${rectIndex * 0.7}s`,
-                    }}>🔥</span>
-                  )}
+                    }}
+                  >🔥</span>
+                )}
+
+                <div
+                  className="relative z-10 flex flex-col items-center w-full px-0.5"
+                  style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px`, overflow: "visible", paddingTop: isTopThree ? `${Math.max(14, sizeFactor * 1.8)}px` : 0 }}
+                >
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                   <span className="font-black text-white drop-shadow-lg"
