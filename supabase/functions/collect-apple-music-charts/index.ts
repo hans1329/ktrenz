@@ -7,18 +7,33 @@ const corsHeaders = {
 };
 
 // Apple Music RSS Feed endpoints (no API key needed)
-const CHART_URLS = [
-  { country: "kr", label: "South Korea", url: "https://rss.applemarketingtools.com/api/v2/kr/music/most-played/200/albums.json" },
-  { country: "us", label: "United States", url: "https://rss.applemarketingtools.com/api/v2/us/music/most-played/200/albums.json" },
-  { country: "jp", label: "Japan", url: "https://rss.applemarketingtools.com/api/v2/jp/music/most-played/200/albums.json" },
-  { country: "gb", label: "United Kingdom", url: "https://rss.applemarketingtools.com/api/v2/gb/music/most-played/200/albums.json" },
-  { country: "de", label: "Germany", url: "https://rss.applemarketingtools.com/api/v2/de/music/most-played/200/albums.json" },
-  { country: "fr", label: "France", url: "https://rss.applemarketingtools.com/api/v2/fr/music/most-played/200/albums.json" },
-  { country: "id", label: "Indonesia", url: "https://rss.applemarketingtools.com/api/v2/id/music/most-played/200/albums.json" },
-  { country: "th", label: "Thailand", url: "https://rss.applemarketingtools.com/api/v2/th/music/most-played/200/albums.json" },
-  { country: "ph", label: "Philippines", url: "https://rss.applemarketingtools.com/api/v2/ph/music/most-played/200/albums.json" },
-  { country: "mx", label: "Mexico", url: "https://rss.applemarketingtools.com/api/v2/mx/music/most-played/200/albums.json" },
+const COUNTRIES = [
+  { country: "kr", label: "South Korea" },
+  { country: "us", label: "United States" },
+  { country: "jp", label: "Japan" },
+  { country: "gb", label: "United Kingdom" },
+  { country: "de", label: "Germany" },
+  { country: "fr", label: "France" },
+  { country: "id", label: "Indonesia" },
+  { country: "th", label: "Thailand" },
+  { country: "ph", label: "Philippines" },
+  { country: "mx", label: "Mexico" },
+  { country: "br", label: "Brazil" },
+  { country: "vn", label: "Vietnam" },
+  { country: "in", label: "India" },
+  { country: "tw", label: "Taiwan" },
+  { country: "au", label: "Australia" },
+  { country: "ca", label: "Canada" },
+  { country: "sg", label: "Singapore" },
+  { country: "my", label: "Malaysia" },
+  { country: "cl", label: "Chile" },
+  { country: "sa", label: "Saudi Arabia" },
 ];
+
+const CHART_URLS = COUNTRIES.map(c => ({
+  ...c,
+  url: `https://rss.applemarketingtools.com/api/v2/${c.country}/music/most-played/200/albums.json`,
+}));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
