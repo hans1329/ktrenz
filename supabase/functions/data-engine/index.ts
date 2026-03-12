@@ -1,5 +1,5 @@
 // data-engine: 데이터 수집 오케스트레이터
-// 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok, buzz_news) + naver_news
+// 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok) + naver_news
 // 모드: 개별 모듈 또는 "all" (체이닝 + 타임시프트)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
