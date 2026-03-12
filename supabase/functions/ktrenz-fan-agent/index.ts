@@ -1973,9 +1973,36 @@ Deno.serve(async (req) => {
     // If the slot has no wiki_entry_id, the user hasn't set a bias for this slot yet —
     // don't inject global watched artists to avoid the AI auto-assuming a bias.
     let watchedContext = "";
+    let milestoneContext = "";
     if (activeSlotWikiEntryId && activeSlotArtistName) {
       // Slot has an artist — use slot's artist as the bias context
       watchedContext = `\n\n🎯 이 에이전트 슬롯의 최애 아티스트: ${activeSlotArtistName}\n- 모든 답변에서 이 아티스트를 우선으로 언급하고, 이 아티스트의 팬 입장에서 응원·전략·소식을 제공해\n- 아티스트 이름을 다시 물어보지 마. 이미 알고 있으니까.\n- 유저가 특정 아티스트를 지정하지 않으면 최애 아티스트 기준으로 답변해\n- "관심 아티스트 목록"이라는 표현 절대 쓰지 마. 이 에이전트는 하나의 최애만 담당해`;
+
+      // Check for unnotified milestone events (e.g., Billboard first entry)
+      const { data: milestones } = await adminClient
+        .from("ktrenz_milestone_events")
+        .select("id, event_type, event_data, created_at")
+        .eq("wiki_entry_id", activeSlotWikiEntryId)
+        .eq("notified", false)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (milestones && milestones.length > 0) {
+        const eventDescriptions = milestones.map((m: any) => {
+          if (m.event_type === "billboard_first_entry") {
+            return `🎉 스페셜 이벤트! ${activeSlotArtistName}${iGa(activeSlotArtistName)} ${m.event_data.chart_name}에 첫 진입했어! #${m.event_data.position} "${m.event_data.song_or_album}"`;
+          }
+          return `🎉 마일스톤: ${m.event_type}`;
+        });
+        milestoneContext = `\n\n🏆 축하 이벤트 (반드시 이번 대화에서 축하해줘!):\n${eventDescriptions.join("\n")}\n- 이 소식을 매우 열정적으로, 팬으로서 진심으로 축하해줘!\n- 이모지를 많이 사용하고, 팬들의 노력을 칭찬하며, 앞으로의 전망도 제시해!`;
+
+        // Mark as notified
+        const milestoneIds = milestones.map((m: any) => m.id);
+        await adminClient
+          .from("ktrenz_milestone_events")
+          .update({ notified: true })
+          .in("id", milestoneIds);
+      }
     } else {
       // No artist on this slot — tell AI to ask which artist to set
       watchedContext = `\n\n⚠️ 이 에이전트 슬롯에는 아직 최애 아티스트가 설정되지 않았어.\n- 유저가 최애를 설정하겠다고 하면, 반드시 "어떤 아티스트를 최애로 설정할까요?" 라고 물어봐.\n- 절대 다른 슬롯이나 이전 데이터를 참고해서 임의로 아티스트를 설정하지 마!\n- 유저가 명시적으로 아티스트 이름을 말할 때까지 manage_watched_artist 도구를 호출하지 마.`;
