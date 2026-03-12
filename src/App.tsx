@@ -35,6 +35,7 @@ import AdminWatchedChannels from "./pages/admin/AdminWatchedChannels";
 import AdminAgencySample from "./pages/admin/AdminAgencySample";
 import AdminCollectionMonitor from "./pages/admin/AdminCollectionMonitor";
 import AdminFesAnalyst from "./pages/admin/AdminFesAnalyst";
+import AdminDataQuality from "./pages/admin/AdminDataQuality";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
