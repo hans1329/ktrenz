@@ -600,6 +600,7 @@ Deno.serve(async (req) => {
       offset,
       limit: effectiveLimit,
       issues_found: issues.length,
+      suppressed_skipped,
       inserted,
       skipped,
       auto_resolved: autoResolved,
