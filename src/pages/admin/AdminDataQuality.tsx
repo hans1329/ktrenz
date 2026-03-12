@@ -204,7 +204,68 @@ const AdminDataQuality = () => {
     },
   });
 
-  const filtered = (issues ?? []).filter((i: any) => {
+  const suppressIssue = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('ktrenz_data_quality_issues' as any)
+        .update({
+          suppressed: true,
+          suppressed_at: new Date().toISOString(),
+          suppressed_note: '수동 무시',
+          resolved: true,
+          resolved_at: new Date().toISOString(),
+          resolution_note: '무시 처리됨',
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('이슈 무시됨 (재감사에서 제외)');
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => toast.error(`무시 실패: ${(err as Error).message}`),
+  });
+
+  const unsuppressIssue = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('ktrenz_data_quality_issues' as any)
+        .update({ suppressed: false, suppressed_at: null, suppressed_note: null })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('무시 해제됨');
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => toast.error(`무시 해제 실패: ${(err as Error).message}`),
+  });
+
+  const suppressAllFiltered = useMutation({
+    mutationFn: async () => {
+      const ids = filtered.filter((i: any) => !i.suppressed).map((i: any) => i.id);
+      if (ids.length === 0) throw new Error('무시할 이슈가 없습니다');
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase
+          .from('ktrenz_data_quality_issues' as any)
+          .update({
+            suppressed: true, suppressed_at: new Date().toISOString(), suppressed_note: '일괄 무시',
+            resolved: true, resolved_at: new Date().toISOString(), resolution_note: '일괄 무시 처리됨',
+          })
+          .in('id', batch);
+        if (error) throw error;
+      }
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count}건 무시 완료 (재감사에서 제외)`);
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => toast.error(`일괄 무시 실패: ${(err as Error).message}`),
+  });
+
+
     if (severityFilter !== 'all' && i.severity !== severityFilter) return false;
     if (typeFilter !== 'all' && i.issue_type !== typeFilter) return false;
     return true;
