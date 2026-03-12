@@ -234,11 +234,11 @@ Twitter/X: 1.0x  ← 기준선`}</code>
 
       {/* ── FES v5.4 ── */}
       <SectionHeader icon={Flame} title="Fan Energy Score (FES) v5.4" color="bg-red-600" />
-      <p className="text-xs text-muted-foreground">카테고리별 독립 Velocity/Intensity를 포함한 6개 카테고리 가중 에너지. <Badge variant="outline" className="text-[9px] ml-1">최소 10 · 최대 250</Badge></p>
+      <p className="text-sm text-muted-foreground">카테고리별 독립 Velocity/Intensity를 포함한 6개 카테고리 가중 에너지. <Badge variant="outline" className="text-xs ml-1">최소 10 · 최대 250</Badge></p>
 
-      <Card className="p-3 bg-primary/5 border-primary/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">v5.4 아키텍처</p>
-        <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
+      <Card className="p-4 bg-primary/5 border-primary/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v5.4 아키텍처</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li><strong className="text-foreground">6개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Social 5% | Fan 3%</li>
           <li><strong className="text-foreground">카테고리별 Velocity/Intensity:</strong> 각 카테고리가 독립적으로 점수화된 후 가중 합산</li>
           <li><strong className="text-foreground">Energy = Velocity 60% + Intensity 40%:</strong> 성장 모멘텀 vs 절대적 위상</li>
