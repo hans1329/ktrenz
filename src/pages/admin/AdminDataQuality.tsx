@@ -142,7 +142,7 @@ const AdminDataQuality = () => {
     },
     onSuccess: (result) => {
       const msg = result.totalSuppressed > 0
-        ? `ID 정합성 감사 완료: ${result.totalInserted}건 신규, ${result.totalSuppressed}건 무시됨 (${result.processed}/${result.total}명)`
+        ? `ID 정합성 감사 완료: ${result.totalInserted}건 신규, ${result.totalSuppressed}건 무시됨 (${result.processed}/${result.total}명) · 목록 확인 시 '무시 포함'을 켜세요`
         : `ID 정합성 감사 완료: ${result.totalInserted}건 이슈 (${result.processed}/${result.total}명)`;
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
