@@ -139,22 +139,35 @@ Deno.serve(async (req) => {
       // ── OpenAI 예측 요청 (듀얼 페르소나) ──
       const systemPrompt = `You are a K-pop trend analyst AI with TWO output personas for "${artistName}".
 
-## PERSONA 1: FAN BRIEFING
-- Write as if talking to a passionate fan of this artist
-- Use casual, encouraging, exciting tone
-- NO technical jargon (no z-scores, no momentum values, no percentages)
-- Focus on: "Your artist is hot because..." or "Here's what fans can do to help..."
-- If rising/spiking: celebrate and encourage more streaming/engagement
-- If falling/flat: reassure and suggest fan activities that can help
-- Keep it warm, motivational, 2-3 sentences max
+## PERSONA 1: FAN SUNBAE (친한 팬 선배)
+You are a friendly, experienced fan senior (선배/sunbae) who talks casually to a fellow fan.
+Generate THREE separate pieces:
+
+### 1. hot_summary — "지금 뭐가 뜨는지" 한줄 요약
+- One punchy sentence about what's currently hot or notable
+- Include the specific category that's moving (YouTube, Buzz, etc.) 
+- Use casual tone with emoji: "YouTube 요즘 터지고 있어! 🔥" or "앨범 쪽은 좀 조용한데 버즈가 살아나는 중 👀"
+- NO numbers, NO percentages, NO technical terms
+
+### 2. fan_action — 팬이 할 수 있는 액션 추천
+- One specific, actionable thing fans can do RIGHT NOW
+- Be practical: "뮤비 스밍 지금 밀면 타이밍 좋을듯!" or "SNS에 해시태그 달아서 버즈 올리자!"
+- Make it feel like a friend suggesting something, not an instruction
+- Include an emoji
+
+### 3. position_note — 다른 아티스트 대비 위치
+- Compare to the general competitive landscape WITHOUT naming specific other artists
+- Use relative terms: "상위권에서 잘 버티고 있어" or "지금 치고 올라가는 중이야"
+- Reference benchmark_context data but describe it naturally, NEVER mention data sources
+- One sentence, encouraging tone
+
+IMPORTANT: Write in the target language naturally. Korean should use 반말 (informal speech). English should be casual. Japanese should use タメ口. All should feel like a friend texting.
 
 ## PERSONA 2: AGENCY ACTION ITEMS
 - Write as a senior strategy consultant for a K-pop entertainment agency
 - Be extremely data-driven and specific
 - Reference competitive benchmarks from OTHER artists (provided in benchmark_context) WITHOUT naming the data source
 - Suggest 2-3 specific, actionable strategies with clear rationale
-- If a category is weak, find examples from benchmark data where other artists improved and suggest similar actions
-- For example: if YouTube is stagnant but another artist gained traction from variety show appearances, suggest specific variety show types
 - Each action item should have: title, specific action, expected impact, priority (high/medium/low)
 
 ## DATA RULES
@@ -209,11 +222,26 @@ Generate prediction + fan briefing + agency action items.`;
                     },
                     required: ["youtube", "buzz", "album", "music", "social"],
                   },
-                  // Fan briefing (casual, warm, no jargon)
-                  fan_briefing: { type: "string", description: "Fan-friendly briefing in English" },
-                  fan_briefing_ko: { type: "string", description: "Fan-friendly briefing in Korean" },
-                  fan_briefing_ja: { type: "string", description: "Fan-friendly briefing in Japanese" },
-                  fan_briefing_zh: { type: "string", description: "Fan-friendly briefing in Chinese" },
+                  // Fan sunbae — hot summary (one-liner)
+                  hot_summary: { type: "string", description: "One punchy sentence about what's hot in English" },
+                  hot_summary_ko: { type: "string", description: "Korean 반말" },
+                  hot_summary_ja: { type: "string", description: "Japanese タメ口" },
+                  hot_summary_zh: { type: "string", description: "Chinese casual" },
+                  // Fan sunbae — fan action recommendation
+                  fan_action: { type: "string", description: "Recommended fan action in English" },
+                  fan_action_ko: { type: "string", description: "Korean 반말" },
+                  fan_action_ja: { type: "string", description: "Japanese タメ口" },
+                  fan_action_zh: { type: "string", description: "Chinese casual" },
+                  // Fan sunbae — positioning vs others
+                  position_note: { type: "string", description: "Competitive position note in English" },
+                  position_note_ko: { type: "string", description: "Korean 반말" },
+                  position_note_ja: { type: "string", description: "Japanese タメ口" },
+                  position_note_zh: { type: "string", description: "Chinese casual" },
+                  // Legacy fan_briefing (kept for backward compat, now derived from above 3)
+                  fan_briefing: { type: "string", description: "Combined fan briefing in English (concatenate hot_summary + fan_action + position_note)" },
+                  fan_briefing_ko: { type: "string", description: "Combined fan briefing in Korean" },
+                  fan_briefing_ja: { type: "string", description: "Combined fan briefing in Japanese" },
+                  fan_briefing_zh: { type: "string", description: "Combined fan briefing in Chinese" },
                   // Agency action items (data-driven, strategic)
                   agency_actions: {
                     type: "array",
@@ -223,7 +251,7 @@ Generate prediction + fan briefing + agency action items.`;
                       properties: {
                         title: { type: "string", description: "Action title in Korean" },
                         action: { type: "string", description: "Specific actionable recommendation in Korean" },
-                        rationale: { type: "string", description: "Data-driven rationale in Korean (reference benchmarks without naming sources)" },
+                        rationale: { type: "string", description: "Data-driven rationale in Korean" },
                         expected_impact: { type: "string", description: "Expected outcome in Korean" },
                         priority: { type: "string", enum: ["high", "medium", "low"] },
                         category: { type: "string", enum: ["youtube", "buzz", "album", "music", "social"] },
@@ -231,14 +259,15 @@ Generate prediction + fan briefing + agency action items.`;
                       required: ["title", "action", "rationale", "priority", "category"],
                     },
                   },
-                  // Technical reasoning (kept for backward compat)
+                  // Technical reasoning
                   reasoning: { type: "string", description: "Brief technical reasoning in English" },
                   reasoning_ko: { type: "string", description: "Brief technical reasoning in Korean" },
                   reasoning_ja: { type: "string", description: "Brief technical reasoning in Japanese" },
                   reasoning_zh: { type: "string", description: "Brief technical reasoning in Chinese" },
                 },
                 required: ["fes_direction", "confidence", "leading_category_next", "category_predictions",
-                  "fan_briefing", "fan_briefing_ko", "agency_actions", "reasoning"],
+                  "hot_summary", "hot_summary_ko", "fan_action", "fan_action_ko", "position_note", "position_note_ko",
+                  "agency_actions", "reasoning"],
               },
             },
           }],
