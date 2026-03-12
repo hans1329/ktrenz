@@ -85,6 +85,10 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
         reasoning_ko: pred.reasoning_ko,
         reasoning_ja: pred.reasoning_ja,
         reasoning_zh: pred.reasoning_zh,
+        fan_briefing: pred.fan_briefing,
+        fan_briefing_ko: pred.fan_briefing_ko,
+        fan_briefing_ja: pred.fan_briefing_ja,
+        fan_briefing_zh: pred.fan_briefing_zh,
         predicted_at: d.predicted_at,
       };
     },
