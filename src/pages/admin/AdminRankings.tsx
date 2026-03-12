@@ -1576,10 +1576,15 @@ const AdminRankings = () => {
             const artist = artists.find((a) => a.wiki_entry_id === wikiEntryId);
             if (!artist) return null;
             const m = dataDetailMetrics || artist.metrics;
-            const sourceLabels: Record<string, string> = { youtube: 'YouTube', buzz: 'Buzz (소셜)', hanteo: 'Album (한터)', music: 'Music' };
+            const sourceLabels: Record<string, string> = { youtube: 'YouTube', buzz: 'Buzz (소셜)', hanteo: 'Album (한터+차트)', music: 'Music' };
+            // Album은 hanteo + apple_music_charts + billboard_charts 중 가장 최근 것 사용
             const collectionDate = source === 'youtube' ? artist.collection.youtube
               : source === 'buzz' ? artist.collection.buzz_multi
-              : source === 'hanteo' ? artist.collection.hanteo
+              : source === 'hanteo' ? (
+                  [artist.collection.hanteo, (artist.collection as any).apple_music_charts, (artist.collection as any).billboard_charts]
+                    .filter(Boolean)
+                    .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime())[0] || null
+                )
               : artist.collection.lastfm || artist.collection.deezer;
             const key = `${artist.wiki_entry_id}-${source}`;
             const isRunning = recollecting === key;
