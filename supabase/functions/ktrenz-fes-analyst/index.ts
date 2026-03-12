@@ -181,6 +181,19 @@ Deno.serve(async (req) => {
       for (let i = 0; i < contribRows.length; i += batchSize) {
         await sb.from("ktrenz_fes_contributions").insert(contribRows.slice(i, i + batchSize));
       }
+
+      // ── 5-b) normalized_fes → v3_scores_v2.energy_score 반영 ──
+      const updateBatch = 10;
+      for (let i = 0; i < contribRows.length; i += updateBatch) {
+        const batch = contribRows.slice(i, i + updateBatch);
+        await Promise.all(batch.map(row =>
+          sb.from("v3_scores_v2").update({
+            energy_score: row.normalized_fes,
+            scored_at: now,
+          }).eq("wiki_entry_id", row.wiki_entry_id)
+        ));
+      }
+      console.log(`[ktrenz-fes-analyst] Updated energy_score for ${contribRows.length} artists`);
     }
 
     // ── 6) 독립 트렌드 계산 (7d/30d rolling) — 벌크 쿼리 최적화 ──
