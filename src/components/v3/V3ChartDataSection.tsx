@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Disc3, Music, BarChart3, TrendingUp } from "lucide-react";
 
 interface V3ChartDataSectionProps {
