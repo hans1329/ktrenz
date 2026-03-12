@@ -143,10 +143,16 @@ Deno.serve(async (req) => {
           : Math.round(WEIGHTS[cat] * 100);
       }
 
-      // 정규화 FES: 가중 z-score의 시그모이드 변환
+      // 정규화 FES: 가중 z-score → 지수 감쇄 변환 (v6)
+      // weightedZ > 0이면 상승 에너지, < 0이면 하락 에너지
+      // 기본값 130(중립) + 방향성 보정, 10~250 범위
       const weightedZ = CATEGORIES.reduce((s, c) => s + zScores[c] * WEIGHTS[c], 0);
-      const sigmoid = 1 / (1 + Math.exp(-weightedZ * 0.5));
-      const normalizedFes = Math.round(10 + sigmoid * 240);
+      const absZ = Math.abs(weightedZ);
+      // 지수 감쇄: 0 → 0, 1 → ~86, 2 → ~150, 3 → ~190
+      const magnitude = 120 * (1 - Math.exp(-absZ / 1.5));
+      const normalizedFes = Math.round(
+        Math.min(250, Math.max(10, 130 + Math.sign(weightedZ) * magnitude))
+      );
 
       // 주도 카테고리
       let maxContrib = 0, leading = "youtube";
