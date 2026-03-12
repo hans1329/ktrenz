@@ -75,7 +75,18 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
         .order("predicted_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data as any;
+      if (!data) return null;
+      const d = data as any;
+      // prediction column contains full JSON with fes_direction, reasoning_ko, etc.
+      const pred = d.prediction || {};
+      return {
+        prediction: pred.fes_direction || pred.prediction || "stable",
+        reasoning: d.reasoning,
+        reasoning_ko: pred.reasoning_ko,
+        reasoning_ja: pred.reasoning_ja,
+        reasoning_zh: pred.reasoning_zh,
+        predicted_at: d.predicted_at,
+      };
     },
     staleTime: 5 * 60_000,
   });
