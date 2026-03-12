@@ -159,6 +159,35 @@ const AdminDataQuality = () => {
     },
   });
 
+  const resolveAllFiltered = useMutation({
+    mutationFn: async () => {
+      const unresolvedIds = filtered.filter((i: any) => !i.resolved).map((i: any) => i.id);
+      if (unresolvedIds.length === 0) throw new Error('해결할 이슈가 없습니다');
+
+      const batchSize = 50;
+      for (let i = 0; i < unresolvedIds.length; i += batchSize) {
+        const batch = unresolvedIds.slice(i, i + batchSize);
+        const { error } = await supabase
+          .from('ktrenz_data_quality_issues' as any)
+          .update({
+            resolved: true,
+            resolved_at: new Date().toISOString(),
+            resolution_note: '일괄 해결',
+          })
+          .in('id', batch);
+        if (error) throw error;
+      }
+      return unresolvedIds.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count}건 일괄 해결 완료`);
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => {
+      toast.error(`일괄 해결 실패: ${(err as Error).message}`);
+    },
+  });
+
   const filtered = (issues ?? []).filter((i: any) => {
     if (severityFilter !== 'all' && i.severity !== severityFilter) return false;
     if (typeFilter !== 'all' && i.issue_type !== typeFilter) return false;
@@ -295,10 +324,22 @@ const AdminDataQuality = () => {
       </div>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">
             이슈 목록 ({filtered.length}건)
           </CardTitle>
+          {filtered.filter((i: any) => !i.resolved).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              disabled={resolveAllFiltered.isPending}
+              onClick={() => resolveAllFiltered.mutate()}
+            >
+              {resolveAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              전체 해결 ({filtered.filter((i: any) => !i.resolved).length}건)
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
