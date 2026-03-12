@@ -8219,6 +8219,10 @@ export type Database = {
         Args: { _edit_type: string; _user_id: string; _wiki_entry_id: string }
         Returns: boolean
       }
+      cancel_market: {
+        Args: { p_admin_id: string; p_market_id: string }
+        Returns: Json
+      }
       check_agent_daily_limit: {
         Args: { _agent_id: string; _amount_usd: number }
         Returns: boolean
