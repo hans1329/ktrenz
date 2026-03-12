@@ -51,16 +51,16 @@ Deno.serve(async (req) => {
           .order("calculated_at", { ascending: false })
           .limit(5),
         sb.from("wiki_entries")
-          .select("name, name_ko")
+          .select("title")
           .eq("id", entryId)
           .maybeSingle(),
       ]);
 
       const contributions = contribRes.data || [];
       const trends = trendRes.data || [];
-      const artistName = entryRes.data?.name || entryId;
+      const artistName = entryRes.data?.title || entryId;
 
-      if (contributions.length < 4) continue; // 최소 데이터 필요
+      if (contributions.length < 2) continue; // 최소 데이터 2건 (수집 사이클 초기에도 예측 가능)
 
       // ── 피처 구성 ──
       const features = {
