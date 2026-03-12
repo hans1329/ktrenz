@@ -183,43 +183,60 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 6) 독립 트렌드 계산 (7d/30d rolling) ──
+    // ── 6) 독립 트렌드 계산 (7d/30d rolling) — 벌크 쿼리 최적화 ──
     const trendRows: any[] = [];
+    const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 단일 벌크 쿼리: 전체 아티스트의 30일 기여도 한번에 조회
+    // Supabase 1000행 제한 대응: 페이지네이션
+    let allHistory: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: chunk } = await sb
+        .from("ktrenz_fes_contributions")
+        .select("wiki_entry_id, snapshot_at, youtube_z, buzz_z, album_z, music_z, social_z")
+        .in("wiki_entry_id", targetIds)
+        .gte("snapshot_at", cutoff30d)
+        .order("snapshot_at", { ascending: true })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      if (!chunk || chunk.length === 0) break;
+      allHistory = allHistory.concat(chunk);
+      if (chunk.length < pageSize) break;
+      page++;
+    }
+
+    // 아티스트별로 그룹핑 (in-memory)
+    const historyByArtist = new Map<string, any[]>();
+    for (const row of allHistory) {
+      const list = historyByArtist.get(row.wiki_entry_id) || [];
+      list.push(row);
+      historyByArtist.set(row.wiki_entry_id, list);
+    }
+
+    const calcStats = (arr: number[]) => {
+      if (arr.length === 0) return { avg: 0, stddev: 0, change: 0 };
+      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+      const variance = arr.reduce((a, v) => a + (v - avg) ** 2, 0) / Math.max(arr.length - 1, 1);
+      const change = arr.length >= 2 ? arr[arr.length - 1] - arr[0] : 0;
+      return { avg: Math.round(avg * 100) / 100, stddev: Math.round(Math.sqrt(variance) * 100) / 100, change: Math.round(change * 100) / 100 };
+    };
 
     for (const entryId of targetIds) {
-      // 최근 30일 기여도 데이터 조회
-      const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: history } = await sb
-        .from("ktrenz_fes_contributions")
-        .select("snapshot_at, youtube_z, buzz_z, album_z, music_z, social_z")
-        .eq("wiki_entry_id", entryId)
-        .gte("snapshot_at", cutoff30d)
-        .order("snapshot_at", { ascending: true });
-
+      const history = historyByArtist.get(entryId);
       if (!history || history.length < 2) continue;
-
-      const cutoff7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       for (const cat of CATEGORIES) {
         const key = `${cat}_z`;
         const all30d = history.map((h: any) => Number(h[key]) || 0);
         const recent7d = history.filter((h: any) => h.snapshot_at >= cutoff7d).map((h: any) => Number(h[key]) || 0);
 
-        const calcStats = (arr: number[]) => {
-          if (arr.length === 0) return { avg: 0, stddev: 0, change: 0 };
-          const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-          const variance = arr.reduce((a, v) => a + (v - avg) ** 2, 0) / Math.max(arr.length - 1, 1);
-          const change = arr.length >= 2 ? arr[arr.length - 1] - arr[0] : 0;
-          return { avg: Math.round(avg * 100) / 100, stddev: Math.round(Math.sqrt(variance) * 100) / 100, change: Math.round(change * 100) / 100 };
-        };
-
         const s7 = calcStats(recent7d);
         const s30 = calcStats(all30d);
 
-        // 모멘텀: 7d 평균 vs 30d 평균 비교
         const momentum = s30.avg !== 0 ? Math.round(((s7.avg - s30.avg) / Math.abs(s30.avg)) * 100) / 100 : 0;
 
-        // 트렌드 방향 결정
         let direction = "flat";
         if (s7.change > 0.5) direction = "rising";
         else if (s7.change < -0.5) direction = "falling";
