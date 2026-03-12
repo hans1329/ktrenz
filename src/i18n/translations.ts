@@ -174,6 +174,16 @@ const translations: Record<string, Record<Language, string>> = {
   "drawer.change24h": { en: "24h Change", ko: "24시간 변동률", ja: "24時間変動率", zh: "24小时变动率" },
   "drawer.upcomingSchedule": { en: "Upcoming", ko: "다가오는 일정", ja: "今後の予定", zh: "即将到来" },
 
+  // ── Insights Tab ──
+  "insights.tabOverview": { en: "Overview", ko: "개요", ja: "概要", zh: "概览" },
+  "insights.tabInsights": { en: "Insights", ko: "인사이트", ja: "インサイト", zh: "洞察" },
+  "insights.leadingCategory": { en: "Leading Category", ko: "주도 카테고리", ja: "主導カテゴリ", zh: "主导类别" },
+  "insights.drivingGrowth": { en: "Driving growth right now", ko: "현재 성장 주도 중", ja: "現在成長を牽引中", zh: "正在推动增长" },
+  "insights.trendSignals": { en: "Trend Signals (7d)", ko: "트렌드 시그널 (7일)", ja: "トレンドシグナル（7日）", zh: "趋势信号（7天）" },
+  "insights.aiAnalysis": { en: "AI Forecast", ko: "AI 예측", ja: "AI予測", zh: "AI预测" },
+  "insights.next48h": { en: "Next 24-48h prediction", ko: "향후 24-48시간 예측", ja: "今後24〜48時間の予測", zh: "未来24-48小时预测" },
+  "insights.noData": { en: "Insights will appear after the next analysis cycle", ko: "다음 분석 주기 후 인사이트가 표시됩니다", ja: "次の分析サイクル後にインサイトが表示されます", zh: "下一个分析周期后将显示洞察" },
+
   // ── Missions ──
   "mission.todaysMission": { en: "Today's Mission", ko: "오늘의 미션", ja: "今日のミッション", zh: "今日任务" },
   "mission.loginForReward": { en: "Sign in to earn mission rewards!", ko: "로그인하면 미션 보상을 받을 수 있어요!", ja: "ログインしてミッション報酬を獲得！", zh: "登录即可获取任务奖励！" },

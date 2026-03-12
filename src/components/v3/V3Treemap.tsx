@@ -8,10 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Sparkles, BarChart3 } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
+import V3InsightsPanel from "@/components/v3/V3InsightsPanel";
 import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
@@ -205,6 +206,7 @@ function ChannelBar({ icon, label, value, total, color, href }: { icon: React.Re
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"overview" | "insights">("overview");
   const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
   const surging = isSurging(item.energyChange24h);
 
@@ -235,6 +237,39 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
           </div>
         </div>
         <div className="overflow-y-auto flex-1 min-h-0">
+          {/* Tab switcher */}
+          <div className="flex gap-1 px-4 pt-3 pb-1">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
+                activeTab === "overview"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <BarChart3 className="w-3 h-3" />
+              {t("insights.tabOverview")}
+            </button>
+            <button
+              onClick={() => setActiveTab("insights")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
+                activeTab === "insights"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Sparkles className="w-3 h-3" />
+              {t("insights.tabInsights")}
+            </button>
+          </div>
+
+          {activeTab === "insights" ? (
+            <div className="p-4">
+              <V3InsightsPanel wikiEntryId={item.id} artistName={item.title} />
+            </div>
+          ) : (
           <div className="p-4 space-y-5 overflow-hidden">
             {/* Surging Location Box */}
             {surging && (
@@ -415,6 +450,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             </button>
             <div className="h-3" />
           </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>
