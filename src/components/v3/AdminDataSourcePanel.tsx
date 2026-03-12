@@ -82,6 +82,7 @@ const formatAge = (dateStr: string): string => {
 };
 
 const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanelProps) => {
+  const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [collectingModules, setCollectingModules] = useState<Set<string>>(new Set());
 
