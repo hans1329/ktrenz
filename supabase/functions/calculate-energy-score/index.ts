@@ -1,4 +1,4 @@
-// Fan Energy Score (FES) v5.5 — Energy 압축 해소, 스냅샷 중복 방지, Social null 수정
+// Fan Energy Score (FES) v6 — Velocity 주도 온도: 변동률이 크면 온도가 높다
 // YouTube 37%, Buzz 23%, Music 18%, Album 14%, Social 5%, Fan 3%
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
