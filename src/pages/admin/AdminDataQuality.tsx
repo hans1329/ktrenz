@@ -98,7 +98,7 @@ const AdminDataQuality = () => {
     onSuccess: (data) => {
       const sup = data.suppressed_skipped ?? 0;
       const msg = sup > 0
-        ? `감사 완료: ${data.inserted}건 신규, ${sup}건 무시됨 (${data.artists_checked}명 검사)`
+        ? `감사 완료: ${data.inserted}건 신규, ${sup}건 무시됨 (${data.artists_checked}명 검사) · 목록 확인 시 '무시 포함'을 켜세요`
         : `감사 완료: ${data.inserted}건 이슈 발견 (${data.artists_checked}명 검사)`;
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
@@ -142,7 +142,7 @@ const AdminDataQuality = () => {
     },
     onSuccess: (result) => {
       const msg = result.totalSuppressed > 0
-        ? `ID 정합성 감사 완료: ${result.totalInserted}건 신규, ${result.totalSuppressed}건 무시됨 (${result.processed}/${result.total}명)`
+        ? `ID 정합성 감사 완료: ${result.totalInserted}건 신규, ${result.totalSuppressed}건 무시됨 (${result.processed}/${result.total}명) · 목록 확인 시 '무시 포함'을 켜세요`
         : `ID 정합성 감사 완료: ${result.totalInserted}건 이슈 (${result.processed}/${result.total}명)`;
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
@@ -164,16 +164,13 @@ const AdminDataQuality = () => {
           resolved: true,
           resolved_at: now,
           resolution_note: note,
-          suppressed: true,
-          suppressed_at: now,
-          suppressed_note: '해결 처리로 재감사 제외',
         })
         .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('해결 완료: 재감사 제외 처리됨');
+      toast.success('해결 처리 완료 (원인 미해결 시 재감사에서 재오픈됨)');
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
     onError: (err) => {
@@ -183,7 +180,7 @@ const AdminDataQuality = () => {
 
   const resolveAllFiltered = useMutation({
     mutationFn: async () => {
-      const targetIds = filtered.filter((i: any) => !i.suppressed).map((i: any) => i.id);
+      const targetIds = filtered.filter((i: any) => !i.resolved && !i.suppressed).map((i: any) => i.id);
       if (targetIds.length === 0) throw new Error('해결할 이슈가 없습니다');
 
       const total = targetIds.length;
@@ -200,9 +197,6 @@ const AdminDataQuality = () => {
             resolved: true,
             resolved_at: now,
             resolution_note: '일괄 해결',
-            suppressed: true,
-            suppressed_at: now,
-            suppressed_note: '일괄 해결로 재감사 제외',
           })
           .in('id', batch);
         if (error) throw error;
@@ -212,7 +206,7 @@ const AdminDataQuality = () => {
       return total;
     },
     onSuccess: (count) => {
-      toast.success(`${count}건 해결 완료 (재감사 제외)`);
+      toast.success(`${count}건 해결 처리 완료 (원인 미해결 시 재감사에서 재오픈됨)`);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
     onError: (err) => {
@@ -463,7 +457,7 @@ const AdminDataQuality = () => {
                 전체 무시 ({filtered.filter((i: any) => !i.suppressed).length}건)
               </Button>
             )}
-            {filtered.filter((i: any) => !i.suppressed).length > 0 && (
+            {filtered.filter((i: any) => !i.resolved && !i.suppressed).length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -472,7 +466,7 @@ const AdminDataQuality = () => {
                 onClick={() => resolveAllFiltered.mutate()}
               >
                 {resolveAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                전체 해결 ({filtered.filter((i: any) => !i.suppressed).length}건)
+                전체 해결 ({filtered.filter((i: any) => !i.resolved && !i.suppressed).length}건)
               </Button>
             )}
           </div>
@@ -545,7 +539,7 @@ const AdminDataQuality = () => {
                               </Button>
                             ) : (
                               <>
-                                {!issue.suppressed && (
+                                {!issue.resolved && !issue.suppressed && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
