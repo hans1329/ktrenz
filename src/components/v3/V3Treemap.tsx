@@ -599,10 +599,22 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       else flat.push(item);
     }
 
-    // 각 그룹 내 정렬
-    rising.sort((a, b) => getCategoryChange(b, category) - getCategoryChange(a, category));
+    // 각 그룹 내 정렬 — Rising/Falling은 변동률 × 절대점수 가중
+    // 변동률만으로 정렬하면 저점수 아티스트가 상위에 올라오는 문제 방지
+    const risingRank = (item: TreemapItem) => {
+      const change = getCategoryChange(item, category);
+      const score = getCategoryScore(item, category);
+      // 변동률 50% + 절대점수 50% (정규화: log 스케일)
+      return change * 0.5 + Math.log1p(Math.max(score, 1)) * 10 * 0.5;
+    };
+    rising.sort((a, b) => risingRank(b) - risingRank(a));
     flat.sort((a, b) => getCategoryScore(b, category) - getCategoryScore(a, category));
-    falling.sort((a, b) => getCategoryChange(a, category) - getCategoryChange(b, category));
+    const fallingRank = (item: TreemapItem) => {
+      const change = Math.abs(getCategoryChange(item, category));
+      const score = getCategoryScore(item, category);
+      return change * 0.5 + Math.log1p(Math.max(score, 1)) * 10 * 0.5;
+    };
+    falling.sort((a, b) => fallingRank(b) - fallingRank(a));
 
     // 상위 N개씩 뽑되, 부족하면 다른 그룹에서 채움
     const pickedRising = rising.slice(0, RISING_COUNT);
