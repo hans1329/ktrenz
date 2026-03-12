@@ -402,6 +402,14 @@ const AdminDataQuality = () => {
         ))}
         <div className="ml-auto flex items-center gap-2">
           <Badge
+            variant={showSuppressed ? 'default' : 'outline'}
+            className="cursor-pointer text-xs"
+            onClick={() => setShowSuppressed(!showSuppressed)}
+          >
+            <EyeOff className="w-3 h-3 mr-1" />
+            {showSuppressed ? '무시 포함' : '무시 제외'}
+          </Badge>
+          <Badge
             variant={showResolved ? 'default' : 'outline'}
             className="cursor-pointer text-xs"
             onClick={() => setShowResolved(!showResolved)}
