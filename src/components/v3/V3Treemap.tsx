@@ -832,7 +832,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                 <div className="relative z-10 flex flex-col items-center w-full px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px`, overflow: 'visible' }}>
                   {isTopThree && (
                     <span style={{
-                      fontSize: `${Math.max(18, sizeFactor * (rectIndex === 0 ? 2.8 : 2))}px`,
+                      fontSize: `${Math.max(18, sizeFactor * (rectIndex === 0 ? 4 : 2))}px`,
                       lineHeight: 1,
                       transform: `translateY(-${Math.max(6, sizeFactor * 0.8)}px)`,
                       marginBottom: `-${Math.max(6, sizeFactor * 0.8)}px`,
