@@ -386,10 +386,11 @@ Deno.serve(async (req) => {
 
         // buzz 전체 실행 시 Naver API를 먼저 동기 수집해 최신 snapshot 확보
         if (module === "buzz") {
+          const { data: tierKo } = await sb.from("v3_artist_tiers").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
           const naverResp = await fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-            body: JSON.stringify({ artistName: artist.title, wikiEntryId }),
+            body: JSON.stringify({ artistName: artist.title, koreanName: tierKo?.name_ko || null, wikiEntryId }),
           });
           if (!naverResp.ok) {
             const naverErr = await naverResp.text();

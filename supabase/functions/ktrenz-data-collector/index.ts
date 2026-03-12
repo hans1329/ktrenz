@@ -967,7 +967,7 @@ async function collectForSingleArtist(
             "Content-Type": "application/json",
             Authorization: `Bearer ${serviceKey}`,
           },
-          body: JSON.stringify({ wikiEntryId, artistName: artistTitle }),
+          body: JSON.stringify({ wikiEntryId, artistName: artistTitle, koreanName: endpoints?.name_ko || null }),
         });
 
         if (!naverResp.ok) {

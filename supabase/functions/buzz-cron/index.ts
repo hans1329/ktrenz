@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             artistName: artist.title,
+            koreanName: koNameMap.get(artist.id) || null,
             wikiEntryId: artist.id,
           }),
         });
