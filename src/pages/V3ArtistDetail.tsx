@@ -18,6 +18,7 @@ import V3ArtistMilestones from "@/components/v3/V3ArtistMilestones";
 import V3ArtistSchedule from "@/components/v3/V3ArtistSchedule";
 import AdminDataSourcePanel from "@/components/v3/AdminDataSourcePanel";
 import DataRunDialog from "@/components/v3/DataRunDialog";
+import V3ChartDataSection from "@/components/v3/V3ChartDataSection";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -521,6 +522,8 @@ const V3ArtistDetail = () => {
             )}
           </>
         )}
+
+        {entry?.id && <V3ChartDataSection wikiEntryId={entry.id} />}
 
         {entry?.id && <V3ArtistSchedule wikiEntryId={entry.id} artistName={entry.title} />}
         {entry?.id && <V3ArtistMilestones wikiEntryId={entry.id} />}
