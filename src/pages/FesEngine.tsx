@@ -474,39 +474,39 @@ spikeDirection = changeRate > 0 ? "surge" : "drop"
 
       {/* ── 에너지 맵 ── */}
       <SectionHeader icon={Activity} title="에너지 맵 (트리맵) 구조" color="bg-emerald-600" />
-      <p className="text-xs text-muted-foreground">홈 화면 <strong>⚡ 에너지 맵</strong>은 FES 상위 10명의 아티스트를 트리맵으로 시각화합니다.</p>
+      <p className="text-sm text-muted-foreground">홈 화면 <strong>⚡ 에너지 맵</strong>은 FES 상위 10명의 아티스트를 트리맵으로 시각화합니다.</p>
 
-      <Card className="p-3 bg-card border-border/50 space-y-3">
+      <Card className="p-4 bg-card border-border/50 space-y-4">
         <div>
-          <span className="text-xs font-bold text-foreground">📐 타일 면적 = Fan Energy Score</span>
-          <p className="text-[10px] text-muted-foreground mt-0.5">FES가 높을수록 면적이 큽니다. Squarify 알고리즘으로 가독성을 위한 정사각형에 가까운 타일을 생성합니다.</p>
+          <span className="text-sm font-bold text-foreground">📐 타일 면적 = Fan Energy Score</span>
+          <p className="text-xs text-muted-foreground mt-1">FES가 높을수록 면적이 큽니다. Squarify 알고리즘으로 가독성을 위한 정사각형에 가까운 타일을 생성합니다.</p>
         </div>
         <div>
-          <span className="text-xs font-bold text-foreground">🎨 타일 색상 = 24시간 에너지 변동률</span>
-          <div className="mt-1 space-y-1">
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">빨강</strong> — 상승 중 (Δ ≥ +5%)</span></div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(160,50%,40%,0.75)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">민트</strong> — 안정 (Δ -5% ~ +5%)</span></div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm" style={{background:"hsla(220,55%,35%,0.7)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">블루</strong> — 하락 중 (Δ ≤ -5%)</span></div>
-            <div className="flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-sm border border-destructive/50 animate-pulse" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-[10px] text-muted-foreground"><strong className="text-foreground">네온 SURGE</strong> — 극단 급등 (Δ ≥ +25%) 발광 + 리플 애니메이션</span></div>
+          <span className="text-sm font-bold text-foreground">🎨 타일 색상 = 24시간 에너지 변동률</span>
+          <div className="mt-1.5 space-y-1.5">
+            <div className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded-sm" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-xs text-muted-foreground"><strong className="text-foreground">빨강</strong> — 상승 중 (Δ ≥ +5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded-sm" style={{background:"hsla(160,50%,40%,0.75)"}}/><span className="text-xs text-muted-foreground"><strong className="text-foreground">민트</strong> — 안정 (Δ -5% ~ +5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded-sm" style={{background:"hsla(220,55%,35%,0.7)"}}/><span className="text-xs text-muted-foreground"><strong className="text-foreground">블루</strong> — 하락 중 (Δ ≤ -5%)</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block w-3.5 h-3.5 rounded-sm border border-destructive/50 animate-pulse" style={{background:"hsla(0,85%,50%,0.9)"}}/><span className="text-xs text-muted-foreground"><strong className="text-foreground">네온 SURGE</strong> — 극단 급등 (Δ ≥ +25%) 발광 + 리플 애니메이션</span></div>
           </div>
         </div>
         <div>
-          <span className="text-xs font-bold text-foreground">✨ 파티클 효과</span>
-          <p className="text-[10px] text-muted-foreground mt-0.5">각 타일에 동적 흰색 파티클이 적용됩니다. 파티클 속도는 에너지 변동률에, 밀도는 에너지 점유율에 비례합니다.</p>
+          <span className="text-sm font-bold text-foreground">✨ 파티클 효과</span>
+          <p className="text-xs text-muted-foreground mt-1">각 타일에 동적 흰색 파티클이 적용됩니다. 파티클 속도는 에너지 변동률에, 밀도는 에너지 점유율에 비례합니다.</p>
         </div>
         <div>
-          <span className="text-xs font-bold text-foreground">📈 타일 내 스파크라인</span>
-          <p className="text-[10px] text-muted-foreground mt-0.5">중형+ 타일은 최근 점수 이력을 미니 라인 차트로 표시하여 직관적인 모멘텀 방향을 보여줍니다.</p>
+          <span className="text-sm font-bold text-foreground">📈 타일 내 스파크라인</span>
+          <p className="text-xs text-muted-foreground mt-1">중형+ 타일은 최근 점수 이력을 미니 라인 차트로 표시하여 직관적인 모멘텀 방향을 보여줍니다.</p>
         </div>
         <div>
-          <span className="text-xs font-bold text-foreground">🏷️ 트렌드 라벨 분류</span>
-          <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 mt-1 whitespace-pre-wrap">{`🔥 SURGE  — Δ ≥ 30% 또는 가속도 ≥ 40%\n↑ Rising  — Δ ≥ 10%\n→ Stable  — Δ > -5%\n↘ Cooling — Δ > -15%\n↓ Falling — Δ ≤ -15%`}</code>
+          <span className="text-sm font-bold text-foreground">🏷️ 트렌드 라벨 분류</span>
+          <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 mt-1.5 whitespace-pre-wrap">{`🔥 SURGE  — Δ ≥ 30% 또는 가속도 ≥ 40%\n↑ Rising  — Δ ≥ 10%\n→ Stable  — Δ > -5%\n↘ Cooling — Δ > -15%\n↓ Falling — Δ ≤ -15%`}</code>
         </div>
       </Card>
 
       <FormulaCard title="Squarify 알고리즘 요약" formula={`1. 총 에너지 합산 → 아티스트별 면적 비율 계산\n2. 최악 종횡비를 최소화하며 행 배치\n3. 긴 축을 따라 반복적으로 분할\n4. 결과: 정사각형에 가까운 타일 레이아웃 → 가독성 ↑`} description="참조: finviz.com/map, kaito.ai 스타일 히트맵 레이아웃" />
 
-      <p className="text-[10px] text-muted-foreground text-center mt-6">최종 업데이트: 2026년 3월 11일 · KTRENDZ FES Engine v5.4 + 정규화 분석 에이전트 v6 + AI 예측 에이전트 v1</p>
+      <p className="text-xs text-muted-foreground text-center mt-6">최종 업데이트: 2026년 3월 11일 · KTRENDZ FES Engine v5.4 + 정규화 분석 에이전트 v6 + AI 예측 에이전트 v1</p>
     </div>
   );
 
