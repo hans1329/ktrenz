@@ -55,7 +55,7 @@ const FesEngine = () => {
       <Card className="p-5 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 border-primary/20">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center"><Gauge className="w-7 h-7 text-primary" /></div>
-          <div><h1 className="text-xl font-black text-foreground">KTRENDZ 스코어링 엔진</h1><p className="text-sm text-muted-foreground mt-0.5">FES v5.4 — 아티스트 트렌드 점수 및 팬 에너지 산출 방식</p></div>
+          <div><h1 className="text-xl font-black text-foreground">KTRENDZ 스코어링 엔진</h1><p className="text-sm text-muted-foreground mt-0.5">FES v6 — Z-Score 정규화 기반 팬 에너지 스코어링 시스템</p></div>
         </div>
       </Card>
 
