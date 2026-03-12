@@ -36,6 +36,8 @@ interface SnapshotMetrics {
   youtube_music?: { topicSubscribers?: number; topicTotalViews?: number; topTracks?: Array<{ title: string; viewCount: number }> };
   buzz_multi?: { buzz_score?: number; total_mentions?: number; sentiment_score?: number; source_breakdown?: Array<{ source: string; mentions: number; weighted: number }> };
   hanteo?: Array<{ album: string; artist: string; first_week_sales: number }>;
+  apple_music_charts?: { rank?: number; bonus?: number; [key: string]: any };
+  billboard_charts?: { rank?: number; bonus?: number; [key: string]: any };
   lastfm?: { listeners?: number; playcount?: number };
   deezer?: { fans?: number; nb_album?: number };
 }
