@@ -64,7 +64,7 @@ const AdminDataQuality = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ['data-quality-issues', showResolved],
+    queryKey: ['data-quality-issues', showResolved, showSuppressed],
     queryFn: async () => {
       let q = supabase
         .from('ktrenz_data_quality_issues' as any)
@@ -73,6 +73,9 @@ const AdminDataQuality = () => {
 
       if (!showResolved) {
         q = q.eq('resolved', false);
+      }
+      if (!showSuppressed) {
+        q = q.eq('suppressed', false);
       }
 
       const { data, error } = await q.limit(500);
