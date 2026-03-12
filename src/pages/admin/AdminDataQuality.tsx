@@ -324,10 +324,22 @@ const AdminDataQuality = () => {
       </div>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm">
             이슈 목록 ({filtered.length}건)
           </CardTitle>
+          {filtered.filter((i: any) => !i.resolved).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              disabled={resolveAllFiltered.isPending}
+              onClick={() => resolveAllFiltered.mutate()}
+            >
+              {resolveAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              전체 해결 ({filtered.filter((i: any) => !i.resolved).length}건)
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
