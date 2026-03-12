@@ -296,8 +296,8 @@ const AdminDataQuality = () => {
         </Card>
       )}
 
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">미해결 전체</p>
           <p className="text-2xl font-bold text-foreground">{totalOpen}</p>
         </Card>
         {(['critical', 'high', 'medium', 'low'] as Severity[]).map((sev) => {
