@@ -409,6 +409,20 @@ Deno.serve(async (req) => {
         );
       }
 
+      // yt_sentiment 개별 아티스트
+      if (module === "yt_sentiment") {
+        const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-yt-sentiment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ wikiEntryId }),
+        }).catch((e) => console.warn(`[data-engine] yt_sentiment single fire error:`, e.message));
+        fireAndForget(p);
+        return new Response(
+          JSON.stringify({ success: true, module, wikiEntryId, status: "launched", runId: currentRunId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // buzz 개별 소스 (buzz_x 등) 또는 buzz 전체
       if (module === "buzz" || module.startsWith("buzz_")) {
         const { data: artist } = await sb.from("wiki_entries").select("title, metadata").eq("id", wikiEntryId).single();
