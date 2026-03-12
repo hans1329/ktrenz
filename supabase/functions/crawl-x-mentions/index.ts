@@ -29,13 +29,8 @@ const SOURCES: SourceConfig[] = [
     tbs: "qdr:d",
     limit: 30,
   },
-  {
-    name: "news",
-    weight: 2.0,
-    buildQuery: (name) => `"${name}" kpop -site:x.com -site:twitter.com -site:reddit.com -site:tiktok.com`,
-    tbs: "qdr:d",
-    limit: 30,
-  },
+  // News 소스 제거됨 — Naver News API(무료)로 별도 수집 중이므로 Firecrawl 크레딧 절감
+  // 기존 news weight 2.0은 naver 가상 소스(1.3) + yt_comments(1.5)로 보완
   {
     name: "reddit",
     weight: 1.2,

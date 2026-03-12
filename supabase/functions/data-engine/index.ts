@@ -1,5 +1,5 @@
 // data-engine: 데이터 수집 오케스트레이터
-// 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok, buzz_news) + naver_news
+// 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok) + naver_news
 // 모드: 개별 모듈 또는 "all" (체이닝 + 타임시프트)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -13,7 +13,7 @@ const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "apple_music_
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
-const BUZZ_SOURCES = ["buzz_x", "buzz_reddit", "buzz_naver", "buzz_tiktok", "buzz_news"] as const;
+const BUZZ_SOURCES = ["buzz_x", "buzz_reddit", "buzz_naver", "buzz_tiktok"] as const;
 type BuzzSourceModule = typeof BUZZ_SOURCES[number];
 
 type Module = PipelineModule | BuzzSourceModule;
@@ -160,7 +160,6 @@ const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
   buzz_reddit: "reddit",
   buzz_naver: "naver",
   buzz_tiktok: "tiktok",
-  buzz_news: "news",
 };
 
 async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule: BuzzSourceModule): Promise<any> {
