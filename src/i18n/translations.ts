@@ -192,6 +192,8 @@ const translations: Record<string, Record<Language, string>> = {
   "insights.predSpike": { en: "🚀 Spike", ko: "🚀 급등", ja: "🚀 急上昇", zh: "🚀 飙升" },
   "insights.predFalling": { en: "📉 Falling", ko: "📉 하락", ja: "📉 下降", zh: "📉 下降" },
   "insights.predStable": { en: "→ Stable", ko: "→ 안정", ja: "→ 安定", zh: "→ 稳定" },
+  "insights.confidence": { en: "Confidence", ko: "신뢰도", ja: "信頼度", zh: "置信度" },
+  "insights.nextLeading": { en: "Next leading", ko: "다음 주도", ja: "次の主導", zh: "下一主导" },
 
   // ── Missions ──
   "mission.todaysMission": { en: "Today's Mission", ko: "오늘의 미션", ja: "今日のミッション", zh: "今日任务" },
