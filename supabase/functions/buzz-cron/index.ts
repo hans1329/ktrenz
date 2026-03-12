@@ -70,12 +70,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[buzz-cron] Batch offset=${batchOffset} size=${batchSize}, processing ${artists.length} artists`);
+    console.log(`[buzz-cron] Batch offset=${batchOffset} size=${batchSize}, processing ${orderedArtists.length} artists (tierCandidates=${uniqueIds.length}${tierSnapshotAt ? `, snapshotAt=${tierSnapshotAt}` : ""})`);
 
     let successCount = 0;
     let errors = 0;
 
-    for (const artist of artists) {
+    for (const artist of orderedArtists) {
       try {
         const meta = artist.metadata as any;
         const hashtags = meta?.hashtags || [];
