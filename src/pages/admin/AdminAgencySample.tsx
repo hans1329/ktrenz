@@ -447,7 +447,73 @@ const AdminAgencySample = () => {
     enabled: compareArtistId !== 'none',
   });
 
-  // ── Analyze mutation ──
+  // ── FES Contribution (latest) ──
+  const { data: fesContrib } = useQuery({
+    queryKey: ['agency-fes-contrib', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_fes_contributions' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('snapshot_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── FES Contribution history (30d for chart) ──
+  const { data: fesContribHistory } = useQuery({
+    queryKey: ['agency-fes-contrib-history', selectedArtistId],
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from('ktrenz_fes_contributions' as any)
+        .select('snapshot_at, youtube_z, buzz_z, album_z, music_z, social_z, normalized_fes, leading_category')
+        .eq('wiki_entry_id', selectedArtistId)
+        .gte('snapshot_at', cutoff)
+        .order('snapshot_at', { ascending: true });
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Category trends ──
+  const { data: categoryTrends } = useQuery({
+    queryKey: ['agency-category-trends', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_category_trends' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('calculated_at', { ascending: false })
+        .limit(5);
+      const latest = new Map<string, any>();
+      for (const row of (data || []) as any[]) {
+        if (!latest.has(row.category)) latest.set(row.category, row);
+      }
+      return latest;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── AI Prediction ──
+  const { data: aiPrediction } = useQuery({
+    queryKey: ['agency-ai-prediction', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_prediction_logs' as any)
+        .select('prediction, reasoning, predicted_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('predicted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
   const analyzeMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('ktrenz-yt-sentiment', {
