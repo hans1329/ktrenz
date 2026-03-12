@@ -491,7 +491,7 @@ const AdminDataQuality = () => {
                     const sev = SEVERITY_CONFIG[issue.severity as Severity] ?? SEVERITY_CONFIG.medium;
                     const SevIcon = sev.icon;
                     return (
-                      <TableRow key={issue.id} className={issue.resolved ? 'opacity-50' : ''}>
+                      <TableRow key={issue.id} className={issue.resolved ? 'opacity-50' : issue.suppressed ? 'opacity-40 bg-muted/30' : ''}>
                         <TableCell>
                           <span className={`flex items-center gap-1 text-xs ${sev.color}`}>
                             <SevIcon className="w-3.5 h-3.5" />
