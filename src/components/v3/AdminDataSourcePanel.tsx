@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Youtube, Twitter, Music, Disc3, Globe, MessageCircle,
-  Loader2, RefreshCw, ChevronDown, ChevronUp, Headphones, Newspaper, Hash
+  Loader2, RefreshCw, ChevronDown, ChevronUp, Headphones, Newspaper, Hash,
+  BarChart3, Video, Users
 } from "lucide-react";
 
 interface AdminDataSourcePanelProps {
@@ -16,17 +17,27 @@ interface AdminDataSourcePanelProps {
 }
 
 const SOURCE_CONFIG = [
+  // YouTube
   { key: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500", platform: "youtube" },
   { key: "youtube_music", label: "YT Music", icon: Headphones, color: "text-red-400", platform: "youtube_music" },
+  // Music
   { key: "lastfm", label: "Last.fm", icon: Music, color: "text-red-600", platform: "lastfm" },
   { key: "deezer", label: "Deezer", icon: Headphones, color: "text-purple-500", platform: "deezer" },
+  { key: "apple_music", label: "Apple Music", icon: Music, color: "text-pink-500", platform: "apple_music_charts" },
+  { key: "billboard", label: "Billboard", icon: BarChart3, color: "text-blue-600", platform: "billboard_charts" },
+  // Sales
   { key: "hanteo", label: "Hanteo", icon: Disc3, color: "text-amber-500", platform: "hanteo" },
+  // Buzz (multi-source breakdown)
   { key: "buzz_x", label: "X (Twitter)", icon: Twitter, color: "text-blue-400", platform: "buzz_multi", sourceFilter: "x_twitter" },
   { key: "buzz_reddit", label: "Reddit", icon: MessageCircle, color: "text-orange-500", platform: "buzz_multi", sourceFilter: "reddit" },
-  { key: "buzz_naver", label: "Naver Buzz", icon: Globe, color: "text-green-500", platform: "buzz_multi", sourceFilter: "naver" },
   { key: "buzz_tiktok", label: "TikTok", icon: Hash, color: "text-pink-400", platform: "buzz_multi", sourceFilter: "tiktok" },
-  { key: "buzz_news", label: "News", icon: Newspaper, color: "text-sky-500", platform: "buzz_multi", sourceFilter: "news" },
+  { key: "buzz_naver", label: "Naver Buzz", icon: Globe, color: "text-green-500", platform: "buzz_multi", sourceFilter: "naver" },
+  { key: "buzz_yt_comments", label: "YT Comments", icon: MessageCircle, color: "text-red-300", platform: "buzz_multi", sourceFilter: "yt_comments" },
+  { key: "buzz_ext_videos", label: "Ext. Videos", icon: Video, color: "text-indigo-400", platform: "buzz_multi", sourceFilter: "ext_videos" },
+  // News
   { key: "naver_news", label: "Naver News", icon: Newspaper, color: "text-green-600", platform: "naver_news" },
+  // Social
+  { key: "social", label: "Social Followers", icon: Users, color: "text-teal-500", platform: "social_followers" },
 ] as const;
 
 // 수집 모듈 매핑 (data-engine에 전달할 모듈명)
@@ -35,13 +46,17 @@ const COLLECT_MODULE_MAP: Record<string, string> = {
   youtube_music: "youtube",
   lastfm: "music",
   deezer: "music",
+  apple_music: "apple_music_charts",
+  billboard: "billboard_charts",
   hanteo: "hanteo",
   buzz_x: "buzz_x",
   buzz_reddit: "buzz_reddit",
   buzz_naver: "buzz_naver",
   buzz_tiktok: "buzz_tiktok",
-  buzz_news: "buzz_news",
+  buzz_yt_comments: "buzz_yt_comments",
+  buzz_ext_videos: "ext_videos",
   naver_news: "naver_news",
+  social: "social",
 };
 
 const formatValue = (v: any): string => {
@@ -73,7 +88,7 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   const { data: snapshots, isLoading, refetch } = useQuery({
     queryKey: ["admin-source-snapshots", wikiEntryId],
     queryFn: async () => {
-      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "hanteo", "buzz_multi", "naver_news"];
+      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_charts", "billboard_charts", "hanteo", "buzz_multi", "naver_news", "social_followers"];
       const results: Record<string, any> = {};
 
       const promises = platforms.map(async (platform) => {
