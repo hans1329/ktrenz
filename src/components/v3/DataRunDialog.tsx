@@ -153,11 +153,11 @@ export default function DataRunDialog({
         {/* 잔여 횟수 */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">{limits.label}</Badge>
+            <Badge variant="secondary" className="text-xs">{isAdmin ? "Admin" : limits.label}</Badge>
             <span className="text-xs text-muted-foreground">오늘 잔여</span>
           </div>
-          <span className={cn("text-sm font-bold", remaining <= 0 ? "text-destructive" : "text-primary")}>
-            {remaining} / {limits.daily === 999 ? "∞" : limits.daily}
+          <span className={cn("text-sm font-bold", !isAdmin && remaining <= 0 ? "text-destructive" : "text-primary")}>
+            {isAdmin ? "∞" : `${remaining} / ${limits.daily === 999 ? "∞" : limits.daily}`}
           </span>
         </div>
 
@@ -166,7 +166,7 @@ export default function DataRunDialog({
           <RainbowProgressBar />
         )}
 
-        {!user && (
+        {!user && !isAdmin && (
           <p className="text-sm text-muted-foreground text-center py-4">로그인 후 이용할 수 있습니다.</p>
         )}
 
