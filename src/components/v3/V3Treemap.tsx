@@ -819,7 +819,10 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   </span>
                 )}
 
-                <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
+                <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px` }}>
+                  {surging && isMedium && (
+                    <Flame className="text-orange-400 drop-shadow-lg" style={{ width: `${Math.max(14, sizeFactor * 1.2)}px`, height: `${Math.max(14, sizeFactor * 1.2)}px` }} fill="currentColor" />
+                  )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                   <span className="font-black text-white drop-shadow-lg"
@@ -828,7 +831,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                     <span className={cn("font-bold rounded-full backdrop-blur-sm",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
                     )} style={{ fontSize: `${badgeFontSize}px`, padding: `${badgePy}px ${badgePx}px` }}>
-                      {surging ? "🔥 " : ""}{catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
+                      {catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
                     </span>
                   )}
                 </div>
