@@ -102,7 +102,7 @@ const V3ChartDataSection = ({ wikiEntryId }: V3ChartDataSectionProps) => {
           <div className="flex items-center gap-2 mt-5">
             <div className="h-px flex-1 bg-border" />
             <span className="text-sm text-foreground font-bold flex items-center gap-1.5">
-              <Disc3 className="w-4 h-4 text-amber-500" /> Hanteo Chart
+              <Disc3 className="w-4 h-4 text-amber-500" /> Album Data
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
