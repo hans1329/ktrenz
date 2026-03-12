@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { artistName, wikiEntryId } = body;
+    const { artistName, koreanName, wikiEntryId } = body;
 
     if (!artistName) {
       return new Response(
@@ -155,11 +155,23 @@ Deno.serve(async (req) => {
     // 24시간 필터를 위한 cutoff
     const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
 
-    // 한국어 + 영어 검색 병렬 실행
-    const [koResults, enResults] = await Promise.all([
-      searchNaverNews(clientId, clientSecret, `"${artistName}"`, 100, "date"),
-      searchNaverNews(clientId, clientSecret, `"${artistName}" kpop`, 50, "date"),
-    ]);
+    // 한글명이 있으면 한글명 우선 검색, 없으면 영문명으로 fallback
+    const primaryName = koreanName || artistName;
+    const secondaryName = koreanName ? artistName : null;
+
+    // 병렬 검색: 한글명 + (영문명 or kpop 키워드)
+    const searchPromises: Promise<NaverNewsItem[]>[] = [
+      searchNaverNews(clientId, clientSecret, `"${primaryName}"`, 100, "date"),
+    ];
+    if (secondaryName) {
+      // 한글명이 있으면 영문명도 별도 검색
+      searchPromises.push(searchNaverNews(clientId, clientSecret, `"${secondaryName}"`, 50, "date"));
+    } else {
+      // 한글명이 없으면 kpop 키워드 조합
+      searchPromises.push(searchNaverNews(clientId, clientSecret, `"${primaryName}" kpop`, 50, "date"));
+    }
+
+    const results = await Promise.all(searchPromises);
 
     // 중복 제거 (link 기준)
     const seenLinks = new Set<string>();
