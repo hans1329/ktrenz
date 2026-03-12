@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Youtube, Twitter, Music, Disc3, Globe, MessageCircle,
-  Loader2, RefreshCw, ChevronDown, ChevronUp, Headphones, Newspaper, Hash
+  Loader2, RefreshCw, ChevronDown, ChevronUp, Headphones, Newspaper, Hash,
+  BarChart3, Video, Users
 } from "lucide-react";
 
 interface AdminDataSourcePanelProps {
