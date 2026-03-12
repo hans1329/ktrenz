@@ -63,7 +63,7 @@ const V3RankingCards = ({ rankings }: V3RankingCardsProps) => {
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                 <span>FES {entry.total_score.toLocaleString()}</span>
                 <span className="text-muted-foreground/30">·</span>
-                <span>E {entry.energy_score}</span>
+                <span>E {entry.energy_score}°E</span>
               </div>
             </div>
 

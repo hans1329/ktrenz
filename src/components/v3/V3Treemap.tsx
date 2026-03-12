@@ -291,7 +291,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
                 <p className="text-[10px] text-muted-foreground mb-1">{t("drawer.fesLabel")}</p>
-                <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
+                <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}°E</p>
               </div>
               <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
                 <p className="text-[10px] text-muted-foreground mb-1">{t("drawer.change24h")}</p>

@@ -156,7 +156,7 @@ export const V3BriefingCard = ({ data }: { data: BriefingData }) => {
                   <span className="font-medium text-foreground/70">#{c.rank}</span> {c.artist_name}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-foreground font-medium">{Math.round(c.energy_score)}</span>
+                  <span className="text-foreground font-medium">{Math.round(c.energy_score)}°E</span>
                   <ChangeIndicator value={c.energy_change_24h} />
                 </div>
               </div>

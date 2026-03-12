@@ -293,7 +293,7 @@ const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any)
                   <ChangeIndicator change={item.changePercent ?? 0} />
                   {item.energy_score > 0 && (
                     <span className="text-[10px] text-primary flex items-center gap-0.5 justify-end mt-0.5">
-                      <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}
+                      <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°E
                     </span>
                   )}
                 </div>
