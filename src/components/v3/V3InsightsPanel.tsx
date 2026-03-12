@@ -258,11 +258,18 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
               {t("insights.next48h")}
             </span>
           </div>
-          {prediction.reasoning && (
-            <p className="text-xs text-foreground/80 leading-relaxed">
-              {prediction.reasoning}
-            </p>
-          )}
+          {(() => {
+            const reasoningMap: Record<string, string | undefined> = {
+              en: prediction.reasoning,
+              ko: prediction.reasoning_ko,
+              ja: prediction.reasoning_ja,
+              zh: prediction.reasoning_zh,
+            };
+            const text = reasoningMap[language] || prediction.reasoning;
+            return text ? (
+              <p className="text-xs text-foreground/80 leading-relaxed">{text}</p>
+            ) : null;
+          })()}
           <p className="text-[9px] text-muted-foreground mt-2">
             {new Date(prediction.predicted_at).toLocaleDateString()}
           </p>
