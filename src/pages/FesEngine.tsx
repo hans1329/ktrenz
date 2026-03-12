@@ -265,12 +265,12 @@ change_24h = (현재 − 24시간전) / 24시간전 × 100
         description="Null 변동 (유효한 24h 비교 없음)은 해당 카테고리를 velocity에서 제외하지만 intensity는 포함합니다. Zero 스코어 카테고리는 전체 가중치로 에너지 0을 기여합니다." />
 
       <div className="grid grid-cols-6 gap-1.5">
-        <Card className="p-2 bg-card border-border/50 text-center"><Youtube className="w-3.5 h-3.5 mx-auto text-destructive" /><p className="text-[10px] font-bold text-foreground mt-1">37%</p><p className="text-[8px] text-muted-foreground">YouTube</p></Card>
-        <Card className="p-2 bg-card border-border/50 text-center"><Zap className="w-3.5 h-3.5 mx-auto text-amber-500" /><p className="text-[10px] font-bold text-foreground mt-1">23%</p><p className="text-[8px] text-muted-foreground">Buzz</p></Card>
-        <Card className="p-2 bg-card border-border/50 text-center"><Music className="w-3.5 h-3.5 mx-auto text-purple-500" /><p className="text-[10px] font-bold text-foreground mt-1">18%</p><p className="text-[8px] text-muted-foreground">Music</p></Card>
-        <Card className="p-2 bg-card border-border/50 text-center"><Disc3 className="w-3.5 h-3.5 mx-auto text-emerald-500" /><p className="text-[10px] font-bold text-foreground mt-1">14%</p><p className="text-[8px] text-muted-foreground">Album</p></Card>
-        <Card className="p-2 bg-card border-border/50 text-center"><Users className="w-3.5 h-3.5 mx-auto text-pink-500" /><p className="text-[10px] font-bold text-foreground mt-1">5%</p><p className="text-[8px] text-muted-foreground">Social</p></Card>
-        <Card className="p-2 bg-card border-border/50 text-center"><Heart className="w-3.5 h-3.5 mx-auto text-blue-500" /><p className="text-[10px] font-bold text-foreground mt-1">3%</p><p className="text-[8px] text-muted-foreground">Fan</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Youtube className="w-4 h-4 mx-auto text-destructive" /><p className="text-xs font-bold text-foreground mt-1">37%</p><p className="text-[10px] text-muted-foreground">YouTube</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Zap className="w-4 h-4 mx-auto text-amber-500" /><p className="text-xs font-bold text-foreground mt-1">23%</p><p className="text-[10px] text-muted-foreground">Buzz</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">18%</p><p className="text-[10px] text-muted-foreground">Music</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Disc3 className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">14%</p><p className="text-[10px] text-muted-foreground">Album</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Users className="w-4 h-4 mx-auto text-pink-500" /><p className="text-xs font-bold text-foreground mt-1">5%</p><p className="text-[10px] text-muted-foreground">Social</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Heart className="w-4 h-4 mx-auto text-blue-500" /><p className="text-xs font-bold text-foreground mt-1">3%</p><p className="text-[10px] text-muted-foreground">Fan</p></Card>
       </div>
 
       <FormulaCard title="energy_change_24h (롤링 윈도우)" formula={`overallChange = Σ(change_i × weight_i) / Σ(weight_i)
@@ -283,10 +283,10 @@ change_24h = (현재 − 24시간전) / 24시간전 × 100
 avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="에너지 스냅샷의 장기 트렌드 추적을 위해 EMA로 베이스라인을 관리합니다." />
 
       <div className="grid grid-cols-4 gap-2">
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💤</span><p className="text-xs font-bold text-foreground mt-1">&lt; 80</p><p className="text-[10px] text-muted-foreground">Low</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">💫</span><p className="text-xs font-bold text-foreground mt-1">80–150</p><p className="text-[10px] text-muted-foreground">Normal</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">⚡</span><p className="text-xs font-bold text-foreground mt-1">150–200</p><p className="text-[10px] text-muted-foreground">Active</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-lg">🔥</span><p className="text-xs font-bold text-foreground mt-1">200+</p><p className="text-[10px] text-muted-foreground">Explosive</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💤</span><p className="text-sm font-bold text-foreground mt-1">&lt; 80</p><p className="text-xs text-muted-foreground">Low</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💫</span><p className="text-sm font-bold text-foreground mt-1">80–150</p><p className="text-xs text-muted-foreground">Normal</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">⚡</span><p className="text-sm font-bold text-foreground mt-1">150–200</p><p className="text-xs text-muted-foreground">Active</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">🔥</span><p className="text-sm font-bold text-foreground mt-1">200+</p><p className="text-xs text-muted-foreground">Explosive</p></Card>
       </div>
 
       {/* ── 정규화 분석 에이전트 (NEW) ── */}
