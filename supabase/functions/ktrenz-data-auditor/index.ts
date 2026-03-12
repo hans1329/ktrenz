@@ -532,8 +532,9 @@ Deno.serve(async (req) => {
 
     const body = await parseBody(req);
     const { mode, wikiEntryId, offset, limit } = body;
+    const effectiveLimit = wikiEntryId ? 1 : mode === "full" ? 500 : limit;
 
-    const { artists, total } = await fetchArtists(supabase, wikiEntryId, offset, limit);
+    const { artists, total } = await fetchArtists(supabase, wikiEntryId, offset, effectiveLimit);
 
     if (!artists.length) {
       return new Response(
