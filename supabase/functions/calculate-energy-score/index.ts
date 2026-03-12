@@ -113,7 +113,7 @@ export function calculateArtistEnergy(
 
   for (const cat of categories) {
     if (cat.raw <= 0) {
-      categoryEnergies.push({ weight: cat.w, energy: 0 });
+      // raw=0인 카테고리는 가중치에서 제외 (dead weight 방지)
       continue;
     }
     if (cat.vel != null) {
