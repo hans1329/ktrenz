@@ -573,7 +573,7 @@ Deno.serve(async (req) => {
       artists_checked: artists.length,
       total_artists: total,
       offset,
-      limit,
+      limit: effectiveLimit,
       issues_found: issues.length,
       inserted,
       skipped,
