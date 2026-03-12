@@ -61,7 +61,7 @@ const FesEngine = () => {
 
       {/* ── 데이터 파이프라인 ── */}
       <SectionHeader icon={Server} title="데이터 파이프라인 & 수집 주기" color="bg-slate-600" />
-      <p className="text-xs text-muted-foreground"><strong>6시간</strong> 주기 (00:05, 06:05, 12:05, 18:05 UTC)로 의존성 순서에 따라 실행됩니다:</p>
+      <p className="text-sm text-muted-foreground"><strong>6시간</strong> 주기 (00:05, 06:05, 12:05, 18:05 UTC)로 의존성 순서에 따라 실행됩니다:</p>
       <FormulaCard title="파이프라인 실행 순서" formula={`youtube → external_videos → music → hanteo
 → apple_music_charts → billboard_charts
 → naver_news → buzz → social → fan_activity
