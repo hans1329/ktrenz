@@ -68,7 +68,7 @@ interface DataRunDialogProps {
 }
 
 export default function DataRunDialog({
-  open, onOpenChange, wikiEntryId, artistTitle, onRunModule, isRunning, isCrawling,
+  open, onOpenChange, wikiEntryId, artistTitle, onRunModule, isRunning, isCrawling, isAdmin = false,
 }: DataRunDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
