@@ -21,9 +21,10 @@ function pctChange(current: number, previous: number): number {
 }
 
 function changeToScore(change: number): number {
-  const normalized = change / 100;
-  const sigmoid = 1 / (1 + Math.exp(-normalized * 3));
-  return Math.round(20 + sigmoid * (MAX_SCORE - 20));
+  if (change === 0) return 0;
+  const absChange = Math.abs(change);
+  const magnitude = MAX_SCORE * (1 - Math.exp(-absChange / 50));
+  return Math.round(Math.sign(change) * magnitude);
 }
 
 Deno.serve(async (req) => {
