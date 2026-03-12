@@ -120,7 +120,8 @@ const AdminDataQuality = () => {
       const total = count ?? 0;
       const batchSize = 20;
       let processed = 0;
-      let totalIssues = 0;
+      let totalInserted = 0;
+      let totalSuppressed = 0;
 
       setIdAuditProgress({ done: 0, total });
 
@@ -132,14 +133,18 @@ const AdminDataQuality = () => {
 
         const parsed = (typeof data === 'string' ? JSON.parse(data) : data) as AuditSummary;
         processed += parsed.artists_checked ?? 0;
-        totalIssues += parsed.issues_found ?? 0;
+        totalInserted += parsed.inserted ?? 0;
+        totalSuppressed += parsed.suppressed_skipped ?? 0;
         setIdAuditProgress({ done: processed, total });
       }
 
-      return { processed, totalIssues, total };
+      return { processed, totalInserted, totalSuppressed, total };
     },
     onSuccess: (result) => {
-      toast.success(`ID 정합성 감사 완료: ${result.totalIssues}건 이슈 (${result.processed}/${result.total}명)`);
+      const msg = result.totalSuppressed > 0
+        ? `ID 정합성 감사 완료: ${result.totalInserted}건 신규, ${result.totalSuppressed}건 무시됨 (${result.processed}/${result.total}명)`
+        : `ID 정합성 감사 완료: ${result.totalInserted}건 이슈 (${result.processed}/${result.total}명)`;
+      toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
     onError: (err) => {
