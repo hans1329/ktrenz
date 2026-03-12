@@ -424,7 +424,7 @@ spikeDirection = changeRate > 0 ? "surge" : "drop"
         <ApiCard method="POST" endpoint="data-engine" description="전체 파이프라인을 오케스트레이션합니다. fire-and-forget 체이닝으로 각 모듈을 순차 실행하며, 마지막에 FES 분석/예측을 수행합니다." params={["module: 'all' | 모듈명", "wikiEntryId?", "triggerSource?"]} />
         <ApiCard method="POST" endpoint="ktrenz-data-collector" description="소스별 YouTube + Music + Hanteo + Buzz 데이터를 수집합니다." params={["source: 'youtube' | 'music' | 'hanteo' | 'buzz'", "wikiEntryId?"]} />
         <ApiCard method="POST" endpoint="collect-social-followers" description="kpop-radar.com에서 Instagram/TikTok/Spotify/Twitter 팔로워 데이터를 스크래핑합니다. ~4 Firecrawl 크레딧." params={["— (전체 tier-1 아티스트)"]} />
-        <ApiCard method="POST" endpoint="calculate-energy-score" description="6개 카테고리에 걸쳐 퍼센타일 + 시그모이드 모델로 FES v5.4를 계산합니다." params={["isBaseline?"]} />
+        <ApiCard method="POST" endpoint="calculate-energy-score" description="v5.4 베이스라인 에너지를 계산합니다 (FES Analyst가 normalized_fes로 덮어쓰기 전 단계)." params={["isBaseline?"]} />
         <ApiCard method="POST" endpoint="ktrenz-fes-analyst" description="카테고리별 z-score 정규화, 기여도 분석, 7d/30d 독립 트렌드 추적을 수행합니다." params={["wiki_entry_ids?"]} />
         <ApiCard method="POST" endpoint="ktrenz-fes-predictor" description="GPT-4o-mini 기반 24-48h FES 방향 예측 및 과거 예측 자동 검증을 수행합니다." params={["wiki_entry_ids?", "mode: 'predict' | 'predict_only'"]} />
         <ApiCard method="POST" endpoint="query-artist-energy" description="유저용 개별 아티스트 실시간 에너지 조회 엔드포인트." params={["wiki_entry_id", "sources?"]} />
