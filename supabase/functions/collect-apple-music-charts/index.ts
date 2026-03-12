@@ -57,6 +57,22 @@ Deno.serve(async (req) => {
       if (w.title) nameLookup.set(w.title.toLowerCase(), w.id);
     }
 
+    // Dedup: skip if collected within last 1 hour
+    const { data: recentSnap } = await sb
+      .from("ktrenz_data_snapshots")
+      .select("id")
+      .eq("platform", "apple_music_chart")
+      .gte("collected_at", new Date(Date.now() - 3600_000).toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (recentSnap) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "collected within last hour" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     let totalMatched = 0;
     let totalCharted = 0;
     const matchedArtists = new Set<string>();

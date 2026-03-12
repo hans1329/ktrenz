@@ -171,6 +171,22 @@ Deno.serve(async (req) => {
       if (w.title) nameLookup.set(w.title.toLowerCase(), w.id);
     }
 
+    // Check for recent collection (dedup: skip if collected within last 1 hour)
+    const { data: recentSnap } = await sb
+      .from("ktrenz_data_snapshots")
+      .select("id")
+      .eq("platform", "billboard_chart")
+      .gte("collected_at", new Date(Date.now() - 3600_000).toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (recentSnap) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "collected within last hour" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     let totalMatched = 0;
     let totalEntries = 0;
     const matchedArtists = new Set<string>();
@@ -209,13 +225,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Parse using the new robust parser
         const chartEntries = parseBillboardMarkdown(markdown);
         totalEntries += chartEntries.length;
         debugParsed[chart.name] = chartEntries.length;
         console.log(`[Billboard] ${chart.name}: parsed ${chartEntries.length} entries (first: ${chartEntries[0]?.title || "none"} by ${chartEntries[0]?.artist || "none"})`);
 
-        // Match against our artists
         for (const entry of chartEntries) {
           const artistLower = entry.artist.toLowerCase();
           let wikiEntryId: string | undefined;
@@ -223,12 +237,15 @@ Deno.serve(async (req) => {
           // Exact match first
           wikiEntryId = nameLookup.get(artistLower);
 
-          // Partial match: check if any artist name is contained in the billboard artist field
+          // Partial match: word-boundary only, min 4 chars to avoid false positives
           if (!wikiEntryId) {
             for (const [name, id] of nameLookup.entries()) {
-              if (name.length >= 3 && (artistLower.includes(name) || name.includes(artistLower))) {
-                wikiEntryId = id;
-                break;
+              if (name.length >= 4) {
+                const regex = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, "i");
+                if (regex.test(entry.artist)) {
+                  wikiEntryId = id;
+                  break;
+                }
               }
             }
           }
@@ -251,7 +268,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Rate limit between scrapes
         await new Promise((r) => setTimeout(r, 1000));
       } catch (e) {
         errors.push(`${chart.name}: ${e.message}`);
