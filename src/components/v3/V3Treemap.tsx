@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Snowflake } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
