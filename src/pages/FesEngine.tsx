@@ -343,11 +343,11 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="에너지 스
 
       {/* ── AI 예측 에이전트 (NEW) ── */}
       <SectionHeader icon={Brain} title="AI 예측 에이전트 (v1)" color="bg-orange-600" />
-      <p className="text-xs text-muted-foreground">정규화된 기여도 및 트렌드 데이터를 기반으로 GPT-4o-mini가 24–48시간 FES 변동을 예측하고, 과거 예측을 자동 검증하여 정확도를 추적합니다.</p>
+      <p className="text-sm text-muted-foreground">정규화된 기여도 및 트렌드 데이터를 기반으로 GPT-4o-mini가 24–48시간 FES 변동을 예측하고, 과거 예측을 자동 검증하여 정확도를 추적합니다.</p>
 
-      <Card className="p-3 bg-orange-500/5 border-orange-500/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">예측 에이전트 아키텍처</p>
-        <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
+      <Card className="p-4 bg-orange-500/5 border-orange-500/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">예측 에이전트 아키텍처</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li><strong className="text-foreground">입력 피처:</strong> 최근 5개 스냅샷의 카테고리별 z-score, 트렌드 방향/모멘텀, 시계열 패턴</li>
           <li><strong className="text-foreground">구조화 출력:</strong> OpenAI Tool Calling으로 FES 방향, 신뢰도, 주도 카테고리, 크로스 카테고리 패턴을 구조적으로 추출</li>
           <li><strong className="text-foreground">자동 검증:</strong> 24시간 후 예측과 실제 결과를 비교하여 정확도 스코어 (0–1) 자동 산정</li>
