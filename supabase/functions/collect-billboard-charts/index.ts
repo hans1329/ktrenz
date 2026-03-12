@@ -190,6 +190,17 @@ Deno.serve(async (req) => {
     let totalMatched = 0;
     let totalEntries = 0;
     const matchedArtists = new Set<string>();
+    const firstEntryArtists: Array<{ wikiEntryId: string; chartName: string; position: number; title: string }> = [];
+    const errors: string[] = [];
+    const debugParsed: Record<string, number> = {};
+
+    // Pre-load existing billboard artists (for first-entry detection)
+    const { data: existingBillboard } = await sb
+      .from("ktrenz_data_snapshots")
+      .select("wiki_entry_id")
+      .eq("platform", "billboard_chart")
+      .limit(1000);
+    const existingBillboardSet = new Set((existingBillboard || []).map((r: any) => r.wiki_entry_id));
     const errors: string[] = [];
     const debugParsed: Record<string, number> = {};
 
