@@ -96,14 +96,24 @@ async function runHanteo(supabaseUrl: string, serviceKey: string, waitForComplet
 }
 
 async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // NOTE: Buzz는 12배치 × 5아티스트 × ~10초 = 600초+ 소요되어 edge function 타임아웃 초과
-  // 따라서 항상 fire-and-forget으로 실행하고, 파이프라인에서는 DELAY_AFTER로 대기
-  console.log(`[data-engine] Running Buzz module (always fire-and-forget to avoid timeout)...`);
+  // Buzz는 아티스트당 ~10초 소요 → edge function 타임아웃 초과 방지를 위해 fire-and-forget
+  console.log(`[data-engine] Running Buzz module (dynamic batching based on Tier 1 count)...`);
+
+  // Tier 1 아티스트 수를 동적으로 조회
+  const sb = createClient(supabaseUrl, serviceKey);
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1);
+  const tier1Count = (tier1Entries || []).length;
+
+  if (tier1Count === 0) {
+    console.warn(`[data-engine] Buzz: No Tier 1 artists found`);
+    return { status: "no_artists", launched: 0 };
+  }
+
   const BATCH_SIZE = 5;
-  const TOTAL_BATCHES = 14; // 65 Tier1 artists ÷ 5 = 13 batches needed, +1 buffer
+  const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
 
   let launched = 0;
-  for (let i = 0; i < TOTAL_BATCHES; i++) {
+  for (let i = 0; i < totalBatches; i++) {
     const p = fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
@@ -111,10 +121,10 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
     }).catch((e) => console.warn(`[data-engine] Buzz batch ${i} fire error:`, e.message));
     fireAndForget(p);
     launched++;
-    if (i < TOTAL_BATCHES - 1) await new Promise(r => setTimeout(r, 2000));
+    if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 2000));
   }
-  console.log(`[data-engine] Buzz: launched ${launched} batches`);
-  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches: TOTAL_BATCHES };
+  console.log(`[data-engine] Buzz: launched ${launched} batches for ${tier1Count} Tier1 artists`);
+  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count };
 }
 
 async function runExternalVideos(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
