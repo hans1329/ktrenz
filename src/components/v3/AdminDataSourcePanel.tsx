@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Youtube, Twitter, Music, Disc3, Globe, MessageCircle,
   Loader2, RefreshCw, ChevronDown, ChevronUp, Headphones, Newspaper, Hash,
-  BarChart3, Video, Users
+  BarChart3, Video, Users, ShieldAlert
 } from "lucide-react";
 
 interface AdminDataSourcePanelProps {
@@ -83,6 +84,37 @@ const formatAge = (dateStr: string): string => {
 const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanelProps) => {
   const [expanded, setExpanded] = useState(false);
   const [collectingModules, setCollectingModules] = useState<Set<string>>(new Set());
+
+  // Individual artist audit
+  const auditMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor', {
+        body: { wiki_entry_id: wikiEntryId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`${artistTitle} 감사 완료: ${data.issues_found}건 이슈`);
+    },
+    onError: (err) => toast.error(`감사 실패: ${(err as Error).message}`),
+  });
+
+  // Fetch issues for this artist
+  const { data: artistIssues } = useQuery({
+    queryKey: ['artist-quality-issues', wikiEntryId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_data_quality_issues' as any)
+        .select('*')
+        .eq('wiki_entry_id', wikiEntryId)
+        .eq('resolved', false)
+        .order('severity');
+      return (data ?? []) as any[];
+    },
+    staleTime: 60_000,
+    enabled: expanded,
+  });
 
   // 최근 스냅샷 가져오기 (모든 플랫폼)
   const { data: snapshots, isLoading, refetch } = useQuery({
@@ -186,7 +218,40 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-1">
+        <div className="px-3 pb-3 space-y-2">
+          {/* Audit button + issues summary */}
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              onClick={() => auditMutation.mutate()}
+              disabled={auditMutation.isPending}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+            >
+              {auditMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldAlert className="w-3 h-3" />}
+              품질 감사
+            </button>
+            {artistIssues && artistIssues.length > 0 && (
+              <Badge variant="destructive" className="text-[10px]">
+                {artistIssues.length}건 이슈
+              </Badge>
+            )}
+          </div>
+
+          {/* Show issues if any */}
+          {artistIssues && artistIssues.length > 0 && (
+            <div className="space-y-1 mb-2">
+              {artistIssues.slice(0, 5).map((issue: any) => (
+                <div key={issue.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded bg-destructive/5 border border-destructive/20 text-[10px]">
+                  <span className={issue.severity === 'critical' ? 'text-red-500' : issue.severity === 'high' ? 'text-orange-500' : 'text-amber-500'}>●</span>
+                  <span className="text-foreground font-medium truncate flex-1">{issue.title?.replace(`${artistTitle}: `, '')}</span>
+                  <span className="text-muted-foreground shrink-0">{issue.platform}</span>
+                </div>
+              ))}
+              {artistIssues.length > 5 && (
+                <p className="text-[10px] text-muted-foreground pl-2">+{artistIssues.length - 5}건 더...</p>
+              )}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="space-y-1">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
           ) : (
