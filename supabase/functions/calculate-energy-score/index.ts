@@ -97,42 +97,42 @@ export function calculateArtistEnergy(
   const socialIntensity = clamp(Math.round(percentiles.social * MAX_SCORE), 0, MAX_SCORE);
   const fanIntensity = clamp(Math.round(percentiles.fan * MAX_SCORE), 0, MAX_SCORE);
 
-  // ── Energy Score v6: Velocity 주도 + Intensity 보조 ──
-  // "온도가 높다 = 지금 변동률이 크다"
-  // Velocity 70% + Intensity 30% — 변동률이 온도를 결정하고, 절대 규모는 바닥을 깔아줌
-  // 하락(음수 velocity)은 온도를 낮추되, intensity 베이스로 최소 온기 유지
-  const categoryEnergies: { weight: number; energy: number }[] = [];
-  const categories = [
-    { w: WEIGHTS.youtube, vel: ytVelocity, int: ytIntensity, raw: current.yt },
-    { w: WEIGHTS.buzz, vel: buzzVelocity, int: buzzIntensity, raw: current.buzz },
-    { w: WEIGHTS.music, vel: musicVelocity, int: musicIntensity, raw: current.music },
-    { w: WEIGHTS.album, vel: albumVelocity, int: albumIntensity, raw: current.album },
-    { w: WEIGHTS.social, vel: socialVelocity, int: socialIntensity, raw: current.social },
-    { w: WEIGHTS.fan, vel: fanVelocity, int: fanIntensity, raw: current.fan },
-  ];
+  // ── Energy Score v6.1: overallChange → 온도 직접 매핑 ──
+  // "온도가 높다 = 지금 가중 변동률이 크다" — 가장 직관적인 매핑
+  // overallChange(%)를 지수 감쇄로 10~250° 스케일에 매핑
+  // Intensity는 이전 데이터 없을 때만 fallback으로 사용
+  let energyScore: number;
 
-  for (const cat of categories) {
-    if (cat.raw <= 0) {
-      // raw=0인 카테고리는 가중치에서 제외 (dead weight 방지)
-      continue;
-    }
-    if (cat.vel != null) {
-      // Velocity 컴포넌트: 양수면 그대로, 음수면 30%만 반영 (하락 시 급냉 방지)
-      const velComponent = cat.vel > 0
-        ? (cat.vel / MAX_SCORE) * MAX_SCORE
-        : (cat.vel / MAX_SCORE) * MAX_SCORE * 0.3;
-      // Energy = Velocity 70% + Intensity 30%
-      const energy = velComponent * 0.7 + cat.int * 0.3;
-      categoryEnergies.push({ weight: cat.w, energy: clamp(Math.round(energy), 0, MAX_SCORE) });
+  if (overallChange != null) {
+    // 가중 변동률을 온도에 직접 매핑 (decay constant = 100으로 넓은 스프레드)
+    // 0% → 10°, ~50% → ~88°, ~100% → ~150°, ~200% → ~215°, ~500%+ → ~250°
+    const absChange = Math.abs(overallChange);
+    const mapped = MAX_SCORE * (1 - Math.exp(-absChange / 100));
+    // 하락(음수 변동)은 온도를 낮추되 급냉 방지 (30% 감쇄)
+    if (overallChange >= 0) {
+      energyScore = clamp(Math.round(mapped), 10, MAX_SCORE);
     } else {
-      // Velocity 없으면 Intensity만 (신규 아티스트 등)
-      categoryEnergies.push({ weight: cat.w, energy: cat.int });
+      energyScore = clamp(Math.round(mapped * 0.3), 10, MAX_SCORE);
+    }
+  } else {
+    // 이전 데이터 없음 → Intensity 기반 fallback (신규 아티스트)
+    const categories = [
+      { w: WEIGHTS.youtube, int: ytIntensity, raw: current.yt },
+      { w: WEIGHTS.buzz, int: buzzIntensity, raw: current.buzz },
+      { w: WEIGHTS.music, int: musicIntensity, raw: current.music },
+      { w: WEIGHTS.album, int: albumIntensity, raw: current.album },
+      { w: WEIGHTS.social, int: socialIntensity, raw: current.social },
+      { w: WEIGHTS.fan, int: fanIntensity, raw: current.fan },
+    ];
+    const active = categories.filter(c => c.raw > 0);
+    if (active.length > 0) {
+      const totalW = active.reduce((s, c) => s + c.w, 0);
+      const avg = active.reduce((s, c) => s + c.int * (c.w / totalW), 0);
+      energyScore = clamp(Math.round(avg), 10, MAX_SCORE);
+    } else {
+      energyScore = 10;
     }
   }
-
-  const totalCatWeight = categoryEnergies.reduce((s, c) => s + c.weight, 0);
-  const rawEnergy = categoryEnergies.reduce((s, c) => s + c.energy * (c.weight / totalCatWeight), 0);
-  const energyScore = clamp(Math.round(rawEnergy), 10, MAX_SCORE);
 
   return {
     energyScore,
