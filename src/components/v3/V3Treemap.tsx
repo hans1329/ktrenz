@@ -772,6 +772,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
              const boxArea = width * height;
              const sizeFactor = Math.sqrt(boxArea) / 10;
              const isTopThree = rectIndex < 3;
+             const isLastItem = rectIndex === rects.length - 1;
+             const isMostFalling = isLastItem && catChange < -2;
              const titleSize = isTopThree 
                ? Math.max(12, Math.min(32, sizeFactor * 4.2))
                : Math.max(9, Math.min(26, sizeFactor * 3.2));
