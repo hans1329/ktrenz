@@ -70,6 +70,16 @@ Deno.serve(async (req) => {
 
     const prev24h = prevSnaps?.[0] || null;
 
+    // ── 2-b) 최신 FES Analyst 기여도 조회 ──
+    const { data: latestContrib } = await sb
+      .from("ktrenz_fes_contributions")
+      .select("normalized_fes, leading_category, youtube_contrib, buzz_contrib, album_contrib, music_contrib, social_contrib, youtube_z, buzz_z, album_z, music_z, social_z, snapshot_at")
+      .eq("wiki_entry_id", wiki_entry_id)
+      .order("snapshot_at", { ascending: false })
+      .limit(1);
+
+    const contrib = latestContrib?.[0] || null;
+
     // ── 3) 퍼센타일 계산을 위해 전체 아티스트 스코어 조회 ──
     const { data: allScores } = await sb
       .from("v3_scores_v2")
