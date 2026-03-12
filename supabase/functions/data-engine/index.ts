@@ -21,6 +21,7 @@ type Module = PipelineModule | BuzzSourceModule;
 // 모듈 완료 후 다음 모듈 시작까지 대기 시간 (초)
 const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
+  yt_sentiment: 10,
   external_videos: 10,
   music: 10,
   hanteo: 10,
