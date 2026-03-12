@@ -421,10 +421,11 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({ success: false, error: "Artist not found" }),
             { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
+        const { data: tierInfo } = await sb.from("v3_artist_tiers").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
         const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-          body: JSON.stringify({ artistName: artist.title, wikiEntryId }),
+          body: JSON.stringify({ artistName: artist.title, koreanName: tierInfo?.name_ko || null, wikiEntryId }),
         }).catch((e) => console.warn(`[data-engine] Naver News single fire error:`, e.message));
         fireAndForget(p);
         return new Response(
