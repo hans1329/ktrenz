@@ -175,16 +175,16 @@ deltaScore = Σ incrementDeltaScore(metric, 24시간전, 48시간전, scale)
   └─ MV views (scale=50)`}
         description="모든 누적 지표는 델타-오버-델타를 사용합니다: 오늘 증분 대 어제 증분의 비율 (가속도 0.3x~5.0x). deltaScore는 max(baseScore × 5, 500)으로 제한됩니다." />
 
-      <Card className="p-3 bg-primary/5 border-primary/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">incrementDeltaScore 함수</p>
-        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`increment = 현재 − 24시간전
+      <Card className="p-4 bg-primary/5 border-primary/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">incrementDeltaScore 함수</p>
+        <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`increment = 현재 − 24시간전
 prevIncrement = 24시간전 − 48시간전
 
 score = log10(increment) × scale
 acceleration = increment / prevIncrement  // 1.0=동일, 5.0=5배↑
 multiplier = clamp(acceleration, 0.3, 5.0)
 finalScore = score × multiplier`}</code>
-        <p className="text-[10px] text-muted-foreground mt-1.5">예시: topicViews 4.5B→4.52B→4.6B → 오늘 +80M / 어제 +20M = <strong>4.0x 가속도</strong></p>
+        <p className="text-xs text-muted-foreground mt-2">예시: topicViews 4.5B→4.52B→4.6B → 오늘 +80M / 어제 +20M = <strong>4.0x 가속도</strong></p>
       </Card>
 
       <VarTable rows={[
