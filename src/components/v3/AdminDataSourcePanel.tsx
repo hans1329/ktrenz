@@ -85,6 +85,37 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   const [expanded, setExpanded] = useState(false);
   const [collectingModules, setCollectingModules] = useState<Set<string>>(new Set());
 
+  // Individual artist audit
+  const auditMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor', {
+        body: { wiki_entry_id: wikiEntryId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`${artistTitle} 감사 완료: ${data.issues_found}건 이슈`);
+    },
+    onError: (err) => toast.error(`감사 실패: ${(err as Error).message}`),
+  });
+
+  // Fetch issues for this artist
+  const { data: artistIssues } = useQuery({
+    queryKey: ['artist-quality-issues', wikiEntryId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_data_quality_issues' as any)
+        .select('*')
+        .eq('wiki_entry_id', wikiEntryId)
+        .eq('resolved', false)
+        .order('severity');
+      return (data ?? []) as any[];
+    },
+    staleTime: 60_000,
+    enabled: expanded,
+  });
+
   // 최근 스냅샷 가져오기 (모든 플랫폼)
   const { data: snapshots, isLoading, refetch } = useQuery({
     queryKey: ["admin-source-snapshots", wikiEntryId],
