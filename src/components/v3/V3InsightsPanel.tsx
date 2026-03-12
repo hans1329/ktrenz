@@ -263,13 +263,14 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
             </span>
           </div>
           {(() => {
-            const reasoningMap: Record<string, string | undefined> = {
-              en: prediction.reasoning,
-              ko: prediction.reasoning_ko,
-              ja: prediction.reasoning_ja,
-              zh: prediction.reasoning_zh,
+            // Prefer fan briefing (casual), fallback to technical reasoning
+            const fanMap: Record<string, string | undefined> = {
+              en: prediction.fan_briefing || prediction.reasoning,
+              ko: prediction.fan_briefing_ko || prediction.reasoning_ko,
+              ja: prediction.fan_briefing_ja || prediction.reasoning_ja,
+              zh: prediction.fan_briefing_zh || prediction.reasoning_zh,
             };
-            const text = reasoningMap[language] || prediction.reasoning;
+            const text = fanMap[language] || fanMap.en;
             return text ? (
               <p className="text-xs text-foreground/80 leading-relaxed">{text}</p>
             ) : null;
