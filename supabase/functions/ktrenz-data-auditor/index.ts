@@ -447,34 +447,12 @@ async function runIdentifierAudit(
 }
 
 async function upsertIssues(supabase: ReturnType<typeof createClient>, issues: Issue[]) {
-  if (issues.length === 0) return { inserted: 0, skipped: 0, suppressed_skipped: 0 };
-
-  // First, fetch all suppressed keys so we don't reopen them
-  const wikiIds = [...new Set(issues.map((i) => i.wiki_entry_id))];
-  const suppressedKeys = new Set<string>();
-
-  for (const ids of chunk(wikiIds, 20)) {
-    const { data } = await supabase
-      .from("ktrenz_data_quality_issues")
-      .select("wiki_entry_id, issue_type, platform")
-      .in("wiki_entry_id", ids)
-      .eq("suppressed", true);
-
-    for (const row of data ?? []) {
-      suppressedKeys.add(`${row.wiki_entry_id}|${row.issue_type}|${row.platform}`);
-    }
-  }
-
-  // Filter out suppressed issues
-  const activeIssues = issues.filter(
-    (i) => !suppressedKeys.has(`${i.wiki_entry_id}|${i.issue_type}|${i.platform}`),
-  );
-  const suppressedSkipped = issues.length - activeIssues.length;
+  if (issues.length === 0) return { inserted: 0, skipped: 0 };
 
   let inserted = 0;
   let skipped = 0;
 
-  for (const batch of chunk(activeIssues, 50)) {
+  for (const batch of chunk(issues, 50)) {
     const payload = batch.map((issue) => ({
       wiki_entry_id: issue.wiki_entry_id,
       artist_name: issue.artist_name,
@@ -503,7 +481,7 @@ async function upsertIssues(supabase: ReturnType<typeof createClient>, issues: I
     else inserted += payload.length;
   }
 
-  return { inserted, skipped, suppressed_skipped: suppressedSkipped };
+  return { inserted, skipped };
 }
 
 async function autoResolveForFullAudit(
@@ -513,34 +491,38 @@ async function autoResolveForFullAudit(
 ) {
   if (artistWikiIds.length === 0) return 0;
 
-  const { data: openIssues } = await supabase
-    .from("ktrenz_data_quality_issues")
-    .select("id, wiki_entry_id, issue_type, platform")
-    .in("wiki_entry_id", artistWikiIds)
-    .eq("resolved", false);
+  // Fetch all existing unresolved issues for these artists
+  const allOpen: { id: string; wiki_entry_id: string; issue_type: string; platform: string }[] = [];
+  for (const ids of chunk(artistWikiIds, 20)) {
+    const { data } = await supabase
+      .from("ktrenz_data_quality_issues")
+      .select("id, wiki_entry_id, issue_type, platform")
+      .in("wiki_entry_id", ids)
+      .eq("resolved", false);
+    if (data) allOpen.push(...data);
+  }
 
-  if (!openIssues || openIssues.length === 0) return 0;
+  if (allOpen.length === 0) return 0;
 
   const currentKeys = new Set(
     currentIssues.map((i) => `${i.wiki_entry_id}|${i.issue_type}|${i.platform}`),
   );
 
-  const toResolve = openIssues
+  // Issues that are no longer detected → delete them
+  const toDelete = allOpen
     .filter((o) => !currentKeys.has(`${o.wiki_entry_id}|${o.issue_type}|${o.platform}`))
     .map((o) => o.id);
 
-  if (toResolve.length === 0) return 0;
+  if (toDelete.length === 0) return 0;
 
-  await supabase
-    .from("ktrenz_data_quality_issues")
-    .update({
-      resolved: true,
-      resolved_at: new Date().toISOString(),
-      resolution_note: "자동 해결: 최신 감사에서 미감지",
-    })
-    .in("id", toResolve);
+  for (const batch of chunk(toDelete, 50)) {
+    await supabase
+      .from("ktrenz_data_quality_issues")
+      .delete()
+      .in("id", batch);
+  }
 
-  return toResolve.length;
+  return toDelete.length;
 }
 
 Deno.serve(async (req) => {
@@ -582,10 +564,10 @@ Deno.serve(async (req) => {
         ? await runIdentifierAudit(artists)
         : await runFastFullAudit(supabase, artists);
 
-    const { inserted, skipped, suppressed_skipped } = await upsertIssues(supabase, issues);
+    const { inserted, skipped } = await upsertIssues(supabase, issues);
 
     let autoResolved = 0;
-    if (mode === "full" && !wikiEntryId) {
+    if (!wikiEntryId) {
       autoResolved = await autoResolveForFullAudit(
         supabase,
         issues,
@@ -600,7 +582,6 @@ Deno.serve(async (req) => {
       offset,
       limit: effectiveLimit,
       issues_found: issues.length,
-      suppressed_skipped,
       inserted,
       skipped,
       auto_resolved: autoResolved,
