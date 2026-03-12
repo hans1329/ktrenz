@@ -6,19 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Required platforms for Tier 1 artists
 const REQUIRED_PLATFORMS = [
-  "youtube",
-  "youtube_music",
-  "buzz_multi",
-  "hanteo_daily",
-  "lastfm",
-  "deezer",
-  "naver_news",
-  "yt_sentiment",
+  "youtube", "youtube_music", "buzz_multi", "hanteo_daily",
+  "lastfm", "deezer", "naver_news", "yt_sentiment",
 ];
-
-const REQUIRED_GEO_SOURCES = ["google_trends", "lastfm"];
 
 interface Issue {
   wiki_entry_id: string;
@@ -42,16 +33,19 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Parse optional wiki_entry_id for single-artist audit
     let targetWikiEntryId: string | null = null;
+    let verifyIds = true;
     try {
       const body = await req.json();
       targetWikiEntryId = body?.wiki_entry_id ?? null;
+      verifyIds = body?.verify_ids !== false;
     } catch {
-      // No body or invalid JSON — audit all
+      verifyIds = false;
     }
 
-    // Get artists to audit from v3_artist_tiers
+    // For full audit, skip external API verification to avoid timeout
+    if (!targetWikiEntryId) verifyIds = false;
+
     let query = supabase
       .from("v3_artist_tiers")
       .select("wiki_entry_id, display_name, tier, youtube_channel_id, lastfm_artist_name, deezer_artist_id");
@@ -63,100 +57,86 @@ Deno.serve(async (req) => {
     }
 
     const { data: artists } = await query;
-
     if (!artists || artists.length === 0) {
       return new Response(
-        JSON.stringify({ message: targetWikiEntryId ? "Artist not found" : "No Tier 1 artists found" }),
+        JSON.stringify({ message: "No artists found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const wikiIds = artists.map(a => a.wiki_entry_id);
     const issues: Issue[] = [];
     const now = new Date();
-    const staleThresholdMs = 26 * 60 * 60 * 1000; // 26 hours
+    const staleMs = 26 * 60 * 60 * 1000;
 
+    // ── Bulk: latest snapshots (last 30h to cover stale check) ──
+    const cutoff = new Date(now.getTime() - 30 * 60 * 60 * 1000).toISOString();
+
+    // Fetch in batches of 10 wiki_entry_ids to keep queries fast
+    const snapshotMap = new Map<string, any[]>();
+    const batchSize = 10;
+    for (let i = 0; i < wikiIds.length; i += batchSize) {
+      const batch = wikiIds.slice(i, i + batchSize);
+      const { data } = await supabase
+        .from("ktrenz_data_snapshots")
+        .select("wiki_entry_id, platform, collected_at, metrics")
+        .in("wiki_entry_id", batch)
+        .in("platform", REQUIRED_PLATFORMS)
+        .gte("collected_at", cutoff)
+        .order("collected_at", { ascending: false })
+        .limit(200);
+
+      for (const snap of (data || [])) {
+        const key = `${snap.wiki_entry_id}|${snap.platform}`;
+        if (!snapshotMap.has(key)) snapshotMap.set(key, []);
+        const arr = snapshotMap.get(key)!;
+        if (arr.length < 2) arr.push(snap);
+      }
+    }
+
+    // ── Bulk: scores ──
+    const { data: allScores } = await supabase
+      .from("v3_scores_v2")
+      .select("wiki_entry_id, youtube_score, music_score, buzz_score, social_score")
+      .in("wiki_entry_id", wikiIds);
+
+    const scoresMap = new Map((allScores || []).map(s => [s.wiki_entry_id, s]));
+
+    // ── Process each artist ──
     for (const artist of artists) {
       const wikiId = artist.wiki_entry_id;
       const name = artist.display_name;
 
-      // ── Check 1: Missing platform snapshots ──
+      // Check platforms
       for (const platform of REQUIRED_PLATFORMS) {
-        const { data: snapshots, count } = await supabase
-          .from("ktrenz_data_snapshots")
-          .select("collected_at, metrics", { count: "exact" })
-          .eq("wiki_entry_id", wikiId)
-          .eq("platform", platform)
-          .order("collected_at", { ascending: false })
-          .limit(2);
+        const snapshots = snapshotMap.get(`${wikiId}|${platform}`);
 
-        if (!count || count === 0) {
+        if (!snapshots || snapshots.length === 0) {
           issues.push({
-            wiki_entry_id: wikiId,
-            artist_name: name,
-            issue_type: "missing_source",
-            platform,
-            severity: "critical",
-            title: `${name}: ${platform} 데이터 없음`,
-            description: `${platform} 플랫폼에서 수집된 스냅샷이 0건입니다.`,
-            expected_value: "1건 이상",
-            actual_value: "0건",
+            wiki_entry_id: wikiId, artist_name: name,
+            issue_type: "stale_data", platform, severity: "high",
+            title: `${name}: ${platform} 수집 지연/없음`,
+            description: `최근 30시간 이내 ${platform} 수집 데이터가 없습니다.`,
+            expected_value: "≤26h", actual_value: "없음/30h+",
           });
           continue;
         }
 
-        const latest = snapshots?.[0];
+        const latest = snapshots[0];
         const latestTime = new Date(latest.collected_at).getTime();
-
-        // ── Check 2: Stale data (>26h since last collection) ──
-        if (now.getTime() - latestTime > staleThresholdMs) {
-          const hoursAgo = Math.round(
-            (now.getTime() - latestTime) / (1000 * 60 * 60)
-          );
+        if (now.getTime() - latestTime > staleMs) {
+          const hoursAgo = Math.round((now.getTime() - latestTime) / (1000 * 60 * 60));
           issues.push({
-            wiki_entry_id: wikiId,
-            artist_name: name,
-            issue_type: "stale_data",
-            platform,
-            severity: hoursAgo > 48 ? "high" : "medium",
+            wiki_entry_id: wikiId, artist_name: name,
+            issue_type: "stale_data", platform,
+            severity: "medium",
             title: `${name}: ${platform} 수집 지연 (${hoursAgo}h)`,
-            description: `마지막 수집이 ${hoursAgo}시간 전입니다. 정상 주기는 6시간입니다.`,
-            expected_value: "≤26h",
-            actual_value: `${hoursAgo}h`,
+            description: `마지막 수집이 ${hoursAgo}시간 전입니다.`,
+            expected_value: "≤26h", actual_value: `${hoursAgo}h`,
           });
         }
 
-        // ── Check 3: New collection spike (0→big jump) ──
-        if (snapshots && snapshots.length >= 2) {
-          const prev = snapshots[1];
-          const curr = snapshots[0];
-          const prevMetrics = prev.metrics as Record<string, number>;
-          const currMetrics = curr.metrics as Record<string, number>;
-
-          // Check for metrics that were 0 and jumped
-          for (const key of Object.keys(currMetrics || {})) {
-            const prevVal = prevMetrics?.[key] ?? 0;
-            const currVal = currMetrics?.[key] ?? 0;
-            if (
-              prevVal === 0 &&
-              currVal > 100 &&
-              typeof currVal === "number"
-            ) {
-              issues.push({
-                wiki_entry_id: wikiId,
-                artist_name: name,
-                issue_type: "new_collection_spike",
-                platform,
-                severity: "medium",
-                title: `${name}: ${platform}.${key} 초기 수집 급증`,
-                description: `${key} 값이 0에서 ${currVal.toLocaleString()}로 급증. 초기 수집으로 인한 왜곡 가능성.`,
-                expected_value: "점진적 증가",
-                actual_value: `0 → ${currVal.toLocaleString()}`,
-              });
-            }
-          }
-        }
-
-        // ── Check 4: Zero/null metrics on major fields ──
+        // Zero metrics
         if (latest?.metrics) {
           const metrics = latest.metrics as Record<string, unknown>;
           const majorFields: Record<string, string[]> = {
@@ -166,189 +146,188 @@ Deno.serve(async (req) => {
             deezer: ["fans"],
             buzz_multi: ["total_score"],
           };
-          const fieldsToCheck = majorFields[platform] || [];
-          for (const field of fieldsToCheck) {
+          for (const field of (majorFields[platform] || [])) {
             const val = metrics[field];
             if (val === 0 || val === null || val === undefined) {
               issues.push({
-                wiki_entry_id: wikiId,
-                artist_name: name,
-                issue_type: "zero_score",
-                platform,
-                severity: "high",
+                wiki_entry_id: wikiId, artist_name: name,
+                issue_type: "zero_score", platform, severity: "high",
                 title: `${name}: ${platform}.${field} = 0`,
-                description: `Tier 1 아티스트의 ${field} 값이 0 또는 null입니다. API 오류 또는 식별자 오류 가능성.`,
-                expected_value: "> 0",
-                actual_value: String(val ?? "null"),
+                description: `${field} 값이 0/null입니다.`,
+                expected_value: "> 0", actual_value: String(val ?? "null"),
               });
             }
           }
         }
       }
 
-      // ── Check 5: Score anomalies from v3_scores_v2 ──
-      const { data: scores } = await supabase
-        .from("v3_scores_v2")
-        .select("*")
-        .eq("wiki_entry_id", wikiId)
-        .limit(1)
-        .maybeSingle();
-
+      // Scores check
+      const scores = scoresMap.get(wikiId);
       if (scores) {
-        const scoreFields = [
-          { key: "youtube_score", label: "YouTube Score" },
-          { key: "music_score", label: "Music Score" },
-          { key: "buzz_score", label: "Buzz Score" },
-          { key: "social_score", label: "Social Score" },
-        ];
-        for (const sf of scoreFields) {
+        for (const sf of [
+          { key: "youtube_score", label: "YouTube" },
+          { key: "music_score", label: "Music" },
+          { key: "buzz_score", label: "Buzz" },
+          { key: "social_score", label: "Social" },
+        ]) {
           const val = (scores as any)[sf.key];
           if (val === 0 || val === null) {
             issues.push({
-              wiki_entry_id: wikiId,
-              artist_name: name,
-              issue_type: "zero_score",
-              platform: sf.key,
-              severity: "high",
-              title: `${name}: ${sf.label} = 0`,
-              description: `Tier 1 아티스트의 ${sf.label}이 0입니다. 해당 데이터 소스 수집 실패 가능성.`,
-              expected_value: "> 0",
-              actual_value: String(val ?? "null"),
+              wiki_entry_id: wikiId, artist_name: name,
+              issue_type: "zero_score", platform: sf.key, severity: "high",
+              title: `${name}: ${sf.label} Score = 0`,
+              description: `${sf.label} 점수가 0입니다.`,
+              expected_value: "> 0", actual_value: String(val ?? "null"),
             });
           }
         }
       }
 
-      // ── Check 6: Missing API identifiers (direct columns) ──
-      const requiredIds: { key: keyof typeof artist; label: string }[] = [
-        { key: "youtube_channel_id", label: "YouTube Channel ID" },
-        { key: "lastfm_artist_name", label: "Last.fm Name" },
-        { key: "deezer_artist_id", label: "Deezer ID" },
-      ];
-      for (const rid of requiredIds) {
+      // Missing identifiers
+      for (const rid of [
+        { key: "youtube_channel_id" as const, label: "YouTube Channel ID" },
+        { key: "lastfm_artist_name" as const, label: "Last.fm Name" },
+        { key: "deezer_artist_id" as const, label: "Deezer ID" },
+      ]) {
         const val = artist[rid.key];
         if (!val || val === "" || val === "null") {
           issues.push({
-            wiki_entry_id: wikiId,
-            artist_name: name,
-            issue_type: "missing_source",
-            platform: rid.key as string,
-            severity: "high",
+            wiki_entry_id: wikiId, artist_name: name,
+            issue_type: "missing_source", platform: rid.key, severity: "high",
             title: `${name}: ${rid.label} 미설정`,
-            description: `${rid.label}가 없어 해당 플랫폼 수집이 불가능합니다.`,
-            expected_value: "설정됨",
-            actual_value: "없음",
+            description: `${rid.label}가 없습니다.`,
+            expected_value: "설정됨", actual_value: "없음",
           });
         }
       }
 
-      // ── Check 7: Geo data coverage ──
-      for (const geoSource of REQUIRED_GEO_SOURCES) {
-        const { count } = await supabase
-          .from("ktrenz_geo_fan_data")
-          .select("id", { count: "exact", head: true })
-          .eq("wiki_entry_id", wikiId)
-          .eq("source", geoSource);
+      // Deezer ID verification (single artist only)
+      if (verifyIds && artist.deezer_artist_id && artist.deezer_artist_id !== "") {
+        try {
+          const resp = await fetch(`https://api.deezer.com/artist/${artist.deezer_artist_id}`);
+          const d = await resp.json();
+          if (d && !d.error) {
+            const dn = (d.name || "").toLowerCase();
+            const en = name.toLowerCase();
+            const match = dn.includes(en) || en.includes(dn) || dn.replace(/\s/g, "") === en.replace(/\s/g, "");
+            if (!match) {
+              issues.push({
+                wiki_entry_id: wikiId, artist_name: name,
+                issue_type: "wrong_identifier", platform: "deezer_artist_id", severity: "critical",
+                title: `${name}: Deezer ID 불일치`,
+                description: `ID ${artist.deezer_artist_id} → "${d.name}" (fans: ${(d.nb_fan||0).toLocaleString()})`,
+                expected_value: name,
+                actual_value: `${d.name} (ID: ${artist.deezer_artist_id})`,
+              });
+              console.log(`[Auditor] ⚠️ Deezer mismatch: ${name} → "${d.name}"`);
+              try {
+                const sr = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=1`);
+                const sd = await sr.json();
+                if (sd?.data?.[0]) console.log(`[Auditor] 💡 Correct: ${sd.data[0].id} "${sd.data[0].name}" (${sd.data[0].nb_fan} fans)`);
+              } catch {}
+            }
+          }
+        } catch {}
+      }
 
-        if (!count || count === 0) {
-          issues.push({
-            wiki_entry_id: wikiId,
-            artist_name: name,
-            issue_type: "missing_source",
-            platform: `geo_${geoSource}`,
-            severity: "medium",
-            title: `${name}: Geo(${geoSource}) 데이터 없음`,
-            description: `${geoSource} 소스의 지리 데이터가 없습니다.`,
-            expected_value: "1건 이상",
-            actual_value: "0건",
-          });
-        }
+      // Last.fm verification (single artist only)
+      if (verifyIds && artist.lastfm_artist_name) {
+        try {
+          const k = Deno.env.get("LASTFM_API_KEY");
+          if (k) {
+            const r = await fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artist.lastfm_artist_name)}&api_key=${k}&format=json`);
+            const d = await r.json();
+            if (d?.error) {
+              issues.push({
+                wiki_entry_id: wikiId, artist_name: name,
+                issue_type: "wrong_identifier", platform: "lastfm_artist_name", severity: "high",
+                title: `${name}: Last.fm 조회 실패`,
+                description: `"${artist.lastfm_artist_name}" → ${d.message}`,
+                expected_value: "유효", actual_value: d.message,
+              });
+            } else if (d?.artist) {
+              const listeners = parseInt(d.artist.stats?.listeners || "0");
+              if (listeners < 1000) {
+                issues.push({
+                  wiki_entry_id: wikiId, artist_name: name,
+                  issue_type: "wrong_identifier", platform: "lastfm_artist_name", severity: "high",
+                  title: `${name}: Last.fm 리스너 비정상`,
+                  description: `"${artist.lastfm_artist_name}" 리스너 ${listeners}명. 동명이인 가능성.`,
+                  expected_value: "> 10,000", actual_value: `${listeners}`,
+                });
+              }
+            }
+          }
+        } catch {}
       }
     }
 
-    // ── Upsert issues (resolved=false unique constraint handles dedup) ──
-    let inserted = 0;
-    let skipped = 0;
-    for (const issue of issues) {
+    // ── Batch upsert ──
+    let inserted = 0, skipped = 0;
+    const batchUpsertSize = 20;
+    for (let i = 0; i < issues.length; i += batchUpsertSize) {
+      const batch = issues.slice(i, i + batchUpsertSize).map(issue => ({
+        wiki_entry_id: issue.wiki_entry_id,
+        artist_name: issue.artist_name,
+        issue_type: issue.issue_type,
+        platform: issue.platform,
+        severity: issue.severity,
+        title: issue.title,
+        description: issue.description,
+        expected_value: issue.expected_value,
+        actual_value: issue.actual_value,
+        resolved: false,
+        updated_at: new Date().toISOString(),
+      }));
       const { error } = await supabase
         .from("ktrenz_data_quality_issues")
-        .upsert(
-          {
-            wiki_entry_id: issue.wiki_entry_id,
-            artist_name: issue.artist_name,
-            issue_type: issue.issue_type,
-            platform: issue.platform,
-            severity: issue.severity,
-            title: issue.title,
-            description: issue.description,
-            expected_value: issue.expected_value,
-            actual_value: issue.actual_value,
-            resolved: false,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "wiki_entry_id,issue_type,platform",
-            ignoreDuplicates: false,
-          }
-        );
-      if (error) {
-        skipped++;
-      } else {
-        inserted++;
-      }
+        .upsert(batch, { onConflict: "wiki_entry_id,issue_type,platform", ignoreDuplicates: false });
+      if (error) skipped += batch.length;
+      else inserted += batch.length;
     }
 
-    // ── Auto-resolve issues that no longer exist ──
-    // Get all currently open issues
-    const { data: openIssues } = await supabase
-      .from("ktrenz_data_quality_issues")
-      .select("id, wiki_entry_id, issue_type, platform")
-      .eq("resolved", false);
-
-    if (openIssues) {
-      const issueKeys = new Set(
-        issues.map(
-          (i) => `${i.wiki_entry_id}|${i.issue_type}|${i.platform}`
-        )
-      );
-      const toResolve = openIssues.filter(
-        (o) => !issueKeys.has(`${o.wiki_entry_id}|${o.issue_type}|${o.platform}`)
-      );
-      for (const r of toResolve) {
-        await supabase
-          .from("ktrenz_data_quality_issues")
-          .update({
-            resolved: true,
-            resolved_at: new Date().toISOString(),
-            resolution_note: "자동 해결: 최신 감사에서 이슈 미감지",
-          })
-          .eq("id", r.id);
+    // Auto-resolve (full audit only)
+    let autoResolved = 0;
+    if (!targetWikiEntryId) {
+      const { data: open } = await supabase
+        .from("ktrenz_data_quality_issues")
+        .select("id, wiki_entry_id, issue_type, platform")
+        .eq("resolved", false);
+      if (open) {
+        const keys = new Set(issues.map(i => `${i.wiki_entry_id}|${i.issue_type}|${i.platform}`));
+        const toResolve = open.filter(o => !keys.has(`${o.wiki_entry_id}|${o.issue_type}|${o.platform}`)).map(o => o.id);
+        if (toResolve.length > 0) {
+          await supabase
+            .from("ktrenz_data_quality_issues")
+            .update({ resolved: true, resolved_at: new Date().toISOString(), resolution_note: "자동 해결" })
+            .in("id", toResolve);
+          autoResolved = toResolve.length;
+        }
       }
     }
 
     const summary = {
       artists_checked: artists.length,
       issues_found: issues.length,
-      inserted,
-      skipped,
+      inserted, skipped, auto_resolved: autoResolved,
+      verify_ids: verifyIds,
       by_severity: {
-        critical: issues.filter((i) => i.severity === "critical").length,
-        high: issues.filter((i) => i.severity === "high").length,
-        medium: issues.filter((i) => i.severity === "medium").length,
-        low: issues.filter((i) => i.severity === "low").length,
+        critical: issues.filter(i => i.severity === "critical").length,
+        high: issues.filter(i => i.severity === "high").length,
+        medium: issues.filter(i => i.severity === "medium").length,
       },
     };
+
+    console.log(`[Auditor] Done: ${JSON.stringify(summary)}`);
 
     return new Response(JSON.stringify(summary, null, 2), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error(`[Auditor] Error: ${(err as Error).message}`);
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
