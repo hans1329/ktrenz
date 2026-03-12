@@ -14,6 +14,114 @@ const BILLBOARD_CHARTS = [
   { id: "billboard-global-excl-us", name: "Global Excl. US", url: "https://www.billboard.com/charts/billboard-global-excl-us/" },
 ];
 
+/**
+ * Parse Billboard markdown into chart entries.
+ * 
+ * Billboard markdown structure per entry:
+ * ```
+ * -
+ * POSITION_NUMBER
+ * 
+ * (optional: NEW/RE)
+ * 
+ * - ![](image_url)
+ * 
+ *   - ### Song Title
+ * 
+ *       [Artist Name](url)
+ * ```
+ * 
+ * We use the "### Title" → "[Artist](url)" pattern which is unique to chart entries.
+ */
+function parseBillboardMarkdown(markdown: string): Array<{ position: number; title: string; artist: string }> {
+  const entries: Array<{ position: number; title: string; artist: string }> = [];
+  const lines = markdown.split("\n");
+
+  // State machine approach: find "### SongTitle" lines that follow a position indicator
+  let currentPosition: number | null = null;
+  let positionLineIdx = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Track position numbers: a line that is just a number 1-200, preceded by a line that is just "-"
+    if (/^\d{1,3}$/.test(line)) {
+      const num = parseInt(line);
+      // Check if 2 lines before is "-" (the list marker) to distinguish from calendar/metadata numbers
+      // Also check the preceding non-empty line
+      if (num >= 1 && num <= 200) {
+        // Look backwards for "-" as a list marker
+        let foundDash = false;
+        for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+          const prev = lines[j].trim();
+          if (prev === "") continue;
+          if (prev === "-") { foundDash = true; break; }
+          break;
+        }
+        if (foundDash) {
+          currentPosition = num;
+          positionLineIdx = i;
+        }
+      }
+    }
+
+    // Look for "### Song Title" — this is the song title in chart entries
+    const titleMatch = line.match(/^(?:-\s+)?###\s+(.+)$/);
+    if (titleMatch && currentPosition !== null && (i - positionLineIdx) < 15) {
+      const title = titleMatch[1].trim();
+      
+      // Skip non-song titles (these are section headers)
+      if (title === "Debut Position" || title === "Peak Position" || title === "Share" || 
+          title === "Credits" || title === "Awards" || title === "Chart History" ||
+          title.startsWith("Songwriter") || title.startsWith("Producer") ||
+          title === "Gains in Weekly Performance" || title === "Additional Awards") {
+        continue;
+      }
+
+      // Next non-empty line(s) should contain [Artist Name](url)
+      let artist = "";
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const nextLine = lines[j].trim();
+        if (!nextLine) continue;
+        
+        // Extract artist from markdown link: [Artist Name](url)
+        // Can have multiple artists: [A](url) With [B](url) or [A](url) Featuring [B](url)
+        const artistLinks = nextLine.match(/\[([^\]]+)\]\([^)]*\)/g);
+        if (artistLinks && artistLinks.length > 0) {
+          // Extract just names from links
+          const names = artistLinks.map(link => {
+            const nameMatch = link.match(/\[([^\]]+)\]/);
+            return nameMatch ? nameMatch[1] : "";
+          }).filter(Boolean);
+          
+          // Also capture "With", "Featuring", "&", "x" connectors
+          artist = names.join(" & ");
+          break;
+        }
+        
+        // Plain text artist (no link)
+        if (nextLine && !nextLine.startsWith("#") && !nextLine.startsWith("-") && !nextLine.startsWith("LW") && !nextLine.startsWith("PEAK") && !nextLine.startsWith("WEEKS")) {
+          artist = nextLine;
+          break;
+        }
+      }
+
+      if (title && artist && artist !== "billboard") {
+        entries.push({ position: currentPosition, title, artist });
+        currentPosition = null; // Reset to avoid duplicate matches
+      }
+    }
+  }
+
+  // Deduplicate by position (keep first occurrence)
+  const seen = new Set<number>();
+  return entries.filter(e => {
+    if (seen.has(e.position)) return false;
+    seen.add(e.position);
+    return true;
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -62,6 +170,7 @@ Deno.serve(async (req) => {
     let totalEntries = 0;
     const matchedArtists = new Set<string>();
     const errors: string[] = [];
+    const debugParsed: Record<string, number> = {};
 
     for (const chart of BILLBOARD_CHARTS) {
       try {
@@ -95,31 +204,15 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Parse Billboard markdown format
-        // Typical pattern: "1\n\nSong Title\n\nArtist Name" or numbered list
-        const lines = markdown.split("\n").map((l: string) => l.trim()).filter(Boolean);
-        const chartEntries: Array<{ position: number; title: string; artist: string }> = [];
-
-        for (let i = 0; i < lines.length; i++) {
-          const posMatch = lines[i].match(/^(\d{1,3})$/);
-          if (posMatch) {
-            const pos = parseInt(posMatch[1]);
-            // Next non-empty lines should be title and artist
-            const title = lines[i + 1] || "";
-            const artist = lines[i + 2] || "";
-            if (title && artist && pos <= 200) {
-              chartEntries.push({ position: pos, title, artist });
-            }
-          }
-        }
-
+        // Parse using the new robust parser
+        const chartEntries = parseBillboardMarkdown(markdown);
         totalEntries += chartEntries.length;
-        console.log(`[Billboard] ${chart.name}: parsed ${chartEntries.length} entries`);
+        debugParsed[chart.name] = chartEntries.length;
+        console.log(`[Billboard] ${chart.name}: parsed ${chartEntries.length} entries (first: ${chartEntries[0]?.title || "none"} by ${chartEntries[0]?.artist || "none"})`);
 
         // Match against our artists
         for (const entry of chartEntries) {
           const artistLower = entry.artist.toLowerCase();
-          // Check exact match and partial contains
           let wikiEntryId: string | undefined;
 
           // Exact match first
@@ -128,7 +221,7 @@ Deno.serve(async (req) => {
           // Partial match: check if any artist name is contained in the billboard artist field
           if (!wikiEntryId) {
             for (const [name, id] of nameLookup.entries()) {
-              if (artistLower.includes(name) || name.includes(artistLower)) {
+              if (name.length >= 3 && (artistLower.includes(name) || name.includes(artistLower))) {
                 wikiEntryId = id;
                 break;
               }
@@ -167,19 +260,21 @@ Deno.serve(async (req) => {
       metrics: {
         charts_scraped: BILLBOARD_CHARTS.length,
         total_entries: totalEntries,
+        parsed_per_chart: debugParsed,
         matched: totalMatched,
         unique_artists: matchedArtists.size,
         errors: errors.length > 0 ? errors : undefined,
       },
     });
 
-    console.log(`[Billboard] Done: ${totalMatched} matches across ${matchedArtists.size} artists`);
+    console.log(`[Billboard] Done: ${totalEntries} parsed, ${totalMatched} matches across ${matchedArtists.size} artists`);
 
     return new Response(
       JSON.stringify({
         success: true,
         charts: BILLBOARD_CHARTS.length,
         totalEntries,
+        parsedPerChart: debugParsed,
         matched: totalMatched,
         uniqueArtists: matchedArtists.size,
         errors: errors.length > 0 ? errors : undefined,

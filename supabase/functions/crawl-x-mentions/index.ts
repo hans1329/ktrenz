@@ -1,5 +1,6 @@
-// Multi-source buzz 크롤링: X, 뉴스, Reddit, YouTube, 네이버, TikTok
-// Firecrawl search API로 6개 소스에서 멘션을 수집하여 버즈 스코어 계산
+// Multi-source buzz 크롤링: X, Reddit, TikTok + 가상 소스(Naver, YT Comments, External Videos)
+// Firecrawl search API로 3개 소스에서 멘션을 수집하여 버즈 스코어 계산
+// v2: 결과 풍부도(relevance) 기반 차별화 + 가상 소스 가중치 강화
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -27,19 +28,15 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:d",
-    limit: 30,
+    limit: 10, // Reduced from 30 — focus on relevance quality, not capped count
   },
-  // News 소스 제거됨 — Naver News API(무료)로 별도 수집 중이므로 Firecrawl 크레딧 절감
-  // 기존 news weight 2.0은 naver 가상 소스(1.3) + yt_comments(1.5)로 보완
   {
     name: "reddit",
     weight: 1.2,
     buildQuery: (name) => `"${name}" site:reddit.com kpop`,
     tbs: "qdr:d",
-    limit: 30,
+    limit: 10,
   },
-  // YouTube 소스 제거됨 — YouTube는 독립 데이터 소스(40%)로 이미 수집 중
-  // Naver 소스 제거됨 — crawl-naver-news 별도 API로 수집 후 가상 소스로 반영
   {
     name: "tiktok",
     weight: 1.4,
@@ -49,7 +46,7 @@ const SOURCES: SourceConfig[] = [
       return parts.join(" OR ");
     },
     tbs: "qdr:d",
-    limit: 30,
+    limit: 10,
   },
 ];
 
@@ -82,21 +79,71 @@ function analyzeSentiment(texts: string[]): { score: number; label: string } {
   return { score: 50, label: "neutral" };
 }
 
-// ── Buzz score calculation ──
+/**
+ * Calculate a "relevance score" from Firecrawl results.
+ * Instead of just counting results (capped at limit), we measure:
+ * 1. Number of results returned (0-10)
+ * 2. Average text richness (longer = more detailed coverage = more popular)
+ * 3. Whether results are actually about the artist (title relevance)
+ * 
+ * Returns a score 0-100 per source.
+ */
+function calculateRelevanceScore(
+  results: any[],
+  artistName: string,
+  limit: number,
+): number {
+  if (!results.length) return 0;
+  
+  const artistLower = artistName.toLowerCase();
+  
+  // Factor 1: Fill rate (how many of the max results did we get?) — 0 to 30
+  const fillRate = Math.min(results.length / limit, 1);
+  const fillScore = fillRate * 30;
+  
+  // Factor 2: Text richness — average content length indicates depth of coverage — 0 to 40
+  const avgTextLength = results.reduce((sum, r) => {
+    const text = r.markdown || r.description || r.title || "";
+    return sum + text.length;
+  }, 0) / results.length;
+  // Map: 0-50 chars = low, 50-500 = medium, 500+ = high
+  const richnessScore = Math.min(avgTextLength / 500, 1) * 40;
+  
+  // Factor 3: Title relevance — how many result titles actually mention the artist — 0 to 30
+  const relevantCount = results.filter(r => {
+    const title = (r.title || "").toLowerCase();
+    return title.includes(artistLower) || artistLower.split(" ").some(w => w.length >= 3 && title.includes(w));
+  }).length;
+  const relevanceRate = relevantCount / results.length;
+  const relevanceScore = relevanceRate * 30;
+  
+  return Math.round(fillScore + richnessScore + relevanceScore);
+}
+
+// ── Buzz score calculation v2 ──
+// Changed from raw mention count to relevance-weighted scoring
 function calculateBuzzScore(
-  sourceResults: { name: string; weight: number; count: number; texts: string[] }[],
+  sourceResults: { name: string; weight: number; count: number; relevance: number; texts: string[] }[],
   overallSentiment: { score: number; label: string }
 ): number {
-  let weightedMentions = 0;
+  // Separate firecrawl sources (capped, use relevance) and virtual sources (uncapped, use count)
+  let weightedScore = 0;
+  
   for (const src of sourceResults) {
-    weightedMentions += src.count * src.weight;
+    if (src.name === "yt_comments" || src.name === "naver" || src.name === "ext_videos") {
+      // Virtual sources: use actual count (uncapped) — these are the TRUE differentiators
+      weightedScore += src.count * src.weight;
+    } else {
+      // Firecrawl sources: use relevance score (0-100) instead of capped count
+      weightedScore += src.relevance * src.weight;
+    }
   }
 
-  const baseScore = Math.round(Math.sqrt(weightedMentions) * 100);
+  const baseScore = Math.round(Math.sqrt(weightedScore) * 100);
   const sentimentBonus = Math.round((overallSentiment.score - 50) * 6);
 
-  const activeSources = sourceResults.filter(s => s.count > 0).length;
-  const diversityBonus = activeSources >= 4 ? 250 : activeSources >= 3 ? 200 : activeSources >= 2 ? 100 : activeSources >= 1 ? 50 : 0;
+  const activeSources = sourceResults.filter(s => s.count > 0 || s.relevance > 0).length;
+  const diversityBonus = activeSources >= 5 ? 300 : activeSources >= 4 ? 250 : activeSources >= 3 ? 200 : activeSources >= 2 ? 100 : activeSources >= 1 ? 50 : 0;
 
   return Math.max(0, baseScore + sentimentBonus + diversityBonus);
 }
@@ -206,11 +253,15 @@ Deno.serve(async (req) => {
         return isNaN(pubTime) || pubTime >= cutoff24h;
       });
 
+      // Calculate relevance score instead of just counting
+      const relevance = calculateRelevanceScore(filtered, artistName, src.limit);
+
       const texts = filtered.map((r: any) => (r.markdown || r.description || r.title || "")).filter(Boolean);
       return {
         name: src.name,
         weight: src.weight,
         count: filtered.length,
+        relevance,
         totalFetched: rawResults.length,
         texts,
         topMentions: filtered.slice(0, 3).map((r: any) => ({
@@ -240,13 +291,13 @@ Deno.serve(async (req) => {
         .maybeSingle() as { data: any };
 
       const ytComments = ytSnap?.metrics?.recentTotalComments || 0;
-      // 댓글 수를 가상 소스로 추가 (100개 단위로 정규화, 가중치 1.5)
-      // 0이어도 항상 소스 분포표에 포함
-      const normalizedComments = ytComments > 0 ? Math.min(100, Math.round(ytComments / 100)) : 0;
+      // 댓글 수를 가상 소스로 추가 (100개 단위로 정규화, 최대 200으로 확장, 가중치 1.5)
+      const normalizedComments = ytComments > 0 ? Math.min(200, Math.round(ytComments / 50)) : 0;
       sourceResults.push({
         name: "yt_comments",
         weight: 1.5,
         count: normalizedComments,
+        relevance: normalizedComments, // virtual sources: relevance = count
         totalFetched: ytComments,
         texts: [],
         topMentions: [],
@@ -263,17 +314,17 @@ Deno.serve(async (req) => {
         .maybeSingle() as { data: any };
 
       const naverArticles = naverSnap?.metrics?.mention_count || naverSnap?.metrics?.article_count_24h || naverSnap?.metrics?.article_count || 0;
-      // 네이버 데이터가 0이어도 항상 소스에 포함 (소스 분포표에 표시)
       sourceResults.push({
         name: "naver",
         weight: 1.3,
         count: naverArticles,
+        relevance: naverArticles,
         totalFetched: naverArticles,
         texts: [],
         topMentions: [],
       });
 
-      // External Video Views 가상 소스 추가 (scan-external-videos에서 수집된 데이터)
+      // External Video Views 가상 소스 추가
       const { data: extSnap } = await sb
         .from("ktrenz_data_snapshots")
         .select("metrics")
@@ -285,12 +336,13 @@ Deno.serve(async (req) => {
 
       const extViews = extSnap?.metrics?.total_views || 0;
       const extComments = extSnap?.metrics?.total_comments || 0;
-      // 조회수를 10만 단위로 정규화, 가중치 1.2x
-      const normalizedExtViews = extViews > 0 ? Math.min(100, Math.round(extViews / 100_000)) : 0;
+      // 조회수를 5만 단위로 정규화 (기존 10만→5만으로 더 세밀하게), 최대 200
+      const normalizedExtViews = extViews > 0 ? Math.min(200, Math.round(extViews / 50_000)) : 0;
       sourceResults.push({
         name: "ext_videos",
         weight: 1.2,
         count: normalizedExtViews,
+        relevance: normalizedExtViews,
         totalFetched: extViews,
         texts: [],
         topMentions: [],
@@ -300,8 +352,9 @@ Deno.serve(async (req) => {
       if (extComments > 0) {
         const ytCommentsSource = sourceResults.find(s => s.name === "yt_comments");
         if (ytCommentsSource) {
-          const additionalNormalized = Math.min(50, Math.round(extComments / 100));
+          const additionalNormalized = Math.min(50, Math.round(extComments / 50));
           ytCommentsSource.count += additionalNormalized;
+          ytCommentsSource.relevance += additionalNormalized;
           ytCommentsSource.totalFetched += extComments;
         }
       }
@@ -317,7 +370,7 @@ Deno.serve(async (req) => {
     const tiktokResult = sourceResults.find(s => s.name === "tiktok");
     const tiktokMentions = tiktokResult?.count ?? 0;
 
-    const sourceLog = sourceResults.map(s => `${s.name}=${s.count}/${s.totalFetched}`).join(", ");
+    const sourceLog = sourceResults.map(s => `${s.name}=${s.count}(rel:${s.relevance})/${s.totalFetched}`).join(", ");
     console.log(`[crawl-x-mentions] ${artistName}: total=${totalMentions} (${sourceLog}), sentiment=${sentiment.label}(${sentiment.score}), buzzScore=${buzzScore}`);
 
     const allTopMentions = sourceResults
@@ -327,8 +380,9 @@ Deno.serve(async (req) => {
     const sourceBreakdown = sourceResults.map(s => ({
       source: s.name,
       mentions: s.count,
+      relevance: s.relevance,
       weight: s.weight,
-      weighted: Math.round(s.count * s.weight),
+      weighted: Math.round((s.name === "yt_comments" || s.name === "naver" || s.name === "ext_videos" ? s.count : s.relevance) * s.weight),
     }));
 
     // DB 업데이트
@@ -349,10 +403,10 @@ Deno.serve(async (req) => {
           sentiment_label: sentiment.label,
           source_breakdown: sourceBreakdown,
         },
-        raw_response: { sources: sourceResults.map(s => ({ name: s.name, count: s.count })) },
+        raw_response: { sources: sourceResults.map(s => ({ name: s.name, count: s.count, relevance: s.relevance })) },
       });
 
-      // 2) v3_scores_v2 업데이트 (v2 테이블 사용)
+      // 2) v3_scores_v2 업데이트
       await sb
         .from("v3_scores_v2")
         .update({
@@ -382,8 +436,6 @@ Deno.serve(async (req) => {
         };
         await sb.from("wiki_entries").update({ metadata }).eq("id", wikiEntryId);
       }
-
-      // NOTE: total_score는 GENERATED 컬럼 — buzz_score 업데이트 시 자동으로 재계산됨
     }
 
     return new Response(
