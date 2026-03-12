@@ -148,7 +148,7 @@ const V3ChartDataSection = ({ wikiEntryId }: V3ChartDataSectionProps) => {
           <div className="flex items-center gap-2 mt-5">
             <div className="h-px flex-1 bg-border" />
             <span className="text-sm text-foreground font-bold flex items-center gap-1.5">
-              <Music className="w-4 h-4 text-pink-500" /> Apple Music Charts
+              <Music className="w-4 h-4 text-pink-500" /> Music Charts
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>

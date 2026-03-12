@@ -1765,7 +1765,7 @@ const AdminRankings = () => {
                       {/* Apple Music Charts */}
                       {(m as any).apple_music_charts ? (
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">🍎 Apple Music Charts</p>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">🍎 Music Charts</p>
                           <div className="grid grid-cols-2 gap-2">
                             {(m as any).apple_music_charts.rank != null && (
                               <div>

@@ -96,7 +96,7 @@ const DATA_SOURCES = [
   },
   {
     id: 'apple_music_chart',
-    name: 'Apple Music Charts',
+    name: 'Music Charts',
     icon: Music,
     color: '#fc3c44',
     platform: 'apple_music_chart',
