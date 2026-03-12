@@ -388,7 +388,7 @@ export default function V3MissionCards({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-amber-400" />
-          <p className="text-sm font-bold text-foreground uppercase tracking-wider">{t("mission.todaysMission")}</p>
+          <p className="text-base font-extrabold text-foreground uppercase tracking-wider">{t("mission.todaysMission")}</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="font-bold text-primary text-base">{completedCount}/{missions.length}</span>
