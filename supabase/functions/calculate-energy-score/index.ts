@@ -158,8 +158,8 @@ Deno.serve(async (req) => {
     const { data: v2Scores } = await sb
       .from("v3_scores_v2")
       .select("id, wiki_entry_id, youtube_score, buzz_score, album_sales_score, music_score, social_score, total_score")
-      .order("total_score", { ascending: false })
-      .limit(100);
+      .in("wiki_entry_id", [...tier1Ids])
+      .order("total_score", { ascending: false });
 
     const scoreMap = new Map<string, any>();
     const entryIds: string[] = [];
