@@ -24,6 +24,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   external_videos: 10,
   music: 10,
   hanteo: 10,
+  apple_music_charts: 5,
+  billboard_charts: 5,
   social: 30,
   buzz: 120,
   energy: 5,
