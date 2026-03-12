@@ -564,10 +564,10 @@ Deno.serve(async (req) => {
         ? await runIdentifierAudit(artists)
         : await runFastFullAudit(supabase, artists);
 
-    const { inserted, skipped, suppressed_skipped } = await upsertIssues(supabase, issues);
+    const { inserted, skipped } = await upsertIssues(supabase, issues);
 
     let autoResolved = 0;
-    if (mode === "full" && !wikiEntryId) {
+    if (!wikiEntryId) {
       autoResolved = await autoResolveForFullAudit(
         supabase,
         issues,
@@ -582,7 +582,6 @@ Deno.serve(async (req) => {
       offset,
       limit: effectiveLimit,
       issues_found: issues.length,
-      suppressed_skipped,
       inserted,
       skipped,
       auto_resolved: autoResolved,
