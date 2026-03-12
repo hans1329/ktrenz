@@ -733,6 +733,15 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       {selectedItem && <InspectorPanel item={selectedItem} onClose={handleInspectorClose} />}
 
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
+        <svg width="0" height="0" className="absolute">
+          <defs>
+            <linearGradient id="flameGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="50%" stopColor="#fb923c" />
+              <stop offset="100%" stopColor="#fde047" />
+            </linearGradient>
+          </defs>
+        </svg>
         <div className="absolute inset-0">
           {rects.map((rect, rectIndex) => {
             const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
@@ -822,13 +831,16 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                 <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px` }}>
                   {isTopThree && (
                     <Flame
-                      className="text-orange-400 animate-pulse"
+                      className="text-orange-500"
                       style={{
                         width: `${Math.max(22, sizeFactor * 2.2)}px`,
                         height: `${Math.max(22, sizeFactor * 2.2)}px`,
                         filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.8)) drop-shadow(0 0 16px rgba(251, 146, 60, 0.4))',
+                        animation: `pulse 2s cubic-bezier(0.4,0,0.6,1) infinite`,
+                        animationDelay: `${rectIndex * 0.7}s`,
                       }}
-                      fill="currentColor"
+                      fill="url(#flameGradient)"
+                      stroke="none"
                     />
                   )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
