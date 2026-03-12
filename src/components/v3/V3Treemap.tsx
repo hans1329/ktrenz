@@ -350,7 +350,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   );
                 })()}
                 {/* Legend with change % */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   {(() => {
                     const maxAbsChange = Math.max(...channels.map(ch => Math.abs(ch.change)));
                     return channels.map(ch => {
@@ -359,9 +359,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                       return (
                         <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
                           className={cn(
-                            "flex items-center justify-between py-1 group",
+                            "flex items-center justify-between px-2.5 py-2 rounded-lg border transition-colors",
+                            "bg-card/50 border-border/50 hover:border-border",
                             ch.href && "cursor-pointer",
-                            isDominant && "animate-[shake_0.5s_ease-in-out_1s_1]"
+                            isDominant && "border-primary/30 bg-primary/5 animate-[shake_0.5s_ease-in-out_1s_1]"
                           )}>
                           <span className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
                             <span className={cn("w-2.5 h-2.5 rounded-sm shrink-0", isDominant && "animate-pulse")}
@@ -385,20 +386,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             {/* AI Fan Sunbae Card — right after category changes */}
             <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
 
-            {item.sparkline.length >= 2 && (
-              <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <p className="text-base text-foreground mb-1 uppercase tracking-wider font-extrabold">{t("drawer.scoreMomentum")}</p>
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
-                  <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
-                </div>
-                <div className="relative h-16 w-full overflow-hidden">
-                  <MiniSparkline data={item.sparkline} width={600} height={64}
-                    color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
-                    ema7d={item.ema7d} ema30d={item.ema30d} />
-                </div>
-              </div>
-                )}
 
 
 
