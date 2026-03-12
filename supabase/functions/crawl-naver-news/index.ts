@@ -176,10 +176,12 @@ Deno.serve(async (req) => {
     // 중복 제거 (link 기준)
     const seenLinks = new Set<string>();
     const allItems: NaverNewsItem[] = [];
-    for (const item of [...koResults, ...enResults]) {
-      if (!seenLinks.has(item.link)) {
-        seenLinks.add(item.link);
-        allItems.push(item);
+    for (const resultSet of results) {
+      for (const item of resultSet) {
+        if (!seenLinks.has(item.link)) {
+          seenLinks.add(item.link);
+          allItems.push(item);
+        }
       }
     }
 
