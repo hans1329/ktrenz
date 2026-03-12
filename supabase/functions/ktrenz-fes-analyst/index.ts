@@ -24,13 +24,13 @@ Deno.serve(async (req) => {
 
     const { wiki_entry_ids } = await req.json().catch(() => ({ wiki_entry_ids: null }));
 
-    // ── 1) 대상 아티스트 조회 ──
+    // ── 1) 대상 아티스트 조회 (Tier 1만 — 데이터 수집 대상만 정규화) ──
     let targetIds: string[] = wiki_entry_ids || [];
     if (!targetIds.length) {
       const { data: tiers } = await sb
         .from("v3_artist_tiers")
         .select("wiki_entry_id")
-        .in("tier", [1, 2]);
+        .eq("tier", 1);
       targetIds = (tiers || []).map((t: any) => t.wiki_entry_id);
     }
 
