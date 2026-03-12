@@ -232,55 +232,72 @@ Twitter/X: 1.0x  ← 기준선`}</code>
         <p className="text-xs text-muted-foreground mt-2">ktrenz_user_events 테이블에서 수집. 팬 스코어 = Σ(event_weight) / 아티스트 / 24시간</p>
       </Card>
 
-      {/* ── FES v5.4 ── */}
-      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v5.4" color="bg-red-600" />
-      <p className="text-sm text-muted-foreground">카테고리별 독립 Velocity/Intensity를 포함한 6개 카테고리 가중 에너지. <Badge variant="outline" className="text-xs ml-1">최소 10 · 최대 250</Badge></p>
+      {/* ── FES v6 ── */}
+      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v6" color="bg-red-600" />
+      <p className="text-sm text-muted-foreground">Z-Score 정규화 기반의 5개 카테고리 가중 에너지 스코어. YouTube 편중 문제를 해결하고 카테고리별 상대적 성장을 균형 있게 반영합니다. <Badge variant="outline" className="text-xs ml-1">최소 10 · 최대 250</Badge></p>
 
       <Card className="p-4 bg-primary/5 border-primary/20">
-        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v5.4 아키텍처</p>
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v6 아키텍처 — v5.4 대비 주요 변경점</p>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li><strong className="text-foreground">6개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Social 5% | Fan 3%</li>
-          <li><strong className="text-foreground">카테고리별 Velocity/Intensity:</strong> 각 카테고리가 독립적으로 점수화된 후 가중 합산</li>
-          <li><strong className="text-foreground">Energy = Velocity 60% + Intensity 40%:</strong> 성장 모멘텀 vs 절대적 위상</li>
-          <li><strong className="text-foreground">퍼센타일 Intensity:</strong> 전체 tier-1 아티스트 중 순위 → 0~250 스케일</li>
-          <li><strong className="text-foreground">시그모이드 Velocity:</strong> 24시간 변동률 → sigmoid(x/100×3) → 20~250 스케일</li>
-          <li><strong className="text-foreground">Social (5%):</strong> kpop-radar 팔로워 데이터 (Instagram, TikTok, Spotify, Twitter)</li>
-          <li><strong className="text-foreground">Fan Activity (3%):</strong> 플랫폼 사용자 이벤트 (링크 클릭 1.5x, 채팅 1.0x, 조회 0.5x)</li>
-          <li><strong className="text-foreground">롤링 윈도우:</strong> 현재 시간 -24h 이전의 가장 가까운 유효 스냅샷과 비교</li>
-          <li><strong className="text-foreground">Zero 페널티:</strong> 스코어 0인 카테고리는 가중치를 유지하되 에너지 0을 기여하여 데이터 공백에 불이익</li>
+          <li><strong className="text-foreground">Z-Score 정규화:</strong> v5.4의 시그모이드+퍼센타일 방식 대신, 전체 아티스트 분포 기준 Z-Score로 정규화하여 YouTube의 절대 변동이 다른 카테고리를 마스킹하지 않음</li>
+          <li><strong className="text-foreground">5개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Social 5% (Fan Activity는 별도 트래킹)</li>
+          <li><strong className="text-foreground">시그모이드 FES 변환:</strong> 가중 Z-Score 합산 → 시그모이드 함수로 10~250 스케일 매핑</li>
+          <li><strong className="text-foreground">기여도 정량화:</strong> 매 스냅샷마다 각 카테고리가 FES 변동에 기여한 비율을 자동 계산</li>
+          <li><strong className="text-foreground">독립 트렌드:</strong> 7일/30일 롤링 통계로 카테고리별 방향·모멘텀을 독립적으로 추적</li>
+          <li><strong className="text-foreground">AI 예측 통합:</strong> GPT-4o-mini 기반 24–48h FES 방향 예측 + 자동 검증 파이프라인</li>
+          <li><strong className="text-foreground">v3_scores_v2 덮어쓰기:</strong> FES Analyst의 normalized_fes가 메인 energy_score 컬럼을 직접 업데이트</li>
         </ul>
       </Card>
 
-      <FormulaCard title="핵심 공식 (v5.4)" formula={`energy_score = Σ(category_energy × weight) / Σ(weights)
+      <FormulaCard title="v6 핵심 공식 — Z-Score 정규화 FES" formula={`1단계: 카테고리별 24h 변동률
+  change_cat = (현재_스코어 − 24h전_스코어) / 24h전_스코어 × 100
 
-category_energy =
-  velocity × 0.60 + intensity × 0.40  (velocity 가용 시)
-  intensity                             (24h 비교 불가 시)
+2단계: 전체 아티스트 분포 통계
+  mean_cat  = avg(모든 아티스트의 change_cat)
+  stddev_cat = stddev(모든 아티스트의 change_cat)
 
-velocity  = sigmoid(change_24h / 100 × 3) → 20~250
-intensity = percentile_rank × 250 → 0~250
-change_24h = (현재 − 24시간전) / 24시간전 × 100
+3단계: Z-Score 정규화
+  z_cat = (change_cat − mean_cat) / stddev_cat
 
-가중치: yt=0.37, buzz=0.23, music=0.18, album=0.14, social=0.05, fan=0.03`}
-        description="Null 변동 (유효한 24h 비교 없음)은 해당 카테고리를 velocity에서 제외하지만 intensity는 포함합니다. Zero 스코어 카테고리는 전체 가중치로 에너지 0을 기여합니다." />
+4단계: 가중 합산 → 시그모이드 변환
+  weightedZ = Σ(z_cat × weight_cat)
+  sigmoid   = 1 / (1 + e^(−weightedZ × 0.5))
+  FES       = 10 + sigmoid × 240  →  범위: 10 ~ 250`}
+        description="Z-Score를 통해 YouTube의 5% 변동과 Buzz의 50% 변동을 동일 스케일에서 비교할 수 있습니다. 시그모이드 변환으로 극단값을 자연스럽게 제한합니다." />
 
-      <div className="grid grid-cols-6 gap-1.5">
+      <div className="grid grid-cols-5 gap-1.5">
         <Card className="p-2.5 bg-card border-border/50 text-center"><Youtube className="w-4 h-4 mx-auto text-destructive" /><p className="text-xs font-bold text-foreground mt-1">37%</p><p className="text-[10px] text-muted-foreground">YouTube</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Zap className="w-4 h-4 mx-auto text-amber-500" /><p className="text-xs font-bold text-foreground mt-1">23%</p><p className="text-[10px] text-muted-foreground">Buzz</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">18%</p><p className="text-[10px] text-muted-foreground">Music</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Disc3 className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">14%</p><p className="text-[10px] text-muted-foreground">Album</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Users className="w-4 h-4 mx-auto text-pink-500" /><p className="text-xs font-bold text-foreground mt-1">5%</p><p className="text-[10px] text-muted-foreground">Social</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Heart className="w-4 h-4 mx-auto text-blue-500" /><p className="text-xs font-bold text-foreground mt-1">3%</p><p className="text-[10px] text-muted-foreground">Fan</p></Card>
       </div>
 
-      <FormulaCard title="energy_change_24h (롤링 윈도우)" formula={`overallChange = Σ(change_i × weight_i) / Σ(weight_i)
-  (유효한 24h 비교가 있는 카테고리만 포함)
+      <FormulaCard title="기여도 계산" formula={`가중 |z| = |z_cat| × weight_cat
+기여도_cat = 가중|z|_cat / Σ(가중|z|_all) × 100%
 
-비교 대상: 현재 − 24h 이전의 가장 최근 유효 스냅샷`}
-        description="암호화폐 거래소 리더보드처럼 — 리셋 없는 연속 24시간 롤링 변동." />
+주도 카테고리 = max(기여도_cat)`}
+        description="예: YouTube z=0.5(기여 25%), Buzz z=2.1(기여 40%), Album z=-0.3(기여 5%) → 주도 카테고리: Buzz" />
 
-      <FormulaCard title="EMA 베이스라인 업데이트" formula={`avg_7d  = avg_7d  × (1 − 0.15) + current × 0.15
-avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="에너지 스냅샷의 장기 트렌드 추적을 위해 EMA로 베이스라인을 관리합니다." />
+      <FormulaCard title="독립 트렌드 (7d/30d)" formula={`카테고리별 롤링 통계:
+  avg_7d    = 최근 7일 z-score 평균
+  stddev_7d = 최근 7일 z-score 표준편차
+  change_7d = z_최신 − z_7일전
+
+모멘텀 = (avg_7d − avg_30d) / |avg_30d| × 100
+
+트렌드 방향:
+  rising  — change_7d > 0.5
+  falling — change_7d < -0.5
+  spike   — |change_7d| > 2.0
+  flat    — 그 외`}
+        description="모멘텀이 양수면 7일 평균이 30일 평균을 상회하는 상승 추세, 음수면 하락 추세를 나타냅니다." />
+
+      <FormulaCard title="v5.4 → v6 파이프라인 흐름" formula={`calculate-energy-score (v5.4 베이스라인)
+  → ktrenz-fes-analyst (Z-Score 정규화 → normalized_fes)
+    → v3_scores_v2.energy_score 덮어쓰기
+  → ktrenz-fes-predictor (AI 예측 생성 + 과거 검증)`}
+        description="v5.4 energy 계산은 여전히 실행되지만, FES Analyst가 최종 normalized_fes로 메인 에너지 점수를 덮어씁니다." />
 
       <div className="grid grid-cols-4 gap-2">
         <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💤</span><p className="text-sm font-bold text-foreground mt-1">&lt; 80</p><p className="text-xs text-muted-foreground">Low</p></Card>
