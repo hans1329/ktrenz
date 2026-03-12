@@ -100,7 +100,7 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
   // 따라서 항상 fire-and-forget으로 실행하고, 파이프라인에서는 DELAY_AFTER로 대기
   console.log(`[data-engine] Running Buzz module (always fire-and-forget to avoid timeout)...`);
   const BATCH_SIZE = 5;
-  const TOTAL_BATCHES = 12;
+  const TOTAL_BATCHES = 14; // 65 Tier1 artists ÷ 5 = 13 batches needed, +1 buffer
 
   let launched = 0;
   for (let i = 0; i < TOTAL_BATCHES; i++) {
