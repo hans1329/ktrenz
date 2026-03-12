@@ -861,6 +861,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                       }}
                     >🔥</span>
                   )}
+                  {isMostFalling && isMedium && (
+                    <Snowflake
+                      className="text-blue-200 drop-shadow-lg"
+                      style={{
+                        width: `${Math.max(16, sizeFactor * 2.5)}px`,
+                        height: `${Math.max(16, sizeFactor * 2.5)}px`,
+                        filter: "drop-shadow(0 0 6px rgba(147, 197, 253, 0.7))",
+                        animation: "pulse 3s cubic-bezier(0.4,0,0.6,1) infinite",
+                      }}
+                    />
+                  )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                   <span className="font-black text-white drop-shadow-lg"
