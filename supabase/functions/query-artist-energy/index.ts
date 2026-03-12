@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     const albumPct = calcPct(curAlbum, allAlbum);
     const musicPct = calcPct(curMusic, allMusic);
 
-    // ── 4) Energy 계산 ──
+    // ── 4) Energy 계산 (v6: Velocity 70% + Intensity 30%) ──
     const ytPrev = prev24h ? Number(prev24h.youtube_score) || 0 : 0;
     const buzzPrev = prev24h ? Number(prev24h.buzz_score) || 0 : 0;
     const albumPrev = prev24h ? Number(prev24h.album_score) || 0 : 0;
@@ -126,7 +126,20 @@ Deno.serve(async (req) => {
 
     const weightedPct = ytPct * WEIGHTS.youtube + buzzPct * WEIGHTS.buzz +
       albumPct * WEIGHTS.album + musicPct * WEIGHTS.music;
-    const energyScore = clamp(Math.round(10 + weightedPct * (MAX_SCORE - 10)), 10, MAX_SCORE);
+
+    // v6: 각 카테고리의 velocity 70% + intensity 30%
+    const catEnergy = (change: number, pct: number) => {
+      const vel = changeToScore(change);
+      const intensity = clamp(Math.round(pct * MAX_SCORE), 0, MAX_SCORE);
+      const velComponent = vel > 0 ? vel : vel * 0.3;
+      return clamp(Math.round(velComponent * 0.7 + intensity * 0.3), 0, MAX_SCORE);
+    };
+    const rawEnergy = catEnergy(ytChange, ytPct) * WEIGHTS.youtube +
+      catEnergy(buzzChange, buzzPct) * WEIGHTS.buzz +
+      catEnergy(albumChange, albumPct) * WEIGHTS.album +
+      catEnergy(musicChange, musicPct) * WEIGHTS.music;
+    const totalWeight = WEIGHTS.youtube + WEIGHTS.buzz + WEIGHTS.album + WEIGHTS.music;
+    const energyScore = clamp(Math.round(rawEnergy / totalWeight), 10, MAX_SCORE);
 
     const result = {
       wiki_entry_id,
