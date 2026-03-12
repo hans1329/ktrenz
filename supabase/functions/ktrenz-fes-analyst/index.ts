@@ -188,18 +188,9 @@ Deno.serve(async (req) => {
         await sb.from("ktrenz_fes_contributions").insert(contribRows.slice(i, i + batchSize));
       }
 
-      // ── 5-b) normalized_fes → v3_scores_v2.energy_score 반영 ──
-      const updateBatch = 10;
-      for (let i = 0; i < contribRows.length; i += updateBatch) {
-        const batch = contribRows.slice(i, i + updateBatch);
-        await Promise.all(batch.map(row =>
-          sb.from("v3_scores_v2").update({
-            energy_score: row.normalized_fes,
-            scored_at: now,
-          }).eq("wiki_entry_id", row.wiki_entry_id)
-        ));
-      }
-      console.log(`[ktrenz-fes-analyst] Updated energy_score for ${contribRows.length} artists`);
+      // NOTE: energy_score는 calculate-energy-score(v5.5)가 관리.
+      // FES Analyst의 normalized_fes는 ktrenz_fes_contributions에만 저장 (분석용).
+      console.log(`[ktrenz-fes-analyst] Saved contributions for ${contribRows.length} artists (analysis only, no energy_score overwrite)`);
     }
 
     // ── 6) 독립 트렌드 계산 (7d/30d rolling) — 벌크 쿼리 최적화 ──
