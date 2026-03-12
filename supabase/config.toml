@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.ktrenz-fes-predictor]
 verify_jwt = false
+
+[functions.ktrenz-velocity-profiler]
+verify_jwt = false
