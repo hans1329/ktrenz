@@ -830,18 +830,15 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
                 <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px` }}>
                   {isTopThree && (
-                    <Flame
-                      className="text-orange-500"
+                    <span
                       style={{
-                        width: `${Math.max(22, sizeFactor * 2.2)}px`,
-                        height: `${Math.max(22, sizeFactor * 2.2)}px`,
-                        filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.8)) drop-shadow(0 0 16px rgba(251, 146, 60, 0.4))',
+                        fontSize: `${Math.max(18, sizeFactor * 2)}px`,
+                        lineHeight: 1,
+                        filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))',
                         animation: `pulse 2s cubic-bezier(0.4,0,0.6,1) infinite`,
                         animationDelay: `${rectIndex * 0.7}s`,
                       }}
-                      fill="url(#flameGradient)"
-                      stroke="none"
-                    />
+                    >🔥</span>
                   )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
