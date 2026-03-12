@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
           .order("calculated_at", { ascending: false })
           .limit(5),
         sb.from("wiki_entries")
-          .select("name, name_ko")
+          .select("title")
           .eq("id", entryId)
           .maybeSingle(),
       ]);
