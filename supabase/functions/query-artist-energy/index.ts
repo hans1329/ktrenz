@@ -15,9 +15,12 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
 
+const LOW_BASE_THRESHOLD = 5;
 function pctChange(current: number, previous: number): number {
   if (previous <= 0) return current > 0 ? 100 : 0;
-  return ((current - previous) / previous) * 100;
+  const raw = ((current - previous) / previous) * 100;
+  if (previous < LOW_BASE_THRESHOLD) return Math.max(-100, Math.min(100, raw));
+  return raw;
 }
 
 function changeToScore(change: number): number {
