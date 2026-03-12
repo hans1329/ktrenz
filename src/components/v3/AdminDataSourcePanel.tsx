@@ -148,7 +148,13 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   };
 
   const renderMetricSummary = (config: typeof SOURCE_CONFIG[number], data: any) => {
-    if (!data?.metrics) return <span className="text-[10px] text-muted-foreground">—</span>;
+    if (!data?.metrics) {
+      // 빌보드: 데이터 없으면 "미진입" 표시
+      if (config.key === "billboard") {
+        return <span className="text-[10px] text-muted-foreground/80 italic">아직 진입 전</span>;
+      }
+      return <span className="text-[10px] text-muted-foreground">—</span>;
+    }
     const m = data.metrics;
 
     // 플랫폼별 핵심 지표 표시

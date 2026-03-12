@@ -51,19 +51,20 @@ const V3ChartDataSection = ({ wikiEntryId }: V3ChartDataSectionProps) => {
     staleTime: 60_000,
   });
 
-  // Billboard charts
+  // Billboard charts (multiple chart types per collection)
   const { data: billboardData } = useQuery({
     queryKey: ["chart-billboard", wikiEntryId],
     queryFn: async () => {
+      const cutoff = new Date(Date.now() - 48 * 3600_000).toISOString();
       const { data } = await supabase
         .from("ktrenz_data_snapshots" as any)
         .select("metrics, collected_at")
         .eq("wiki_entry_id", wikiEntryId)
-        .eq("platform", "billboard_charts")
+        .eq("platform", "billboard_chart")
+        .gte("collected_at", cutoff)
         .order("collected_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data as any;
+        .limit(10);
+      return (data as any[]) || [];
     },
     staleTime: 60_000,
   });
