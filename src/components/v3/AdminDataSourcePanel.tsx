@@ -88,7 +88,7 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   const { data: snapshots, isLoading, refetch } = useQuery({
     queryKey: ["admin-source-snapshots", wikiEntryId],
     queryFn: async () => {
-      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_charts", "billboard_charts", "hanteo", "buzz_multi", "naver_news", "social_followers"];
+      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_chart", "billboard_charts", "hanteo_daily", "buzz_multi", "naver_news", "social_followers"];
       const results: Record<string, any> = {};
 
       const promises = platforms.map(async (platform) => {
