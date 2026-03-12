@@ -464,6 +464,9 @@ async function upsertIssues(supabase: ReturnType<typeof createClient>, issues: I
       expected_value: issue.expected_value,
       actual_value: issue.actual_value,
       resolved: false,
+      resolved_at: null,
+      resolved_by: null,
+      resolution_note: null,
       updated_at: new Date().toISOString(),
     }));
 
