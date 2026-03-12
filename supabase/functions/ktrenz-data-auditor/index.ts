@@ -582,7 +582,7 @@ Deno.serve(async (req) => {
         ? await runIdentifierAudit(artists)
         : await runFastFullAudit(supabase, artists);
 
-    const { inserted, skipped } = await upsertIssues(supabase, issues);
+    const { inserted, skipped, suppressed_skipped } = await upsertIssues(supabase, issues);
 
     let autoResolved = 0;
     if (mode === "full" && !wikiEntryId) {
