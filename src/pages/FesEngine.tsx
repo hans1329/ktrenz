@@ -198,16 +198,16 @@ finalScore = score × multiplier`}</code>
 
       {/* ── 소셜 스코어 ── */}
       <SectionHeader icon={Users} title="소셜 스코어 (v5.4)" color="bg-pink-600" />
-      <p className="text-xs text-muted-foreground"><strong>kpop-radar.com</strong>에서 스크래핑한 크로스 플랫폼 팔로워 데이터 (실행당 Firecrawl 4 크레딧). 30% 베이스 (로그 스케일) + 70% 델타 모델을 사용합니다.</p>
+      <p className="text-sm text-muted-foreground"><strong>kpop-radar.com</strong>에서 스크래핑한 크로스 플랫폼 팔로워 데이터 (실행당 Firecrawl 4 크레딧). 30% 베이스 (로그 스케일) + 70% 델타 모델을 사용합니다.</p>
       <FormulaCard title="공식" formula={`SocialScore = avg(platformScores)
 
 platformScore = (baseScore × 0.3 + deltaScore × 0.7) × weight
   baseScore  = log10(followers) × 100
   deltaScore = max(growthRate × 1000, baseScore × 0.1)
   growthRate = (현재 − 24시간전) / 24시간전`} description="이전 스냅샷이 없는 경우, deltaScore는 baseScore의 10%를 최소 모멘텀으로 사용합니다." />
-      <Card className="p-3 bg-card border-border/50">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">플랫폼 가중치</p>
-        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Spotify:   1.5x  ← 스트리밍 연관성
+      <Card className="p-4 bg-card border-border/50">
+        <p className="text-sm text-muted-foreground font-medium mb-1.5">플랫폼 가중치</p>
+        <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`Spotify:   1.5x  ← 스트리밍 연관성
 TikTok:    1.3x  ← 바이럴 도달
 Instagram: 1.2x  ← 시각적 참여
 Twitter/X: 1.0x  ← 기준선`}</code>
