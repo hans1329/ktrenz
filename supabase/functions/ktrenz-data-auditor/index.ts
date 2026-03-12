@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
           skipped: 0,
           total_artists: total,
           offset,
-          limit,
+          limit: effectiveLimit,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
