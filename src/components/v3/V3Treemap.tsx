@@ -833,7 +833,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                     <span style={{
                       fontSize: `${Math.max(18, sizeFactor * 2)}px`,
                       lineHeight: 1,
-                      marginTop: `-${Math.max(5, sizeFactor * 0.8)}px`,
+                      display: 'block',
+                      transform: `translateY(-${Math.max(8, sizeFactor * 1.1)}px)`,
                       filter: 'drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))',
                       animation: `pulse 2s cubic-bezier(0.4,0,0.6,1) infinite`,
                       animationDelay: `${rectIndex * 0.7}s`,
