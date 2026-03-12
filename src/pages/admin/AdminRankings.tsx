@@ -1630,7 +1630,7 @@ const AdminRankings = () => {
                             <p className="text-2xl font-bold font-mono">{currentScore?.toLocaleString() ?? '—'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-muted-foreground">24h 변동 (vs 베이스라인)</p>
+                            <p className="text-xs text-muted-foreground">24h 변동 (vs 이전 스냅샷)</p>
                             {ch == null
                               ? <p className="text-lg font-mono text-muted-foreground">—</p>
                               : <p className={`text-lg font-mono font-bold ${ch > 0 ? 'text-emerald-500' : ch < -5 ? 'text-red-500' : 'text-muted-foreground'}`}>
