@@ -457,7 +457,7 @@ const AdminDataQuality = () => {
                 전체 무시 ({filtered.filter((i: any) => !i.suppressed).length}건)
               </Button>
             )}
-            {filtered.filter((i: any) => !i.suppressed).length > 0 && (
+            {filtered.filter((i: any) => !i.resolved && !i.suppressed).length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -466,7 +466,7 @@ const AdminDataQuality = () => {
                 onClick={() => resolveAllFiltered.mutate()}
               >
                 {resolveAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                전체 해결 ({filtered.filter((i: any) => !i.suppressed).length}건)
+                전체 해결 ({filtered.filter((i: any) => !i.resolved && !i.suppressed).length}건)
               </Button>
             )}
           </div>
