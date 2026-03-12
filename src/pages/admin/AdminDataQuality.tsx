@@ -514,18 +514,40 @@ const AdminDataQuality = () => {
                           {formatDistanceToNow(new Date(issue.detected_at), { addSuffix: true })}
                         </TableCell>
                         <TableCell>
-                          {!issue.resolved ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => resolveIssue.mutate({ id: issue.id, note: '수동 해결' })}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> 해결
-                            </Button>
-                          ) : (
-                            <span className="text-[10px] text-emerald-500">✓ 해결됨</span>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {issue.suppressed ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => unsuppressIssue.mutate({ id: issue.id })}
+                              >
+                                <Eye className="w-3.5 h-3.5 mr-1" /> 해제
+                              </Button>
+                            ) : (
+                              <>
+                                {!issue.resolved && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs h-7"
+                                    onClick={() => resolveIssue.mutate({ id: issue.id, note: '수동 해결' })}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs h-7 text-muted-foreground"
+                                  title="무시 (재감사에서 제외)"
+                                  onClick={() => suppressIssue.mutate({ id: issue.id })}
+                                >
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
