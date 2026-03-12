@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
       const contributions = contribRes.data || [];
       const trends = trendRes.data || [];
-      const artistName = entryRes.data?.name || entryId;
+      const artistName = entryRes.data?.title || entryId;
 
       if (contributions.length < 2) continue; // 최소 데이터 2건 (수집 사이클 초기에도 예측 가능)
 
