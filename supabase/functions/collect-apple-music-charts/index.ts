@@ -32,7 +32,7 @@ const COUNTRIES = [
 
 const CHART_URLS = COUNTRIES.map(c => ({
   ...c,
-  url: `https://rss.applemarketingtools.com/api/v2/${c.country}/music/most-played/200/albums.json`,
+  url: `https://rss.applemarketingtools.com/api/v2/${c.country}/music/most-played/100/albums.json`,
 }));
 
 Deno.serve(async (req) => {
