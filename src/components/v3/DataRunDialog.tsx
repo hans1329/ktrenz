@@ -64,10 +64,11 @@ interface DataRunDialogProps {
   onRunModule: (module: DataModule) => void;
   isRunning: boolean;
   isCrawling: boolean;
+  isAdmin?: boolean;
 }
 
 export default function DataRunDialog({
-  open, onOpenChange, wikiEntryId, artistTitle, onRunModule, isRunning, isCrawling,
+  open, onOpenChange, wikiEntryId, artistTitle, onRunModule, isRunning, isCrawling, isAdmin = false,
 }: DataRunDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -113,6 +114,7 @@ export default function DataRunDialog({
 
   const canRun = (mod: DataModule) => {
     if (isCrawling || isRunning) return false;
+    if (isAdmin) return true; // 관리자는 제한 없음
     if (!user) return false;
     if (remaining <= 0) return false;
     if (mod === "all" && !limits.allowAll) return false;
@@ -151,11 +153,11 @@ export default function DataRunDialog({
         {/* 잔여 횟수 */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">{limits.label}</Badge>
+            <Badge variant="secondary" className="text-xs">{isAdmin ? "Admin" : limits.label}</Badge>
             <span className="text-xs text-muted-foreground">오늘 잔여</span>
           </div>
-          <span className={cn("text-sm font-bold", remaining <= 0 ? "text-destructive" : "text-primary")}>
-            {remaining} / {limits.daily === 999 ? "∞" : limits.daily}
+          <span className={cn("text-sm font-bold", !isAdmin && remaining <= 0 ? "text-destructive" : "text-primary")}>
+            {isAdmin ? "∞" : `${remaining} / ${limits.daily === 999 ? "∞" : limits.daily}`}
           </span>
         </div>
 
@@ -164,7 +166,7 @@ export default function DataRunDialog({
           <RainbowProgressBar />
         )}
 
-        {!user && (
+        {!user && !isAdmin && (
           <p className="text-sm text-muted-foreground text-center py-4">로그인 후 이용할 수 있습니다.</p>
         )}
 
@@ -173,7 +175,7 @@ export default function DataRunDialog({
           {MODULES.map((mod) => {
             const disabled = !canRun(mod.id);
             const isActive = runningModule === mod.id && isRunning;
-            const locked = mod.id === "all" && !limits.allowAll;
+            const locked = mod.id === "all" && !limits.allowAll && !isAdmin;
 
             return (
               <button
