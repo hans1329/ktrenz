@@ -96,7 +96,11 @@ const AdminDataQuality = () => {
       return (typeof data === 'string' ? JSON.parse(data) : data) as AuditSummary;
     },
     onSuccess: (data) => {
-      toast.success(`감사 완료: ${data.issues_found}건 이슈 발견 (${data.artists_checked}명 검사)`);
+      const sup = data.suppressed_skipped ?? 0;
+      const msg = sup > 0
+        ? `감사 완료: ${data.inserted}건 신규, ${sup}건 무시됨 (${data.artists_checked}명 검사)`
+        : `감사 완료: ${data.inserted}건 이슈 발견 (${data.artists_checked}명 검사)`;
+      toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
     onError: (err) => {
