@@ -1729,28 +1729,92 @@ const AdminRankings = () => {
                     <p className="text-sm text-muted-foreground text-center py-4">Buzz 메트릭 데이터 없음</p>
                   )}
 
-                  {/* Hanteo / Album Details */}
-                  {source === 'hanteo' && m.hanteo && m.hanteo.length > 0 && (
-                    <div className="rounded-lg border border-border p-3 space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground">한터차트 앨범 데이터</p>
-                      <div className="space-y-1.5">
-                        {m.hanteo.map((h: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-border/30 last:border-0">
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium truncate">{h.album || '—'}</p>
-                              <p className="text-[10px] text-muted-foreground">{h.artist || '—'}</p>
-                            </div>
-                            <div className="text-right shrink-0 ml-3">
-                              <p className="font-mono font-medium">{(h.first_week_sales || 0).toLocaleString()}</p>
-                              <p className="text-[10px] text-muted-foreground">초동</p>
-                            </div>
+                  {/* Album Details (Multi-source: Hanteo + Apple Music + Billboard) */}
+                  {source === 'hanteo' && (
+                    <div className="rounded-lg border border-border p-3 space-y-3">
+                      <p className="text-xs font-semibold text-muted-foreground">앨범 스코어 구성</p>
+                      <p className="text-[10px] text-muted-foreground">= Hanteo 실판매 + Apple Music 차트 + Billboard 차트 합산</p>
+
+                      {/* Hanteo */}
+                      {m.hanteo && m.hanteo.length > 0 ? (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">📦 한터차트</p>
+                          <div className="space-y-1.5">
+                            {m.hanteo.map((h: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between text-xs py-1.5 border-b border-border/30 last:border-0">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate">{h.album || '—'}</p>
+                                  <p className="text-[10px] text-muted-foreground">{h.artist || '—'}</p>
+                                </div>
+                                <div className="text-right shrink-0 ml-3">
+                                  <p className="font-mono font-medium">{(h.first_week_sales || 0).toLocaleString()}</p>
+                                  <p className="text-[10px] text-muted-foreground">초동</p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">한터차트 데이터 없음</p>
+                      )}
+
+                      {/* Apple Music Charts */}
+                      {(m as any).apple_music_charts ? (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">🍎 Apple Music Charts</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(m as any).apple_music_charts.rank != null && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">순위</p>
+                                <p className="text-sm font-mono font-medium">#{(m as any).apple_music_charts.rank}</p>
+                              </div>
+                            )}
+                            {(m as any).apple_music_charts.bonus != null && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">보너스 점수</p>
+                                <p className="text-sm font-mono font-medium">+{(m as any).apple_music_charts.bonus}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Apple Music 차트 데이터 없음</p>
+                      )}
+
+                      {/* Billboard Charts */}
+                      {(m as any).billboard_charts ? (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1">📊 Billboard Charts</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(m as any).billboard_charts.rank != null && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">순위</p>
+                                <p className="text-sm font-mono font-medium">#{(m as any).billboard_charts.rank}</p>
+                              </div>
+                            )}
+                            {(m as any).billboard_charts.bonus != null && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground">보너스 점수</p>
+                                <p className="text-sm font-mono font-medium">+{(m as any).billboard_charts.bonus}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Billboard 차트 데이터 없음</p>
+                      )}
+
+                      {/* Collection timestamps */}
+                      <div className="border-t border-border/50 pt-2 space-y-0.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground">수집 시각</p>
+                        {artist.collection.hanteo && <p className="text-[10px] text-muted-foreground">한터: {formatAgo(artist.collection.hanteo)}</p>}
+                        {(artist.collection as any).apple_music_charts && <p className="text-[10px] text-muted-foreground">Apple Music: {formatAgo((artist.collection as any).apple_music_charts)}</p>}
+                        {(artist.collection as any).billboard_charts && <p className="text-[10px] text-muted-foreground">Billboard: {formatAgo((artist.collection as any).billboard_charts)}</p>}
+                        {!artist.collection.hanteo && !(artist.collection as any).apple_music_charts && !(artist.collection as any).billboard_charts && (
+                          <p className="text-[10px] text-muted-foreground">수집 기록 없음</p>
+                        )}
                       </div>
                     </div>
-                  )}
-                  {source === 'hanteo' && (!m.hanteo || m.hanteo.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center py-4">한터차트 데이터 없음</p>
                   )}
 
                   {/* Music Details */}
