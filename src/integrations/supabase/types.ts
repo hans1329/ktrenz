@@ -3335,6 +3335,105 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_velocity_profile_summary: {
+        Row: {
+          avg_peak_day_offset: number | null
+          avg_peak_velocity: number | null
+          avg_post_velocity: number | null
+          avg_pre_velocity: number | null
+          avg_recovery_days: number | null
+          category: string
+          event_count: number | null
+          event_type: string
+          id: string
+          updated_at: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          avg_peak_day_offset?: number | null
+          avg_peak_velocity?: number | null
+          avg_post_velocity?: number | null
+          avg_pre_velocity?: number | null
+          avg_recovery_days?: number | null
+          category: string
+          event_count?: number | null
+          event_type: string
+          id?: string
+          updated_at?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          avg_peak_day_offset?: number | null
+          avg_peak_velocity?: number | null
+          avg_post_velocity?: number | null
+          avg_pre_velocity?: number | null
+          avg_recovery_days?: number | null
+          category?: string
+          event_count?: number | null
+          event_type?: string
+          id?: string
+          updated_at?: string
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
+      ktrenz_velocity_stats: {
+        Row: {
+          avg_intensity: number | null
+          avg_velocity: number | null
+          calculated_at: string
+          category: string
+          drop_count: number | null
+          id: string
+          max_velocity: number | null
+          min_velocity: number | null
+          peak_day: string | null
+          sample_count: number | null
+          spike_count: number | null
+          stddev_velocity: number | null
+          time_window: string
+          trough_day: string | null
+          velocity_trend: string | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          avg_intensity?: number | null
+          avg_velocity?: number | null
+          calculated_at?: string
+          category: string
+          drop_count?: number | null
+          id?: string
+          max_velocity?: number | null
+          min_velocity?: number | null
+          peak_day?: string | null
+          sample_count?: number | null
+          spike_count?: number | null
+          stddev_velocity?: number | null
+          time_window: string
+          trough_day?: string | null
+          velocity_trend?: string | null
+          wiki_entry_id: string
+        }
+        Update: {
+          avg_intensity?: number | null
+          avg_velocity?: number | null
+          calculated_at?: string
+          category?: string
+          drop_count?: number | null
+          id?: string
+          max_velocity?: number | null
+          min_velocity?: number | null
+          peak_day?: string | null
+          sample_count?: number | null
+          spike_count?: number | null
+          stddev_velocity?: number | null
+          time_window?: string
+          trough_day?: string | null
+          velocity_trend?: string | null
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_watched_artists: {
         Row: {
           artist_name: string
