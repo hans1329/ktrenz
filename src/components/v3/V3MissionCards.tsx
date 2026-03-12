@@ -388,7 +388,7 @@ export default function V3MissionCards({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-amber-400" />
-          <p className="text-sm font-bold text-foreground uppercase tracking-wider">{t("mission.todaysMission")}</p>
+          <p className="text-base font-extrabold text-foreground uppercase tracking-wider">{t("mission.todaysMission")}</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="font-bold text-primary text-base">{completedCount}/{missions.length}</span>
@@ -462,7 +462,7 @@ export default function V3MissionCards({
                        <img
                          src={mission.thumbnail}
                          alt=""
-                         className="shrink-0 w-24 h-14 rounded-md object-cover bg-muted"
+                         className="shrink-0 w-32 h-20 rounded-lg object-cover bg-muted"
                          loading="lazy"
                          onError={(e) => {
                            (e.currentTarget as HTMLImageElement).style.display = "none";
