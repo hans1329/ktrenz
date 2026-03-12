@@ -263,6 +263,7 @@ Deno.serve(async (req) => {
 
           if (wikiEntryId) {
             totalMatched++;
+            const isFirstEntry = !existingBillboardSet.has(wikiEntryId);
             matchedArtists.add(wikiEntryId);
 
             await sb.from("ktrenz_data_snapshots").insert({
@@ -276,6 +277,17 @@ Deno.serve(async (req) => {
                 artist_name: entry.artist,
               },
             });
+
+            // 첫 빌보드 진입 감지 → 마일스톤 이벤트 생성
+            if (isFirstEntry) {
+              existingBillboardSet.add(wikiEntryId); // 같은 수집 내 중복 방지
+              firstEntryArtists.push({
+                wikiEntryId,
+                chartName: chart.name,
+                position: entry.position,
+                title: entry.title,
+              });
+            }
           }
         }
 
