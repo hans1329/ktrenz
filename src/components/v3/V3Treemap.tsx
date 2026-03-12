@@ -350,7 +350,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                   );
                 })()}
                 {/* Legend with change % */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2">
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   {(() => {
                     const maxAbsChange = Math.max(...channels.map(ch => Math.abs(ch.change)));
                     return channels.map(ch => {
@@ -359,9 +359,10 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
                       return (
                         <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
                           className={cn(
-                            "flex items-center justify-between py-1 group",
+                            "flex items-center justify-between px-2.5 py-2 rounded-lg border transition-colors",
+                            "bg-card/50 border-border/50 hover:border-border",
                             ch.href && "cursor-pointer",
-                            isDominant && "animate-[shake_0.5s_ease-in-out_1s_1]"
+                            isDominant && "border-primary/30 bg-primary/5 animate-[shake_0.5s_ease-in-out_1s_1]"
                           )}>
                           <span className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
                             <span className={cn("w-2.5 h-2.5 rounded-sm shrink-0", isDominant && "animate-pulse")}
