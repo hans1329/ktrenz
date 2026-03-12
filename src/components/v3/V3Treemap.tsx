@@ -272,8 +272,8 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
 
             {channels.length > 0 && (
               <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4 my-2">
-                <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5" /> {t("drawer.categoryChanges")}
+                <p className="text-base text-foreground uppercase tracking-wider font-extrabold flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" /> {t("drawer.categoryChanges")}
                 </p>
                 {/* Animated stacked bar with countup + shake on top category */}
                 {(() => {
