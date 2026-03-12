@@ -291,7 +291,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
                 <p className="text-[10px] text-muted-foreground mb-1">{t("drawer.fesLabel")}</p>
-                <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}</p>
+                <p className="text-xl font-black text-foreground truncate">{Math.round(item.energyScore)}°E</p>
               </div>
               <div className="rounded-xl bg-muted/50 border border-border p-3 text-center overflow-hidden">
                 <p className="text-[10px] text-muted-foreground mb-1">{t("drawer.change24h")}</p>
@@ -867,7 +867,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                   <span className="font-black text-white drop-shadow-lg"
-                    style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}</span>
+                    style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}°E</span>
                   {isLarge && (
                     <span className={cn("font-bold rounded-full backdrop-blur-sm",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"

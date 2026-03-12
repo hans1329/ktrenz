@@ -218,7 +218,7 @@ const Notifications = () => {
                   <div className="text-right shrink-0">
                     <div className="flex items-center gap-1 text-primary">
                       <Zap className="w-3 h-3" />
-                      <span className="text-base font-black">{Math.round(artist.energy_score)}</span>
+                      <span className="text-base font-black">{Math.round(artist.energy_score)}°E</span>
                     </div>
                   </div>
                 </button>

@@ -170,7 +170,7 @@ const translations: Record<string, Record<Language, string>> = {
   "drawer.surgingLocation": { en: "Energy Surging Location", ko: "에너지 급상승 위치", ja: "エネルギー急上昇の位置", zh: "能量飙升位置" },
   "drawer.fanEnergyInspector": { en: "Fan Energy Inspector", ko: "팬 에너지 분석", ja: "ファンエネルギー分析", zh: "粉丝能量分析" },
 
-  "drawer.fesLabel": { en: "Fan Energy Score", ko: "팬 에너지 스코어", ja: "ファンエネルギースコア", zh: "粉丝能量分数" },
+  "drawer.fesLabel": { en: "Fan Energy °E", ko: "팬 에너지 °E", ja: "ファンエネルギー °E", zh: "粉丝能量 °E" },
   "drawer.change24h": { en: "24h Change", ko: "24시간 변동률", ja: "24時間変動率", zh: "24小时变动率" },
   "drawer.upcomingSchedule": { en: "Upcoming", ko: "다가오는 일정", ja: "今後の予定", zh: "即将到来" },
 

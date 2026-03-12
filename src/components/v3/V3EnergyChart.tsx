@@ -45,7 +45,7 @@ const EnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: numb
           </defs>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-0">
-          <span className="text-2xl font-black text-foreground">{score}</span>
+          <span className="text-2xl font-black text-foreground">{score}°E</span>
         </div>
       </div>
       <div className={cn("flex items-center gap-1 mt-1 px-3 py-1 rounded-full", level.bg)}>
@@ -64,7 +64,7 @@ const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: n
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Zap className="w-3 h-3 text-amber-500" /> Velocity</span>
-          <span className="text-xs font-bold text-foreground">{velocity} / {velMax}</span>
+          <span className="text-xs font-bold text-foreground">{velocity} / {velMax}°E</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-700" style={{ width: `${Math.min((velocity / velMax) * 100, 100)}%` }} />
@@ -74,7 +74,7 @@ const ComponentBars = ({ velocity, intensity }: { velocity: number; intensity: n
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><Activity className="w-3 h-3 text-teal-400" /> Intensity</span>
-          <span className="text-xs font-bold text-foreground">{intensity} / {intMax}</span>
+          <span className="text-xs font-bold text-foreground">{intensity} / {intMax}°E</span>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-700" style={{ width: `${Math.min((intensity / intMax) * 100, 100)}%` }} />
