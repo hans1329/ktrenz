@@ -206,7 +206,7 @@ function ChannelBar({ icon, label, value, total, color, href }: { icon: React.Re
 function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => void }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"overview" | "insights">("overview");
+  
   const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
   const surging = isSurging(item.energyChange24h);
 
