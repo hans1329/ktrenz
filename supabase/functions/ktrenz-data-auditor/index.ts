@@ -219,24 +219,23 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── Check 6: Missing API identifiers in metadata ──
-      const meta = artist.metadata as Record<string, unknown> | null;
-      const requiredIds: { key: string; label: string }[] = [
+      // ── Check 6: Missing API identifiers (direct columns) ──
+      const requiredIds: { key: keyof typeof artist; label: string }[] = [
         { key: "youtube_channel_id", label: "YouTube Channel ID" },
-        { key: "lastfm_name", label: "Last.fm Name" },
-        { key: "deezer_id", label: "Deezer ID" },
+        { key: "lastfm_artist_name", label: "Last.fm Name" },
+        { key: "deezer_artist_id", label: "Deezer ID" },
       ];
       for (const rid of requiredIds) {
-        const val = meta?.[rid.key];
+        const val = artist[rid.key];
         if (!val || val === "" || val === "null") {
           issues.push({
             wiki_entry_id: wikiId,
             artist_name: name,
             issue_type: "missing_source",
-            platform: rid.key,
+            platform: rid.key as string,
             severity: "high",
             title: `${name}: ${rid.label} 미설정`,
-            description: `메타데이터에 ${rid.label}가 없어 해당 플랫폼 수집이 불가능합니다.`,
+            description: `${rid.label}가 없어 해당 플랫폼 수집이 불가능합니다.`,
             expected_value: "설정됨",
             actual_value: "없음",
           });
