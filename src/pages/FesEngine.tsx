@@ -51,11 +51,11 @@ const FesEngine = () => {
   useEffect(() => { document.documentElement.classList.add("v3-theme"); return () => { document.documentElement.classList.remove("v3-theme"); }; }, []);
 
   const PageContent = () => (
-    <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 pb-24 space-y-3">
-      <Card className="p-4 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 border-primary/20">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 pb-24 space-y-4">
+      <Card className="p-5 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 border-primary/20">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center"><Gauge className="w-6 h-6 text-primary" /></div>
-          <div><h1 className="text-lg font-black text-foreground">KTRENDZ 스코어링 엔진</h1><p className="text-xs text-muted-foreground mt-0.5">FES v5.4 — 아티스트 트렌드 점수 및 팬 에너지 산출 방식</p></div>
+          <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center"><Gauge className="w-7 h-7 text-primary" /></div>
+          <div><h1 className="text-xl font-black text-foreground">KTRENDZ 스코어링 엔진</h1><p className="text-sm text-muted-foreground mt-0.5">FES v5.4 — 아티스트 트렌드 점수 및 팬 에너지 산출 방식</p></div>
         </div>
       </Card>
 
