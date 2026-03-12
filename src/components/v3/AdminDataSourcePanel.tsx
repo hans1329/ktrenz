@@ -46,13 +46,17 @@ const COLLECT_MODULE_MAP: Record<string, string> = {
   youtube_music: "youtube",
   lastfm: "music",
   deezer: "music",
+  apple_music: "apple_music_charts",
+  billboard: "billboard_charts",
   hanteo: "hanteo",
   buzz_x: "buzz_x",
   buzz_reddit: "buzz_reddit",
   buzz_naver: "buzz_naver",
   buzz_tiktok: "buzz_tiktok",
-  buzz_news: "buzz_news",
+  buzz_yt_comments: "buzz_yt_comments",
+  buzz_ext_videos: "ext_videos",
   naver_news: "naver_news",
+  social: "social",
 };
 
 const formatValue = (v: any): string => {
