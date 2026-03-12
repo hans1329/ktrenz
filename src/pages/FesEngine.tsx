@@ -12,35 +12,35 @@ import { cn } from "@/lib/utils";
 
 const SectionHeader = ({ icon: Icon, title, color }: { icon: any; title: string; color: string }) => (
   <div className="flex items-center gap-2 mt-6 mb-3">
-    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", color)}><Icon className="w-4 h-4 text-white" /></div>
-    <h2 className="text-base font-black text-foreground">{title}</h2>
+    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", color)}><Icon className="w-4.5 h-4.5 text-white" /></div>
+    <h2 className="text-lg font-black text-foreground">{title}</h2>
   </div>
 );
 
 const FormulaCard = ({ title, formula, description }: { title: string; formula: string; description?: string }) => (
-  <Card className="p-3 bg-card border-border/50">
-    <p className="text-[11px] text-muted-foreground font-medium mb-1">{title}</p>
-    <code className="block text-xs font-mono font-bold text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{formula}</code>
-    {description && <p className="text-[10px] text-muted-foreground mt-1.5">{description}</p>}
+  <Card className="p-4 bg-card border-border/50">
+    <p className="text-sm text-muted-foreground font-medium mb-1.5">{title}</p>
+    <code className="block text-sm font-mono font-bold text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{formula}</code>
+    {description && <p className="text-xs text-muted-foreground mt-2">{description}</p>}
   </Card>
 );
 
 const VarTable = ({ rows }: { rows: { name: string; desc: string; source: string }[] }) => (
   <div className="rounded-lg border border-border overflow-hidden">
-    <table className="w-full text-xs">
-      <thead><tr className="bg-muted/50"><th className="text-left p-2 font-semibold text-foreground">변수</th><th className="text-left p-2 font-semibold text-foreground">설명</th><th className="text-left p-2 font-semibold text-foreground">소스</th></tr></thead>
+    <table className="w-full text-sm">
+      <thead><tr className="bg-muted/50"><th className="text-left p-2.5 font-semibold text-foreground">변수</th><th className="text-left p-2.5 font-semibold text-foreground">설명</th><th className="text-left p-2.5 font-semibold text-foreground">소스</th></tr></thead>
       <tbody>
-        {rows.map((r, i) => (<tr key={i} className="border-t border-border"><td className="p-2 font-mono text-primary text-[11px]">{r.name}</td><td className="p-2 text-muted-foreground">{r.desc}</td><td className="p-2"><Badge variant="outline" className="text-[9px]">{r.source}</Badge></td></tr>))}
+        {rows.map((r, i) => (<tr key={i} className="border-t border-border"><td className="p-2.5 font-mono text-primary text-sm">{r.name}</td><td className="p-2.5 text-muted-foreground">{r.desc}</td><td className="p-2.5"><Badge variant="outline" className="text-xs">{r.source}</Badge></td></tr>))}
       </tbody>
     </table>
   </div>
 );
 
 const ApiCard = ({ method, endpoint, description, params }: { method: string; endpoint: string; description: string; params?: string[] }) => (
-  <Card className="p-3 bg-card border-border/50">
-    <div className="flex items-center gap-2 mb-1"><Badge className="text-[9px] bg-primary/20 text-primary border-0 rounded">{method}</Badge><code className="text-[11px] font-mono font-bold text-foreground">{endpoint}</code></div>
-    <p className="text-[10px] text-muted-foreground">{description}</p>
-    {params && params.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1">{params.map((p, i) => <Badge key={i} variant="secondary" className="text-[9px]">{p}</Badge>)}</div>}
+  <Card className="p-4 bg-card border-border/50">
+    <div className="flex items-center gap-2 mb-1.5"><Badge className="text-xs bg-primary/20 text-primary border-0 rounded">{method}</Badge><code className="text-sm font-mono font-bold text-foreground">{endpoint}</code></div>
+    <p className="text-xs text-muted-foreground">{description}</p>
+    {params && params.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{params.map((p, i) => <Badge key={i} variant="secondary" className="text-xs">{p}</Badge>)}</div>}
   </Card>
 );
 
