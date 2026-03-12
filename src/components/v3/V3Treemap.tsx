@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Snowflake } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
@@ -651,6 +651,20 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       }
     }
 
+    // Move the most-negative-change item to the very end → squarify places it bottom-right
+    if (result.length > 3) {
+      let worstIdx = -1;
+      let worstChange = 0;
+      for (let i = 3; i < result.length; i++) {
+        const ch = getCategoryChange(result[i], category);
+        if (ch < worstChange) { worstChange = ch; worstIdx = i; }
+      }
+      if (worstIdx >= 0 && worstIdx !== result.length - 1) {
+        const [worstItem] = result.splice(worstIdx, 1);
+        result.push(worstItem);
+      }
+    }
+
     return result;
   }, [items, category, agentWikiIds]);
 
@@ -758,6 +772,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
              const boxArea = width * height;
              const sizeFactor = Math.sqrt(boxArea) / 10;
              const isTopThree = rectIndex < 3;
+             const isLastItem = rectIndex === rects.length - 1;
+             const isMostFalling = isLastItem && catChange < -2;
              const titleSize = isTopThree 
                ? Math.max(12, Math.min(32, sizeFactor * 4.2))
                : Math.max(9, Math.min(26, sizeFactor * 3.2));
@@ -844,6 +860,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                         animationDelay: `${rectIndex * 0.7}s`,
                       }}
                     >🔥</span>
+                  )}
+                  {isMostFalling && isMedium && (
+                    <Snowflake
+                      className="text-blue-200 drop-shadow-lg"
+                      style={{
+                        width: `${Math.max(16, sizeFactor * 2.5)}px`,
+                        height: `${Math.max(16, sizeFactor * 2.5)}px`,
+                        filter: "drop-shadow(0 0 6px rgba(147, 197, 253, 0.7))",
+                        animation: "pulse 3s cubic-bezier(0.4,0,0.6,1) infinite",
+                      }}
+                    />
                   )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
