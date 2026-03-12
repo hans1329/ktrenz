@@ -152,7 +152,19 @@ Provide your analysis with reasoning in all 4 languages.`;
                   },
                   reasoning: {
                     type: "string",
-                    description: "Brief explanation of the prediction",
+                    description: "Brief explanation in English",
+                  },
+                  reasoning_ko: {
+                    type: "string",
+                    description: "Brief explanation in Korean (한국어)",
+                  },
+                  reasoning_ja: {
+                    type: "string",
+                    description: "Brief explanation in Japanese (日本語)",
+                  },
+                  reasoning_zh: {
+                    type: "string",
+                    description: "Brief explanation in Chinese (中文)",
                   },
                 },
                 required: ["fes_direction", "confidence", "leading_category_next", "category_predictions", "reasoning"],
