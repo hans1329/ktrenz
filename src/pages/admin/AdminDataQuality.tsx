@@ -165,7 +165,11 @@ const AdminDataQuality = () => {
       const unresolvedIds = filtered.filter((i: any) => !i.resolved).map((i: any) => i.id);
       if (unresolvedIds.length === 0) throw new Error('해결할 이슈가 없습니다');
 
+      const total = unresolvedIds.length;
       const batchSize = 50;
+      let done = 0;
+      setResolveProgress({ done: 0, total });
+
       for (let i = 0; i < unresolvedIds.length; i += batchSize) {
         const batch = unresolvedIds.slice(i, i + batchSize);
         const { error } = await supabase
@@ -177,8 +181,10 @@ const AdminDataQuality = () => {
           })
           .in('id', batch);
         if (error) throw error;
+        done += batch.length;
+        setResolveProgress({ done, total });
       }
-      return unresolvedIds.length;
+      return total;
     },
     onSuccess: (count) => {
       toast.success(`${count}건 일괄 해결 완료`);
@@ -186,6 +192,9 @@ const AdminDataQuality = () => {
     },
     onError: (err) => {
       toast.error(`일괄 해결 실패: ${(err as Error).message}`);
+    },
+    onSettled: () => {
+      setResolveProgress(null);
     },
   });
 
