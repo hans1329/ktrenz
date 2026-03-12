@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.ktrenz-velocity-profiler]
 verify_jwt = false
+
+[functions.ktrenz-data-auditor]
+verify_jwt = false

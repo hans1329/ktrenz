@@ -80,6 +80,7 @@ const App = () => (
               <Route path="agency-sample" element={<AdminAgencySample />} />
               <Route path="collection-monitor" element={<AdminCollectionMonitor />} />
               <Route path="fes-analyst" element={<AdminFesAnalyst />} />
+              <Route path="data-quality" element={<AdminDataQuality />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
