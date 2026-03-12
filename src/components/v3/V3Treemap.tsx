@@ -450,6 +450,7 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             </button>
             <div className="h-3" />
           </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>
