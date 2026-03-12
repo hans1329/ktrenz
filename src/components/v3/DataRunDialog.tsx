@@ -114,6 +114,7 @@ export default function DataRunDialog({
 
   const canRun = (mod: DataModule) => {
     if (isCrawling || isRunning) return false;
+    if (isAdmin) return true; // 관리자는 제한 없음
     if (!user) return false;
     if (remaining <= 0) return false;
     if (mod === "all" && !limits.allowAll) return false;
