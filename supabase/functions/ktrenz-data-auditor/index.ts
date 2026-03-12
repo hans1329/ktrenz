@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
       }
 
       // ── Check 6b: Verify Deezer ID points to correct artist ──
-      if (artist.deezer_artist_id && artist.deezer_artist_id !== "" && artist.deezer_artist_id !== "null") {
+      if (verifyIds && artist.deezer_artist_id && artist.deezer_artist_id !== "" && artist.deezer_artist_id !== "null") {
         try {
           const deezerResp = await fetch(`https://api.deezer.com/artist/${artist.deezer_artist_id}`);
           const deezerData = await deezerResp.json();
