@@ -539,7 +539,7 @@ const AdminDataQuality = () => {
                               </Button>
                             ) : (
                               <>
-                                {!issue.suppressed && (
+                                {!issue.resolved && !issue.suppressed && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
