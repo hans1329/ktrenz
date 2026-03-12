@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       const trends = trendRes.data || [];
       const artistName = entryRes.data?.name || entryId;
 
-      if (contributions.length < 4) continue; // 최소 데이터 필요
+      if (contributions.length < 2) continue; // 최소 데이터 2건 (수집 사이클 초기에도 예측 가능)
 
       // ── 피처 구성 ──
       const features = {
