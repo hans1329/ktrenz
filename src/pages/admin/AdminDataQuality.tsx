@@ -7,13 +7,28 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  ShieldAlert, CheckCircle2, AlertTriangle, XCircle, Loader2,
-  Play, Filter, RefreshCw,
+  ShieldAlert,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Loader2,
+  Play,
+  Filter,
+  RefreshCw,
+  Search,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low';
+
+type AuditSummary = {
+  artists_checked: number;
+  issues_found: number;
+  total_artists?: number;
+  offset?: number;
+  limit?: number;
+};
 
 const SEVERITY_CONFIG: Record<Severity, { color: string; icon: typeof XCircle; label: string }> = {
   critical: { color: 'text-red-500', icon: XCircle, label: 'Critical' },
@@ -29,6 +44,7 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   new_collection_spike: '초기 수집 급증',
   unit_mismatch: '단위 불일치',
   value_anomaly: '값 이상',
+  wrong_identifier: '식별자 불일치',
 };
 
 const AdminDataQuality = () => {
@@ -36,9 +52,14 @@ const AdminDataQuality = () => {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showResolved, setShowResolved] = useState(false);
+  const [idAuditProgress, setIdAuditProgress] = useState<{ done: number; total: number } | null>(null);
 
-  // Fetch issues
-  const { data: issues, isLoading } = useQuery({
+  const {
+    data: issues,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['data-quality-issues', showResolved],
     queryFn: async () => {
       let q = supabase
@@ -50,19 +71,20 @@ const AdminDataQuality = () => {
         q = q.eq('resolved', false);
       }
 
-      const { data } = await q.limit(500);
+      const { data, error } = await q.limit(500);
+      if (error) throw error;
       return (data ?? []) as any[];
     },
     staleTime: 30_000,
   });
 
-  // Run auditor
   const runAudit = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor');
+      const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor', {
+        body: { mode: 'full' },
+      });
       if (error) throw error;
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-      return parsed;
+      return (typeof data === 'string' ? JSON.parse(data) : data) as AuditSummary;
     },
     onSuccess: (data) => {
       toast.success(`감사 완료: ${data.issues_found}건 이슈 발견 (${data.artists_checked}명 검사)`);
@@ -73,10 +95,51 @@ const AdminDataQuality = () => {
     },
   });
 
-  // Resolve issue
+  const runIdentifierAudit = useMutation({
+    mutationFn: async () => {
+      const { count, error: countError } = await supabase
+        .from('v3_artist_tiers' as any)
+        .select('wiki_entry_id', { count: 'exact', head: true })
+        .eq('tier', 1);
+
+      if (countError) throw countError;
+
+      const total = count ?? 0;
+      const batchSize = 20;
+      let processed = 0;
+      let totalIssues = 0;
+
+      setIdAuditProgress({ done: 0, total });
+
+      for (let offset = 0; offset < total; offset += batchSize) {
+        const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor', {
+          body: { mode: 'id_only', offset, limit: batchSize },
+        });
+        if (error) throw error;
+
+        const parsed = (typeof data === 'string' ? JSON.parse(data) : data) as AuditSummary;
+        processed += parsed.artists_checked ?? 0;
+        totalIssues += parsed.issues_found ?? 0;
+        setIdAuditProgress({ done: processed, total });
+      }
+
+      return { processed, totalIssues, total };
+    },
+    onSuccess: (result) => {
+      toast.success(`ID 정합성 감사 완료: ${result.totalIssues}건 이슈 (${result.processed}/${result.total}명)`);
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => {
+      toast.error(`ID 정합성 감사 실패: ${(err as Error).message}`);
+    },
+    onSettled: () => {
+      setIdAuditProgress(null);
+    },
+  });
+
   const resolveIssue = useMutation({
     mutationFn: async ({ id, note }: { id: string; note: string }) => {
-      await supabase
+      const { error } = await supabase
         .from('ktrenz_data_quality_issues' as any)
         .update({
           resolved: true,
@@ -84,10 +147,15 @@ const AdminDataQuality = () => {
           resolution_note: note,
         })
         .eq('id', id);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success('이슈 해결됨');
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => {
+      toast.error(`해결 처리 실패: ${(err as Error).message}`);
     },
   });
 
@@ -97,7 +165,6 @@ const AdminDataQuality = () => {
     return true;
   });
 
-  // Summary
   const summary = {
     critical: (issues ?? []).filter((i: any) => i.severity === 'critical' && !i.resolved).length,
     high: (issues ?? []).filter((i: any) => i.severity === 'high' && !i.resolved).length,
@@ -118,10 +185,20 @@ const AdminDataQuality = () => {
     );
   }
 
+  if (isError) {
+    return (
+      <Card className="p-4 border-destructive/30 bg-destructive/5">
+        <div className="flex items-center gap-2 text-destructive text-sm font-semibold">
+          <ShieldAlert className="w-4 h-4" /> 데이터 조회 실패
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">{(error as Error)?.message ?? '알 수 없는 오류'}</p>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h1 className="text-lg font-bold flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-primary" /> 데이터 품질 감시
@@ -130,18 +207,37 @@ const AdminDataQuality = () => {
             Tier 1 아티스트 데이터 수집 이상 탐지 · 자동 감사 · 수동 해결
           </p>
         </div>
-        <Button
-          onClick={() => runAudit.mutate()}
-          disabled={runAudit.isPending}
-          size="sm"
-          className="gap-2"
-        >
-          {runAudit.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-          감사 실행
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => runIdentifierAudit.mutate()}
+            disabled={runIdentifierAudit.isPending || runAudit.isPending}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            {runIdentifierAudit.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            ID 정합성 감사
+          </Button>
+          <Button
+            onClick={() => runAudit.mutate()}
+            disabled={runAudit.isPending || runIdentifierAudit.isPending}
+            size="sm"
+            className="gap-2"
+          >
+            {runAudit.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            일반 감사
+          </Button>
+        </div>
       </div>
 
-      {/* Summary KPIs */}
+      {idAuditProgress && (
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">
+            ID 정합성 감사 진행중: <span className="font-semibold text-foreground">{idAuditProgress.done}</span> / {idAuditProgress.total}
+          </p>
+        </Card>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">미해결 전체</p>
@@ -161,7 +257,6 @@ const AdminDataQuality = () => {
         })}
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
         <Filter className="w-4 h-4 text-muted-foreground" />
         <Badge
@@ -199,7 +294,6 @@ const AdminDataQuality = () => {
         </div>
       </div>
 
-      {/* Issues Table */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">
