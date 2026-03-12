@@ -820,8 +820,16 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                 )}
 
                 <div className="relative z-10 flex flex-col items-center w-full overflow-hidden px-0.5" style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px` }}>
-                  {surging && isMedium && (
-                    <Flame className="text-orange-400 drop-shadow-lg" style={{ width: `${Math.max(14, sizeFactor * 1.2)}px`, height: `${Math.max(14, sizeFactor * 1.2)}px` }} fill="currentColor" />
+                  {isTopThree && (
+                    <Flame
+                      className="text-orange-400 animate-pulse"
+                      style={{
+                        width: `${Math.max(22, sizeFactor * 2.2)}px`,
+                        height: `${Math.max(22, sizeFactor * 2.2)}px`,
+                        filter: 'drop-shadow(0 0 8px rgba(251, 146, 60, 0.8)) drop-shadow(0 0 16px rgba(251, 146, 60, 0.4))',
+                      }}
+                      fill="currentColor"
+                    />
                   )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                     style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
