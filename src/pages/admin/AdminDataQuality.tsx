@@ -152,7 +152,7 @@ const AdminDataQuality = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('이슈 해결됨');
+      toast.success('이슈 확인 처리됨 (원인 미해결 시 재감사에서 재오픈)');
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
     onError: (err) => {
