@@ -160,7 +160,6 @@ const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
   buzz_reddit: "reddit",
   buzz_naver: "naver",
   buzz_tiktok: "tiktok",
-  buzz_news: "news",
 };
 
 async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule: BuzzSourceModule): Promise<any> {
