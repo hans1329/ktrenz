@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
+const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -21,6 +21,7 @@ type Module = PipelineModule | BuzzSourceModule;
 // 모듈 완료 후 다음 모듈 시작까지 대기 시간 (초)
 const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
+  yt_sentiment: 10,
   external_videos: 10,
   music: 10,
   hanteo: 10,
@@ -261,6 +262,25 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 // energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
+  yt_sentiment: async (url, key) => {
+    console.log("[data-engine] Running yt_sentiment for all Tier 1 artists...");
+    const sb = createClient(url, key);
+    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1);
+    const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
+    let launched = 0;
+    for (const t of targets) {
+      const p = fetch(`${url}/functions/v1/ktrenz-yt-sentiment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ wikiEntryId: t.wiki_entry_id }),
+      }).catch((e) => console.warn(`[data-engine] yt_sentiment fire error:`, e.message));
+      fireAndForget(p);
+      launched++;
+      if (launched % 3 === 0) await new Promise(r => setTimeout(r, 2000));
+    }
+    console.log(`[data-engine] yt_sentiment: launched ${launched}/${targets.length} artists`);
+    return { status: "launched", launched, total: targets.length };
+  },
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
@@ -382,6 +402,20 @@ Deno.serve(async (req) => {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
           body: JSON.stringify({ source: module, wikiEntryId }),
         }).catch((e) => console.warn(`[data-engine] ${module} single fire error:`, e.message));
+        fireAndForget(p);
+        return new Response(
+          JSON.stringify({ success: true, module, wikiEntryId, status: "launched", runId: currentRunId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // yt_sentiment 개별 아티스트
+      if (module === "yt_sentiment") {
+        const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-yt-sentiment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ wikiEntryId }),
+        }).catch((e) => console.warn(`[data-engine] yt_sentiment single fire error:`, e.message));
         fireAndForget(p);
         return new Response(
           JSON.stringify({ success: true, module, wikiEntryId, status: "launched", runId: currentRunId }),

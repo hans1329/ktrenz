@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.ktrenz-data-auditor]
 verify_jwt = false
+
+[functions.ktrenz-yt-sentiment]
+verify_jwt = false
