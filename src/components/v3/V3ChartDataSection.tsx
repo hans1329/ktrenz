@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Disc3, Music, BarChart3, TrendingUp } from "lucide-react";
 
 interface V3ChartDataSectionProps {
@@ -51,26 +52,27 @@ const V3ChartDataSection = ({ wikiEntryId }: V3ChartDataSectionProps) => {
     staleTime: 60_000,
   });
 
-  // Billboard charts
+  // Billboard charts (multiple chart types per collection)
   const { data: billboardData } = useQuery({
     queryKey: ["chart-billboard", wikiEntryId],
     queryFn: async () => {
+      const cutoff = new Date(Date.now() - 48 * 3600_000).toISOString();
       const { data } = await supabase
         .from("ktrenz_data_snapshots" as any)
         .select("metrics, collected_at")
         .eq("wiki_entry_id", wikiEntryId)
-        .eq("platform", "billboard_charts")
+        .eq("platform", "billboard_chart")
+        .gte("collected_at", cutoff)
         .order("collected_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data as any;
+        .limit(10);
+      return (data as any[]) || [];
     },
     staleTime: 60_000,
   });
 
   const hasHanteo = hanteoData?.metrics;
   const hasAppleMusic = appleMusicData && appleMusicData.length > 0;
-  const hasBillboard = billboardData?.metrics;
+  const hasBillboard = billboardData && billboardData.length > 0;
 
   if (!hasHanteo && !hasAppleMusic && !hasBillboard) return null;
 
@@ -81,6 +83,15 @@ const V3ChartDataSection = ({ wikiEntryId }: V3ChartDataSectionProps) => {
           appleMusicData.map((item: any) => [item.metrics?.country, item])
         ).values()
       ).sort((a: any, b: any) => (a.metrics?.chart_position || 999) - (b.metrics?.chart_position || 999))
+    : [];
+
+  // Deduplicate Billboard by chart_id (keep latest)
+  const uniqueBillboard = hasBillboard
+    ? Array.from(
+        new Map(
+          billboardData.map((item: any) => [item.metrics?.chart_id, item])
+        ).values()
+      ).sort((a: any, b: any) => (a.metrics?.position || 999) - (b.metrics?.position || 999))
     : [];
 
   return (
@@ -182,27 +193,21 @@ const V3ChartDataSection = ({ wikiEntryId }: V3ChartDataSectionProps) => {
             <div className="h-px flex-1 bg-border" />
           </div>
           <Card className="p-4 bg-card border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {billboardData.metrics.chart_name || "Chart"}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(billboardData.collected_at).toLocaleDateString()}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-10 h-10 rounded-lg bg-blue-600/10 flex items-center justify-center text-lg font-black text-blue-600">
-                #{billboardData.metrics.chart_position || billboardData.metrics.rank}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground truncate">
-                  {billboardData.metrics.song_name || billboardData.metrics.album_name || "—"}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {billboardData.metrics.chart_name || "Billboard"}
-                </p>
+            {uniqueBillboard.map((entry: any, idx: number) => (
+              <div key={idx} className={cn("flex items-center gap-3", idx > 0 && "mt-3 pt-3 border-t border-border/30")}>
+                <span className="w-10 h-10 rounded-lg bg-blue-600/10 flex items-center justify-center text-lg font-black text-blue-600 shrink-0">
+                  #{entry.metrics?.position}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">
+                    {entry.metrics?.song_or_album || "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {entry.metrics?.chart_name || "Billboard"}
+                  </p>
+                </div>
               </div>
-            </div>
+            ))}
           </Card>
         </>
       )}

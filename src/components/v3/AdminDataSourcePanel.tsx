@@ -24,7 +24,7 @@ const SOURCE_CONFIG = [
   { key: "lastfm", label: "Last.fm", icon: Music, color: "text-red-600", platform: "lastfm" },
   { key: "deezer", label: "Deezer", icon: Headphones, color: "text-purple-500", platform: "deezer" },
   { key: "apple_music", label: "Apple Music", icon: Music, color: "text-pink-500", platform: "apple_music_chart" },
-  { key: "billboard", label: "Billboard", icon: BarChart3, color: "text-blue-600", platform: "billboard_charts" },
+  { key: "billboard", label: "Billboard", icon: BarChart3, color: "text-blue-600", platform: "billboard_chart" },
   // Sales
   { key: "hanteo", label: "Hanteo", icon: Disc3, color: "text-amber-500", platform: "hanteo_daily" },
   // Buzz (multi-source breakdown)
@@ -88,7 +88,7 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   const { data: snapshots, isLoading, refetch } = useQuery({
     queryKey: ["admin-source-snapshots", wikiEntryId],
     queryFn: async () => {
-      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_chart", "billboard_charts", "hanteo_daily", "buzz_multi", "naver_news", "social_followers"];
+      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_chart", "billboard_chart", "hanteo_daily", "buzz_multi", "naver_news", "social_followers"];
       const results: Record<string, any> = {};
 
       const promises = platforms.map(async (platform) => {
@@ -148,7 +148,13 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   };
 
   const renderMetricSummary = (config: typeof SOURCE_CONFIG[number], data: any) => {
-    if (!data?.metrics) return <span className="text-[10px] text-muted-foreground">—</span>;
+    if (!data?.metrics) {
+      // 빌보드: 데이터 없으면 "미진입" 표시
+      if (config.key === "billboard") {
+        return <span className="text-[10px] text-muted-foreground/80 italic">아직 진입 전</span>;
+      }
+      return <span className="text-[10px] text-muted-foreground">—</span>;
+    }
     const m = data.metrics;
 
     // 플랫폼별 핵심 지표 표시

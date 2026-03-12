@@ -2920,6 +2920,33 @@ export type Database = {
           },
         ]
       }
+      ktrenz_milestone_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          notified: boolean
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          notified?: boolean
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          notified?: boolean
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_normalization_stats: {
         Row: {
           calculated_at: string
