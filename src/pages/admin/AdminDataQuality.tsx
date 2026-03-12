@@ -16,6 +16,8 @@ import {
   Filter,
   RefreshCw,
   Search,
+  EyeOff,
+  Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -52,6 +54,7 @@ const AdminDataQuality = () => {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showResolved, setShowResolved] = useState(false);
+  const [showSuppressed, setShowSuppressed] = useState(false);
   const [idAuditProgress, setIdAuditProgress] = useState<{ done: number; total: number } | null>(null);
   const [resolveProgress, setResolveProgress] = useState<{ done: number; total: number } | null>(null);
 
@@ -61,7 +64,7 @@ const AdminDataQuality = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ['data-quality-issues', showResolved],
+    queryKey: ['data-quality-issues', showResolved, showSuppressed],
     queryFn: async () => {
       let q = supabase
         .from('ktrenz_data_quality_issues' as any)
@@ -70,6 +73,9 @@ const AdminDataQuality = () => {
 
       if (!showResolved) {
         q = q.eq('resolved', false);
+      }
+      if (!showSuppressed) {
+        q = q.eq('suppressed', false);
       }
 
       const { data, error } = await q.limit(500);
@@ -196,6 +202,67 @@ const AdminDataQuality = () => {
     onSettled: () => {
       setResolveProgress(null);
     },
+  });
+
+  const suppressIssue = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('ktrenz_data_quality_issues' as any)
+        .update({
+          suppressed: true,
+          suppressed_at: new Date().toISOString(),
+          suppressed_note: '수동 무시',
+          resolved: true,
+          resolved_at: new Date().toISOString(),
+          resolution_note: '무시 처리됨',
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('이슈 무시됨 (재감사에서 제외)');
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => toast.error(`무시 실패: ${(err as Error).message}`),
+  });
+
+  const unsuppressIssue = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('ktrenz_data_quality_issues' as any)
+        .update({ suppressed: false, suppressed_at: null, suppressed_note: null })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('무시 해제됨');
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => toast.error(`무시 해제 실패: ${(err as Error).message}`),
+  });
+
+  const suppressAllFiltered = useMutation({
+    mutationFn: async () => {
+      const ids = filtered.filter((i: any) => !i.suppressed).map((i: any) => i.id);
+      if (ids.length === 0) throw new Error('무시할 이슈가 없습니다');
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase
+          .from('ktrenz_data_quality_issues' as any)
+          .update({
+            suppressed: true, suppressed_at: new Date().toISOString(), suppressed_note: '일괄 무시',
+            resolved: true, resolved_at: new Date().toISOString(), resolution_note: '일괄 무시 처리됨',
+          })
+          .in('id', batch);
+        if (error) throw error;
+      }
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count}건 무시 완료 (재감사에서 제외)`);
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
+    },
+    onError: (err) => toast.error(`일괄 무시 실패: ${(err as Error).message}`),
   });
 
   const filtered = (issues ?? []).filter((i: any) => {
@@ -335,6 +402,14 @@ const AdminDataQuality = () => {
         ))}
         <div className="ml-auto flex items-center gap-2">
           <Badge
+            variant={showSuppressed ? 'default' : 'outline'}
+            className="cursor-pointer text-xs"
+            onClick={() => setShowSuppressed(!showSuppressed)}
+          >
+            <EyeOff className="w-3 h-3 mr-1" />
+            {showSuppressed ? '무시 포함' : '무시 제외'}
+          </Badge>
+          <Badge
             variant={showResolved ? 'default' : 'outline'}
             className="cursor-pointer text-xs"
             onClick={() => setShowResolved(!showResolved)}
@@ -356,18 +431,32 @@ const AdminDataQuality = () => {
           <CardTitle className="text-sm">
             이슈 목록 ({filtered.length}건)
           </CardTitle>
-          {filtered.filter((i: any) => !i.resolved).length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
-              disabled={resolveAllFiltered.isPending}
-              onClick={() => resolveAllFiltered.mutate()}
-            >
-              {resolveAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-              전체 해결 ({filtered.filter((i: any) => !i.resolved).length}건)
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {filtered.filter((i: any) => !i.suppressed).length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={suppressAllFiltered.isPending}
+                onClick={() => suppressAllFiltered.mutate()}
+              >
+                {suppressAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <EyeOff className="w-3.5 h-3.5" />}
+                전체 무시 ({filtered.filter((i: any) => !i.suppressed).length}건)
+              </Button>
+            )}
+            {filtered.filter((i: any) => !i.resolved).length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={resolveAllFiltered.isPending}
+                onClick={() => resolveAllFiltered.mutate()}
+              >
+                {resolveAllFiltered.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                전체 해결 ({filtered.filter((i: any) => !i.resolved).length}건)
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
@@ -402,7 +491,7 @@ const AdminDataQuality = () => {
                     const sev = SEVERITY_CONFIG[issue.severity as Severity] ?? SEVERITY_CONFIG.medium;
                     const SevIcon = sev.icon;
                     return (
-                      <TableRow key={issue.id} className={issue.resolved ? 'opacity-50' : ''}>
+                      <TableRow key={issue.id} className={issue.resolved ? 'opacity-50' : issue.suppressed ? 'opacity-40 bg-muted/30' : ''}>
                         <TableCell>
                           <span className={`flex items-center gap-1 text-xs ${sev.color}`}>
                             <SevIcon className="w-3.5 h-3.5" />
@@ -425,18 +514,40 @@ const AdminDataQuality = () => {
                           {formatDistanceToNow(new Date(issue.detected_at), { addSuffix: true })}
                         </TableCell>
                         <TableCell>
-                          {!issue.resolved ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs h-7"
-                              onClick={() => resolveIssue.mutate({ id: issue.id, note: '수동 해결' })}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> 해결
-                            </Button>
-                          ) : (
-                            <span className="text-[10px] text-emerald-500">✓ 해결됨</span>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {issue.suppressed ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => unsuppressIssue.mutate({ id: issue.id })}
+                              >
+                                <Eye className="w-3.5 h-3.5 mr-1" /> 해제
+                              </Button>
+                            ) : (
+                              <>
+                                {!issue.resolved && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs h-7"
+                                    onClick={() => resolveIssue.mutate({ id: issue.id, note: '수동 해결' })}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs h-7 text-muted-foreground"
+                                  title="무시 (재감사에서 제외)"
+                                  onClick={() => suppressIssue.mutate({ id: issue.id })}
+                                >
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
