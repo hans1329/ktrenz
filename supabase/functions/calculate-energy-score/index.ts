@@ -97,11 +97,10 @@ export function calculateArtistEnergy(
   const socialIntensity = clamp(Math.round(percentiles.social * MAX_SCORE), 0, MAX_SCORE);
   const fanIntensity = clamp(Math.round(percentiles.fan * MAX_SCORE), 0, MAX_SCORE);
 
-  // ── Energy Score: Intensity 기반 + Velocity 보정 ──
-  // v5.5: Intensity가 베이스, Velocity는 방향성 보너스/페널티
-  // Energy = Intensity * (1 + Velocity/MAX_SCORE * 0.5)
-  // 이렇게 하면 큰 아티스트(높은 Intensity)가 성장 중이면 높은 에너지,
-  // 작은 아티스트가 폭발적 성장 중이면 Velocity가 크게 보정
+  // ── Energy Score v6: Velocity 주도 + Intensity 보조 ──
+  // "온도가 높다 = 지금 변동률이 크다"
+  // Velocity 70% + Intensity 30% — 변동률이 온도를 결정하고, 절대 규모는 바닥을 깔아줌
+  // 하락(음수 velocity)은 온도를 낮추되, intensity 베이스로 최소 온기 유지
   const categoryEnergies: { weight: number; energy: number }[] = [];
   const categories = [
     { w: WEIGHTS.youtube, vel: ytVelocity, int: ytIntensity, raw: current.yt },
@@ -118,11 +117,15 @@ export function calculateArtistEnergy(
       continue;
     }
     if (cat.vel != null) {
-      // Velocity 보정: Intensity * (1 + vel/MAX * 0.5), 최소 10, 최대 MAX
-      const velBoost = (cat.vel / MAX_SCORE) * 0.5;
-      const energy = cat.int * (1 + velBoost);
+      // Velocity 컴포넌트: 양수면 그대로, 음수면 30%만 반영 (하락 시 급냉 방지)
+      const velComponent = cat.vel > 0
+        ? (cat.vel / MAX_SCORE) * MAX_SCORE
+        : (cat.vel / MAX_SCORE) * MAX_SCORE * 0.3;
+      // Energy = Velocity 70% + Intensity 30%
+      const energy = velComponent * 0.7 + cat.int * 0.3;
       categoryEnergies.push({ weight: cat.w, energy: clamp(Math.round(energy), 0, MAX_SCORE) });
     } else {
+      // Velocity 없으면 Intensity만 (신규 아티스트 등)
       categoryEnergies.push({ weight: cat.w, energy: cat.int });
     }
   }
