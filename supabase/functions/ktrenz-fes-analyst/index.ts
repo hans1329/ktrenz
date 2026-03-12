@@ -30,8 +30,7 @@ Deno.serve(async (req) => {
       const { data: tiers } = await sb
         .from("v3_artist_tiers")
         .select("wiki_entry_id")
-        .in("tier", ["tier1", "tier2"])
-        .eq("is_active", true);
+        .in("tier", [1, 2]);
       targetIds = (tiers || []).map((t: any) => t.wiki_entry_id);
     }
 
