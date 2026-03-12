@@ -18,11 +18,11 @@ const CATEGORY_META: Record<string, { label: string; color: string; icon: string
   social: { label: "Social", color: "hsl(200, 80%, 50%)", icon: "👥" },
 };
 
-const DIRECTION_CONFIG: Record<string, { label: string; color: string; icon: typeof TrendingUp }> = {
-  rising: { label: "Rising", color: "text-green-400", icon: TrendingUp },
-  spike: { label: "Spike!", color: "text-pink-400", icon: ArrowUpRight },
-  falling: { label: "Falling", color: "text-red-400", icon: TrendingDown },
-  flat: { label: "Flat", color: "text-muted-foreground", icon: Minus },
+const DIRECTION_KEYS: Record<string, { labelKey: string; color: string; icon: typeof TrendingUp }> = {
+  rising: { labelKey: "insights.rising", color: "text-green-400", icon: TrendingUp },
+  spike: { labelKey: "insights.spike", color: "text-pink-400", icon: ArrowUpRight },
+  falling: { labelKey: "insights.falling", color: "text-red-400", icon: TrendingDown },
+  flat: { labelKey: "insights.flat", color: "text-muted-foreground", icon: Minus },
 };
 
 export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPanelProps) {
@@ -187,7 +187,7 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
             {categories.map(cat => {
               const trend = trends.get(cat);
               if (!trend) return null;
-              const dir = DIRECTION_CONFIG[trend.trend_direction] || DIRECTION_CONFIG.flat;
+              const dir = DIRECTION_KEYS[trend.trend_direction] || DIRECTION_KEYS.flat;
               const DirIcon = dir.icon;
               const momentum = trend.momentum || 0;
 
@@ -198,7 +198,6 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
                     <span className="text-xs font-semibold text-foreground">{CATEGORY_META[cat]?.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {/* Momentum badge */}
                     {momentum !== 0 && (
                       <span className={cn(
                         "text-[10px] font-medium px-1.5 py-0.5 rounded-full",
@@ -207,7 +206,6 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
                         {momentum > 0 ? "+" : ""}{momentum.toFixed(2)}
                       </span>
                     )}
-                    {/* Direction badge */}
                     <span className={cn(
                       "inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full",
                       trend.trend_direction === "spike" && "bg-pink-500/15 text-pink-400",
@@ -216,7 +214,7 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
                       trend.trend_direction === "flat" && "bg-muted text-muted-foreground",
                     )}>
                       <DirIcon className="w-3 h-3" />
-                      {dir.label}
+                      {t(dir.labelKey)}
                     </span>
                   </div>
                 </div>
@@ -241,9 +239,9 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
               prediction.prediction === "falling" && "bg-red-500/15 text-red-400",
               prediction.prediction === "stable" && "bg-muted text-muted-foreground",
             )}>
-              {prediction.prediction === "rising" ? "📈 Rising" :
-               prediction.prediction === "spike" ? "🚀 Spike" :
-               prediction.prediction === "falling" ? "📉 Falling" : "→ Stable"}
+              {prediction.prediction === "rising" ? t("insights.predRising") :
+               prediction.prediction === "spike" ? t("insights.predSpike") :
+               prediction.prediction === "falling" ? t("insights.predFalling") : t("insights.predStable")}
             </span>
             <span className="text-[10px] text-muted-foreground">
               {t("insights.next48h")}
