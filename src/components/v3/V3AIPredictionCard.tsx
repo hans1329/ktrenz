@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Sparkles, TrendingUp, TrendingDown, ArrowUpRight, Minus, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowUpRight, Minus, Brain, Heart } from "lucide-react";
 
 interface AIPredictionCardProps {
   wikiEntryId: string;
@@ -40,6 +40,12 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
         confidence: pred.confidence || 0,
         leading_next: pred.leading_category_next,
         category_predictions: pred.category_predictions,
+        // Fan briefing (new v3)
+        fan_briefing: pred.fan_briefing,
+        fan_briefing_ko: pred.fan_briefing_ko,
+        fan_briefing_ja: pred.fan_briefing_ja,
+        fan_briefing_zh: pred.fan_briefing_zh,
+        // Legacy reasoning (fallback)
         reasoning: d.reasoning,
         reasoning_ko: pred.reasoning_ko,
         reasoning_ja: pred.reasoning_ja,
@@ -55,14 +61,14 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
   const config = DIRECTION_CONFIG[prediction.direction] || DIRECTION_CONFIG.stable;
   const DirIcon = config.icon;
 
-  // Pick localized reasoning
-  const reasoningMap: Record<string, string | undefined> = {
-    en: prediction.reasoning,
-    ko: prediction.reasoning_ko,
-    ja: prediction.reasoning_ja,
-    zh: prediction.reasoning_zh,
+  // Fan briefing (prefer fan_briefing, fallback to reasoning)
+  const fanBriefingMap: Record<string, string | undefined> = {
+    en: prediction.fan_briefing || prediction.reasoning,
+    ko: prediction.fan_briefing_ko || prediction.reasoning_ko,
+    ja: prediction.fan_briefing_ja || prediction.reasoning_ja,
+    zh: prediction.fan_briefing_zh || prediction.reasoning_zh,
   };
-  const reasoning = reasoningMap[language] || prediction.reasoning;
+  const fanBriefing = fanBriefingMap[language] || fanBriefingMap.en;
 
   const confidencePct = Math.round(prediction.confidence * 100);
 
@@ -79,11 +85,11 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-              <Brain className="w-4 h-4 text-primary" />
+              <Heart className="w-4 h-4 text-pink-400" />
             </div>
             <div>
               <p className="text-[10px] text-primary uppercase tracking-wider font-bold">
-                {t("insights.aiAnalysis")}
+                {t("insights.fanBriefing")}
               </p>
               <p className="text-[9px] text-muted-foreground">
                 {t("insights.next48h")}
@@ -95,8 +101,8 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
             <span className={cn(
               "text-xs font-black px-2.5 py-1 rounded-full",
               prediction.direction === "rising" && "bg-green-500/15 text-green-400",
-              prediction.direction === "spike" || prediction.direction === "spike_up" && "bg-pink-500/15 text-pink-400",
-              prediction.direction === "falling" || prediction.direction === "spike_down" && "bg-red-500/15 text-red-400",
+              (prediction.direction === "spike" || prediction.direction === "spike_up") && "bg-pink-500/15 text-pink-400",
+              (prediction.direction === "falling" || prediction.direction === "spike_down") && "bg-red-500/15 text-red-400",
               (prediction.direction === "flat" || prediction.direction === "stable") && "bg-muted text-muted-foreground",
             )}>
               <DirIcon className="w-3 h-3 inline mr-0.5" />
@@ -119,10 +125,10 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
           <span className="text-[10px] font-bold text-foreground">{confidencePct}%</span>
         </div>
 
-        {/* Reasoning */}
-        {reasoning && (
-          <p className="text-[11px] text-foreground/80 leading-relaxed line-clamp-3">
-            {reasoning}
+        {/* Fan Briefing */}
+        {fanBriefing && (
+          <p className="text-[11px] text-foreground/80 leading-relaxed line-clamp-4">
+            {fanBriefing}
           </p>
         )}
 

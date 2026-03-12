@@ -1,5 +1,6 @@
 // FES Predictor Agent: 패턴 학습 및 예측
 // ktrenz-fes-analyst 실행 후 호출되어 트렌드 데이터를 기반으로 예측 생성
+// v3: Fan/Agency 듀얼 페르소나 + 크로스 아티스트 벤치마킹
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,8 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const CATEGORIES = ["youtube", "buzz", "album", "music", "social"] as const;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -33,10 +32,58 @@ Deno.serve(async (req) => {
       targetIds = (tiers || []).map((t: any) => t.wiki_entry_id);
     }
 
+    // ── 크로스 아티스트 벤치마크 데이터 수집 ──
+    // 최근 7일간 다른 아티스트들의 카테고리별 변동 트렌드
+    const { data: allTrends } = await sb
+      .from("ktrenz_category_trends")
+      .select("wiki_entry_id, category, trend_direction, momentum, change_7d, avg_7d, calculated_at")
+      .gte("calculated_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order("calculated_at", { ascending: false })
+      .limit(500);
+
+    // 아티스트별 최신 트렌드 매핑
+    const artistTrendMap = new Map<string, any[]>();
+    for (const t of allTrends || []) {
+      const arr = artistTrendMap.get(t.wiki_entry_id) || [];
+      arr.push(t);
+      artistTrendMap.set(t.wiki_entry_id, arr);
+    }
+
+    // 아티스트 이름 매핑
+    const allArtistIds = [...new Set([...targetIds, ...(allTrends || []).map((t: any) => t.wiki_entry_id)])];
+    const { data: allArtists } = await sb
+      .from("wiki_entries")
+      .select("id, title")
+      .in("id", allArtistIds.slice(0, 100));
+    const nameMap = new Map((allArtists || []).map((a: any) => [a.id, a.title]));
+
+    // 최근 급등 사례 수집 (벤치마크용)
+    const benchmarkInsights: string[] = [];
+    for (const [aid, trends] of artistTrendMap) {
+      if (targetIds.includes(aid)) continue; // 자기 자신 제외
+      const spikes = trends.filter((t: any) => t.trend_direction === "spike" || (t.momentum && t.momentum > 0.5));
+      for (const s of spikes.slice(0, 2)) {
+        benchmarkInsights.push(
+          `${nameMap.get(aid) || "Unknown"}: ${s.category} ${s.trend_direction} (momentum: ${s.momentum}, change_7d: ${s.change_7d})`
+        );
+      }
+    }
+
+    // 최근 외부 영상 출연 성과 (벤치마크용)
+    const { data: recentExtVideos } = await sb
+      .from("ktrenz_external_videos")
+      .select("wiki_entry_id, channel_name, title, view_count, fetched_at")
+      .gte("fetched_at", new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString())
+      .order("view_count", { ascending: false })
+      .limit(20);
+
+    const extVideoInsights = (recentExtVideos || []).map((v: any) =>
+      `${nameMap.get(v.wiki_entry_id) || "Unknown"} appeared on "${v.channel_name}" (${v.title}) — ${(v.view_count / 1000000).toFixed(1)}M views`
+    ).slice(0, 10);
+
     const results: any[] = [];
 
-    for (const entryId of targetIds.slice(0, 10)) { // 배치 제한
-      // 최근 기여도 데이터 (30일)
+    for (const entryId of targetIds.slice(0, 10)) {
       const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const [contribRes, trendRes, entryRes] = await Promise.all([
         sb.from("ktrenz_fes_contributions")
@@ -60,7 +107,7 @@ Deno.serve(async (req) => {
       const trends = trendRes.data || [];
       const artistName = entryRes.data?.title || entryId;
 
-      if (contributions.length < 2) continue; // 최소 데이터 2건 (수집 사이클 초기에도 예측 가능)
+      if (contributions.length < 2) continue;
 
       // ── 피처 구성 ──
       const features = {
@@ -75,7 +122,6 @@ Deno.serve(async (req) => {
           cat: t.category, dir: t.trend_direction, momentum: t.momentum,
           avg_7d: t.avg_7d, avg_30d: t.avg_30d, change_7d: t.change_7d, change_30d: t.change_30d,
         })),
-        // 시계열 패턴: 카테고리별 z-score 이동
         time_series: {
           youtube: contributions.map((c: any) => Number(c.youtube_z) || 0),
           buzz: contributions.map((c: any) => Number(c.buzz_z) || 0),
@@ -83,23 +129,45 @@ Deno.serve(async (req) => {
           music: contributions.map((c: any) => Number(c.music_z) || 0),
           social: contributions.map((c: any) => Number(c.social_z) || 0),
         },
+        // 크로스 아티스트 벤치마크 컨텍스트
+        benchmark_context: {
+          other_artists_spikes: benchmarkInsights.slice(0, 8),
+          recent_successful_appearances: extVideoInsights.slice(0, 5),
+        },
       };
 
-      // ── OpenAI 예측 요청 ──
-      const systemPrompt = `You are a K-pop trend analyst AI. Analyze the provided FES (Fan Energy Score) data for "${artistName}" and generate predictions.
+      // ── OpenAI 예측 요청 (듀얼 페르소나) ──
+      const systemPrompt = `You are a K-pop trend analyst AI with TWO output personas for "${artistName}".
 
-Rules:
+## PERSONA 1: FAN BRIEFING
+- Write as if talking to a passionate fan of this artist
+- Use casual, encouraging, exciting tone
+- NO technical jargon (no z-scores, no momentum values, no percentages)
+- Focus on: "Your artist is hot because..." or "Here's what fans can do to help..."
+- If rising/spiking: celebrate and encourage more streaming/engagement
+- If falling/flat: reassure and suggest fan activities that can help
+- Keep it warm, motivational, 2-3 sentences max
+
+## PERSONA 2: AGENCY ACTION ITEMS
+- Write as a senior strategy consultant for a K-pop entertainment agency
+- Be extremely data-driven and specific
+- Reference competitive benchmarks from OTHER artists (provided in benchmark_context) WITHOUT naming the data source
+- Suggest 2-3 specific, actionable strategies with clear rationale
+- If a category is weak, find examples from benchmark data where other artists improved and suggest similar actions
+- For example: if YouTube is stagnant but another artist gained traction from variety show appearances, suggest specific variety show types
+- Each action item should have: title, specific action, expected impact, priority (high/medium/low)
+
+## DATA RULES
 - FES uses z-score normalized category changes (youtube, buzz, album, music, social)
-- Focus on identifying: 1) which category will lead next movement, 2) whether FES will rise/fall/stay flat in next 24-48h, 3) any cross-category patterns (e.g., buzz spike preceding album spike)
-- Be data-driven and specific with numbers
-- If data is insufficient, say so honestly
-- IMPORTANT: Provide reasoning in 4 languages (English, Korean, Japanese, Chinese) as separate fields`;
+- Focus on which category will lead next movement
+- Be honest if data is insufficient
+- Provide ALL text fields in 4 languages (EN, KO, JA, ZH)`;
 
-      const userPrompt = `Analyze this FES data and predict next 24-48h movement:
+      const userPrompt = `Analyze this FES data and generate dual-persona output:
 
 ${JSON.stringify(features, null, 2)}
 
-Provide your analysis with reasoning in all 4 languages.`;
+Generate prediction + fan briefing + agency action items.`;
 
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -117,23 +185,18 @@ Provide your analysis with reasoning in all 4 languages.`;
             type: "function",
             function: {
               name: "submit_prediction",
-              description: "Submit structured prediction for artist FES movement",
+              description: "Submit structured prediction with fan and agency personas",
               parameters: {
                 type: "object",
                 properties: {
                   fes_direction: {
                     type: "string",
                     enum: ["rising", "falling", "flat", "spike_up", "spike_down"],
-                    description: "Predicted FES direction in next 24-48h",
                   },
-                  confidence: {
-                    type: "number",
-                    description: "Confidence 0-1",
-                  },
+                  confidence: { type: "number", description: "0-1" },
                   leading_category_next: {
                     type: "string",
                     enum: ["youtube", "buzz", "album", "music", "social"],
-                    description: "Which category will lead the next movement",
                   },
                   category_predictions: {
                     type: "object",
@@ -146,28 +209,36 @@ Provide your analysis with reasoning in all 4 languages.`;
                     },
                     required: ["youtube", "buzz", "album", "music", "social"],
                   },
-                  cross_category_pattern: {
-                    type: "string",
-                    description: "Detected cross-category pattern if any",
+                  // Fan briefing (casual, warm, no jargon)
+                  fan_briefing: { type: "string", description: "Fan-friendly briefing in English" },
+                  fan_briefing_ko: { type: "string", description: "Fan-friendly briefing in Korean" },
+                  fan_briefing_ja: { type: "string", description: "Fan-friendly briefing in Japanese" },
+                  fan_briefing_zh: { type: "string", description: "Fan-friendly briefing in Chinese" },
+                  // Agency action items (data-driven, strategic)
+                  agency_actions: {
+                    type: "array",
+                    description: "2-3 strategic action items for the agency",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string", description: "Action title in Korean" },
+                        action: { type: "string", description: "Specific actionable recommendation in Korean" },
+                        rationale: { type: "string", description: "Data-driven rationale in Korean (reference benchmarks without naming sources)" },
+                        expected_impact: { type: "string", description: "Expected outcome in Korean" },
+                        priority: { type: "string", enum: ["high", "medium", "low"] },
+                        category: { type: "string", enum: ["youtube", "buzz", "album", "music", "social"] },
+                      },
+                      required: ["title", "action", "rationale", "priority", "category"],
+                    },
                   },
-                  reasoning: {
-                    type: "string",
-                    description: "Brief explanation in English",
-                  },
-                  reasoning_ko: {
-                    type: "string",
-                    description: "Brief explanation in Korean (한국어)",
-                  },
-                  reasoning_ja: {
-                    type: "string",
-                    description: "Brief explanation in Japanese (日本語)",
-                  },
-                  reasoning_zh: {
-                    type: "string",
-                    description: "Brief explanation in Chinese (中文)",
-                  },
+                  // Technical reasoning (kept for backward compat)
+                  reasoning: { type: "string", description: "Brief technical reasoning in English" },
+                  reasoning_ko: { type: "string", description: "Brief technical reasoning in Korean" },
+                  reasoning_ja: { type: "string", description: "Brief technical reasoning in Japanese" },
+                  reasoning_zh: { type: "string", description: "Brief technical reasoning in Chinese" },
                 },
-                required: ["fes_direction", "confidence", "leading_category_next", "category_predictions", "reasoning"],
+                required: ["fes_direction", "confidence", "leading_category_next", "category_predictions",
+                  "fan_briefing", "fan_briefing_ko", "agency_actions", "reasoning"],
               },
             },
           }],
@@ -199,13 +270,13 @@ Provide your analysis with reasoning in all 4 languages.`;
         prediction,
         reasoning: prediction.reasoning,
         features_used: features,
-        model_version: "v2-gpt4o-mini-i18n",
+        model_version: "v3-dual-persona",
       });
 
       results.push({ artist: artistName, prediction });
     }
 
-    // ── 과거 예측 검증 (24h 전 예측 vs 실제) ──
+    // ── 과거 예측 검증 ──
     if (mode !== "predict_only") {
       const verify24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const verify48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
@@ -219,7 +290,6 @@ Provide your analysis with reasoning in all 4 languages.`;
         .limit(50);
 
       for (const pred of oldPredictions || []) {
-        // 예측 시점 이후의 최신 기여도 데이터 확인
         const { data: latestContrib } = await sb
           .from("ktrenz_fes_contributions")
           .select("normalized_fes, leading_category")
@@ -246,7 +316,6 @@ Provide your analysis with reasoning in all 4 languages.`;
         if (actualDelta > 5) actualDirection = actualDelta > 20 ? "spike_up" : "rising";
         else if (actualDelta < -5) actualDirection = actualDelta < -20 ? "spike_down" : "falling";
 
-        // 정확도: 방향 일치 여부 (단순)
         const directionMatch = (predDirection === actualDirection) ? 1.0
           : (predDirection?.includes("up") && actualDirection.includes("up")) || (predDirection?.includes("down") && actualDirection.includes("down"))
             ? 0.7 : (predDirection === "flat" && actualDirection === "flat") ? 1.0 : 0.0;
@@ -261,7 +330,7 @@ Provide your analysis with reasoning in all 4 languages.`;
       }
     }
 
-    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions`);
+    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions (v3-dual-persona)`);
 
     return new Response(JSON.stringify({ ok: true, predictions: results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
