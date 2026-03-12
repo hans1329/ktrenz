@@ -733,6 +733,15 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       {selectedItem && <InspectorPanel item={selectedItem} onClose={handleInspectorClose} />}
 
       <div className="relative w-full rounded-2xl overflow-hidden border border-border" style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}>
+        <svg width="0" height="0" className="absolute">
+          <defs>
+            <linearGradient id="flameGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="50%" stopColor="#fb923c" />
+              <stop offset="100%" stopColor="#fde047" />
+            </linearGradient>
+          </defs>
+        </svg>
         <div className="absolute inset-0">
           {rects.map((rect, rectIndex) => {
             const left = (rect.x / containerWidth) * 100; const top = (rect.y / containerHeight) * 100;
