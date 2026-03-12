@@ -546,6 +546,27 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
   }, [user?.id, watchedArtists, hasBiasRegistered, welcomeSent, isStreaming, chatHistory]);
 
+  // --- AI Prediction Card seed message pickup ---
+  useEffect(() => {
+    if (!activeSlot?.wiki_entry_id || isStreaming) return;
+    try {
+      const raw = localStorage.getItem("ktrenz_agent_seed");
+      if (!raw) return;
+      const seed = JSON.parse(raw);
+      // Only use if fresh (< 5 min) and not consumed yet
+      if (!seed?.message || Date.now() - seed.createdAt > 5 * 60_000) {
+        localStorage.removeItem("ktrenz_agent_seed");
+        return;
+      }
+      localStorage.removeItem("ktrenz_agent_seed");
+      // Auto-send the seed as a user question about this artist
+      const prompt = `${seed.artistName}: ${seed.message}`;
+      setTimeout(() => handleSend(prompt), 500);
+    } catch {
+      localStorage.removeItem("ktrenz_agent_seed");
+    }
+  }, [activeSlot?.wiki_entry_id]);
+
   // --- 관심 아티스트 등록 시 에이전트 슬롯 이름/이미지 동기화 & 프로필 메뉴 열기 ---
   const prevWatchedCountRef = useRef<number | null>(null);
   useEffect(() => {
