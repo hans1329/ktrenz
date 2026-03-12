@@ -26,7 +26,7 @@ const DIRECTION_KEYS: Record<string, { labelKey: string; color: string; icon: ty
 };
 
 export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPanelProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // 1) Latest contribution data
   const { data: contrib, isLoading: contribLoading } = useQuery({
@@ -75,7 +75,18 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
         .order("predicted_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data as any;
+      if (!data) return null;
+      const d = data as any;
+      // prediction column contains full JSON with fes_direction, reasoning_ko, etc.
+      const pred = d.prediction || {};
+      return {
+        prediction: pred.fes_direction || pred.prediction || "stable",
+        reasoning: d.reasoning,
+        reasoning_ko: pred.reasoning_ko,
+        reasoning_ja: pred.reasoning_ja,
+        reasoning_zh: pred.reasoning_zh,
+        predicted_at: d.predicted_at,
+      };
     },
     staleTime: 5 * 60_000,
   });
@@ -247,11 +258,18 @@ export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPan
               {t("insights.next48h")}
             </span>
           </div>
-          {prediction.reasoning && (
-            <p className="text-xs text-foreground/80 leading-relaxed">
-              {prediction.reasoning}
-            </p>
-          )}
+          {(() => {
+            const reasoningMap: Record<string, string | undefined> = {
+              en: prediction.reasoning,
+              ko: prediction.reasoning_ko,
+              ja: prediction.reasoning_ja,
+              zh: prediction.reasoning_zh,
+            };
+            const text = reasoningMap[language] || prediction.reasoning;
+            return text ? (
+              <p className="text-xs text-foreground/80 leading-relaxed">{text}</p>
+            ) : null;
+          })()}
           <p className="text-[9px] text-muted-foreground mt-2">
             {new Date(prediction.predicted_at).toLocaleDateString()}
           </p>

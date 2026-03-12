@@ -92,13 +92,14 @@ Rules:
 - FES uses z-score normalized category changes (youtube, buzz, album, music, social)
 - Focus on identifying: 1) which category will lead next movement, 2) whether FES will rise/fall/stay flat in next 24-48h, 3) any cross-category patterns (e.g., buzz spike preceding album spike)
 - Be data-driven and specific with numbers
-- If data is insufficient, say so honestly`;
+- If data is insufficient, say so honestly
+- IMPORTANT: Provide reasoning in 4 languages (English, Korean, Japanese, Chinese) as separate fields`;
 
       const userPrompt = `Analyze this FES data and predict next 24-48h movement:
 
 ${JSON.stringify(features, null, 2)}
 
-Provide your analysis.`;
+Provide your analysis with reasoning in all 4 languages.`;
 
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -151,7 +152,19 @@ Provide your analysis.`;
                   },
                   reasoning: {
                     type: "string",
-                    description: "Brief explanation of the prediction",
+                    description: "Brief explanation in English",
+                  },
+                  reasoning_ko: {
+                    type: "string",
+                    description: "Brief explanation in Korean (한국어)",
+                  },
+                  reasoning_ja: {
+                    type: "string",
+                    description: "Brief explanation in Japanese (日本語)",
+                  },
+                  reasoning_zh: {
+                    type: "string",
+                    description: "Brief explanation in Chinese (中文)",
                   },
                 },
                 required: ["fes_direction", "confidence", "leading_category_next", "category_predictions", "reasoning"],
@@ -186,7 +199,7 @@ Provide your analysis.`;
         prediction,
         reasoning: prediction.reasoning,
         features_used: features,
-        model_version: "v1-gpt4o-mini",
+        model_version: "v2-gpt4o-mini-i18n",
       });
 
       results.push({ artist: artistName, prediction });
