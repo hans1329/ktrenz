@@ -291,11 +291,11 @@ avg_30d = avg_30d × (1 − 0.05) + current × 0.05`} description="에너지 스
 
       {/* ── 정규화 분석 에이전트 (NEW) ── */}
       <SectionHeader icon={FlaskConical} title="FES 정규화 분석 에이전트 (v6)" color="bg-violet-600" />
-      <p className="text-xs text-muted-foreground">YouTube 편중 문제를 해결하고, 카테고리별 기여도를 정량화하며, 독립적인 트렌드 추적을 수행하는 분석 에이전트입니다.</p>
+      <p className="text-sm text-muted-foreground">YouTube 편중 문제를 해결하고, 카테고리별 기여도를 정량화하며, 독립적인 트렌드 추적을 수행하는 분석 에이전트입니다.</p>
 
-      <Card className="p-3 bg-violet-500/5 border-violet-500/20">
-        <p className="text-[10px] text-muted-foreground mb-1 uppercase font-bold tracking-wider">핵심 기능</p>
-        <ul className="text-[10px] text-muted-foreground space-y-1 list-disc pl-4">
+      <Card className="p-4 bg-violet-500/5 border-violet-500/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">핵심 기능</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li><strong className="text-foreground">Z-Score 정규화:</strong> 각 카테고리의 변동률을 전체 아티스트 분포 기준으로 표준화하여 YouTube의 절대 변동이 다른 카테고리를 마스킹하지 않도록 함</li>
           <li><strong className="text-foreground">기여도 분석:</strong> FES 변동에 각 카테고리가 얼마나 기여했는지 가중 |z-score| 비율로 계산</li>
           <li><strong className="text-foreground">독립 트렌드 추적:</strong> 7일/30일 롤링 통계로 카테고리별 방향, 표준편차, 모멘텀을 독립적으로 추적</li>
