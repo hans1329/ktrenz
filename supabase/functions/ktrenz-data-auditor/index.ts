@@ -42,13 +42,16 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Parse optional wiki_entry_id for single-artist audit
+    // Parse optional wiki_entry_id and verify_ids flag
     let targetWikiEntryId: string | null = null;
+    let verifyIds = true; // verify Deezer/Last.fm IDs via external API
     try {
       const body = await req.json();
       targetWikiEntryId = body?.wiki_entry_id ?? null;
+      verifyIds = body?.verify_ids !== false; // default true, set false to skip
     } catch {
-      // No body or invalid JSON — audit all
+      // No body or invalid JSON — audit all, skip ID verification for speed
+      verifyIds = false;
     }
 
     // Get artists to audit from v3_artist_tiers
