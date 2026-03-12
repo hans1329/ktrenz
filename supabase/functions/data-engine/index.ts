@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
+const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -24,6 +24,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   external_videos: 10,
   music: 10,
   hanteo: 10,
+  apple_music_charts: 5,
+  billboard_charts: 5,
   social: 30,
   buzz: 120,
   energy: 5,
@@ -265,6 +267,32 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "detect_geo_changes", ...parsed };
   },
   naver_news: runNaverNews,
+  apple_music_charts: async (url, key) => {
+    console.log("[data-engine] Running Apple Music Charts...");
+    const resp = await fetch(`${url}/functions/v1/collect-apple-music-charts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Apple Music Charts: matched=${parsed?.matched ?? 0}, artists=${parsed?.uniqueArtists ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "apple_music_charts", ...parsed };
+  },
+  billboard_charts: async (url, key) => {
+    console.log("[data-engine] Running Billboard Charts...");
+    const resp = await fetch(`${url}/functions/v1/collect-billboard-charts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Billboard Charts: matched=${parsed?.matched ?? 0}, artists=${parsed?.uniqueArtists ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "billboard_charts", ...parsed };
+  },
   fes_analyst: async (url, key) => {
     console.log("[data-engine] Running FES Analyst...");
     const resp = await fetch(`${url}/functions/v1/ktrenz-fes-analyst`, {

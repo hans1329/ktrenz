@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // 1) Load artists for matching
     const { data: artists } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, aliases, tier");
+      .select("wiki_entry_id, display_name, name_ko, tier");
     if (!artists || artists.length === 0) {
       return new Response(JSON.stringify({ error: "No artists found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -45,11 +45,17 @@ Deno.serve(async (req) => {
     const nameLookup = new Map<string, string>();
     for (const a of artists) {
       if (a.display_name) nameLookup.set(a.display_name.toLowerCase(), a.wiki_entry_id);
-      if (a.aliases && Array.isArray(a.aliases)) {
-        for (const alias of a.aliases) {
-          if (typeof alias === "string") nameLookup.set(alias.toLowerCase(), a.wiki_entry_id);
-        }
-      }
+      if (a.name_ko) nameLookup.set(a.name_ko.toLowerCase(), a.wiki_entry_id);
+    }
+
+    // Also load wiki_entries titles for broader matching
+    const wikiIds = artists.map((a: any) => a.wiki_entry_id);
+    const { data: wikiEntries } = await sb
+      .from("wiki_entries")
+      .select("id, title")
+      .in("id", wikiIds);
+    for (const w of (wikiEntries || [])) {
+      if (w.title) nameLookup.set(w.title.toLowerCase(), w.id);
     }
 
     let totalMatched = 0;
