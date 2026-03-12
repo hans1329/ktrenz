@@ -267,6 +267,32 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "detect_geo_changes", ...parsed };
   },
   naver_news: runNaverNews,
+  apple_music_charts: async (url, key) => {
+    console.log("[data-engine] Running Apple Music Charts...");
+    const resp = await fetch(`${url}/functions/v1/collect-apple-music-charts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Apple Music Charts: matched=${parsed?.matched ?? 0}, artists=${parsed?.uniqueArtists ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "apple_music_charts", ...parsed };
+  },
+  billboard_charts: async (url, key) => {
+    console.log("[data-engine] Running Billboard Charts...");
+    const resp = await fetch(`${url}/functions/v1/collect-billboard-charts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Billboard Charts: matched=${parsed?.matched ?? 0}, artists=${parsed?.uniqueArtists ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "billboard_charts", ...parsed };
+  },
   fes_analyst: async (url, key) => {
     console.log("[data-engine] Running FES Analyst...");
     const resp = await fetch(`${url}/functions/v1/ktrenz-fes-analyst`, {
