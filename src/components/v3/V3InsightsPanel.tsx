@@ -18,11 +18,11 @@ const CATEGORY_META: Record<string, { label: string; color: string; icon: string
   social: { label: "Social", color: "hsl(200, 80%, 50%)", icon: "👥" },
 };
 
-const DIRECTION_CONFIG: Record<string, { label: string; color: string; icon: typeof TrendingUp }> = {
-  rising: { label: "Rising", color: "text-green-400", icon: TrendingUp },
-  spike: { label: "Spike!", color: "text-pink-400", icon: ArrowUpRight },
-  falling: { label: "Falling", color: "text-red-400", icon: TrendingDown },
-  flat: { label: "Flat", color: "text-muted-foreground", icon: Minus },
+const DIRECTION_KEYS: Record<string, { labelKey: string; color: string; icon: typeof TrendingUp }> = {
+  rising: { labelKey: "insights.rising", color: "text-green-400", icon: TrendingUp },
+  spike: { labelKey: "insights.spike", color: "text-pink-400", icon: ArrowUpRight },
+  falling: { labelKey: "insights.falling", color: "text-red-400", icon: TrendingDown },
+  flat: { labelKey: "insights.flat", color: "text-muted-foreground", icon: Minus },
 };
 
 export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPanelProps) {

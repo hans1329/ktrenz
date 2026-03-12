@@ -183,6 +183,15 @@ const translations: Record<string, Record<Language, string>> = {
   "insights.aiAnalysis": { en: "AI Forecast", ko: "AI 예측", ja: "AI予測", zh: "AI预测" },
   "insights.next48h": { en: "Next 24-48h prediction", ko: "향후 24-48시간 예측", ja: "今後24〜48時間の予測", zh: "未来24-48小时预测" },
   "insights.noData": { en: "Insights will appear after the next analysis cycle", ko: "다음 분석 주기 후 인사이트가 표시됩니다", ja: "次の分析サイクル後にインサイトが表示されます", zh: "下一个分析周期后将显示洞察" },
+  "insights.rising": { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" },
+  "insights.spike": { en: "Spike!", ko: "급등!", ja: "急上昇!", zh: "飙升!" },
+  "insights.falling": { en: "Falling", ko: "하락", ja: "下降", zh: "下降" },
+  "insights.flat": { en: "Flat", ko: "보합", ja: "横ばい", zh: "持平" },
+  "insights.stable": { en: "Stable", ko: "안정", ja: "安定", zh: "稳定" },
+  "insights.predRising": { en: "📈 Rising", ko: "📈 상승", ja: "📈 上昇", zh: "📈 上升" },
+  "insights.predSpike": { en: "🚀 Spike", ko: "🚀 급등", ja: "🚀 急上昇", zh: "🚀 飙升" },
+  "insights.predFalling": { en: "📉 Falling", ko: "📉 하락", ja: "📉 下降", zh: "📉 下降" },
+  "insights.predStable": { en: "→ Stable", ko: "→ 안정", ja: "→ 安定", zh: "→ 稳定" },
 
   // ── Missions ──
   "mission.todaysMission": { en: "Today's Mission", ko: "오늘의 미션", ja: "今日のミッション", zh: "今日任务" },
