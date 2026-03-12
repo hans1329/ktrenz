@@ -651,6 +651,20 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       }
     }
 
+    // Move the most-negative-change item to the very end → squarify places it bottom-right
+    if (result.length > 3) {
+      let worstIdx = -1;
+      let worstChange = 0;
+      for (let i = 3; i < result.length; i++) {
+        const ch = getCategoryChange(result[i], category);
+        if (ch < worstChange) { worstChange = ch; worstIdx = i; }
+      }
+      if (worstIdx >= 0 && worstIdx !== result.length - 1) {
+        const [worstItem] = result.splice(worstIdx, 1);
+        result.push(worstItem);
+      }
+    }
+
     return result;
   }, [items, category, agentWikiIds]);
 
