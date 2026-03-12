@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useRef } from "react";
 
 interface BoxParticlesProps {
   count?: number;
@@ -18,13 +18,13 @@ interface Particle {
   opacity: number;
 }
 
-const BoxParticles = ({
+const BoxParticles = forwardRef<HTMLCanvasElement, BoxParticlesProps>(({
   count = 20,
   color = "hsl(11, 100%, 46%)",
   speed = 0.5,
   density = 0.5,
-}: BoxParticlesProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+}, forwardedRef) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animRef = useRef<number>(0);
 
@@ -86,11 +86,20 @@ const BoxParticles = ({
 
   return (
     <canvas
-      ref={canvasRef}
+      ref={(node) => {
+        canvasRef.current = node;
+        if (typeof forwardedRef === "function") {
+          forwardedRef(node);
+        } else if (forwardedRef) {
+          forwardedRef.current = node;
+        }
+      }}
       className="absolute inset-0 pointer-events-none z-0"
       style={{ borderRadius: "inherit" }}
     />
   );
-};
+});
+
+BoxParticles.displayName = "BoxParticles";
 
 export default BoxParticles;
