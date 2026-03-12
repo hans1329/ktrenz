@@ -89,15 +89,31 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   // Individual artist audit
   const auditMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor', {
-        body: { wiki_entry_id: wikiEntryId },
-      });
-      if (error) throw error;
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-      return parsed;
+      const [fullResult, idResult] = await Promise.all([
+        supabase.functions.invoke('ktrenz-data-auditor', {
+          body: { mode: 'full', wiki_entry_id: wikiEntryId },
+        }),
+        supabase.functions.invoke('ktrenz-data-auditor', {
+          body: { mode: 'id_only', wiki_entry_id: wikiEntryId },
+        }),
+      ]);
+
+      if (fullResult.error) throw fullResult.error;
+      if (idResult.error) throw idResult.error;
+
+      const fullData = typeof fullResult.data === 'string' ? JSON.parse(fullResult.data) : fullResult.data;
+      const idData = typeof idResult.data === 'string' ? JSON.parse(idResult.data) : idResult.data;
+
+      return {
+        fullIssues: fullData?.issues_found ?? 0,
+        idIssues: idData?.issues_found ?? 0,
+        issues_found: (fullData?.issues_found ?? 0) + (idData?.issues_found ?? 0),
+      };
     },
     onSuccess: (data) => {
-      toast.success(`${artistTitle} 감사 완료: ${data?.issues_found ?? 0}건 이슈`);
+      toast.success(`${artistTitle} 감사 완료: 일반 ${data.fullIssues}건 + ID ${data.idIssues}건`);
+      queryClient.invalidateQueries({ queryKey: ['artist-quality-issues', wikiEntryId] });
+      queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
     onError: (err) => toast.error(`감사 실패: ${(err as Error).message}`),
   });
