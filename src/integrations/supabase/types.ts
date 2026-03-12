@@ -8350,6 +8350,13 @@ export type Database = {
           schema_type: Database["public"]["Enums"]["wiki_schema_type"]
         }[]
       }
+      get_trending_artists_24h: {
+        Args: { result_limit?: number }
+        Returns: {
+          support_count: number
+          wiki_entry_id: string
+        }[]
+      }
       get_trending_wiki_entries: {
         Args: never
         Returns: {
