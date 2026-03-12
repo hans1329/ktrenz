@@ -551,6 +551,7 @@ const V3ArtistDetail = () => {
       onRunModule={handleRunModule}
       isRunning={refreshMutation.isPending}
       isCrawling={isCrawling}
+      isAdmin={isAdmin}
     />
   ) : null;
 

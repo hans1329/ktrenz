@@ -175,7 +175,7 @@ export default function DataRunDialog({
           {MODULES.map((mod) => {
             const disabled = !canRun(mod.id);
             const isActive = runningModule === mod.id && isRunning;
-            const locked = mod.id === "all" && !limits.allowAll;
+            const locked = mod.id === "all" && !limits.allowAll && !isAdmin;
 
             return (
               <button
