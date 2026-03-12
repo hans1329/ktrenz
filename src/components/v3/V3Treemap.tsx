@@ -116,21 +116,24 @@ const CATEGORY_CONFIG: Record<EnergyCategory, { label: string; icon: React.React
 };
 
 // ── Sparkline ──
-function MiniSparkline({ data, width, height, color = "rgba(255,255,255,0.5)", ema7d, ema30d }: { data: number[]; width: number; height: number; color?: string; ema7d?: number | null; ema30d?: number | null }) {
-  if (data.length < 2) return null;
-  const min = Math.min(...data, ema7d ?? Infinity, ema30d ?? Infinity); const max = Math.max(...data, ema7d ?? -Infinity, ema30d ?? -Infinity); const range = max - min || 1; const padding = 2;
-  const points = data.map((v, i) => { const x = (i / (data.length - 1)) * width; const y = height - padding - ((v - min) / range) * (height - padding * 2); return `${x},${y}`; }).join(" ");
-  const areaPoints = `0,${height} ${points} ${width},${height}`;
-  const emaY = (val: number) => height - padding - ((val - min) / range) * (height - padding * 2);
-  return (
-    <svg width={width} height={height} className="absolute bottom-0 left-0 opacity-50 pointer-events-none">
-      <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0.05" /></linearGradient></defs>
-      <polygon points={areaPoints} fill="url(#sparkFill)" /><polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
-      {ema7d != null && <line x1={0} y1={emaY(ema7d)} x2={width} y2={emaY(ema7d)} stroke="hsl(0, 80%, 65%)" strokeWidth="1" strokeDasharray="3,2" opacity="0.8" />}
-      {ema30d != null && <line x1={0} y1={emaY(ema30d)} x2={width} y2={emaY(ema30d)} stroke="hsl(210, 80%, 65%)" strokeWidth="1" strokeDasharray="5,3" opacity="0.7" />}
-    </svg>
-  );
-}
+const MiniSparkline = forwardRef<SVGSVGElement, { data: number[]; width: number; height: number; color?: string; ema7d?: number | null; ema30d?: number | null }>(
+  ({ data, width, height, color = "rgba(255,255,255,0.5)", ema7d, ema30d }, ref) => {
+    if (data.length < 2) return null;
+    const min = Math.min(...data, ema7d ?? Infinity, ema30d ?? Infinity); const max = Math.max(...data, ema7d ?? -Infinity, ema30d ?? -Infinity); const range = max - min || 1; const padding = 2;
+    const points = data.map((v, i) => { const x = (i / (data.length - 1)) * width; const y = height - padding - ((v - min) / range) * (height - padding * 2); return `${x},${y}`; }).join(" ");
+    const areaPoints = `0,${height} ${points} ${width},${height}`;
+    const emaY = (val: number) => height - padding - ((val - min) / range) * (height - padding * 2);
+    return (
+      <svg ref={ref} width={width} height={height} className="absolute bottom-0 left-0 opacity-50 pointer-events-none">
+        <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3" /><stop offset="100%" stopColor={color} stopOpacity="0.05" /></linearGradient></defs>
+        <polygon points={areaPoints} fill="url(#sparkFill)" /><polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
+        {ema7d != null && <line x1={0} y1={emaY(ema7d)} x2={width} y2={emaY(ema7d)} stroke="hsl(0, 80%, 65%)" strokeWidth="1" strokeDasharray="3,2" opacity="0.8" />}
+        {ema30d != null && <line x1={0} y1={emaY(ema30d)} x2={width} y2={emaY(ema30d)} stroke="hsl(210, 80%, 65%)" strokeWidth="1" strokeDasharray="5,3" opacity="0.7" />}
+      </svg>
+    );
+  }
+);
+MiniSparkline.displayName = "MiniSparkline";
 
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; }
