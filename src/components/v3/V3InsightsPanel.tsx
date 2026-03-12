@@ -26,7 +26,7 @@ const DIRECTION_KEYS: Record<string, { labelKey: string; color: string; icon: ty
 };
 
 export default function V3InsightsPanel({ wikiEntryId, artistName }: InsightsPanelProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // 1) Latest contribution data
   const { data: contrib, isLoading: contribLoading } = useQuery({
