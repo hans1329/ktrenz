@@ -72,7 +72,7 @@ const FesEngine = () => {
 
       {/* ── 토탈 트렌드 스코어 ── */}
       <SectionHeader icon={TrendingUp} title="토탈 트렌드 스코어" color="bg-primary" />
-      <p className="text-xs text-muted-foreground">메인 랭킹 점수입니다. 각 하위 점수는 <strong>0–100으로 정규화</strong>된 후 가중 합산됩니다 (최대 10,000).</p>
+      <p className="text-sm text-muted-foreground">메인 랭킹 점수입니다. 각 하위 점수는 <strong>0–100으로 정규화</strong>된 후 가중 합산됩니다 (최대 10,000).</p>
       <FormulaCard title="정규화 가중 합산" formula={`TotalTrendScore =
   min(ytScore / 310, 100) × 30   ← YouTube 30%
 + min(buzzScore / 15, 100) × 25  ← Buzz 25%
@@ -80,10 +80,10 @@ const FesEngine = () => {
 + min(musicScore / 2, 100) × 20  ← Music 20%`} description="각 구성 요소는 정규화 상수로 나눈 후 100으로 제한됩니다. 최종 점수는 DB의 GENERATED 컬럼으로, 하위 점수 업데이트 시 자동 재계산됩니다." />
 
       <div className="grid grid-cols-4 gap-2">
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Youtube className="w-4 h-4 mx-auto text-destructive" /><p className="text-xs font-bold text-foreground mt-1">30%</p><p className="text-[9px] text-muted-foreground">YouTube</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Zap className="w-4 h-4 mx-auto text-amber-500" /><p className="text-xs font-bold text-foreground mt-1">25%</p><p className="text-[9px] text-muted-foreground">Buzz</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><BarChart3 className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">25%</p><p className="text-[9px] text-muted-foreground">Album Sales</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">20%</p><p className="text-[9px] text-muted-foreground">Music</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><Youtube className="w-5 h-5 mx-auto text-destructive" /><p className="text-sm font-bold text-foreground mt-1">30%</p><p className="text-xs text-muted-foreground">YouTube</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><Zap className="w-5 h-5 mx-auto text-amber-500" /><p className="text-sm font-bold text-foreground mt-1">25%</p><p className="text-xs text-muted-foreground">Buzz</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><BarChart3 className="w-5 h-5 mx-auto text-emerald-500" /><p className="text-sm font-bold text-foreground mt-1">25%</p><p className="text-xs text-muted-foreground">Album Sales</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><Music className="w-5 h-5 mx-auto text-purple-500" /><p className="text-sm font-bold text-foreground mt-1">20%</p><p className="text-xs text-muted-foreground">Music</p></Card>
       </div>
 
       {/* ── YouTube 스코어 ── */}
