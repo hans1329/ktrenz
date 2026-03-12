@@ -1,0 +1,1 @@
+update wiki_entries set image_url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Jungkook_at_the_White_House_2022.jpg/440px-Jungkook_at_the_White_House_2022.jpg' where slug = 'bts-jungkook';
