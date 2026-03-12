@@ -229,11 +229,17 @@ Deno.serve(async (req) => {
     }
 
     const calcStats = (arr: number[]) => {
-      if (arr.length === 0) return { avg: 0, stddev: 0, change: 0 };
+      if (arr.length === 0) return { avg: 0, stddev: 0, change: 0, latest: 0, earliest: 0 };
       const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
       const variance = arr.reduce((a, v) => a + (v - avg) ** 2, 0) / Math.max(arr.length - 1, 1);
       const change = arr.length >= 2 ? arr[arr.length - 1] - arr[0] : 0;
-      return { avg: Math.round(avg * 100) / 100, stddev: Math.round(Math.sqrt(variance) * 100) / 100, change: Math.round(change * 100) / 100 };
+      return {
+        avg: Math.round(avg * 100) / 100,
+        stddev: Math.round(Math.sqrt(variance) * 100) / 100,
+        change: Math.round(change * 100) / 100,
+        latest: arr[arr.length - 1],
+        earliest: arr[0],
+      };
     };
 
     for (const entryId of targetIds) {
@@ -248,12 +254,24 @@ Deno.serve(async (req) => {
         const s7 = calcStats(recent7d);
         const s30 = calcStats(all30d);
 
-        const momentum = s30.avg !== 0 ? Math.round(((s7.avg - s30.avg) / Math.abs(s30.avg)) * 100) / 100 : 0;
+        // Momentum: 7d 평균과 30d 평균의 차이 (절대 비교, 0 나누기 방지)
+        // 양수 = 최근 7일이 30일 평균보다 활발, 음수 = 둔화
+        const denominator = Math.max(Math.abs(s30.avg), s30.stddev, 0.1);
+        const momentum = Math.round(((s7.avg - s30.avg) / denominator) * 100) / 100;
 
+        // Direction: 7d 변동 기반, spike는 방향 구분
         let direction = "flat";
-        if (s7.change > 0.5) direction = "rising";
-        else if (s7.change < -0.5) direction = "falling";
-        if (Math.abs(s7.change) > 2) direction = "spike";
+        if (Math.abs(s7.change) > 2) {
+          direction = s7.change > 0 ? "spike" : "falling"; // spike는 양수일때만
+        } else if (s7.change > 0.3) {
+          direction = "rising";
+        } else if (s7.change < -0.3) {
+          direction = "falling";
+        }
+
+        // 추가: momentum이 강하면 direction 보정
+        if (momentum > 1.5 && direction === "flat") direction = "rising";
+        if (momentum < -1.5 && direction === "flat") direction = "falling";
 
         trendRows.push({
           wiki_entry_id: entryId,
