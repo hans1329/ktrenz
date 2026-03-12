@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, forwardRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
