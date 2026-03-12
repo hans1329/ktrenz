@@ -222,11 +222,26 @@ Generate prediction + fan briefing + agency action items.`;
                     },
                     required: ["youtube", "buzz", "album", "music", "social"],
                   },
-                  // Fan briefing (casual, warm, no jargon)
-                  fan_briefing: { type: "string", description: "Fan-friendly briefing in English" },
-                  fan_briefing_ko: { type: "string", description: "Fan-friendly briefing in Korean" },
-                  fan_briefing_ja: { type: "string", description: "Fan-friendly briefing in Japanese" },
-                  fan_briefing_zh: { type: "string", description: "Fan-friendly briefing in Chinese" },
+                  // Fan sunbae — hot summary (one-liner)
+                  hot_summary: { type: "string", description: "One punchy sentence about what's hot in English" },
+                  hot_summary_ko: { type: "string", description: "Korean 반말" },
+                  hot_summary_ja: { type: "string", description: "Japanese タメ口" },
+                  hot_summary_zh: { type: "string", description: "Chinese casual" },
+                  // Fan sunbae — fan action recommendation
+                  fan_action: { type: "string", description: "Recommended fan action in English" },
+                  fan_action_ko: { type: "string", description: "Korean 반말" },
+                  fan_action_ja: { type: "string", description: "Japanese タメ口" },
+                  fan_action_zh: { type: "string", description: "Chinese casual" },
+                  // Fan sunbae — positioning vs others
+                  position_note: { type: "string", description: "Competitive position note in English" },
+                  position_note_ko: { type: "string", description: "Korean 반말" },
+                  position_note_ja: { type: "string", description: "Japanese タメ口" },
+                  position_note_zh: { type: "string", description: "Chinese casual" },
+                  // Legacy fan_briefing (kept for backward compat, now derived from above 3)
+                  fan_briefing: { type: "string", description: "Combined fan briefing in English (concatenate hot_summary + fan_action + position_note)" },
+                  fan_briefing_ko: { type: "string", description: "Combined fan briefing in Korean" },
+                  fan_briefing_ja: { type: "string", description: "Combined fan briefing in Japanese" },
+                  fan_briefing_zh: { type: "string", description: "Combined fan briefing in Chinese" },
                   // Agency action items (data-driven, strategic)
                   agency_actions: {
                     type: "array",
@@ -236,7 +251,7 @@ Generate prediction + fan briefing + agency action items.`;
                       properties: {
                         title: { type: "string", description: "Action title in Korean" },
                         action: { type: "string", description: "Specific actionable recommendation in Korean" },
-                        rationale: { type: "string", description: "Data-driven rationale in Korean (reference benchmarks without naming sources)" },
+                        rationale: { type: "string", description: "Data-driven rationale in Korean" },
                         expected_impact: { type: "string", description: "Expected outcome in Korean" },
                         priority: { type: "string", enum: ["high", "medium", "low"] },
                         category: { type: "string", enum: ["youtube", "buzz", "album", "music", "social"] },
@@ -244,14 +259,15 @@ Generate prediction + fan briefing + agency action items.`;
                       required: ["title", "action", "rationale", "priority", "category"],
                     },
                   },
-                  // Technical reasoning (kept for backward compat)
+                  // Technical reasoning
                   reasoning: { type: "string", description: "Brief technical reasoning in English" },
                   reasoning_ko: { type: "string", description: "Brief technical reasoning in Korean" },
                   reasoning_ja: { type: "string", description: "Brief technical reasoning in Japanese" },
                   reasoning_zh: { type: "string", description: "Brief technical reasoning in Chinese" },
                 },
                 required: ["fes_direction", "confidence", "leading_category_next", "category_predictions",
-                  "fan_briefing", "fan_briefing_ko", "agency_actions", "reasoning"],
+                  "hot_summary", "hot_summary_ko", "fan_action", "fan_action_ko", "position_note", "position_note_ko",
+                  "agency_actions", "reasoning"],
               },
             },
           }],
