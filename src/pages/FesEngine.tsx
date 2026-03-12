@@ -108,7 +108,7 @@ totalViewDelta   = incrementDeltaScore(현재, 24시간전, 48시간전, scale=5
 
       {/* ── YouTube Music ── */}
       <SectionHeader icon={Headphones} title="YouTube Music (토픽 채널)" color="bg-rose-600" />
-      <p className="text-xs text-muted-foreground">YouTube의 자동 생성 <strong>"아티스트 - Topic"</strong> 채널에서 수집된 공식 오디오/스트리밍 데이터입니다.</p>
+      <p className="text-sm text-muted-foreground">YouTube의 자동 생성 <strong>"아티스트 - Topic"</strong> 채널에서 수집된 공식 오디오/스트리밍 데이터입니다.</p>
       <FormulaCard title="데이터 수집" formula={`1. 최초: "Artist - Topic" 검색 → 채널 ID 저장 (100 유닛, 1회)
 2. 이후:  playlistItems + channels API만 사용 (3 유닛/호출)
 3. ID는 v3_artist_tiers.youtube_topic_channel_id에 저장`} description="토픽 채널 ID는 최초 검색 후 자동 저장되어, 이후 호출 시 비용이 높은 검색 API를 건너뜁니다." />
