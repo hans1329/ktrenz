@@ -42,15 +42,31 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Get all Tier 1 artists
-    const { data: artists } = await supabase
+    // Parse optional wiki_entry_id for single-artist audit
+    let targetWikiEntryId: string | null = null;
+    try {
+      const body = await req.json();
+      targetWikiEntryId = body?.wiki_entry_id ?? null;
+    } catch {
+      // No body or invalid JSON — audit all
+    }
+
+    // Get artists to audit
+    let query = supabase
       .from("v3_artists")
-      .select("wiki_entry_id, name, tier, metadata")
-      .eq("tier", 1);
+      .select("wiki_entry_id, name, tier, metadata");
+
+    if (targetWikiEntryId) {
+      query = query.eq("wiki_entry_id", targetWikiEntryId);
+    } else {
+      query = query.eq("tier", 1);
+    }
+
+    const { data: artists } = await query;
 
     if (!artists || artists.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No Tier 1 artists found" }),
+        JSON.stringify({ message: targetWikiEntryId ? "Artist not found" : "No Tier 1 artists found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
