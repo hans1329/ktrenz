@@ -98,7 +98,7 @@ export const V3BriefingCard = ({ data }: { data: BriefingData }) => {
                 <Zap className="w-3.5 h-3.5" />
                 <span className="text-lg font-black">{Math.round(artist.energy_score)}°E</span>
               </div>
-              <span className="text-[10px] text-muted-foreground">ENERGY</span>
+              <span className="text-[10px] text-muted-foreground">°E</span>
             </div>
           </div>
 
