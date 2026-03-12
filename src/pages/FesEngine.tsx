@@ -137,21 +137,21 @@ External Videos:  1.2x  ← 외부 채널 출연`}</code>
 
       {/* ── 앨범 판매 스코어 ── */}
       <SectionHeader icon={BarChart3} title="앨범 판매 스코어 (멀티 소스)" color="bg-emerald-600" />
-      <p className="text-xs text-muted-foreground"><strong>한터 차트</strong>의 앨범/실물 판매량 + <strong>Apple Music RSS</strong> 및 <strong>Billboard</strong> (Firecrawl 스크래핑)의 글로벌 차트 성적을 결합합니다.</p>
+      <p className="text-sm text-muted-foreground"><strong>한터 차트</strong>의 앨범/실물 판매량 + <strong>Apple Music RSS</strong> 및 <strong>Billboard</strong> (Firecrawl 스크래핑)의 글로벌 차트 성적을 결합합니다.</p>
       <FormulaCard title="공식" formula={`AlbumScore = baseScore × 0.30 + deltaScore × 0.70 + chartBonus
 
 baseScore  = log10(dailySales) × 200
 deltaScore = (dailySales − prevDailySales) / 10K × 500
 chartBonus = appleBonus + billboardBonus`} description="차트 보너스는 가산식입니다 — 글로벌 차트에 진입한 아티스트는 한터 판매 데이터가 없어도 차트 성적만으로 점수를 받을 수 있습니다." />
-      <Card className="p-3 bg-card border-border/50">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">차트 보너스 포인트</p>
-        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`Apple Music (국가별, 10개국):
+      <Card className="p-4 bg-card border-border/50">
+        <p className="text-sm text-muted-foreground font-medium mb-1.5">차트 보너스 포인트</p>
+        <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`Apple Music (국가별, 10개국):
   Top 10:  +150pt    Top 50:  +80pt    Top 100: +30pt
 
 Billboard (차트별: 200, Hot 100, Global 200, Global Excl. US):
   Top 10:  +300pt    Top 50:  +150pt
   Top 100: +60pt     Top 200: +20pt`}</code>
-        <p className="text-[10px] text-muted-foreground mt-1.5">예시: Apple Music KR #3 + US #45 + Billboard Global 200 #80 → 150 + 80 + 60 = +290pt 차트 보너스</p>
+        <p className="text-xs text-muted-foreground mt-2">예시: Apple Music KR #3 + US #45 + Billboard Global 200 #80 → 150 + 80 + 60 = +290pt 차트 보너스</p>
       </Card>
       <VarTable rows={[
         { name: "dailySales", desc: "한터 일일 앨범 판매량", source: "한터 차트 API" },
