@@ -221,15 +221,15 @@ Twitter/X: 1.0x  ← 기준선`}</code>
 
       {/* ── 팬 활동 스코어 ── */}
       <SectionHeader icon={Heart} title="팬 활동 스코어" color="bg-blue-600" />
-      <p className="text-xs text-muted-foreground">플랫폼 내 사용자 참여를 롤링 24시간 윈도우로 집계합니다.</p>
-      <Card className="p-3 bg-card border-border/50">
-        <p className="text-[11px] text-muted-foreground font-medium mb-1">이벤트 가중치</p>
-        <code className="block text-[11px] font-mono text-primary bg-primary/5 rounded px-2 py-1.5 whitespace-pre-wrap">{`외부 링크 클릭: 1.5x  ← 가장 높은 의도 시그널
+      <p className="text-sm text-muted-foreground">플랫폼 내 사용자 참여를 롤링 24시간 윈도우로 집계합니다.</p>
+      <Card className="p-4 bg-card border-border/50">
+        <p className="text-sm text-muted-foreground font-medium mb-1.5">이벤트 가중치</p>
+        <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`외부 링크 클릭: 1.5x  ← 가장 높은 의도 시그널
 에이전트 채팅:   1.0x  ← 적극적 참여
 아티스트 상세:   0.5x  ← 수동적 관심
 트리맵 클릭:     0.3x  ← 캐주얼 탐색
 리스트 클릭:     0.3x  ← 캐주얼 탐색`}</code>
-        <p className="text-[10px] text-muted-foreground mt-1.5">ktrenz_user_events 테이블에서 수집. 팬 스코어 = Σ(event_weight) / 아티스트 / 24시간</p>
+        <p className="text-xs text-muted-foreground mt-2">ktrenz_user_events 테이블에서 수집. 팬 스코어 = Σ(event_weight) / 아티스트 / 24시간</p>
       </Card>
 
       {/* ── FES v5.4 ── */}
