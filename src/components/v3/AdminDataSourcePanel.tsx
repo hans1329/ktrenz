@@ -92,10 +92,11 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
         body: { wiki_entry_id: wikiEntryId },
       });
       if (error) throw error;
-      return data;
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      return parsed;
     },
     onSuccess: (data) => {
-      toast.success(`${artistTitle} 감사 완료: ${data.issues_found}건 이슈`);
+      toast.success(`${artistTitle} 감사 완료: ${data?.issues_found ?? 0}건 이슈`);
     },
     onError: (err) => toast.error(`감사 실패: ${(err as Error).message}`),
   });

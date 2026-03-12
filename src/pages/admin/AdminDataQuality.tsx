@@ -61,7 +61,8 @@ const AdminDataQuality = () => {
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('ktrenz-data-auditor');
       if (error) throw error;
-      return data;
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      return parsed;
     },
     onSuccess: (data) => {
       toast.success(`감사 완료: ${data.issues_found}건 이슈 발견 (${data.artists_checked}명 검사)`);
