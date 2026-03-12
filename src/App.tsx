@@ -35,6 +35,7 @@ import AdminWatchedChannels from "./pages/admin/AdminWatchedChannels";
 import AdminAgencySample from "./pages/admin/AdminAgencySample";
 import AdminCollectionMonitor from "./pages/admin/AdminCollectionMonitor";
 import AdminFesAnalyst from "./pages/admin/AdminFesAnalyst";
+import AdminDataQuality from "./pages/admin/AdminDataQuality";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="agency-sample" element={<AdminAgencySample />} />
               <Route path="collection-monitor" element={<AdminCollectionMonitor />} />
               <Route path="fes-analyst" element={<AdminFesAnalyst />} />
+              <Route path="data-quality" element={<AdminDataQuality />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
