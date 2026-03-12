@@ -88,7 +88,7 @@ const FesEngine = () => {
 
       {/* ── YouTube 스코어 ── */}
       <SectionHeader icon={Youtube} title="YouTube 스코어 (v2 델타 모델)" color="bg-destructive" />
-      <p className="text-xs text-muted-foreground">30% 절대 규모 (로그 스케일) + 70% 24시간 델타. 누적 지표는 <strong>델타-오버-델타 (가속도)</strong>를 사용합니다.</p>
+      <p className="text-sm text-muted-foreground">30% 절대 규모 (로그 스케일) + 70% 24시간 델타. 누적 지표는 <strong>델타-오버-델타 (가속도)</strong>를 사용합니다.</p>
       <FormulaCard title="공식" formula={`YouTubeScore = baseScore × 0.30 + deltaScore × 0.70
 
 baseScore  = log10(subscribers) × 50 + log10(totalViews) × 30
