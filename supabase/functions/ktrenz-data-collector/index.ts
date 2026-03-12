@@ -1173,7 +1173,7 @@ Deno.serve(async (req) => {
       // 고정 엔드포인트 가져오기
       const { data: tierData } = await adminClient
         .from("v3_artist_tiers")
-        .select("youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id")
+        .select("youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, name_ko")
         .eq("wiki_entry_id", wikiEntryId)
         .maybeSingle();
 
