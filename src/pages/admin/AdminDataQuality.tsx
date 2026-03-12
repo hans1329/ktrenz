@@ -265,7 +265,7 @@ const AdminDataQuality = () => {
     onError: (err) => toast.error(`일괄 무시 실패: ${(err as Error).message}`),
   });
 
-
+  const filtered = (issues ?? []).filter((i: any) => {
     if (severityFilter !== 'all' && i.severity !== severityFilter) return false;
     if (typeFilter !== 'all' && i.issue_type !== typeFilter) return false;
     return true;
