@@ -297,6 +297,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 빌보드 첫 진입 마일스톤 이벤트 저장
+    for (const fe of firstEntryArtists) {
+      console.log(`[Billboard] 🎉 FIRST ENTRY: ${fe.title} on ${fe.chartName} #${fe.position}`);
+      await sb.from("ktrenz_milestone_events").insert({
+        wiki_entry_id: fe.wikiEntryId,
+        event_type: "billboard_first_entry",
+        event_data: {
+          chart_name: fe.chartName,
+          position: fe.position,
+          song_or_album: fe.title,
+        },
+      });
+    }
+
     // Log collection
     await sb.from("ktrenz_collection_log").insert({
       platform: "billboard_chart",
@@ -307,11 +321,12 @@ Deno.serve(async (req) => {
         parsed_per_chart: debugParsed,
         matched: totalMatched,
         unique_artists: matchedArtists.size,
+        first_entries: firstEntryArtists.length,
         errors: errors.length > 0 ? errors : undefined,
       },
     });
 
-    console.log(`[Billboard] Done: ${totalEntries} parsed, ${totalMatched} matches across ${matchedArtists.size} artists`);
+    console.log(`[Billboard] Done: ${totalEntries} parsed, ${totalMatched} matches, ${firstEntryArtists.length} first entries`);
 
     return new Response(
       JSON.stringify({
