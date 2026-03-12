@@ -53,6 +53,7 @@ const AdminDataQuality = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showResolved, setShowResolved] = useState(false);
   const [idAuditProgress, setIdAuditProgress] = useState<{ done: number; total: number } | null>(null);
+  const [resolveProgress, setResolveProgress] = useState<{ done: number; total: number } | null>(null);
 
   const {
     data: issues,
@@ -164,7 +165,11 @@ const AdminDataQuality = () => {
       const unresolvedIds = filtered.filter((i: any) => !i.resolved).map((i: any) => i.id);
       if (unresolvedIds.length === 0) throw new Error('해결할 이슈가 없습니다');
 
+      const total = unresolvedIds.length;
       const batchSize = 50;
+      let done = 0;
+      setResolveProgress({ done: 0, total });
+
       for (let i = 0; i < unresolvedIds.length; i += batchSize) {
         const batch = unresolvedIds.slice(i, i + batchSize);
         const { error } = await supabase
@@ -176,8 +181,10 @@ const AdminDataQuality = () => {
           })
           .in('id', batch);
         if (error) throw error;
+        done += batch.length;
+        setResolveProgress({ done, total });
       }
-      return unresolvedIds.length;
+      return total;
     },
     onSuccess: (count) => {
       toast.success(`${count}건 일괄 해결 완료`);
@@ -185,6 +192,9 @@ const AdminDataQuality = () => {
     },
     onError: (err) => {
       toast.error(`일괄 해결 실패: ${(err as Error).message}`);
+    },
+    onSettled: () => {
+      setResolveProgress(null);
     },
   });
 
@@ -267,9 +277,27 @@ const AdminDataQuality = () => {
         </Card>
       )}
 
+      {resolveProgress && (
+        <Card className="p-3">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">
+                일괄 해결 진행중: <span className="font-semibold text-foreground">{resolveProgress.done}</span> / {resolveProgress.total}
+              </p>
+              <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${(resolveProgress.done / resolveProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">미해결 전체</p>
           <p className="text-2xl font-bold text-foreground">{totalOpen}</p>
         </Card>
         {(['critical', 'high', 'medium', 'low'] as Severity[]).map((sev) => {
