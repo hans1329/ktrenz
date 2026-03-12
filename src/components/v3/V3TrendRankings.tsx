@@ -240,7 +240,7 @@ const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number
           <ChangeIndicator change={item.changePercent ?? 0} />
           {item.energy_score > 0 && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end mt-0.5">
-              <Flame className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°E
+              <Flame className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°
             </span>
           )}
         </div>
