@@ -447,7 +447,73 @@ const AdminAgencySample = () => {
     enabled: compareArtistId !== 'none',
   });
 
-  // ── Analyze mutation ──
+  // ── FES Contribution (latest) ──
+  const { data: fesContrib } = useQuery({
+    queryKey: ['agency-fes-contrib', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_fes_contributions' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('snapshot_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── FES Contribution history (30d for chart) ──
+  const { data: fesContribHistory } = useQuery({
+    queryKey: ['agency-fes-contrib-history', selectedArtistId],
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from('ktrenz_fes_contributions' as any)
+        .select('snapshot_at, youtube_z, buzz_z, album_z, music_z, social_z, normalized_fes, leading_category')
+        .eq('wiki_entry_id', selectedArtistId)
+        .gte('snapshot_at', cutoff)
+        .order('snapshot_at', { ascending: true });
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── Category trends ──
+  const { data: categoryTrends } = useQuery({
+    queryKey: ['agency-category-trends', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_category_trends' as any)
+        .select('*')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('calculated_at', { ascending: false })
+        .limit(5);
+      const latest = new Map<string, any>();
+      for (const row of (data || []) as any[]) {
+        if (!latest.has(row.category)) latest.set(row.category, row);
+      }
+      return latest;
+    },
+    enabled: !!selectedArtistId,
+  });
+
+  // ── AI Prediction ──
+  const { data: aiPrediction } = useQuery({
+    queryKey: ['agency-ai-prediction', selectedArtistId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_prediction_logs' as any)
+        .select('prediction, reasoning, predicted_at')
+        .eq('wiki_entry_id', selectedArtistId)
+        .order('predicted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!selectedArtistId,
+  });
+
   const analyzeMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('ktrenz-yt-sentiment', {
@@ -842,7 +908,190 @@ Artist: ${context.artist}
             </Card>
           </div>
 
-          {/* ═══ Row 3: Buzz Trend + Source Breakdown ═══ */}
+          {/* ═══ FES 분석 인사이트 ═══ */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Z-Score 기여도 */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" /> FES 카테고리 기여도
+                </CardTitle>
+                <CardDescription className="text-xs">Z-Score 정규화 기반 · 주도 카테고리 분석</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {fesContrib ? (() => {
+                  const cats = [
+                    { key: 'youtube', label: 'YouTube', color: '#ef4444', contrib: fesContrib.youtube_contrib, z: fesContrib.youtube_z },
+                    { key: 'buzz', label: 'Buzz', color: '#8b5cf6', contrib: fesContrib.buzz_contrib, z: fesContrib.buzz_z },
+                    { key: 'music', label: 'Music', color: '#3b82f6', contrib: fesContrib.music_contrib, z: fesContrib.music_z },
+                    { key: 'album', label: 'Album', color: '#f59e0b', contrib: fesContrib.album_contrib, z: fesContrib.album_z },
+                    { key: 'social', label: 'Social', color: '#ec4899', contrib: fesContrib.social_contrib, z: fesContrib.social_z },
+                  ];
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="text-xs">주도: {fesContrib.leading_category}</Badge>
+                        <Badge variant="secondary" className="text-xs">FES: {fesContrib.normalized_fes}°E</Badge>
+                      </div>
+                      <div className="flex h-6 rounded-full overflow-hidden bg-muted/50">
+                        {cats.filter(c => c.contrib > 0).sort((a, b) => b.contrib - a.contrib).map(c => (
+                          <div key={c.key} className="h-full flex items-center justify-center text-[9px] font-bold text-white"
+                            style={{ width: `${c.contrib}%`, backgroundColor: c.color, minWidth: c.contrib > 0 ? '14px' : '0' }}>
+                            {c.contrib >= 12 ? `${c.contrib}%` : ''}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-1.5">
+                        {cats.map(c => (
+                          <div key={c.key} className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
+                              {c.label}
+                            </span>
+                            <span className="flex items-center gap-3">
+                              <span className="text-muted-foreground">{c.contrib}%</span>
+                              <span className={c.z > 0 ? 'text-emerald-500 font-medium' : c.z < 0 ? 'text-red-500 font-medium' : 'text-muted-foreground'}>
+                                z={c.z}
+                              </span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })() : <div className="py-8 text-center text-sm text-muted-foreground">분석 데이터 없음</div>}
+              </CardContent>
+            </Card>
+
+            {/* 트렌드 시그널 */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-500" /> 카테고리 트렌드 시그널
+                </CardTitle>
+                <CardDescription className="text-xs">7일/30일 모멘텀 비교</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {categoryTrends && categoryTrends.size > 0 ? (
+                  <div className="space-y-2">
+                    {['youtube', 'buzz', 'music', 'album', 'social'].map(cat => {
+                      const t = categoryTrends.get(cat);
+                      if (!t) return null;
+                      const dirEmoji = t.trend_direction === 'spike' ? '🚀' : t.trend_direction === 'rising' ? '📈' : t.trend_direction === 'falling' ? '📉' : '➡️';
+                      const dirColor = t.trend_direction === 'spike' ? 'text-pink-400' : t.trend_direction === 'rising' ? 'text-emerald-400' : t.trend_direction === 'falling' ? 'text-red-400' : 'text-muted-foreground';
+                      return (
+                        <div key={cat} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{dirEmoji}</span>
+                            <span className="text-xs font-semibold capitalize">{cat}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs">
+                            <span className="text-muted-foreground">7d: <strong>{t.avg_7d?.toFixed(2)}</strong></span>
+                            <span className="text-muted-foreground">30d: <strong>{t.avg_30d?.toFixed(2)}</strong></span>
+                            {t.momentum !== 0 && (
+                              <Badge variant="outline" className={`text-[10px] ${t.momentum > 0 ? 'border-emerald-500/30 text-emerald-400' : 'border-red-500/30 text-red-400'}`}>
+                                {t.momentum > 0 ? '+' : ''}{t.momentum}
+                              </Badge>
+                            )}
+                            <Badge className={`text-[10px] ${dirColor}`} variant="secondary">
+                              {t.trend_direction}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : <div className="py-8 text-center text-sm text-muted-foreground">트렌드 데이터 없음</div>}
+              </CardContent>
+            </Card>
+
+            {/* AI 예측 */}
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-primary" /> AI 예측 (24-48h)
+                </CardTitle>
+                <CardDescription className="text-xs">GPT-4o-mini 기반 FES 방향 예측</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {aiPrediction ? (() => {
+                  const pred = aiPrediction.prediction || {};
+                  const direction = pred.fes_direction || 'stable';
+                  const dirEmoji = direction === 'rising' ? '📈' : direction.includes('spike') ? '🚀' : direction === 'falling' ? '📉' : '➡️';
+                  const catPreds = pred.category_predictions || {};
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{dirEmoji}</span>
+                        <div>
+                          <p className="font-bold text-sm capitalize">{direction.replace('_', ' ')}</p>
+                          <p className="text-xs text-muted-foreground">신뢰도: {Math.round((pred.confidence || 0) * 100)}%</p>
+                        </div>
+                      </div>
+                      {pred.leading_category_next && (
+                        <Badge variant="outline" className="text-xs">다음 주도: {pred.leading_category_next}</Badge>
+                      )}
+                      <div className="grid grid-cols-5 gap-1 text-center">
+                        {Object.entries(catPreds).map(([k, v]: [string, any]) => (
+                          <div key={k} className="rounded-lg bg-muted/50 p-1.5">
+                            <p className="text-[9px] text-muted-foreground capitalize">{k}</p>
+                            <p className={`text-xs font-bold ${v === 'up' ? 'text-emerald-400' : v === 'down' ? 'text-red-400' : 'text-muted-foreground'}`}>
+                              {v === 'up' ? '↑' : v === 'down' ? '↓' : '—'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      {aiPrediction.reasoning && (
+                        <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/50 pt-2">
+                          {aiPrediction.reasoning}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground/60">
+                        {new Date(aiPrediction.predicted_at).toLocaleString('ko-KR')}
+                      </p>
+                    </div>
+                  );
+                })() : <div className="py-8 text-center text-sm text-muted-foreground">예측 데이터 없음</div>}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Z-Score 시계열 차트 */}
+          {fesContribHistory && fesContribHistory.length > 2 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" /> Z-Score 추이 (30일)
+                </CardTitle>
+                <CardDescription className="text-xs">카테고리별 정규화 변동 추이</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={fesContribHistory.map((h: any) => ({
+                    date: h.snapshot_at?.slice(5, 10),
+                    YouTube: h.youtube_z,
+                    Buzz: h.buzz_z,
+                    Music: h.music_z,
+                    Album: h.album_z,
+                    Social: h.social_z,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                    <XAxis dataKey="date" tick={{ fontSize: 9 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                    <Line type="monotone" dataKey="YouTube" stroke="#ef4444" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="Buzz" stroke="#8b5cf6" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="Music" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="Album" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="Social" stroke="#ec4899" strokeWidth={1.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader className="pb-2">
