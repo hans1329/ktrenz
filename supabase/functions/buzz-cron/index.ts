@@ -17,25 +17,38 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const batchSize = Math.min(50, Math.max(1, Number(body.batchSize) || 5));
     const batchOffset = Math.max(0, Number(body.batchOffset) || 0);
+    const tierSnapshotAt = typeof body.tierSnapshotAt === "string" && !Number.isNaN(Date.parse(body.tierSnapshotAt))
+      ? body.tierSnapshotAt
+      : null;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // 1군(tier=1) 아티스트만 대상 — 직접 티어 테이블에서 가져옴
-    const { data: tier1Entries } = await sb
+    // Tier 1 대상 스냅샷 고정 (run 도중 tier 변경에 따른 offset 누락 방지)
+    let tierQuery = sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id")
-      .eq("tier", 1);
-    const allTier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
+      .select("wiki_entry_id, name_ko")
+      .eq("tier", 1)
+      .order("wiki_entry_id", { ascending: true });
 
-    // 중복 제거
-    const uniqueIds = [...new Set(allTier1Ids)];
+    if (tierSnapshotAt) {
+      tierQuery = tierQuery.lte("updated_at", tierSnapshotAt);
+    }
+
+    const { data: tier1Entries } = await tierQuery;
+
+    const uniqueIds = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+
+    const koNameMap = new Map<string, string>();
+    for (const t of tier1Entries || []) {
+      if (t?.wiki_entry_id && t?.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
+    }
 
     const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
     if (batch.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No artists in this batch", batchOffset, batchSize }),
+        JSON.stringify({ success: true, message: "No artists in this batch", batchOffset, batchSize, tierSnapshotAt, totalCandidates: uniqueIds.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -45,18 +58,14 @@ Deno.serve(async (req) => {
       .from("wiki_entries")
       .select("id, title, metadata")
       .in("id", entryIds)
-      .eq("schema_type", "artist");
+      .in("schema_type", ["artist", "member"]);
 
-    // name_ko 매핑
-    const { data: tierKoData } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").in("wiki_entry_id", entryIds);
-    const koNameMap = new Map<string, string>();
-    for (const t of tierKoData || []) {
-      if (t.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
-    }
+    const artistMap = new Map<string, any>((artists || []).map((a: any) => [a.id, a]));
+    const orderedArtists = entryIds.map((id: string) => artistMap.get(id)).filter(Boolean) as any[];
 
-    if (!artists?.length) {
+    if (!orderedArtists.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No matching artists", batchOffset, batchSize }),
+        JSON.stringify({ success: true, message: "No matching artists", batchOffset, batchSize, tierSnapshotAt }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
