@@ -447,12 +447,34 @@ async function runIdentifierAudit(
 }
 
 async function upsertIssues(supabase: ReturnType<typeof createClient>, issues: Issue[]) {
-  if (issues.length === 0) return { inserted: 0, skipped: 0 };
+  if (issues.length === 0) return { inserted: 0, skipped: 0, suppressed_skipped: 0 };
+
+  // First, fetch all suppressed keys so we don't reopen them
+  const wikiIds = [...new Set(issues.map((i) => i.wiki_entry_id))];
+  const suppressedKeys = new Set<string>();
+
+  for (const ids of chunk(wikiIds, 20)) {
+    const { data } = await supabase
+      .from("ktrenz_data_quality_issues")
+      .select("wiki_entry_id, issue_type, platform")
+      .in("wiki_entry_id", ids)
+      .eq("suppressed", true);
+
+    for (const row of data ?? []) {
+      suppressedKeys.add(`${row.wiki_entry_id}|${row.issue_type}|${row.platform}`);
+    }
+  }
+
+  // Filter out suppressed issues
+  const activeIssues = issues.filter(
+    (i) => !suppressedKeys.has(`${i.wiki_entry_id}|${i.issue_type}|${i.platform}`),
+  );
+  const suppressedSkipped = issues.length - activeIssues.length;
 
   let inserted = 0;
   let skipped = 0;
 
-  for (const batch of chunk(issues, 50)) {
+  for (const batch of chunk(activeIssues, 50)) {
     const payload = batch.map((issue) => ({
       wiki_entry_id: issue.wiki_entry_id,
       artist_name: issue.artist_name,
@@ -481,7 +503,7 @@ async function upsertIssues(supabase: ReturnType<typeof createClient>, issues: I
     else inserted += payload.length;
   }
 
-  return { inserted, skipped };
+  return { inserted, skipped, suppressed_skipped: suppressedSkipped };
 }
 
 async function autoResolveForFullAudit(
