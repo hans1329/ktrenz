@@ -27,6 +27,8 @@ type Severity = 'critical' | 'high' | 'medium' | 'low';
 type AuditSummary = {
   artists_checked: number;
   issues_found: number;
+  inserted: number;
+  suppressed_skipped: number;
   total_artists?: number;
   offset?: number;
   limit?: number;
