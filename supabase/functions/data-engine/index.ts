@@ -262,6 +262,25 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 // energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
+  yt_sentiment: async (url, key) => {
+    console.log("[data-engine] Running yt_sentiment for all Tier 1 artists...");
+    const sb = createClient(url, key);
+    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1);
+    const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
+    let launched = 0;
+    for (const t of targets) {
+      const p = fetch(`${url}/functions/v1/ktrenz-yt-sentiment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ wikiEntryId: t.wiki_entry_id }),
+      }).catch((e) => console.warn(`[data-engine] yt_sentiment fire error:`, e.message));
+      fireAndForget(p);
+      launched++;
+      if (launched % 3 === 0) await new Promise(r => setTimeout(r, 2000));
+    }
+    console.log(`[data-engine] yt_sentiment: launched ${launched}/${targets.length} artists`);
+    return { status: "launched", launched, total: targets.length };
+  },
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
   hanteo: runHanteo,
