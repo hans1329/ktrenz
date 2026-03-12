@@ -212,9 +212,15 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<any> {
   console.log("[data-engine] Launching Naver News (fire-and-forget)...");
   const sb = createClient(supabaseUrl, serviceKey);
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1);
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").eq("tier", 1);
   const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
   if (!tier1Ids.length) return { status: "no_artists" };
+
+  // name_ko 매핑
+  const koNameMap = new Map<string, string>();
+  for (const t of tier1Entries || []) {
+    if (t.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
+  }
 
   const { data: artists } = await sb.from("wiki_entries").select("id, title").eq("schema_type", "artist").in("id", tier1Ids);
   if (!artists?.length) return { status: "no_artists" };
@@ -224,7 +230,7 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
     const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ artistName: artist.title, wikiEntryId: artist.id }),
+      body: JSON.stringify({ artistName: artist.title, koreanName: koNameMap.get(artist.id) || null, wikiEntryId: artist.id }),
     }).catch((e) => console.warn(`[data-engine] Naver News for ${artist.title} error:`, e.message));
     fireAndForget(p);
     launched++;
