@@ -98,7 +98,7 @@ const AdminDataQuality = () => {
     onSuccess: (data) => {
       const sup = data.suppressed_skipped ?? 0;
       const msg = sup > 0
-        ? `감사 완료: ${data.inserted}건 신규, ${sup}건 무시됨 (${data.artists_checked}명 검사)`
+        ? `감사 완료: ${data.inserted}건 신규, ${sup}건 무시됨 (${data.artists_checked}명 검사) · 목록 확인 시 '무시 포함'을 켜세요`
         : `감사 완료: ${data.inserted}건 이슈 발견 (${data.artists_checked}명 검사)`;
       toast.success(msg);
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
