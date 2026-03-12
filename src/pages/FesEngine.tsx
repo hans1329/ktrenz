@@ -306,56 +306,15 @@ Twitter/X: 1.0x  ← 기준선`}</code>
         <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">🔥</span><p className="text-sm font-bold text-foreground mt-1">200+</p><p className="text-xs text-muted-foreground">Explosive</p></Card>
       </div>
 
-      {/* ── 정규화 분석 에이전트 (NEW) ── */}
-      <SectionHeader icon={FlaskConical} title="FES 정규화 분석 에이전트 (v6)" color="bg-violet-600" />
-      <p className="text-sm text-muted-foreground">YouTube 편중 문제를 해결하고, 카테고리별 기여도를 정량화하며, 독립적인 트렌드 추적을 수행하는 분석 에이전트입니다.</p>
-
-      <Card className="p-4 bg-violet-500/5 border-violet-500/20">
-        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">핵심 기능</p>
-        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li><strong className="text-foreground">Z-Score 정규화:</strong> 각 카테고리의 변동률을 전체 아티스트 분포 기준으로 표준화하여 YouTube의 절대 변동이 다른 카테고리를 마스킹하지 않도록 함</li>
-          <li><strong className="text-foreground">기여도 분석:</strong> FES 변동에 각 카테고리가 얼마나 기여했는지 가중 |z-score| 비율로 계산</li>
-          <li><strong className="text-foreground">독립 트렌드 추적:</strong> 7일/30일 롤링 통계로 카테고리별 방향, 표준편차, 모멘텀을 독립적으로 추적</li>
-          <li><strong className="text-foreground">주도 카테고리 식별:</strong> 매 스냅샷마다 FES 변동을 이끈 카테고리를 자동 식별</li>
-        </ul>
-      </Card>
-
-      <FormulaCard title="Z-Score 정규화" formula={`카테고리별 변동률:
-  change_cat = (현재_스코어 − 24h전_스코어) / 24h전_스코어 × 100
-
-전체 아티스트 분포 통계:
-  mean_cat  = avg(모든 아티스트의 change_cat)
-  stddev_cat = stddev(모든 아티스트의 change_cat)
-
-정규화된 z-score:
-  z_cat = (change_cat − mean_cat) / stddev_cat`}
-        description="z-score를 통해 YouTube의 5% 변동과 Buzz의 50% 변동을 동일 스케일에서 비교할 수 있습니다." />
-
-      <FormulaCard title="기여도 계산" formula={`가중 |z| = |z_cat| × weight_cat
-기여도_cat = 가중|z|_cat / Σ(가중|z|_all) × 100%
-
-정규화 FES = sigmoid(Σ(z_cat × weight_cat) × 0.5) → 10~250
-주도 카테고리 = max(기여도_cat)`}
-        description="예: YouTube z=0.5(기여 25%), Buzz z=2.1(기여 40%), Album z=-0.3(기여 5%) → 주도 카테고리: Buzz" />
-
-      <FormulaCard title="독립 트렌드 (7d/30d)" formula={`카테고리별 롤링 통계:
-  avg_7d   = 최근 7일 z-score 평균
-  stddev_7d = 최근 7일 z-score 표준편차
-  change_7d = z_최신 − z_7일전
-
-모멘텀 = (avg_7d − avg_30d) / |avg_30d| × 100
-
-트렌드 방향:
-  rising  — change_7d > 0.5
-  falling — change_7d < -0.5
-  spike   — |change_7d| > 2.0
-  flat    — 그 외`}
-        description="모멘텀이 양수면 7일 평균이 30일 평균을 상회하는 상승 추세, 음수면 하락 추세를 나타냅니다." />
+      {/* ── 정규화 분석 테이블 ── */}
+      <SectionHeader icon={FlaskConical} title="v6 데이터 저장소" color="bg-violet-600" />
+      <p className="text-sm text-muted-foreground">FES v6의 Z-Score 정규화, 기여도, 트렌드 데이터가 저장되는 테이블입니다.</p>
 
       <VarTable rows={[
-        { name: "ktrenz_fes_contributions", desc: "카테고리별 z-score + 기여도 + 정규화 FES (스냅샷당)", source: "Supabase" },
-        { name: "ktrenz_category_trends", desc: "카테고리별 7d/30d 독립 트렌드 통계", source: "Supabase" },
-        { name: "ktrenz_normalization_stats", desc: "전체 아티스트 분포 기준 통계 (평균/σ/중앙값)", source: "Supabase" },
+        { name: "ktrenz_fes_contributions", desc: "카테고리별 z-score + 기여도 + normalized_fes + 주도 카테고리 (스냅샷당)", source: "Supabase" },
+        { name: "ktrenz_category_trends", desc: "카테고리별 7d/30d 독립 트렌드 (방향/모멘텀/변동률)", source: "Supabase" },
+        { name: "ktrenz_normalization_stats", desc: "전체 아티스트 분포 기준 통계 (평균/σ/중앙값/샘플수)", source: "Supabase" },
+        { name: "v3_scores_v2.energy_score", desc: "FES Analyst가 덮어쓰는 최종 에너지 점수", source: "Supabase" },
       ]} />
 
       {/* ── AI 예측 에이전트 (NEW) ── */}
