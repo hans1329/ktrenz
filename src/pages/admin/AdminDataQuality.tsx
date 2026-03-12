@@ -54,6 +54,7 @@ const AdminDataQuality = () => {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showResolved, setShowResolved] = useState(false);
+  const [showSuppressed, setShowSuppressed] = useState(false);
   const [idAuditProgress, setIdAuditProgress] = useState<{ done: number; total: number } | null>(null);
   const [resolveProgress, setResolveProgress] = useState<{ done: number; total: number } | null>(null);
 
