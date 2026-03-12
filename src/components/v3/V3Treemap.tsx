@@ -382,6 +382,9 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
               </div>
             )}
 
+            {/* AI Fan Sunbae Card — right after category changes */}
+            <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
+
             {item.sparkline.length >= 2 && (
               <div className="rounded-xl bg-muted/30 border border-border p-3">
                 <p className="text-base text-foreground mb-1 uppercase tracking-wider font-extrabold">{t("drawer.scoreMomentum")}</p>
@@ -410,9 +413,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             />
 
             <V3NextScheduleCard wikiEntryId={item.id} artistImage={item.imageUrl} artistName={item.title} />
-
-            {/* AI Prediction */}
-            <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
 
             <button onClick={() => navigate(`/artist/${item.slug}`)}
               className="w-full flex items-center justify-center gap-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 py-3.5 rounded-full transition-colors">
