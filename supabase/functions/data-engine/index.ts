@@ -13,7 +13,7 @@ const PIPELINE = ["youtube", "external_videos", "music", "hanteo", "apple_music_
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
-const BUZZ_SOURCES = ["buzz_x", "buzz_reddit", "buzz_naver", "buzz_tiktok", "buzz_news"] as const;
+const BUZZ_SOURCES = ["buzz_x", "buzz_reddit", "buzz_naver", "buzz_tiktok"] as const;
 type BuzzSourceModule = typeof BUZZ_SOURCES[number];
 
 type Module = PipelineModule | BuzzSourceModule;
