@@ -49,6 +49,8 @@ interface CollectionStatus {
   lastfm?: string;
   deezer?: string;
   hanteo?: string;
+  apple_music_charts?: string;
+  billboard_charts?: string;
 }
 
 interface ArtistTier {
