@@ -199,7 +199,7 @@ Provide your analysis with reasoning in all 4 languages.`;
         prediction,
         reasoning: prediction.reasoning,
         features_used: features,
-        model_version: "v1-gpt4o-mini",
+        model_version: "v2-gpt4o-mini-i18n",
       });
 
       results.push({ artist: artistName, prediction });
