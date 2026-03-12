@@ -257,7 +257,7 @@ const V3ArtistDetail = () => {
       if (data.music?.musicScore != null) parts.push(`Music: ${data.music.musicScore}`);
       if (data.album) parts.push('Album ✓');
       const notificationFes = data.fes?.energy_score ?? data.fallbackFes?.results?.[0]?.energyScore;
-      if (notificationFes != null) parts.push(`FES: ${Math.round(notificationFes)}°E`);
+      if (notificationFes != null) parts.push(`FES: ${Math.round(notificationFes)}°`);
       const desc = parts.join(' · ') || 'Using cached data';
       if (data.ytQuotaExceeded) {
         toast({ title: "YouTube 할당량 소진", description: "일일 할당량이 소진되었습니다. 내일 자동으로 리셋됩니다.", variant: "destructive" });

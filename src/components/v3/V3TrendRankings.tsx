@@ -93,7 +93,7 @@ const MiniEnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: 
           </defs>
         </svg>
         <div className="absolute inset-0 flex items-end justify-center pb-0">
-          <span className="text-lg font-black text-foreground leading-none">{score}°E</span>
+          <span className="text-lg font-black text-foreground leading-none">{score}°</span>
         </div>
       </div>
       <div className={cn("flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full", level.bg)}>
@@ -240,7 +240,7 @@ const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number
           <ChangeIndicator change={item.changePercent ?? 0} />
           {item.energy_score > 0 && (
             <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 justify-end mt-0.5">
-              <Flame className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°E
+              <Flame className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°
             </span>
           )}
         </div>
@@ -293,7 +293,7 @@ const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any)
                   <ChangeIndicator change={item.changePercent ?? 0} />
                   {item.energy_score > 0 && (
                     <span className="text-[10px] text-primary flex items-center gap-0.5 justify-end mt-0.5">
-                      <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°E
+                      <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}°
                     </span>
                   )}
                 </div>
