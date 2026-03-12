@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, ArrowUpRight, Minus, Zap, Target, Users } from "lucide-react";
+import { Target, Users, MessageCircle } from "lucide-react";
 
 interface AIPredictionCardProps {
   wikiEntryId: string;
@@ -20,7 +21,8 @@ const DIRECTION_CONFIG: Record<string, { emoji: string; bgClass: string }> = {
 };
 
 export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredictionCardProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const navigate = useNavigate();
 
   const { data: prediction, isLoading } = useQuery({
     queryKey: ["fes-prediction-v2", wikiEntryId],
@@ -37,11 +39,9 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
       const pred = d.prediction || {};
       return {
         direction: pred.fes_direction || "stable",
-        // Structured 3-part content (new)
         hot_summary: pick(pred, "hot_summary", language) || pick(pred, "fan_briefing", language),
         fan_action: pick(pred, "fan_action", language),
         position_note: pick(pred, "position_note", language),
-        // Legacy fallback
         fan_briefing: pick(pred, "fan_briefing", language) || d.reasoning,
         predicted_at: d.predicted_at,
       };
@@ -54,11 +54,32 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
   const config = DIRECTION_CONFIG[prediction.direction] || DIRECTION_CONFIG.stable;
   const hasStructured = prediction.hot_summary && prediction.fan_action;
 
+  const handleClick = () => {
+    // Build a context message from the prediction to seed the agent chat
+    const contextMessage = prediction.hot_summary || prediction.fan_briefing || "";
+    const actionMessage = prediction.fan_action || "";
+    const seed = [contextMessage, actionMessage].filter(Boolean).join(" ");
+
+    // Store context for the agent to pick up
+    localStorage.setItem("ktrenz_agent_seed", JSON.stringify({
+      artistName,
+      wikiEntryId,
+      message: seed,
+      createdAt: Date.now(),
+    }));
+
+    navigate("/agent");
+  };
+
   return (
-    <div className={cn(
-      "rounded-xl overflow-hidden border border-border/60",
-      "bg-gradient-to-br", config.bgClass
-    )}>
+    <button
+      onClick={handleClick}
+      className={cn(
+        "w-full text-left rounded-xl overflow-hidden border border-border/60 transition-all",
+        "bg-gradient-to-br", config.bgClass,
+        "hover:border-primary/40 hover:shadow-md active:scale-[0.98]"
+      )}
+    >
       <div className="p-3.5 space-y-2.5">
         {hasStructured ? (
           <>
@@ -95,7 +116,6 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
             )}
           </>
         ) : (
-          /* Legacy: single fan_briefing block */
           <div className="flex items-start gap-2">
             <span className="text-base mt-0.5 shrink-0">{config.emoji}</span>
             <p className="text-[11px] text-foreground/80 leading-relaxed line-clamp-4">
@@ -104,12 +124,18 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
           </div>
         )}
 
-        {/* Timestamp */}
-        <p className="text-[9px] text-muted-foreground text-right">
-          {new Date(prediction.predicted_at).toLocaleDateString()}
-        </p>
+        {/* CTA + Timestamp row */}
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary">
+            <MessageCircle className="w-3 h-3" />
+            {t("prediction.askAgent") || "Ask Agent more →"}
+          </span>
+          <p className="text-[9px] text-muted-foreground">
+            {new Date(prediction.predicted_at).toLocaleDateString()}
+          </p>
+        </div>
       </div>
-    </div>
+    </button>
   );
 }
 

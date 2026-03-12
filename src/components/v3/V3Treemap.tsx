@@ -386,20 +386,6 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
             {/* AI Fan Sunbae Card — right after category changes */}
             <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
 
-            {item.sparkline.length >= 2 && (
-              <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <p className="text-base text-foreground mb-1 uppercase tracking-wider font-extrabold">{t("drawer.scoreMomentum")}</p>
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t border-dashed" style={{ borderColor: "hsl(0, 80%, 65%)" }} /> <span className="text-muted-foreground">7d EMA</span></span>
-                  <span className="flex items-center gap-1 text-[9px]"><span className="inline-block w-4 h-0 border-t-2 border-dashed" style={{ borderColor: "hsl(210, 80%, 65%)" }} /> <span className="text-muted-foreground">30d EMA</span></span>
-                </div>
-                <div className="relative h-16 w-full overflow-hidden">
-                  <MiniSparkline data={item.sparkline} width={600} height={64}
-                    color={item.energyChange24h >= 15 ? "hsl(0, 80%, 60%)" : item.energyChange24h >= 0 ? "hsl(145, 65%, 50%)" : "hsl(220, 70%, 60%)"}
-                    ema7d={item.ema7d} ema30d={item.ema30d} />
-                </div>
-              </div>
-                )}
 
 
 
