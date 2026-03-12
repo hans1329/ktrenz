@@ -491,34 +491,38 @@ async function autoResolveForFullAudit(
 ) {
   if (artistWikiIds.length === 0) return 0;
 
-  const { data: openIssues } = await supabase
-    .from("ktrenz_data_quality_issues")
-    .select("id, wiki_entry_id, issue_type, platform")
-    .in("wiki_entry_id", artistWikiIds)
-    .eq("resolved", false);
+  // Fetch all existing unresolved issues for these artists
+  const allOpen: { id: string; wiki_entry_id: string; issue_type: string; platform: string }[] = [];
+  for (const ids of chunk(artistWikiIds, 20)) {
+    const { data } = await supabase
+      .from("ktrenz_data_quality_issues")
+      .select("id, wiki_entry_id, issue_type, platform")
+      .in("wiki_entry_id", ids)
+      .eq("resolved", false);
+    if (data) allOpen.push(...data);
+  }
 
-  if (!openIssues || openIssues.length === 0) return 0;
+  if (allOpen.length === 0) return 0;
 
   const currentKeys = new Set(
     currentIssues.map((i) => `${i.wiki_entry_id}|${i.issue_type}|${i.platform}`),
   );
 
-  const toResolve = openIssues
+  // Issues that are no longer detected → delete them
+  const toDelete = allOpen
     .filter((o) => !currentKeys.has(`${o.wiki_entry_id}|${o.issue_type}|${o.platform}`))
     .map((o) => o.id);
 
-  if (toResolve.length === 0) return 0;
+  if (toDelete.length === 0) return 0;
 
-  await supabase
-    .from("ktrenz_data_quality_issues")
-    .update({
-      resolved: true,
-      resolved_at: new Date().toISOString(),
-      resolution_note: "자동 해결: 최신 감사에서 미감지",
-    })
-    .in("id", toResolve);
+  for (const batch of chunk(toDelete, 50)) {
+    await supabase
+      .from("ktrenz_data_quality_issues")
+      .delete()
+      .in("id", batch);
+  }
 
-  return toResolve.length;
+  return toDelete.length;
 }
 
 Deno.serve(async (req) => {
