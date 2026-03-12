@@ -93,7 +93,7 @@ const MiniEnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: 
           </defs>
         </svg>
         <div className="absolute inset-0 flex items-end justify-center pb-0">
-          <span className="text-lg font-black text-foreground leading-none">{score}°E</span>
+          <span className="text-lg font-black text-foreground leading-none">{score}°</span>
         </div>
       </div>
       <div className={cn("flex items-center gap-0.5 mt-0.5 px-2 py-0.5 rounded-full", level.bg)}>
