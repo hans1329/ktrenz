@@ -229,6 +229,9 @@ export default function V3MissionCards({
   }, [consumePendingMission]);
 
   const ytVideos: YTVideo[] = (() => {
+    const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
     const topVideos = metadata?.youtube_stats?.youtube_top_videos || [];
     const vids: YTVideo[] = topVideos
       .filter((v: any) => v.videoId || v.video_id)
@@ -237,9 +240,14 @@ export default function V3MissionCards({
         title: v.title || t("mission.video"),
       }))
       .slice(0, 5);
-    // Fallback to the single prop videoId if metadata has nothing
+
+    // Fallback to the single prop videoId — but only if channel has recent activity
     if (vids.length === 0 && videoId) {
-      vids.push({ id: videoId, title: videoTitle || t("mission.latestVideo") });
+      const newestPublished = metadata?.youtube_stats?.youtube_recent_newest_published;
+      const isRecent = newestPublished && (now - new Date(newestPublished).getTime()) < SIX_MONTHS_MS;
+      if (isRecent) {
+        vids.push({ id: videoId, title: videoTitle || t("mission.latestVideo") });
+      }
     }
     return vids;
   })();
