@@ -931,7 +931,7 @@ Artist: ${context.artist}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs">주도: {fesContrib.leading_category}</Badge>
-                        <Badge variant="secondary" className="text-xs">FES: {fesContrib.normalized_fes}°E</Badge>
+                        <Badge variant="secondary" className="text-xs">FES: {fesContrib.normalized_fes}°</Badge>
                       </div>
                       <div className="flex h-6 rounded-full overflow-hidden bg-muted/50">
                         {cats.filter(c => c.contrib > 0).sort((a, b) => b.contrib - a.contrib).map(c => (
