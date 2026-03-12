@@ -277,7 +277,25 @@ const AdminDataQuality = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {resolveProgress && (
+        <Card className="p-3">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">
+                일괄 해결 진행중: <span className="font-semibold text-foreground">{resolveProgress.done}</span> / {resolveProgress.total}
+              </p>
+              <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${(resolveProgress.done / resolveProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">미해결 전체</p>
           <p className="text-2xl font-bold text-foreground">{totalOpen}</p>
