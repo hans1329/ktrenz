@@ -2530,6 +2530,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_data_quality_issues: {
+        Row: {
+          actual_value: string | null
+          artist_name: string | null
+          description: string | null
+          detected_at: string
+          expected_value: string | null
+          id: string
+          issue_type: string
+          platform: string | null
+          resolution_note: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+          updated_at: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          actual_value?: string | null
+          artist_name?: string | null
+          description?: string | null
+          detected_at?: string
+          expected_value?: string | null
+          id?: string
+          issue_type: string
+          platform?: string | null
+          resolution_note?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+          updated_at?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          actual_value?: string | null
+          artist_name?: string | null
+          description?: string | null
+          detected_at?: string
+          expected_value?: string | null
+          id?: string
+          issue_type?: string
+          platform?: string | null
+          resolution_note?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+          wiki_entry_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_data_run_usage: {
         Row: {
           created_at: string
