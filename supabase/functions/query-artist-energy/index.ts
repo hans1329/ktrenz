@@ -129,10 +129,30 @@ Deno.serve(async (req) => {
 
     const result = {
       wiki_entry_id,
-      energy_score: energyScore,
+      energy_score: contrib?.normalized_fes ?? energyScore,
       energy_rank: currentScore.energy_rank,
       change_24h: Math.round(overallChange * 10) / 10,
       prev_snapshot_at: prev24h?.snapshot_at || null,
+      // FES Analyst 기여도 데이터
+      analyst: contrib ? {
+        normalized_fes: contrib.normalized_fes,
+        leading_category: contrib.leading_category,
+        contributions: {
+          youtube: contrib.youtube_contrib,
+          buzz: contrib.buzz_contrib,
+          album: contrib.album_contrib,
+          music: contrib.music_contrib,
+          social: contrib.social_contrib,
+        },
+        z_scores: {
+          youtube: contrib.youtube_z,
+          buzz: contrib.buzz_z,
+          album: contrib.album_z,
+          music: contrib.music_z,
+          social: contrib.social_z,
+        },
+        analyzed_at: contrib.snapshot_at,
+      } : null,
       categories: {} as Record<string, any>,
     };
 
