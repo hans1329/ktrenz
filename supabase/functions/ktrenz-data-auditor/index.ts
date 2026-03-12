@@ -51,10 +51,10 @@ Deno.serve(async (req) => {
       // No body or invalid JSON — audit all
     }
 
-    // Get artists to audit
+    // Get artists to audit from v3_artist_tiers
     let query = supabase
-      .from("v3_artists")
-      .select("wiki_entry_id, name, tier, metadata");
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id, display_name, tier, youtube_channel_id, lastfm_artist_name, deezer_artist_id");
 
     if (targetWikiEntryId) {
       query = query.eq("wiki_entry_id", targetWikiEntryId);
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
 
     for (const artist of artists) {
       const wikiId = artist.wiki_entry_id;
-      const name = artist.name;
+      const name = artist.display_name;
 
       // ── Check 1: Missing platform snapshots ──
       for (const platform of REQUIRED_PLATFORMS) {
