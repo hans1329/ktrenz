@@ -45,7 +45,7 @@ const EnergyGauge = ({ score, maxScore = 500 }: { score: number; maxScore?: numb
           </defs>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-0">
-          <span className="text-2xl font-black text-foreground">{score}</span>
+          <span className="text-2xl font-black text-foreground">{score}°E</span>
         </div>
       </div>
       <div className={cn("flex items-center gap-1 mt-1 px-3 py-1 rounded-full", level.bg)}>
