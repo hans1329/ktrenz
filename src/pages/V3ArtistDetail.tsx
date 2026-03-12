@@ -378,21 +378,7 @@ const V3ArtistDetail = () => {
           </div>
         </div>
 
-        {(ytData || buzzData) && (
-          <Card className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"><TrendingUp className="w-4 h-4 text-primary" /></div>
-                <div><p className="text-xs text-muted-foreground font-medium">트렌드 스코어</p><p className="text-2xl font-black text-foreground">{(totalTrendScore || 0).toLocaleString()}</p></div>
-              </div>
-              <div className="text-right space-y-1">
-                {ytData && <div className="flex items-center gap-1.5 justify-end"><Youtube className="w-3 h-3 text-destructive" /><span className="text-xs font-semibold text-foreground">{(ytData.youtubeScore || 0).toLocaleString()}</span></div>}
-                {buzzData && <div className="flex items-center gap-1.5 justify-end"><MessageSquare className="w-3 h-3 text-amber-500" /><span className="text-xs font-semibold text-foreground">{(buzzData.buzzScore || 0).toLocaleString()}</span></div>}
-                {(effectiveMusicScore > 0 || musicData) && <div className="flex items-center gap-1.5 justify-end"><Music className="w-3 h-3 text-primary" /><span className="text-xs font-semibold text-foreground">{effectiveMusicScore.toLocaleString()}</span></div>}
-              </div>
-            </div>
-          </Card>
-        )}
+        {/* 트렌드 스코어 카드 — 숨김 처리 */}
 
         {(refreshMutation.isPending || refreshMutation.isSuccess) && <RainbowProgress isComplete={!refreshMutation.isPending} />}
 
