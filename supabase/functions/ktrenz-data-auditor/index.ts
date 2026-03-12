@@ -242,6 +242,88 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── Check 6b: Verify Deezer ID points to correct artist ──
+      if (artist.deezer_artist_id && artist.deezer_artist_id !== "" && artist.deezer_artist_id !== "null") {
+        try {
+          const deezerResp = await fetch(`https://api.deezer.com/artist/${artist.deezer_artist_id}`);
+          const deezerData = await deezerResp.json();
+          if (deezerData && !deezerData.error) {
+            const deezerName = (deezerData.name || "").toLowerCase();
+            const expectedName = name.toLowerCase();
+            // Check if names match (fuzzy: one contains the other)
+            const match = deezerName.includes(expectedName) || expectedName.includes(deezerName)
+              || deezerName.replace(/\s/g, "") === expectedName.replace(/\s/g, "");
+            if (!match) {
+              // Also check fans count - if too low for a known artist, likely wrong
+              const fans = deezerData.nb_fan || 0;
+              issues.push({
+                wiki_entry_id: wikiId,
+                artist_name: name,
+                issue_type: "wrong_identifier",
+                platform: "deezer_artist_id",
+                severity: "critical",
+                title: `${name}: Deezer ID가 다른 아티스트를 가리킴`,
+                description: `저장된 Deezer ID ${artist.deezer_artist_id}의 실제 아티스트: "${deezerData.name}" (fans: ${fans.toLocaleString()}). 예상: "${name}"`,
+                expected_value: name,
+                actual_value: `${deezerData.name} (ID: ${artist.deezer_artist_id}, fans: ${fans.toLocaleString()})`,
+              });
+              console.log(`[Auditor] ⚠️ Deezer mismatch: ${name} → stored ID ${artist.deezer_artist_id} resolves to "${deezerData.name}" (${fans} fans)`);
+
+              // Try to find the correct ID
+              const searchResp = await fetch(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}&limit=3`);
+              const searchData = await searchResp.json();
+              if (searchData?.data?.length > 0) {
+                const best = searchData.data[0];
+                console.log(`[Auditor] 💡 Suggested correct Deezer ID for ${name}: ${best.id} ("${best.name}", ${best.nb_fan} fans)`);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`[Auditor] Deezer verify failed for ${name}: ${(e as Error).message}`);
+        }
+      }
+
+      // ── Check 6c: Verify Last.fm name resolves correctly ──
+      if (artist.lastfm_artist_name && artist.lastfm_artist_name !== "") {
+        try {
+          const LASTFM_KEY = Deno.env.get("LASTFM_API_KEY");
+          if (LASTFM_KEY) {
+            const lfmResp = await fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artist.lastfm_artist_name)}&api_key=${LASTFM_KEY}&format=json`);
+            const lfmData = await lfmResp.json();
+            if (lfmData?.error) {
+              issues.push({
+                wiki_entry_id: wikiId,
+                artist_name: name,
+                issue_type: "wrong_identifier",
+                platform: "lastfm_artist_name",
+                severity: "high",
+                title: `${name}: Last.fm 이름 조회 실패`,
+                description: `"${artist.lastfm_artist_name}" → Last.fm API 에러: ${lfmData.message}`,
+                expected_value: "유효한 아티스트",
+                actual_value: `Error: ${lfmData.message}`,
+              });
+            } else if (lfmData?.artist) {
+              const listeners = parseInt(lfmData.artist.stats?.listeners || "0");
+              if (listeners < 1000) {
+                issues.push({
+                  wiki_entry_id: wikiId,
+                  artist_name: name,
+                  issue_type: "wrong_identifier",
+                  platform: "lastfm_artist_name",
+                  severity: "high",
+                  title: `${name}: Last.fm 리스너 비정상 (${listeners})`,
+                  description: `"${artist.lastfm_artist_name}"의 리스너가 ${listeners}명으로 Tier 1 아티스트치고 너무 적습니다. 동명이인 가능성.`,
+                  expected_value: "> 10,000",
+                  actual_value: `${listeners.toLocaleString()} listeners`,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`[Auditor] Last.fm verify failed for ${name}: ${(e as Error).message}`);
+        }
+      }
+
       // ── Check 7: Geo data coverage ──
       for (const geoSource of REQUIRED_GEO_SOURCES) {
         const { count } = await supabase
