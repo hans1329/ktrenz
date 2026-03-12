@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
       }
 
       // ── Check 6c: Verify Last.fm name resolves correctly ──
-      if (artist.lastfm_artist_name && artist.lastfm_artist_name !== "") {
+      if (verifyIds && artist.lastfm_artist_name && artist.lastfm_artist_name !== "") {
         try {
           const LASTFM_KEY = Deno.env.get("LASTFM_API_KEY");
           if (LASTFM_KEY) {
