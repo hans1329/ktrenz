@@ -97,58 +97,68 @@ Deno.serve(async (req) => {
     const matchedArtists = new Set<string>();
     const errors: string[] = [];
 
-    for (const chart of CHART_URLS) {
-      try {
-        const res = await fetch(chart.url, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json",
-          },
-        });
-        if (!res.ok) {
-          errors.push(`${chart.country}: HTTP ${res.status}`);
-          continue;
-        }
-        const data = await res.json();
-        const results = data?.feed?.results;
-        if (!Array.isArray(results)) {
-          errors.push(`${chart.country}: no results array`);
-          continue;
-        }
-
-        totalCharted += results.length;
-
-        for (let i = 0; i < results.length; i++) {
-          const entry = results[i];
-          const artistName = entry.artistName?.toLowerCase() || "";
-          const wikiEntryId = nameLookup.get(artistName);
-
-          if (wikiEntryId) {
-            totalMatched++;
-            matchedArtists.add(wikiEntryId);
-
-            await sb.from("ktrenz_data_snapshots").insert({
-              wiki_entry_id: wikiEntryId,
-              platform: "apple_music_chart",
-              metrics: {
-                country: chart.country,
-                country_label: chart.label,
-                chart_position: i + 1,
-                album_name: entry.name,
-                artist_name: entry.artistName,
-                release_date: entry.releaseDate,
-                artwork_url: entry.artworkUrl100,
-                genres: entry.genres?.map((g: any) => g.name),
-              },
-            });
+    // Process countries in parallel batches of 5
+    const BATCH_SIZE = 5;
+    for (let b = 0; b < CHART_URLS.length; b += BATCH_SIZE) {
+      const batch = CHART_URLS.slice(b, b + BATCH_SIZE);
+      const results = await Promise.allSettled(batch.map(async (chart) => {
+        try {
+          const res = await fetch(chart.url, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "application/json",
+            },
+          });
+          if (!res.ok) {
+            errors.push(`${chart.country}: HTTP ${res.status}`);
+            return;
           }
-        }
+          const data = await res.json();
+          const albums = data?.feed?.results;
+          if (!Array.isArray(albums)) {
+            errors.push(`${chart.country}: no results array`);
+            return;
+          }
 
-        console.log(`[AppleMusic] ${chart.label}: ${results.length} albums scanned`);
-        // Small delay to be polite
-        await new Promise((r) => setTimeout(r, 200));
-      } catch (e) {
-        errors.push(`${chart.country}: ${e.message}`);
+          totalCharted += albums.length;
+          const inserts: any[] = [];
+
+          for (let i = 0; i < albums.length; i++) {
+            const entry = albums[i];
+            const artistName = entry.artistName?.toLowerCase() || "";
+            const wikiEntryId = nameLookup.get(artistName);
+
+            if (wikiEntryId) {
+              totalMatched++;
+              matchedArtists.add(wikiEntryId);
+              inserts.push({
+                wiki_entry_id: wikiEntryId,
+                platform: "apple_music_chart",
+                metrics: {
+                  country: chart.country,
+                  country_label: chart.label,
+                  chart_position: i + 1,
+                  album_name: entry.name,
+                  artist_name: entry.artistName,
+                  release_date: entry.releaseDate,
+                  artwork_url: entry.artworkUrl100,
+                  genres: entry.genres?.map((g: any) => g.name),
+                },
+              });
+            }
+          }
+
+          if (inserts.length > 0) {
+            await sb.from("ktrenz_data_snapshots").insert(inserts);
+          }
+          console.log(`[AppleMusic] ${chart.label}: ${albums.length} albums, ${inserts.length} matched`);
+        } catch (e) {
+          errors.push(`${chart.country}: ${e.message}`);
+        }
+      }));
+      // Small delay between batches
+      if (b + BATCH_SIZE < CHART_URLS.length) {
+        await new Promise((r) => setTimeout(r, 300));
       }
     }
 
