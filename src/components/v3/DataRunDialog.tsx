@@ -64,6 +64,7 @@ interface DataRunDialogProps {
   onRunModule: (module: DataModule) => void;
   isRunning: boolean;
   isCrawling: boolean;
+  isAdmin?: boolean;
 }
 
 export default function DataRunDialog({
