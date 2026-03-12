@@ -2545,6 +2545,9 @@ export type Database = {
           resolved_at: string | null
           resolved_by: string | null
           severity: string
+          suppressed: boolean
+          suppressed_at: string | null
+          suppressed_note: string | null
           title: string
           updated_at: string
           wiki_entry_id: string
@@ -2563,6 +2566,9 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
+          suppressed?: boolean
+          suppressed_at?: string | null
+          suppressed_note?: string | null
           title: string
           updated_at?: string
           wiki_entry_id: string
@@ -2581,6 +2587,9 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           severity?: string
+          suppressed?: boolean
+          suppressed_at?: string | null
+          suppressed_note?: string | null
           title?: string
           updated_at?: string
           wiki_entry_id?: string
