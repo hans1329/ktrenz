@@ -26,7 +26,7 @@ const SOURCE_CONFIG = [
   { key: "apple_music", label: "Apple Music", icon: Music, color: "text-pink-500", platform: "apple_music_chart" },
   { key: "billboard", label: "Billboard", icon: BarChart3, color: "text-blue-600", platform: "billboard_chart" },
   // Sales
-  { key: "hanteo", label: "Hanteo", icon: Disc3, color: "text-amber-500", platform: "hanteo_daily" },
+  { key: "hanteo", label: "Album Data", icon: Disc3, color: "text-amber-500", platform: "hanteo_daily" },
   // Buzz (multi-source breakdown)
   { key: "buzz_x", label: "X (Twitter)", icon: Twitter, color: "text-blue-400", platform: "buzz_multi", sourceFilter: "x_twitter" },
   { key: "buzz_reddit", label: "Reddit", icon: MessageCircle, color: "text-orange-500", platform: "buzz_multi", sourceFilter: "reddit" },
