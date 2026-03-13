@@ -417,7 +417,7 @@ function FeedbackDrawer({
 // ── Main Hook ──────────────────────────────────────────
 export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
   const { user } = useAuth();
-  const { activeSlot, slots } = useAgentSlots();
+  const { activeSlot: currentActiveSlot, slots } = useAgentSlots();
   const { language } = useLanguage();
   const [feedbackState, setFeedbackState] = useState<{
     trigger: FeedbackTrigger;
@@ -436,14 +436,16 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
     if (!user?.id) return;
     // Briefing & inactivity only for registered agent artists
     if (!isRegisteredAgent && (trigger === "briefing" || trigger === "inactivity")) return;
+
     const feedback = generateFeedback(trigger, status, language);
     setFeedbackState({ trigger, feedback });
 
-    // Save to chat history only for registered agent artists
-    if (isRegisteredAgent) {
-      saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
+    const shouldSave = isRegisteredAgent || trigger === "completion" || trigger === "milestone";
+    if (shouldSave) {
+      const targetSlotId = matchingSlot?.id ?? currentActiveSlot?.id ?? null;
+      void saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text, targetSlotId);
     }
-  }, [user?.id, language, isRegisteredAgent]);
+  }, [user?.id, language, isRegisteredAgent, matchingSlot?.id, currentActiveSlot?.id]);
 
   // Trigger: mission completion
   const onMissionComplete = useCallback((status: MissionStatus) => {
