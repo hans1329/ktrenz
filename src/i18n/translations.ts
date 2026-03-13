@@ -420,6 +420,11 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Rankings ──
   "ranking.myBias": { en: "My Bias", ko: "나의 최애", ja: "推しアーティスト", zh: "我的最爱" },
+
+  // ── Agent Alerts ──
+  "alert.dismiss": { en: "Got it", ko: "확인", ja: "了解", zh: "知道了" },
+  "alert.viewInChat": { en: "View in Chat", ko: "채팅에서 보기", ja: "チャットで見る", zh: "在聊天中查看" },
+  "alert.liveAlert": { en: "Live Alert", ko: "실시간 알림", ja: "リアルタイム通知", zh: "实时提醒" },
 };
 
 export default translations;

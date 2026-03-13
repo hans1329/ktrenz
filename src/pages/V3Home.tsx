@@ -7,11 +7,14 @@ import V3TabBar, { type V3Tab } from "@/components/v3/V3TabBar";
 import V3TrendRankings from "@/components/v3/V3TrendRankings";
 import V3FanAgent from "@/components/v3/V3FanAgent";
 import V3DesktopHero from "@/components/v3/V3DesktopHero";
+import AgentAlertNotification from "@/components/v3/AgentAlertNotification";
+import { useAgentAlerts } from "@/hooks/useAgentAlerts";
 
 const V3Home = () => {
   const [activeTab, setActiveTab] = useState<V3Tab>("rankings");
   const isMobile = useIsMobile();
   const isSubPage = activeTab === "agent";
+  const { pendingAlert, dismissAlert } = useAgentAlerts();
 
   // V3 다크 테마 적용
   useEffect(() => {
@@ -39,6 +42,7 @@ const V3Home = () => {
           {renderContent()}
         </div>
         <V3TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+        <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
       </>
     );
   }
@@ -59,6 +63,7 @@ const V3Home = () => {
           </div>
         </main>
       </div>
+      <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
     </>
   );
 };
