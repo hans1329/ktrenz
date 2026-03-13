@@ -51,8 +51,10 @@ type ChatMessage = {
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
+type QuickActionKind = "fanActivity" | "liveRankings" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings";
 
 interface QuickAction {
+  id: QuickActionKind;
   icon: React.ElementType;
   label: string;
   prompt: string;
@@ -61,12 +63,12 @@ interface QuickAction {
 }
 
 const getQuickActions = (t: (key: string) => string): QuickAction[] => [
-  { icon: Heart, label: t("agent.fanActivity"), prompt: t("agent.prompt.fanActivity"), mode: "chat", color: "text-pink-400" },
-  { icon: TrendingUp, label: t("agent.liveRankings"), prompt: t("agent.prompt.liveRankings"), mode: "trend", color: "text-blue-400" },
-  { icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
-  { icon: Music2, label: t("agent.streamingGuide"), prompt: t("agent.prompt.streamingGuide"), mode: "streaming", color: "text-green-400" },
-  { icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
-  { icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
+  { id: "fanActivity", icon: Heart, label: t("agent.fanActivity"), prompt: t("agent.prompt.fanActivity"), mode: "chat", color: "text-pink-400" },
+  { id: "liveRankings", icon: TrendingUp, label: t("agent.liveRankings"), prompt: t("agent.prompt.liveRankings"), mode: "trend", color: "text-blue-400" },
+  { id: "trendAnalysis", icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
+  { id: "streamingGuide", icon: Music2, label: t("agent.streamingGuide"), prompt: t("agent.prompt.streamingGuide"), mode: "streaming", color: "text-green-400" },
+  { id: "newsBriefing", icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
+  { id: "alertSettings", icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
 ];
 
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
@@ -185,6 +187,7 @@ async function streamChat({
   messages,
   token,
   agentSlotId,
+  quickActionHint,
   onDelta,
   onMeta,
   onStatus,
@@ -193,6 +196,7 @@ async function streamChat({
   messages: ChatMessage[];
   token: string;
   agentSlotId?: string | null;
+  quickActionHint?: "live_rankings" | "trend_analysis";
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
   onStatus?: (status: string) => void;
@@ -225,6 +229,7 @@ async function streamChat({
       messages,
       language: (window as any).__ktrenz_lang || "ko",
       agent_slot_id: agentSlotId ?? null,
+      quick_action: quickActionHint ?? null,
     }),
   });
 
@@ -809,7 +814,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Guide/Ranking data fetching removed — now handled via tool calling in the edge function
 
   const track = useTrackEvent();
-  const handleSend = useCallback(async (overrideText?: string, bypassPurchaseConfirm = false) => {
+  const handleSend = useCallback(async (
+    overrideText?: string,
+    bypassPurchaseConfirm = false,
+    quickActionHint?: "live_rankings" | "trend_analysis"
+  ) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
 
@@ -838,6 +847,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         messages: updatedMessages,
         token: session.access_token,
         agentSlotId: activeSlot?.id,
+        quickActionHint,
         onDelta: (chunk) => {
           assistantContent += chunk;
           setMessages((prev) => {
@@ -929,7 +939,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
-    handleSend(action.prompt);
+    const hintMap: Partial<Record<QuickActionKind, "live_rankings" | "trend_analysis">> = {
+      liveRankings: "live_rankings",
+      trendAnalysis: "trend_analysis",
+    };
+    handleSend(action.prompt, false, hintMap[action.id]);
   };
 
   // ── Sub-header ──
@@ -1312,7 +1326,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     fan_activity: t("agent.prompt.fanActivity"),
                     rankings: t("agent.prompt.liveRankings"),
                     streaming: t("agent.prompt.streamingGuide"),
-                    news: t("agent.prompt.trendAnalysis"),
+                    news: t("agent.prompt.newsBriefing"),
                   };
                   return (
                     <button

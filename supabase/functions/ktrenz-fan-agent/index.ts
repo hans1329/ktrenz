@@ -2144,8 +2144,9 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     const body = await req.json();
-    const { messages, mode, language, agent_slot_id } = body;
+    const { messages, mode, language, agent_slot_id, quick_action } = body;
     const userLang = language || "ko";
+    const quickActionHint = typeof quick_action === "string" ? quick_action : null;
     const isBriefingMode = mode === "briefing";
     const isClearChatMode = mode === "clear_chat";
 
@@ -2446,6 +2447,216 @@ Deno.serve(async (req) => {
         try {
           // Initial "thinking" status
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
+
+          // Fast-path for quick action buttons to reduce latency and force distinct card types
+          if (quickActionHint === "live_rankings") {
+            const rankingLabel = toolStatusMap.get_rankings?.[userLang] || toolStatusMap.get_rankings?.en || "Checking rankings…";
+            sendStatus(controller, rankingLabel);
+
+            const rankingResult = await handleTool("get_rankings", { limit: 10 }, adminClient, userId, rankingCache, activeSlotId, activeSlotIndex);
+            let rankingContent = userLang === "ko"
+              ? "실시간 Top 10 카드를 가져왔어요!"
+              : "I pulled the real-time Top 10 card.";
+
+            try {
+              const parsed = JSON.parse(rankingResult);
+              if (parsed.rankings) {
+                collectedMeta.rankingData = parsed.rankings.slice(0, 10).map((item: any) => ({
+                  rank: item.rank,
+                  artist_name: item.artist,
+                  image_url: null,
+                  total_score: item.total_score ?? 0,
+                  energy_score: item.energy_score ?? 0,
+                  energy_change_24h: item.energy_change_24h ?? 0,
+                  youtube_score: item.youtube_score ?? 0,
+                  buzz_score: item.buzz_score ?? 0,
+                }));
+
+                const biasRank = activeSlotArtistName
+                  ? parsed.rankings.find((item: any) =>
+                      String(item.artist || "").toLowerCase() === String(activeSlotArtistName).toLowerCase()
+                    )
+                  : null;
+
+                if (userLang === "ko") {
+                  rankingContent = biasRank
+                    ? `실시간 Top 10 카드를 준비했어요! 우리 ${activeSlotArtistName}${eunNeun(activeSlotArtistName)} 현재 #${biasRank.rank}예요.`
+                    : "실시간 Top 10 카드를 준비했어요!";
+                } else if (userLang === "ja") {
+                  rankingContent = biasRank
+                    ? `リアルタイムTop10カードを用意しました！あなたの推しは現在 #${biasRank.rank} です。`
+                    : "リアルタイムTop10カードを用意しました！";
+                } else if (userLang === "zh") {
+                  rankingContent = biasRank
+                    ? `已准备实时 Top10 卡片！你的本命目前是 #${biasRank.rank}。`
+                    : "已准备实时 Top10 卡片！";
+                } else {
+                  rankingContent = biasRank
+                    ? `Top 10 card is ready. Your bias is currently #${biasRank.rank}.`
+                    : "Top 10 card is ready.";
+                }
+              }
+            } catch {
+              // keep fallback content
+            }
+
+            const rankingMetaToSave: any = {};
+            if (collectedMeta.rankingData) rankingMetaToSave.rankingData = collectedMeta.rankingData;
+
+            await adminClient.from("ktrenz_fan_agent_messages").insert({
+              user_id: userId,
+              agent_slot_id: activeSlotId,
+              role: "assistant",
+              content: rankingContent,
+              metadata: Object.keys(rankingMetaToSave).length > 0 ? rankingMetaToSave : null,
+            });
+
+            sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+            for (let i = 0; i < rankingContent.length; i += 20) {
+              const chunk = rankingContent.slice(i, i + 20);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+            }
+
+            if (collectedMeta.rankingData) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: { rankingData: collectedMeta.rankingData } })}\n\n`));
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+
+            extractAndStoreIntent(
+              adminClient,
+              OPENAI_API_KEY,
+              userId,
+              lastUserMsg?.content || "",
+              activeSlotWikiEntryId,
+              activeSlotId,
+              ["get_rankings"],
+              collectedMeta.knowledgeArchiveIds,
+            ).catch((e: any) => console.error("[IntentExtract] Error:", e));
+
+            return;
+          }
+
+          if (quickActionHint === "trend_analysis") {
+            if (!activeSlotArtistName) {
+              const emptyTrendContent = userLang === "ko"
+                ? "먼저 최애 아티스트를 설정해주시면, 해당 아티스트 기준으로 트렌드 분석 카드를 바로 보여드릴게요."
+                : "Set your bias artist first, then I can show a dedicated trend analysis card.";
+
+              await adminClient.from("ktrenz_fan_agent_messages").insert({
+                user_id: userId,
+                agent_slot_id: activeSlotId,
+                role: "assistant",
+                content: emptyTrendContent,
+                metadata: null,
+              });
+
+              sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+              for (let i = 0; i < emptyTrendContent.length; i += 20) {
+                const chunk = emptyTrendContent.slice(i, i + 20);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+              }
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            const lookupLabel = toolStatusMap.lookup_artist?.[userLang] || toolStatusMap.lookup_artist?.en || "Looking up artist data…";
+            sendStatus(controller, lookupLabel);
+
+            const trendResult = await handleTool(
+              "lookup_artist",
+              { artist_name: activeSlotArtistName },
+              adminClient,
+              userId,
+              rankingCache,
+              activeSlotId,
+              activeSlotIndex,
+            );
+
+            let trendContent = userLang === "ko"
+              ? `우리 ${activeSlotArtistName} 상세 트렌드 분석 카드를 준비했어요!`
+              : `I prepared a detailed trend analysis card for ${activeSlotArtistName}.`;
+
+            try {
+              const parsed = JSON.parse(trendResult);
+              if (parsed.artist && !parsed.error) {
+                const categories = [
+                  { key: "youtube", label: "YouTube", score: parsed.youtube?.score ?? 0, rank: parsed.youtube?.rank ?? 0 },
+                  { key: "buzz", label: "Buzz", score: parsed.buzz?.score ?? 0, rank: parsed.buzz?.rank ?? 0 },
+                  { key: "music", label: "Music", score: parsed.music?.score ?? 0, rank: parsed.music?.rank ?? 0 },
+                  { key: "album", label: "Album", score: parsed.album?.score ?? 0, rank: parsed.album?.rank ?? 0 },
+                ];
+                const strongest = [...categories].sort((a, b) => a.rank - b.rank)[0];
+                const weakest = [...categories].sort((a, b) => b.rank - a.rank)[0];
+
+                collectedMeta.reportCards = [{
+                  type: "artist_report",
+                  artist: parsed.artist,
+                  rank: parsed.rank,
+                  totalArtists: parsed.total_artists ?? 50,
+                  energy: {
+                    score: parsed.energy_score ?? 0,
+                    change24h: parsed.energy_change_24h ?? 0,
+                  },
+                  categories,
+                  strongest,
+                  weakest,
+                  tier: parsed.tier ?? null,
+                }];
+
+                if (userLang === "ko") {
+                  trendContent = `우리 ${parsed.artist}${eunNeun(parsed.artist)} 현재 #${parsed.rank}예요. 강점은 ${strongest.label}, 보완 포인트는 ${weakest.label}예요.`;
+                } else if (userLang === "ja") {
+                  trendContent = `${parsed.artist} は現在 #${parsed.rank}。強みは ${strongest.label}、改善ポイントは ${weakest.label} です。`;
+                } else if (userLang === "zh") {
+                  trendContent = `${parsed.artist} 当前排名 #${parsed.rank}，优势是 ${strongest.label}，补强点是 ${weakest.label}。`;
+                } else {
+                  trendContent = `${parsed.artist} is now #${parsed.rank}. Strongest is ${strongest.label}, and the main gap is ${weakest.label}.`;
+                }
+              }
+            } catch {
+              // keep fallback content
+            }
+
+            const trendMetaToSave: any = {};
+            if (collectedMeta.reportCards) trendMetaToSave.reportCards = collectedMeta.reportCards;
+
+            await adminClient.from("ktrenz_fan_agent_messages").insert({
+              user_id: userId,
+              agent_slot_id: activeSlotId,
+              role: "assistant",
+              content: trendContent,
+              metadata: Object.keys(trendMetaToSave).length > 0 ? trendMetaToSave : null,
+            });
+
+            sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+            for (let i = 0; i < trendContent.length; i += 20) {
+              const chunk = trendContent.slice(i, i + 20);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+            }
+
+            if (collectedMeta.reportCards) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: { reportCards: collectedMeta.reportCards } })}\n\n`));
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+
+            extractAndStoreIntent(
+              adminClient,
+              OPENAI_API_KEY,
+              userId,
+              lastUserMsg?.content || "",
+              activeSlotWikiEntryId,
+              activeSlotId,
+              ["lookup_artist"],
+              collectedMeta.knowledgeArchiveIds,
+            ).catch((e: any) => console.error("[IntentExtract] Error:", e));
+
+            return;
+          }
 
           const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "", { allowBareArtist: !activeSlotWikiEntryId });
           if (forcedBiasArtist) {

@@ -106,7 +106,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Agent Quick Action Prompts ──
   "agent.prompt.liveRankings": { en: "Show me the live trend rankings Top 10", ko: "실시간 트렌드 랭킹 Top 10 보여줘", ja: "リアルタイムトレンドランキングTop10を見せて", zh: "展示实时趋势排名前10" },
-  "agent.prompt.trendAnalysis": { en: "Analyze today's most notable trend changes", ko: "오늘 가장 주목할 만한 트렌드 변화를 분석해줘", ja: "今日の最も注目すべきトレンド変化を分析して", zh: "分析今天最值得关注的趋势变化" },
+  "agent.prompt.trendAnalysis": { en: "Give me a detailed trend analysis for my bias artist with strongest/weakest categories and 24h momentum", ko: "내 최애 아티스트 기준으로 카테고리별 강점/약점과 24시간 모멘텀을 상세 분석해줘", ja: "推しアーティスト基準で、カテゴリ別の強み/弱みと24時間モメンタムを詳しく分析して", zh: "请基于我最爱的艺人，详细分析各类别强弱和24小时动量" },
   "agent.prompt.streamingGuide": { en: "I want a streaming guide for my bias artist.", ko: "내 최애 아티스트 스밍 가이드를 보고 싶어.", ja: "推しアーティストのストリーミングガイドが見たい。", zh: "我想看最爱艺人的流媒体指南。" },
   "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for my bias artist. Guide me on how to set it up.", ko: "최애 아티스트의 랭킹 변동 알림을 설정하고 싶어. 방법을 안내해줘.", ja: "推しアーティストのランキング変動アラートを設定したい。方法を教えて。", zh: "我想为最爱的艺人设置排名变动提醒。请指导我如何设置。" },
   "agent.prompt.alertSetup": { en: "I want to set my bias artist. Guide me.", ko: "최애 아티스트 설정하고 싶어. 방법 알려줘.", ja: "推しアーティストを設定したい。教えて。", zh: "我想设置最爱的艺人。告诉我怎么做。" },
