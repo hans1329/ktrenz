@@ -327,6 +327,79 @@ async function handleTool(
     return koNameMap;
   }
 
+  // Helper: normalize artist text for typo-tolerant matching
+  function normalizeArtistName(input: string): string {
+    return (input || "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/[^a-z0-9가-힣]/g, "");
+  }
+
+  function levenshteinDistance(a: string, b: string): number {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+
+    const matrix = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+    for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost,
+        );
+      }
+    }
+    return matrix[a.length][b.length];
+  }
+
+  async function findClosestTierArtist(query: string): Promise<{ wiki_entry_id: string; display_name: string | null; name_ko: string | null; distance: number } | null> {
+    const normalizedQuery = normalizeArtistName(query);
+    if (!normalizedQuery) return null;
+
+    const { data: candidates } = await adminClient
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id, display_name, name_ko")
+      .not("wiki_entry_id", "is", null);
+
+    if (!candidates || candidates.length === 0) return null;
+
+    const scored = (candidates as any[])
+      .map((row) => {
+        const variants = [row.name_ko, row.display_name]
+          .filter(Boolean)
+          .map((v: string) => normalizeArtistName(v))
+          .filter(Boolean);
+
+        if (variants.length === 0) return null;
+
+        const bestDistance = Math.min(...variants.map((v) => levenshteinDistance(normalizedQuery, v)));
+        return {
+          wiki_entry_id: row.wiki_entry_id,
+          display_name: row.display_name ?? null,
+          name_ko: row.name_ko ?? null,
+          distance: bestDistance,
+        };
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => a.distance - b.distance) as { wiki_entry_id: string; display_name: string | null; name_ko: string | null; distance: number }[];
+
+    if (scored.length === 0) return null;
+
+    const best = scored[0];
+    const second = scored[1];
+    const maxDistance = normalizedQuery.length <= 3 ? 0 : normalizedQuery.length <= 5 ? 1 : 2;
+    const hasClearLead = !second || best.distance + 1 <= second.distance;
+
+    if (best.distance <= maxDistance && hasClearLead) return best;
+    return null;
+  }
+
   // Helper: find artist by name (fuzzy, supports Korean names)
   async function findArtist(name: string) {
     const all = await getAllScores();
