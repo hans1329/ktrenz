@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
 import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
+import V3InspectorPanel, { type InspectorItem } from "@/components/v3/V3InspectorPanel";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -137,7 +138,7 @@ const MiniCategoryBars = ({ data }: { data: Record<string, { velocity: number; i
   );
 };
 
-const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }>; onTrack?: () => void }) => {
+const PodiumCard = ({ item, rank, maxScore, energyData, onTrack, onItemClick }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }>; onTrack?: () => void; onItemClick?: (item: any) => void }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
 
@@ -151,7 +152,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; 
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
 
   return (
-    <Link to={`/artist/${entry.slug}`} className="block" onClick={onTrack}>
+    <button className="block w-full text-left" onClick={() => { onTrack?.(); onItemClick?.(item); }}>
       <div className={cn("relative rounded-2xl transition-all active:scale-[0.97]", "bg-gradient-to-br", rankStyles.gradient, rankStyles.glow, "bg-card hover:shadow-card-hover",
         rankStyles.isFirst ? "p-5 border-2 border-yellow-400/20" : "p-4")}>
         <div className="flex items-center justify-between mb-3">
@@ -203,18 +204,18 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; 
           </div>
         )}
       </div>
-    </Link>
+    </button>
   );
 };
 
-const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number; maxScore: number; onTrack?: () => void }) => {
+const RankingRow = ({ item, rank, maxScore, onTrack, onItemClick }: { item: any; rank: number; maxScore: number; onTrack?: () => void; onItemClick?: (item: any) => void }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
   const scorePercent = maxScore > 0 ? (displayScore / maxScore) * 100 : 0;
 
   return (
-    <Link to={`/artist/${entry.slug}`} onClick={onTrack}>
+    <button className="block w-full text-left" onClick={() => { onTrack?.(); onItemClick?.(item); }}>
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 hover:bg-card transition-colors active:scale-[0.98]">
         <span className="w-6 text-center text-sm font-bold text-muted-foreground">{rank}</span>
         <Avatar className="w-10 h-10 shrink-0">
@@ -245,11 +246,11 @@ const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number
           )}
         </div>
       </div>
-    </Link>
+    </button>
   );
 };
 
-const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any) => void }) => {
+const MyAgentPinned = ({ items, onTrack, onItemClick }: { items: any[]; onTrack?: (item: any) => void; onItemClick?: (item: any) => void }) => {
   if (!items.length) return null;
   return (
     <div className="mb-4">
@@ -264,7 +265,7 @@ const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any)
           if (!entry) return null;
           const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
           return (
-            <Link key={item.wiki_entry_id} to={`/artist/${entry.slug}`} onClick={() => onTrack?.(item)}>
+            <button key={item.wiki_entry_id} className="block w-full text-left" onClick={() => { onTrack?.(item); onItemClick?.(item); }}>
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98]">
                 <span className="w-6 text-center text-sm font-bold text-primary">#{item.globalRank}</span>
                 <div className="relative">
@@ -298,7 +299,7 @@ const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any)
                   )}
                 </div>
               </div>
-            </Link>
+            </button>
           );
         })}
       </div>
@@ -323,6 +324,39 @@ const V3TrendRankings = () => {
   const [energyCategory, setEnergyCategory] = useState<EnergyCategory>("all");
   const [collectingModule, setCollectingModule] = useState<string | null>(null);
   const { data: crawlStatus } = useCrawlStatus();
+  const [inspectorItem, setInspectorItem] = useState<InspectorItem | null>(null);
+
+  const toInspectorItem = useCallback((item: any): InspectorItem => {
+    const entry = item.wiki_entries as any;
+    return {
+      id: entry?.id || item.wiki_entry_id,
+      slug: entry?.slug || "",
+      title: entry?.title || "",
+      imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
+      energyScore: Number(item.energy_score ?? 0),
+      energyChange24h: Number(item.energy_change_24h ?? item.changePercent ?? 0),
+      totalScore: Number(item.total_score ?? 0),
+      youtubeScore: Number(item.youtube_score ?? 0),
+      buzzScore: Number(item.buzz_score ?? 0),
+      twitterScore: 0,
+      albumSalesScore: Number(item.album_sales_score ?? 0),
+      musicScore: Number(item.music_score ?? 0),
+      fanScore: Number(item.fan_score ?? 0),
+      youtubeChange24h: Number(item.youtube_change_24h ?? 0),
+      buzzChange24h: Number(item.buzz_change_24h ?? 0),
+      albumChange24h: Number(item.album_change_24h ?? 0),
+      musicChange24h: Number(item.music_change_24h ?? 0),
+      fanChange24h: Number(item.fan_change_24h ?? 0),
+      metadata: entry?.metadata,
+      youtubeChannelId: (entry?.metadata as any)?.youtube_channel_id || null,
+      latestYoutubeVideoId: null,
+      latestYoutubeVideoTitle: null,
+    };
+  }, []);
+
+  const handleItemClick = useCallback((item: any) => {
+    setInspectorItem(toInspectorItem(item));
+  }, [toInspectorItem]);
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
 
@@ -673,9 +707,9 @@ const V3TrendRankings = () => {
                   </button>
                 ))}
             </div>
-            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
+            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             {top3.map((item, idx) => (
-              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             ))}
             <Link to="/rankings"
               className="flex items-center justify-center gap-2 py-3 rounded-xl bg-muted/50 hover:bg-muted text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
@@ -683,6 +717,7 @@ const V3TrendRankings = () => {
             </Link>
           </div>
         </div>
+        {inspectorItem && <V3InspectorPanel item={inspectorItem} onClose={() => setInspectorItem(null)} />}
         <ArtistListingRequestDialog />
       </div>
     );
@@ -749,9 +784,9 @@ const V3TrendRankings = () => {
             </div>
           </div>
           <div className="px-4 space-y-3 mb-4">
-            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
+            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             {top3.map((item, idx) => (
-              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             ))}
           </div>
           {rest.length > 0 && (
@@ -764,13 +799,14 @@ const V3TrendRankings = () => {
                 </div>
               </div>
               <div className="px-4 space-y-1.5">
-                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />)}
+                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />)}
               </div>
             </>
           )}
           <ArtistListingRequestDialog />
         </>
       )}
+      {inspectorItem && <V3InspectorPanel item={inspectorItem} onClose={() => setInspectorItem(null)} />}
     </div>
   );
 };
