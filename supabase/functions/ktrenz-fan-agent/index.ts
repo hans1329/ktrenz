@@ -2741,7 +2741,101 @@ Deno.serve(async (req) => {
             return;
           }
 
-          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "", { allowBareArtist: !activeSlotWikiEntryId });
+          if (quickActionHint === "fan_activity") {
+            if (!activeSlotArtistName) {
+              const emptyContent = userLang === "ko"
+                ? "먼저 최애 아티스트를 설정해주시면, 맞춤 팬활동을 추천해드릴게요!"
+                : "Set your bias artist first, then I can recommend fan activities!";
+
+              await adminClient.from("ktrenz_fan_agent_messages").insert({
+                user_id: userId, agent_slot_id: activeSlotId, role: "assistant", content: emptyContent, metadata: null,
+              });
+
+              sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+              for (let i = 0; i < emptyContent.length; i += 20) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: emptyContent.slice(i, i + 20) } }] })}\n\n`));
+              }
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            const actLabel = toolStatusMap.get_fan_activity?.[userLang] || toolStatusMap.get_fan_activity?.en || "Preparing fan activity…";
+            sendStatus(controller, actLabel);
+
+            const actResult = await handleTool(
+              "get_fan_activity",
+              { artist_name: activeSlotArtistName },
+              adminClient, userId, rankingCache, activeSlotId, activeSlotIndex,
+            );
+
+            let actContent = "";
+            try {
+              const parsed = JSON.parse(actResult);
+              if (parsed.error) {
+                actContent = parsed.message || "팬활동을 불러올 수 없습니다.";
+              } else {
+                const act = parsed.activity;
+                const rankStr = parsed.rank ? ` #${parsed.rank}` : "";
+                const energyStr = parsed.energy_score ? ` ⚡${parsed.energy_score}` : "";
+                const changeStr = parsed.energy_change_24h != null
+                  ? (parsed.energy_change_24h > 0 ? ` (+${parsed.energy_change_24h})` : ` (${parsed.energy_change_24h})`)
+                  : "";
+                const progress = `${parsed.completed_today || 0}/${parsed.total_activities || 8}`;
+
+                if (userLang === "ko") {
+                  actContent = `**${parsed.artist}**${rankStr}${energyStr}${changeStr}\n\n`;
+                  actContent += `${act.emoji} **${act.activity}**\n`;
+                  actContent += `${act.description}\n\n`;
+                  if (parsed.content_card_markdown) {
+                    actContent += `${parsed.content_card_markdown}\n\n`;
+                  }
+                  actContent += `💡 ${act.tip}\n\n`;
+                  if (parsed.extra_cards_markdown) {
+                    actContent += `${parsed.extra_cards_markdown}\n\n`;
+                  }
+                  actContent += `📊 오늘 진행: ${progress}`;
+                } else {
+                  actContent = `**${parsed.artist}**${rankStr}${energyStr}${changeStr}\n\n`;
+                  actContent += `${act.emoji} **${act.activity}**\n`;
+                  actContent += `${act.description}\n\n`;
+                  if (parsed.content_card_markdown) {
+                    actContent += `${parsed.content_card_markdown}\n\n`;
+                  }
+                  actContent += `💡 ${act.tip}\n\n`;
+                  if (parsed.extra_cards_markdown) {
+                    actContent += `${parsed.extra_cards_markdown}\n\n`;
+                  }
+                  actContent += `📊 Today's progress: ${progress}`;
+                }
+              }
+            } catch {
+              actContent = actResult;
+            }
+
+            await adminClient.from("ktrenz_fan_agent_messages").insert({
+              user_id: userId, agent_slot_id: activeSlotId, role: "assistant",
+              content: actContent, metadata: null,
+            });
+
+            sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+            for (let i = 0; i < actContent.length; i += 20) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: actContent.slice(i, i + 20) } }] })}\n\n`));
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+
+            extractAndStoreIntent(
+              adminClient, OPENAI_API_KEY, userId, lastUserMsg?.content || "",
+              activeSlotWikiEntryId, activeSlotId, ["get_fan_activity"],
+              collectedMeta.knowledgeArchiveIds,
+            ).catch((e: any) => console.error("[IntentExtract] Error:", e));
+
+            return;
+          }
+
+
           if (forcedBiasArtist) {
             const updatingLabel = toolStatusMap.manage_watched_artist?.[userLang] || toolStatusMap.manage_watched_artist?.en || "Updating your artist…";
             sendStatus(controller, updatingLabel);
