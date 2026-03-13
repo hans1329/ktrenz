@@ -48,7 +48,7 @@ function generateMissions(
     missions.push({
       key: `yt_${i}_watch`,
       category: "youtube",
-      title: video.title.slice(0, 40),
+      title: video.title.slice(0, 60),
       description: `${t("mission.watchAndStream")}`,
       url: `https://www.youtube.com/watch?v=${video.id}`,
       points: 10,
