@@ -197,7 +197,7 @@ async function streamChat({
   messages: ChatMessage[];
   token: string;
   agentSlotId?: string | null;
-  quickActionHint?: "live_rankings" | "trend_analysis";
+  quickActionHint?: QuickActionHint;
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
   onStatus?: (status: string) => void;
