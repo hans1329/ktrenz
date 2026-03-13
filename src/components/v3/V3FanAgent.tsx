@@ -724,6 +724,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   rankingData: meta.rankingData ?? m.rankingData,
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
+                  statsData: meta.statsData ?? m.statsData,
                 } : m
               );
             }
