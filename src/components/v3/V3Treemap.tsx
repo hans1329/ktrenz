@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Youtube, Twitter, Music, MessageCircle, TrendingUp, Disc3, Snowflake } from "lucide-react";
+import BoxParticles from "@/components/v3/BoxParticles";
 import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
