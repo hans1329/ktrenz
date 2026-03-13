@@ -1423,58 +1423,52 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
-        {(() => {
-          const showQuickActions = hasStarted && messages.length > 0 && !isStreaming;
-          return (
-          <>
-            {showQuickActions && (
-              <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
-                {!hasBiasRegistered && (
-                  <button
-                    onClick={() => handleSend(t("agent.prompt.alertSetup"))}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary font-medium hover:bg-primary/20 transition-all shrink-0"
-                  >
-                    <Heart className="w-3 h-3" />
-                    {t("agent.registerBias")}
-                  </button>
-                )
-                {QUICK_ACTIONS.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <button
-                      key={action.label}
-                      onClick={() => handleQuickAction(action)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted/50 border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all shrink-0"
-                    >
-                      <Icon className={cn("w-3 h-3", action.color)} />
-                      {action.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <div className="flex items-center gap-2 bg-card border border-border/50 rounded-2xl px-4 py-2.5 focus-within:border-primary/40 transition-colors">
-              <input
-                ref={inputRef}
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder={t("agent.inputPlaceholder")}
-                className="flex-1 bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
-                disabled={isStreaming}
-              />
-              <Button
-                size="icon"
-                className="rounded-full w-8 h-8 shrink-0"
-                onClick={() => handleSend()}
-                disabled={!chatInput.trim() || isStreaming}
+        {hasStarted && messages.length > 0 && !isStreaming && (
+          <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
+            {!hasBiasRegistered && (
+              <button
+                onClick={() => handleSend(t("agent.prompt.alertSetup"))}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary font-medium hover:bg-primary/20 transition-all shrink-0"
               >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </>
+                <Heart className="w-3 h-3" />
+                {t("agent.registerBias")}
+              </button>
+            )}
+            {QUICK_ACTIONS.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.label}
+                  onClick={() => handleQuickAction(action)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted/50 border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all shrink-0"
+                >
+                  <Icon className={cn("w-3 h-3", action.color)} />
+                  {action.label}
+                </button>
+              );
+            })}
+          </div>
         )}
+        <div className="flex items-center gap-2 bg-card border border-border/50 rounded-2xl px-4 py-2.5 focus-within:border-primary/40 transition-colors">
+          <input
+            ref={inputRef}
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder={t("agent.inputPlaceholder")}
+            className="flex-1 bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
+            disabled={isStreaming}
+          />
+          <Button
+            size="icon"
+            className="rounded-full w-8 h-8 shrink-0"
+            onClick={() => handleSend()}
+            disabled={!chatInput.trim() || isStreaming}
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
       {/* Agent Profile Modal */}
       <Drawer open={showAgentProfileModal} onOpenChange={setShowAgentProfileModal}>
