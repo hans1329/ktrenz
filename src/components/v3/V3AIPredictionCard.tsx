@@ -168,7 +168,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
                 </p>
                 {actionUrl && (
                   <div className="flex items-center gap-1.5 mt-2">
-                    <span className="text-[11px] font-bold text-pink-300/80 group-hover/action:text-pink-200 transition-colors">
+                    <span className="text-xs font-bold text-pink-300/80 group-hover/action:text-pink-200 transition-colors">
                       {t("prediction.goNow")} — {categoryLabel[prediction.leading_category] || "Link"}
                     </span>
                     <ExternalLink className="w-3 h-3 text-pink-300/60 group-hover/action:text-pink-200 transition-colors" />
