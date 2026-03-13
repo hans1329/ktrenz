@@ -324,6 +324,39 @@ const V3TrendRankings = () => {
   const [energyCategory, setEnergyCategory] = useState<EnergyCategory>("all");
   const [collectingModule, setCollectingModule] = useState<string | null>(null);
   const { data: crawlStatus } = useCrawlStatus();
+  const [inspectorItem, setInspectorItem] = useState<InspectorItem | null>(null);
+
+  const toInspectorItem = useCallback((item: any): InspectorItem => {
+    const entry = item.wiki_entries as any;
+    return {
+      id: entry?.id || item.wiki_entry_id,
+      slug: entry?.slug || "",
+      title: entry?.title || "",
+      imageUrl: entry?.image_url || (entry?.metadata as any)?.profile_image || null,
+      energyScore: Number(item.energy_score ?? 0),
+      energyChange24h: Number(item.energy_change_24h ?? item.changePercent ?? 0),
+      totalScore: Number(item.total_score ?? 0),
+      youtubeScore: Number(item.youtube_score ?? 0),
+      buzzScore: Number(item.buzz_score ?? 0),
+      twitterScore: 0,
+      albumSalesScore: Number(item.album_sales_score ?? 0),
+      musicScore: Number(item.music_score ?? 0),
+      fanScore: Number(item.fan_score ?? 0),
+      youtubeChange24h: Number(item.youtube_change_24h ?? 0),
+      buzzChange24h: Number(item.buzz_change_24h ?? 0),
+      albumChange24h: Number(item.album_change_24h ?? 0),
+      musicChange24h: Number(item.music_change_24h ?? 0),
+      fanChange24h: Number(item.fan_change_24h ?? 0),
+      metadata: entry?.metadata,
+      youtubeChannelId: (entry?.metadata as any)?.youtube_channel_id || null,
+      latestYoutubeVideoId: null,
+      latestYoutubeVideoTitle: null,
+    };
+  }, []);
+
+  const handleItemClick = useCallback((item: any) => {
+    setInspectorItem(toInspectorItem(item));
+  }, [toInspectorItem]);
   const isCrawling = crawlStatus?.status === "running";
   const periodRef = useRef<HTMLDivElement>(null);
 
