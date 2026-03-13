@@ -186,8 +186,8 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
           </>
         ) : (
           <div className="flex items-start gap-2.5">
-            <span className="text-xl mt-0.5 shrink-0">{config.emoji}</span>
-            <p className="text-[12px] text-foreground/80 leading-relaxed line-clamp-4">
+            <span className="text-2xl mt-0.5 shrink-0">{config.emoji}</span>
+            <p className="text-sm text-foreground/80 leading-relaxed line-clamp-4">
               {prediction.fan_briefing}
             </p>
           </div>
