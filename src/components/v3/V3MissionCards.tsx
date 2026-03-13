@@ -180,14 +180,25 @@ export default function V3MissionCards({
 
   // pending mission 저장 (모바일 메모리 해제/리로드 대비)
   const PENDING_KEY = "ktrenz_pending_mission_v1";
-  const setPendingMission = (mission: { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null) => {
+  interface PendingMission {
+    title: string;
+    points: number;
+    category: keyof typeof CATEGORY_CONFIG;
+    key: string;
+    completedCount?: number;
+    totalCount?: number;
+    totalPoints?: number;
+    allDone?: boolean;
+    createdAt: number;
+  }
+  const setPendingMission = (mission: Omit<PendingMission, 'createdAt'> | null) => {
     if (mission) {
       localStorage.setItem(PENDING_KEY, JSON.stringify({ ...mission, createdAt: Date.now() }));
     } else {
       localStorage.removeItem(PENDING_KEY);
     }
   };
-  const getPendingMission = (): { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null => {
+  const getPendingMission = (): PendingMission | null => {
     try {
       const raw = localStorage.getItem(PENDING_KEY);
       if (!raw) return null;
@@ -202,15 +213,24 @@ export default function V3MissionCards({
       return null;
     }
   };
-  const today = new Date().toISOString().slice(0, 10);
 
   // 탭 복귀 감지 → 에이전트 피드백
   const triggerPendingFeedback = useCallback(() => {
     const pending = getPendingMission();
-    if (!pending) return;
-    setPendingMission(null);
-    // Will be handled by agent feedback via onMissionComplete on next render
-  }, []);
+    if (!pending || !pending.completedCount) return;
+    localStorage.removeItem(PENDING_KEY);
+    // Trigger celebration modal on tab return
+    onMissionComplete({
+      completedCount: pending.completedCount,
+      totalCount: pending.totalCount || missions.length,
+      totalPoints: pending.totalPoints || 0,
+      allDone: pending.allDone || false,
+      lastCompletedCategory: pending.category,
+      lastCompletedTitle: pending.title,
+      artistName,
+      wikiEntryId,
+    });
+  }, [onMissionComplete, missions.length, artistName, wikiEntryId]);
 
   useEffect(() => {
     triggerPendingFeedback();
