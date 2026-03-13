@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Snowflake } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Snowflake, X } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
@@ -229,14 +229,21 @@ function InspectorPanel({ item, onClose }: { item: TreemapItem; onClose: () => v
   return (
     <Drawer open onOpenChange={(open) => { if (!open) onClose(); }} handleOnly>
       <DrawerContent className={cn(
-        "max-h-[75vh] lg:max-h-[92vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
+        "max-h-[100dvh] lg:max-h-[92vh] rounded-t-2xl border-t mx-auto max-w-[600px] bg-card flex flex-col",
         surging ? "border-destructive/50" : "border-border"
       )}>
-        {/* Drag handle + title = draggable zone */}
+        {/* Drag handle + title + close button = draggable zone */}
         <div className="shrink-0 border-b border-border -mt-1" vaul-drawer-handle="">
           <div className="flex items-center gap-2 px-4 py-3 min-w-0 cursor-grab active:cursor-grabbing">
             {surging && <span className="text-lg animate-fire-burn shrink-0">🔥</span>}
-            <p className="text-base font-black text-foreground truncate">{item.title}</p>
+            <p className="text-base font-black text-foreground truncate flex-1">{item.title}</p>
+            <button
+              onClick={onClose}
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-muted/80 hover:bg-muted transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4 text-foreground" />
+            </button>
           </div>
         </div>
         <div className="overflow-y-auto flex-1 min-h-0">
