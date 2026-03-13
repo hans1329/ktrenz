@@ -179,26 +179,7 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
   return worst;
 }
 
-// ── Channel Bar ──
-function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
-  const pct = total > 0 ? (value / total) * 100 : 0;
-  const content = (
-    <div className={cn("space-y-1.5 p-2.5 rounded-xl border border-border bg-muted/40 transition-all", href && "hover:border-primary/40 hover:bg-muted/70 cursor-pointer active:scale-[0.98]")}>
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2 text-xs font-semibold text-foreground">{icon} {label}</span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-foreground">{Math.round(value)} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span></span>
-          {href && <ExternalLink className="w-3 h-3 text-muted-foreground" />}
-        </div>
-      </div>
-      <div className="h-3 rounded-full bg-muted overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: color }} />
-      </div>
-    </div>
-  );
-  if (href) return <a href={href} target="_blank" rel="noopener noreferrer" data-track-category={label}>{content}</a>;
-  return content;
-}
+
 
 // ── Inspector Panel (shared component) ──
 import V3InspectorPanel from "@/components/v3/V3InspectorPanel";
