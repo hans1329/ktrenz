@@ -23,8 +23,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
   yt_sentiment: 10,
   external_videos: 10,
-  music: 10,
-  hanteo: 10,
+  music: 45,      // Last.fm + Deezer 65명 → fire-and-forget 후 충분한 대기
+  hanteo: 30,     // 한터 스크래핑 → 대기
   apple_music_charts: 5,
   billboard_charts: 5,
   social: 30,
