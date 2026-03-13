@@ -52,6 +52,7 @@ type ChatMessage = {
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
 type QuickActionKind = "fanActivity" | "liveRankings" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings";
+type QuickActionHint = "live_rankings" | "trend_analysis" | "streaming_guide";
 
 interface QuickAction {
   id: QuickActionKind;
@@ -196,7 +197,7 @@ async function streamChat({
   messages: ChatMessage[];
   token: string;
   agentSlotId?: string | null;
-  quickActionHint?: "live_rankings" | "trend_analysis";
+  quickActionHint?: QuickActionHint;
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
   onStatus?: (status: string) => void;
@@ -817,7 +818,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const handleSend = useCallback(async (
     overrideText?: string,
     bypassPurchaseConfirm = false,
-    quickActionHint?: "live_rankings" | "trend_analysis"
+    quickActionHint?: QuickActionHint
   ) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
@@ -939,9 +940,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
-    const hintMap: Partial<Record<QuickActionKind, "live_rankings" | "trend_analysis">> = {
+    const hintMap: Partial<Record<QuickActionKind, QuickActionHint>> = {
       liveRankings: "live_rankings",
       trendAnalysis: "trend_analysis",
+      streamingGuide: "streaming_guide",
     };
     handleSend(action.prompt, false, hintMap[action.id]);
   };

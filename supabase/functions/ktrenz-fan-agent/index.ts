@@ -2658,6 +2658,89 @@ Deno.serve(async (req) => {
             return;
           }
 
+          if (quickActionHint === "streaming_guide") {
+            if (!activeSlotArtistName) {
+              const emptyContent = userLang === "ko"
+                ? "먼저 최애 아티스트를 설정해주시면, 맞춤 스트리밍 가이드 카드를 바로 보여드릴게요."
+                : "Set your bias artist first, then I can show a streaming guide card.";
+
+              await adminClient.from("ktrenz_fan_agent_messages").insert({
+                user_id: userId, agent_slot_id: activeSlotId, role: "assistant", content: emptyContent, metadata: null,
+              });
+
+              sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+              for (let i = 0; i < emptyContent.length; i += 20) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: emptyContent.slice(i, i + 20) } }] })}\n\n`));
+              }
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+
+            const guideLabel = toolStatusMap.get_streaming_guide?.[userLang] || toolStatusMap.get_streaming_guide?.en || "Building streaming guide…";
+            sendStatus(controller, guideLabel);
+
+            const guideResult = await handleTool(
+              "get_streaming_guide",
+              { artist_name: activeSlotArtistName },
+              adminClient, userId, rankingCache, activeSlotId, activeSlotIndex,
+            );
+
+            let guideContent = userLang === "ko"
+              ? `우리 ${activeSlotArtistName} 스트리밍 가이드 카드를 준비했어요! 🎵`
+              : `Streaming guide card for ${activeSlotArtistName} is ready! 🎵`;
+
+            try {
+              const parsed = JSON.parse(guideResult);
+              if (parsed.guide && !parsed.error) {
+                collectedMeta.guideData = [{ artist_name: parsed.artist || activeSlotArtistName, guide_data: parsed.guide }];
+
+                const g = parsed.guide;
+                if (userLang === "ko") {
+                  const momentumLabel = g.momentum === "rising" ? "상승세" : g.momentum === "declining" ? "하락세" : "안정세";
+                  guideContent = `우리 ${parsed.artist || activeSlotArtistName} 스밍 가이드예요! 현재 ${momentumLabel}${g.current_rank ? ` (#${g.current_rank})` : ""}이에요. 🎵`;
+                } else if (userLang === "ja") {
+                  guideContent = `${parsed.artist || activeSlotArtistName} のストリーミングガイドです！${g.current_rank ? `現在 #${g.current_rank}` : ""} 🎵`;
+                } else if (userLang === "zh") {
+                  guideContent = `${parsed.artist || activeSlotArtistName} 的流媒体指南已就绪！${g.current_rank ? `当前排名 #${g.current_rank}` : ""} 🎵`;
+                } else {
+                  guideContent = `Streaming guide for ${parsed.artist || activeSlotArtistName} is ready!${g.current_rank ? ` Currently #${g.current_rank}.` : ""} 🎵`;
+                }
+              }
+            } catch {
+              // keep fallback
+            }
+
+            const guideMetaToSave: any = {};
+            if (collectedMeta.guideData) guideMetaToSave.guideData = collectedMeta.guideData;
+
+            await adminClient.from("ktrenz_fan_agent_messages").insert({
+              user_id: userId, agent_slot_id: activeSlotId, role: "assistant",
+              content: guideContent,
+              metadata: Object.keys(guideMetaToSave).length > 0 ? guideMetaToSave : null,
+            });
+
+            sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+            for (let i = 0; i < guideContent.length; i += 20) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: guideContent.slice(i, i + 20) } }] })}\n\n`));
+            }
+
+            if (collectedMeta.guideData) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: { guideData: collectedMeta.guideData } })}\n\n`));
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+
+            extractAndStoreIntent(
+              adminClient, OPENAI_API_KEY, userId, lastUserMsg?.content || "",
+              activeSlotWikiEntryId, activeSlotId, ["get_streaming_guide"],
+              collectedMeta.knowledgeArchiveIds,
+            ).catch((e: any) => console.error("[IntentExtract] Error:", e));
+
+            return;
+          }
+
           const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "", { allowBareArtist: !activeSlotWikiEntryId });
           if (forcedBiasArtist) {
             const updatingLabel = toolStatusMap.manage_watched_artist?.[userLang] || toolStatusMap.manage_watched_artist?.en || "Updating your artist…";
