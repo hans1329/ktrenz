@@ -142,7 +142,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
             {/* Hot summary */}
             <div className="flex items-start gap-2.5">
               <span className="text-2xl mt-0.5 shrink-0">{config.emoji}</span>
-              <p className="text-sm font-bold text-foreground leading-snug">
+              <p className="text-base font-bold text-foreground leading-snug">
                 {prediction.hot_summary}
               </p>
             </div>
