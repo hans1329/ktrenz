@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, PartyPopper } from "lucide-react";
+import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, PartyPopper, Eye, ThumbsUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 interface Mission {
@@ -17,6 +17,13 @@ interface Mission {
   icon: React.ReactNode;
   thumbnail?: string | null;
   contentId?: string;
+  stats?: { viewCount?: number; likeCount?: number; commentCount?: number };
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
 
 const CATEGORY_CONFIG = {
@@ -29,6 +36,9 @@ const CATEGORY_CONFIG = {
 interface YTVideo {
   id: string;
   title: string;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
 }
 
 function generateMissions(
@@ -55,6 +65,7 @@ function generateMissions(
       icon: CATEGORY_CONFIG.youtube.icon,
       thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
       contentId: `yt:${video.id}`,
+      stats: { viewCount: video.viewCount, likeCount: video.likeCount, commentCount: video.commentCount },
     });
   });
 
@@ -228,6 +239,7 @@ export default function V3MissionCards({
     };
   }, [consumePendingMission]);
 
+
   const ytVideos: YTVideo[] = (() => {
     const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
     const now = Date.now();
@@ -238,6 +250,9 @@ export default function V3MissionCards({
       .map((v: any) => ({
         id: v.videoId || v.video_id,
         title: v.title || t("mission.video"),
+        viewCount: v.viewCount ? Number(v.viewCount) : undefined,
+        likeCount: v.likeCount ? Number(v.likeCount) : undefined,
+        commentCount: v.commentCount ? Number(v.commentCount) : undefined,
       }))
       .slice(0, 5);
 
@@ -477,7 +492,31 @@ export default function V3MissionCards({
                          }}
                        />
                      )}
-                    <span className="text-sm font-bold text-foreground line-clamp-3 flex-1">{mission.title}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-bold text-foreground line-clamp-3">{mission.title}</span>
+                      {mission.stats && (mission.stats.viewCount || mission.stats.likeCount || mission.stats.commentCount) && (
+                        <div className="flex items-center gap-3 mt-1">
+                          {mission.stats.viewCount != null && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Eye className="w-3 h-3" />
+                              {formatCompact(mission.stats.viewCount)}
+                            </span>
+                          )}
+                          {mission.stats.likeCount != null && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <ThumbsUp className="w-3 h-3" />
+                              {formatCompact(mission.stats.likeCount)}
+                            </span>
+                          )}
+                          {mission.stats.commentCount != null && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <MessageSquare className="w-3 h-3" />
+                              {formatCompact(mission.stats.commentCount)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {mission.description && (
