@@ -179,7 +179,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
 
             {/* Position note */}
             {prediction.position_note && (
-              <p className="text-xs text-muted-foreground/60 leading-relaxed pl-1">
+              <p className="text-sm text-muted-foreground/60 leading-relaxed pl-1">
                 💡 {prediction.position_note}
               </p>
             )}
