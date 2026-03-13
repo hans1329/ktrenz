@@ -403,7 +403,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── AI Prediction ──
   "prediction.askAgent": { en: "Ask Agent more →", ko: "에이전트에게 더 물어보기 →", ja: "エージェントに聞く →", zh: "向助手询问更多 →" },
-  "prediction.aiLabel": { en: "AI Insight", ko: "AI 인사이트", ja: "AIインサイト", zh: "AI洞察" },
+  "prediction.aiLabel": { en: "K-Insight", ko: "K 인사이트", ja: "Kインサイト", zh: "K洞察" },
   "prediction.doThis": { en: "Try this!", ko: "이렇게 해봐!", ja: "やってみて！", zh: "试试这个！" },
   "prediction.talkMore": { en: "Chat with Agent", ko: "에이전트와 대화하기", ja: "エージェントと話す", zh: "与助手聊天" },
   "prediction.goNow": { en: "Go now", ko: "바로가기", ja: "今すぐ行く", zh: "立即前往" },
