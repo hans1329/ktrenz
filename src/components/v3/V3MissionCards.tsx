@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, PartyPopper, Eye, ThumbsUp, MessageSquare } from "lucide-react";
+import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, Eye, ThumbsUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import AgentMissionFeedback, { useAgentMissionFeedback, type MissionStatus } from "@/components/v3/AgentMissionFeedback";
 
 interface Mission {
   key: string;
