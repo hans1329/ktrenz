@@ -201,8 +201,6 @@ Deno.serve(async (req) => {
       .eq("platform", "billboard_chart")
       .limit(1000);
     const existingBillboardSet = new Set((existingBillboard || []).map((r: any) => r.wiki_entry_id));
-    const errors: string[] = [];
-    const debugParsed: Record<string, number> = {};
 
     for (const chart of BILLBOARD_CHARTS) {
       try {
