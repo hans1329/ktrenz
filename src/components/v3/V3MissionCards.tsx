@@ -341,6 +341,7 @@ export default function V3MissionCards({
     missions.length > 0 ? missionStatusObj : null
   );
 
+  const handleMission = async (mission: Mission) => {
     // 로그인 유저 + 미완료 미션이면 pendingRef 세팅 (탭 복귀 시 축하 모달용)
     const { data: authData } = await supabase.auth.getUser();
     const isLoggedIn = !!authData.user;
