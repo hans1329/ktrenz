@@ -940,9 +940,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
-    const hintMap: Partial<Record<QuickActionKind, "live_rankings" | "trend_analysis">> = {
+    const hintMap: Partial<Record<QuickActionKind, QuickActionHint>> = {
       liveRankings: "live_rankings",
       trendAnalysis: "trend_analysis",
+      streamingGuide: "streaming_guide",
     };
     handleSend(action.prompt, false, hintMap[action.id]);
   };
