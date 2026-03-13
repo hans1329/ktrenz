@@ -477,7 +477,7 @@ export default function V3MissionCards({
                          }}
                        />
                      )}
-                    <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
+                    <span className="text-sm font-bold text-foreground line-clamp-3 flex-1">{mission.title}</span>
                   </div>
 
                   {mission.description && (
