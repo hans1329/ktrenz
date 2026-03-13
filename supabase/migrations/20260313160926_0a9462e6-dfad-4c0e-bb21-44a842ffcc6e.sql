@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_fan_agent_messages ADD COLUMN metadata jsonb DEFAULT NULL;
