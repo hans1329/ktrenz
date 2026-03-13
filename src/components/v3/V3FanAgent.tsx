@@ -1326,7 +1326,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     fan_activity: t("agent.prompt.fanActivity"),
                     rankings: t("agent.prompt.liveRankings"),
                     streaming: t("agent.prompt.streamingGuide"),
-                    news: t("agent.prompt.trendAnalysis"),
+                    news: t("agent.prompt.newsBriefing"),
                   };
                   return (
                     <button
