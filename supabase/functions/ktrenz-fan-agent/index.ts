@@ -622,7 +622,7 @@ async function handleTool(
           const { data: aliasExact } = await adminClient
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko")
-            .or(`name_ko.ilike.${artist_name},display_name.ilike.${artist_name}`)
+            .or(`name_ko.eq.${artist_name},display_name.eq.${artist_name},name_ko.ilike.${artist_name},display_name.ilike.${artist_name}`)
             .limit(1);
           if (aliasExact && aliasExact.length > 0) {
             wikiMatch = [{ id: aliasExact[0].wiki_entry_id, title: aliasExact[0].display_name }];
