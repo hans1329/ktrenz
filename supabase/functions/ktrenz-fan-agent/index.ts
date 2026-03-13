@@ -25,12 +25,13 @@ function eunNeun(name: string): string { return hasJongseong(name) ? "은" : "�
 
 function sanitizeArtistCandidate(value: string): string {
   return (value || "")
-    .replace(/["'`]/g, "")
+    .replace(/["'`“”‘’「」『』《》〈〉]/g, "")
     .replace(/\b(?:my|our)\b/gi, "")
     .replace(/\b(?:bias|artist)\b/gi, "")
     .replace(/(?:최애|아티스트)/g, "")
     .replace(/\s+/g, " ")
     .trim()
+    .replace(/[.,!?！？]+$/g, "")
     .replace(/(?:으로|로|을|를|은|는|이|가)$/u, "")
     .trim();
 }
