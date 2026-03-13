@@ -46,7 +46,7 @@ type ChatMessage = {
   briefingData?: BriefingData | null;
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
-  statsData?: StatEntry[] | null;
+  
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
