@@ -2193,7 +2193,7 @@ Deno.serve(async (req) => {
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
     // Collect structured data from tool calls for inline card rendering
-    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[]; knowledgeArchiveIds: string[] } = { knowledgeArchiveIds: [] };
+    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[]; statsData?: any[]; knowledgeArchiveIds: string[] } = { knowledgeArchiveIds: [] };
 
     // ── Briefing Mode (unchanged logic) ──
     if (isBriefingMode) {
