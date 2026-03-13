@@ -814,7 +814,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Guide/Ranking data fetching removed — now handled via tool calling in the edge function
 
   const track = useTrackEvent();
-  const handleSend = useCallback(async (overrideText?: string, bypassPurchaseConfirm = false) => {
+  const handleSend = useCallback(async (
+    overrideText?: string,
+    bypassPurchaseConfirm = false,
+    quickActionHint?: "live_rankings" | "trend_analysis"
+  ) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
 
@@ -843,6 +847,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         messages: updatedMessages,
         token: session.access_token,
         agentSlotId: activeSlot?.id,
+        quickActionHint,
         onDelta: (chunk) => {
           assistantContent += chunk;
           setMessages((prev) => {
