@@ -220,15 +220,15 @@ export default function V3MissionCards({
     };
 
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("focus", consumePendingMission);
-    window.addEventListener("pageshow", consumePendingMission);
+    window.addEventListener("focus", triggerPendingFeedback);
+    window.addEventListener("pageshow", triggerPendingFeedback);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("focus", consumePendingMission);
-      window.removeEventListener("pageshow", consumePendingMission);
+      window.removeEventListener("focus", triggerPendingFeedback);
+      window.removeEventListener("pageshow", triggerPendingFeedback);
     };
-  }, [consumePendingMission]);
+  }, [triggerPendingFeedback]);
 
 
   const ytVideos: YTVideo[] = (() => {
