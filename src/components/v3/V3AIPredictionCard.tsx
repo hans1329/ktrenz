@@ -160,7 +160,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
                   "transition-all duration-200",
                 )}
               >
-                <p className="text-[11px] font-bold text-purple-300/80 uppercase tracking-wider mb-1">
+                <p className="text-xs font-bold text-purple-300/80 uppercase tracking-wider mb-1">
                   {t("prediction.doThis")}
                 </p>
                 <p className="text-[13px] text-foreground/90 leading-relaxed font-medium">
