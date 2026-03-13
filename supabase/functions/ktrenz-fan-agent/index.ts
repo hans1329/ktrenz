@@ -2202,7 +2202,7 @@ Deno.serve(async (req) => {
           // Initial "thinking" status
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
 
-          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "");
+          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "", { allowBareArtist: !activeSlotWikiEntryId });
           if (forcedBiasArtist) {
             const updatingLabel = toolStatusMap.manage_watched_artist?.[userLang] || toolStatusMap.manage_watched_artist?.en || "Updating your artist…";
             sendStatus(controller, updatingLabel);
