@@ -121,26 +121,18 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
     <div
       className={cn(
         "relative w-full rounded-2xl overflow-hidden",
-        "border border-border/30",
-        "bg-gradient-to-br",
-        config.gradientClass,
-        "shadow-lg",
-        config.glowColor,
+        "border border-purple-500/20",
+        "bg-gradient-to-br from-pink-500/20 via-purple-500/15 to-violet-500/10",
       )}
     >
-      {/* Animated shimmer overlay */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent animate-rainbow-slide" />
-      </div>
-
       <div className="relative p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/80">
-            <Sparkles className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-purple-300">
+            <Sparkles className="w-3.5 h-3.5" />
             {t("prediction.aiLabel")}
           </span>
-          <span className="text-[9px] text-muted-foreground/50">
+          <span className="text-[10px] text-muted-foreground/50">
             {new Date(prediction.predicted_at).toLocaleDateString()}
           </span>
         </div>
