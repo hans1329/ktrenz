@@ -239,19 +239,6 @@ export default function V3MissionCards({
     };
   }, [consumePendingMission]);
 
-interface YTVideo {
-  id: string;
-  title: string;
-  viewCount?: number;
-  likeCount?: number;
-  commentCount?: number;
-}
-
-function formatCompact(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
 
   const ytVideos: YTVideo[] = (() => {
     const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
