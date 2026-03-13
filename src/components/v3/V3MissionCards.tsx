@@ -551,50 +551,14 @@ export default function V3MissionCards({
         })()}
       </div>
 
-      {/* 축하 모달 */}
-      {celebration && (() => {
-        const cfg = CATEGORY_CONFIG[celebration.category];
-        const categoryLabel = t(`mission.category.${celebration.category}`);
-        return (
-          <div className={cn(
-            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300",
-            celebration.closing ? "opacity-0" : "animate-in fade-in duration-200"
-          )}>
-            <div className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-300",
-              "bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl",
-              celebration.closing
-                ? "scale-150 opacity-0"
-                : "animate-in zoom-in-95 duration-200"
-            )}
-              style={{
-                maskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
-                WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
-              }}
-            >
-              {/* 카테고리 뱃지 */}
-              <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold", cfg.bg, cfg.color)}>
-                {cfg.icon}
-                <span>{categoryLabel} {t("mission.categoryMission")}</span>
-              </div>
 
-              {/* 아이콘 */}
-              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <PartyPopper className="w-8 h-8 text-amber-500" />
-              </div>
-
-              <p className="text-lg font-extrabold text-foreground text-center">{t("mission.complete")}</p>
-              <p className="text-sm text-muted-foreground text-center line-clamp-2 max-w-[280px]">{celebration.title}</p>
-              <span className="text-3xl font-black text-amber-500">+{celebration.points}P</span>
-
-              {/* 타이머 바 */}
-              <div className="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
-                <div className="h-full bg-amber-500 rounded-full" style={{ animation: "shrink-bar 2.5s linear forwards" }} />
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Agent mission feedback */}
+      <AgentMissionFeedback
+        feedbackState={feedbackState}
+        agentSlot={activeSlot}
+        missionStatus={missionStatusObj}
+        onClose={closeFeedback}
+      />
     </div>
   );
 }
