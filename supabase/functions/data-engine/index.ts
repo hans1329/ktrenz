@@ -567,9 +567,9 @@ Deno.serve(async (req) => {
 
     // ── 이전 모듈의 딜레이 대기 (체이닝에서 전달된 경우) ──
     const waitMs = waitBeforeMs || 0;
-    if (waitBeforeMs > 0) {
-      console.log(`[data-engine] Waiting ${waitBeforeMs}ms before executing ${mod}...`);
-      await new Promise(r => setTimeout(r, waitBeforeMs));
+    if (waitMs > 0) {
+      console.log(`[data-engine] Waiting ${waitMs}ms before executing ${mod}...`);
+      await new Promise(r => setTimeout(r, waitMs));
     }
 
     if (runId) {
