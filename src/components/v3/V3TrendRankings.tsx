@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
 import V3Treemap, { type EnergyCategory } from "@/components/v3/V3Treemap";
+import V3InspectorPanel, { type InspectorItem } from "@/components/v3/V3InspectorPanel";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
