@@ -138,6 +138,7 @@ interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; 
 function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number, category: EnergyCategory): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
+  const lastIdx = items.length - 1;
   const tileSize = (i: TreemapItem, idx: number) => {
     const score = getCategoryScore(i, category);
     const base = Math.log1p(Math.max(score, 1));
@@ -146,6 +147,8 @@ function squarify(items: TreemapItem[], x: number, y: number, w: number, h: numb
     if (idx === 2) return base * 5.0;
     if (idx === 3) return base * 1.8;
     if (idx === 4) return base * 1.5;
+    // 가장 하락폭이 큰 아티스트(마지막)는 눈 아이콘이 잘 보이도록 크기 부스트
+    if (idx === lastIdx) return base * 3.0;
     return base;
   };
   const totalValue = items.reduce((s, i, idx) => s + tileSize(i, idx), 0);
