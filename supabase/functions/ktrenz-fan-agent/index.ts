@@ -2178,6 +2178,84 @@ Deno.serve(async (req) => {
           // Initial "thinking" status
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
 
+          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "");
+          if (forcedBiasArtist) {
+            const updatingLabel = toolStatusMap.manage_watched_artist?.[userLang] || toolStatusMap.manage_watched_artist?.en || "Updating your artist…";
+            sendStatus(controller, updatingLabel);
+
+            const forcedResult = await handleTool(
+              "manage_watched_artist",
+              { action: "add", artist_name: forcedBiasArtist },
+              adminClient,
+              userId,
+              rankingCache,
+              activeSlotId,
+              activeSlotIndex,
+            );
+
+            let forcedContent = "";
+            try {
+              const parsed = JSON.parse(forcedResult);
+              if (parsed.success && parsed.action === "set_bias" && parsed.quick_actions) {
+                collectedMeta.quickActions = parsed.quick_actions;
+                collectedMeta.biasArtist = parsed.artist;
+                if (userLang === "ko") {
+                  forcedContent = `✨ **${parsed.artist}**${eulReul(parsed.artist)} 최애 아티스트로 설정했어요!\n\n이제 팬활동을 시작해 볼까요? 💜\n\n아래 카드를 눌러 바로 시작해보세요!`;
+                } else if (userLang === "ja") {
+                  forcedContent = `✨ **${parsed.artist}** を推しアーティストに設定しました！\n\nファン活動を始めましょうか？💜\n\n下のカードをタップしてすぐ始められます！`;
+                } else if (userLang === "zh") {
+                  forcedContent = `✨ 已将 **${parsed.artist}** 设为你的本命艺人！\n\n现在开始粉丝活动吧？💜\n\n点击下方卡片即可马上开始！`;
+                } else {
+                  forcedContent = `✨ **${parsed.artist}** is now set as your bias artist!\n\nReady to start fan activities? 💜\n\nTap the cards below to begin right away!`;
+                }
+              } else {
+                forcedContent = parsed.message || parsed.error || "요청을 처리했어요.";
+              }
+            } catch {
+              forcedContent = forcedResult;
+            }
+
+            if (!forcedContent) {
+              forcedContent = userLang === "ko" ? "아티스트 설정을 처리했어요." : "Your artist setting has been updated.";
+            }
+
+            await adminClient.from("ktrenz_fan_agent_messages").insert({
+              user_id: userId,
+              agent_slot_id: activeSlotId,
+              role: "assistant",
+              content: forcedContent,
+            });
+
+            sendStatus(controller, writingLabels[userLang] || writingLabels.en);
+
+            const chunkSize = 20;
+            for (let i = 0; i < forcedContent.length; i += chunkSize) {
+              const chunk = forcedContent.slice(i, i + chunkSize);
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+            }
+
+            const hasForcedMeta = collectedMeta.quickActions && collectedMeta.quickActions.length > 0;
+            if (hasForcedMeta) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: collectedMeta })}\n\n`));
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+
+            extractAndStoreIntent(
+              adminClient,
+              OPENAI_API_KEY,
+              userId,
+              lastUserMsg?.content || "",
+              activeSlotWikiEntryId,
+              activeSlotId,
+              ["manage_watched_artist"],
+              collectedMeta.knowledgeArchiveIds,
+            ).catch((e: any) => console.error("[IntentExtract] Error:", e));
+
+            return;
+          }
+
           let toolCallRound = 0;
           const MAX_TOOL_ROUNDS = 5;
 
