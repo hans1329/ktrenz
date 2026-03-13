@@ -234,11 +234,11 @@ async function runFastFullAudit(
       if (latest?.metrics) {
         const metrics = latest.metrics as Record<string, unknown>;
         const fieldsByPlatform: Record<string, string[]> = {
-          youtube: ["viewCount", "subscriberCount"],
-          youtube_music: ["viewCount"],
+          youtube: ["totalViewCount", "subscriberCount"],
+          youtube_music: ["topicTotalViews"],
           lastfm: ["playcount", "listeners"],
           deezer: ["fans"],
-          buzz_multi: ["total_score"],
+          buzz_multi: ["buzz_score"],
         };
         for (const field of fieldsByPlatform[platform] ?? []) {
           const val = metrics[field];
