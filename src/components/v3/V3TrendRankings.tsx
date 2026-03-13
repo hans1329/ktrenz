@@ -249,7 +249,7 @@ const RankingRow = ({ item, rank, maxScore, onTrack, onItemClick }: { item: any;
   );
 };
 
-const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any) => void }) => {
+const MyAgentPinned = ({ items, onTrack, onItemClick }: { items: any[]; onTrack?: (item: any) => void; onItemClick?: (item: any) => void }) => {
   if (!items.length) return null;
   return (
     <div className="mb-4">
@@ -264,7 +264,7 @@ const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any)
           if (!entry) return null;
           const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
           return (
-            <Link key={item.wiki_entry_id} to={`/artist/${entry.slug}`} onClick={() => onTrack?.(item)}>
+            <button key={item.wiki_entry_id} className="block w-full text-left" onClick={() => { onTrack?.(item); onItemClick?.(item); }}>
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98]">
                 <span className="w-6 text-center text-sm font-bold text-primary">#{item.globalRank}</span>
                 <div className="relative">
@@ -298,7 +298,7 @@ const MyAgentPinned = ({ items, onTrack }: { items: any[]; onTrack?: (item: any)
                   )}
                 </div>
               </div>
-            </Link>
+            </button>
           );
         })}
       </div>
