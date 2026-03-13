@@ -541,11 +541,12 @@ Deno.serve(async (req) => {
       console.log(`[data-engine] Pipeline started (run: ${currentRunId}): ${PIPELINE.join(" → ")}`);
 
       const remaining = [...PIPELINE].slice(1);
-      fetch(`${supabaseUrl}/functions/v1/data-engine`, {
+      const startPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
         body: JSON.stringify({ module: PIPELINE[0], runId: currentRunId, chain: remaining }),
-      }).catch(() => {});
+      }).catch((e) => console.warn(`[data-engine] Pipeline start fetch failed:`, e.message));
+      fireAndForget(startPromise);
 
       return new Response(
         JSON.stringify({ success: true, runId: currentRunId, message: `Pipeline started: ${PIPELINE.join(" → ")}` }),
@@ -610,11 +611,12 @@ Deno.serve(async (req) => {
       console.log(`[data-engine] Chaining → ${nextModule} after ${delaySec}s`);
       await new Promise(r => setTimeout(r, delaySec * 1000));
 
-      fetch(`${supabaseUrl}/functions/v1/data-engine`, {
+      const chainPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
         body: JSON.stringify({ module: nextModule, runId: currentRunId, chain: remainingChain }),
-      }).catch(() => {});
+      }).catch((e) => console.warn(`[data-engine] Chain fetch to ${nextModule} failed:`, e.message));
+      fireAndForget(chainPromise);
     } else if (runId && !chain?.length) {
       await sb.from("ktrenz_engine_runs")
         .update({ status: "completed", completed_at: new Date().toISOString(), current_module: null })
