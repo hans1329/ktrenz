@@ -41,9 +41,8 @@ function extractForcedBiasArtist(userText: string): string | null {
 
   const lower = text.toLowerCase();
   const registerHints = ["등록", "설정", "추가", "지정", "변경", "바꿔", "set", "register", "change"];
-  const biasHints = ["최애", "bias", "아티스트", "artist"];
 
-  if (!registerHints.some((keyword) => lower.includes(keyword)) || !biasHints.some((keyword) => lower.includes(keyword))) {
+  if (!registerHints.some((keyword) => lower.includes(keyword))) {
     return null;
   }
 
