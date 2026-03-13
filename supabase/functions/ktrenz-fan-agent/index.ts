@@ -378,15 +378,59 @@ async function handleTool(
   }
 
   // Helper: Korean name map (cached)
+  type TierAliasCandidate = {
+    wiki_entry_id: string;
+    display_name: string | null;
+    name_ko: string | null;
+  };
+
   let koNameMap: Map<string, string> | null = null;
+  let tierAliasCandidatesCache: TierAliasCandidate[] | null = null;
+
+  async function getTierAliasCandidates(): Promise<TierAliasCandidate[]> {
+    if (tierAliasCandidatesCache) return tierAliasCandidatesCache;
+
+    const pageSize = 1000;
+    let from = 0;
+    const allRows: TierAliasCandidate[] = [];
+
+    while (true) {
+      const { data, error } = await adminClient
+        .from("v3_artist_tiers")
+        .select("wiki_entry_id, display_name, name_ko")
+        .not("wiki_entry_id", "is", null)
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        console.error("[FanAgent] Failed to load tier alias candidates:", error.message);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+
+      for (const row of data as TierAliasCandidate[]) {
+        if (!row.wiki_entry_id) continue;
+        allRows.push({
+          wiki_entry_id: row.wiki_entry_id,
+          display_name: row.display_name ?? null,
+          name_ko: row.name_ko ?? null,
+        });
+      }
+
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+
+    tierAliasCandidatesCache = allRows;
+    return tierAliasCandidatesCache;
+  }
+
   async function getKoNameMap(): Promise<Map<string, string>> {
     if (koNameMap) return koNameMap;
-    const { data } = await adminClient
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, name_ko, display_name")
-      .not("name_ko", "is", null);
+    const candidates = await getTierAliasCandidates();
+
     koNameMap = new Map();
-    for (const row of data ?? []) {
+    for (const row of candidates) {
       if (row.name_ko) koNameMap.set(row.wiki_entry_id, row.name_ko.toLowerCase());
     }
     return koNameMap;
@@ -395,6 +439,8 @@ async function handleTool(
   // Helper: normalize artist text for typo-tolerant matching
   function normalizeArtistName(input: string): string {
     return (input || "")
+      .normalize("NFC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "")
@@ -427,14 +473,10 @@ async function handleTool(
     const normalizedQuery = normalizeArtistName(query);
     if (!normalizedQuery) return null;
 
-    const { data: candidates } = await adminClient
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko")
-      .not("wiki_entry_id", "is", null);
-
+    const candidates = await getTierAliasCandidates();
     if (!candidates || candidates.length === 0) return null;
 
-    const scored = (candidates as any[])
+    const scored = candidates
       .map((row) => {
         const variants = [row.name_ko, row.display_name]
           .filter(Boolean)
@@ -471,17 +513,12 @@ async function handleTool(
     const normalizedQuery = normalizeArtistName(sanitizedQuery);
     if (!normalizedQuery) return null;
 
-    const { data: candidates } = await adminClient
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)")
-      .not("wiki_entry_id", "is", null);
-
+    const candidates = await getTierAliasCandidates();
     if (!candidates || candidates.length === 0) return null;
 
-    const ranked = (candidates as any[])
+    const ranked = candidates
       .map((row) => {
-        const wikiTitle = row.wiki_entries?.title ?? null;
-        const variants = [row.name_ko, row.display_name, wikiTitle]
+        const variants = [row.name_ko, row.display_name]
           .filter(Boolean)
           .map((v: string) => ({ raw: v, normalized: normalizeArtistName(v) }))
           .filter((v: { raw: string; normalized: string }) => !!v.normalized);
@@ -493,10 +530,10 @@ async function handleTool(
         const bestDistance = Math.min(...variants.map((v: { raw: string; normalized: string }) => levenshteinDistance(normalizedQuery, v.normalized)));
 
         return {
-          wiki_entry_id: row.wiki_entry_id as string,
+          wiki_entry_id: row.wiki_entry_id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
-          wiki_title: wikiTitle,
+          wiki_title: null,
           hasExact,
           hasContains,
           distance: bestDistance,
@@ -691,25 +728,38 @@ async function handleTool(
         }
 
         let wikiMatch: { id: string; title: string | null }[] | null = null;
+        let lookupHadError = false;
 
         // Step 1: Try exact title match first
         const [exactWikiEqRes, exactWikiIlikeRes] = await Promise.all([
           adminClient.from("wiki_entries").select("id, title").eq("title", targetArtistName).limit(1),
           adminClient.from("wiki_entries").select("id, title").ilike("title", targetArtistName).limit(1),
         ]);
+
+        if (exactWikiEqRes.error || exactWikiIlikeRes.error) {
+          lookupHadError = true;
+          console.error("[FanAgent] Wiki exact match error:", exactWikiEqRes.error?.message || exactWikiIlikeRes.error?.message);
+        }
+
         const exactWiki = exactWikiEqRes.data?.[0] ?? exactWikiIlikeRes.data?.[0] ?? null;
         if (exactWiki) {
           wikiMatch = [{ id: exactWiki.id, title: exactWiki.title }];
         }
 
-        // Step 2: Try exact Korean/alias name match in tier table (safe queries, no .or parsing)
+        // Step 2: Try exact Korean/alias name match in tier table (no relation join dependency)
         if (!wikiMatch || wikiMatch.length === 0) {
           const [koEqRes, displayEqRes, koIlikeRes, displayIlikeRes] = await Promise.all([
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)").eq("name_ko", targetArtistName).limit(1),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)").eq("display_name", targetArtistName).limit(1),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)").ilike("name_ko", targetArtistName).limit(1),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)").ilike("display_name", targetArtistName).limit(1),
+            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").eq("name_ko", targetArtistName).limit(1),
+            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").eq("display_name", targetArtistName).limit(1),
+            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", targetArtistName).limit(1),
+            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("display_name", targetArtistName).limit(1),
           ]);
+
+          const tierExactError = koEqRes.error || displayEqRes.error || koIlikeRes.error || displayIlikeRes.error;
+          if (tierExactError) {
+            lookupHadError = true;
+            console.error("[FanAgent] Tier exact alias match error:", tierExactError.message);
+          }
 
           const aliasExact =
             koEqRes.data?.[0] ??
@@ -718,11 +768,32 @@ async function handleTool(
             displayIlikeRes.data?.[0] ??
             null;
 
-          if (aliasExact) {
+          if (aliasExact?.wiki_entry_id) {
             wikiMatch = [{
               id: aliasExact.wiki_entry_id,
-              title: aliasExact.display_name ?? aliasExact.wiki_entries?.title ?? aliasExact.name_ko ?? targetArtistName,
+              title: aliasExact.display_name ?? aliasExact.name_ko ?? targetArtistName,
             }];
+          }
+
+          // Extra exact-normalized fallback (NFC/공백/특수문자 차이 보정)
+          if (!wikiMatch || wikiMatch.length === 0) {
+            const normalizedTarget = normalizeArtistName(targetArtistName);
+            if (normalizedTarget) {
+              const tierCandidates = await getTierAliasCandidates();
+              const normalizedExact = tierCandidates.find((row) => {
+                const variants = [row.name_ko, row.display_name]
+                  .filter(Boolean)
+                  .map((v: string) => normalizeArtistName(v));
+                return variants.some((v) => v === normalizedTarget);
+              });
+
+              if (normalizedExact?.wiki_entry_id) {
+                wikiMatch = [{
+                  id: normalizedExact.wiki_entry_id,
+                  title: normalizedExact.display_name ?? normalizedExact.name_ko ?? targetArtistName,
+                }];
+              }
+            }
           }
         }
 
@@ -739,11 +810,17 @@ async function handleTool(
 
         // Step 4: Try partial title match (e.g., "All Day" matches "All Day Project")
         if (!wikiMatch || wikiMatch.length === 0) {
-          const { data: partialMatch } = await adminClient
+          const { data: partialMatch, error: partialTitleErr } = await adminClient
             .from("wiki_entries")
             .select("id, title")
             .ilike("title", `%${targetArtistName}%`)
             .limit(1);
+
+          if (partialTitleErr) {
+            lookupHadError = true;
+            console.error("[FanAgent] Wiki partial match error:", partialTitleErr.message);
+          }
+
           if (partialMatch && partialMatch.length === 1) {
             wikiMatch = partialMatch;
           }
@@ -755,6 +832,11 @@ async function handleTool(
             adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
             adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
           ]);
+
+          if (koPartialRes.error || displayPartialRes.error) {
+            lookupHadError = true;
+            console.error("[FanAgent] Tier partial alias match error:", koPartialRes.error?.message || displayPartialRes.error?.message);
+          }
 
           const partialMap = new Map<string, { wiki_entry_id: string; display_name: string | null; name_ko: string | null }>();
           for (const row of [...(koPartialRes.data ?? []), ...(displayPartialRes.data ?? [])]) {
@@ -787,7 +869,7 @@ async function handleTool(
         }
 
         if (!wikiMatch || wikiMatch.length === 0) {
-          const { data: fuzzyMatches } = await adminClient
+          const { data: fuzzyMatches, error: fuzzyTitleErr } = await adminClient
             .from("wiki_entries")
             .select("id, title")
             .ilike("title", `%${targetArtistName}%`)
@@ -797,6 +879,11 @@ async function handleTool(
             adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
             adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
           ]);
+
+          if (fuzzyTitleErr || koAliasMatchesRes.error || displayAliasMatchesRes.error) {
+            lookupHadError = true;
+            console.error("[FanAgent] Fallback artist lookup error:", fuzzyTitleErr?.message || koAliasMatchesRes.error?.message || displayAliasMatchesRes.error?.message);
+          }
 
           const aliasMap = new Map<string, { wiki_entry_id: string; display_name: string | null; name_ko: string | null }>();
           for (const row of [...(koAliasMatchesRes.data ?? []), ...(displayAliasMatchesRes.data ?? [])]) {
@@ -818,6 +905,16 @@ async function handleTool(
               query: targetArtistName,
               suggestions,
               message: `"${targetArtistName}"${eulReul(targetArtistName)} 정확히 찾을 수 없어요. 혹시 이 중에 있나요? ${suggestions.join(", ")}. 정확한 이름을 말씀해주세요!`,
+            });
+          }
+
+          if (lookupHadError) {
+            return JSON.stringify({
+              success: false,
+              action: "artist_lookup_failed",
+              query: targetArtistName,
+              suggestions: [],
+              message: `"${targetArtistName}" 검색 중 일시적인 조회 오류가 발생했어요. 다시 시도해주세요.`,
             });
           }
 
