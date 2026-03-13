@@ -2144,8 +2144,9 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     const body = await req.json();
-    const { messages, mode, language, agent_slot_id } = body;
+    const { messages, mode, language, agent_slot_id, quick_action } = body;
     const userLang = language || "ko";
+    const quickActionHint = typeof quick_action === "string" ? quick_action : null;
     const isBriefingMode = mode === "briefing";
     const isClearChatMode = mode === "clear_chat";
 
