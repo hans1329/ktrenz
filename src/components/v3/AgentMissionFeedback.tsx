@@ -212,17 +212,6 @@ function CelebrationModal({
           )}
         </Avatar>
 
-        {/* Icon */}
-        <div className={cn(
-          "w-14 h-14 rounded-full flex items-center justify-center",
-          isMilestone ? "bg-amber-500/20" : "bg-primary/20"
-        )}>
-          {isMilestone ? (
-            <PartyPopper className="w-7 h-7 text-amber-500" />
-          ) : (
-            <Zap className="w-7 h-7 text-primary" />
-          )}
-        </div>
 
         {/* Feedback text */}
         <p className="text-base font-bold text-foreground text-center max-w-[300px] leading-relaxed">
