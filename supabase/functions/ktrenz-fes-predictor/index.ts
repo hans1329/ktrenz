@@ -379,9 +379,32 @@ Generate prediction + fan briefing + agency action items.`;
       }
     }
 
-    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions (v3-dual-persona)`);
+    // ── 콜백 체이닝: 다음 배치가 있으면 자기 자신을 재호출 ──
+    const nextOffset = offset + BATCH_SIZE;
+    let chainedNext = false;
+    if (!wiki_entry_ids && nextOffset < targetIds.length) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      try {
+        const chainRes = await fetch(`${SUPABASE_URL}/functions/v1/ktrenz-fes-predictor`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ mode, batch_offset: nextOffset }),
+        });
+        await chainRes.text(); // consume body
+        chainedNext = true;
+        console.log(`[ktrenz-fes-predictor] Chained next batch offset=${nextOffset}`);
+      } catch (e) {
+        console.error(`[ktrenz-fes-predictor] Chain call failed:`, e);
+      }
+    }
 
-    return new Response(JSON.stringify({ ok: true, predictions: results }),
+    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions (offset=${offset}, chained=${chainedNext})`);
+
+    return new Response(JSON.stringify({ ok: true, predictions: results, offset, chained: chainedNext }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
