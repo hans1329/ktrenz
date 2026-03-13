@@ -2607,7 +2607,7 @@ Deno.serve(async (req) => {
                 }];
 
                 if (userLang === "ko") {
-                  trendContent = `우리 ${parsed.artist}${eunNeun(parsed.rank ? parsed.artist : activeSlotArtistName)} 현재 #${parsed.rank}예요. 강점은 ${strongest.label}, 보완 포인트는 ${weakest.label}예요.`;
+                  trendContent = `우리 ${parsed.artist}${eunNeun(parsed.artist)} 현재 #${parsed.rank}예요. 강점은 ${strongest.label}, 보완 포인트는 ${weakest.label}예요.`;
                 } else if (userLang === "ja") {
                   trendContent = `${parsed.artist} は現在 #${parsed.rank}。強みは ${strongest.label}、改善ポイントは ${weakest.label} です。`;
                 } else if (userLang === "zh") {
