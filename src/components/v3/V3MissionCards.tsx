@@ -228,6 +228,20 @@ export default function V3MissionCards({
     };
   }, [consumePendingMission]);
 
+interface YTVideo {
+  id: string;
+  title: string;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
   const ytVideos: YTVideo[] = (() => {
     const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
     const now = Date.now();
@@ -238,6 +252,9 @@ export default function V3MissionCards({
       .map((v: any) => ({
         id: v.videoId || v.video_id,
         title: v.title || t("mission.video"),
+        viewCount: v.viewCount ? Number(v.viewCount) : undefined,
+        likeCount: v.likeCount ? Number(v.likeCount) : undefined,
+        commentCount: v.commentCount ? Number(v.commentCount) : undefined,
       }))
       .slice(0, 5);
 
