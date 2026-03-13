@@ -576,6 +576,13 @@ export default function V3MissionCards({
         })()}
       </div>
 
+  // Effect: trigger onMissionComplete when pending feedback data is set (after tab return)
+  useEffect(() => {
+    if (pendingFeedbackData) {
+      onMissionComplete(pendingFeedbackData);
+      setPendingFeedbackData(null);
+    }
+  }, [pendingFeedbackData, onMissionComplete]);
 
       {/* Agent mission feedback */}
       <AgentMissionFeedback
