@@ -1423,20 +1423,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
-        {!hasBiasRegistered ? (
-          /* Blocked state — no artist registered */
-          <button
-            onClick={() => handleSend(t("agent.prompt.alertSetup"))}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-primary/10 border border-primary/30 text-primary font-medium text-sm hover:bg-primary/20 transition-all active:scale-[0.98]"
-          >
-            <Heart className="w-4 h-4" />
-            {t("agent.inputBlockedNoArtist")}
-          </button>
-        ) : (
+        {(() => {
+          const showQuickActions = hasStarted && messages.length > 0 && !isStreaming;
+          return (
           <>
-            {hasStarted && messages.length > 0 && !isStreaming && (
+            {showQuickActions && (
               <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
-                {!activeSlot?.wiki_entry_id && (
+                {!hasBiasRegistered && (
                   <button
                     onClick={() => handleSend(t("agent.prompt.alertSetup"))}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary font-medium hover:bg-primary/20 transition-all shrink-0"
@@ -1444,7 +1437,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     <Heart className="w-3 h-3" />
                     {t("agent.registerBias")}
                   </button>
-                )}
+                )
                 {QUICK_ACTIONS.map((action) => {
                   const Icon = action.icon;
                   return (
