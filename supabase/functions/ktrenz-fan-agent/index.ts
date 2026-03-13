@@ -2703,21 +2703,45 @@ Deno.serve(async (req) => {
                 } catch {}
               }
 
-              // Collect stat card data for lookup/compare/rankings
+              // Collect report card data for lookup/compare
               if (fnName === "lookup_artist") {
                 try {
                   const parsed = JSON.parse(result);
                   if (parsed.artist && !parsed.error) {
-                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
-                    collectedMeta.statsData.push({
+                    if (!collectedMeta.reportCards) collectedMeta.reportCards = [];
+                    collectedMeta.reportCards.push({
+                      type: "artist_report",
                       artist: parsed.artist,
                       rank: parsed.rank,
-                      energy_score: parsed.energy_score ?? 0,
-                      energy_change_24h: parsed.energy_change_24h ?? 0,
-                      youtube_score: parsed.youtube_score ?? 0,
-                      buzz_score: parsed.buzz_score ?? 0,
-                      music_score: parsed.music_score ?? 0,
-                      album_sales_score: parsed.album_sales_score ?? 0,
+                      totalArtists: parsed.total_artists ?? 50,
+                      energy: {
+                        score: parsed.energy_score ?? 0,
+                        change24h: parsed.energy_change_24h ?? 0,
+                      },
+                      categories: [
+                        { key: "youtube", label: "YouTube", score: parsed.youtube?.score ?? 0, rank: parsed.youtube?.rank ?? 0 },
+                        { key: "buzz", label: "Buzz", score: parsed.buzz?.score ?? 0, rank: parsed.buzz?.rank ?? 0 },
+                        { key: "music", label: "Music", score: parsed.music?.score ?? 0, rank: parsed.music?.rank ?? 0 },
+                        { key: "album", label: "Album", score: parsed.album?.score ?? 0, rank: parsed.album?.rank ?? 0 },
+                      ],
+                      strongest: (() => {
+                        const cats = [
+                          { key: "youtube", label: "YouTube", score: parsed.youtube?.score ?? 0, rank: parsed.youtube?.rank ?? 0 },
+                          { key: "buzz", label: "Buzz", score: parsed.buzz?.score ?? 0, rank: parsed.buzz?.rank ?? 0 },
+                          { key: "music", label: "Music", score: parsed.music?.score ?? 0, rank: parsed.music?.rank ?? 0 },
+                          { key: "album", label: "Album", score: parsed.album?.score ?? 0, rank: parsed.album?.rank ?? 0 },
+                        ].sort((a, b) => a.rank - b.rank);
+                        return cats[0];
+                      })(),
+                      weakest: (() => {
+                        const cats = [
+                          { key: "youtube", label: "YouTube", score: parsed.youtube?.score ?? 0, rank: parsed.youtube?.rank ?? 0 },
+                          { key: "buzz", label: "Buzz", score: parsed.buzz?.score ?? 0, rank: parsed.buzz?.rank ?? 0 },
+                          { key: "music", label: "Music", score: parsed.music?.score ?? 0, rank: parsed.music?.rank ?? 0 },
+                          { key: "album", label: "Album", score: parsed.album?.score ?? 0, rank: parsed.album?.rank ?? 0 },
+                        ].sort((a, b) => b.rank - a.rank);
+                        return cats[0];
+                      })(),
                       tier: parsed.tier ?? null,
                     });
                   }
