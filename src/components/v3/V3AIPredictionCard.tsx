@@ -163,7 +163,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
                 <p className="text-xs font-bold text-purple-300/80 uppercase tracking-wider mb-1">
                   {t("prediction.doThis")}
                 </p>
-                <p className="text-[13px] text-foreground/90 leading-relaxed font-medium">
+                <p className="text-sm text-foreground/90 leading-relaxed font-medium">
                   {prediction.fan_action}
                 </p>
                 {actionUrl && (
