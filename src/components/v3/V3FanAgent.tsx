@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -287,19 +287,17 @@ async function streamChat({
 }
 
 // ── Agent Avatar Component ─────────────────────────────
-const AgentAvatar = ({
-  avatarUrl,
-  size = "sm",
-}: {
+const AgentAvatar = forwardRef<HTMLDivElement, {
   avatarUrl: string | null | undefined;
   size?: "sm" | "lg";
-}) => {
+}>(({ avatarUrl, size = "sm" }, ref) => {
   const sizeClasses = size === "lg"
     ? "w-10 h-10 rounded-xl"
     : "w-9 h-9 rounded-xl";
 
   return (
     <div
+      ref={ref}
       className={cn(
         sizeClasses,
         "relative overflow-hidden shrink-0 flex items-center justify-center",
@@ -313,7 +311,16 @@ const AgentAvatar = ({
       )}
     </div>
   );
-};
+});
+
+AgentAvatar.displayName = "AgentAvatar";
+
+const MarkdownLink = forwardRef<HTMLAnchorElement, any>(({ href, children }, ref) => {
+  if (!href) return <a ref={ref}>{children}</a>;
+  return <V3InlineLinkCard ref={ref} href={href}>{children}</V3InlineLinkCard>;
+});
+
+MarkdownLink.displayName = "MarkdownLink";
 
 // ── Component ──────────────────────────────────────────
 interface V3FanAgentProps {
@@ -1138,10 +1145,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
                   <ReactMarkdown
                     components={{
-                      a: ({ href, children }) => {
-                        if (!href) return <a>{children}</a>;
-                        return <V3InlineLinkCard href={href}>{children}</V3InlineLinkCard>;
-                      },
+                      a: MarkdownLink,
                       img: ({ src, alt }) => (
                         <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
                       ),
