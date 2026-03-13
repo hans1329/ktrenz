@@ -121,6 +121,12 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
   const BATCH_SIZE = 5;
   const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
 
+  // Edge Function 60초 타임아웃 내에서 안전하게 완료하기 위해 동적 딜레이 계산 (최대 25초 사용)
+  const MAX_LAUNCH_TIME_MS = 25_000;
+  const delayMs = totalBatches > 1 ? Math.min(2000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
+
+  console.log(`[data-engine] Buzz: ${totalBatches} batches, delay=${delayMs}ms, estimated=${totalBatches > 1 ? (totalBatches - 1) * delayMs / 1000 : 0}s`);
+
   let launched = 0;
   for (let i = 0; i < totalBatches; i++) {
     const p = fetch(`${supabaseUrl}/functions/v1/buzz-cron`, {
@@ -130,7 +136,7 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
     }).catch((e) => console.warn(`[data-engine] Buzz batch ${i} fire error:`, e.message));
     fireAndForget(p);
     launched++;
-    if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 2000));
+    if (i < totalBatches - 1) await new Promise(r => setTimeout(r, delayMs));
   }
   console.log(`[data-engine] Buzz: launched ${launched} batches for ${tier1Count} Tier1 artists (snapshotAt=${tierSnapshotAt})`);
   return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count, tierSnapshotAt };
