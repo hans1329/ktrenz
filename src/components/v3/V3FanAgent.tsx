@@ -1275,22 +1275,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               )}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
-                  <ReactMarkdown
-                    components={{
-                      a: MarkdownLink,
-                      p: ({ children }) => <p><MarkdownText>{children}</MarkdownText></p>,
-                      li: ({ children }) => <li><MarkdownText>{children}</MarkdownText></li>,
-                      strong: ({ children }) => <strong><MarkdownText>{children}</MarkdownText></strong>,
-                      img: ({ src, alt }) => (
-                        <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
-                      ),
-                    }}
-                  >{msg.content}</ReactMarkdown>
-                  {isStreaming && i === messages.length - 1 && (
-                    <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
-                  )}
-                </div>
+                <SectionCards content={msg.content} isLastStreaming={isStreaming && i === messages.length - 1} />
               ) : (
                 msg.content
               )}
