@@ -1,5 +1,6 @@
 // YouTube 댓글 감성 분석 + 언어 기반 국가 분류 엣지 함수
-// 특정 아티스트의 최근 영상 댓글을 수집하고 키워드 기반 감성 분석 + 언어 감지 수행
+// 배치 모드: 여러 아티스트를 한 번에 처리 (wikiEntryIds 배열)
+// 단건 모드: 단일 아티스트 처리 (wikiEntryId)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -31,7 +32,7 @@ const NEGATIVE = [
   "👎", "😡", "🤮", "💩",
 ];
 
-// ── Language → Country mapping (only high-confidence 1:1 mappings) ──
+// ── Language → Country mapping ──
 const LANG_TO_COUNTRY: Record<string, { code: string; name: string }> = {
   ko: { code: "KR", name: "South Korea" },
   ja: { code: "JP", name: "Japan" },
@@ -50,13 +51,10 @@ const LANG_TO_COUNTRY: Record<string, { code: string; name: string }> = {
   es: { code: "ES", name: "Spain" },
 };
 
-// Unicode range-based language detection (no API needed)
 function detectLanguage(text: string): string {
   const clean = text.replace(/[\s\d\p{Emoji_Presentation}\p{Extended_Pictographic}.,!?@#$%^&*()_+\-=\[\]{};':"\\|<>\/~`]/gu, "");
   if (!clean) return "unknown";
-
   let ko = 0, ja = 0, th = 0, ar = 0, latin = 0, total = 0;
-
   for (const ch of clean) {
     const cp = ch.codePointAt(0)!;
     total++;
@@ -69,14 +67,11 @@ function detectLanguage(text: string): string {
     else if (cp >= 0x0600 && cp <= 0x06FF) ar++;
     else if (cp >= 0x0041 && cp <= 0x024F) latin++;
   }
-
   if (total === 0) return "unknown";
-
   if (ko / total > 0.3) return "ko";
   if (ja / total > 0.3) return "ja";
   if (th / total > 0.3) return "th";
   if (ar / total > 0.3) return "ar";
-
   if (latin / total > 0.5) {
     const lower = text.toLowerCase();
     if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(lower)) return "vi";
@@ -91,7 +86,6 @@ function detectLanguage(text: string): string {
     if (/\b(che|della|sono|questo|quella|molto|anche|perché)\b/.test(lower)) return "it";
     return "en";
   }
-
   return "unknown";
 }
 
@@ -117,31 +111,30 @@ function analyzeComment(text: string): { sentiment: "positive" | "negative" | "n
   return { sentiment: "neutral", score: 50 };
 }
 
+const COMMENTS_PER_VIDEO = 30;
+
 async function fetchVideoComments(
   apiKey: string,
   videoId: string,
-  maxResults = 50,
 ): Promise<CommentSentiment[]> {
-  const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=${maxResults}&order=relevance&textFormat=plainText&key=${apiKey}`;
+  const url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=${COMMENTS_PER_VIDEO}&order=relevance&textFormat=plainText&key=${apiKey}`;
   const resp = await fetch(url);
   if (!resp.ok) {
     console.warn(`[yt-sentiment] Comments fetch failed for ${videoId}: ${resp.status}`);
     return [];
   }
   const data = await resp.json();
-  const items = data.items || [];
-  return items.map((item: any) => {
+  return (data.items || []).map((item: any) => {
     const snippet = item.snippet?.topLevelComment?.snippet;
     const text = snippet?.textDisplay || "";
     const { sentiment, score } = analyzeComment(text);
-    const lang = detectLanguage(text);
     return {
       text: text.slice(0, 200),
       sentiment,
       score,
       likeCount: snippet?.likeCount || 0,
       publishedAt: snippet?.publishedAt || "",
-      lang,
+      lang: detectLanguage(text),
     };
   });
 }
@@ -157,7 +150,6 @@ async function getRecentVideoIds(
   const chData = await chResp.json();
   const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!uploadsId) return [];
-
   const plUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=${maxVideos}&key=${apiKey}`;
   const plResp = await fetch(plUrl);
   if (!plResp.ok) return [];
@@ -168,110 +160,64 @@ async function getRecentVideoIds(
   }));
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// ── 단일 아티스트 처리 로직 ──
+async function processArtist(
+  sb: any,
+  ytApiKey: string,
+  wikiEntryId: string,
+  displayName: string,
+  channelId: string,
+): Promise<{ success: boolean; artistName: string; overallScore?: number; error?: string }> {
   try {
-    const { wikiEntryId } = await req.json();
-    if (!wikiEntryId) {
-      return new Response(
-        JSON.stringify({ success: false, error: "wikiEntryId required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
-    if (!ytApiKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: "YOUTUBE_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    // Get artist info
-    const { data: tier } = await sb
-      .from("v3_artist_tiers")
-      .select("display_name, youtube_channel_id")
-      .eq("wiki_entry_id", wikiEntryId)
-      .maybeSingle();
-
-    if (!tier?.youtube_channel_id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "No YouTube channel ID for this artist" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    console.log(`[yt-sentiment] Analyzing: ${tier.display_name} (${tier.youtube_channel_id})`);
-
-    // Get recent videos
-    const videos = await getRecentVideoIds(ytApiKey, tier.youtube_channel_id, 3);
+    const videos = await getRecentVideoIds(ytApiKey, channelId, 3);
     if (videos.length === 0) {
-      return new Response(
-        JSON.stringify({ success: false, error: "No recent videos found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return { success: false, artistName: displayName, error: "No recent videos" };
     }
 
-    // Fetch comments for each video (50 each, ~3 API units total)
     const allCommentsRaw: CommentSentiment[] = [];
     const videoResults = await Promise.all(
       videos.map(async (v) => {
-        const comments = await fetchVideoComments(ytApiKey, v.videoId, 50);
+        const comments = await fetchVideoComments(ytApiKey, v.videoId);
         allCommentsRaw.push(...comments);
         const pos = comments.filter((c) => c.sentiment === "positive").length;
         const neg = comments.filter((c) => c.sentiment === "negative").length;
         const neu = comments.filter((c) => c.sentiment === "neutral").length;
-        const avgScore =
-          comments.length > 0
-            ? Math.round(comments.reduce((s, c) => s + c.score, 0) / comments.length)
-            : 50;
+        const avgScore = comments.length > 0
+          ? Math.round(comments.reduce((s, c) => s + c.score, 0) / comments.length)
+          : 50;
         return {
-          videoId: v.videoId,
-          title: v.title,
-          commentCount: comments.length,
-          sentiment: { positive: pos, negative: neg, neutral: neu },
-          avgScore,
+          videoId: v.videoId, title: v.title, commentCount: comments.length,
+          sentiment: { positive: pos, negative: neg, neutral: neu }, avgScore,
           topComments: comments.sort((a, b) => b.likeCount - a.likeCount).slice(0, 5),
           recentComments: comments.slice(0, 10),
         };
       }),
     );
 
-    // Overall sentiment aggregation
     const allComments = videoResults.flatMap((v) => v.recentComments);
     const totalPos = videoResults.reduce((s, v) => s + v.sentiment.positive, 0);
     const totalNeg = videoResults.reduce((s, v) => s + v.sentiment.negative, 0);
     const totalNeu = videoResults.reduce((s, v) => s + v.sentiment.neutral, 0);
     const totalComments = totalPos + totalNeg + totalNeu;
-    const overallScore =
-      totalComments > 0
-        ? Math.round(allComments.reduce((s, c) => s + c.score, 0) / allComments.length)
-        : 50;
+    const overallScore = totalComments > 0
+      ? Math.round(allComments.reduce((s, c) => s + c.score, 0) / allComments.length)
+      : 50;
     const overallLabel = overallScore >= 65 ? "positive" : overallScore <= 35 ? "negative" : "neutral";
 
-    // ── Language distribution → Geo data ──
+    // Language distribution
     const langCounts: Record<string, number> = {};
     for (const c of allCommentsRaw) {
       if (c.lang && c.lang !== "unknown" && c.lang !== "en") {
         langCounts[c.lang] = (langCounts[c.lang] || 0) + 1;
       }
     }
-
     const totalNonEnglish = Object.values(langCounts).reduce((s, n) => s + n, 0);
     const langDistribution: Record<string, number> = {};
     for (const [lang, count] of Object.entries(langCounts)) {
       langDistribution[lang] = Math.round((count / Math.max(totalNonEnglish, 1)) * 100);
     }
 
-    // Save geo data from comment languages
+    // Save geo data
     const now = new Date().toISOString();
     const geoRows = Object.entries(langCounts)
       .filter(([lang]) => LANG_TO_COUNTRY[lang])
@@ -289,15 +235,10 @@ Deno.serve(async (req) => {
 
     if (geoRows.length > 0) {
       const { error: geoErr } = await sb.from("ktrenz_geo_fan_data").insert(geoRows);
-
-      if (geoErr) {
-        console.error("[yt-sentiment] Geo insert error:", geoErr);
-      } else {
-        console.log(`[yt-sentiment] Saved ${geoRows.length} country signals from comment languages`);
-      }
+      if (geoErr) console.error(`[yt-sentiment] Geo insert error for ${displayName}:`, geoErr);
     }
 
-    // Save sentiment snapshot (include language distribution)
+    // Save sentiment snapshot
     await sb.from("ktrenz_data_snapshots").insert({
       wiki_entry_id: wikiEntryId,
       platform: "yt_sentiment",
@@ -305,37 +246,97 @@ Deno.serve(async (req) => {
         overall_score: overallScore,
         overall_label: overallLabel,
         total_comments_analyzed: totalComments,
-        positive: totalPos,
-        negative: totalNeg,
-        neutral: totalNeu,
+        positive: totalPos, negative: totalNeg, neutral: totalNeu,
         videos_analyzed: videos.length,
         language_distribution: langDistribution,
         non_english_comments: totalNonEnglish,
       },
       raw_response: {
         videos: videoResults.map((v) => ({
-          videoId: v.videoId,
-          title: v.title,
-          sentiment: v.sentiment,
+          videoId: v.videoId, title: v.title, sentiment: v.sentiment,
         })),
       },
     });
 
-    console.log(
-      `[yt-sentiment] ${tier.display_name}: score=${overallScore} (${overallLabel}), comments=${totalComments}, videos=${videos.length}, langs=${JSON.stringify(langDistribution)}`,
+    console.log(`[yt-sentiment] ${displayName}: score=${overallScore} (${overallLabel}), comments=${totalComments}, langs=${JSON.stringify(langDistribution)}`);
+    return { success: true, artistName: displayName, overallScore };
+  } catch (err) {
+    console.error(`[yt-sentiment] Error for ${displayName}:`, err);
+    return { success: false, artistName: displayName, error: err.message };
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const body = await req.json();
+    // 배치 모드: wikiEntryIds 배열, 단건 모드: wikiEntryId
+    const wikiEntryIds: string[] = body.wikiEntryIds || (body.wikiEntryId ? [body.wikiEntryId] : []);
+
+    if (wikiEntryIds.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "wikiEntryIds or wikiEntryId required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
+    if (!ytApiKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: "YOUTUBE_API_KEY not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    // 아티스트 정보 일괄 조회
+    const { data: tiers } = await sb
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id, display_name, youtube_channel_id")
+      .in("wiki_entry_id", wikiEntryIds);
+
+    const validArtists = (tiers || []).filter((t: any) => t.youtube_channel_id);
+
+    if (validArtists.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "No artists with YouTube channel ID found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    console.log(`[yt-sentiment] Processing ${validArtists.length} artists in batch`);
+
+    // 순차 처리 (YouTube API rate limit 고려, 아티스트 간 간격 없이 순차 실행)
+    const results = [];
+    for (const artist of validArtists) {
+      const result = await processArtist(
+        sb, ytApiKey,
+        artist.wiki_entry_id,
+        artist.display_name,
+        artist.youtube_channel_id,
+      );
+      results.push(result);
+    }
+
+    const succeeded = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
+
+    console.log(`[yt-sentiment] Batch complete: ${succeeded} succeeded, ${failed} failed out of ${validArtists.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        artistName: tier.display_name,
-        overallScore,
-        overallLabel,
-        totalComments,
-        breakdown: { positive: totalPos, negative: totalNeg, neutral: totalNeu },
-        languageDistribution: langDistribution,
-        geoSignals: geoRows.length,
-        videos: videoResults,
+        total: validArtists.length,
+        succeeded,
+        failed,
+        results,
         analyzedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
