@@ -226,17 +226,22 @@ async function saveFeedbackToChat(
   userId: string,
   wikiEntryId: string,
   feedbackText: string,
+  agentSlotId: string | null,
 ) {
   try {
-    await (supabase as any)
+    const { error } = await (supabase as any)
       .from("ktrenz_fan_agent_messages")
       .insert({
         user_id: userId,
+        agent_slot_id: agentSlotId,
         role: "assistant",
+        mode: "mission_feedback",
         content: `🎯 **Mission Feedback**\n\n${feedbackText}`,
       });
+
+    if (error) throw error;
   } catch (e) {
-    console.error("Failed to save feedback to chat:", e);
+    console.error("Failed to save feedback to chat:", { wikiEntryId, agentSlotId, error: e });
   }
 }
 
@@ -412,7 +417,7 @@ function FeedbackDrawer({
 // ── Main Hook ──────────────────────────────────────────
 export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
   const { user } = useAuth();
-  const { activeSlot, slots } = useAgentSlots();
+  const { activeSlot: currentActiveSlot, slots } = useAgentSlots();
   const { language } = useLanguage();
   const [feedbackState, setFeedbackState] = useState<{
     trigger: FeedbackTrigger;
@@ -431,14 +436,16 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
     if (!user?.id) return;
     // Briefing & inactivity only for registered agent artists
     if (!isRegisteredAgent && (trigger === "briefing" || trigger === "inactivity")) return;
+
     const feedback = generateFeedback(trigger, status, language);
     setFeedbackState({ trigger, feedback });
 
-    // Save to chat history only for registered agent artists
-    if (isRegisteredAgent) {
-      saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
+    const shouldSave = isRegisteredAgent || trigger === "completion" || trigger === "milestone";
+    if (shouldSave) {
+      const targetSlotId = matchingSlot?.id ?? currentActiveSlot?.id ?? null;
+      void saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text, targetSlotId);
     }
-  }, [user?.id, language, isRegisteredAgent]);
+  }, [user?.id, language, isRegisteredAgent, matchingSlot?.id, currentActiveSlot?.id]);
 
   // Trigger: mission completion
   const onMissionComplete = useCallback((status: MissionStatus) => {
