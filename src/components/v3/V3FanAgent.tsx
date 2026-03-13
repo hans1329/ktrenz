@@ -52,6 +52,7 @@ type ChatMessage = {
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
 type QuickActionKind = "fanActivity" | "liveRankings" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings";
+type QuickActionHint = "live_rankings" | "trend_analysis" | "streaming_guide";
 
 interface QuickAction {
   id: QuickActionKind;
