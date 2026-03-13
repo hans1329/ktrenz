@@ -6,13 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, Snowflake, X } from "lucide-react";
-import BoxParticles from "@/components/v3/BoxParticles";
-import V3MissionCards from "@/components/v3/V3MissionCards";
-import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
-import V3AIPredictionCard from "@/components/v3/V3AIPredictionCard";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, Disc3, Snowflake } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
