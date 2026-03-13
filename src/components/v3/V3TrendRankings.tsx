@@ -784,9 +784,9 @@ const V3TrendRankings = () => {
             </div>
           </div>
           <div className="px-4 space-y-3 mb-4">
-            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
+            <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             {top3.map((item, idx) => (
-              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             ))}
           </div>
           {rest.length > 0 && (
@@ -799,7 +799,7 @@ const V3TrendRankings = () => {
                 </div>
               </div>
               <div className="px-4 space-y-1.5">
-                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} />)}
+                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />)}
               </div>
             </>
           )}
