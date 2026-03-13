@@ -328,7 +328,19 @@ export default function V3MissionCards({
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
   const allDone = missions.length > 0 && completedCount === missions.length;
 
-  const handleMission = async (mission: Mission) => {
+  // Agent mission feedback
+  const missionStatusObj: MissionStatus = {
+    completedCount,
+    totalCount: missions.length,
+    totalPoints,
+    allDone,
+    artistName,
+    wikiEntryId,
+  };
+  const { feedbackState, activeSlot, onMissionComplete, closeFeedback } = useAgentMissionFeedback(
+    missions.length > 0 ? missionStatusObj : null
+  );
+
     // 로그인 유저 + 미완료 미션이면 pendingRef 세팅 (탭 복귀 시 축하 모달용)
     const { data: authData } = await supabase.auth.getUser();
     const isLoggedIn = !!authData.user;
