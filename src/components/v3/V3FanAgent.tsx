@@ -1200,6 +1200,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   <ReactMarkdown
                     components={{
                       a: MarkdownLink,
+                      p: ({ children }) => <p><MarkdownText>{children}</MarkdownText></p>,
+                      li: ({ children }) => <li><MarkdownText>{children}</MarkdownText></li>,
+                      strong: ({ children }) => <strong><MarkdownText>{children}</MarkdownText></strong>,
                       img: ({ src, alt }) => (
                         <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
                       ),
