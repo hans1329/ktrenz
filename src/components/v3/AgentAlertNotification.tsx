@@ -37,6 +37,44 @@ export default function AgentAlertNotification({
 
   const handleGoToChat = () => {
     setOpen(false);
+    // Store a seed so the agent auto-sends an analysis query
+    if (alert) {
+      const seedPrompts: Record<string, Record<string, string>> = {
+        energy_spike: {
+          ko: `${alert.artistName}의 에너지가 급등한 이유를 분석해줘. 어떤 이벤트가 있었는지 알려줘.`,
+          en: `Analyze why ${alert.artistName}'s energy is surging. What events are driving this?`,
+          ja: `${alert.artistName}のエネルギーが急上昇した理由を分析して。何が起きているの？`,
+          zh: `分析一下${alert.artistName}能量飙升的原因，发生了什么事？`,
+        },
+        energy_drop: {
+          ko: `${alert.artistName}의 에너지가 하락한 이유를 분석해줘. 팬으로서 어떻게 도울 수 있을까?`,
+          en: `Analyze why ${alert.artistName}'s energy is dropping. How can fans help?`,
+          ja: `${alert.artistName}のエネルギーが下落した理由を分析して。ファンとして何ができる？`,
+          zh: `分析一下${alert.artistName}能量下降的原因，粉丝能做什么？`,
+        },
+        rank_1: {
+          ko: `${alert.artistName}이(가) 1위를 달성했어! 어떤 요인이 1위를 이끌었는지 분석해줘.`,
+          en: `${alert.artistName} hit #1! Analyze what factors drove them to the top.`,
+          ja: `${alert.artistName}が1位を達成！何が1位に導いたか分析して。`,
+          zh: `${alert.artistName}达到了第一名！分析是什么因素推动的。`,
+        },
+        milestone: {
+          ko: `${alert.artistName}의 새로운 마일스톤에 대해 자세히 알려줘.`,
+          en: `Tell me more about ${alert.artistName}'s new milestone.`,
+          ja: `${alert.artistName}の新しいマイルストーンについて詳しく教えて。`,
+          zh: `详细介绍一下${alert.artistName}的新里程碑。`,
+        },
+      };
+      const lang = localStorage.getItem("ktrenz-language") || "ko";
+      const prompts = seedPrompts[alert.type] || seedPrompts.energy_spike;
+      const message = prompts[lang] || prompts.en;
+
+      localStorage.setItem("ktrenz_agent_seed", JSON.stringify({
+        artistName: alert.artistName,
+        message,
+        createdAt: Date.now(),
+      }));
+    }
     setTimeout(() => {
       onDismiss();
       navigate("/agent");
