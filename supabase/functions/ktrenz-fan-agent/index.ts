@@ -2773,19 +2773,17 @@ Deno.serve(async (req) => {
                 try {
                   const parsed = JSON.parse(result);
                   if (parsed.rankings) {
-                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
-                    for (const item of parsed.rankings.slice(0, 5)) {
-                      collectedMeta.statsData.push({
-                        artist: item.artist,
-                        rank: item.rank,
-                        energy_score: item.energy_score ?? 0,
-                        energy_change_24h: item.energy_change_24h ?? 0,
-                        youtube_score: item.youtube_score ?? 0,
-                        buzz_score: item.buzz_score ?? 0,
-                        music_score: item.music_score ?? 0,
-                        album_sales_score: item.album_sales_score ?? 0,
-                      });
-                    }
+                    // Send rankingData for card rendering
+                    collectedMeta.rankingData = parsed.rankings.slice(0, 10).map((item: any) => ({
+                      rank: item.rank,
+                      artist_name: item.artist,
+                      image_url: null,
+                      total_score: item.total_score ?? 0,
+                      energy_score: item.energy_score ?? 0,
+                      energy_change_24h: item.energy_change_24h ?? 0,
+                      youtube_score: item.youtube_score ?? 0,
+                      buzz_score: item.buzz_score ?? 0,
+                    }));
                   }
                 } catch {}
               }
