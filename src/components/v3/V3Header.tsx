@@ -47,13 +47,29 @@ const V3Header = () => {
       if (searchQuery.trim().length >= 2) {
         setIsSearching(true);
         try {
-          const { data, error } = await supabase
+          // Search wiki_entries by title/slug
+          const { data: wikiData } = await supabase
             .from("wiki_entries")
             .select("id, title, slug, image_url, schema_type")
             .or(`title.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
             .in("schema_type", ["artist", "member"] as const)
             .limit(8);
-          if (!error && data) setSearchResults(data);
+
+          // Also search v3_artist_tiers by name_ko / display_name
+          const { data: tierData } = await (supabase as any)
+            .from("v3_artist_tiers")
+            .select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(id, title, slug, image_url, schema_type)")
+            .or(`name_ko.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
+            .limit(8);
+
+          const resultMap = new Map<string, SearchResult>();
+          (wikiData || []).forEach((r: SearchResult) => resultMap.set(r.id, r));
+          (tierData || []).forEach((t: any) => {
+            if (t.wiki_entries && !resultMap.has(t.wiki_entries.id)) {
+              resultMap.set(t.wiki_entries.id, t.wiki_entries);
+            }
+          });
+          setSearchResults(Array.from(resultMap.values()).slice(0, 8));
         } catch (err) { console.error("Search error:", err); }
         finally { setIsSearching(false); }
       } else { setSearchResults([]); }
