@@ -322,25 +322,29 @@ function FeedbackDrawer({
 // ── Main Hook ──────────────────────────────────────────
 export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
   const { user } = useAuth();
-  const { activeSlot } = useAgentSlots();
+  const { activeSlot, slots } = useAgentSlots();
   const { language } = useLanguage();
   const [feedbackState, setFeedbackState] = useState<{
     trigger: FeedbackTrigger;
     feedback: FeedbackMessage;
   } | null>(null);
 
+  // Check if this artist is registered in any agent slot
+  const matchingSlot = slots.find(s => s.wiki_entry_id === missionStatus?.wikiEntryId) ?? null;
+  const isRegisteredAgent = !!matchingSlot;
+
   const BRIEFING_KEY = `ktrenz_mission_briefing_${missionStatus?.wikiEntryId}`;
   const INACTIVITY_KEY = `ktrenz_mission_inactivity_${missionStatus?.wikiEntryId}`;
 
-  // Show feedback
+  // Show feedback — only for registered agent artists
   const showFeedback = useCallback((trigger: FeedbackTrigger, status: MissionStatus) => {
-    if (!user?.id) return;
+    if (!user?.id || !isRegisteredAgent) return;
     const feedback = generateFeedback(trigger, status, language);
     setFeedbackState({ trigger, feedback });
 
     // Save to chat history (fire-and-forget)
     saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
-  }, [user?.id, language]);
+  }, [user?.id, language, isRegisteredAgent]);
 
   // Trigger: mission completion
   const onMissionComplete = useCallback((status: MissionStatus) => {
@@ -388,7 +392,7 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
 
   return {
     feedbackState,
-    activeSlot,
+    activeSlot: matchingSlot,
     onMissionComplete,
     closeFeedback,
   };
