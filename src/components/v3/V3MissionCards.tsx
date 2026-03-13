@@ -213,11 +213,10 @@ export default function V3MissionCards({
   }, []);
 
   useEffect(() => {
-    // 리로드 복귀 케이스 대응
-    consumePendingMission();
+    triggerPendingFeedback();
 
     const onVisibility = () => {
-      if (document.visibilityState === "visible") consumePendingMission();
+      if (document.visibilityState === "visible") triggerPendingFeedback();
     };
 
     document.addEventListener("visibilitychange", onVisibility);
