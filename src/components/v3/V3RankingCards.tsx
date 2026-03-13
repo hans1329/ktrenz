@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trophy } from "lucide-react";
 
 export interface RankingEntry {
   rank: number;
@@ -16,72 +16,90 @@ interface V3RankingCardsProps {
   rankings: RankingEntry[];
 }
 
+const RANK_MEDALS = ["🥇", "🥈", "🥉"];
+
 const V3RankingCards = ({ rankings }: V3RankingCardsProps) => {
   if (!rankings || rankings.length === 0) return null;
 
   return (
-    <div className="mt-2 space-y-1.5 w-full">
-      {rankings.map((entry) => {
-        const changePercent = entry.energy_change_24h;
-        const isUp = changePercent > 0;
-        const isDown = changePercent < 0;
+    <div className="mt-2 w-full rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border/30 bg-gradient-to-r from-amber-500/5 to-transparent">
+        <Trophy className="w-4 h-4 text-amber-400" />
+        <span className="text-[13px] font-bold text-foreground">Real-time Trend Rankings</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">Top {rankings.length}</span>
+      </div>
 
-        return (
-          <div
-            key={entry.rank}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors",
-              "bg-card/80 border-border/30 hover:border-primary/20",
-              entry.rank <= 3 && "border-primary/20 bg-primary/5"
-            )}
-          >
-            {/* Rank */}
-            <div className={cn(
-              "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
-              entry.rank === 1 && "bg-amber-500/20 text-amber-400",
-              entry.rank === 2 && "bg-slate-300/20 text-slate-300",
-              entry.rank === 3 && "bg-orange-400/20 text-orange-400",
-              entry.rank > 3 && "bg-muted/50 text-muted-foreground"
-            )}>
-              {entry.rank}
-            </div>
+      {/* List */}
+      <div className="divide-y divide-border/20">
+        {rankings.map((entry) => {
+          const change = entry.energy_change_24h;
+          const isUp = change > 0;
+          const isDown = change < 0;
+          const isTop3 = entry.rank <= 3;
 
-            {/* Avatar */}
-            <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted shrink-0">
-              {entry.image_url ? (
-                <img src={entry.image_url} alt={entry.artist_name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                  {entry.artist_name.charAt(0)}
-                </div>
+          return (
+            <div
+              key={entry.rank}
+              className={cn(
+                "flex items-center gap-2.5 px-3.5 py-2 transition-colors",
+                isTop3 && "bg-amber-500/[0.03]"
               )}
-            </div>
+            >
+              {/* Rank */}
+              <div className="w-6 text-center shrink-0">
+                {isTop3 ? (
+                  <span className="text-base">{RANK_MEDALS[entry.rank - 1]}</span>
+                ) : (
+                  <span className="text-xs font-bold text-muted-foreground">{entry.rank}</span>
+                )}
+              </div>
 
-            {/* Name + Score */}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{entry.artist_name}</p>
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <span>FES {entry.total_score.toLocaleString()}</span>
-                <span className="text-muted-foreground/30">·</span>
-                <span>E {entry.energy_score}°</span>
+              {/* Avatar */}
+              <div className={cn(
+                "w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center text-[11px] font-bold",
+                isTop3
+                  ? "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400"
+                  : "bg-muted/50 text-muted-foreground"
+              )}>
+                {entry.image_url ? (
+                  <img src={entry.image_url} alt={entry.artist_name} className="w-full h-full object-cover" />
+                ) : (
+                  entry.artist_name.charAt(0)
+                )}
+              </div>
+
+              {/* Name + Score */}
+              <div className="flex-1 min-w-0">
+                <p className={cn(
+                  "text-[13px] font-semibold truncate",
+                  isTop3 ? "text-foreground" : "text-foreground/80"
+                )}>
+                  {entry.artist_name}
+                </p>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span>⚡ {entry.energy_score.toLocaleString()}</span>
+                  <span className="opacity-30">·</span>
+                  <span>FES {entry.total_score.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Change badge */}
+              <div className={cn(
+                "flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md shrink-0",
+                isUp && "text-emerald-400 bg-emerald-500/10",
+                isDown && "text-red-400 bg-red-500/10",
+                !isUp && !isDown && "text-muted-foreground bg-muted/30"
+              )}>
+                {isUp && <TrendingUp className="w-3 h-3" />}
+                {isDown && <TrendingDown className="w-3 h-3" />}
+                {!isUp && !isDown && <Minus className="w-3 h-3" />}
+                {isUp ? "+" : ""}{change.toFixed(1)}%
               </div>
             </div>
-
-            {/* Change */}
-            <div className={cn(
-              "flex items-center gap-0.5 text-xs font-medium shrink-0 px-1.5 py-0.5 rounded-md",
-              isUp && "text-emerald-400 bg-emerald-500/10",
-              isDown && "text-red-400 bg-red-500/10",
-              !isUp && !isDown && "text-muted-foreground bg-muted/50"
-            )}>
-              {isUp && <TrendingUp className="w-3 h-3" />}
-              {isDown && <TrendingDown className="w-3 h-3" />}
-              {!isUp && !isDown && <Minus className="w-3 h-3" />}
-              <span>{isUp ? "+" : ""}{changePercent.toFixed(1)}%</span>
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };
