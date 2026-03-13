@@ -409,12 +409,13 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json().catch(() => ({}));
-    const { module = "all", runId, chain, wikiEntryId, isBaseline } = body as {
+    const { module = "all", runId, chain, wikiEntryId, isBaseline, waitBeforeMs } = body as {
       module?: string;
       runId?: string;
       chain?: string[];
       wikiEntryId?: string;
       isBaseline?: boolean;
+      waitBeforeMs?: number;
     };
 
     const currentRunId = runId || crypto.randomUUID();
