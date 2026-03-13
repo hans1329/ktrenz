@@ -31,97 +31,194 @@ interface FeedbackMessage {
   useAI?: boolean;
 }
 
+// ── Category-based action & impact descriptions ──────
+const categoryFeedback: Record<string, Record<string, { action: string[]; impact: string[] }>> = {
+  ko: {
+    youtube: {
+      action: ["영상을 시청했어요!", "유튜브 조회수에 기여했어요!"],
+      impact: [
+        "조회수가 올라가면 유튜브 알고리즘이 더 많은 사람에게 영상을 추천해요 📈",
+        "영상 시청은 아티스트의 유튜브 랭킹과 수익에 직접적으로 기여해요 💰",
+        "조회수 증가 → 트렌딩 진입 → 신규 팬 유입의 선순환이 시작돼요 🔄",
+      ],
+    },
+    news: {
+      action: ["기사를 읽었어요!", "뉴스 트래픽에 기여했어요!"],
+      impact: [
+        "기사 클릭수가 높아지면 미디어가 더 많은 관련 기사를 작성해요 📰",
+        "뉴스 관심도는 방송 출연과 브랜드 협찬에 영향을 줘요 ✨",
+        "미디어 버즈가 올라가면 아티스트의 인지도와 영향력이 커져요 📊",
+      ],
+    },
+    buzz: {
+      action: ["SNS에서 활동했어요!", "소셜 버즈를 만들었어요!"],
+      impact: [
+        "SNS 언급이 늘면 트렌딩에 오르고 더 많은 팬이 관심을 가져요 🔥",
+        "해시태그 활동은 아티스트의 온라인 존재감을 높여줘요 💬",
+        "팬들의 소셜 활동은 음원 차트와 투표에도 간접적으로 영향을 줘요 📱",
+      ],
+    },
+    music: {
+      action: ["음악을 스트리밍했어요!", "스트리밍 수에 기여했어요!"],
+      impact: [
+        "스트리밍 수는 음원 차트 순위에 직접 반영돼요 🎵",
+        "차트 성적이 좋으면 음악방송 출연과 수상에 유리해요 🏆",
+        "스트리밍은 아티스트의 수익과 차기 앨범 투자에 직결돼요 💎",
+      ],
+    },
+  },
+  en: {
+    youtube: {
+      action: ["You watched a video!", "You contributed to YouTube views!"],
+      impact: [
+        "More views help the YouTube algorithm recommend the video to more people 📈",
+        "Video views directly contribute to the artist's YouTube ranking and revenue 💰",
+        "Views → Trending → New fans: you're starting a positive cycle 🔄",
+      ],
+    },
+    news: {
+      action: ["You read an article!", "You boosted news traffic!"],
+      impact: [
+        "Higher article clicks encourage media to write more coverage 📰",
+        "News attention influences broadcast appearances and brand deals ✨",
+        "Media buzz increases the artist's recognition and influence 📊",
+      ],
+    },
+    buzz: {
+      action: ["You engaged on social media!", "You created social buzz!"],
+      impact: [
+        "More SNS mentions help trend and attract new fans 🔥",
+        "Hashtag activity boosts the artist's online presence 💬",
+        "Fan social activity indirectly impacts music charts and votes 📱",
+      ],
+    },
+    music: {
+      action: ["You streamed music!", "You contributed to streaming numbers!"],
+      impact: [
+        "Streaming counts directly affect music chart rankings 🎵",
+        "Better chart performance leads to more show appearances and awards 🏆",
+        "Streaming directly supports the artist's revenue and future albums 💎",
+      ],
+    },
+  },
+  ja: {
+    youtube: {
+      action: ["動画を視聴しました！"],
+      impact: ["再生回数が増えるとYouTubeアルゴリズムがより多くの人に推薦します 📈"],
+    },
+    news: {
+      action: ["記事を読みました！"],
+      impact: ["記事クリック数が増えるとメディアがもっと記事を書きます 📰"],
+    },
+    buzz: {
+      action: ["SNSで活動しました！"],
+      impact: ["SNSの言及が増えるとトレンドに乗ります 🔥"],
+    },
+    music: {
+      action: ["音楽をストリーミングしました！"],
+      impact: ["ストリーミング数は音楽チャート順位に直接反映されます 🎵"],
+    },
+  },
+  zh: {
+    youtube: {
+      action: ["你观看了视频！"],
+      impact: ["播放量增加会让YouTube算法推荐给更多人 📈"],
+    },
+    news: {
+      action: ["你阅读了文章！"],
+      impact: ["文章点击量增加会促使媒体写更多报道 📰"],
+    },
+    buzz: {
+      action: ["你参与了社交媒体！"],
+      impact: ["社交媒体提及增加有助于登上趋势 🔥"],
+    },
+    music: {
+      action: ["你收听了音乐！"],
+      impact: ["播放量直接影响音乐排行榜排名 🎵"],
+    },
+  },
+};
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 // ── Template-based feedback generator ──────────────────
 function generateFeedback(
   trigger: FeedbackTrigger,
   status: MissionStatus,
   lang: string,
 ): FeedbackMessage {
-  const { completedCount, totalCount, totalPoints, allDone, lastCompletedCategory, weakCategories, artistName } = status;
+  const { completedCount, totalCount, totalPoints, allDone, lastCompletedCategory, artistName } = status;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const templates: Record<string, Record<FeedbackTrigger, FeedbackMessage[]>> = {
-    ko: {
-      completion: [
-        { text: `미션 완료! 벌써 ${completedCount}/${totalCount}개 달성 💪 ${artistName} 위해 오늘도 힘내고 있네요!`, emoji: "🎉" },
-        { text: `+${totalPoints}P 획득 중! ${progress}% 진행 — 이 페이스면 올클리어 가능해요!`, emoji: "🔥" },
-        { text: `${lastCompletedCategory} 미션 성공! 다음 미션도 바로 도전해볼까요?`, emoji: "⚡" },
-        { text: `대단해요! ${completedCount}개째 미션 클리어! ${artistName}의 에너지가 올라가고 있어요 📈`, emoji: "💖" },
-      ],
-      briefing: [
-        { text: `오늘 ${artistName}을(를) 위한 미션 ${totalCount}개가 준비되어 있어요! 현재 ${completedCount}개 완료, ${totalPoints}P 획득 중이에요.`, emoji: "📋" },
-        { text: `반가워요! 오늘의 미션 현황: ${completedCount}/${totalCount} (${progress}%) — 함께 ${artistName} 응원해요!`, emoji: "👋" },
-      ],
-      inactivity: [
-        { text: `미션 ${totalCount - completedCount}개 남았어요! 지금 하나만 더 해볼까요? ${artistName}이(가) 기다리고 있어요~`, emoji: "⏰" },
-        { text: `아직 ${totalCount - completedCount}개 미션이 남아있어요. 자기 전에 하나만 더? 🌙`, emoji: "💬" },
-        ...(weakCategories?.length ? [{ text: `이번 주 ${weakCategories[0]} 미션이 부족해요! 하나만 해볼까요?`, emoji: "🎯" }] : []),
-      ],
-      milestone: [
-        { text: `🏆 올클리어! ${totalCount}개 미션 전부 완료! ${totalPoints}P 획득 — ${artistName}의 진정한 팬이에요!`, emoji: "🏆", useAI: true },
-        { text: `대박! 오늘의 미션을 모두 완수했어요! ${artistName}의 팬 에너지 점수에 큰 기여를 했어요! 🎊`, emoji: "🎊", useAI: true },
-      ],
-    },
-    en: {
-      completion: [
-        { text: `Mission done! ${completedCount}/${totalCount} completed 💪 You're crushing it for ${artistName}!`, emoji: "🎉" },
-        { text: `+${totalPoints}P earned! ${progress}% progress — you're on track for a clean sweep!`, emoji: "🔥" },
-        { text: `${lastCompletedCategory} mission complete! Ready for the next one?`, emoji: "⚡" },
-        { text: `Amazing! ${completedCount} missions cleared! ${artistName}'s energy is rising 📈`, emoji: "💖" },
-      ],
-      briefing: [
-        { text: `${totalCount} missions ready for ${artistName} today! Currently ${completedCount} done, ${totalPoints}P earned.`, emoji: "📋" },
-        { text: `Hey there! Mission status: ${completedCount}/${totalCount} (${progress}%) — let's support ${artistName}!`, emoji: "👋" },
-      ],
-      inactivity: [
-        { text: `${totalCount - completedCount} missions left! How about one more for ${artistName}?`, emoji: "⏰" },
-        { text: `Still ${totalCount - completedCount} missions remaining. One more before bed? 🌙`, emoji: "💬" },
-        ...(weakCategories?.length ? [{ text: `Your ${weakCategories[0]} missions need attention this week! Try one?`, emoji: "🎯" }] : []),
-      ],
-      milestone: [
-        { text: `🏆 All clear! All ${totalCount} missions done! ${totalPoints}P earned — you're ${artistName}'s ultimate fan!`, emoji: "🏆", useAI: true },
-        { text: `Incredible! Every mission completed! You've made a huge contribution to ${artistName}'s Fan Energy Score! 🎊`, emoji: "🎊", useAI: true },
-      ],
-    },
-    ja: {
-      completion: [
-        { text: `ミッション完了！${completedCount}/${totalCount}達成 💪 ${artistName}のために今日も頑張ってますね！`, emoji: "🎉" },
-        { text: `+${totalPoints}P獲得中！${progress}%進行中 — このペースなら全クリ可能！`, emoji: "🔥" },
-        { text: `${lastCompletedCategory}ミッション成功！次のミッションも挑戦してみましょう？`, emoji: "⚡" },
-      ],
-      briefing: [
-        { text: `今日${artistName}のためのミッション${totalCount}個が用意されています！現在${completedCount}個完了、${totalPoints}P獲得中。`, emoji: "📋" },
-      ],
-      inactivity: [
-        { text: `ミッション${totalCount - completedCount}個残ってます！もう1つやってみませんか？`, emoji: "⏰" },
-      ],
-      milestone: [
-        { text: `🏆 全クリア！${totalCount}個のミッション全て完了！${totalPoints}P獲得 — ${artistName}の真のファンです！`, emoji: "🏆", useAI: true },
-      ],
-    },
-    zh: {
-      completion: [
-        { text: `任务完成！已完成 ${completedCount}/${totalCount} 💪 为${artistName}继续加油！`, emoji: "🎉" },
-      ],
-      briefing: [
-        { text: `今天为${artistName}准备了${totalCount}个任务！目前完成${completedCount}个，获得${totalPoints}P。`, emoji: "📋" },
-      ],
-      inactivity: [
-        { text: `还剩${totalCount - completedCount}个任务！再来一个吧？`, emoji: "⏰" },
-      ],
-      milestone: [
-        { text: `🏆 全部完成！${totalCount}个任务全部搞定！获得${totalPoints}P — 你是${artistName}的终极粉丝！`, emoji: "🏆", useAI: true },
-      ],
-    },
+  // For completion/milestone: use category-based action + impact
+  if (trigger === "completion" || trigger === "milestone") {
+    const langData = categoryFeedback[lang] || categoryFeedback.en;
+    const cat = lastCompletedCategory && langData[lastCompletedCategory]
+      ? lastCompletedCategory
+      : "youtube"; // fallback
+    const catData = langData[cat];
+    const action = pickRandom(catData.action);
+    const impact = pickRandom(catData.impact);
+
+    if (allDone) {
+      const allClearMsg = lang === "ko"
+        ? `🏆 올클리어! ${totalCount}개 미션 전부 완료! ${artistName}의 진정한 팬이에요!`
+        : lang === "ja" ? `🏆 全クリア！${totalCount}個のミッション全て完了！${artistName}の真のファンです！`
+        : lang === "zh" ? `🏆 全部完成！${totalCount}个任务全部搞定！你是${artistName}的终极粉丝！`
+        : `🏆 All clear! All ${totalCount} missions done! You're ${artistName}'s ultimate fan!`;
+      return {
+        text: `${action}\n\n${impact}\n\n${allClearMsg}`,
+        emoji: "🏆",
+        useAI: true,
+      };
+    }
+
+    return {
+      text: `${action}\n\n${impact}`,
+      emoji: trigger === "completion" ? "🎉" : "🏆",
+    };
+  }
+
+  // Briefing & inactivity templates (unchanged logic)
+  const briefingTemplates: Record<string, FeedbackMessage[]> = {
+    ko: [
+      { text: `오늘 ${artistName}을(를) 위한 미션 ${totalCount}개가 준비되어 있어요! 현재 ${completedCount}개 완료, ${totalPoints}P 획득 중이에요.`, emoji: "📋" },
+      { text: `반가워요! 오늘의 미션 현황: ${completedCount}/${totalCount} (${progress}%) — 함께 ${artistName} 응원해요!`, emoji: "👋" },
+    ],
+    en: [
+      { text: `${totalCount} missions ready for ${artistName} today! Currently ${completedCount} done, ${totalPoints}P earned.`, emoji: "📋" },
+      { text: `Hey there! Mission status: ${completedCount}/${totalCount} (${progress}%) — let's support ${artistName}!`, emoji: "👋" },
+    ],
+    ja: [
+      { text: `今日${artistName}のためのミッション${totalCount}個が用意されています！現在${completedCount}個完了、${totalPoints}P獲得中。`, emoji: "📋" },
+    ],
+    zh: [
+      { text: `今天为${artistName}准备了${totalCount}个任务！目前完成${completedCount}个，获得${totalPoints}P。`, emoji: "📋" },
+    ],
   };
 
-  const langTemplates = templates[lang] || templates.en;
-  const pool = allDone && trigger === "completion"
-    ? langTemplates.milestone
-    : langTemplates[trigger];
+  const inactivityTemplates: Record<string, FeedbackMessage[]> = {
+    ko: [
+      { text: `미션 ${totalCount - completedCount}개 남았어요! 지금 하나만 더 해볼까요? ${artistName}이(가) 기다리고 있어요~`, emoji: "⏰" },
+    ],
+    en: [
+      { text: `${totalCount - completedCount} missions left! How about one more for ${artistName}?`, emoji: "⏰" },
+    ],
+    ja: [
+      { text: `ミッション${totalCount - completedCount}個残ってます！もう1つやってみませんか？`, emoji: "⏰" },
+    ],
+    zh: [
+      { text: `还剩${totalCount - completedCount}个任务！再来一个吧？`, emoji: "⏰" },
+    ],
+  };
 
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex];
+  const pool = trigger === "briefing"
+    ? (briefingTemplates[lang] || briefingTemplates.en)
+    : (inactivityTemplates[lang] || inactivityTemplates.en);
+
+  return pickRandom(pool);
 }
 
 // ── Save feedback to agent chat history ──────────────
