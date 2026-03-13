@@ -65,6 +65,7 @@ function generateMissions(
       icon: CATEGORY_CONFIG.youtube.icon,
       thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
       contentId: `yt:${video.id}`,
+      stats: { viewCount: video.viewCount, likeCount: video.likeCount, commentCount: video.commentCount },
     });
   });
 
