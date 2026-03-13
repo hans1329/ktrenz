@@ -132,7 +132,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
             <Sparkles className="w-3.5 h-3.5" />
             {t("prediction.aiLabel")}
           </span>
-          <span className="text-[10px] text-muted-foreground/50">
+          <span className="text-xs text-muted-foreground/50">
             {new Date(prediction.predicted_at).toLocaleDateString()}
           </span>
         </div>
