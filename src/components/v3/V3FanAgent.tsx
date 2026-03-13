@@ -16,6 +16,7 @@ import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
+import V3StatCards, { type StatEntry } from "@/components/v3/V3StatCards";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
@@ -46,6 +47,7 @@ type ChatMessage = {
   briefingData?: BriefingData | null;
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
+  statsData?: StatEntry[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -722,6 +724,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   rankingData: meta.rankingData ?? m.rankingData,
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
+                  statsData: meta.statsData ?? m.statsData,
                 } : m
               );
             }
@@ -1162,6 +1165,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
             {msg.role === "assistant" && msg.briefingData && (
               <V3BriefingCard data={msg.briefingData} />
+            )}
+
+            {msg.role === "assistant" && msg.statsData && msg.statsData.length > 0 && (
+              <V3StatCards stats={msg.statsData} />
             )}
 
             {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (

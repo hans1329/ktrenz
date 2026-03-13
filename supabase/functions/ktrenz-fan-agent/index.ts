@@ -2193,7 +2193,7 @@ Deno.serve(async (req) => {
     // Ranking cache shared across tool calls within a single request
     const rankingCache: { data: any[] | null } = { data: null };
     // Collect structured data from tool calls for inline card rendering
-    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[]; knowledgeArchiveIds: string[] } = { knowledgeArchiveIds: [] };
+    const collectedMeta: { guideData?: any[]; rankingData?: any[]; quickActions?: any[]; biasArtist?: string; followUps?: string[]; statsData?: any[]; knowledgeArchiveIds: string[] } = { knowledgeArchiveIds: [] };
 
     // ── Briefing Mode (unchanged logic) ──
     if (isBriefingMode) {
@@ -2616,7 +2616,7 @@ Deno.serve(async (req) => {
               }
 
               // Send structured meta data for inline card rendering
-              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps;
+              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps || collectedMeta.statsData;
               if (hasMeta) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: collectedMeta })}\n\n`));
               }
@@ -2672,6 +2672,69 @@ Deno.serve(async (req) => {
                   if (parsed.guide && !parsed.error) {
                     if (!collectedMeta.guideData) collectedMeta.guideData = [];
                     collectedMeta.guideData.push({ artist_name: parsed.artist, guide_data: parsed.guide });
+                  }
+                } catch {}
+              }
+
+              // Collect stat card data for lookup/compare/rankings
+              if (fnName === "lookup_artist") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.artist && !parsed.error) {
+                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
+                    collectedMeta.statsData.push({
+                      artist: parsed.artist,
+                      rank: parsed.rank,
+                      energy_score: parsed.energy_score ?? 0,
+                      energy_change_24h: parsed.energy_change_24h ?? 0,
+                      youtube_score: parsed.youtube_score ?? 0,
+                      buzz_score: parsed.buzz_score ?? 0,
+                      music_score: parsed.music_score ?? 0,
+                      album_sales_score: parsed.album_sales_score ?? 0,
+                      tier: parsed.tier ?? null,
+                    });
+                  }
+                } catch {}
+              }
+              if (fnName === "compare_artists") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.comparison) {
+                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
+                    for (const item of parsed.comparison) {
+                      if (!item.error) {
+                        collectedMeta.statsData.push({
+                          artist: item.artist,
+                          rank: item.rank,
+                          energy_score: item.energy_score ?? 0,
+                          energy_change_24h: item.energy_change_24h ?? 0,
+                          youtube_score: item.youtube_score ?? 0,
+                          buzz_score: item.buzz_score ?? 0,
+                          music_score: item.music_score ?? 0,
+                          album_sales_score: item.album_sales_score ?? 0,
+                        });
+                      }
+                    }
+                  }
+                } catch {}
+              }
+              if (fnName === "get_rankings") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.rankings) {
+                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
+                    for (const item of parsed.rankings.slice(0, 5)) {
+                      collectedMeta.statsData.push({
+                        artist: item.artist,
+                        rank: item.rank,
+                        energy_score: item.energy_score ?? 0,
+                        energy_change_24h: item.energy_change_24h ?? 0,
+                        youtube_score: item.youtube_score ?? 0,
+                        buzz_score: item.buzz_score ?? 0,
+                        music_score: item.music_score ?? 0,
+                        album_sales_score: item.album_sales_score ?? 0,
+                      });
+                    }
                   }
                 } catch {}
               }
