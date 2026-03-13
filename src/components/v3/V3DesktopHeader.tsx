@@ -135,7 +135,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                   <Icon className="w-4 h-4" />
                   <span>{t(item.titleKey)}</span>
                   {item.id === "agent" && showAgentBadge && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background" />
                   )}
                 </button>
               );
