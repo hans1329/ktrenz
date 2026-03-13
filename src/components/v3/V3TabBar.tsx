@@ -122,6 +122,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
           transform: 'translate3d(0,0,0)',
           boxShadow: '0 0 30px 12px rgba(168, 85, 247, 0.15), 0 0 60px 25px rgba(168, 85, 247, 0.08)',
         }}>
+
         <div className="flex items-center justify-evenly h-16 max-w-md mx-auto">
           {tabs.map((tab) => {
             if (tab.isCenter) {
