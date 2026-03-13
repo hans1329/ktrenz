@@ -11,60 +11,15 @@ interface AIPredictionCardProps {
 
 const DIRECTION_CONFIG: Record<string, {
   emoji: string;
-  gradientClass: string;
-  accentClass: string;
-  glowColor: string;
   Icon: typeof TrendingUp;
 }> = {
-  rising: {
-    emoji: "🚀",
-    gradientClass: "from-emerald-500/20 via-teal-500/10 to-cyan-500/5",
-    accentClass: "text-emerald-400",
-    glowColor: "shadow-emerald-500/20",
-    Icon: TrendingUp,
-  },
-  spike: {
-    emoji: "🔥",
-    gradientClass: "from-rose-500/25 via-orange-500/15 to-amber-500/5",
-    accentClass: "text-rose-400",
-    glowColor: "shadow-rose-500/25",
-    Icon: Flame,
-  },
-  spike_up: {
-    emoji: "🔥",
-    gradientClass: "from-rose-500/25 via-orange-500/15 to-amber-500/5",
-    accentClass: "text-rose-400",
-    glowColor: "shadow-rose-500/25",
-    Icon: Flame,
-  },
-  falling: {
-    emoji: "💤",
-    gradientClass: "from-blue-500/15 via-indigo-500/10 to-violet-500/5",
-    accentClass: "text-blue-400",
-    glowColor: "shadow-blue-500/15",
-    Icon: TrendingDown,
-  },
-  spike_down: {
-    emoji: "⚡",
-    gradientClass: "from-amber-500/20 via-orange-500/10 to-red-500/5",
-    accentClass: "text-amber-400",
-    glowColor: "shadow-amber-500/20",
-    Icon: TrendingDown,
-  },
-  flat: {
-    emoji: "😎",
-    gradientClass: "from-violet-500/10 via-purple-500/5 to-fuchsia-500/5",
-    accentClass: "text-muted-foreground",
-    glowColor: "shadow-violet-500/10",
-    Icon: Minus,
-  },
-  stable: {
-    emoji: "😎",
-    gradientClass: "from-violet-500/10 via-purple-500/5 to-fuchsia-500/5",
-    accentClass: "text-muted-foreground",
-    glowColor: "shadow-violet-500/10",
-    Icon: Minus,
-  },
+  rising:     { emoji: "🚀", Icon: TrendingUp },
+  spike:      { emoji: "🔥", Icon: Flame },
+  spike_up:   { emoji: "🔥", Icon: Flame },
+  falling:    { emoji: "💤", Icon: TrendingDown },
+  spike_down: { emoji: "⚡", Icon: TrendingDown },
+  flat:       { emoji: "😎", Icon: Minus },
+  stable:     { emoji: "😎", Icon: Minus },
 };
 
 /** Build an external action URL based on the leading category */
@@ -166,26 +121,18 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
     <div
       className={cn(
         "relative w-full rounded-2xl overflow-hidden",
-        "border border-border/30",
-        "bg-gradient-to-br",
-        config.gradientClass,
-        "shadow-lg",
-        config.glowColor,
+        "border border-purple-500/20",
+        "bg-gradient-to-br from-pink-500/20 via-purple-500/15 to-violet-500/10",
       )}
     >
-      {/* Animated shimmer overlay */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent animate-rainbow-slide" />
-      </div>
-
       <div className="relative p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary/80">
-            <Sparkles className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-purple-300">
+            <Sparkles className="w-3.5 h-3.5" />
             {t("prediction.aiLabel")}
           </span>
-          <span className="text-[9px] text-muted-foreground/50">
+          <span className="text-[10px] text-muted-foreground/50">
             {new Date(prediction.predicted_at).toLocaleDateString()}
           </span>
         </div>
@@ -194,37 +141,37 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
           <>
             {/* Hot summary */}
             <div className="flex items-start gap-2.5">
-              <span className="text-xl mt-0.5 shrink-0">{config.emoji}</span>
-              <p className="text-[13px] font-bold text-foreground leading-snug">
+              <span className="text-2xl mt-0.5 shrink-0">{config.emoji}</span>
+              <p className="text-sm font-bold text-foreground leading-snug">
                 {prediction.hot_summary}
               </p>
             </div>
 
-            {/* Action CTA — the main interactive element */}
+            {/* Action CTA */}
             {prediction.fan_action && (
               <button
                 onClick={handleActionClick}
                 className={cn(
-                  "w-full text-left rounded-xl px-3.5 py-3 group/action",
-                  "bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5",
-                  "border border-primary/20",
-                  "hover:border-primary/40 hover:from-primary/20 hover:via-primary/15 hover:to-primary/10",
+                  "w-full text-left rounded-xl px-4 py-3 group/action",
+                  "bg-white/[0.07]",
+                  "border border-white/10",
+                  "hover:bg-white/[0.12] hover:border-white/20",
                   "active:scale-[0.98]",
                   "transition-all duration-200",
                 )}
               >
-                <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-bold text-purple-300/80 uppercase tracking-wider mb-1">
                   {t("prediction.doThis")}
                 </p>
-                <p className="text-[12px] text-foreground/90 leading-relaxed font-medium">
+                <p className="text-[13px] text-foreground/90 leading-relaxed font-medium">
                   {prediction.fan_action}
                 </p>
                 {actionUrl && (
                   <div className="flex items-center gap-1.5 mt-2">
-                    <span className="text-[10px] font-bold text-primary/80 group-hover/action:text-primary transition-colors">
+                    <span className="text-[11px] font-bold text-pink-300/80 group-hover/action:text-pink-200 transition-colors">
                       {t("prediction.goNow")} — {categoryLabel[prediction.leading_category] || "Link"}
                     </span>
-                    <ExternalLink className="w-3 h-3 text-primary/60 group-hover/action:text-primary transition-colors" />
+                    <ExternalLink className="w-3 h-3 text-pink-300/60 group-hover/action:text-pink-200 transition-colors" />
                   </div>
                 )}
               </button>
@@ -232,15 +179,15 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
 
             {/* Position note */}
             {prediction.position_note && (
-              <p className="text-[11px] text-muted-foreground/60 leading-relaxed pl-1">
+              <p className="text-xs text-muted-foreground/60 leading-relaxed pl-1">
                 💡 {prediction.position_note}
               </p>
             )}
           </>
         ) : (
           <div className="flex items-start gap-2.5">
-            <span className="text-xl mt-0.5 shrink-0">{config.emoji}</span>
-            <p className="text-[12px] text-foreground/80 leading-relaxed line-clamp-4">
+            <span className="text-2xl mt-0.5 shrink-0">{config.emoji}</span>
+            <p className="text-sm text-foreground/80 leading-relaxed line-clamp-4">
               {prediction.fan_briefing}
             </p>
           </div>
