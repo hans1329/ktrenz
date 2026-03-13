@@ -392,7 +392,7 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
 
   return {
     feedbackState,
-    activeSlot,
+    activeSlot: matchingSlot,
     onMissionComplete,
     closeFeedback,
   };
