@@ -539,7 +539,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       if (!user?.id) return [];
       const queryBuilder = (supabase as any)
         .from("ktrenz_fan_agent_messages")
-        .select("role, content, created_at")
+        .select("role, content, created_at, metadata")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
         .limit(50);
@@ -555,7 +555,14 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         console.warn("Chat history load failed:", error.message);
         return [];
       }
-      return (data || []).map((d: any) => ({ role: d.role as "user" | "assistant", content: d.content, timestamp: d.created_at }));
+      return (data || []).map((d: any) => ({
+        role: d.role as "user" | "assistant",
+        content: d.content,
+        timestamp: d.created_at,
+        rankingData: d.metadata?.rankingData ?? null,
+        guideData: d.metadata?.guideData ?? null,
+        reportCards: d.metadata?.reportCards ?? null,
+      }));
     },
     enabled: !!user?.id && !slotsLoading,
     staleTime: 1000 * 10,

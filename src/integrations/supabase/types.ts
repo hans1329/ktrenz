@@ -2753,6 +2753,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          metadata: Json | null
           mode: string | null
           role: string
           user_id: string
@@ -2762,6 +2763,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          metadata?: Json | null
           mode?: string | null
           role: string
           user_id: string
@@ -2771,6 +2773,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          metadata?: Json | null
           mode?: string | null
           role?: string
           user_id?: string
