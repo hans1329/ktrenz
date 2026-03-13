@@ -2622,13 +2622,19 @@ Deno.serve(async (req) => {
                   : ["실시간 랭킹 보기", "오늘의 팬활동", "최신 뉴스 확인"];
               }
 
-              // Save assistant message (without follow-up markers)
+              // Save assistant message with card metadata
               if (finalContent) {
+                const metaToSave: any = {};
+                if (collectedMeta.rankingData) metaToSave.rankingData = collectedMeta.rankingData;
+                if (collectedMeta.guideData) metaToSave.guideData = collectedMeta.guideData;
+                if (collectedMeta.reportCards) metaToSave.reportCards = collectedMeta.reportCards;
+                
                 await adminClient.from("ktrenz_fan_agent_messages").insert({
                   user_id: userId,
                   agent_slot_id: activeSlotId,
                   role: "assistant",
                   content: finalContent,
+                  metadata: Object.keys(metaToSave).length > 0 ? metaToSave : null,
                 });
               }
 
