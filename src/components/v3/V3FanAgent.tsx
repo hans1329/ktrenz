@@ -940,6 +940,45 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
+    // Alert settings: directly toggle alert instead of sending to LLM
+    if (action.id === "alertSettings") {
+      if (activeSlot?.wiki_entry_id && activeSlot?.artist_name && user?.id) {
+        if (!hasAlertOn) {
+          (async () => {
+            await supabase.from("ktrenz_watched_artists").delete().eq("user_id", user.id);
+            await supabase.from("ktrenz_watched_artists").insert({
+              user_id: user.id,
+              artist_name: activeSlot.artist_name,
+              wiki_entry_id: activeSlot.wiki_entry_id,
+            });
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
+            localStorage.removeItem(`ktrenz-daily-news-seen-${user.id}`);
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
+            const confirmMsg: ChatMessage = {
+              role: "assistant",
+              content: t("agent.alertsOnMessage").replace("{artist}", activeSlot.artist_name!),
+              timestamp: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, confirmMsg]);
+            setHasStarted(true);
+          })();
+        } else {
+          // Already on — inform user
+          const alreadyMsg: ChatMessage = {
+            role: "assistant",
+            content: t("agent.alertsAlreadyOn")?.replace("{artist}", activeSlot.artist_name!) ||
+              `Alerts for ${activeSlot.artist_name} are already active! 🔔`,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, alreadyMsg]);
+          setHasStarted(true);
+        }
+      } else {
+        handleSend(t("agent.prompt.alertSetup"));
+      }
+      return;
+    }
+
     const hintMap: Partial<Record<QuickActionKind, QuickActionHint>> = {
       liveRankings: "live_rankings",
       trendAnalysis: "trend_analysis",
