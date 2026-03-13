@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
