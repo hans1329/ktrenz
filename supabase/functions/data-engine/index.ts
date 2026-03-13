@@ -267,6 +267,17 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     const sb = createClient(url, key);
     const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1);
     const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
+    const totalCount = targets.length;
+
+    // Edge Function 60초 타임아웃 내에서 안전하게 완료하기 위해
+    // 총 대상 수 기반으로 배치 크기와 딜레이를 동적 계산 (최대 25초 사용)
+    const MAX_LAUNCH_TIME_MS = 25_000;
+    const groupSize = Math.max(3, Math.ceil(totalCount / 12)); // 최대 12 그룹으로 분할
+    const totalGroups = Math.ceil(totalCount / groupSize);
+    const delayMs = totalGroups > 1 ? Math.floor(MAX_LAUNCH_TIME_MS / (totalGroups - 1)) : 0;
+
+    console.log(`[data-engine] yt_sentiment: ${totalCount} targets, groupSize=${groupSize}, groups=${totalGroups}, delay=${delayMs}ms`);
+
     let launched = 0;
     for (const t of targets) {
       const p = fetch(`${url}/functions/v1/ktrenz-yt-sentiment`, {
@@ -276,10 +287,12 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
       }).catch((e) => console.warn(`[data-engine] yt_sentiment fire error:`, e.message));
       fireAndForget(p);
       launched++;
-      if (launched % 3 === 0) await new Promise(r => setTimeout(r, 2000));
+      if (launched % groupSize === 0 && launched < totalCount) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
     }
-    console.log(`[data-engine] yt_sentiment: launched ${launched}/${targets.length} artists`);
-    return { status: "launched", launched, total: targets.length };
+    console.log(`[data-engine] yt_sentiment: launched ${launched}/${totalCount} artists`);
+    return { status: "launched", launched, total: totalCount };
   },
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
