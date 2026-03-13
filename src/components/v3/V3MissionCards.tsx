@@ -520,7 +520,7 @@ export default function V3MissionCards({
                   </div>
 
                   {mission.description && (
-                    <p className="text-xs text-teal-400 line-clamp-2 leading-relaxed font-medium">{mission.description}</p>
+                    <p className="text-xs text-teal-500/70 line-clamp-2 leading-relaxed font-medium">{mission.description}</p>
                   )}
 
                   {completed && (
