@@ -466,6 +466,72 @@ async function handleTool(
     return null;
   }
 
+  async function resolveTierArtistCandidate(query: string): Promise<{ wiki_entry_id: string; display_name: string | null; name_ko: string | null; wiki_title: string | null } | null> {
+    const sanitizedQuery = sanitizeArtistCandidate(query);
+    const normalizedQuery = normalizeArtistName(sanitizedQuery);
+    if (!normalizedQuery) return null;
+
+    const { data: candidates } = await adminClient
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)")
+      .not("wiki_entry_id", "is", null);
+
+    if (!candidates || candidates.length === 0) return null;
+
+    const ranked = (candidates as any[])
+      .map((row) => {
+        const wikiTitle = row.wiki_entries?.title ?? null;
+        const variants = [row.name_ko, row.display_name, wikiTitle]
+          .filter(Boolean)
+          .map((v: string) => ({ raw: v, normalized: normalizeArtistName(v) }))
+          .filter((v: { raw: string; normalized: string }) => !!v.normalized);
+
+        if (variants.length === 0) return null;
+
+        const hasExact = variants.some((v: { raw: string; normalized: string }) => v.normalized === normalizedQuery);
+        const hasContains = variants.some((v: { raw: string; normalized: string }) => v.normalized.includes(normalizedQuery) || normalizedQuery.includes(v.normalized));
+        const bestDistance = Math.min(...variants.map((v: { raw: string; normalized: string }) => levenshteinDistance(normalizedQuery, v.normalized)));
+
+        return {
+          wiki_entry_id: row.wiki_entry_id as string,
+          display_name: row.display_name ?? null,
+          name_ko: row.name_ko ?? null,
+          wiki_title: wikiTitle,
+          hasExact,
+          hasContains,
+          distance: bestDistance,
+        };
+      })
+      .filter(Boolean) as {
+        wiki_entry_id: string;
+        display_name: string | null;
+        name_ko: string | null;
+        wiki_title: string | null;
+        hasExact: boolean;
+        hasContains: boolean;
+        distance: number;
+      }[];
+
+    if (ranked.length === 0) return null;
+
+    const exact = ranked.find((item) => item.hasExact);
+    if (exact) return exact;
+
+    const contains = ranked
+      .filter((item) => item.hasContains)
+      .sort((a, b) => a.distance - b.distance);
+    if (contains.length === 1) return contains[0];
+
+    const sortedByDistance = [...ranked].sort((a, b) => a.distance - b.distance);
+    const best = sortedByDistance[0];
+    const second = sortedByDistance[1];
+    const maxDistance = normalizedQuery.length <= 3 ? 1 : normalizedQuery.length <= 5 ? 2 : 3;
+    const hasClearLead = !second || best.distance + 1 <= second.distance;
+
+    if (best.distance <= maxDistance && hasClearLead) return best;
+    return null;
+  }
+
   // Helper: find artist by name (fuzzy, supports Korean names)
   async function findArtist(name: string) {
     const all = await getAllScores();
