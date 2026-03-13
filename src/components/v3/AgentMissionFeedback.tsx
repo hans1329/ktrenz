@@ -336,14 +336,18 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
   const BRIEFING_KEY = `ktrenz_mission_briefing_${missionStatus?.wikiEntryId}`;
   const INACTIVITY_KEY = `ktrenz_mission_inactivity_${missionStatus?.wikiEntryId}`;
 
-  // Show feedback — only for registered agent artists
+  // Show feedback — celebration modal for all, briefing/inactivity only for registered agents
   const showFeedback = useCallback((trigger: FeedbackTrigger, status: MissionStatus) => {
-    if (!user?.id || !isRegisteredAgent) return;
+    if (!user?.id) return;
+    // Briefing & inactivity only for registered agent artists
+    if (!isRegisteredAgent && (trigger === "briefing" || trigger === "inactivity")) return;
     const feedback = generateFeedback(trigger, status, language);
     setFeedbackState({ trigger, feedback });
 
-    // Save to chat history (fire-and-forget)
-    saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
+    // Save to chat history only for registered agents
+    if (isRegisteredAgent) {
+      saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
+    }
   }, [user?.id, language, isRegisteredAgent]);
 
   // Trigger: mission completion
