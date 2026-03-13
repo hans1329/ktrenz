@@ -20,7 +20,9 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const { wiki_entry_ids, mode } = await req.json().catch(() => ({ wiki_entry_ids: null, mode: "predict" }));
+    const { wiki_entry_ids, mode, batch_offset } = await req.json().catch(() => ({ wiki_entry_ids: null, mode: "predict", batch_offset: 0 }));
+    const offset = batch_offset || 0;
+    const BATCH_SIZE = 10;
 
     // 대상 아티스트
     let targetIds: string[] = wiki_entry_ids || [];
@@ -83,7 +85,10 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
 
-    for (const entryId of targetIds.slice(0, 10)) {
+    const batch = wiki_entry_ids ? targetIds : targetIds.slice(offset, offset + BATCH_SIZE);
+    console.log(`[ktrenz-fes-predictor] Batch offset=${offset}, batch=${batch.length}, total=${targetIds.length}`);
+
+    for (const entryId of batch) {
       const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const [contribRes, trendRes, entryRes] = await Promise.all([
         sb.from("ktrenz_fes_contributions")
@@ -374,9 +379,32 @@ Generate prediction + fan briefing + agency action items.`;
       }
     }
 
-    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions (v3-dual-persona)`);
+    // ── 콜백 체이닝: 다음 배치가 있으면 자기 자신을 재호출 ──
+    const nextOffset = offset + BATCH_SIZE;
+    let chainedNext = false;
+    if (!wiki_entry_ids && nextOffset < targetIds.length) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      try {
+        const chainRes = await fetch(`${SUPABASE_URL}/functions/v1/ktrenz-fes-predictor`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ mode, batch_offset: nextOffset }),
+        });
+        await chainRes.text(); // consume body
+        chainedNext = true;
+        console.log(`[ktrenz-fes-predictor] Chained next batch offset=${nextOffset}`);
+      } catch (e) {
+        console.error(`[ktrenz-fes-predictor] Chain call failed:`, e);
+      }
+    }
 
-    return new Response(JSON.stringify({ ok: true, predictions: results }),
+    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions (offset=${offset}, chained=${chainedNext})`);
+
+    return new Response(JSON.stringify({ ok: true, predictions: results, offset, chained: chainedNext }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
