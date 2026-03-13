@@ -183,6 +183,10 @@ IMPORTANT: Write in the target language naturally. Korean should use 반말 (inf
 
 ## DATA RULES
 - FES uses z-score normalized category changes (youtube, buzz, album, music, social)
+- CRITICAL: "latest_z" shows the CURRENT absolute z-score level. "dir" shows the 7-day TREND direction.
+  - A high latest_z (e.g., 5+) with "falling" dir means "still very strong but slightly declining from a peak" — NOT "weak and declining"
+  - A low latest_z (e.g., <1) with "falling" dir means "genuinely weak and declining"
+  - ALWAYS consider BOTH latest_z and dir together before making judgments
 - Focus on which category will lead next movement
 - Be honest if data is insufficient
 - Provide ALL text fields in 4 languages (EN, KO, JA, ZH)`;
