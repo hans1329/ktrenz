@@ -541,11 +541,12 @@ Deno.serve(async (req) => {
       console.log(`[data-engine] Pipeline started (run: ${currentRunId}): ${PIPELINE.join(" → ")}`);
 
       const remaining = [...PIPELINE].slice(1);
-      fetch(`${supabaseUrl}/functions/v1/data-engine`, {
+      const startPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
         body: JSON.stringify({ module: PIPELINE[0], runId: currentRunId, chain: remaining }),
-      }).catch(() => {});
+      }).catch((e) => console.warn(`[data-engine] Pipeline start fetch failed:`, e.message));
+      fireAndForget(startPromise);
 
       return new Response(
         JSON.stringify({ success: true, runId: currentRunId, message: `Pipeline started: ${PIPELINE.join(" → ")}` }),
