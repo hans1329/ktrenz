@@ -251,7 +251,7 @@ export default function V3MissionCards({
     };
   }, [triggerPendingFeedback]);
 
-  // (moved below: pending feedback effect)
+  
 
   const ytVideos: YTVideo[] = (() => {
     const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
