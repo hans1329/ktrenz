@@ -52,7 +52,7 @@ type ChatMessage = {
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
 type QuickActionKind = "fanActivity" | "liveRankings" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings";
-type QuickActionHint = "live_rankings" | "trend_analysis" | "streaming_guide";
+type QuickActionHint = "live_rankings" | "trend_analysis" | "streaming_guide" | "fan_activity";
 
 interface QuickAction {
   id: QuickActionKind;
@@ -980,6 +980,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
 
     const hintMap: Partial<Record<QuickActionKind, QuickActionHint>> = {
+      fanActivity: "fan_activity",
       liveRankings: "live_rankings",
       trendAnalysis: "trend_analysis",
       streamingGuide: "streaming_guide",
