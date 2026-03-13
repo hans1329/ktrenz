@@ -310,10 +310,17 @@ function CelebrationModal({
         </Avatar>
 
 
-        {/* Feedback text */}
-        <p className="text-base font-bold text-foreground text-center max-w-[300px] leading-relaxed">
-          {feedback.text}
-        </p>
+        {/* Feedback text — action + impact */}
+        <div className="text-center max-w-[300px] space-y-2">
+          {feedback.text.split("\n\n").map((line, i) => (
+            <p key={i} className={cn(
+              "leading-relaxed",
+              i === 0 ? "text-base font-bold text-foreground" : "text-sm text-muted-foreground"
+            )}>
+              {line}
+            </p>
+          ))}
+        </div>
 
         {/* Points */}
         <span className="text-2xl font-black text-amber-500">+{missionStatus.totalPoints}P</span>
@@ -326,7 +333,7 @@ function CelebrationModal({
 
         {/* Timer bar */}
         <div className="h-1 w-48 bg-muted rounded-full overflow-hidden mt-2">
-          <div className="h-full bg-primary rounded-full" style={{ animation: "shrink-bar 4s linear forwards" }} />
+          <div className="h-full bg-primary rounded-full" style={{ animation: "shrink-bar 6s linear forwards" }} />
         </div>
       </div>
     </div>
