@@ -818,7 +818,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const handleSend = useCallback(async (
     overrideText?: string,
     bypassPurchaseConfirm = false,
-    quickActionHint?: "live_rankings" | "trend_analysis"
+    quickActionHint?: QuickActionHint
   ) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
