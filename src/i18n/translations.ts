@@ -106,9 +106,9 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Agent Quick Action Prompts ──
   "agent.prompt.liveRankings": { en: "Show me the live trend rankings Top 10", ko: "실시간 트렌드 랭킹 Top 10 보여줘", ja: "リアルタイムトレンドランキングTop10を見せて", zh: "展示实时趋势排名前10" },
-  "agent.prompt.trendAnalysis": { en: "Give me a detailed trend analysis for my bias artist with strongest/weakest categories and 24h momentum", ko: "내 최애 아티스트 기준으로 카테고리별 강점/약점과 24시간 모멘텀을 상세 분석해줘", ja: "推しアーティスト基準で、カテゴリ別の強み/弱みと24時間モメンタムを詳しく分析して", zh: "请基于我最爱的艺人，详细分析各类别强弱和24小时动量" },
-  "agent.prompt.streamingGuide": { en: "I want a streaming guide for my bias artist.", ko: "내 최애 아티스트 스밍 가이드를 보고 싶어.", ja: "推しアーティストのストリーミングガイドが見たい。", zh: "我想看最爱艺人的流媒体指南。" },
-  "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for my bias artist. Guide me on how to set it up.", ko: "최애 아티스트의 랭킹 변동 알림을 설정하고 싶어. 방법을 안내해줘.", ja: "推しアーティストのランキング変動アラートを設定したい。方法を教えて。", zh: "我想为最爱的艺人设置排名变动提醒。请指导我如何设置。" },
+  "agent.prompt.trendAnalysis": { en: "Give me a detailed trend analysis for {artist} with strongest/weakest categories and 24h momentum", ko: "{artist} 기준으로 카테고리별 강점/약점과 24시간 모멘텀을 상세 분석해줘", ja: "{artist}基準で、カテゴリ別の強み/弱みと24時間モメンタムを詳しく分析して", zh: "请基于{artist}，详细分析各类别强弱和24小时动量" },
+  "agent.prompt.streamingGuide": { en: "I want a streaming guide for {artist}.", ko: "{artist} 스밍 가이드를 보고 싶어.", ja: "{artist}のストリーミングガイドが見たい。", zh: "我想看{artist}的流媒体指南。" },
+  "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for {artist}. Guide me on how to set it up.", ko: "{artist}의 랭킹 변동 알림을 설정하고 싶어. 방법을 안내해줘.", ja: "{artist}のランキング変動アラートを設定したい。方法を教えて。", zh: "我想为{artist}设置排名变动提醒。请指导我如何设置。" },
   "agent.prompt.alertSetup": { en: "I want to set my bias artist. Guide me.", ko: "최애 아티스트 설정하고 싶어. 방법 알려줘.", ja: "推しアーティストを設定したい。教えて。", zh: "我想设置最爱的艺人。告诉我怎么做。" },
   "agent.registerBias": { en: "Register My Bias Artist", ko: "최애 아티스트 등록하기", ja: "推しアーティストを登録", zh: "注册最爱艺人" },
   "agent.registerBiasDesc": { en: "Set your favorite artist to get personalized support", ko: "나만의 맞춤 팬활동을 시작해보세요", ja: "パーソナライズされたサポートを受けましょう", zh: "设置您最喜欢的艺人以获得个性化支持" },
