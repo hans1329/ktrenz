@@ -251,6 +251,13 @@ export default function V3MissionCards({
     };
   }, [triggerPendingFeedback]);
 
+  // Effect: trigger onMissionComplete when pending feedback data is set (after tab return)
+  useEffect(() => {
+    if (pendingFeedbackData) {
+      onMissionComplete(pendingFeedbackData);
+      setPendingFeedbackData(null);
+    }
+  }, [pendingFeedbackData, onMissionComplete]);
 
   const ytVideos: YTVideo[] = (() => {
     const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
