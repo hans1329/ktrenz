@@ -329,18 +329,21 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
     feedback: FeedbackMessage;
   } | null>(null);
 
+  // Check if this artist is registered as an agent
+  const isRegisteredAgent = !!(activeSlot?.wiki_entry_id && missionStatus?.wikiEntryId && activeSlot.wiki_entry_id === missionStatus.wikiEntryId);
+
   const BRIEFING_KEY = `ktrenz_mission_briefing_${missionStatus?.wikiEntryId}`;
   const INACTIVITY_KEY = `ktrenz_mission_inactivity_${missionStatus?.wikiEntryId}`;
 
-  // Show feedback
+  // Show feedback — only for registered agent artists
   const showFeedback = useCallback((trigger: FeedbackTrigger, status: MissionStatus) => {
-    if (!user?.id) return;
+    if (!user?.id || !isRegisteredAgent) return;
     const feedback = generateFeedback(trigger, status, language);
     setFeedbackState({ trigger, feedback });
 
     // Save to chat history (fire-and-forget)
     saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
-  }, [user?.id, language]);
+  }, [user?.id, language, isRegisteredAgent]);
 
   // Trigger: mission completion
   const onMissionComplete = useCallback((status: MissionStatus) => {
