@@ -35,14 +35,39 @@ function sanitizeArtistCandidate(value: string): string {
     .trim();
 }
 
-function extractForcedBiasArtist(userText: string): string | null {
+function isLikelyBareArtistInput(userText: string): boolean {
+  const text = (userText || "").trim();
+  if (!text || text.length < 2 || text.length > 40) return false;
+  if (!/^[A-Za-z0-9가-힣\s().,&-]+$/.test(text)) return false;
+  if (/[?!？！]/.test(text)) return false;
+
+  const lower = text.toLowerCase();
+  const blockedKeywords = [
+    "등록", "설정", "추가", "지정", "변경", "삭제", "제거", "바꿔",
+    "추천", "보여", "알려", "랭킹", "순위", "뉴스", "일정", "스밍", "가이드", "팬활동",
+    "누구", "어떤", "무엇", "뭐", "도와", "해줘", "해주세요", "맞아", "인지",
+    "show", "tell", "what", "who", "how", "please", "help",
+  ];
+  if (blockedKeywords.some((keyword) => lower.includes(keyword))) return false;
+
+  const words = text.split(/\s+/).filter(Boolean);
+  return words.length <= 4;
+}
+
+function extractForcedBiasArtist(userText: string, options?: { allowBareArtist?: boolean }): string | null {
   const text = (userText || "").trim();
   if (!text) return null;
 
+  const allowBareArtist = !!options?.allowBareArtist;
   const lower = text.toLowerCase();
   const registerHints = ["등록", "설정", "추가", "지정", "변경", "바꿔", "set", "register", "change"];
+  const hasRegisterIntent = registerHints.some((keyword) => lower.includes(keyword));
 
-  if (!registerHints.some((keyword) => lower.includes(keyword))) {
+  if (!hasRegisterIntent) {
+    if (allowBareArtist && isLikelyBareArtistInput(text)) {
+      const candidate = sanitizeArtistCandidate(text);
+      if (candidate && candidate.length >= 2) return candidate;
+    }
     return null;
   }
 
@@ -597,7 +622,7 @@ async function handleTool(
           const { data: aliasExact } = await adminClient
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko")
-            .or(`name_ko.ilike.${artist_name},display_name.ilike.${artist_name}`)
+            .or(`name_ko.eq.${artist_name},display_name.eq.${artist_name},name_ko.ilike.${artist_name},display_name.ilike.${artist_name}`)
             .limit(1);
           if (aliasExact && aliasExact.length > 0) {
             wikiMatch = [{ id: aliasExact[0].wiki_entry_id, title: aliasExact[0].display_name }];
@@ -2177,7 +2202,7 @@ Deno.serve(async (req) => {
           // Initial "thinking" status
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
 
-          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "");
+          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "", { allowBareArtist: !activeSlotWikiEntryId });
           if (forcedBiasArtist) {
             const updatingLabel = toolStatusMap.manage_watched_artist?.[userLang] || toolStatusMap.manage_watched_artist?.en || "Updating your artist…";
             sendStatus(controller, updatingLabel);
