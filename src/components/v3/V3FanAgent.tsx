@@ -1461,7 +1461,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder={t("agent.inputPlaceholder")}
-            className="flex-1 bg-transparent text-base md:text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
+            className="flex-1 bg-transparent text-sm md:text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
             disabled={isStreaming}
           />
           <Button
