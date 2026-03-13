@@ -23,8 +23,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
   yt_sentiment: 10,
   external_videos: 10,
-  music: 10,
-  hanteo: 10,
+  music: 45,      // Last.fm + Deezer 65명 → fire-and-forget 후 충분한 대기
+  hanteo: 30,     // 한터 스크래핑 → 대기
   apple_music_charts: 5,
   billboard_charts: 5,
   social: 30,
@@ -574,7 +574,10 @@ Deno.serve(async (req) => {
     try {
       // 명시적 isBaseline 요청 시에만 baseline=true, 파이프라인 일반 수집은 false
       const shouldBaseline = mod === "energy" && isBaseline === true;
-      const waitForCompletion = !!runId; // 전체 파이프라인에서는 각 모듈 완료를 기다려 데이터 정합성 보장
+
+      // 파이프라인 체이닝에서는 fire-and-forget으로 실행하여 60초 타임아웃 방지
+      // 개별 모듈 실행(chain 없음)에서만 waitForCompletion 사용
+      const waitForCompletion = !!runId && !chain?.length;
 
       if (mod === "energy" && shouldBaseline) {
         result = await runEnergy(supabaseUrl, serviceKey, true);
