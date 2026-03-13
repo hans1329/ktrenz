@@ -249,6 +249,12 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
   const { data: artists } = await sb.from("wiki_entries").select("id, title").eq("schema_type", "artist").in("id", tier1Ids);
   if (!artists?.length) return { status: "no_artists" };
 
+  // 동적 딜레이: 총 대상 수 기반으로 안전한 실행 시간 내 완료
+  const totalCount = artists.length;
+  const groupSize = Math.max(5, Math.ceil(totalCount / 10)); // 최대 10그룹
+  const totalGroups = Math.ceil(totalCount / groupSize);
+  const delayMs = totalGroups > 1 ? Math.min(500, Math.floor(15_000 / (totalGroups - 1))) : 0;
+
   let launched = 0;
   for (const artist of artists) {
     const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
@@ -258,7 +264,9 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
     }).catch((e) => console.warn(`[data-engine] Naver News for ${artist.title} error:`, e.message));
     fireAndForget(p);
     launched++;
-    if (launched % 5 === 0) await new Promise(r => setTimeout(r, 500));
+    if (launched % groupSize === 0 && launched < totalCount) {
+      await new Promise(r => setTimeout(r, delayMs));
+    }
   }
   console.log(`[data-engine] Naver News: launched ${launched} artists`);
   return { status: "launched", artists: launched };
