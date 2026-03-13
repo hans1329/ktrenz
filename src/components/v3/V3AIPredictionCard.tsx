@@ -11,60 +11,15 @@ interface AIPredictionCardProps {
 
 const DIRECTION_CONFIG: Record<string, {
   emoji: string;
-  gradientClass: string;
-  accentClass: string;
-  glowColor: string;
   Icon: typeof TrendingUp;
 }> = {
-  rising: {
-    emoji: "🚀",
-    gradientClass: "from-emerald-500/20 via-teal-500/10 to-cyan-500/5",
-    accentClass: "text-emerald-400",
-    glowColor: "shadow-emerald-500/20",
-    Icon: TrendingUp,
-  },
-  spike: {
-    emoji: "🔥",
-    gradientClass: "from-rose-500/25 via-orange-500/15 to-amber-500/5",
-    accentClass: "text-rose-400",
-    glowColor: "shadow-rose-500/25",
-    Icon: Flame,
-  },
-  spike_up: {
-    emoji: "🔥",
-    gradientClass: "from-rose-500/25 via-orange-500/15 to-amber-500/5",
-    accentClass: "text-rose-400",
-    glowColor: "shadow-rose-500/25",
-    Icon: Flame,
-  },
-  falling: {
-    emoji: "💤",
-    gradientClass: "from-blue-500/15 via-indigo-500/10 to-violet-500/5",
-    accentClass: "text-blue-400",
-    glowColor: "shadow-blue-500/15",
-    Icon: TrendingDown,
-  },
-  spike_down: {
-    emoji: "⚡",
-    gradientClass: "from-amber-500/20 via-orange-500/10 to-red-500/5",
-    accentClass: "text-amber-400",
-    glowColor: "shadow-amber-500/20",
-    Icon: TrendingDown,
-  },
-  flat: {
-    emoji: "😎",
-    gradientClass: "from-violet-500/10 via-purple-500/5 to-fuchsia-500/5",
-    accentClass: "text-muted-foreground",
-    glowColor: "shadow-violet-500/10",
-    Icon: Minus,
-  },
-  stable: {
-    emoji: "😎",
-    gradientClass: "from-violet-500/10 via-purple-500/5 to-fuchsia-500/5",
-    accentClass: "text-muted-foreground",
-    glowColor: "shadow-violet-500/10",
-    Icon: Minus,
-  },
+  rising:     { emoji: "🚀", Icon: TrendingUp },
+  spike:      { emoji: "🔥", Icon: Flame },
+  spike_up:   { emoji: "🔥", Icon: Flame },
+  falling:    { emoji: "💤", Icon: TrendingDown },
+  spike_down: { emoji: "⚡", Icon: TrendingDown },
+  flat:       { emoji: "😎", Icon: Minus },
+  stable:     { emoji: "😎", Icon: Minus },
 };
 
 /** Build an external action URL based on the leading category */
