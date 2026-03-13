@@ -198,13 +198,8 @@ const V3Rankings = () => {
         ) : (
           <div className="space-y-2">
             {/* Pinned My Agent section */}
-            {pinnedAgentItems.length > 0 && (
-              <div className="mb-3">
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-                  <span className="text-xs font-bold text-primary uppercase tracking-wider">My Agent</span>
-                  <div className="h-px flex-1 bg-primary/20" />
-                </div>
+             {pinnedAgentItems.length > 0 && (
+              <div className="mb-3 space-y-1.5">
                 {pinnedAgentItems.map((item) => {
                   const entry = item.wiki_entries as any;
                   if (!entry) return null;
@@ -212,35 +207,38 @@ const V3Rankings = () => {
                   const scorePercent = maxScore > 0 ? (displayScore / maxScore) * 100 : 0;
                   return (
                     <Link key={`pinned-${item.wiki_entry_id}`} to={`/artist/${entry.slug}`}>
-                      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98] mb-1.5">
-                        <div className="w-7 flex justify-center shrink-0">
-                          <span className="text-sm font-bold text-primary">#{item.globalRank}</span>
+                      <div className="rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98] overflow-hidden">
+                        <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
+                          <Star className="w-3 h-3 text-primary fill-primary" />
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{t("ranking.myBias")}</span>
                         </div>
-                        <div className="relative">
+                        <div className="flex items-center gap-3 px-4 pb-3">
+                          <div className="w-7 flex justify-center shrink-0">
+                            <span className="text-sm font-bold text-primary">#{item.globalRank}</span>
+                          </div>
                           <Avatar className="w-12 h-12 ring-2 ring-primary/30 ring-offset-1 ring-offset-background">
                             <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
                             <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{entry.title?.[0]}</AvatarFallback>
                           </Avatar>
-                          <Star className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-primary fill-primary drop-shadow-sm" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-base font-bold text-foreground truncate">{entry.title}</p>
-                            {item.energy_score >= 300 && <span className="text-[10px] shrink-0">🔥</span>}
-                            {item.energy_score >= 150 && item.energy_score < 300 && <span className="text-[10px] shrink-0">⚡</span>}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-base font-bold text-foreground truncate">{entry.title}</p>
+                              {item.energy_score >= 300 && <span className="text-[10px] shrink-0">🔥</span>}
+                              {item.energy_score >= 150 && item.energy_score < 300 && <span className="text-[10px] shrink-0">⚡</span>}
+                            </div>
+                            <div className="mt-1 h-1 rounded-full bg-primary/10 overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all" style={{ width: `${scorePercent}%` }} />
+                            </div>
                           </div>
-                          <div className="mt-1 h-1 rounded-full bg-primary/10 overflow-hidden">
-                            <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all" style={{ width: `${scorePercent}%` }} />
+                          <div className="text-right shrink-0">
+                            <p className="text-base font-bold text-foreground">{Math.round(displayScore)}</p>
+                            <ChangeIndicator change={item.changePercent ?? 0} />
+                            {item.energy_score > 0 && (
+                              <span className="text-[10px] text-primary flex items-center gap-0.5 justify-end mt-0.5">
+                                <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}
+                              </span>
+                            )}
                           </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-base font-bold text-foreground">{Math.round(displayScore)}</p>
-                          <ChangeIndicator change={item.changePercent ?? 0} />
-                          {item.energy_score > 0 && (
-                            <span className="text-[10px] text-primary flex items-center gap-0.5 justify-end mt-0.5">
-                              <Zap className="w-2.5 h-2.5" />{Math.round(item.energy_score)}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </Link>

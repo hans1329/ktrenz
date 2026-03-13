@@ -254,27 +254,25 @@ const MyAgentPinned = ({ items, onTrack, onItemClick }: { items: any[]; onTrack?
   const { t } = useLanguage();
   if (!items.length) return null;
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2.5 px-1">
-        <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-        <span className="text-xs font-bold text-primary uppercase tracking-wider">{t("ranking.myBias")}</span>
-        <div className="h-px flex-1 bg-primary/20" />
-      </div>
-      <div className="space-y-1.5">
-        {items.map((item) => {
-          const entry = item.wiki_entries as any;
-          if (!entry) return null;
-          const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
-          return (
-            <button key={item.wiki_entry_id} className="block w-full text-left" onClick={() => { onTrack?.(item); onItemClick?.(item); }}>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98]">
+    <div className="mb-4 space-y-1.5">
+      {items.map((item) => {
+        const entry = item.wiki_entries as any;
+        if (!entry) return null;
+        const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
+        return (
+          <button key={item.wiki_entry_id} className="block w-full text-left" onClick={() => { onTrack?.(item); onItemClick?.(item); }}>
+            <div className="rounded-xl bg-primary/5 border border-primary/20 hover:border-primary/40 transition-all active:scale-[0.98] overflow-hidden">
+              <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
+                <Star className="w-3 h-3 text-primary fill-primary" />
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{t("ranking.myBias")}</span>
+              </div>
+              <div className="flex items-center gap-3 px-4 pb-3">
                 <span className="w-6 text-center text-sm font-bold text-primary">#{item.globalRank}</span>
                 <div className="relative">
                   <Avatar className="w-10 h-10 ring-2 ring-primary/30 ring-offset-1 ring-offset-background">
                     <AvatarImage src={entry.image_url || (entry.metadata as any)?.profile_image} className="object-cover" />
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{entry.title?.[0]}</AvatarFallback>
                   </Avatar>
-                  <Star className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-primary fill-primary drop-shadow-sm" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -300,10 +298,10 @@ const MyAgentPinned = ({ items, onTrack, onItemClick }: { items: any[]; onTrack?
                   )}
                 </div>
               </div>
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 };
