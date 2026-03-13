@@ -406,6 +406,7 @@ const translations: Record<string, Record<Language, string>> = {
   "prediction.aiLabel": { en: "AI Insight", ko: "AI 인사이트", ja: "AIインサイト", zh: "AI洞察" },
   "prediction.doThis": { en: "Try this!", ko: "이렇게 해봐!", ja: "やってみて！", zh: "试试这个！" },
   "prediction.talkMore": { en: "Chat with Agent", ko: "에이전트와 대화하기", ja: "エージェントと話す", zh: "与助手聊天" },
+  "prediction.goNow": { en: "Go now", ko: "바로가기", ja: "今すぐ行く", zh: "立即前往" },
 
   // ── Hero ──
   "hero.title": { en: "Feel the Pulse\nof K-Pop, Live.", ko: "실시간으로 느끼는\nK-Pop의 맥박.", ja: "リアルタイムで感じる\nK-Popの鼓動.", zh: "实时感受\nK-Pop的脉搏." },
