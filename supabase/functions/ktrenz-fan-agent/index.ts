@@ -2676,6 +2676,69 @@ Deno.serve(async (req) => {
                 } catch {}
               }
 
+              // Collect stat card data for lookup/compare/rankings
+              if (fnName === "lookup_artist") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.artist && !parsed.error) {
+                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
+                    collectedMeta.statsData.push({
+                      artist: parsed.artist,
+                      rank: parsed.rank,
+                      energy_score: parsed.energy_score ?? 0,
+                      energy_change_24h: parsed.energy_change_24h ?? 0,
+                      youtube_score: parsed.youtube_score ?? 0,
+                      buzz_score: parsed.buzz_score ?? 0,
+                      music_score: parsed.music_score ?? 0,
+                      album_sales_score: parsed.album_sales_score ?? 0,
+                      tier: parsed.tier ?? null,
+                    });
+                  }
+                } catch {}
+              }
+              if (fnName === "compare_artists") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.comparison) {
+                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
+                    for (const item of parsed.comparison) {
+                      if (!item.error) {
+                        collectedMeta.statsData.push({
+                          artist: item.artist,
+                          rank: item.rank,
+                          energy_score: item.energy_score ?? 0,
+                          energy_change_24h: item.energy_change_24h ?? 0,
+                          youtube_score: item.youtube_score ?? 0,
+                          buzz_score: item.buzz_score ?? 0,
+                          music_score: item.music_score ?? 0,
+                          album_sales_score: item.album_sales_score ?? 0,
+                        });
+                      }
+                    }
+                  }
+                } catch {}
+              }
+              if (fnName === "get_rankings") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.rankings) {
+                    if (!collectedMeta.statsData) collectedMeta.statsData = [];
+                    for (const item of parsed.rankings.slice(0, 5)) {
+                      collectedMeta.statsData.push({
+                        artist: item.artist,
+                        rank: item.rank,
+                        energy_score: item.energy_score ?? 0,
+                        energy_change_24h: item.energy_change_24h ?? 0,
+                        youtube_score: item.youtube_score ?? 0,
+                        buzz_score: item.buzz_score ?? 0,
+                        music_score: item.music_score ?? 0,
+                        album_sales_score: item.album_sales_score ?? 0,
+                      });
+                    }
+                  }
+                } catch {}
+              }
+
               // Collect quick actions after bias registration
               if (fnName === "manage_watched_artist") {
                 try {
