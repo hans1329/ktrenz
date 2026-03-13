@@ -176,7 +176,6 @@ export default function V3MissionCards({
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{ title: string; points: number; category: keyof typeof CATEGORY_CONFIG; closing?: boolean } | null>(null);
   const encodedName = encodeURIComponent(artistName);
 
   // pending mission 저장 (모바일 메모리 해제/리로드 대비)
