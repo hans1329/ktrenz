@@ -7,6 +7,7 @@ import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
 import V3AIPredictionCard from "@/components/v3/V3AIPredictionCard";
+import V3CorrelationPanel from "@/components/v3/V3CorrelationPanel";
 
 export interface InspectorItem {
   id: string;
