@@ -399,6 +399,21 @@ export default function V3MissionCards({
       });
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
+
+      // Trigger agent feedback
+      const newCompleted = completedCount + 1;
+      const newPoints = totalPoints + mission.points;
+      const newAllDone = newCompleted === missions.length;
+      onMissionComplete({
+        completedCount: newCompleted,
+        totalCount: missions.length,
+        totalPoints: newPoints,
+        allDone: newAllDone,
+        lastCompletedCategory: mission.category,
+        lastCompletedTitle: mission.title,
+        artistName,
+        wikiEntryId,
+      });
     } catch (e) {
       console.error("Mission complete error:", e);
     } finally {
