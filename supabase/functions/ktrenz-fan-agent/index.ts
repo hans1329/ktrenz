@@ -433,10 +433,11 @@ async function handleTool(
 
     const best = scored[0];
     const second = scored[1];
-    const maxDistance = normalizedQuery.length <= 3 ? 0 : normalizedQuery.length <= 5 ? 1 : 2;
+    const maxDistance = normalizedQuery.length <= 3 ? 1 : normalizedQuery.length <= 5 ? 2 : 3;
     const hasClearLead = !second || best.distance + 1 <= second.distance;
+    const isHighConfidenceTypo = best.distance <= 1;
 
-    if (best.distance <= maxDistance && hasClearLead) return best;
+    if (best.distance <= maxDistance && (hasClearLead || isHighConfidenceTypo)) return best;
     return null;
   }
 
