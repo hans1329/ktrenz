@@ -36,6 +36,9 @@ const CATEGORY_CONFIG = {
 interface YTVideo {
   id: string;
   title: string;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
 }
 
 function generateMissions(
