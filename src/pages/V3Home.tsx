@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
@@ -38,7 +39,11 @@ const V3Home = () => {
           path="/"
         />
         {!isSubPage && <V3Header />}
-        <div className="pb-20 pt-14">
+        <div className={cn(
+          isSubPage
+            ? "h-[calc(100dvh-5rem)] flex flex-col"
+            : "pb-20 pt-14"
+        )}>
           {renderContent()}
         </div>
         <V3TabBar activeTab={activeTab} onTabChange={setActiveTab} />
