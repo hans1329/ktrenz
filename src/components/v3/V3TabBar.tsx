@@ -128,7 +128,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
               return (
                 <button key={tab.id} onClick={() => navigate("/agent")} className="flex items-center justify-center -mt-6 relative">
                   {showAgentBadge && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background animate-pulse z-10" />
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
                   )}
                    <div className={cn("w-16 h-16 rounded-full transition-all duration-200 overflow-hidden bg-black grid place-items-center")}
                     style={{ boxShadow: '0 0 15px 4px rgba(168, 85, 247, 0.4), 0 0 30px 8px rgba(168, 85, 247, 0.2)' }}>
