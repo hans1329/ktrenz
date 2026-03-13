@@ -228,15 +228,12 @@ async function saveFeedbackToChat(
   feedbackText: string,
 ) {
   try {
-    // Save as agent message
     await (supabase as any)
-      .from("agent_chat_messages")
+      .from("ktrenz_fan_agent_messages")
       .insert({
         user_id: userId,
-        sender_type: "assistant",
-        message: `🎯 **Mission Feedback**\n\n${feedbackText}`,
-        topic_type: "mission_feedback",
-        metadata: { wiki_entry_id: wikiEntryId, auto_generated: true },
+        role: "assistant",
+        content: `🎯 **Mission Feedback**\n\n${feedbackText}`,
       });
   } catch (e) {
     console.error("Failed to save feedback to chat:", e);
