@@ -222,6 +222,9 @@ const translations: Record<string, Record<Language, string>> = {
   "mission.allDoneDesc": { en: "Great job! Come back tomorrow for new missions.", ko: "잘 하셨어요! 내일 또 새로운 미션으로 만나요 💪", ja: "お疲れ様でした！明日も新しいミッションでお会いしましょう💪", zh: "做得好！明天再来完成新任务吧💪" },
   "mission.watchAndStream": { en: "Watch & boost the view count 📺", ko: "시청하고 조회수 올려주기 📺", ja: "視聴して再生数を上げよう 📺", zh: "观看并提升播放量 📺" },
   "mission.readArticle": { en: "Read & share to spread the buzz 📰", ko: "읽고 공유해서 버즈 올려주기 📰", ja: "読んでシェアしてバズらせよう 📰", zh: "阅读分享提升热度 📰" },
+  "mission.briefing": { en: "Briefing", ko: "브리핑", ja: "ブリーフィング", zh: "简报" },
+  "mission.reminder": { en: "Reminder", ko: "리마인더", ja: "リマインダー", zh: "提醒" },
+  "mission.weakCategoryHint": { en: "Try some missions in this category!", ko: "이 카테고리 미션도 도전해보세요!", ja: "このカテゴリのミッションも挑戦してみましょう！", zh: "试试这个类别的任务吧！" },
 
   // ── Deck Page ──
   "deck.subtitle": { en: "AI-Powered Fan Energy Intelligence Platform", ko: "AI 기반 팬 에너지 인텔리전스 플랫폼", ja: "AI搭載ファンエネルギーインテリジェンスプラットフォーム", zh: "AI驱动的粉丝能量情报平台" },
