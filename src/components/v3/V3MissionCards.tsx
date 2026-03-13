@@ -176,7 +176,9 @@ export default function V3MissionCards({
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
+  const [pendingFeedbackData, setPendingFeedbackData] = useState<MissionStatus | null>(null);
   const encodedName = encodeURIComponent(artistName);
+  const today = new Date().toISOString().slice(0, 10);
 
   // pending mission 저장 (모바일 메모리 해제/리로드 대비)
   const PENDING_KEY = "ktrenz_pending_mission_v1";
@@ -214,15 +216,14 @@ export default function V3MissionCards({
     }
   };
 
-  // 탭 복귀 감지 → 에이전트 피드백
+  // 탭 복귀 감지 → pending feedback을 state에 저장
   const triggerPendingFeedback = useCallback(() => {
     const pending = getPendingMission();
     if (!pending || !pending.completedCount) return;
     localStorage.removeItem(PENDING_KEY);
-    // Trigger celebration modal on tab return
-    onMissionComplete({
+    setPendingFeedbackData({
       completedCount: pending.completedCount,
-      totalCount: pending.totalCount || missions.length,
+      totalCount: pending.totalCount || 0,
       totalPoints: pending.totalPoints || 0,
       allDone: pending.allDone || false,
       lastCompletedCategory: pending.category,
@@ -230,7 +231,7 @@ export default function V3MissionCards({
       artistName,
       wikiEntryId,
     });
-  }, [onMissionComplete, missions.length, artistName, wikiEntryId]);
+  }, [artistName, wikiEntryId]);
 
   useEffect(() => {
     triggerPendingFeedback();
