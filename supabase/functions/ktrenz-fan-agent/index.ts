@@ -378,15 +378,59 @@ async function handleTool(
   }
 
   // Helper: Korean name map (cached)
+  type TierAliasCandidate = {
+    wiki_entry_id: string;
+    display_name: string | null;
+    name_ko: string | null;
+  };
+
   let koNameMap: Map<string, string> | null = null;
+  let tierAliasCandidatesCache: TierAliasCandidate[] | null = null;
+
+  async function getTierAliasCandidates(): Promise<TierAliasCandidate[]> {
+    if (tierAliasCandidatesCache) return tierAliasCandidatesCache;
+
+    const pageSize = 1000;
+    let from = 0;
+    const allRows: TierAliasCandidate[] = [];
+
+    while (true) {
+      const { data, error } = await adminClient
+        .from("v3_artist_tiers")
+        .select("wiki_entry_id, display_name, name_ko")
+        .not("wiki_entry_id", "is", null)
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        console.error("[FanAgent] Failed to load tier alias candidates:", error.message);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+
+      for (const row of data as TierAliasCandidate[]) {
+        if (!row.wiki_entry_id) continue;
+        allRows.push({
+          wiki_entry_id: row.wiki_entry_id,
+          display_name: row.display_name ?? null,
+          name_ko: row.name_ko ?? null,
+        });
+      }
+
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+
+    tierAliasCandidatesCache = allRows;
+    return tierAliasCandidatesCache;
+  }
+
   async function getKoNameMap(): Promise<Map<string, string>> {
     if (koNameMap) return koNameMap;
-    const { data } = await adminClient
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, name_ko, display_name")
-      .not("name_ko", "is", null);
+    const candidates = await getTierAliasCandidates();
+
     koNameMap = new Map();
-    for (const row of data ?? []) {
+    for (const row of candidates) {
       if (row.name_ko) koNameMap.set(row.wiki_entry_id, row.name_ko.toLowerCase());
     }
     return koNameMap;
@@ -395,6 +439,8 @@ async function handleTool(
   // Helper: normalize artist text for typo-tolerant matching
   function normalizeArtistName(input: string): string {
     return (input || "")
+      .normalize("NFC")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "")
@@ -427,14 +473,10 @@ async function handleTool(
     const normalizedQuery = normalizeArtistName(query);
     if (!normalizedQuery) return null;
 
-    const { data: candidates } = await adminClient
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko")
-      .not("wiki_entry_id", "is", null);
-
+    const candidates = await getTierAliasCandidates();
     if (!candidates || candidates.length === 0) return null;
 
-    const scored = (candidates as any[])
+    const scored = candidates
       .map((row) => {
         const variants = [row.name_ko, row.display_name]
           .filter(Boolean)
@@ -471,17 +513,12 @@ async function handleTool(
     const normalizedQuery = normalizeArtistName(sanitizedQuery);
     if (!normalizedQuery) return null;
 
-    const { data: candidates } = await adminClient
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(title)")
-      .not("wiki_entry_id", "is", null);
-
+    const candidates = await getTierAliasCandidates();
     if (!candidates || candidates.length === 0) return null;
 
-    const ranked = (candidates as any[])
+    const ranked = candidates
       .map((row) => {
-        const wikiTitle = row.wiki_entries?.title ?? null;
-        const variants = [row.name_ko, row.display_name, wikiTitle]
+        const variants = [row.name_ko, row.display_name]
           .filter(Boolean)
           .map((v: string) => ({ raw: v, normalized: normalizeArtistName(v) }))
           .filter((v: { raw: string; normalized: string }) => !!v.normalized);
@@ -493,10 +530,10 @@ async function handleTool(
         const bestDistance = Math.min(...variants.map((v: { raw: string; normalized: string }) => levenshteinDistance(normalizedQuery, v.normalized)));
 
         return {
-          wiki_entry_id: row.wiki_entry_id as string,
+          wiki_entry_id: row.wiki_entry_id,
           display_name: row.display_name ?? null,
           name_ko: row.name_ko ?? null,
-          wiki_title: wikiTitle,
+          wiki_title: null,
           hasExact,
           hasContains,
           distance: bestDistance,
