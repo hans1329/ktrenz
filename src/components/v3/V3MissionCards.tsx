@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, PartyPopper, Eye, ThumbsUp, MessageSquare } from "lucide-react";
+import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, Eye, ThumbsUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import AgentMissionFeedback, { useAgentMissionFeedback, type MissionStatus } from "@/components/v3/AgentMissionFeedback";
 
 interface Mission {
   key: string;
@@ -175,7 +176,6 @@ export default function V3MissionCards({
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{ title: string; points: number; category: keyof typeof CATEGORY_CONFIG; closing?: boolean } | null>(null);
   const encodedName = encodeURIComponent(artistName);
 
   // pending mission 저장 (모바일 메모리 해제/리로드 대비)
@@ -204,40 +204,31 @@ export default function V3MissionCards({
   };
   const today = new Date().toISOString().slice(0, 10);
 
-  // 탭 복귀 감지 → 축하 모달
-  const showCelebration = useCallback((mission: Pick<Mission, "title" | "points" | "category">) => {
-    setCelebration({ title: mission.title, points: mission.points, category: mission.category });
-    setTimeout(() => {
-      setCelebration(prev => prev ? { ...prev, closing: true } : null);
-      setTimeout(() => setCelebration(null), 400);
-    }, 2500);
-  }, []);
-
-  const consumePendingMission = useCallback(() => {
+  // 탭 복귀 감지 → 에이전트 피드백
+  const triggerPendingFeedback = useCallback(() => {
     const pending = getPendingMission();
     if (!pending) return;
     setPendingMission(null);
-    showCelebration(pending);
-  }, [showCelebration]);
+    // Will be handled by agent feedback via onMissionComplete on next render
+  }, []);
 
   useEffect(() => {
-    // 리로드 복귀 케이스 대응
-    consumePendingMission();
+    triggerPendingFeedback();
 
     const onVisibility = () => {
-      if (document.visibilityState === "visible") consumePendingMission();
+      if (document.visibilityState === "visible") triggerPendingFeedback();
     };
 
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("focus", consumePendingMission);
-    window.addEventListener("pageshow", consumePendingMission);
+    window.addEventListener("focus", triggerPendingFeedback);
+    window.addEventListener("pageshow", triggerPendingFeedback);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("focus", consumePendingMission);
-      window.removeEventListener("pageshow", consumePendingMission);
+      window.removeEventListener("focus", triggerPendingFeedback);
+      window.removeEventListener("pageshow", triggerPendingFeedback);
     };
-  }, [consumePendingMission]);
+  }, [triggerPendingFeedback]);
 
 
   const ytVideos: YTVideo[] = (() => {
@@ -337,7 +328,19 @@ export default function V3MissionCards({
   const totalPoints = missions.filter(m => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
   const allDone = missions.length > 0 && completedCount === missions.length;
 
-  const handleMission = async (mission: Mission) => {
+  // Agent mission feedback
+  const missionStatusObj: MissionStatus = {
+    completedCount,
+    totalCount: missions.length,
+    totalPoints,
+    allDone,
+    artistName,
+    wikiEntryId,
+  };
+  const { feedbackState, activeSlot, onMissionComplete, closeFeedback } = useAgentMissionFeedback(
+    missions.length > 0 ? missionStatusObj : null
+  );
+
     // 로그인 유저 + 미완료 미션이면 pendingRef 세팅 (탭 복귀 시 축하 모달용)
     const { data: authData } = await supabase.auth.getUser();
     const isLoggedIn = !!authData.user;
@@ -396,6 +399,21 @@ export default function V3MissionCards({
       });
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
+
+      // Trigger agent feedback
+      const newCompleted = completedCount + 1;
+      const newPoints = totalPoints + mission.points;
+      const newAllDone = newCompleted === missions.length;
+      onMissionComplete({
+        completedCount: newCompleted,
+        totalCount: missions.length,
+        totalPoints: newPoints,
+        allDone: newAllDone,
+        lastCompletedCategory: mission.category,
+        lastCompletedTitle: mission.title,
+        artistName,
+        wikiEntryId,
+      });
     } catch (e) {
       console.error("Mission complete error:", e);
     } finally {
@@ -533,50 +551,14 @@ export default function V3MissionCards({
         })()}
       </div>
 
-      {/* 축하 모달 */}
-      {celebration && (() => {
-        const cfg = CATEGORY_CONFIG[celebration.category];
-        const categoryLabel = t(`mission.category.${celebration.category}`);
-        return (
-          <div className={cn(
-            "fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300",
-            celebration.closing ? "opacity-0" : "animate-in fade-in duration-200"
-          )}>
-            <div className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 py-10 transition-all duration-300",
-              "bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl",
-              celebration.closing
-                ? "scale-150 opacity-0"
-                : "animate-in zoom-in-95 duration-200"
-            )}
-              style={{
-                maskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
-                WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
-              }}
-            >
-              {/* 카테고리 뱃지 */}
-              <div className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold", cfg.bg, cfg.color)}>
-                {cfg.icon}
-                <span>{categoryLabel} {t("mission.categoryMission")}</span>
-              </div>
 
-              {/* 아이콘 */}
-              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <PartyPopper className="w-8 h-8 text-amber-500" />
-              </div>
-
-              <p className="text-lg font-extrabold text-foreground text-center">{t("mission.complete")}</p>
-              <p className="text-sm text-muted-foreground text-center line-clamp-2 max-w-[280px]">{celebration.title}</p>
-              <span className="text-3xl font-black text-amber-500">+{celebration.points}P</span>
-
-              {/* 타이머 바 */}
-              <div className="h-1 w-full bg-muted rounded-full overflow-hidden mt-1">
-                <div className="h-full bg-amber-500 rounded-full" style={{ animation: "shrink-bar 2.5s linear forwards" }} />
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Agent mission feedback */}
+      <AgentMissionFeedback
+        feedbackState={feedbackState}
+        agentSlot={activeSlot}
+        missionStatus={missionStatusObj}
+        onClose={closeFeedback}
+      />
     </div>
   );
 }
