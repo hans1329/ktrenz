@@ -492,7 +492,31 @@ export default function V3MissionCards({
                          }}
                        />
                      )}
-                    <span className="text-sm font-bold text-foreground line-clamp-3 flex-1">{mission.title}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-bold text-foreground line-clamp-3">{mission.title}</span>
+                      {mission.stats && (mission.stats.viewCount || mission.stats.likeCount || mission.stats.commentCount) && (
+                        <div className="flex items-center gap-3 mt-1">
+                          {mission.stats.viewCount != null && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Eye className="w-3 h-3" />
+                              {formatCompact(mission.stats.viewCount)}
+                            </span>
+                          )}
+                          {mission.stats.likeCount != null && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <ThumbsUp className="w-3 h-3" />
+                              {formatCompact(mission.stats.likeCount)}
+                            </span>
+                          )}
+                          {mission.stats.commentCount != null && (
+                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <MessageSquare className="w-3 h-3" />
+                              {formatCompact(mission.stats.commentCount)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {mission.description && (
