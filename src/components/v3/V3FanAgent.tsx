@@ -318,54 +318,133 @@ AgentAvatar.displayName = "AgentAvatar";
 
 // Inline number highlighter for chat text
 function highlightNumbers(text: string): React.ReactNode[] {
-  // Match: +343.8%, -12.5%, #1, #23, 3110점, 632점, 1,234, scores like 3110, percentages, ranks
   const pattern = /((?:[+\-]\d[\d,]*\.?\d*%)|(?:\d[\d,]*\.?\d*%)|(?:#\d+(?:위)?)|(?:\d[\d,]*\.?\d*(?:점|위|P|p))|(?:(?:^|(?<=\s|：|:))\d[\d,]*\.?\d*(?=$|\s|,|!|\.|\)|、|，)))/g;
-
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-
   while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
     const val = match[0];
     const isPositive = val.startsWith("+") || (val.includes("%") && !val.startsWith("-") && parseFloat(val) > 0);
     const isNegative = val.startsWith("-");
     const isRank = val.startsWith("#");
-
-    let className = "inline-flex items-center px-1 py-0.5 rounded font-bold text-[13px] ";
-    if (isPositive) {
-      className += "bg-emerald-500/15 text-emerald-400";
-    } else if (isNegative) {
-      className += "bg-red-500/15 text-red-400";
-    } else if (isRank) {
-      className += "bg-amber-500/15 text-amber-400";
-    } else {
-      className += "bg-primary/10 text-primary";
-    }
-
-    parts.push(<span key={match.index} className={className}>{val}</span>);
+    let cls = "inline-flex items-center px-1 py-0.5 rounded font-bold text-[13px] ";
+    if (isPositive) cls += "bg-emerald-500/15 text-emerald-400";
+    else if (isNegative) cls += "bg-red-500/15 text-red-400";
+    else if (isRank) cls += "bg-amber-500/15 text-amber-400";
+    else cls += "bg-primary/10 text-primary";
+    parts.push(<span key={match.index} className={cls}>{val}</span>);
     lastIndex = match.index + val.length;
   }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
   return parts.length > 0 ? parts : [text];
 }
 
 const MarkdownText = ({ children }: { children: React.ReactNode }) => {
-  if (typeof children === "string") {
-    return <>{highlightNumbers(children)}</>;
-  }
+  if (typeof children === "string") return <>{highlightNumbers(children)}</>;
   if (Array.isArray(children)) {
     return <>{children.map((child, i) =>
       typeof child === "string" ? <React.Fragment key={i}>{highlightNumbers(child)}</React.Fragment> : child
     )}</>;
   }
   return <>{children}</>;
+};
+
+// Section-aware emoji map for card headers
+const SECTION_EMOJI_MAP: Record<string, string> = {
+  energy: "⚡", 에너지: "⚡", 점수: "⚡",
+  youtube: "▶️", 유튜브: "▶️",
+  buzz: "💬", 버즈: "💬", sns: "💬",
+  music: "🎵", 뮤직: "🎵", 음악: "🎵", 차트: "🎵",
+  album: "💿", 앨범: "💿", 판매: "💿",
+  competition: "⚔️", 경쟁: "⚔️", 비교: "⚔️", 아티스트: "🎤",
+  ranking: "🏆", 순위: "🏆", 랭킹: "🏆",
+  strategy: "🎯", 전략: "🎯", 추천: "💡", 분석: "📊",
+  summary: "📋", 요약: "📋", 결론: "✅", 팬: "💜",
+};
+
+function getSectionEmoji(title: string): string {
+  const lower = title.toLowerCase();
+  for (const [keyword, emoji] of Object.entries(SECTION_EMOJI_MAP)) {
+    if (lower.includes(keyword)) return emoji;
+  }
+  return "📌";
+}
+
+// Split markdown content into intro + section cards
+function splitIntoSections(content: string): { intro: string; sections: { title: string; body: string }[] } {
+  // Match section headers: "## Title", "### Title", or "**Title:**" at start of line
+  const sectionPattern = /(?:^|\n)(?:#{2,3}\s+(.+)|(?:\*\*(.+?)[:：]\*\*))/g;
+  const matches = [...content.matchAll(sectionPattern)];
+
+  if (matches.length < 2) {
+    // Not enough sections to card-ify
+    return { intro: content, sections: [] };
+  }
+
+  const intro = content.slice(0, matches[0].index).trim();
+  const sections: { title: string; body: string }[] = [];
+
+  for (let i = 0; i < matches.length; i++) {
+    const title = (matches[i][1] || matches[i][2] || "").trim();
+    const startIdx = (matches[i].index ?? 0) + matches[i][0].length;
+    const endIdx = i + 1 < matches.length ? matches[i + 1].index : content.length;
+    const body = content.slice(startIdx, endIdx).trim();
+    if (title) sections.push({ title, body });
+  }
+
+  return { intro, sections };
+}
+
+// Section card markdown renderer
+const SectionCards = ({ content, isLastStreaming }: { content: string; isLastStreaming: boolean }) => {
+  const { intro, sections } = splitIntoSections(content);
+
+  const mdComponents = {
+    a: MarkdownLink,
+    p: ({ children }: any) => <p><MarkdownText>{children}</MarkdownText></p>,
+    li: ({ children }: any) => <li><MarkdownText>{children}</MarkdownText></li>,
+    strong: ({ children }: any) => <strong><MarkdownText>{children}</MarkdownText></strong>,
+    img: ({ src, alt }: any) => (
+      <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
+    ),
+  };
+
+  if (sections.length === 0) {
+    // No sections — render normally
+    return (
+      <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
+        <ReactMarkdown components={mdComponents}>{content}</ReactMarkdown>
+        {isLastStreaming && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Intro text */}
+      {intro && (
+        <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 text-foreground">
+          <ReactMarkdown components={mdComponents}>{intro}</ReactMarkdown>
+        </div>
+      )}
+
+      {/* Section cards */}
+      {sections.map((section, idx) => (
+        <div key={idx} className="rounded-xl border border-border/40 bg-secondary/30 p-3 space-y-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm">{getSectionEmoji(section.title)}</span>
+            <span className="text-[13px] font-bold text-foreground">{section.title}</span>
+          </div>
+          <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-0.5 [&_ul]:my-0.5 [&_ol]:my-0.5 [&_li]:my-0 text-foreground/80 text-[13px] leading-relaxed">
+            <ReactMarkdown components={mdComponents}>{section.body}</ReactMarkdown>
+          </div>
+        </div>
+      ))}
+
+      {isLastStreaming && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />}
+    </div>
+  );
 };
 
 const MarkdownLink = forwardRef<HTMLAnchorElement, any>(({ href, children }, ref) => {
@@ -1196,22 +1275,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               )}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 text-foreground">
-                  <ReactMarkdown
-                    components={{
-                      a: MarkdownLink,
-                      p: ({ children }) => <p><MarkdownText>{children}</MarkdownText></p>,
-                      li: ({ children }) => <li><MarkdownText>{children}</MarkdownText></li>,
-                      strong: ({ children }) => <strong><MarkdownText>{children}</MarkdownText></strong>,
-                      img: ({ src, alt }) => (
-                        <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
-                      ),
-                    }}
-                  >{msg.content}</ReactMarkdown>
-                  {isStreaming && i === messages.length - 1 && (
-                    <span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
-                  )}
-                </div>
+                <SectionCards content={msg.content} isLastStreaming={isStreaming && i === messages.length - 1} />
               ) : (
                 msg.content
               )}
