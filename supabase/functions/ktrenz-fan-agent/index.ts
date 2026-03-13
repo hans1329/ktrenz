@@ -614,7 +614,7 @@ async function handleTool(
         music_score: Math.round(a.music_score ?? 0),
         album_sales_score: Math.round(a.album_sales_score ?? 0),
       }));
-      return JSON.stringify({ rankings: result, timestamp: new Date().toISOString() });
+      return JSON.stringify({ rankings: result, timestamp: new Date().toISOString(), _ui_hint: "RANKING_CARD_RENDERED: 이 랭킹 데이터는 유저 화면에 이미 시각적 카드로 표시되었습니다. 텍스트로 순위를 다시 나열하지 마세요. 1문장 이내로 핵심 코멘트만 하세요." });
     }
 
     case "lookup_artist": {
