@@ -23,6 +23,46 @@ function eulReul(name: string): string { return hasJongseong(name) ? "을" : "�
 function iGa(name: string): string { return hasJongseong(name) ? "이" : "가"; }
 function eunNeun(name: string): string { return hasJongseong(name) ? "은" : "는"; }
 
+function sanitizeArtistCandidate(value: string): string {
+  return (value || "")
+    .replace(/["'`]/g, "")
+    .replace(/\b(?:my|our)\b/gi, "")
+    .replace(/\b(?:bias|artist)\b/gi, "")
+    .replace(/(?:최애|아티스트)/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/(?:으로|로|을|를|은|는|이|가)$/u, "")
+    .trim();
+}
+
+function extractForcedBiasArtist(userText: string): string | null {
+  const text = (userText || "").trim();
+  if (!text) return null;
+
+  const lower = text.toLowerCase();
+  const registerHints = ["등록", "설정", "추가", "지정", "변경", "바꿔", "set", "register", "change"];
+  const biasHints = ["최애", "bias", "아티스트", "artist"];
+
+  if (!registerHints.some((keyword) => lower.includes(keyword)) || !biasHints.some((keyword) => lower.includes(keyword))) {
+    return null;
+  }
+
+  const patterns = [
+    /([A-Za-z0-9가-힣][A-Za-z0-9가-힣\s().,&-]{0,40}?)\s*(?:을|를|로|으로)?\s*(?:최애|bias|아티스트|artist)?\s*(?:로)?\s*(?:등록|설정|추가|지정|변경|바꿔|set|register|change)/i,
+    /(?:최애|bias)\s*(?:아티스트|artist)?\s*(?:를|을|로)?\s*([A-Za-z0-9가-힣][A-Za-z0-9가-힣\s().,&-]{0,40})/i,
+    /(?:set|register|change)\s*(?:my\s*)?(?:bias|artist)?\s*(?:to\s*)?([A-Za-z0-9가-힣][A-Za-z0-9가-힣\s().,&-]{0,40})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const matched = text.match(pattern);
+    if (!matched?.[1]) continue;
+    const candidate = sanitizeArtistCandidate(matched[1]);
+    if (candidate && candidate.length >= 2) return candidate;
+  }
+
+  return null;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
