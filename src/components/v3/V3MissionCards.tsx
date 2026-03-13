@@ -433,19 +433,16 @@ export default function V3MissionCards({
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
 
-      // Trigger agent feedback
+      // Store completion data for tab-return feedback (celebration modal)
       const newCompleted = completedCount + 1;
       const newPoints = totalPoints + mission.points;
       const newAllDone = newCompleted === missions.length;
-      onMissionComplete({
+      setPendingMission({
+        ...mission,
         completedCount: newCompleted,
         totalCount: missions.length,
         totalPoints: newPoints,
         allDone: newAllDone,
-        lastCompletedCategory: mission.category,
-        lastCompletedTitle: mission.title,
-        artistName,
-        wikiEntryId,
       });
     } catch (e) {
       console.error("Mission complete error:", e);
