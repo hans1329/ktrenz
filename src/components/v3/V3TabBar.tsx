@@ -132,7 +132,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
                     <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
                   )}
                    <div className={cn("w-16 h-16 rounded-full transition-all duration-200 overflow-hidden bg-black grid place-items-center")}
-                    style={{ boxShadow: '0 0 15px 4px rgba(168, 85, 247, 0.4), 0 0 30px 8px rgba(168, 85, 247, 0.2)' }}>
+                    style={{ boxShadow: '0 0 15px 4px rgba(255, 255, 255, 0.4), 0 0 30px 8px rgba(255, 255, 255, 0.2)' }}>
                     {agentAvatarUrl ? (
                       <img src={agentAvatarUrl} alt="Agent" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                     ) : (
