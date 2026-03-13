@@ -273,7 +273,7 @@ function CelebrationModal({
     const timer = setTimeout(() => {
       setClosing(true);
       setTimeout(onClose, 400);
-    }, 4000);
+    }, 6000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
