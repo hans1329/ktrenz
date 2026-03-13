@@ -831,7 +831,7 @@ async function handleTool(
         }
 
         const wikiId = wikiMatch[0].id;
-        const resolvedName = wikiMatch[0].title;
+        const resolvedName = wikiMatch[0].title || targetArtistName;
 
         // Tier gate: only allow Tier 1 or Tier 2 artists
         const { data: tierRow } = await adminClient
