@@ -141,21 +141,21 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
           <>
             {/* Hot summary */}
             <div className="flex items-start gap-2.5">
-              <span className="text-xl mt-0.5 shrink-0">{config.emoji}</span>
-              <p className="text-[13px] font-bold text-foreground leading-snug">
+              <span className="text-2xl mt-0.5 shrink-0">{config.emoji}</span>
+              <p className="text-sm font-bold text-foreground leading-snug">
                 {prediction.hot_summary}
               </p>
             </div>
 
-            {/* Action CTA — the main interactive element */}
+            {/* Action CTA */}
             {prediction.fan_action && (
               <button
                 onClick={handleActionClick}
                 className={cn(
-                  "w-full text-left rounded-xl px-3.5 py-3 group/action",
-                  "bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5",
-                  "border border-primary/20",
-                  "hover:border-primary/40 hover:from-primary/20 hover:via-primary/15 hover:to-primary/10",
+                  "w-full text-left rounded-xl px-4 py-3 group/action",
+                  "bg-white/[0.07]",
+                  "border border-white/10",
+                  "hover:bg-white/[0.12] hover:border-white/20",
                   "active:scale-[0.98]",
                   "transition-all duration-200",
                 )}
