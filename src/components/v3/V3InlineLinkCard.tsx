@@ -45,7 +45,6 @@ function extractImageFromChildren(children: React.ReactNode): { imgSrc: string; 
   const imgInfo = walk(children);
   if (!imgInfo?.imgSrc) return null;
 
-  // Extract text content
   const getText = (node: React.ReactNode): string => {
     if (typeof node === "string") return node;
     if (Array.isArray(node)) return node.map(getText).join("");
@@ -64,34 +63,38 @@ function extractImageFromChildren(children: React.ReactNode): { imgSrc: string; 
   };
 }
 
-interface V3InlineLinkCardProps {
+interface V3InlineLinkCardProps extends Omit<React.ComponentPropsWithoutRef<"a">, "href"> {
   href: string;
   children: React.ReactNode;
 }
 
-const V3InlineLinkCard = ({ href, children }: V3InlineLinkCardProps) => {
+const V3InlineLinkCard = React.forwardRef<HTMLAnchorElement, V3InlineLinkCardProps>(({ href, children, className, onClick, ...rest }, ref) => {
   const platform = detectPlatform(href);
   const imageData = extractImageFromChildren(children);
 
-  // ── Thumbnail card (when image child is present) ──
   if (imageData?.imgSrc) {
     const isYouTube = /youtube\.com|youtu\.be/.test(href);
     return (
       <a
+        ref={ref}
         href={href}
         target="_blank"
         rel="noopener noreferrer"
+        {...rest}
         className={cn(
           "not-prose flex overflow-hidden rounded-xl my-2 border transition-all",
           "hover:scale-[1.01] hover:shadow-lg active:scale-[0.99]",
           "no-underline cursor-pointer",
           platform.gradient,
-          "bg-gradient-to-r"
+          "bg-gradient-to-r",
+          className,
         )}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.(e);
+        }}
       >
-        {/* Thumbnail */}
-        <div className="relative w-[120px] h-[80px] shrink-0 bg-muted overflow-hidden">
+        <span className="relative block w-[120px] h-[80px] shrink-0 bg-muted overflow-hidden">
           <img
             src={imageData.imgSrc}
             alt={imageData.imgAlt}
@@ -100,56 +103,66 @@ const V3InlineLinkCard = ({ href, children }: V3InlineLinkCardProps) => {
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
           {isYouTube && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-              <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+            <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <span className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
                 <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-              </div>
-            </div>
+              </span>
+            </span>
           )}
-        </div>
-        {/* Info */}
-        <div className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-0.5">
-          <div className="text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">
+        </span>
+
+        <span className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-0.5">
+          <span className="block text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">
             {imageData.imgAlt || imageData.textContent || `${platform.label} 콘텐츠`}
-          </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
+          </span>
+          <span className="flex items-center gap-1.5 mt-0.5">
             <span className="text-xs">{platform.emoji}</span>
             <span className="text-[11px] text-muted-foreground">{platform.label}</span>
             <ExternalLink className="w-3 h-3 text-muted-foreground/50 ml-auto" />
-          </div>
-        </div>
+          </span>
+        </span>
       </a>
     );
   }
 
-  // ── Text-only card (no thumbnail) ──
-  const text = typeof children === "string" ? children :
-    Array.isArray(children) ? children.map(c => typeof c === "string" ? c : "").join("") : "";
+  const text = typeof children === "string"
+    ? children
+    : Array.isArray(children)
+      ? children.map((c) => (typeof c === "string" ? c : "")).join("")
+      : "";
 
   return (
     <a
+      ref={ref}
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      {...rest}
       className={cn(
         "not-prose flex items-center gap-2.5 my-1.5 px-3 py-2.5 rounded-xl",
         "bg-gradient-to-r border transition-all",
         "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
         "no-underline cursor-pointer",
-        platform.gradient
+        platform.gradient,
+        className,
       )}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
     >
       <span className="text-lg shrink-0">{platform.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-semibold text-foreground truncate">
+      <span className="flex-1 min-w-0">
+        <span className="block text-[13px] font-semibold text-foreground truncate">
           {text || `${platform.label} 바로가기`}
-        </div>
-        <div className="text-[11px] text-muted-foreground truncate">{platform.label}</div>
-      </div>
+        </span>
+        <span className="block text-[11px] text-muted-foreground truncate">{platform.label}</span>
+      </span>
       <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
     </a>
   );
-};
+});
+
+V3InlineLinkCard.displayName = "V3InlineLinkCard";
 
 export default V3InlineLinkCard;
