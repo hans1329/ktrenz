@@ -85,7 +85,10 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
 
-    for (const entryId of targetIds.slice(0, 10)) {
+    const batch = wiki_entry_ids ? targetIds : targetIds.slice(offset, offset + BATCH_SIZE);
+    console.log(`[ktrenz-fes-predictor] Batch offset=${offset}, batch=${batch.length}, total=${targetIds.length}`);
+
+    for (const entryId of batch) {
       const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const [contribRes, trendRes, entryRes] = await Promise.all([
         sb.from("ktrenz_fes_contributions")
