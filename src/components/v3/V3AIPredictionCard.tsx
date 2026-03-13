@@ -128,7 +128,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
       <div className="relative p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-purple-300">
+          <span className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-widest text-purple-300">
             <Sparkles className="w-3.5 h-3.5" />
             {t("prediction.aiLabel")}
           </span>
