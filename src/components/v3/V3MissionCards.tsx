@@ -176,18 +176,31 @@ export default function V3MissionCards({
   const track = useTrackEvent();
   const queryClient = useQueryClient();
   const [completing, setCompleting] = useState<string | null>(null);
+  const [pendingFeedbackData, setPendingFeedbackData] = useState<MissionStatus | null>(null);
   const encodedName = encodeURIComponent(artistName);
+  const today = new Date().toISOString().slice(0, 10);
 
   // pending mission 저장 (모바일 메모리 해제/리로드 대비)
   const PENDING_KEY = "ktrenz_pending_mission_v1";
-  const setPendingMission = (mission: { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null) => {
+  interface PendingMission {
+    title: string;
+    points: number;
+    category: keyof typeof CATEGORY_CONFIG;
+    key: string;
+    completedCount?: number;
+    totalCount?: number;
+    totalPoints?: number;
+    allDone?: boolean;
+    createdAt: number;
+  }
+  const setPendingMission = (mission: Omit<PendingMission, 'createdAt'> | null) => {
     if (mission) {
       localStorage.setItem(PENDING_KEY, JSON.stringify({ ...mission, createdAt: Date.now() }));
     } else {
       localStorage.removeItem(PENDING_KEY);
     }
   };
-  const getPendingMission = (): { title: string; points: number; category: keyof typeof CATEGORY_CONFIG; key: string } | null => {
+  const getPendingMission = (): PendingMission | null => {
     try {
       const raw = localStorage.getItem(PENDING_KEY);
       if (!raw) return null;
@@ -202,15 +215,23 @@ export default function V3MissionCards({
       return null;
     }
   };
-  const today = new Date().toISOString().slice(0, 10);
 
-  // 탭 복귀 감지 → 에이전트 피드백
+  // 탭 복귀 감지 → pending feedback을 state에 저장
   const triggerPendingFeedback = useCallback(() => {
     const pending = getPendingMission();
-    if (!pending) return;
-    setPendingMission(null);
-    // Will be handled by agent feedback via onMissionComplete on next render
-  }, []);
+    if (!pending || !pending.completedCount) return;
+    localStorage.removeItem(PENDING_KEY);
+    setPendingFeedbackData({
+      completedCount: pending.completedCount,
+      totalCount: pending.totalCount || 0,
+      totalPoints: pending.totalPoints || 0,
+      allDone: pending.allDone || false,
+      lastCompletedCategory: pending.category,
+      lastCompletedTitle: pending.title,
+      artistName,
+      wikiEntryId,
+    });
+  }, [artistName, wikiEntryId]);
 
   useEffect(() => {
     triggerPendingFeedback();
@@ -230,6 +251,7 @@ export default function V3MissionCards({
     };
   }, [triggerPendingFeedback]);
 
+  
 
   const ytVideos: YTVideo[] = (() => {
     const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
@@ -341,6 +363,14 @@ export default function V3MissionCards({
     missions.length > 0 ? missionStatusObj : null
   );
 
+  // Effect: trigger onMissionComplete when pending feedback data is set (after tab return)
+  useEffect(() => {
+    if (pendingFeedbackData) {
+      onMissionComplete(pendingFeedbackData);
+      setPendingFeedbackData(null);
+    }
+  }, [pendingFeedbackData, onMissionComplete]);
+
   const handleMission = async (mission: Mission) => {
     // 로그인 유저 + 미완료 미션이면 pendingRef 세팅 (탭 복귀 시 축하 모달용)
     const { data: authData } = await supabase.auth.getUser();
@@ -348,7 +378,9 @@ export default function V3MissionCards({
     const alreadyDone = completedSet.has(mission.key);
 
     if (isLoggedIn && !alreadyDone) {
-      setPendingMission(mission);
+      setPendingMission({
+        ...mission,
+      });
     }
 
     // Open link
@@ -401,19 +433,16 @@ export default function V3MissionCards({
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
 
-      // Trigger agent feedback
+      // Store completion data for tab-return feedback (celebration modal)
       const newCompleted = completedCount + 1;
       const newPoints = totalPoints + mission.points;
       const newAllDone = newCompleted === missions.length;
-      onMissionComplete({
+      setPendingMission({
+        ...mission,
         completedCount: newCompleted,
         totalCount: missions.length,
         totalPoints: newPoints,
         allDone: newAllDone,
-        lastCompletedCategory: mission.category,
-        lastCompletedTitle: mission.title,
-        artistName,
-        wikiEntryId,
       });
     } catch (e) {
       console.error("Mission complete error:", e);
