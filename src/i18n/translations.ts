@@ -417,6 +417,9 @@ const translations: Record<string, Record<Language, string>> = {
   "hero.title": { en: "Feel the Pulse\nof K-Pop, Live.", ko: "실시간으로 느끼는\nK-Pop의 맥박.", ja: "リアルタイムで感じる\nK-Popの鼓動.", zh: "实时感受\nK-Pop的脉搏." },
   "hero.subtitle": { en: "See which artists are surging right now.\nThe KTrenZ engine captures the energy fans create across the globe.", ko: "지금 급상승 중인 아티스트를 확인하세요.\nKTrenZ 엔진이 전 세계 팬들이 만들어내는 에너지를 포착합니다.", ja: "今急上昇中のアーティストをチェック。\nKTrenZエンジンが世界中のファンが生み出すエネルギーをキャッチします。", zh: "查看哪些艺人正在飙升。\nKTrenZ引擎捕捉全球粉丝创造的能量。" },
   "hero.hotSpots": { en: "Biggest Movers (24h)", ko: "24시간 급등·급락", ja: "24時間注目の動き", zh: "24小时最大波动" },
+
+  // ── Rankings ──
+  "ranking.myBias": { en: "My Bias", ko: "나의 최애", ja: "推しアーティスト", zh: "我的最爱" },
 };
 
 export default translations;

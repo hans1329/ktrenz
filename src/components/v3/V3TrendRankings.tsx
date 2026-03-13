@@ -251,12 +251,13 @@ const RankingRow = ({ item, rank, maxScore, onTrack, onItemClick }: { item: any;
 };
 
 const MyAgentPinned = ({ items, onTrack, onItemClick }: { items: any[]; onTrack?: (item: any) => void; onItemClick?: (item: any) => void }) => {
+  const { t } = useLanguage();
   if (!items.length) return null;
   return (
     <div className="mb-4">
       <div className="flex items-center gap-2 mb-2.5 px-1">
         <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-        <span className="text-xs font-bold text-primary uppercase tracking-wider">My Agent</span>
+        <span className="text-xs font-bold text-primary uppercase tracking-wider">{t("ranking.myBias")}</span>
         <div className="h-px flex-1 bg-primary/20" />
       </div>
       <div className="space-y-1.5">
