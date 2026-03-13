@@ -513,16 +513,32 @@ async function handleTool(
         .select("id, title")
         .ilike("title", `%${args.query}%`)
         .limit(10);
-      // Also search by Korean name
+
+      // Search by Korean/English aliases in tier table
       const { data: koMatches } = await adminClient
         .from("v3_artist_tiers")
         .select("wiki_entry_id, display_name, name_ko")
-        .ilike("name_ko", `%${args.query}%`)
+        .or(`name_ko.ilike.%${args.query}%,display_name.ilike.%${args.query}%`)
         .limit(10);
+
       const titles = new Set((matches ?? []).map((m: any) => m.title));
       for (const km of koMatches ?? []) {
-        titles.add(`${km.display_name} (${km.name_ko})`);
+        if (km.name_ko) titles.add(`${km.display_name} (${km.name_ko})`);
+        else if (km.display_name) titles.add(km.display_name);
       }
+
+      // Typo-tolerant fallback (e.g., 코르티즈 → 코르티스)
+      if (titles.size === 0) {
+        const closest = await findClosestTierArtist(args.query);
+        if (closest) {
+          titles.add(
+            closest.name_ko
+              ? `${closest.display_name} (${closest.name_ko})`
+              : (closest.display_name || args.query)
+          );
+        }
+      }
+
       return JSON.stringify({ results: [...titles] });
     }
 
