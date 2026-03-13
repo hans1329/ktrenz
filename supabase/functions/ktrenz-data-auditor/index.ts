@@ -165,21 +165,24 @@ async function runFastFullAudit(
 
   const snapshotsByKey = new Map<string, any[]>();
 
-  const batches = chunk(wikiIds, 15);
+  // Query per platform to avoid global LIMIT cutting off artist-platform combos
+  const batches = chunk(wikiIds, 20);
   for (const ids of batches) {
-    const { data: snapshots } = await supabase
-      .from("ktrenz_data_snapshots")
-      .select("wiki_entry_id, platform, collected_at, metrics")
-      .in("wiki_entry_id", ids)
-      .in("platform", REQUIRED_PLATFORMS as unknown as string[])
-      .order("collected_at", { ascending: false })
-      .limit(1200);
+    for (const platform of REQUIRED_PLATFORMS) {
+      const { data: snapshots } = await supabase
+        .from("ktrenz_data_snapshots")
+        .select("wiki_entry_id, platform, collected_at, metrics")
+        .in("wiki_entry_id", ids)
+        .eq("platform", platform)
+        .order("collected_at", { ascending: false })
+        .limit(ids.length * 2);
 
-    for (const snap of snapshots ?? []) {
-      const key = `${snap.wiki_entry_id}|${snap.platform}`;
-      if (!snapshotsByKey.has(key)) snapshotsByKey.set(key, []);
-      const arr = snapshotsByKey.get(key)!;
-      if (arr.length < 2) arr.push(snap);
+      for (const snap of snapshots ?? []) {
+        const key = `${snap.wiki_entry_id}|${snap.platform}`;
+        if (!snapshotsByKey.has(key)) snapshotsByKey.set(key, []);
+        const arr = snapshotsByKey.get(key)!;
+        if (arr.length < 2) arr.push(snap);
+      }
     }
   }
 
