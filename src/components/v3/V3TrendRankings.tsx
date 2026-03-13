@@ -717,6 +717,7 @@ const V3TrendRankings = () => {
             </Link>
           </div>
         </div>
+        {inspectorItem && <V3InspectorPanel item={inspectorItem} onClose={() => setInspectorItem(null)} />}
         <ArtistListingRequestDialog />
       </div>
     );
