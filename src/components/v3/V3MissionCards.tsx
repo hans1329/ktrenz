@@ -63,7 +63,7 @@ function generateMissions(
     missions.push({
       key: `news_${i}`,
       category: "news",
-      title: item.title.slice(0, 50),
+      title: item.title.slice(0, 80),
       description: `${t("mission.readArticle")}`,
       url: item.url,
       points: 8,
