@@ -287,19 +287,17 @@ async function streamChat({
 }
 
 // ── Agent Avatar Component ─────────────────────────────
-const AgentAvatar = ({
-  avatarUrl,
-  size = "sm",
-}: {
+const AgentAvatar = forwardRef<HTMLDivElement, {
   avatarUrl: string | null | undefined;
   size?: "sm" | "lg";
-}) => {
+}>(({ avatarUrl, size = "sm" }, ref) => {
   const sizeClasses = size === "lg"
     ? "w-10 h-10 rounded-xl"
     : "w-9 h-9 rounded-xl";
 
   return (
     <div
+      ref={ref}
       className={cn(
         sizeClasses,
         "relative overflow-hidden shrink-0 flex items-center justify-center",
@@ -313,7 +311,16 @@ const AgentAvatar = ({
       )}
     </div>
   );
-};
+});
+
+AgentAvatar.displayName = "AgentAvatar";
+
+const MarkdownLink = forwardRef<HTMLAnchorElement, any>(({ href, children }, ref) => {
+  if (!href) return <a ref={ref}>{children}</a>;
+  return <V3InlineLinkCard ref={ref} href={href}>{children}</V3InlineLinkCard>;
+});
+
+MarkdownLink.displayName = "MarkdownLink";
 
 // ── Component ──────────────────────────────────────────
 interface V3FanAgentProps {
