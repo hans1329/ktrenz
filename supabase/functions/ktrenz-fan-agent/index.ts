@@ -634,17 +634,30 @@ async function handleTool(
 
       const wikiId = found.wiki_entry_id;
       const tierInfo = await getTierInfo(wikiId);
+      const all = await getAllScores();
+      const totalArtists = all.length;
+
+      // Calculate category-level ranks
+      const ytRank = [...all].sort((a, b) => (b.youtube_score ?? 0) - (a.youtube_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
+      const bzRank = [...all].sort((a, b) => (b.buzz_score ?? 0) - (a.buzz_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
+      const muRank = [...all].sort((a, b) => (b.music_score ?? 0) - (a.music_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
+      const alRank = [...all].sort((a, b) => (b.album_sales_score ?? 0) - (a.album_sales_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
+
+      // Find #1 scores for gap analysis
+      const top1 = all[0];
 
       return JSON.stringify({
         artist: (found.wiki_entries as any)?.title,
         rank: found._rank,
+        total_artists: totalArtists,
         energy_score: Math.round(found.energy_score ?? 0),
         energy_change_24h: +(found.energy_change_24h ?? 0).toFixed(1),
         total_score: Math.round(found.total_score ?? 0),
-        youtube_score: Math.round(found.youtube_score ?? 0),
-        buzz_score: Math.round(found.buzz_score ?? 0),
-        music_score: Math.round(found.music_score ?? 0),
-        album_sales_score: Math.round(found.album_sales_score ?? 0),
+        youtube: { score: Math.round(found.youtube_score ?? 0), rank: ytRank },
+        buzz: { score: Math.round(found.buzz_score ?? 0), rank: bzRank },
+        music: { score: Math.round(found.music_score ?? 0), rank: muRank },
+        album: { score: Math.round(found.album_sales_score ?? 0), rank: alRank },
+        top1_energy: top1 ? { artist: (top1.wiki_entries as any)?.title, score: Math.round(top1.energy_score ?? 0) } : null,
         tier: tierInfo?.tier ?? null,
         latest_video: tierInfo?.latest_video_title ?? null,
         scored_at: found.scored_at,
