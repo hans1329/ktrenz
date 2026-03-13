@@ -48,7 +48,7 @@ function generateMissions(
     missions.push({
       key: `yt_${i}_watch`,
       category: "youtube",
-      title: video.title.slice(0, 40),
+      title: video.title.slice(0, 60),
       description: `${t("mission.watchAndStream")}`,
       url: `https://www.youtube.com/watch?v=${video.id}`,
       points: 10,
@@ -63,7 +63,7 @@ function generateMissions(
     missions.push({
       key: `news_${i}`,
       category: "news",
-      title: item.title.slice(0, 50),
+      title: item.title.slice(0, 80),
       description: `${t("mission.readArticle")}`,
       url: item.url,
       points: 8,
@@ -477,11 +477,11 @@ export default function V3MissionCards({
                          }}
                        />
                      )}
-                    <span className="text-sm font-bold text-foreground line-clamp-2 flex-1">{mission.title}</span>
+                    <span className="text-sm font-bold text-foreground line-clamp-3 flex-1">{mission.title}</span>
                   </div>
 
                   {mission.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">{mission.description}</p>
+                    <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">{mission.description}</p>
                   )}
 
                   {completed && (
