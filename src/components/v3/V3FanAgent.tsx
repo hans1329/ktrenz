@@ -939,7 +939,11 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [user?.id, isPurchasing, pendingPurchaseText, handleSend, refetchUsage, t]);
 
   const handleQuickAction = (action: QuickAction) => {
-    handleSend(action.prompt);
+    const hintMap: Partial<Record<QuickActionKind, "live_rankings" | "trend_analysis">> = {
+      liveRankings: "live_rankings",
+      trendAnalysis: "trend_analysis",
+    };
+    handleSend(action.prompt, false, hintMap[action.id]);
   };
 
   // ── Sub-header ──
