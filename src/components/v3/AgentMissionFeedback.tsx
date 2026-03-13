@@ -322,15 +322,16 @@ function FeedbackDrawer({
 // ── Main Hook ──────────────────────────────────────────
 export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
   const { user } = useAuth();
-  const { activeSlot } = useAgentSlots();
+  const { activeSlot, slots } = useAgentSlots();
   const { language } = useLanguage();
   const [feedbackState, setFeedbackState] = useState<{
     trigger: FeedbackTrigger;
     feedback: FeedbackMessage;
   } | null>(null);
 
-  // Check if this artist is registered as an agent
-  const isRegisteredAgent = !!(activeSlot?.wiki_entry_id && missionStatus?.wikiEntryId && activeSlot.wiki_entry_id === missionStatus.wikiEntryId);
+  // Check if this artist is registered in any agent slot
+  const matchingSlot = slots.find(s => s.wiki_entry_id === missionStatus?.wikiEntryId) ?? null;
+  const isRegisteredAgent = !!matchingSlot;
 
   const BRIEFING_KEY = `ktrenz_mission_briefing_${missionStatus?.wikiEntryId}`;
   const INACTIVITY_KEY = `ktrenz_mission_inactivity_${missionStatus?.wikiEntryId}`;
