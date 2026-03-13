@@ -143,6 +143,38 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// ── Praise messages per language ──────────────────────
+const praiseMessages: Record<string, string[]> = {
+  ko: [
+    "대단해요! 👏 팬의 작은 행동이 아티스트에게 큰 힘이 돼요!",
+    "멋져요! ✨ 이런 꾸준한 활동이 진짜 팬덤의 힘이에요!",
+    "최고예요! 🔥 아티스트도 분명 이 응원을 느낄 거예요!",
+    "잘했어요! 💪 한 걸음씩 모이면 큰 변화가 돼요!",
+    "훌륭해요! 🌟 오늘도 아티스트를 위해 기여했어요!",
+    "굿잡! 🎯 팬들의 활동이 차트와 알고리즘을 움직여요!",
+    "파이팅! 💫 꾸준한 참여가 아티스트의 성장을 만들어요!",
+  ],
+  en: [
+    "Amazing! 👏 Every small action makes a big difference for your artist!",
+    "Great job! ✨ Consistent support is what true fandom is about!",
+    "Awesome! 🔥 Your artist definitely feels this support!",
+    "Well done! 💪 Every step adds up to a big impact!",
+    "Fantastic! 🌟 You've made a real contribution today!",
+    "Nice work! 🎯 Fan activity moves charts and algorithms!",
+    "Keep it up! 💫 Your dedication helps your artist grow!",
+  ],
+  ja: [
+    "すごい！👏 ファンの小さな行動がアーティストの大きな力になります！",
+    "素晴らしい！✨ こういう活動が本当のファンダムの力です！",
+    "最高！🔥 アーティストもきっとこの応援を感じていますよ！",
+  ],
+  zh: [
+    "太棒了！👏 粉丝的每一个行动都对艺人有巨大的意义！",
+    "好厉害！✨ 持续的支持才是真正的追星力量！",
+    "很棒！🔥 你的艺人一定能感受到这份支持！",
+  ],
+};
+
 // ── Template-based feedback generator ──────────────────
 function generateFeedback(
   trigger: FeedbackTrigger,
@@ -152,7 +184,7 @@ function generateFeedback(
   const { completedCount, totalCount, totalPoints, allDone, lastCompletedCategory, artistName } = status;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // For completion/milestone: use category-based action + impact
+  // For completion/milestone: use category-based action + impact + praise
   if (trigger === "completion" || trigger === "milestone") {
     const langData = categoryFeedback[lang] || categoryFeedback.en;
     const cat = lastCompletedCategory && langData[lastCompletedCategory]
@@ -161,6 +193,7 @@ function generateFeedback(
     const catData = langData[cat];
     const action = pickRandom(catData.action);
     const impact = pickRandom(catData.impact);
+    const praise = pickRandom(praiseMessages[lang] || praiseMessages.en);
 
     if (allDone) {
       const allClearMsg = lang === "ko"
@@ -169,14 +202,14 @@ function generateFeedback(
         : lang === "zh" ? `🏆 全部完成！${totalCount}个任务全部搞定！你是${artistName}的终极粉丝！`
         : `🏆 All clear! All ${totalCount} missions done! You're ${artistName}'s ultimate fan!`;
       return {
-        text: `${action}\n\n${impact}\n\n${allClearMsg}`,
+        text: `${action}\n\n${impact}\n\n${praise}\n\n${allClearMsg}`,
         emoji: "🏆",
         useAI: true,
       };
     }
 
     return {
-      text: `${action}\n\n${impact}`,
+      text: `${action}\n\n${impact}\n\n${praise}`,
       emoji: trigger === "completion" ? "🎉" : "🏆",
     };
   }
