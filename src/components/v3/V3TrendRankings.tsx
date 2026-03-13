@@ -137,7 +137,7 @@ const MiniCategoryBars = ({ data }: { data: Record<string, { velocity: number; i
   );
 };
 
-const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }>; onTrack?: () => void }) => {
+const PodiumCard = ({ item, rank, maxScore, energyData, onTrack, onItemClick }: { item: any; rank: number; maxScore: number; energyData?: Record<string, { velocity: number; intensity: number }>; onTrack?: () => void; onItemClick?: (item: any) => void }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
 
@@ -151,7 +151,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; 
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
 
   return (
-    <Link to={`/artist/${entry.slug}`} className="block" onClick={onTrack}>
+    <button className="block w-full text-left" onClick={() => { onTrack?.(); onItemClick?.(item); }}>
       <div className={cn("relative rounded-2xl transition-all active:scale-[0.97]", "bg-gradient-to-br", rankStyles.gradient, rankStyles.glow, "bg-card hover:shadow-card-hover",
         rankStyles.isFirst ? "p-5 border-2 border-yellow-400/20" : "p-4")}>
         <div className="flex items-center justify-between mb-3">
@@ -203,7 +203,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack }: { item: any; 
           </div>
         )}
       </div>
-    </Link>
+    </button>
   );
 };
 
