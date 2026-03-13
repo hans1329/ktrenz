@@ -228,17 +228,6 @@ async function saveFeedbackToChat(
   feedbackText: string,
 ) {
   try {
-    // Find the user's active agent slot for this artist
-    const { data: slot } = await (supabase as any)
-      .from("ktrenz_agent_slots")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("wiki_entry_id", wikiEntryId)
-      .limit(1)
-      .maybeSingle();
-
-    if (!slot) return; // No agent for this artist, skip
-
     // Save as agent message
     await (supabase as any)
       .from("agent_chat_messages")
