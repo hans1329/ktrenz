@@ -437,11 +437,8 @@ export function useAgentMissionFeedback(missionStatus: MissionStatus | null) {
     const feedback = generateFeedback(trigger, status, language);
     setFeedbackState({ trigger, feedback });
 
-    // Save completion feedback to chat history for all users
-    if (trigger === "completion" || trigger === "milestone") {
-      saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
-    } else if (isRegisteredAgent) {
-      // Briefing/inactivity only for registered agents
+    // Save to chat history only for registered agent artists
+    if (isRegisteredAgent) {
       saveFeedbackToChat(user.id, status.wikiEntryId, feedback.text);
     }
   }, [user?.id, language, isRegisteredAgent]);
