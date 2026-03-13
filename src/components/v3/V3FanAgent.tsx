@@ -945,7 +945,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       trendAnalysis: "trend_analysis",
       streamingGuide: "streaming_guide",
     };
-    handleSend(action.prompt, false, hintMap[action.id]);
+    const artistName = activeSlot?.artist_name || "my bias artist";
+    const prompt = action.prompt.replace(/\{artist\}/g, artistName);
+    handleSend(prompt, false, hintMap[action.id]);
   };
 
   // ── Sub-header ──
