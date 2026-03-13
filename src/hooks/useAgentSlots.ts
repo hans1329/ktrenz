@@ -95,16 +95,21 @@ export function useAgentSlots() {
 
     const { data, error } = await (supabase as any)
       .from("ktrenz_agent_slots")
-      .insert({
+      .upsert({
         user_id: user.id,
         slot_index: nextIndex,
         artist_name: artistName,
         wiki_entry_id: wikiEntryId || null,
         is_active: true,
-      })
+      }, { onConflict: "user_id,slot_index", ignoreDuplicates: false })
       .select()
       .single();
     if (error) {
+      // If duplicate, just refetch existing slots
+      if (error.code === "23505") {
+        queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user.id] });
+        return null;
+      }
       toast.error(error.message);
       return null;
     }
