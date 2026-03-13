@@ -376,7 +376,9 @@ export default function V3MissionCards({
     const alreadyDone = completedSet.has(mission.key);
 
     if (isLoggedIn && !alreadyDone) {
-      setPendingMission(mission);
+      setPendingMission({
+        ...mission,
+      });
     }
 
     // Open link
