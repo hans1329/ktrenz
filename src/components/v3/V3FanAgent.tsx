@@ -1166,9 +1166,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <V3BriefingCard data={msg.briefingData} />
             )}
 
-            {msg.role === "assistant" && msg.statsData && msg.statsData.length > 0 && (
-              <V3StatCards stats={msg.statsData} />
-            )}
+
+
 
             {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (
               <V3RankingCards rankings={msg.rankingData} />
