@@ -277,36 +277,37 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
   yt_sentiment: async (url, key) => {
-    console.log("[data-engine] Running yt_sentiment for all Tier 1 artists...");
+    console.log("[data-engine] Running yt_sentiment batch for all Tier 1 artists...");
     const sb = createClient(url, key);
     const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1);
     const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
     const totalCount = targets.length;
 
-    // Edge Function 60초 타임아웃 내에서 안전하게 완료하기 위해
-    // 총 대상 수 기반으로 배치 크기와 딜레이를 동적 계산 (최대 25초 사용)
-    const MAX_LAUNCH_TIME_MS = 25_000;
-    const groupSize = Math.max(3, Math.ceil(totalCount / 12)); // 최대 12 그룹으로 분할
-    const totalGroups = Math.ceil(totalCount / groupSize);
-    const delayMs = totalGroups > 1 ? Math.floor(MAX_LAUNCH_TIME_MS / (totalGroups - 1)) : 0;
+    // 배치로 분할 (한 배치당 ~10명, Edge Function 타임아웃 고려)
+    const BATCH_SIZE = 10;
+    const batches: string[][] = [];
+    for (let i = 0; i < totalCount; i += BATCH_SIZE) {
+      batches.push(targets.slice(i, i + BATCH_SIZE).map((t: any) => t.wiki_entry_id));
+    }
 
-    console.log(`[data-engine] yt_sentiment: ${totalCount} targets, groupSize=${groupSize}, groups=${totalGroups}, delay=${delayMs}ms`);
+    console.log(`[data-engine] yt_sentiment: ${totalCount} artists → ${batches.length} batches of ~${BATCH_SIZE}`);
 
+    // 각 배치를 별도 함수 호출로 발사 (2초 간격)
     let launched = 0;
-    for (const t of targets) {
+    for (let i = 0; i < batches.length; i++) {
       const p = fetch(`${url}/functions/v1/ktrenz-yt-sentiment`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ wikiEntryId: t.wiki_entry_id }),
-      }).catch((e) => console.warn(`[data-engine] yt_sentiment fire error:`, e.message));
+        body: JSON.stringify({ wikiEntryIds: batches[i] }),
+      }).catch((e) => console.warn(`[data-engine] yt_sentiment batch ${i} fire error:`, e.message));
       fireAndForget(p);
-      launched++;
-      if (launched % groupSize === 0 && launched < totalCount) {
-        await new Promise(r => setTimeout(r, delayMs));
+      launched += batches[i].length;
+      if (i < batches.length - 1) {
+        await new Promise(r => setTimeout(r, 2000));
       }
     }
-    console.log(`[data-engine] yt_sentiment: launched ${launched}/${totalCount} artists`);
-    return { status: "launched", launched, total: totalCount };
+    console.log(`[data-engine] yt_sentiment: launched ${launched}/${totalCount} artists in ${batches.length} batches`);
+    return { status: "launched", launched, total: totalCount, batches: batches.length };
   },
   external_videos: (url, key) => runExternalVideos(url, key, false),
   music: runMusic,
