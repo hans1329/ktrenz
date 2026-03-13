@@ -240,6 +240,9 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
             <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
             <div className="w-12 h-px bg-border mx-auto" />
 
+            <V3CorrelationPanel wikiEntryId={item.id} artistName={item.title} />
+            <div className="w-12 h-px bg-border mx-auto" />
+
             <V3MissionCards
               wikiEntryId={item.id}
               artistName={item.title}

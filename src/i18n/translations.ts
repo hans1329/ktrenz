@@ -426,6 +426,15 @@ const translations: Record<string, Record<Language, string>> = {
   "alert.dismiss": { en: "Got it", ko: "확인", ja: "了解", zh: "知道了" },
   "alert.viewInChat": { en: "View in Chat", ko: "채팅에서 보기", ja: "チャットで見る", zh: "在聊天中查看" },
   "alert.liveAlert": { en: "Live Alert", ko: "실시간 알림", ja: "リアルタイム通知", zh: "实时提醒" },
+
+  // ── Correlation Panel ──
+  "correlation.title": { en: "FES vs Outcome", ko: "FES vs 성과 상관관계", ja: "FES vs 成果", zh: "FES vs 成果" },
+  "correlation.gapBar": { en: "Gap", ko: "갭", ja: "ギャップ", zh: "差距" },
+  "correlation.timeSeries": { en: "Trend", ko: "추이", ja: "推移", zh: "趋势" },
+  "correlation.scatter": { en: "Scatter", ko: "분포", ja: "分布", zh: "分布" },
+  "correlation.noData": { en: "Not enough data yet", ko: "데이터가 아직 부족합니다", ja: "データが不足しています", zh: "数据不足" },
+  "correlation.catchUpBadge": { en: "Outcome likely to catch up in ~3 days (avg gap: {gap})", ko: "약 3일 후 성과가 따라붙을 가능성 높음 (평균 갭: {gap})", ja: "約3日後に成果が追いつく可能性あり (平均ギャップ: {gap})", zh: "预计约3天后成果跟上 (平均差距: {gap})" },
+  "correlation.laggingBadge": { en: "FES lagging behind outcome (avg gap: {gap})", ko: "FES가 성과 대비 뒤처지는 중 (평균 갭: {gap})", ja: "FESが成果に遅れている (平均ギャップ: {gap})", zh: "FES落后于成果 (平均差距: {gap})" },
 };
 
 export default translations;
