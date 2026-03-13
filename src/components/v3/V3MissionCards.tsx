@@ -204,21 +204,13 @@ export default function V3MissionCards({
   };
   const today = new Date().toISOString().slice(0, 10);
 
-  // 탭 복귀 감지 → 축하 모달
-  const showCelebration = useCallback((mission: Pick<Mission, "title" | "points" | "category">) => {
-    setCelebration({ title: mission.title, points: mission.points, category: mission.category });
-    setTimeout(() => {
-      setCelebration(prev => prev ? { ...prev, closing: true } : null);
-      setTimeout(() => setCelebration(null), 400);
-    }, 2500);
-  }, []);
-
-  const consumePendingMission = useCallback(() => {
+  // 탭 복귀 감지 → 에이전트 피드백
+  const triggerPendingFeedback = useCallback(() => {
     const pending = getPendingMission();
     if (!pending) return;
     setPendingMission(null);
-    showCelebration(pending);
-  }, [showCelebration]);
+    // Will be handled by agent feedback via onMissionComplete on next render
+  }, []);
 
   useEffect(() => {
     // 리로드 복귀 케이스 대응
