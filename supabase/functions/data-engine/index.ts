@@ -564,33 +564,57 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 이전 모듈의 딜레이 대기 (체이닝에서 전달된 경우) ──
+    const waitBeforeMs = body.waitBeforeMs || 0;
+    if (waitBeforeMs > 0) {
+      console.log(`[data-engine] Waiting ${waitBeforeMs}ms before executing ${mod}...`);
+      await new Promise(r => setTimeout(r, waitBeforeMs));
+    }
+
     if (runId) {
       await sb.from("ktrenz_engine_runs").update({ current_module: mod }).eq("id", currentRunId);
     }
 
     console.log(`[data-engine] Executing module: ${mod} (run: ${currentRunId})`);
 
+    // ── 체이닝 준비: 모듈 실행 전에 다음 체인 호출을 예약 ──
+    // 모듈 실행과 체이닝을 분리하여 60초 타임아웃 문제 해결
+    if (chain && chain.length > 0) {
+      const nextModule = chain[0];
+      const remainingChain = chain.slice(1);
+      const delaySec = DELAY_AFTER[mod as Module] || 10;
+      const delayMs = delaySec * 1000;
+
+      console.log(`[data-engine] Pre-scheduling chain → ${nextModule} (will wait ${delaySec}s before executing)`);
+
+      // 다음 모듈을 즉시 호출하되, waitBeforeMs로 딜레이를 위임
+      const chainPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ module: nextModule, runId: currentRunId, chain: remainingChain, waitBeforeMs: delayMs }),
+      }).catch((e) => console.warn(`[data-engine] Chain fetch to ${nextModule} failed:`, e.message));
+      fireAndForget(chainPromise);
+    }
+
+    // ── 모듈 실행 (fire-and-forget) ──
     let result: any = {};
     try {
-      // 명시적 isBaseline 요청 시에만 baseline=true, 파이프라인 일반 수집은 false
       const shouldBaseline = mod === "energy" && isBaseline === true;
-
-      // 파이프라인 체이닝에서는 fire-and-forget으로 실행하여 60초 타임아웃 방지
-      // 개별 모듈 실행(chain 없음)에서만 waitForCompletion 사용
-      const waitForCompletion = !!runId && !chain?.length;
 
       if (mod === "energy" && shouldBaseline) {
         result = await runEnergy(supabaseUrl, serviceKey, true);
+      } else if (mod === "energy") {
+        result = await runEnergy(supabaseUrl, serviceKey, false);
       } else if (mod === "youtube") {
-        result = await runYouTube(supabaseUrl, serviceKey, waitForCompletion);
+        result = await runYouTube(supabaseUrl, serviceKey, false);
       } else if (mod === "external_videos") {
-        result = await runExternalVideos(supabaseUrl, serviceKey, waitForCompletion);
+        result = await runExternalVideos(supabaseUrl, serviceKey, false);
       } else if (mod === "music") {
-        result = await runMusic(supabaseUrl, serviceKey, waitForCompletion);
+        result = await runMusic(supabaseUrl, serviceKey, false);
       } else if (mod === "hanteo") {
-        result = await runHanteo(supabaseUrl, serviceKey, waitForCompletion);
+        result = await runHanteo(supabaseUrl, serviceKey, false);
       } else if (mod === "buzz") {
-        result = await runBuzz(supabaseUrl, serviceKey, waitForCompletion);
+        result = await runBuzz(supabaseUrl, serviceKey, false);
       } else {
         result = await MODULE_RUNNERS[mod](supabaseUrl, serviceKey);
       }
@@ -600,28 +624,15 @@ Deno.serve(async (req) => {
       result = { error: (e as Error).message };
     }
 
+    // ── 결과 기록 ──
     if (runId) {
       const { data: currentRun } = await sb.from("ktrenz_engine_runs").select("results").eq("id", currentRunId).maybeSingle();
       const updatedResults = { ...(currentRun?.results as any || {}), [mod]: result };
       await sb.from("ktrenz_engine_runs").update({ results: updatedResults }).eq("id", currentRunId);
     }
 
-    // ── 체이닝 ──
-    if (chain && chain.length > 0) {
-      const nextModule = chain[0];
-      const remainingChain = chain.slice(1);
-      const delaySec = DELAY_AFTER[mod as PipelineModule] || 10;
-
-      console.log(`[data-engine] Chaining → ${nextModule} after ${delaySec}s`);
-      await new Promise(r => setTimeout(r, delaySec * 1000));
-
-      const chainPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-        body: JSON.stringify({ module: nextModule, runId: currentRunId, chain: remainingChain }),
-      }).catch((e) => console.warn(`[data-engine] Chain fetch to ${nextModule} failed:`, e.message));
-      fireAndForget(chainPromise);
-    } else if (runId && !chain?.length) {
+    // ── 파이프라인 완료 체크 ──
+    if (runId && !chain?.length) {
       await sb.from("ktrenz_engine_runs")
         .update({ status: "completed", completed_at: new Date().toISOString(), current_module: null })
         .eq("id", currentRunId);
