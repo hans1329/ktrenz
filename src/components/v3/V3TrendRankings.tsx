@@ -207,14 +207,14 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack, onItemClick }: 
   );
 };
 
-const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number; maxScore: number; onTrack?: () => void }) => {
+const RankingRow = ({ item, rank, maxScore, onTrack, onItemClick }: { item: any; rank: number; maxScore: number; onTrack?: () => void; onItemClick?: (item: any) => void }) => {
   const entry = item.wiki_entries as any;
   if (!entry) return null;
   const displayScore = Number(item.displayScore ?? item.total_score ?? 0);
   const scorePercent = maxScore > 0 ? (displayScore / maxScore) * 100 : 0;
 
   return (
-    <Link to={`/artist/${entry.slug}`} onClick={onTrack}>
+    <button className="block w-full text-left" onClick={() => { onTrack?.(); onItemClick?.(item); }}>
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card/50 hover:bg-card transition-colors active:scale-[0.98]">
         <span className="w-6 text-center text-sm font-bold text-muted-foreground">{rank}</span>
         <Avatar className="w-10 h-10 shrink-0">
@@ -245,7 +245,7 @@ const RankingRow = ({ item, rank, maxScore, onTrack }: { item: any; rank: number
           )}
         </div>
       </div>
-    </Link>
+    </button>
   );
 };
 
