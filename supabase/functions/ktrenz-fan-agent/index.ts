@@ -552,15 +552,15 @@ async function handleTool(
           .ilike("title", artist_name)
           .limit(1);
 
-        // Step 2: Try exact Korean name match
+        // Step 2: Try exact Korean/alias name match in tier table
         if (!wikiMatch || wikiMatch.length === 0) {
-          const { data: koExact } = await adminClient
+          const { data: aliasExact } = await adminClient
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko")
-            .ilike("name_ko", artist_name)
+            .or(`name_ko.ilike.${artist_name},display_name.ilike.${artist_name}`)
             .limit(1);
-          if (koExact && koExact.length > 0) {
-            wikiMatch = [{ id: koExact[0].wiki_entry_id, title: koExact[0].display_name }];
+          if (aliasExact && aliasExact.length > 0) {
+            wikiMatch = [{ id: aliasExact[0].wiki_entry_id, title: aliasExact[0].display_name }];
           }
         }
 
@@ -572,23 +572,21 @@ async function handleTool(
             .ilike("title", `%${artist_name}%`)
             .limit(1);
           if (partialMatch && partialMatch.length === 1) {
-            // Only auto-match if exactly one result
             wikiMatch = partialMatch;
           }
         }
 
-        // Step 4: Try partial Korean name match
+        // Step 4: Try partial Korean/alias match
         if (!wikiMatch || wikiMatch.length === 0) {
-          const { data: koPartial } = await adminClient
+          const { data: aliasPartial } = await adminClient
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko")
-            .ilike("name_ko", `%${artist_name}%`)
+            .or(`name_ko.ilike.%${artist_name}%,display_name.ilike.%${artist_name}%`)
             .limit(5);
-          if (koPartial && koPartial.length === 1) {
-            wikiMatch = [{ id: koPartial[0].wiki_entry_id, title: koPartial[0].display_name }];
-          } else if (koPartial && koPartial.length > 1) {
-            // Multiple matches — ask user to clarify
-            const suggestions = koPartial.map((km: any) => `${km.display_name} (${km.name_ko})`);
+          if (aliasPartial && aliasPartial.length === 1) {
+            wikiMatch = [{ id: aliasPartial[0].wiki_entry_id, title: aliasPartial[0].display_name }];
+          } else if (aliasPartial && aliasPartial.length > 1) {
+            const suggestions = aliasPartial.map((km: any) => km.name_ko ? `${km.display_name} (${km.name_ko})` : km.display_name);
             return JSON.stringify({
               success: false,
               action: "artist_not_found",
@@ -599,7 +597,14 @@ async function handleTool(
           }
         }
 
-        // Step 5: Broader fuzzy search as last resort
+        // Step 5: Typo-tolerant fallback + broader suggestions
+        if (!wikiMatch || wikiMatch.length === 0) {
+          const closest = await findClosestTierArtist(artist_name);
+          if (closest) {
+            wikiMatch = [{ id: closest.wiki_entry_id, title: closest.display_name || closest.name_ko || artist_name }];
+          }
+        }
+
         if (!wikiMatch || wikiMatch.length === 0) {
           const { data: fuzzyMatches } = await adminClient
             .from("wiki_entries")
@@ -607,16 +612,17 @@ async function handleTool(
             .ilike("title", `%${artist_name}%`)
             .limit(5);
 
-          const { data: koMatches } = await adminClient
+          const { data: aliasMatches } = await adminClient
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko")
-            .ilike("name_ko", `%${artist_name}%`)
+            .or(`name_ko.ilike.%${artist_name}%,display_name.ilike.%${artist_name}%`)
             .limit(5);
 
           const suggestions: string[] = [];
           for (const m of fuzzyMatches ?? []) suggestions.push(m.title);
-          for (const km of koMatches ?? []) {
-            if (!suggestions.includes(km.display_name)) suggestions.push(`${km.display_name} (${km.name_ko})`);
+          for (const km of aliasMatches ?? []) {
+            const label = km.name_ko ? `${km.display_name} (${km.name_ko})` : km.display_name;
+            if (label && !suggestions.includes(label)) suggestions.push(label);
           }
 
           if (suggestions.length > 0) {
@@ -627,15 +633,15 @@ async function handleTool(
               suggestions,
               message: `"${artist_name}"${eulReul(artist_name)} 정확히 찾을 수 없어요. 혹시 이 중에 있나요? ${suggestions.join(", ")}. 정확한 이름을 말씀해주세요!`,
             });
-          } else {
-            return JSON.stringify({
-              success: false,
-              action: "artist_not_in_system",
-              query: artist_name,
-              suggestions: [],
-              message: `"${artist_name}"${eunNeun(artist_name)} K-TrenZ에 등록되지 않은 아티스트예요. 현재 등록된 아티스트만 최애로 설정할 수 있어요.`,
-            });
           }
+
+          return JSON.stringify({
+            success: false,
+            action: "artist_not_in_system",
+            query: artist_name,
+            suggestions: [],
+            message: `"${artist_name}"${eunNeun(artist_name)} K-TrenZ에 등록되지 않은 아티스트예요. 현재 등록된 아티스트만 최애로 설정할 수 있어요.`,
+          });
         }
 
         const wikiId = wikiMatch[0].id;
