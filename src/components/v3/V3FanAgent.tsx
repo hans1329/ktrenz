@@ -51,8 +51,10 @@ type ChatMessage = {
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
+type QuickActionKind = "fanActivity" | "liveRankings" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings";
 
 interface QuickAction {
+  id: QuickActionKind;
   icon: React.ElementType;
   label: string;
   prompt: string;
@@ -61,12 +63,12 @@ interface QuickAction {
 }
 
 const getQuickActions = (t: (key: string) => string): QuickAction[] => [
-  { icon: Heart, label: t("agent.fanActivity"), prompt: t("agent.prompt.fanActivity"), mode: "chat", color: "text-pink-400" },
-  { icon: TrendingUp, label: t("agent.liveRankings"), prompt: t("agent.prompt.liveRankings"), mode: "trend", color: "text-blue-400" },
-  { icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
-  { icon: Music2, label: t("agent.streamingGuide"), prompt: t("agent.prompt.streamingGuide"), mode: "streaming", color: "text-green-400" },
-  { icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
-  { icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
+  { id: "fanActivity", icon: Heart, label: t("agent.fanActivity"), prompt: t("agent.prompt.fanActivity"), mode: "chat", color: "text-pink-400" },
+  { id: "liveRankings", icon: TrendingUp, label: t("agent.liveRankings"), prompt: t("agent.prompt.liveRankings"), mode: "trend", color: "text-blue-400" },
+  { id: "trendAnalysis", icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
+  { id: "streamingGuide", icon: Music2, label: t("agent.streamingGuide"), prompt: t("agent.prompt.streamingGuide"), mode: "streaming", color: "text-green-400" },
+  { id: "newsBriefing", icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
+  { id: "alertSettings", icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
 ];
 
 const CHAT_URL = `https://jguylowswwgjvotdcsfj.supabase.co/functions/v1/ktrenz-fan-agent`;
