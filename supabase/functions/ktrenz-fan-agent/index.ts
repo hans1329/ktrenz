@@ -2741,6 +2741,7 @@ Deno.serve(async (req) => {
             return;
           }
 
+          const forcedBiasArtist = extractForcedBiasArtist(lastUserMsg?.content ?? "", { allowBareArtist: !activeSlotWikiEntryId });
           if (forcedBiasArtist) {
             const updatingLabel = toolStatusMap.manage_watched_artist?.[userLang] || toolStatusMap.manage_watched_artist?.en || "Updating your artist…";
             sendStatus(controller, updatingLabel);
