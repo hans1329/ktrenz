@@ -20,7 +20,9 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const { wiki_entry_ids, mode } = await req.json().catch(() => ({ wiki_entry_ids: null, mode: "predict" }));
+    const { wiki_entry_ids, mode, batch_offset } = await req.json().catch(() => ({ wiki_entry_ids: null, mode: "predict", batch_offset: 0 }));
+    const offset = batch_offset || 0;
+    const BATCH_SIZE = 10;
 
     // 대상 아티스트
     let targetIds: string[] = wiki_entry_ids || [];
