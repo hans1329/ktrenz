@@ -434,13 +434,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Auto-create default slot if user has none
   const autoCreatingRef = useRef(false);
   useEffect(() => {
-    if (user?.id && slots.length === 0 && !autoCreatingRef.current && slotLimit) {
+    if (user?.id && slots.length === 0 && !slotsLoading && !autoCreatingRef.current && slotLimit) {
       autoCreatingRef.current = true;
       createSlot("New Agent").finally(() => {
         autoCreatingRef.current = false;
       });
     }
-  }, [user?.id, slots.length, slotLimit, createSlot]);
+  }, [user?.id, slots.length, slotsLoading, slotLimit, createSlot]);
 
   // Reset chat state when active slot changes
   const prevSlotIdRef = useRef<string | null | undefined>(undefined);
