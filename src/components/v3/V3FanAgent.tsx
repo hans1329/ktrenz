@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
+import React, { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
-import V3StatCards, { type StatEntry } from "@/components/v3/V3StatCards";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
@@ -47,7 +46,7 @@ type ChatMessage = {
   briefingData?: BriefingData | null;
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
-  statsData?: StatEntry[] | null;
+  
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -316,6 +315,58 @@ const AgentAvatar = forwardRef<HTMLDivElement, {
 });
 
 AgentAvatar.displayName = "AgentAvatar";
+
+// Inline number highlighter for chat text
+function highlightNumbers(text: string): React.ReactNode[] {
+  // Match: +343.8%, -12.5%, #1, #23, 3110점, 632점, 1,234, scores like 3110, percentages, ranks
+  const pattern = /((?:[+\-]\d[\d,]*\.?\d*%)|(?:\d[\d,]*\.?\d*%)|(?:#\d+(?:위)?)|(?:\d[\d,]*\.?\d*(?:점|위|P|p))|(?:(?:^|(?<=\s|：|:))\d[\d,]*\.?\d*(?=$|\s|,|!|\.|\)|、|，)))/g;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const val = match[0];
+    const isPositive = val.startsWith("+") || (val.includes("%") && !val.startsWith("-") && parseFloat(val) > 0);
+    const isNegative = val.startsWith("-");
+    const isRank = val.startsWith("#");
+
+    let className = "inline-flex items-center px-1 py-0.5 rounded font-bold text-[13px] ";
+    if (isPositive) {
+      className += "bg-emerald-500/15 text-emerald-400";
+    } else if (isNegative) {
+      className += "bg-red-500/15 text-red-400";
+    } else if (isRank) {
+      className += "bg-amber-500/15 text-amber-400";
+    } else {
+      className += "bg-primary/10 text-primary";
+    }
+
+    parts.push(<span key={match.index} className={className}>{val}</span>);
+    lastIndex = match.index + val.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [text];
+}
+
+const MarkdownText = ({ children }: { children: React.ReactNode }) => {
+  if (typeof children === "string") {
+    return <>{highlightNumbers(children)}</>;
+  }
+  if (Array.isArray(children)) {
+    return <>{children.map((child, i) =>
+      typeof child === "string" ? <React.Fragment key={i}>{highlightNumbers(child)}</React.Fragment> : child
+    )}</>;
+  }
+  return <>{children}</>;
+};
 
 const MarkdownLink = forwardRef<HTMLAnchorElement, any>(({ href, children }, ref) => {
   if (!href) return <a ref={ref}>{children}</a>;
@@ -724,7 +775,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   rankingData: meta.rankingData ?? m.rankingData,
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
-                  statsData: meta.statsData ?? m.statsData,
+                  
                 } : m
               );
             }
@@ -1149,6 +1200,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   <ReactMarkdown
                     components={{
                       a: MarkdownLink,
+                      p: ({ children }) => <p><MarkdownText>{children}</MarkdownText></p>,
+                      li: ({ children }) => <li><MarkdownText>{children}</MarkdownText></li>,
+                      strong: ({ children }) => <strong><MarkdownText>{children}</MarkdownText></strong>,
                       img: ({ src, alt }) => (
                         <img src={src} alt={alt || ""} className="rounded-lg max-w-full my-1.5 border border-border/20" loading="lazy" />
                       ),
@@ -1167,9 +1221,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <V3BriefingCard data={msg.briefingData} />
             )}
 
-            {msg.role === "assistant" && msg.statsData && msg.statsData.length > 0 && (
-              <V3StatCards stats={msg.statsData} />
-            )}
+
+
 
             {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (
               <V3RankingCards rankings={msg.rankingData} />
