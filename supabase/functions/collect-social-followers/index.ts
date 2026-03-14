@@ -249,10 +249,19 @@ Deno.serve(async (req) => {
     let processed = 0, matched = 0;
     for (const artist of artists) {
       const name = artist.display_name || "";
-      if (!name) continue;
+      const nameKo = (artist as any).name_ko || "";
+      if (!name && !nameKo) continue;
 
-      const normalizedArtist = normalizeName(name);
-      const variants = normalizedArtist.split("|").filter(Boolean);
+      // Build all name variants for matching (display_name + name_ko)
+      const allVariants: string[] = [];
+      if (name) {
+        const normalized = normalizeName(name);
+        allVariants.push(...normalized.split("|").filter(Boolean));
+      }
+      if (nameKo) {
+        const normalizedKo = normalizeName(nameKo);
+        allVariants.push(...normalizedKo.split("|").filter(Boolean));
+      }
 
       // Find matches across platforms
       const findMatch = (lookup: Map<string, PlatformEntry>): PlatformEntry | null => {
