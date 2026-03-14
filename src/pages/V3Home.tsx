@@ -91,7 +91,7 @@ const V3Home = () => {
           </div>
         </main>
       </div>
-      <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
+      <AgentAlertNotification alert={testAlert || pendingAlert} onDismiss={() => { setTestAlert(null); dismissAlert(); }} />
     </>
   );
 };
