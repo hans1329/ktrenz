@@ -6449,6 +6449,7 @@ export type Database = {
           latest_youtube_video_id: string | null
           latest_youtube_video_title: string | null
           name_ko: string | null
+          spotify_artist_id: string | null
           tier: number
           tiktok_handle: string | null
           updated_at: string
@@ -6470,6 +6471,7 @@ export type Database = {
           latest_youtube_video_id?: string | null
           latest_youtube_video_title?: string | null
           name_ko?: string | null
+          spotify_artist_id?: string | null
           tier?: number
           tiktok_handle?: string | null
           updated_at?: string
@@ -6491,6 +6493,7 @@ export type Database = {
           latest_youtube_video_id?: string | null
           latest_youtube_video_title?: string | null
           name_ko?: string | null
+          spotify_artist_id?: string | null
           tier?: number
           tiktok_handle?: string | null
           updated_at?: string
