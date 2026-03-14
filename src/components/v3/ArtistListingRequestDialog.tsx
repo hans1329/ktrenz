@@ -55,7 +55,7 @@ const ArtistListingRequestDialog = () => {
             <Plus className="w-3.5 h-3.5 mr-1" /> {t("listing.request")}
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="text-lg">{t("listing.title")}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
