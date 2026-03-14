@@ -598,6 +598,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 모듈 실행 (fire-and-forget) ──
+    const GUARD_MODULES = ["youtube", "music", "buzz", "social", "hanteo"];
     let result: any = {};
     try {
       const shouldBaseline = mod === "energy" && isBaseline === true;
@@ -620,6 +621,17 @@ Deno.serve(async (req) => {
         result = await MODULE_RUNNERS[mod](supabaseUrl, serviceKey);
       }
       console.log(`[data-engine] Module ${mod} completed:`, JSON.stringify(result).slice(0, 300));
+
+      // ── Pipeline Guard: 수집 모듈 완료 후 이상치 검증 (fire-and-forget) ──
+      if (GUARD_MODULES.includes(mod)) {
+        const guardPromise = fetch(`${supabaseUrl}/functions/v1/ktrenz-pipeline-guard`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ module: mod, engine_run_id: currentRunId }),
+        }).catch((e) => console.warn(`[data-engine] Guard for ${mod} failed:`, e.message));
+        fireAndForget(guardPromise);
+        console.log(`[data-engine] Guard triggered for ${mod}`);
+      }
     } catch (e) {
       console.error(`[data-engine] Module ${mod} failed:`, e);
       result = { error: (e as Error).message };
