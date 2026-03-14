@@ -640,11 +640,9 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                     />
                   )}
                   {rectIndex === 0 ? (
-                    <span className="relative w-full flex justify-center items-center">
-                      <span className="font-black text-white truncate leading-tight drop-shadow-lg"
-                        style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
+                    <span className="relative w-full text-center">
                       <span
-                        className="shrink-0 ml-0.5"
+                        className="absolute left-0 top-1/2 -translate-y-1/2"
                         style={{
                           fontSize: `${Math.max(12, sizeFactor * 2.5)}px`,
                           lineHeight: 1,
@@ -652,6 +650,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                           animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
                         }}
                       >🔥</span>
+                      <span className="font-black text-white truncate leading-tight drop-shadow-lg"
+                        style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                     </span>
                   ) : (
                     <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
