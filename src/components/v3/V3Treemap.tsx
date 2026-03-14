@@ -237,8 +237,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
       const { data, error } = await supabase.from("v3_scores_v2" as any)
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
-          youtube_score, buzz_score, album_sales_score, music_score, fan_score,
-          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, fan_change_24h,
+          youtube_score, buzz_score, album_sales_score, music_score, fan_score, social_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, fan_change_24h, social_change_24h,
           scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, created_at)`)
         .order("total_score", { ascending: false })
