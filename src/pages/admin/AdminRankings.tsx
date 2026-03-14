@@ -196,11 +196,20 @@ const AdminRankings = () => {
         supabase
           .from('v3_scores_v2')
           .select('wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, scored_at'),
-        supabase
-          .from('ktrenz_data_snapshots')
-          .select('wiki_entry_id, platform, collected_at, metrics')
-          .not('wiki_entry_id', 'is', null)
-          .order('collected_at', { ascending: false }),
+        // 최근 48시간 스냅샷만 로드 (1000행 제한 회피)
+        (async () => {
+          const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+          const platforms = ['youtube', 'buzz_multi', 'hanteo', 'apple_music_charts', 'billboard_charts', 'lastfm', 'deezer', 'social_followers'];
+          const { data, error } = await supabase
+            .from('ktrenz_data_snapshots')
+            .select('wiki_entry_id, platform, collected_at, metrics')
+            .not('wiki_entry_id', 'is', null)
+            .in('platform', platforms)
+            .gte('collected_at', since)
+            .order('collected_at', { ascending: false })
+            .limit(5000);
+          return { data, error };
+        })(),
       ]);
 
       if (tiersRes.error) throw tiersRes.error;
