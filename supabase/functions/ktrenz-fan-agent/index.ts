@@ -2146,7 +2146,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { messages, mode, language, agent_slot_id, quick_action } = body;
     const userLang = language || "ko";
-    const quickActionHint = typeof quick_action === "string" ? quick_action : null;
+
+    const quickActionRaw = typeof quick_action === "string" ? quick_action.trim().toLowerCase() : "";
+    const quickActionHintMap: Record<string, "live_rankings" | "trend_analysis" | "streaming_guide" | "fan_activity"> = {
+      live_rankings: "live_rankings",
+      rankings: "live_rankings",
+      liverankings: "live_rankings",
+      trend_analysis: "trend_analysis",
+      trendanalysis: "trend_analysis",
+      streaming_guide: "streaming_guide",
+      streamingguide: "streaming_guide",
+      fan_activity: "fan_activity",
+      fanactivity: "fan_activity",
+    };
+    const quickActionHint = quickActionRaw ? quickActionHintMap[quickActionRaw] ?? null : null;
     const isBriefingMode = mode === "briefing";
     const isClearChatMode = mode === "clear_chat";
 
