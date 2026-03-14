@@ -59,6 +59,35 @@ export default function AgentAlertNotification({
         return commaParts.flatMap(p => splitChunk(p));
       }
 
+      // For CJK (Korean/Japanese/Chinese), split by particles/suffixes
+      const cjkSplit = trimmed.match(/[\u3000-\u9FFF\uAC00-\uD7AF]+|[^\u3000-\u9FFF\uAC00-\uD7AF]+/g);
+      const hasCJK = cjkSplit && cjkSplit.some(s => /[\u3000-\u9FFF\uAC00-\uD7AF]/.test(s));
+
+      if (hasCJK) {
+        // Split Korean/CJK at particles and natural breaks
+        const parts = trimmed.split(/(?<=[을를이가은는에서도의로와과]) |(?<= )/g).filter(Boolean);
+        if (parts.length > 1) {
+          const merged: string[] = [];
+          let buf = "";
+          for (const p of parts) {
+            if ((buf + p).length > MAX_LEN && buf) {
+              merged.push(buf.trim());
+              buf = p;
+            } else {
+              buf += p;
+            }
+          }
+          if (buf.trim()) merged.push(buf.trim());
+          if (merged.length > 1) return merged.flatMap(m => splitChunk(m));
+        }
+        // Force split at MAX_LEN for long CJK without spaces
+        if (trimmed.length > MAX_LEN) {
+          const mid2 = Math.min(MAX_LEN, Math.floor(trimmed.length / 2));
+          return [trimmed.slice(0, mid2), ...splitChunk(trimmed.slice(mid2))];
+        }
+        return [trimmed];
+      }
+
       // Split at nearest space to midpoint
       const mid = Math.floor(trimmed.length / 2);
       let splitAt = -1;
@@ -223,7 +252,7 @@ export default function AgentAlertNotification({
               </AvatarFallback>
             )}
           </Avatar>
-          <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 font-bold tracking-widest uppercase animate-pulse">
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 font-bold tracking-widest uppercase animate-pulse">
             {t("alert.liveAlert")}
           </span>
         </div>
