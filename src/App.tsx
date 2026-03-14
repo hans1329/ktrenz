@@ -36,6 +36,7 @@ import AdminAgencySample from "./pages/admin/AdminAgencySample";
 import AdminCollectionMonitor from "./pages/admin/AdminCollectionMonitor";
 import AdminFesAnalyst from "./pages/admin/AdminFesAnalyst";
 import AdminDataQuality from "./pages/admin/AdminDataQuality";
+import AdminPipelineGuard from "./pages/admin/AdminPipelineGuard";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
