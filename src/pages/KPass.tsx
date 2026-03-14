@@ -111,7 +111,7 @@ const KPassPage = () => {
 
   return (
     <>
-      <SEO title="K-Pass Membership – KTrenZ" description="Unlock premium K-Pop trend data with K-Pass." path="/kpass" />
+      <SEO title="K-Pass Membership – KTrenZ" titleKo="K-Pass 멤버십 – KTrenZ" description="Unlock premium K-Pop trend data with K-Pass." descriptionKo="K-Pass로 프리미엄 K-Pop 트렌드 데이터를 이용하세요." path="/kpass" />
 
       <div className="min-h-screen bg-background pb-24">
         {/* Header */}

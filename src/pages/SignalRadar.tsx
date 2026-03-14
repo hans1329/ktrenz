@@ -10,8 +10,10 @@ const SignalRadar = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Signal Radar – KTrenZ Proprietary Data Infrastructure"
-        description="Signal Radar builds a defensible data moat by collecting exclusive event labels, fandom signals, and attention data that competitors cannot replicate."
+        title="Signal Radar – KTrenZ Data Infrastructure"
+        titleKo="시그널 레이더 – KTrenZ 데이터 인프라"
+        description="Signal Radar collects exclusive event labels, fandom signals, and attention data to build a defensible K-Pop data moat."
+        descriptionKo="독점 이벤트·팬덤·관심 데이터로 K-Pop 데이터 경쟁력을 구축하는 시그널 레이더."
         path="/signal"
       />
 

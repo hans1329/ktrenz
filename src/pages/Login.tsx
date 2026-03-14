@@ -100,7 +100,7 @@ const Login = () => {
 
   return (
     <>
-      <SEO title={t("login.title")} description="Sign in to KTrenZ to access K-Pop trend data and Fan Agent." path="/login" />
+      <SEO title="Sign In – KTrenZ" titleKo="로그인 – KTrenZ" description="Sign in to KTrenZ to access K-Pop trend data and Fan Agent." descriptionKo="KTrenZ에 로그인하여 K-Pop 트렌드 데이터와 팬 에이전트를 이용하세요." path="/login" />
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         
         <div className="w-full max-w-sm space-y-8">
