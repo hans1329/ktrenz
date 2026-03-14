@@ -55,10 +55,10 @@ export default function SEO({
       <link rel="canonical" href={url} />
 
       {/* Hreflang */}
-      <link rel="alternate" hreflang="en" href={url} />
-      <link rel="alternate" hreflang="ko" href={url} />
-      <link rel="alternate" hreflang="ja" href={url} />
-      <link rel="alternate" hreflang="x-default" href={url} />
+      <link rel="alternate" hrefLang="en" href={url} />
+      <link rel="alternate" hrefLang="ko" href={url} />
+      <link rel="alternate" hrefLang="ja" href={url} />
+      <link rel="alternate" hrefLang="x-default" href={url} />
 
       {/* Open Graph */}
       <meta property="og:type" content={type} />
