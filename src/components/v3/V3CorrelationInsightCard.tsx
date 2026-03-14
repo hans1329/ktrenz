@@ -47,38 +47,49 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
     const days = [...byDay.values()];
     if (days.length < 3) return null;
 
-    // Category strength analysis
     const latest = days[days.length - 1];
     const fes = latest.energy_score || 0;
 
-    const catScores = CATEGORIES.map(c => {
-      const score = latest[`${c.key}_score`] || (c.key === "social" ? latest.fan_score || 0 : 0);
-      const gap = fes - score;
-      return { ...c, score, gap };
+    // Find the snapshot ~7 days ago
+    const weekAgoIdx = Math.max(0, days.length - 8);
+    const weekAgo = days[weekAgoIdx];
+
+    // Calculate 7-day change rate per category
+    const catDeltas = CATEGORIES.map(c => {
+      const getScore = (d: any) =>
+        d[`${c.key}_score`] || (c.key === "social" ? d.fan_score || 0 : 0);
+      const now = getScore(latest);
+      const prev = getScore(weekAgo);
+      const delta = prev > 0 ? ((now - prev) / prev) * 100 : now > 0 ? 100 : 0;
+      return { ...c, score: now, delta: Math.round(delta) };
     });
 
-    // Sort: most behind (highest positive gap = FES leads, performance lags)
-    const weakest = [...catScores].sort((a, b) => b.gap - a.gap)[0];
-    const strongest = [...catScores].sort((a, b) => a.gap - b.gap)[0];
+    // Sort by delta: lowest = weakest momentum, highest = strongest momentum
+    const sorted = [...catDeltas].sort((a, b) => a.delta - b.delta);
+    const weakest = sorted[0];
+    const strongest = sorted[sorted.length - 1];
 
-    // Catch-up badge: check last 3 days
+    // Catch-up badge: 3-day sustained gap
     const recent3 = days.slice(-3);
     let catchUp: { type: "catchup" | "lagging"; category: string } | null = null;
 
-    // Check against the weakest category
-    const allOver = recent3.every(d => {
-      const s = d[`${weakest.key}_score`] || (weakest.key === "social" ? d.fan_score || 0 : 0);
-      return (d.energy_score || 0) - s > 15;
-    });
-    if (allOver) catchUp = { type: "catchup", category: weakest.label };
+    const getScore = (d: any, key: string) =>
+      d[`${key}_score`] || (key === "social" ? d.fan_score || 0 : 0);
 
-    const allUnder = recent3.every(d => {
-      const s = d[`${strongest.key}_score`] || (strongest.key === "social" ? d.fan_score || 0 : 0);
-      return (d.energy_score || 0) - s < -15;
-    });
+    // Strongest category consistently outpacing FES
+    const allUnder = recent3.every(d =>
+      getScore(d, strongest.key) > (d.energy_score || 0) * 1.3
+    );
     if (allUnder) catchUp = { type: "lagging", category: strongest.label };
 
-    return { fes, catScores, weakest, strongest, catchUp };
+    // Weakest category consistently trailing
+    const allOver = recent3.every(d => {
+      const s = getScore(d, weakest.key);
+      return s < (d.energy_score || 0) * 0.5 || s === 0;
+    });
+    if (allOver && !catchUp) catchUp = { type: "catchup", category: weakest.label };
+
+    return { fes, catDeltas, weakest, strongest, catchUp };
   }, [snapshots]);
 
   if (!analysis) return null;
