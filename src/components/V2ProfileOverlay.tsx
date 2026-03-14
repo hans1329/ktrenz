@@ -210,14 +210,14 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           <div className="space-y-0.5 pt-1">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:text-foreground"
+              className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
               onClick={() => { onOpenChange(false); navigate("/settings", { state: { fromProfile: true } }); }}
             >
               <Settings className="w-4 h-4" /> <span className="text-sm">{t("common.settings")}</span>
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 h-11 rounded-xl text-destructive hover:text-destructive"
+              className="w-full justify-start gap-3 h-11 rounded-xl text-destructive hover:bg-transparent hover:text-destructive"
               onClick={signOut}
             >
               <LogOut className="w-4 h-4" /> <span className="text-sm">{t("common.signOut")}</span>
