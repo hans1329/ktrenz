@@ -1,6 +1,5 @@
-// Social Followers Collector v4: Spotify Batch API + kpop-radar Hybrid
-// - Spotify followers: Official Spotify Web API Batch endpoint (2 API calls for all artists)
-// - Instagram, Twitter/X, TikTok: kpop-radar.com scrape (Firecrawl, 3 credits)
+// Social Followers Collector v5: kpop-radar Full Scrape (4 platforms)
+// All platforms (Instagram, Twitter/X, TikTok, Spotify) from kpop-radar.com
 // Stores in ktrenz_data_snapshots (platform: "social_followers") + updates v3_scores_v2.social_score
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,95 +11,13 @@ const corsHeaders = {
 
 interface PlatformEntry { rank: number; artistName: string; growth: number; total: number; }
 interface SocialMetrics { instagram_followers: number | null; tiktok_followers: number | null; spotify_followers: number | null; twitter_followers: number | null; }
-interface SpotifyArtistData { followers: number; popularity: number; name: string; }
 
 const SCRAPE_PLATFORMS = [
   { key: "instagram", url: "https://www.kpop-radar.com/instagram" },
   { key: "twitter", url: "https://www.kpop-radar.com/twitter" },
   { key: "tiktok", url: "https://www.kpop-radar.com/tiktok" },
+  { key: "spotify", url: "https://www.kpop-radar.com/spotify" },
 ] as const;
-
-// ─── Spotify API ───
-
-let spotifyToken: string | null = null;
-let spotifyTokenExpiry = 0;
-
-async function getSpotifyToken(): Promise<string> {
-  if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
-  const clientId = Deno.env.get("SPOTIFY_CLIENT_ID");
-  const clientSecret = Deno.env.get("SPOTIFY_CLIENT_SECRET");
-  if (!clientId || !clientSecret) throw new Error("Spotify credentials not configured");
-
-  const resp = await fetch("https://accounts.spotify.com/api/token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  if (!resp.ok) { const t = await resp.text(); throw new Error(`Spotify token error ${resp.status}: ${t}`); }
-  const data = await resp.json();
-  spotifyToken = data.access_token;
-  spotifyTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-  console.log(`[Social/Spotify] Token acquired, expires_in: ${data.expires_in}s, client_id starts with: ${clientId.substring(0, 8)}...`);
-  return spotifyToken!;
-}
-
-/** Fetch all artists using parallel individual calls (10 concurrent) */
-async function getSpotifyArtistsBatch(artistIds: string[]): Promise<Map<string, SpotifyArtistData>> {
-  const result = new Map<string, SpotifyArtistData>();
-  if (!artistIds.length) return result;
-  try {
-    const token = await getSpotifyToken();
-    const CONCURRENCY = 10;
-
-    for (let i = 0; i < artistIds.length; i += CONCURRENCY) {
-      const chunk = artistIds.slice(i, i + CONCURRENCY);
-      const promises = chunk.map(async (id, idx) => {
-        try {
-          const resp = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (!resp.ok) { await resp.text(); return; }
-          const a = await resp.json();
-          // Log first artist's full followers structure for debugging
-          if (i === 0 && idx === 0) {
-            console.log(`[Social/Spotify] Sample response for ${a.name}: followers=${JSON.stringify(a.followers)}, popularity=${a.popularity}`);
-          }
-          if (a) result.set(a.id, { followers: a.followers?.total ?? 0, popularity: a.popularity ?? 0, name: a.name ?? "" });
-        } catch { /* skip */ }
-      });
-      await Promise.all(promises);
-      if (i + CONCURRENCY < artistIds.length) await new Promise(r => setTimeout(r, 200));
-    }
-    console.log(`[Social/Spotify] Fetched ${result.size}/${artistIds.length} artists (parallel individual calls)`);
-  } catch (e) {
-    console.warn(`[Social/Spotify] Fetch error:`, e.message);
-  }
-  return result;
-}
-
-/** Search Spotify for artist by name — returns ID only */
-async function searchSpotifyArtist(name: string): Promise<string | null> {
-  try {
-    const token = await getSpotifyToken();
-    const resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=5`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!resp.ok) { await resp.text(); return null; }
-    const data = await resp.json();
-    const artists = data?.artists?.items;
-    if (!artists?.length) return null;
-
-    const nameLower = name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
-    const exact = artists.find((a: any) => a.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "") === nameLower);
-    return (exact || artists[0]).id;
-  } catch (e) {
-    console.warn(`[Social/Spotify] Search error for ${name}:`, e.message);
-    return null;
-  }
-}
 
 // ─── kpop-radar scrape ───
 
@@ -180,31 +97,27 @@ Deno.serve(async (req) => {
 
   try {
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-    const hasSpotify = !!(Deno.env.get("SPOTIFY_CLIENT_ID") && Deno.env.get("SPOTIFY_CLIENT_SECRET"));
-
-    if (!FIRECRAWL_API_KEY && !hasSpotify) {
-      return new Response(JSON.stringify({ error: "No data sources configured" }), {
+    if (!FIRECRAWL_API_KEY) {
+      return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    console.log(`[Social] Starting hybrid collection (Spotify: ${hasSpotify}, Scrape: ${!!FIRECRAWL_API_KEY})...`);
+    console.log(`[Social] Starting kpop-radar full scrape (4 platforms)...`);
 
-    // Step 1: Scrape kpop-radar (3 platforms in parallel)
+    // Step 1: Scrape all 4 platforms sequentially (avoid rate limit)
     const platformData: Record<string, PlatformEntry[]> = {};
-    if (FIRECRAWL_API_KEY) {
-      for (const platform of SCRAPE_PLATFORMS) {
-        try { platformData[platform.key] = await scrapePlatform(FIRECRAWL_API_KEY, platform.url); }
-        catch (e) { console.error(`[Social] Scrape ${platform.key} failed:`, e.message); platformData[platform.key] = []; }
-        await new Promise(r => setTimeout(r, 500));
-      }
+    for (const platform of SCRAPE_PLATFORMS) {
+      try { platformData[platform.key] = await scrapePlatform(FIRECRAWL_API_KEY, platform.url); }
+      catch (e) { console.error(`[Social] Scrape ${platform.key} failed:`, e.message); platformData[platform.key] = []; }
+      await new Promise(r => setTimeout(r, 500));
     }
-    console.log(`[Social] Scraped: ${Object.values(platformData).reduce((s, v) => s + v.length, 0)} entries`);
+    console.log(`[Social] Scraped totals: ${Object.entries(platformData).map(([k, v]) => `${k}=${v.length}`).join(", ")}`);
 
     // Step 2: Get tier-1 artists
     const { data: artists } = await sb.from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko, spotify_artist_id")
+      .select("wiki_entry_id, display_name, name_ko")
       .eq("tier", 1);
     if (!artists?.length) {
       return new Response(JSON.stringify({ success: true, message: "No artists" }), {
@@ -212,32 +125,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 3: Spotify — resolve missing IDs via search, then batch fetch ALL
-    let spotifyDiscovered = 0;
-    if (hasSpotify) {
-      const needSearch = artists.filter(a => !(a as any).spotify_artist_id && a.display_name);
-      if (needSearch.length > 0) {
-        console.log(`[Social/Spotify] Searching ${needSearch.length} artists without Spotify ID...`);
-        for (const artist of needSearch) {
-          const foundId = await searchSpotifyArtist(artist.display_name || "");
-          if (foundId) {
-            (artist as any).spotify_artist_id = foundId;
-            spotifyDiscovered++;
-            await sb.from("v3_artist_tiers")
-              .update({ spotify_artist_id: foundId })
-              .eq("wiki_entry_id", artist.wiki_entry_id);
-          }
-          await new Promise(r => setTimeout(r, 100));
-        }
-        console.log(`[Social/Spotify] Discovered ${spotifyDiscovered} new IDs`);
-      }
-    }
-
-    // Batch fetch all Spotify data in 2 API calls (max 50 per call)
-    const allSpotifyIds = artists.map(a => (a as any).spotify_artist_id).filter(Boolean) as string[];
-    const spotifyDataMap = hasSpotify ? await getSpotifyArtistsBatch(allSpotifyIds) : new Map<string, SpotifyArtistData>();
-
-    // Step 4: Build scrape lookup maps
+    // Step 3: Build scrape lookup maps
     const platformLookups: Record<string, Map<string, PlatformEntry>> = {};
     for (const [key, entries] of Object.entries(platformData)) {
       const lookup = new Map<string, PlatformEntry>();
@@ -248,8 +136,8 @@ Deno.serve(async (req) => {
       platformLookups[key] = lookup;
     }
 
-    // Step 5: Process each artist
-    let processed = 0, matched = 0, spotifyHits = 0;
+    // Step 4: Process each artist
+    let processed = 0, matched = 0;
 
     for (const artist of artists) {
       const name = artist.display_name || "";
@@ -273,16 +161,12 @@ Deno.serve(async (req) => {
       const igMatch = findMatch(platformLookups.instagram || new Map());
       const twMatch = findMatch(platformLookups.twitter || new Map());
       const tkMatch = findMatch(platformLookups.tiktok || new Map());
-
-      // Spotify from batch data
-      const spId = (artist as any).spotify_artist_id;
-      const spData = spId ? spotifyDataMap.get(spId) : null;
-      if (spData) spotifyHits++;
+      const spMatch = findMatch(platformLookups.spotify || new Map());
 
       const metrics: SocialMetrics = {
         instagram_followers: igMatch?.total ?? null,
         tiktok_followers: tkMatch?.total ?? null,
-        spotify_followers: spData?.followers ?? null,
+        spotify_followers: spMatch?.total ?? null,
         twitter_followers: twMatch?.total ?? null,
       };
 
@@ -316,12 +200,11 @@ Deno.serve(async (req) => {
         platform: "social_followers",
         metrics: {
           ...metrics,
-          spotify_popularity: spData?.popularity ?? null,
-          spotify_source: spId ? "api" : "none",
           instagram_growth: igMatch?.growth ?? null,
           tiktok_growth: tkMatch?.growth ?? null,
           twitter_growth: twMatch?.growth ?? null,
-          source: "hybrid_v4",
+          spotify_growth: spMatch?.growth ?? null,
+          source: "kpop_radar_v5",
         },
       });
 
@@ -335,12 +218,11 @@ Deno.serve(async (req) => {
       processed++;
     }
 
-    console.log(`[Social] Done: ${processed} processed, ${matched} matched, Spotify: ${spotifyHits} hits, ${spotifyDiscovered} discovered`);
+    console.log(`[Social] Done: ${processed} processed, ${matched} matched`);
 
     return new Response(JSON.stringify({
       success: true, processed, matched,
-      spotify: { apiHits: spotifyHits, newlyDiscovered: spotifyDiscovered, batchSize: allSpotifyIds.length },
-      scrapePlatformCounts: Object.fromEntries(Object.entries(platformData).map(([k, v]) => [k, v.length])),
+      platformCounts: Object.fromEntries(Object.entries(platformData).map(([k, v]) => [k, v.length])),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
     console.error("[Social] Fatal:", err);
