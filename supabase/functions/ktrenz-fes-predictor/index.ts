@@ -401,9 +401,9 @@ Generate prediction + fan briefing + agency action items.`;
                       required: ["title", "action", "rationale", "priority", "category", "signal_source"],
                     },
                   },
-                  // Technical reasoning
-                  reasoning: { type: "string" },
-                  reasoning_ko: { type: "string" },
+                  // Technical reasoning (한국어 필수)
+                  reasoning: { type: "string", description: "Technical reasoning in English" },
+                  reasoning_ko: { type: "string", description: "기술적 분석 요약 (한국어, 필수 — 에이전시 대시보드에 표시됨)" },
                   reasoning_ja: { type: "string" },
                   reasoning_zh: { type: "string" },
                 },
