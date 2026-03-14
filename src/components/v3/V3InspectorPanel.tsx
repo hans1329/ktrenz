@@ -2,7 +2,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, X } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, X, Users } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
@@ -24,11 +24,13 @@ export interface InspectorItem {
   albumSalesScore: number;
   musicScore: number;
   fanScore: number;
+  socialScore: number;
   youtubeChange24h: number;
   buzzChange24h: number;
   albumChange24h: number;
   musicChange24h: number;
   fanChange24h: number;
+  socialChange24h: number;
   metadata?: any;
   youtubeChannelId?: string | null;
   latestYoutubeVideoId?: string | null;
@@ -63,7 +65,7 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
+  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0) + (item.socialScore || 0);
   const surging = isSurging(item.energyChange24h);
 
   const encodedName = encodeURIComponent(item.title);
@@ -76,6 +78,7 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 70%, 45%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 90%, 42%)", change: item.albumChange24h },
     { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 70%, 38%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "Social", value: item.socialScore, color: "hsl(210, 80%, 50%)", change: item.socialChange24h },
     { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Fan Activity", value: item.fanScore, color: "hsl(200, 80%, 50%)", change: item.fanChange24h },
   ].filter(c => c.value > 0);
 

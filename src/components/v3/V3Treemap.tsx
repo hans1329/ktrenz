@@ -18,8 +18,8 @@ interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
   energyScore: number; energyChange24h: number; totalScore: number;
   youtubeScore: number; buzzScore: number; twitterScore: number;
-  albumSalesScore: number; musicScore: number; fanScore: number;
-  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number; fanChange24h: number;
+  albumSalesScore: number; musicScore: number; fanScore: number; socialScore: number;
+  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number; fanChange24h: number; socialChange24h: number;
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
   metadata?: any;
@@ -237,8 +237,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
       const { data, error } = await supabase.from("v3_scores_v2" as any)
         .select(`wiki_entry_id, total_score, energy_score, energy_change_24h,
-          youtube_score, buzz_score, album_sales_score, music_score, fan_score,
-          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, fan_change_24h,
+          youtube_score, buzz_score, album_sales_score, music_score, fan_score, social_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, fan_change_24h, social_change_24h,
           scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, created_at)`)
         .order("total_score", { ascending: false })
@@ -310,12 +310,13 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
           energyScore: s.energy_score || 0, energyChange24h: change, totalScore: s.total_score || 0,
           youtubeScore: s.youtube_score || 0, buzzScore: s.buzz_score || 0, twitterScore: 0,
           albumSalesScore: s.album_sales_score || 0, musicScore: s.music_score || 0,
-          fanScore: s.fan_score || 0,
+          fanScore: s.fan_score || 0, socialScore: s.social_score || 0,
           youtubeChange24h: s.youtube_change_24h || 0,
           buzzChange24h: s.buzz_change_24h || 0,
           albumChange24h: s.album_change_24h || 0,
           musicChange24h: s.music_change_24h || 0,
           fanChange24h: s.fan_change_24h || 0,
+          socialChange24h: s.social_change_24h || 0,
           sparkline, trendLabel: getTrendLabel(change, sparkline),
           ema7d: bl?.ema7d ?? null, ema30d: bl?.ema30d ?? null,
           metadata: entry?.metadata || null,
