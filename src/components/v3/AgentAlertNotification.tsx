@@ -41,52 +41,51 @@ export default function AgentAlertNotification({
   const [phase, setPhase] = useState<"enter" | "idle" | "exit">("enter");
   const [currentLine, setCurrentLine] = useState(0);
 
-  // Split body into caption lines
+  // Split body into semantic caption lines
   const captionLines = useMemo(() => {
     if (!alert) return [];
     const raw = alert.body || "";
-    // Aggressively split into short chunks (~20 chars target)
-    const MAX_LEN = 18;
+    const MAX_LEN = 20;
 
-    function splitChunk(text: string): string[] {
+    const isCJK = (s: string) => /[\uAC00-\uD7AF\u3040-\u30FF\u4E00-\u9FFF]/.test(s);
+
+    function splitKorean(text: string): string[] {
       const trimmed = text.trim();
       if (!trimmed) return [];
       if (trimmed.length <= MAX_LEN) return [trimmed];
 
-      // Try comma/semicolon split
-      const commaParts = trimmed.split(/(?<=[,;，；])\s*/).filter(Boolean);
-      if (commaParts.length > 1) {
-        return commaParts.flatMap(p => splitChunk(p));
+      // Split at semantic boundaries: after clause-ending particles/verb endings + space
+      // Prioritize: 했습니다 / 합니다 / 입니다 / 습니다 / 있습니다 / 동안 / 에서 / 와 / 과 / 고 / 며
+      const semanticBreaks = trimmed.split(
+        /(?<=(?:했습니다|합니다|입니다|있습니다|됩니다|겠습니다|습니다|었다|였다|한다|된다|하며|하고|동안|에서|으로|부터)[\.\,]?\s)|(?<=(?:와|과|및)\s)/g
+      ).filter(Boolean);
+
+      if (semanticBreaks.length > 1) {
+        // Recursively split any still-long chunks
+        return semanticBreaks.flatMap(chunk => splitKorean(chunk));
       }
 
-      // For CJK (Korean/Japanese/Chinese), split by particles/suffixes
-      const cjkSplit = trimmed.match(/[\u3000-\u9FFF\uAC00-\uD7AF]+|[^\u3000-\u9FFF\uAC00-\uD7AF]+/g);
-      const hasCJK = cjkSplit && cjkSplit.some(s => /[\u3000-\u9FFF\uAC00-\uD7AF]/.test(s));
-
-      if (hasCJK) {
-        // Split Korean/CJK at particles and natural breaks
-        const parts = trimmed.split(/(?<=[을를이가은는에서도의로와과]) |(?<= )/g).filter(Boolean);
-        if (parts.length > 1) {
-          const merged: string[] = [];
-          let buf = "";
-          for (const p of parts) {
-            if ((buf + p).length > MAX_LEN && buf) {
-              merged.push(buf.trim());
-              buf = p;
-            } else {
-              buf += p;
-            }
-          }
-          if (buf.trim()) merged.push(buf.trim());
-          if (merged.length > 1) return merged.flatMap(m => splitChunk(m));
-        }
-        // Force split at MAX_LEN for long CJK without spaces
-        if (trimmed.length > MAX_LEN) {
-          const mid2 = Math.min(MAX_LEN, Math.floor(trimmed.length / 2));
-          return [trimmed.slice(0, mid2), ...splitChunk(trimmed.slice(mid2))];
-        }
-        return [trimmed];
+      // Fallback: split at space nearest to midpoint
+      const words = trimmed.split(/\s+/);
+      if (words.length >= 2) {
+        const mid = Math.ceil(words.length / 2);
+        const first = words.slice(0, mid).join(" ");
+        const second = words.slice(mid).join(" ");
+        return [...splitKorean(first), ...splitKorean(second)];
       }
+
+      // No spaces — force split
+      if (trimmed.length > MAX_LEN) {
+        const half = Math.floor(trimmed.length / 2);
+        return [trimmed.slice(0, half), trimmed.slice(half)];
+      }
+      return [trimmed];
+    }
+
+    function splitEnglish(text: string): string[] {
+      const trimmed = text.trim();
+      if (!trimmed) return [];
+      if (trimmed.length <= MAX_LEN) return [trimmed];
 
       // Split at nearest space to midpoint
       const mid = Math.floor(trimmed.length / 2);
@@ -97,11 +96,24 @@ export default function AgentAlertNotification({
       }
       if (splitAt > 0 && splitAt < trimmed.length - 1) {
         return [
-          ...splitChunk(trimmed.slice(0, splitAt)),
-          ...splitChunk(trimmed.slice(splitAt + 1)),
+          ...splitEnglish(trimmed.slice(0, splitAt)),
+          ...splitEnglish(trimmed.slice(splitAt + 1)),
         ];
       }
       return [trimmed];
+    }
+
+    function splitChunk(text: string): string[] {
+      const trimmed = text.trim();
+      if (!trimmed) return [];
+
+      // Comma/semicolon split first
+      const commaParts = trimmed.split(/(?<=[,;，；])\s*/).filter(Boolean);
+      if (commaParts.length > 1) {
+        return commaParts.flatMap(p => splitChunk(p));
+      }
+
+      return isCJK(trimmed) ? splitKorean(trimmed) : splitEnglish(trimmed);
     }
 
     const sentences = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
