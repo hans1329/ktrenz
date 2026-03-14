@@ -18,8 +18,8 @@ interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
   energyScore: number; energyChange24h: number; totalScore: number;
   youtubeScore: number; buzzScore: number; twitterScore: number;
-  albumSalesScore: number; musicScore: number; fanScore: number;
-  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number; fanChange24h: number;
+  albumSalesScore: number; musicScore: number; fanScore: number; socialScore: number;
+  youtubeChange24h: number; buzzChange24h: number; albumChange24h: number; musicChange24h: number; fanChange24h: number; socialChange24h: number;
   sparkline: number[]; trendLabel: TrendLabel;
   ema7d: number | null; ema30d: number | null;
   metadata?: any;
