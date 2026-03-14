@@ -110,7 +110,8 @@ const CATEGORY_CONFIG: Record<EnergyCategory, { label: string; icon: React.React
   buzz: { label: "Buzz", icon: <MessageCircle className="w-3 h-3" />, color: "hsl(280, 60%, 55%)" },
   album: { label: "Album", icon: <Disc3 className="w-3 h-3" />, color: "hsl(35, 80%, 50%)" },
   music: { label: "Music", icon: <Music className="w-3 h-3" />, color: "hsl(145, 60%, 45%)" },
-  fan: { label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(200, 80%, 50%)" },
+  social: { label: "Social", icon: <Twitter className="w-3 h-3" />, color: "hsl(195, 85%, 45%)" },
+  fan: { label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(330, 70%, 50%)" },
 };
 
 // ── Sparkline ──

@@ -129,6 +129,7 @@ const V3Rankings = () => {
       case "buzz": return Number(item.buzz_score ?? 0);
       case "album": return Number(item.album_sales_score ?? 0);
       case "music": return Number(item.music_score ?? 0);
+      case "social": return Number(item.social_score ?? 0);
       case "fan": return Number(item.fan_score ?? 0);
       default: return Number(item.total_score ?? 0);
     }
