@@ -15,6 +15,7 @@ import KPass from "./pages/KPass";
 import Settings from "./pages/Settings";
 import PitchDeck from "./pages/PitchDeck";
 import Deck from "./pages/Deck";
+import SignalRadar from "./pages/SignalRadar";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
