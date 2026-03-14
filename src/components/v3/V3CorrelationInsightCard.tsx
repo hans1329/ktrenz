@@ -150,19 +150,25 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName, arti
         </div>
 
         {/* Action insight */}
-        <div className="rounded-xl bg-white/[0.07] border border-white/10 px-3 py-2.5 space-y-1">
+        <button
+          onClick={() => artistSlug && navigate(`/artist/${artistSlug}`)}
+          className={cn(
+            "w-full text-left rounded-xl bg-white/[0.07] border border-white/10 px-3 py-2.5 space-y-1 transition-colors",
+            artistSlug && "hover:bg-white/[0.12] cursor-pointer active:scale-[0.98]"
+          )}
+        >
           <div className="flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <p className="text-xs font-bold text-amber-300/80 uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-amber-300/80 uppercase tracking-wider">
               {t("correlationInsight.focusArea")}
             </p>
           </div>
-          <p className="text-sm sm:text-base text-foreground/90 font-medium leading-snug">
+          <p className="text-xs text-foreground/90 font-medium leading-snug">
             {analysis.weakest.emoji} {t("correlationInsight.weakChannel")
               .replace("{channel}", analysis.weakest.label)
               .replace("{artist}", artistName)}
           </p>
-        </div>
+        </button>
 
         {/* Catch-up badge */}
         {analysis.catchUp && (
