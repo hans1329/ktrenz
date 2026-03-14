@@ -217,9 +217,8 @@ export default function AgentAlertNotification({
             style={{
               textShadow: "0 1px 8px rgba(0,0,0,0.4)",
             }}
-          >
-            {captionLines[currentLine]}
-          </p>
+            dangerouslySetInnerHTML={{ __html: highlightKeywords(captionLines[currentLine], isTitle) }}
+          />
         </div>
 
         {/* Actions */}
