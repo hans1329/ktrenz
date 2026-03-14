@@ -86,6 +86,7 @@ const App = () => (
               <Route path="fes-analyst" element={<AdminFesAnalyst />} />
               <Route path="data-quality" element={<AdminDataQuality />} />
               <Route path="pipeline-guard" element={<AdminPipelineGuard />} />
+              <Route path="signal-events" element={<AdminSignalEvents />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
