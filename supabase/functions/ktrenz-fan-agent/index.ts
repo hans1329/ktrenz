@@ -2472,7 +2472,8 @@ Deno.serve(async (req) => {
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
 
           // Fast-path for quick action buttons to reduce latency and force distinct card types
-          if (quickActionHint === "live_rankings") {
+          const shouldForceLiveRankings = quickActionHint === "live_rankings" || isLiveRankingPrompt;
+          if (shouldForceLiveRankings) {
             const rankingLabel = toolStatusMap.get_rankings?.[userLang] || toolStatusMap.get_rankings?.en || "Checking rankings…";
             sendStatus(controller, rankingLabel);
 
