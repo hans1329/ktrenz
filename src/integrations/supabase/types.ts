@@ -2390,6 +2390,109 @@ export type Database = {
           },
         ]
       }
+      ktrenz_artist_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          event_title: string
+          event_type: string
+          id: string
+          impact_window_days: number
+          labeled_by: string
+          metadata: Json | null
+          source_url: string | null
+          updated_at: string
+          verified: boolean
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          event_title: string
+          event_type: string
+          id?: string
+          impact_window_days?: number
+          labeled_by?: string
+          metadata?: Json | null
+          source_url?: string | null
+          updated_at?: string
+          verified?: boolean
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          event_title?: string
+          event_type?: string
+          id?: string
+          impact_window_days?: number
+          labeled_by?: string
+          metadata?: Json | null
+          source_url?: string | null
+          updated_at?: string
+          verified?: boolean
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_artist_events_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_attention_signals: {
+        Row: {
+          avg_dwell_sections: number | null
+          created_at: string
+          detail_sections: Json
+          detail_views: number
+          external_link_clicks: number
+          id: string
+          ranking_card_clicks: number
+          signal_date: string
+          treemap_clicks: number
+          unique_viewers: number
+          wiki_entry_id: string
+        }
+        Insert: {
+          avg_dwell_sections?: number | null
+          created_at?: string
+          detail_sections?: Json
+          detail_views?: number
+          external_link_clicks?: number
+          id?: string
+          ranking_card_clicks?: number
+          signal_date: string
+          treemap_clicks?: number
+          unique_viewers?: number
+          wiki_entry_id: string
+        }
+        Update: {
+          avg_dwell_sections?: number | null
+          created_at?: string
+          detail_sections?: Json
+          detail_views?: number
+          external_link_clicks?: number
+          id?: string
+          ranking_card_clicks?: number
+          signal_date?: string
+          treemap_clicks?: number
+          unique_viewers?: number
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_attention_signals_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_category_trends: {
         Row: {
           avg_30d: number | null
@@ -2832,6 +2935,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ktrenz_fan_contributions_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_fandom_signals: {
+        Row: {
+          avg_session_depth: number | null
+          created_at: string
+          hot_topics: Json
+          id: string
+          intent_distribution: Json
+          sentiment_avg: number | null
+          sentiment_distribution: Json
+          signal_date: string
+          total_queries: number
+          unique_users: number
+          wiki_entry_id: string
+        }
+        Insert: {
+          avg_session_depth?: number | null
+          created_at?: string
+          hot_topics?: Json
+          id?: string
+          intent_distribution?: Json
+          sentiment_avg?: number | null
+          sentiment_distribution?: Json
+          signal_date: string
+          total_queries?: number
+          unique_users?: number
+          wiki_entry_id: string
+        }
+        Update: {
+          avg_session_depth?: number | null
+          created_at?: string
+          hot_topics?: Json
+          id?: string
+          intent_distribution?: Json
+          sentiment_avg?: number | null
+          sentiment_distribution?: Json
+          signal_date?: string
+          total_queries?: number
+          unique_users?: number
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_fandom_signals_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
             isOneToOne: false
             referencedRelation: "wiki_entries"
