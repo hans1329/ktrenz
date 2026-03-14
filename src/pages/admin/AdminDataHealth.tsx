@@ -22,6 +22,9 @@ interface ArtistHealth {
   youtube_topic_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
+  instagram_handle: string | null;
+  x_handle: string | null;
+  tiktok_handle: string | null;
   wiki_title: string;
   wiki_image: string | null;
 }
