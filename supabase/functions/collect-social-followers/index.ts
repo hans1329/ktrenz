@@ -53,9 +53,23 @@ async function getSpotifyArtistsBatch(artistIds: string[]): Promise<Map<string, 
   if (!artistIds.length) return result;
   try {
     const token = await getSpotifyToken();
+
+    // Quick single-artist test first (BTS) to verify API access
+    const testResp = await fetch(`https://api.spotify.com/v1/artists/3Nrfpe0tUJi4K4DXYWgMUX`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const testBody = await testResp.text();
+    console.log(`[Social/Spotify] Single test: ${testResp.status}, body preview: ${testBody.substring(0, 200)}`);
+
+    if (testResp.status === 403) {
+      console.error(`[Social/Spotify] API access forbidden — check Spotify app permissions`);
+      return result;
+    }
+
     for (let i = 0; i < artistIds.length; i += 50) {
       const batch = artistIds.slice(i, i + 50);
-      const resp = await fetch(`https://api.spotify.com/v1/artists?ids=${batch.join(",")}`, {
+      const url = `https://api.spotify.com/v1/artists?ids=${batch.join(",")}`;
+      const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!resp.ok) {
