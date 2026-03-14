@@ -42,6 +42,7 @@ const CATEGORY_CHIPS: { key: EnergyCategory; label: string; icon: React.ReactNod
   { key: "buzz", label: "Buzz", icon: <Twitter className="w-3 h-3" /> },
   { key: "album", label: "Album", icon: <Disc3 className="w-3 h-3" /> },
   { key: "music", label: "Music", icon: <Music className="w-3 h-3" /> },
+  { key: "social", label: "Social", icon: <Star className="w-3 h-3" /> },
   { key: "fan", label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" /> },
 ];
 
