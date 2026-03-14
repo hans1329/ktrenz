@@ -1315,9 +1315,56 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </PopoverContent>
         </Popover>
 
-        {/* Right: usage indicator */}
-        <div className="min-w-[72px] flex justify-end">
-          {agentUsage && (
+        {/* Right: date picker + usage indicator */}
+        <div className="min-w-[72px] flex items-center justify-end gap-1">
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("rounded-full w-8 h-8", isViewingHistory && "text-primary bg-primary/10")}
+              >
+                <CalendarDays className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end" sideOffset={8}>
+              <div className="p-2 border-b border-border/50">
+                <p className="text-xs text-muted-foreground text-center">{t("agent.chatHistory")}</p>
+              </div>
+              <Calendar
+                mode="single"
+                selected={selectedDate ?? undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const dateStr = format(date, "yyyy-MM-dd");
+                    if (chatDatesSet.has(dateStr)) {
+                      setSelectedDate(date);
+                    }
+                  }
+                  setShowDatePicker(false);
+                }}
+                disabled={(date) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  return !chatDatesSet.has(dateStr);
+                }}
+                className="p-3 pointer-events-auto"
+                locale={ko}
+              />
+              {isViewingHistory && (
+                <div className="p-2 border-t border-border/50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-lg text-xs"
+                    onClick={() => { setSelectedDate(null); setShowDatePicker(false); }}
+                  >
+                    {t("agent.backToLive")}
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          {agentUsage && !isViewingHistory && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/80 text-xs font-medium text-muted-foreground">
               <MessageCircle className="w-3 h-3" />
               <span className={cn(
