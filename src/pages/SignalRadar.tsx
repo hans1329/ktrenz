@@ -275,7 +275,7 @@ const SignalRadar = () => {
               { phase: "Phase 2", status: "✅", title: "Event Label System", desc: "ktrenz_artist_events 테이블 + Admin 등록 UI (/admin/signal-events)" },
               { phase: "Phase 3", status: "✅", title: "Fandom Pulse Aggregator", desc: "ktrenz_fandom_signals 테이블 + Daily Cron (04:30 UTC)" },
               { phase: "Phase 4", status: "✅", title: "Attention Map Aggregator", desc: "ktrenz_attention_signals 테이블 + Daily Cron (04:35 UTC)" },
-              { phase: "Phase 5", status: "⬜", title: "FES Predictor v4", desc: "Signal Layer 데이터를 예측 모델에 주입 → 8차원 예측" },
+              { phase: "Phase 5", status: "✅", title: "FES Predictor v4", desc: "Signal Radar 3개 소스 전부 통합 + signal_confidence_factors + signal_source 태깅" },
             ].map(({ phase, status, title, desc }) => (
               <div key={phase} className="flex gap-3 items-start">
                 <div className="text-sm w-7 shrink-0">{status}</div>

@@ -1,6 +1,6 @@
 // FES Predictor Agent: 패턴 학습 및 예측
-// ktrenz-fes-analyst 실행 후 호출되어 트렌드 데이터를 기반으로 예측 생성
-// v3: Fan/Agency 듀얼 페르소나 + 크로스 아티스트 벤치마킹
+// v4: Signal Radar 통합 (Attention Map + Fandom Pulse + Event Labels)
+// Tool Calling으로 구조화된 출력
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
     }
 
     // ── 크로스 아티스트 벤치마크 데이터 수집 ──
-    // 최근 7일간 다른 아티스트들의 카테고리별 변동 트렌드
     const { data: allTrends } = await sb
       .from("ktrenz_category_trends")
       .select("wiki_entry_id, category, trend_direction, momentum, change_7d, avg_7d, calculated_at")
@@ -43,7 +42,6 @@ Deno.serve(async (req) => {
       .order("calculated_at", { ascending: false })
       .limit(500);
 
-    // 아티스트별 최신 트렌드 매핑
     const artistTrendMap = new Map<string, any[]>();
     for (const t of allTrends || []) {
       const arr = artistTrendMap.get(t.wiki_entry_id) || [];
@@ -59,10 +57,10 @@ Deno.serve(async (req) => {
       .in("id", allArtistIds.slice(0, 100));
     const nameMap = new Map((allArtists || []).map((a: any) => [a.id, a.title]));
 
-    // 최근 급등 사례 수집 (벤치마크용)
+    // 크로스 아티스트 벤치마크 인사이트
     const benchmarkInsights: string[] = [];
     for (const [aid, trends] of artistTrendMap) {
-      if (targetIds.includes(aid)) continue; // 자기 자신 제외
+      if (targetIds.includes(aid)) continue;
       const spikes = trends.filter((t: any) => t.trend_direction === "spike" || (t.momentum && t.momentum > 0.5));
       for (const s of spikes.slice(0, 2)) {
         benchmarkInsights.push(
@@ -71,7 +69,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 최근 외부 영상 출연 성과 (벤치마크용)
+    // 외부 영상 출연 성과
     const { data: recentExtVideos } = await sb
       .from("ktrenz_external_videos")
       .select("wiki_entry_id, channel_name, title, view_count, fetched_at")
@@ -83,13 +81,61 @@ Deno.serve(async (req) => {
       `${nameMap.get(v.wiki_entry_id) || "Unknown"} appeared on "${v.channel_name}" (${v.title}) — ${(v.view_count / 1000000).toFixed(1)}M views`
     ).slice(0, 10);
 
+    // ── Signal Radar 벌크 데이터 수집 (배치 전체) ──
+    const batch = wiki_entry_ids ? targetIds : targetIds.slice(offset, offset + BATCH_SIZE);
+    const batchIds = batch;
+
+    const cutoff7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Parallel bulk queries for Signal Radar data
+    const [attentionRes, fandomRes, eventsRes] = await Promise.all([
+      // Signal-C: Attention Map (최근 7일)
+      sb.from("ktrenz_attention_signals")
+        .select("wiki_entry_id, signal_date, treemap_clicks, detail_views, detail_sections, unique_viewers, ranking_card_clicks, avg_dwell_sections, external_link_clicks")
+        .in("wiki_entry_id", batchIds)
+        .gte("signal_date", cutoff7d)
+        .order("signal_date", { ascending: false }),
+      // Signal-B: Fandom Pulse (최근 7일)
+      sb.from("ktrenz_fandom_signals")
+        .select("wiki_entry_id, signal_date, intent_count, sentiment_avg, intent_distribution, hot_topics, unique_users")
+        .in("wiki_entry_id", batchIds)
+        .gte("signal_date", cutoff7d)
+        .order("signal_date", { ascending: false }),
+      // Signal-A: Event Labels (활성 + 최근 완료)
+      sb.from("ktrenz_artist_events")
+        .select("wiki_entry_id, event_type, event_label, start_date, end_date, impact_window_days, metadata, verified")
+        .in("wiki_entry_id", batchIds)
+        .gte("end_date", new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+    ]);
+
+    // Group by wiki_entry_id
+    const attentionMap = new Map<string, any[]>();
+    for (const a of attentionRes.data || []) {
+      const arr = attentionMap.get(a.wiki_entry_id) || [];
+      arr.push(a);
+      attentionMap.set(a.wiki_entry_id, arr);
+    }
+
+    const fandomMap = new Map<string, any[]>();
+    for (const f of fandomRes.data || []) {
+      const arr = fandomMap.get(f.wiki_entry_id) || [];
+      arr.push(f);
+      fandomMap.set(f.wiki_entry_id, arr);
+    }
+
+    const eventsMap = new Map<string, any[]>();
+    for (const e of eventsRes.data || []) {
+      const arr = eventsMap.get(e.wiki_entry_id) || [];
+      arr.push(e);
+      eventsMap.set(e.wiki_entry_id, arr);
+    }
+
+    console.log(`[ktrenz-fes-predictor] v4 Batch offset=${offset}, batch=${batch.length}, total=${targetIds.length}, signals: attention=${attentionRes.data?.length || 0}, fandom=${fandomRes.data?.length || 0}, events=${eventsRes.data?.length || 0}`);
+
     const results: any[] = [];
 
-    const batch = wiki_entry_ids ? targetIds : targetIds.slice(offset, offset + BATCH_SIZE);
-    console.log(`[ktrenz-fes-predictor] Batch offset=${offset}, batch=${batch.length}, total=${targetIds.length}`);
-
     for (const entryId of batch) {
-      const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const [contribRes, trendRes, entryRes] = await Promise.all([
         sb.from("ktrenz_fes_contributions")
           .select("*")
@@ -115,7 +161,6 @@ Deno.serve(async (req) => {
       if (contributions.length < 2) continue;
 
       // ── 피처 구성 ──
-      // 최신 스냅샷의 z-score를 트렌드에 병합 (AI가 절대 수준 + 방향 모두 파악 가능)
       const latestContrib = contributions[contributions.length - 1];
       const latestZScores: Record<string, number> = {
         youtube: Number(latestContrib?.youtube_z) || 0,
@@ -124,6 +169,11 @@ Deno.serve(async (req) => {
         music: Number(latestContrib?.music_z) || 0,
         social: Number(latestContrib?.social_z) || 0,
       };
+
+      // Signal Radar features per artist
+      const attentionData = attentionMap.get(entryId) || [];
+      const fandomData = fandomMap.get(entryId) || [];
+      const eventData = eventsMap.get(entryId) || [];
 
       const features = {
         artist: artistName,
@@ -136,7 +186,7 @@ Deno.serve(async (req) => {
         category_trends: trends.map((t: any) => ({
           cat: t.category, dir: t.trend_direction, momentum: t.momentum,
           avg_7d: t.avg_7d, avg_30d: t.avg_30d, change_7d: t.change_7d, change_30d: t.change_30d,
-          latest_z: latestZScores[t.category] ?? 0, // 현재 z-score 절대값
+          latest_z: latestZScores[t.category] ?? 0,
         })),
         time_series: {
           youtube: contributions.map((c: any) => Number(c.youtube_z) || 0),
@@ -145,58 +195,119 @@ Deno.serve(async (req) => {
           music: contributions.map((c: any) => Number(c.music_z) || 0),
           social: contributions.map((c: any) => Number(c.social_z) || 0),
         },
-        // 크로스 아티스트 벤치마크 컨텍스트
+        // ── Signal Radar v4 ──
+        signal_attention: attentionData.length > 0 ? {
+          days: attentionData.length,
+          latest: attentionData[0] ? {
+            date: attentionData[0].signal_date,
+            treemap_clicks: attentionData[0].treemap_clicks,
+            detail_views: attentionData[0].detail_views,
+            unique_viewers: attentionData[0].unique_viewers,
+            ranking_card_clicks: attentionData[0].ranking_card_clicks,
+            avg_dwell_sections: attentionData[0].avg_dwell_sections,
+            external_link_clicks: attentionData[0].external_link_clicks,
+            section_distribution: attentionData[0].detail_sections,
+          } : null,
+          trend_7d: {
+            avg_detail_views: attentionData.reduce((s: number, a: any) => s + (a.detail_views || 0), 0) / Math.max(attentionData.length, 1),
+            avg_unique_viewers: attentionData.reduce((s: number, a: any) => s + (a.unique_viewers || 0), 0) / Math.max(attentionData.length, 1),
+            total_treemap_clicks: attentionData.reduce((s: number, a: any) => s + (a.treemap_clicks || 0), 0),
+            total_external_clicks: attentionData.reduce((s: number, a: any) => s + (a.external_link_clicks || 0), 0),
+          },
+        } : null,
+        signal_fandom: fandomData.length > 0 ? {
+          days: fandomData.length,
+          latest: fandomData[0] ? {
+            date: fandomData[0].signal_date,
+            intent_count: fandomData[0].intent_count,
+            sentiment_avg: fandomData[0].sentiment_avg,
+            unique_users: fandomData[0].unique_users,
+            intent_distribution: fandomData[0].intent_distribution,
+            hot_topics: fandomData[0].hot_topics,
+          } : null,
+          trend_7d: {
+            avg_sentiment: fandomData.reduce((s: number, f: any) => s + (Number(f.sentiment_avg) || 0), 0) / Math.max(fandomData.length, 1),
+            total_intents: fandomData.reduce((s: number, f: any) => s + (f.intent_count || 0), 0),
+            avg_unique_users: fandomData.reduce((s: number, f: any) => s + (f.unique_users || 0), 0) / Math.max(fandomData.length, 1),
+          },
+        } : null,
+        signal_events: eventData.length > 0 ? eventData.map((e: any) => ({
+          type: e.event_type,
+          label: e.event_label,
+          start: e.start_date,
+          end: e.end_date,
+          impact_window: e.impact_window_days,
+          verified: e.verified,
+          metadata: e.metadata,
+        })) : null,
+        // 크로스 아티스트 벤치마크
         benchmark_context: {
           other_artists_spikes: benchmarkInsights.slice(0, 8),
           recent_successful_appearances: extVideoInsights.slice(0, 5),
         },
       };
 
-      // ── OpenAI 예측 요청 (듀얼 페르소나) ──
-      const systemPrompt = `You are a K-pop trend analyst AI with TWO output personas for "${artistName}".
+      // ── OpenAI 예측 요청 (v4: Signal Radar 통합 듀얼 페르소나) ──
+      const systemPrompt = `You are a K-pop trend analyst AI (v4) with TWO output personas for "${artistName}".
+You now have access to THREE exclusive Signal Radar data sources IN ADDITION to standard FES metrics:
+
+## SIGNAL RADAR DATA (Exclusive to KTrenZ)
+1. **signal_attention** — User behavior within KTrenZ platform (clicks, views, dwell time)
+   - High detail_views + low FES → "hidden interest" building before public breakout
+   - Rising unique_viewers → growing audience beyond core fans
+   - section_distribution shows what fans are investigating (youtube/music/buzz sections)
+   - external_link_clicks indicate purchase/streaming intent
+2. **signal_fandom** — Fan Agent chat intents and sentiment aggregation
+   - sentiment_avg (0-1) captures real-time emotional temperature
+   - intent_distribution shows what fans are ASKING about (tour dates, album releases, etc.)
+   - hot_topics reveal trending discussion themes
+   - Rising intent_count with stable sentiment → anticipation building
+3. **signal_events** — Labeled events (comeback, festival, variety show, etc.)
+   - Active events provide CONTEXT for current metric movements
+   - impact_window_days indicates expected influence duration
+   - Use events to distinguish organic growth from event-driven spikes
 
 ## PERSONA 1: FAN SUNBAE (친한 팬 선배)
-You are a friendly, experienced fan senior (선배/sunbae) who talks casually to a fellow fan.
-Generate THREE separate pieces:
-
+Generate THREE pieces:
 ### 1. hot_summary — "지금 뭐가 뜨는지" 한줄 요약
-- One punchy sentence about what's currently hot or notable
-- Include the specific category that's moving (YouTube, Buzz, etc.) 
-- Use casual tone with emoji: "YouTube 요즘 터지고 있어! 🔥" or "앨범 쪽은 좀 조용한데 버즈가 살아나는 중 👀"
-- NO numbers, NO percentages, NO technical terms
+- One punchy sentence about what's currently hot
+- Include the specific category moving (YouTube, Buzz, etc.)
+- When signal_attention shows high activity, mention "관심 급등" naturally
+- When signal_fandom shows strong sentiment, weave in fan mood
+- Casual tone with emoji. NO numbers, NO percentages, NO technical terms.
 
 ### 2. fan_action — 팬이 할 수 있는 액션 추천
 - One specific, actionable thing fans can do RIGHT NOW
-- Be practical: "뮤비 스밍 지금 밀면 타이밍 좋을듯!" or "SNS에 해시태그 달아서 버즈 올리자!"
-- Make it feel like a friend suggesting something, not an instruction
-- Include an emoji
+- If an event is active, reference it naturally: "컴백 직전이니까 스밍 미리 준비하자!"
+- If attention is rising, leverage FOMO: "다른 팬들도 슬슬 관심 갖기 시작했어!"
+- Practical, friend-like tone with emoji
 
 ### 3. position_note — 다른 아티스트 대비 위치
-- Compare to the general competitive landscape WITHOUT naming specific other artists
-- Use relative terms: "상위권에서 잘 버티고 있어" or "지금 치고 올라가는 중이야"
-- Reference benchmark_context data but describe it naturally, NEVER mention data sources
+- Compare to competitive landscape WITHOUT naming other artists
+- If signal_attention is strong relative to FES, note the "hidden momentum"
 - One sentence, encouraging tone
 
-IMPORTANT: Write in the target language naturally. Korean should use 반말 (informal speech). English should be casual. Japanese should use タメ口. All should feel like a friend texting.
+IMPORTANT: Write in the target language naturally. Korean=반말, English=casual, Japanese=タメ口.
 
 ## PERSONA 2: AGENCY ACTION ITEMS
-- Write as a senior strategy consultant for a K-pop entertainment agency
-- Be extremely data-driven and specific
-- Reference competitive benchmarks from OTHER artists (provided in benchmark_context) WITHOUT naming the data source
+- Senior strategy consultant, extremely data-driven
+- NOW leverage Signal Radar data for deeper insights:
+  - If attention diverges from FES → "hidden demand" opportunity
+  - If fandom sentiment is strong but FES low → "untapped conversion potential"
+  - If an event is approaching → proactive preparation strategy
+- Reference competitive benchmarks from OTHER artists
 - Suggest 2-3 specific, actionable strategies with clear rationale
-- Each action item should have: title, specific action, expected impact, priority (high/medium/low)
+- Each: title, action, expected_impact, priority, category
 
 ## DATA RULES
 - FES uses z-score normalized category changes (youtube, buzz, album, music, social)
-- CRITICAL: "latest_z" shows the CURRENT absolute z-score level. "dir" shows the 7-day TREND direction.
-  - A high latest_z (e.g., 5+) with "falling" dir means "still very strong but slightly declining from a peak" — NOT "weak and declining"
-  - A low latest_z (e.g., <1) with "falling" dir means "genuinely weak and declining"
-  - ALWAYS consider BOTH latest_z and dir together before making judgments
-- Focus on which category will lead next movement
-- Be honest if data is insufficient
+- CRITICAL: "latest_z" = CURRENT absolute level. "dir" = 7-day TREND direction.
+  - High latest_z + "falling" dir = "still strong but slightly declining from peak"
+  - Low latest_z + "falling" dir = "genuinely weak and declining"
+- signal_* fields may be null if no data collected yet — skip those insights gracefully
 - Provide ALL text fields in 4 languages (EN, KO, JA, ZH)`;
 
-      const userPrompt = `Analyze this FES data and generate dual-persona output:
+      const userPrompt = `Analyze this FES + Signal Radar data and generate v4 dual-persona output:
 
 ${JSON.stringify(features, null, 2)}
 
@@ -218,7 +329,7 @@ Generate prediction + fan briefing + agency action items.`;
             type: "function",
             function: {
               name: "submit_prediction",
-              description: "Submit structured prediction with fan and agency personas",
+              description: "Submit structured prediction with fan and agency personas, including Signal Radar insights",
               parameters: {
                 type: "object",
                 properties: {
@@ -242,50 +353,61 @@ Generate prediction + fan briefing + agency action items.`;
                     },
                     required: ["youtube", "buzz", "album", "music", "social"],
                   },
-                  // Fan sunbae — hot summary (one-liner)
-                  hot_summary: { type: "string", description: "One punchy sentence about what's hot in English" },
-                  hot_summary_ko: { type: "string", description: "Korean 반말" },
-                  hot_summary_ja: { type: "string", description: "Japanese タメ口" },
-                  hot_summary_zh: { type: "string", description: "Chinese casual" },
-                  // Fan sunbae — fan action recommendation
-                  fan_action: { type: "string", description: "Recommended fan action in English" },
-                  fan_action_ko: { type: "string", description: "Korean 반말" },
-                  fan_action_ja: { type: "string", description: "Japanese タメ口" },
-                  fan_action_zh: { type: "string", description: "Chinese casual" },
-                  // Fan sunbae — positioning vs others
-                  position_note: { type: "string", description: "Competitive position note in English" },
-                  position_note_ko: { type: "string", description: "Korean 반말" },
-                  position_note_ja: { type: "string", description: "Japanese タメ口" },
-                  position_note_zh: { type: "string", description: "Chinese casual" },
-                  // Legacy fan_briefing (kept for backward compat, now derived from above 3)
-                  fan_briefing: { type: "string", description: "Combined fan briefing in English (concatenate hot_summary + fan_action + position_note)" },
-                  fan_briefing_ko: { type: "string", description: "Combined fan briefing in Korean" },
-                  fan_briefing_ja: { type: "string", description: "Combined fan briefing in Japanese" },
-                  fan_briefing_zh: { type: "string", description: "Combined fan briefing in Chinese" },
-                  // Agency action items (data-driven, strategic)
+                  // Signal Radar confidence boost
+                  signal_confidence_factors: {
+                    type: "object",
+                    description: "How each signal source influenced the prediction confidence",
+                    properties: {
+                      attention_impact: { type: "string", enum: ["strong", "moderate", "weak", "no_data"], description: "How much attention data influenced prediction" },
+                      fandom_impact: { type: "string", enum: ["strong", "moderate", "weak", "no_data"], description: "How much fandom data influenced prediction" },
+                      event_impact: { type: "string", enum: ["strong", "moderate", "weak", "no_data"], description: "How much event context influenced prediction" },
+                    },
+                    required: ["attention_impact", "fandom_impact", "event_impact"],
+                  },
+                  // Fan sunbae
+                  hot_summary: { type: "string" },
+                  hot_summary_ko: { type: "string" },
+                  hot_summary_ja: { type: "string" },
+                  hot_summary_zh: { type: "string" },
+                  fan_action: { type: "string" },
+                  fan_action_ko: { type: "string" },
+                  fan_action_ja: { type: "string" },
+                  fan_action_zh: { type: "string" },
+                  position_note: { type: "string" },
+                  position_note_ko: { type: "string" },
+                  position_note_ja: { type: "string" },
+                  position_note_zh: { type: "string" },
+                  // Legacy fan_briefing (backward compat)
+                  fan_briefing: { type: "string" },
+                  fan_briefing_ko: { type: "string" },
+                  fan_briefing_ja: { type: "string" },
+                  fan_briefing_zh: { type: "string" },
+                  // Agency action items
                   agency_actions: {
                     type: "array",
                     description: "2-3 strategic action items for the agency",
                     items: {
                       type: "object",
                       properties: {
-                        title: { type: "string", description: "Action title in Korean" },
-                        action: { type: "string", description: "Specific actionable recommendation in Korean" },
-                        rationale: { type: "string", description: "Data-driven rationale in Korean" },
-                        expected_impact: { type: "string", description: "Expected outcome in Korean" },
+                        title: { type: "string" },
+                        action: { type: "string" },
+                        rationale: { type: "string" },
+                        expected_impact: { type: "string" },
                         priority: { type: "string", enum: ["high", "medium", "low"] },
                         category: { type: "string", enum: ["youtube", "buzz", "album", "music", "social"] },
+                        signal_source: { type: "string", enum: ["fes_only", "attention", "fandom", "event", "combined"], description: "Which signal primarily drove this recommendation" },
                       },
-                      required: ["title", "action", "rationale", "priority", "category"],
+                      required: ["title", "action", "rationale", "priority", "category", "signal_source"],
                     },
                   },
                   // Technical reasoning
-                  reasoning: { type: "string", description: "Brief technical reasoning in English" },
-                  reasoning_ko: { type: "string", description: "Brief technical reasoning in Korean" },
-                  reasoning_ja: { type: "string", description: "Brief technical reasoning in Japanese" },
-                  reasoning_zh: { type: "string", description: "Brief technical reasoning in Chinese" },
+                  reasoning: { type: "string" },
+                  reasoning_ko: { type: "string" },
+                  reasoning_ja: { type: "string" },
+                  reasoning_zh: { type: "string" },
                 },
                 required: ["fes_direction", "confidence", "leading_category_next", "category_predictions",
+                  "signal_confidence_factors",
                   "hot_summary", "hot_summary_ko", "fan_action", "fan_action_ko", "position_note", "position_note_ko",
                   "agency_actions", "reasoning"],
               },
@@ -319,7 +441,7 @@ Generate prediction + fan briefing + agency action items.`;
         prediction,
         reasoning: prediction.reasoning,
         features_used: features,
-        model_version: "v3-dual-persona",
+        model_version: "v4-signal-radar",
       });
 
       results.push({ artist: artistName, prediction });
@@ -379,7 +501,7 @@ Generate prediction + fan briefing + agency action items.`;
       }
     }
 
-    // ── 콜백 체이닝: 다음 배치가 있으면 자기 자신을 재호출 ──
+    // ── 콜백 체이닝: 다음 배치 ──
     const nextOffset = offset + BATCH_SIZE;
     let chainedNext = false;
     if (!wiki_entry_ids && nextOffset < targetIds.length) {
@@ -394,7 +516,7 @@ Generate prediction + fan briefing + agency action items.`;
           },
           body: JSON.stringify({ mode, batch_offset: nextOffset }),
         });
-        await chainRes.text(); // consume body
+        await chainRes.text();
         chainedNext = true;
         console.log(`[ktrenz-fes-predictor] Chained next batch offset=${nextOffset}`);
       } catch (e) {
@@ -402,9 +524,9 @@ Generate prediction + fan briefing + agency action items.`;
       }
     }
 
-    console.log(`[ktrenz-fes-predictor] Done: ${results.length} predictions (offset=${offset}, chained=${chainedNext})`);
+    console.log(`[ktrenz-fes-predictor] v4 Done: ${results.length} predictions (offset=${offset}, chained=${chainedNext})`);
 
-    return new Response(JSON.stringify({ ok: true, predictions: results, offset, chained: chainedNext }),
+    return new Response(JSON.stringify({ ok: true, version: "v4-signal-radar", predictions: results, offset, chained: chainedNext }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
