@@ -223,8 +223,11 @@ const SignalRadar = () => {
             ktrenz_attention_signals (daily per artist)<br />
             &nbsp;&nbsp;↓<br />
             FES Predictor / Agency Dashboard / Tier Engine
-          </div>
+        </div>
         </section>
+
+        {/* FES Intelligence Framework + Signal-D */}
+        <SignalRadarIntelligenceSection />
 
         {/* Pipeline Guard */}
         <section className="space-y-4">
