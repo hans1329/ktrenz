@@ -69,9 +69,6 @@ const AdminDataHealth = () => {
       youtube_topic_channel_id: artist.youtube_topic_channel_id || '',
       lastfm_artist_name: artist.lastfm_artist_name || '',
       deezer_artist_id: artist.deezer_artist_id || '',
-      instagram_handle: artist.instagram_handle || '',
-      x_handle: artist.x_handle || '',
-      tiktok_handle: artist.tiktok_handle || '',
     });
   };
 
