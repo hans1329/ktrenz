@@ -280,6 +280,7 @@ const SignalRadar = () => {
               { phase: "Phase 3", status: "✅", title: "Fandom Pulse Aggregator", desc: "ktrenz_fandom_signals 테이블 + Daily Cron (04:30 UTC)" },
               { phase: "Phase 4", status: "✅", title: "Attention Map Aggregator", desc: "ktrenz_attention_signals 테이블 + Daily Cron (04:35 UTC)" },
               { phase: "Phase 5", status: "✅", title: "FES Predictor v4", desc: "Signal Radar 3개 소스 전부 통합 + signal_confidence_factors + signal_source 태깅" },
+              { phase: "Phase 6", status: "📋", title: "Revenue Pulse (Signal-D)", desc: "ktrenz_revenue_signals 테이블 + Buzz↔Performance 전환율 계산 + Agency Dashboard 연동" },
             ].map(({ phase, status, title, desc }) => (
               <div key={phase} className="flex gap-3 items-start">
                 <div className="text-sm w-7 shrink-0">{status}</div>
