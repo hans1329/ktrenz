@@ -211,50 +211,98 @@ const AdminPipelineGuard = () => {
         </Card>
       ) : (
         <div className="space-y-2">
-          {logs.map((log: any) => (
-            <Card key={log.id} className={log.resolved ? "opacity-50" : ""}>
-              <CardContent className="py-3 px-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant={log.action === "block" ? "destructive" : "secondary"} className="text-xs">
-                        {log.action === "block" ? "🚫 BLOCK" : "⚠️ WARN"}
-                      </Badge>
-                      <span className="text-sm font-medium truncate">
-                        {log.wiki_entry?.title || log.wiki_entry_id?.slice(0, 8)}
-                      </span>
-                      <Badge variant="outline" className="text-xs">{log.module}</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground space-x-3">
-                      <span>{RULE_LABELS[log.guard_rule] || log.guard_rule}</span>
-                      {log.delta_pct !== null && (
-                        <span className={log.delta_pct < 0 ? "text-red-500" : "text-amber-500"}>
-                          {log.delta_pct > 0 ? "+" : ""}{log.delta_pct}%
+          {logs.map((log: any) => {
+            const isBlock = log.action === "block";
+            const isUnresolved = !log.resolved;
+            return (
+              <Card
+                key={log.id}
+                className={
+                  log.resolved
+                    ? "opacity-40"
+                    : isBlock
+                    ? "border-destructive/60 bg-destructive/5 shadow-[0_0_12px_-2px_hsl(var(--destructive)/0.25)]"
+                    : ""
+                }
+              >
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {isBlock && isUnresolved && (
+                          <span className="relative flex h-2.5 w-2.5 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive" />
+                          </span>
+                        )}
+                        <Badge
+                          variant={isBlock ? "destructive" : "secondary"}
+                          className={isBlock ? "text-xs font-bold animate-pulse" : "text-xs"}
+                        >
+                          {isBlock ? "🚫 BLOCK — 수집 실패" : "⚠️ WARN"}
+                        </Badge>
+                        <span className="text-sm font-medium truncate">
+                          {log.wiki_entry?.title || log.wiki_entry_id?.slice(0, 8)}
                         </span>
+                        <Badge variant="outline" className="text-xs">{log.module}</Badge>
+                      </div>
+
+                      {/* BLOCK: 상세 실패 정보 강조 */}
+                      {isBlock && isUnresolved ? (
+                        <div className="mt-2 p-2 rounded bg-destructive/10 border border-destructive/20 text-xs space-y-1">
+                          <div className="font-semibold text-destructive">
+                            {RULE_LABELS[log.guard_rule] || log.guard_rule}
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
+                            <span>이전 값:</span>
+                            <span className="font-mono">{JSON.stringify(log.previous_value)}</span>
+                            <span>현재 값:</span>
+                            <span className="font-mono font-bold text-destructive">{JSON.stringify(log.current_value)}</span>
+                            {log.delta_pct !== null && (
+                              <>
+                                <span>변동률:</span>
+                                <span className="font-bold text-destructive">{log.delta_pct > 0 ? "+" : ""}{log.delta_pct}%</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-destructive/70 pt-1">
+                            ⚠ 이 스냅샷은 플래그 처리되어 다운스트림 계산에서 제외됩니다
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground space-x-3">
+                          <span>{RULE_LABELS[log.guard_rule] || log.guard_rule}</span>
+                          {log.delta_pct !== null && (
+                            <span className={log.delta_pct < 0 ? "text-destructive" : "text-amber-500"}>
+                              {log.delta_pct > 0 ? "+" : ""}{log.delta_pct}%
+                            </span>
+                          )}
+                          <span className="font-mono">
+                            {JSON.stringify(log.previous_value)} → {JSON.stringify(log.current_value)}
+                          </span>
+                        </div>
                       )}
-                      <span>
-                        {JSON.stringify(log.previous_value)} → {JSON.stringify(log.current_value)}
-                      </span>
+
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(log.created_at).toLocaleString("ko-KR")}
+                        {log.engine_run_id && <span className="ml-2">Run: {log.engine_run_id.slice(0, 8)}</span>}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-1">
-                      {new Date(log.created_at).toLocaleString("ko-KR")}
-                      {log.engine_run_id && <span className="ml-2">Run: {log.engine_run_id.slice(0, 8)}</span>}
-                    </div>
+                    {isUnresolved && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resolveMutation.mutate(log.id)}
+                        disabled={resolveMutation.isPending}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
-                  {!log.resolved && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => resolveMutation.mutate(log.id)}
-                      disabled={resolveMutation.isPending}
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
