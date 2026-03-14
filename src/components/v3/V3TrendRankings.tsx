@@ -169,7 +169,10 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack, onItemClick }: 
             <AvatarFallback className={cn("bg-muted font-bold", rankStyles.isFirst ? "text-xl" : "text-lg")}>{entry.title?.[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className={cn("font-bold text-foreground truncate", rankStyles.isFirst ? "text-lg" : "text-sm")}>{entry.title}</p>
+            <p className={cn("font-bold text-foreground truncate flex items-center gap-1.5", rankStyles.isFirst ? "text-lg" : "text-sm")}>
+              {entry.title}
+              {item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold shrink-0 leading-none">NEW</span>}
+            </p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {item.youtube_score > 0 && (
                 <div className="flex items-center gap-0.5">
