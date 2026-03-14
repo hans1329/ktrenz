@@ -39,6 +39,7 @@ import AdminFesAnalyst from "./pages/admin/AdminFesAnalyst";
 import AdminDataQuality from "./pages/admin/AdminDataQuality";
 import AdminPipelineGuard from "./pages/admin/AdminPipelineGuard";
 import AdminSignalEvents from "./pages/admin/AdminSignalEvents";
+import AdminListingRequests from "./pages/admin/AdminListingRequests";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
