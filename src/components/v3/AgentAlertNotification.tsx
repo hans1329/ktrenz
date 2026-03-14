@@ -46,7 +46,7 @@ export default function AgentAlertNotification({
     if (!alert) return [];
     const raw = alert.body || "";
     // Aggressively split into short chunks (~20 chars target)
-    const MAX_LEN = 25;
+    const MAX_LEN = 18;
 
     function splitChunk(text: string): string[] {
       const trimmed = text.trim();
