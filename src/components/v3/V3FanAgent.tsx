@@ -737,7 +737,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // --- AI Prediction Card seed message pickup ---
   useEffect(() => {
-    if (!activeSlot?.wiki_entry_id || isStreaming) return;
+    if (!activeSlot?.wiki_entry_id || isStreaming || agentUsage === undefined) return;
     try {
       const raw = localStorage.getItem("ktrenz_agent_seed");
       if (!raw) return;
