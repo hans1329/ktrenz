@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Minus, Zap, Bar
 interface Props {
   wikiEntryId: string;
   artistName: string;
+  artistSlug?: string;
 }
 
 const CATEGORIES = [
@@ -18,8 +20,9 @@ const CATEGORIES = [
   { key: "social", label: "Social", emoji: "📱" },
 ] as const;
 
-export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Props) {
+export default function V3CorrelationInsightCard({ wikiEntryId, artistName, artistSlug }: Props) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const fromDate = new Date(Date.now() - 14 * 86400000).toISOString();
 
   const { data: snapshots } = useQuery({
@@ -147,19 +150,25 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
         </div>
 
         {/* Action insight */}
-        <div className="rounded-xl bg-white/[0.07] border border-white/10 px-3 py-2.5 space-y-1">
+        <button
+          onClick={() => artistSlug && navigate(`/artist/${artistSlug}`)}
+          className={cn(
+            "w-full text-left rounded-xl bg-white/[0.07] border border-white/10 px-3 py-2.5 space-y-1 transition-colors",
+            artistSlug && "hover:bg-white/[0.12] cursor-pointer active:scale-[0.98]"
+          )}
+        >
           <div className="flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <p className="text-xs font-bold text-amber-300/80 uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-amber-300/80 uppercase tracking-wider">
               {t("correlationInsight.focusArea")}
             </p>
           </div>
-          <p className="text-sm sm:text-base text-foreground/90 font-medium leading-snug">
+          <p className="text-xs text-foreground/90 font-medium leading-snug">
             {analysis.weakest.emoji} {t("correlationInsight.weakChannel")
               .replace("{channel}", analysis.weakest.label)
               .replace("{artist}", artistName)}
           </p>
-        </div>
+        </button>
 
         {/* Catch-up badge */}
         {analysis.catchUp && (
