@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { X, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { AgentAlert } from "@/hooks/useAgentAlerts";
@@ -16,28 +14,42 @@ export default function AgentAlertNotification({
 }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [phase, setPhase] = useState<"enter" | "idle" | "exit">("enter");
+
+  // Split body into caption lines
+  const captionLines = useMemo(() => {
+    if (!alert) return [];
+    const raw = alert.body || "";
+    // Split on periods, exclamation marks, or question marks followed by space
+    const parts = raw.split(/(?<=[.!?。！？])\s+/).filter(Boolean);
+    return parts.length > 0 ? parts : [raw];
+  }, [alert]);
 
   useEffect(() => {
     if (alert) {
-      // Small delay so drawer animates in
-      const timer = setTimeout(() => setOpen(true), 300);
+      const timer = setTimeout(() => {
+        setVisible(true);
+        setPhase("enter");
+      }, 100);
       return () => clearTimeout(timer);
     } else {
-      setOpen(false);
+      setVisible(false);
+      setPhase("enter");
     }
   }, [alert]);
 
-  if (!alert) return null;
+  if (!alert || !visible) return null;
 
   const handleClose = () => {
-    setOpen(false);
-    setTimeout(onDismiss, 300);
+    setPhase("exit");
+    setTimeout(() => {
+      setVisible(false);
+      onDismiss();
+    }, 400);
   };
 
   const handleGoToChat = () => {
-    setOpen(false);
-    // Store a seed so the agent auto-sends an analysis query
     if (alert) {
       const seedPrompts: Record<string, Record<string, string>> = {
         energy_spike: {
@@ -75,62 +87,111 @@ export default function AgentAlertNotification({
         createdAt: Date.now(),
       }));
     }
+    setPhase("exit");
     setTimeout(() => {
+      setVisible(false);
       onDismiss();
       navigate("/agent");
-    }, 300);
+    }, 400);
   };
 
-  return (
-    <Drawer open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DrawerContent className="mx-auto mb-2 rounded-2xl max-w-[480px]">
-        <div className="px-5 py-5 space-y-4">
-          {/* Header */}
-          <div className="flex items-start gap-3">
-            <Avatar className="w-12 h-12 border-2 border-primary/20 shrink-0">
-              {alert.slot.avatar_url ? (
-                <AvatarImage src={alert.slot.avatar_url} alt={alert.artistName} className="object-cover" />
-              ) : (
-                <AvatarFallback className="bg-primary/20 text-primary text-lg">
-                  {alert.emoji}
-                </AvatarFallback>
-              )}
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 font-bold animate-pulse">
-                  {t("alert.liveAlert")}
-                </span>
-              </div>
-              <p className="text-base font-bold text-foreground">{alert.title}</p>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{alert.body}</p>
-            </div>
-            <button
-              onClick={handleClose}
-              className="shrink-0 p-1 rounded-full hover:bg-muted transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
+  const isExiting = phase === "exit";
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleClose}
-              className="flex-1 h-10 rounded-xl bg-muted text-sm font-semibold text-foreground transition-colors hover:bg-muted/80"
-            >
-              {t("alert.dismiss")}
-            </button>
-            <button
-              onClick={handleGoToChat}
-              className="flex-1 h-10 rounded-xl bg-primary text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary/90"
-            >
-              <MessageCircle className="w-4 h-4" />
-              {t("alert.viewInChat")}
-            </button>
-          </div>
+  return (
+    <div
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-500 ${
+        isExiting ? "opacity-0" : "opacity-100"
+      }`}
+      style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(12px)" }}
+      onClick={handleClose}
+    >
+      {/* Close button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); handleClose(); }}
+        className="absolute top-4 right-4 p-2 rounded-full text-white/60 hover:text-white transition-colors z-10"
+        style={{ paddingTop: "env(safe-area-inset-top, 16px)" }}
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      {/* Content container */}
+      <div
+        className="flex flex-col items-center gap-6 px-8 max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Avatar + LIVE badge */}
+        <div
+          className={`flex flex-col items-center gap-3 transition-all duration-700 ${
+            isExiting ? "opacity-0 scale-90" : "opacity-100 scale-100"
+          }`}
+          style={{ animationDelay: "0ms" }}
+        >
+          <Avatar className="w-20 h-20 border-2 border-primary/40 shadow-[0_0_30px_rgba(234,88,12,0.3)]">
+            {alert.slot.avatar_url ? (
+              <AvatarImage src={alert.slot.avatar_url} alt={alert.artistName} className="object-cover" />
+            ) : (
+              <AvatarFallback className="bg-primary/20 text-primary text-3xl">
+                {alert.emoji}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold tracking-wider uppercase animate-pulse">
+            {t("alert.liveAlert")}
+          </span>
         </div>
-      </DrawerContent>
-    </Drawer>
+
+        {/* Title - Reels-style caption */}
+        <h2
+          className="text-xl font-bold text-white text-center leading-snug caption-line"
+          style={{
+            animationDelay: "200ms",
+            animationFillMode: "both",
+            textShadow: "0 2px 20px rgba(0,0,0,0.8)",
+          }}
+        >
+          {alert.title}
+        </h2>
+
+        {/* Body lines - staggered Reels captions */}
+        <div className="flex flex-col items-center gap-3 w-full">
+          {captionLines.map((line, i) => (
+            <p
+              key={i}
+              className="text-[15px] text-white/80 text-center leading-relaxed caption-line font-medium"
+              style={{
+                animationDelay: `${400 + i * 300}ms`,
+                animationFillMode: "both",
+                textShadow: "0 1px 12px rgba(0,0,0,0.6)",
+              }}
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div
+          className="flex gap-3 w-full mt-4 caption-line"
+          style={{
+            animationDelay: `${400 + captionLines.length * 300 + 200}ms`,
+            animationFillMode: "both",
+          }}
+        >
+          <button
+            onClick={handleClose}
+            className="flex-1 h-12 rounded-2xl bg-white/10 text-sm font-semibold text-white/80 transition-colors hover:bg-white/20 backdrop-blur-sm"
+          >
+            {t("alert.dismiss")}
+          </button>
+          <button
+            onClick={handleGoToChat}
+            className="flex-1 h-12 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary/90 shadow-[0_0_20px_rgba(234,88,12,0.4)]"
+          >
+            <MessageCircle className="w-4 h-4" />
+            {t("alert.viewInChat")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
