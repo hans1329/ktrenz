@@ -17,24 +17,6 @@ const V3Home = () => {
   const isSubPage = activeTab === "agent";
   const { pendingAlert, dismissAlert } = useAgentAlerts();
 
-  // ── TEST: fake alert for dev ──
-  const [testAlert, setTestAlert] = useState<any>(null);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTestAlert({
-        id: "test-1",
-        type: "energy_spike" as const,
-        artistName: "aespa",
-        wikiEntryId: "test",
-        title: "🔥 aespa Energy Surging!",
-        body: "Energy score jumped +12.4% in the last 6 hours. YouTube views and social mentions are driving the spike, likely linked to a new music video teaser drop.",
-        emoji: "🔥",
-        slot: { avatar_url: "https://i.scdn.co/image/ab6761610000e5eb2b32a5e024c2aab2e1bb833e" } as any,
-        timestamp: Date.now(),
-      });
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
 
   // V3 다크 테마 적용
   useEffect(() => {
@@ -68,7 +50,7 @@ const V3Home = () => {
           {renderContent()}
         </div>
         <V3TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-        <AgentAlertNotification alert={testAlert || pendingAlert} onDismiss={() => { setTestAlert(null); dismissAlert(); }} />
+        <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
       </>
     );
   }
