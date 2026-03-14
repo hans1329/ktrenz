@@ -163,12 +163,6 @@ export default function AgentAlertNotification({
       onClick={handleClose}
     >
       {/* Close */}
-      <button
-        onClick={(e) => { e.stopPropagation(); handleClose(); }}
-        className="absolute top-4 right-4 p-2 rounded-full text-white/40 hover:text-white/80 transition-colors z-10"
-      >
-        <X className="w-5 h-5" />
-      </button>
 
       {/* Dot indicators */}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -230,13 +224,13 @@ export default function AgentAlertNotification({
         }`}>
           <button
             onClick={handleClose}
-            className="flex-1 h-11 rounded-2xl bg-white/8 border border-white/10 text-sm font-medium text-white/70 transition-colors hover:bg-white/15"
+            className="flex-1 h-11 rounded-2xl bg-white/8 border border-white/30 text-sm font-medium text-white/80 transition-colors hover:bg-white/15"
           >
             {t("alert.dismiss")}
           </button>
           <button
             onClick={handleGoToChat}
-            className="flex-1 h-11 rounded-2xl bg-primary/90 text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary shadow-[0_0_24px_rgba(234,88,12,0.3)]"
+            className="flex-1 h-11 rounded-2xl bg-primary/90 border border-primary/60 text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary shadow-[0_0_24px_rgba(234,88,12,0.3)]"
           >
             <MessageCircle className="w-4 h-4" />
             {t("alert.viewInChat")}
