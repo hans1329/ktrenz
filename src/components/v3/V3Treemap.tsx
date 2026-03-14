@@ -640,10 +640,12 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                     />
                   )}
                   {rectIndex === 0 ? (
-                    <span className="flex items-center gap-1 w-full justify-center">
+                    <span className="relative w-full flex justify-center items-center">
                       <span
-                        className="shrink-0"
+                        className="absolute shrink-0"
                         style={{
+                          right: '100%',
+                          marginRight: '2px',
                           fontSize: `${Math.max(14, sizeFactor * 3)}px`,
                           lineHeight: 1,
                           filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
