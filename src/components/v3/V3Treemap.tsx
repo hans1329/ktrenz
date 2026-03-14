@@ -604,6 +604,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                       speed={Math.max(0.1, Math.min(1, absChange / maxAbsChange))}
                       density={isTop3 ? 0.75 : 0.5}
                       color="hsl(0, 0%, 100%)"
+                      shape={isFirst ? "star" : "circle"}
                     />
                   );
                 })()}
@@ -627,17 +628,6 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   className="relative z-10 flex flex-col items-center w-full px-0.5"
                   style={{ gap: `${Math.max(0, sizeFactor * 0.2)}px`, overflow: "visible" }}
                 >
-                  {rectIndex === 0 && (
-                    <span
-                      className="block"
-                      style={{
-                        fontSize: `${Math.max(18, sizeFactor * 4)}px`,
-                        lineHeight: 1,
-                        filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
-                        animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
-                      }}
-                    >🔥</span>
-                  )}
                   {isMostFalling && isMedium && (
                     <Snowflake
                       className="text-blue-200 drop-shadow-lg"
@@ -649,8 +639,24 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                       }}
                     />
                   )}
-                  <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                    style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
+                  {rectIndex === 0 ? (
+                    <span className="flex items-center gap-1 w-full justify-center">
+                      <span
+                        className="shrink-0"
+                        style={{
+                          fontSize: `${Math.max(14, sizeFactor * 3)}px`,
+                          lineHeight: 1,
+                          filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
+                          animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+                        }}
+                      >🔥</span>
+                      <span className="font-black text-white truncate leading-tight drop-shadow-lg"
+                        style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
+                    </span>
+                  ) : (
+                    <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
+                      style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
+                  )}
                   <span className="font-black text-white drop-shadow-lg"
                     style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}°</span>
                   {isLarge && (
