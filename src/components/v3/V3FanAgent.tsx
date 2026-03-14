@@ -789,27 +789,78 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           .eq("wiki_entry_id", activeSlot.wiki_entry_id)
           .eq("platform", "naver_news")
           .order("collected_at", { ascending: false })
-          .limit(1);
+          .limit(3);
 
-        const snapshot = snapshots?.[0];
-        if (!snapshot?.raw_response) return;
+        if (!snapshots?.length) return;
 
-        const topItems = snapshot.raw_response?.top_items ?? snapshot.raw_response?.items ?? [];
-        if (topItems.length === 0) return;
+        // Collect all news items from recent snapshots
+        const artistName = (activeSlot.artist_name || "").toLowerCase();
+        const artistAliases = [artistName];
+        // Common aliases: e.g. "BIGBANG" -> "빅뱅", "GD", "지드래곤" etc.
+        if (artistName.includes("bigbang") || artistName.includes("빅뱅")) {
+          artistAliases.push("bigbang", "빅뱅", "지드래곤", "gd", "g-dragon", "태양", "대성", "탑");
+        }
 
-        // Pick the first news item
-        const newsItem = topItems[0];
-        const title = (newsItem.title || "").replace(/<[^>]*>/g, "").replace(/\[.*?\]/g, "").trim();
-        const link = newsItem.link || newsItem.originallink || "";
-        const desc = (newsItem.description || "").replace(/<[^>]*>/g, "").trim();
+        const seenTitles = new Set<string>();
+        const allItems: { title: string; link: string; desc: string; thumbnail?: string }[] = [];
 
-        if (!title) return;
+        for (const snap of snapshots) {
+          const raw = snap.raw_response as any;
+          const items = raw?.top_items ?? raw?.items ?? [];
+          for (const item of items) {
+            const rawTitle = (item.title || "").replace(/<[^>]*>/g, "").replace(/\[.*?\]/g, "").trim();
+            if (!rawTitle || seenTitles.has(rawTitle)) continue;
+            seenTitles.add(rawTitle);
+
+            const titleLower = rawTitle.toLowerCase();
+            const descRaw = (item.description || "").replace(/<[^>]*>/g, "").trim();
+            const textToCheck = (titleLower + " " + descRaw.toLowerCase());
+
+            // Relevance filter: title or description must prominently feature the artist
+            const isRelevant = artistAliases.some(alias => textToCheck.includes(alias));
+            if (!isRelevant) continue;
+
+            // Skip "brand reputation" / ranking aggregate articles that mention many artists
+            const isBrandRanking = /브랜드평판|브랜드 평판|개인 브랜드|보이그룹.*위|걸그룹.*위/.test(rawTitle + descRaw);
+            if (isBrandRanking) continue;
+
+            allItems.push({
+              title: rawTitle,
+              link: item.link || item.originallink || item.url || "",
+              desc: descRaw,
+              thumbnail: item.image || null,
+            });
+          }
+        }
+
+        if (allItems.length === 0) return;
+
+        // Build clean message with up to 3 relevant items
+        const topNews = allItems.slice(0, 3);
+        let content = t("agent.dailyNewsIntro").replace("{artist}", activeSlot.artist_name || "");
+
+        for (const news of topNews) {
+          content += `\n\n`;
+          if (news.thumbnail) {
+            content += `[![${news.title}](${news.thumbnail})](${news.link})\n`;
+          }
+          content += `📰 **${news.title}**`;
+          if (news.desc && news.desc.length > 10) {
+            // Clean sentence: cut at last period/sentence boundary within 120 chars
+            let shortDesc = news.desc.slice(0, 120);
+            const lastPeriod = Math.max(shortDesc.lastIndexOf("."), shortDesc.lastIndexOf("다"));
+            if (lastPeriod > 40) shortDesc = shortDesc.slice(0, lastPeriod + 1);
+            else shortDesc += "…";
+            content += `\n${shortDesc}`;
+          }
+          if (news.link) {
+            content += `\n🔗 [${t("agent.readMore")}](${news.link})`;
+          }
+        }
 
         const newsMsg: ChatMessage = {
           role: "assistant",
-          content: t("agent.dailyNewsIntro").replace("{artist}", activeSlot.artist_name || "") +
-            `\n\n📰 **${title}**\n${desc ? desc.slice(0, 100) + "..." : ""}` +
-            (link ? `\n\n🔗 [${t("agent.readMore")}](${link})` : ""),
+          content,
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, newsMsg]);
