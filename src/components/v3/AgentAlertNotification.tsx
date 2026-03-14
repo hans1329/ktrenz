@@ -5,6 +5,29 @@ import { X, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { AgentAlert } from "@/hooks/useAgentAlerts";
 
+// Highlight key words/numbers in yellow bold
+const HIGHLIGHT_PATTERNS = [
+  /([+-]?\d+\.?\d*%)/g,                    // percentages like +12.4%
+  /(#\d+|1위|1st)/gi,                       // rankings
+  /\b(surging|spike|drop|dropping|hit|new milestone|급등|하락|달성|마일스톤|急上昇|下落|飙升|下降)\b/gi,
+  /\b(YouTube|Spotify|TikTok|Instagram|Billboard)\b/g,
+];
+
+function highlightKeywords(text: string, isTitle: boolean): string {
+  let result = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  for (const pattern of HIGHLIGHT_PATTERNS) {
+    result = result.replace(pattern, (match) =>
+      `<span style="color: #FBBF24; font-weight: 800;">${match}</span>`
+    );
+  }
+  if (isTitle) {
+    result = result.replace(/(🔥|⚡|📉|🏆|🎯|⬆️|⬇️|🚀|💥)/g,
+      (m) => `<span style="font-size: 1.3em;">${m}</span>`
+    );
+  }
+  return result;
+}
+
 export default function AgentAlertNotification({
   alert,
   onDismiss,
@@ -217,9 +240,8 @@ export default function AgentAlertNotification({
             style={{
               textShadow: "0 1px 8px rgba(0,0,0,0.4)",
             }}
-          >
-            {captionLines[currentLine]}
-          </p>
+            dangerouslySetInnerHTML={{ __html: highlightKeywords(captionLines[currentLine], isTitle) }}
+          />
         </div>
 
         {/* Actions */}
