@@ -1,6 +1,7 @@
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Radar, Tag, MessageCircle, Eye, ShieldCheck, Layers, Target } from "lucide-react";
+import SignalRadarIntelligenceSection from "@/components/v3/SignalRadarIntelligenceSection";
 import { Button } from "@/components/ui/button";
 
 const SignalRadar = () => {
@@ -222,8 +223,11 @@ const SignalRadar = () => {
             ktrenz_attention_signals (daily per artist)<br />
             &nbsp;&nbsp;↓<br />
             FES Predictor / Agency Dashboard / Tier Engine
-          </div>
+        </div>
         </section>
+
+        {/* FES Intelligence Framework + Signal-D */}
+        <SignalRadarIntelligenceSection />
 
         {/* Pipeline Guard */}
         <section className="space-y-4">
@@ -276,6 +280,7 @@ const SignalRadar = () => {
               { phase: "Phase 3", status: "✅", title: "Fandom Pulse Aggregator", desc: "ktrenz_fandom_signals 테이블 + Daily Cron (04:30 UTC)" },
               { phase: "Phase 4", status: "✅", title: "Attention Map Aggregator", desc: "ktrenz_attention_signals 테이블 + Daily Cron (04:35 UTC)" },
               { phase: "Phase 5", status: "✅", title: "FES Predictor v4", desc: "Signal Radar 3개 소스 전부 통합 + signal_confidence_factors + signal_source 태깅" },
+              { phase: "Phase 6", status: "📋", title: "Revenue Pulse (Signal-D)", desc: "ktrenz_revenue_signals 테이블 + Buzz↔Performance 전환율 계산 + Agency Dashboard 연동" },
             ].map(({ phase, status, title, desc }) => (
               <div key={phase} className="flex gap-3 items-start">
                 <div className="text-sm w-7 shrink-0">{status}</div>
