@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { X, MessageCircle } from "lucide-react";
@@ -16,18 +16,43 @@ export default function AgentAlertNotification({
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [phase, setPhase] = useState<"enter" | "idle" | "exit">("enter");
+  const [currentLine, setCurrentLine] = useState(0);
 
   // Split body into caption lines
   const captionLines = useMemo(() => {
     if (!alert) return [];
     const raw = alert.body || "";
-    // Split on periods, exclamation marks, or question marks followed by space
-    const parts = raw.split(/(?<=[.!?。！？])\s+/).filter(Boolean);
-    return parts.length > 0 ? parts : [raw];
+    const parts = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
+    // Prepend title as the first "hero" line
+    return [alert.title, ...parts];
   }, [alert]);
+
+  // Rotate through lines
+  useEffect(() => {
+    if (!visible || phase === "exit" || captionLines.length === 0) return;
+
+    // Start showing first line after enter
+    const startTimer = setTimeout(() => {
+      setCurrentLine(0);
+    }, 300);
+
+    // Cycle lines every 2.5s
+    const interval = setInterval(() => {
+      setCurrentLine((prev) => {
+        const next = prev + 1;
+        return next < captionLines.length ? next : 0;
+      });
+    }, 2800);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearInterval(interval);
+    };
+  }, [visible, phase, captionLines.length]);
 
   useEffect(() => {
     if (alert) {
+      setCurrentLine(0);
       const timer = setTimeout(() => {
         setVisible(true);
         setPhase("enter");
@@ -36,20 +61,19 @@ export default function AgentAlertNotification({
     } else {
       setVisible(false);
       setPhase("enter");
+      setCurrentLine(0);
     }
   }, [alert]);
 
-  if (!alert || !visible) return null;
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setPhase("exit");
     setTimeout(() => {
       setVisible(false);
       onDismiss();
     }, 400);
-  };
+  }, [onDismiss]);
 
-  const handleGoToChat = () => {
+  const handleGoToChat = useCallback(() => {
     if (alert) {
       const seedPrompts: Record<string, Record<string, string>> = {
         energy_spike: {
@@ -93,99 +117,96 @@ export default function AgentAlertNotification({
       onDismiss();
       navigate("/agent");
     }, 400);
-  };
+  }, [alert, navigate, onDismiss]);
+
+  if (!alert || !visible) return null;
 
   const isExiting = phase === "exit";
+  const isTitle = currentLine === 0;
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-500 ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity duration-500 ${
         isExiting ? "opacity-0" : "opacity-100"
       }`}
-      style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(20px)" }}
       onClick={handleClose}
     >
-      {/* Close button */}
+      {/* Close */}
       <button
         onClick={(e) => { e.stopPropagation(); handleClose(); }}
-        className="absolute top-4 right-4 p-2 rounded-full text-white/60 hover:text-white transition-colors z-10"
-        style={{ paddingTop: "env(safe-area-inset-top, 16px)" }}
+        className="absolute top-4 right-4 p-2 rounded-full text-white/40 hover:text-white/80 transition-colors z-10"
       >
-        <X className="w-6 h-6" />
+        <X className="w-5 h-5" />
       </button>
 
-      {/* Content container */}
+      {/* Dot indicators */}
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 flex gap-1.5">
+        {captionLines.map((_, i) => (
+          <div
+            key={i}
+            className={`h-1 rounded-full transition-all duration-300 ${
+              i === currentLine
+                ? "w-5 bg-white/80"
+                : "w-1 bg-white/25"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Center content */}
       <div
-        className="flex flex-col items-center gap-6 px-8 max-w-md w-full"
+        className="flex flex-col items-center gap-8 px-10 max-w-sm w-full"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Avatar + LIVE badge */}
-        <div
-          className={`flex flex-col items-center gap-3 transition-all duration-700 ${
-            isExiting ? "opacity-0 scale-90" : "opacity-100 scale-100"
-          }`}
-          style={{ animationDelay: "0ms" }}
-        >
-          <Avatar className="w-20 h-20 border-2 border-primary/40 shadow-[0_0_30px_rgba(234,88,12,0.3)]">
+        {/* Avatar + LIVE - always visible */}
+        <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${
+          isExiting ? "opacity-0 scale-90" : "opacity-100 scale-100"
+        }`}>
+          <Avatar className="w-16 h-16 border border-primary/30 shadow-[0_0_40px_rgba(234,88,12,0.2)]">
             {alert.slot.avatar_url ? (
               <AvatarImage src={alert.slot.avatar_url} alt={alert.artistName} className="object-cover" />
             ) : (
-              <AvatarFallback className="bg-primary/20 text-primary text-3xl">
+              <AvatarFallback className="bg-primary/20 text-primary text-2xl">
                 {alert.emoji}
               </AvatarFallback>
             )}
           </Avatar>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold tracking-wider uppercase animate-pulse">
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 font-bold tracking-widest uppercase animate-pulse">
             {t("alert.liveAlert")}
           </span>
         </div>
 
-        {/* Title - Reels-style caption */}
-        <h2
-          className="text-xl font-bold text-white text-center leading-snug caption-line"
-          style={{
-            animationDelay: "200ms",
-            animationFillMode: "both",
-            textShadow: "0 2px 20px rgba(0,0,0,0.8)",
-          }}
-        >
-          {alert.title}
-        </h2>
-
-        {/* Body lines - staggered Reels captions */}
-        <div className="flex flex-col items-center gap-3 w-full">
-          {captionLines.map((line, i) => (
-            <p
-              key={i}
-              className="text-[15px] text-white/80 text-center leading-relaxed caption-line font-medium"
-              style={{
-                animationDelay: `${400 + i * 300}ms`,
-                animationFillMode: "both",
-                textShadow: "0 1px 12px rgba(0,0,0,0.6)",
-              }}
-            >
-              {line}
-            </p>
-          ))}
+        {/* Rotating caption - single line at a time */}
+        <div className="min-h-[80px] flex items-center justify-center w-full">
+          <p
+            key={currentLine}
+            className={`text-center font-semibold leading-relaxed caption-rotate ${
+              isTitle
+                ? "text-xl text-white"
+                : "text-[15px] text-white/85"
+            }`}
+            style={{
+              textShadow: "0 2px 24px rgba(0,0,0,0.6)",
+            }}
+          >
+            {captionLines[currentLine]}
+          </p>
         </div>
 
         {/* Actions */}
-        <div
-          className="flex gap-3 w-full mt-4 caption-line"
-          style={{
-            animationDelay: `${400 + captionLines.length * 300 + 200}ms`,
-            animationFillMode: "both",
-          }}
-        >
+        <div className={`flex gap-3 w-full transition-all duration-500 delay-500 ${
+          isExiting ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+        }`}>
           <button
             onClick={handleClose}
-            className="flex-1 h-12 rounded-2xl bg-white/10 text-sm font-semibold text-white/80 transition-colors hover:bg-white/20 backdrop-blur-sm"
+            className="flex-1 h-11 rounded-2xl bg-white/8 border border-white/10 text-sm font-medium text-white/70 transition-colors hover:bg-white/15"
           >
             {t("alert.dismiss")}
           </button>
           <button
             onClick={handleGoToChat}
-            className="flex-1 h-12 rounded-2xl bg-primary text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary/90 shadow-[0_0_20px_rgba(234,88,12,0.4)]"
+            className="flex-1 h-11 rounded-2xl bg-primary/90 text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary shadow-[0_0_24px_rgba(234,88,12,0.3)]"
           >
             <MessageCircle className="w-4 h-4" />
             {t("alert.viewInChat")}
