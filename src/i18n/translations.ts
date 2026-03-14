@@ -106,7 +106,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.status.writing": { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" },
 
   // ── Agent Quick Action Prompts ──
-  "agent.prompt.liveRankings": { en: "Show me the live trend rankings Top 10", ko: "실시간 트렌드 랭킹 Top 10 보여줘", ja: "リアルタイムトレンドランキングTop10を見せて", zh: "展示实时趋势排名前10" },
+  "agent.prompt.liveRankings": { en: "Show me the live rankings Top 10", ko: "실시간 랭킹 Top 10 보여줘", ja: "リアルタイムランキングTop10を見せて", zh: "展示实时排名前10" },
   "agent.prompt.trendAnalysis": { en: "Give me a detailed trend analysis for {artist} with strongest/weakest categories and 24h momentum", ko: "{artist} 기준으로 카테고리별 강점/약점과 24시간 모멘텀을 상세 분석해줘", ja: "{artist}基準で、カテゴリ別の強み/弱みと24時間モメンタムを詳しく分析して", zh: "请基于{artist}，详细分析各类别强弱和24小时动量" },
   "agent.prompt.streamingGuide": { en: "I want a streaming guide for {artist}.", ko: "{artist} 스밍 가이드를 보고 싶어.", ja: "{artist}のストリーミングガイドが見たい。", zh: "我想看{artist}的流媒体指南。" },
   "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for {artist}. Guide me on how to set it up.", ko: "{artist}의 랭킹 변동 알림을 설정하고 싶어. 방법을 안내해줘.", ja: "{artist}のランキング変動アラートを設定したい。方法を教えて。", zh: "我想为{artist}设置排名变动提醒。请指导我如何设置。" },
