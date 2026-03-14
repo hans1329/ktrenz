@@ -20,8 +20,9 @@ const CATEGORIES = [
   { key: "social", label: "Social", emoji: "📱" },
 ] as const;
 
-export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Props) {
+export default function V3CorrelationInsightCard({ wikiEntryId, artistName, artistSlug }: Props) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const fromDate = new Date(Date.now() - 14 * 86400000).toISOString();
 
   const { data: snapshots } = useQuery({
