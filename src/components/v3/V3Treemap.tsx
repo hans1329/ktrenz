@@ -86,6 +86,7 @@ export function getCategoryScore(item: TreemapItem, category: EnergyCategory): n
     case "buzz": return item.buzzScore;
     case "album": return item.albumSalesScore;
     case "music": return item.musicScore;
+    case "social": return item.socialScore;
     case "fan": return item.fanScore;
     default: return item.energyScore;
   }
