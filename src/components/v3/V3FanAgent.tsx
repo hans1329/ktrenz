@@ -737,7 +737,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
   // --- AI Prediction Card seed message pickup ---
   useEffect(() => {
-    if (!activeSlot?.wiki_entry_id || isStreaming) return;
+    if (!activeSlot?.wiki_entry_id || isStreaming || agentUsage === undefined) return;
     try {
       const raw = localStorage.getItem("ktrenz_agent_seed");
       if (!raw) return;
@@ -754,7 +754,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     } catch {
       localStorage.removeItem("ktrenz_agent_seed");
     }
-  }, [activeSlot?.wiki_entry_id]);
+  }, [activeSlot?.wiki_entry_id, agentUsage]);
 
   // --- 관심 아티스트 등록 시 에이전트 슬롯 이름/이미지 동기화 & 프로필 메뉴 열기 ---
   const prevWatchedCountRef = useRef<number | null>(null);
