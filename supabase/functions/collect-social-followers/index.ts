@@ -57,13 +57,17 @@ async function getSpotifyArtistsBatch(artistIds: string[]): Promise<Map<string, 
 
     for (let i = 0; i < artistIds.length; i += CONCURRENCY) {
       const chunk = artistIds.slice(i, i + CONCURRENCY);
-      const promises = chunk.map(async (id) => {
+      const promises = chunk.map(async (id, idx) => {
         try {
           const resp = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (!resp.ok) { await resp.text(); return; }
           const a = await resp.json();
+          // Log first artist's full followers structure for debugging
+          if (i === 0 && idx === 0) {
+            console.log(`[Social/Spotify] Sample response for ${a.name}: followers=${JSON.stringify(a.followers)}, popularity=${a.popularity}`);
+          }
           if (a) result.set(a.id, { followers: a.followers?.total ?? 0, popularity: a.popularity ?? 0, name: a.name ?? "" });
         } catch { /* skip */ }
       });
