@@ -12,7 +12,7 @@ import BoxParticles from "@/components/v3/BoxParticles";
 import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
-export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music" | "fan";
+export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music" | "social" | "fan";
 
 interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
