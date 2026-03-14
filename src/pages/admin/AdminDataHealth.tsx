@@ -92,9 +92,6 @@ const AdminDataHealth = () => {
           youtube_topic_channel_id: editFields.youtube_topic_channel_id.trim() || null,
           lastfm_artist_name: editFields.lastfm_artist_name.trim() || null,
           deezer_artist_id: editFields.deezer_artist_id.trim() || null,
-          instagram_handle: editFields.instagram_handle.trim() || null,
-          x_handle: editFields.x_handle.trim() || null,
-          tiktok_handle: editFields.tiktok_handle.trim() || null,
         } as any)
         .eq('id', editArtist.id);
       if (error) throw error;
