@@ -84,7 +84,7 @@ const BoxParticles = ({
         ctx.globalAlpha = p.opacity;
         ctx.fillStyle = color;
         if (shape === "star") {
-          drawStar(p.x, p.y, p.size * 1.8, 5);
+          drawStar(p.x, p.y, p.size * 3.5, 5);
           ctx.fill();
         } else {
           ctx.beginPath();
