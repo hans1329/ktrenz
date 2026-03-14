@@ -31,8 +31,8 @@ const SignalRadarIntelligenceSection = () => {
             </div>
           </div>
 
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
-            <div className="text-xs font-medium text-emerald-400">A Data × Performance</div>
+          <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-2">
+            <div className="text-xs font-medium text-accent-foreground">A Data × Performance</div>
             <div className="text-sm font-semibold text-foreground">현재 매출 성과</div>
             <ul className="text-xs text-muted-foreground space-y-1">
               <li>• Hanteo 판매량</li>
