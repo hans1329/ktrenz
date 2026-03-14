@@ -59,6 +59,8 @@ const BoxParticles = ({
       vy: (Math.random() - 0.5) * 2 * velBase,
       size: Math.random() * sizeBase + 0.8,
       opacity: Math.random() * opacityBase + 0.1,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.02,
     }));
 
     const drawStar = (cx: number, cy: number, r: number, spikes: number) => {
