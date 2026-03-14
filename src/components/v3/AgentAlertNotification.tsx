@@ -159,7 +159,7 @@ export default function AgentAlertNotification({
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity duration-500 ${
         isExiting ? "opacity-0" : "opacity-100"
       }`}
-      style={{ background: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(0, 0, 0, 0.25)", backdropFilter: "blur(8px)" }}
       onClick={handleClose}
     >
       {/* Close */}
@@ -211,10 +211,10 @@ export default function AgentAlertNotification({
         <div className="min-h-[100px] flex items-center justify-center w-full">
           <p
             key={currentLine}
-            className={`text-center font-bold leading-snug caption-rotate rounded-2xl px-5 py-3 ${
+            className={`text-center font-bold leading-snug caption-rotate rounded-2xl px-6 py-4 ${
               isTitle
-                ? "text-2xl text-white bg-white/10 backdrop-blur-md"
-                : "text-lg text-white/90 bg-white/8 backdrop-blur-md"
+                ? "text-3xl text-white bg-black/50 backdrop-blur-md"
+                : "text-xl text-white/95 bg-black/40 backdrop-blur-md"
             }`}
             style={{
               textShadow: "0 1px 8px rgba(0,0,0,0.4)",
