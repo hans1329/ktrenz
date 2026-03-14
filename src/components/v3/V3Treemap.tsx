@@ -98,6 +98,7 @@ export function getCategoryChange(item: TreemapItem, category: EnergyCategory): 
     case "buzz": return item.buzzChange24h;
     case "album": return item.albumChange24h;
     case "music": return item.musicChange24h;
+    case "social": return item.socialChange24h;
     case "fan": return item.fanChange24h;
     default: return item.energyChange24h;
   }
