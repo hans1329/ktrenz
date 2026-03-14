@@ -639,32 +639,23 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                       }}
                     />
                   )}
-                  {rectIndex === 0 ? (
-                    <span className="w-full flex justify-center items-center"
-                      style={{ marginLeft: `-${Math.max(12, sizeFactor * 2.5) + 2}px` }}>
-                      <span
-                        className="shrink-0"
-                        style={{
-                          fontSize: `${Math.max(12, sizeFactor * 2.5)}px`,
-                          lineHeight: 1,
-                          filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
-                          animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
-                          marginRight: '2px',
-                        }}
-                      >🔥</span>
-                      <span className="font-black text-white truncate leading-tight drop-shadow-lg"
-                        style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
-                    </span>
-                  ) : (
-                    <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
+                  <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                       style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
-                  )}
                   <span className="font-black text-white drop-shadow-lg"
                     style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}°</span>
                   {isLarge && (
-                    <span className={cn("font-bold rounded-full backdrop-blur-sm",
+                    <span className={cn("font-bold rounded-full backdrop-blur-sm flex items-center justify-center gap-0.5",
                       surging ? "bg-white/20 text-white" : "bg-black/30 text-white/80"
-                    )} style={{ fontSize: `${badgeFontSize}px`, padding: `${badgePy}px ${badgePx}px` }}>
+                    )} style={{
+                      fontSize: `${rectIndex === 0 ? badgeFontSize * 1.4 : badgeFontSize}px`,
+                      padding: `${rectIndex === 0 ? badgePy * 1.5 : badgePy}px ${rectIndex === 0 ? badgePx * 1.5 : badgePx}px`,
+                    }}>
+                      {rectIndex === 0 && <span style={{
+                        fontSize: `${badgeFontSize * 1.3}px`,
+                        lineHeight: 1,
+                        filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
+                        animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+                      }}>🔥</span>}
                       {catChange > 0 ? "+" : ""}{catChange.toFixed(1)}%
                     </span>
                   )}
