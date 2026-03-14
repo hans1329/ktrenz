@@ -254,7 +254,8 @@ const AdminEntries = () => {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>

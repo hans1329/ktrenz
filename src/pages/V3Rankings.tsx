@@ -92,9 +92,13 @@ const V3Rankings = () => {
       if (error) throw error;
       if (!allScores?.length) return [];
 
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       const typedScores = (allScores as any[]).filter(s => tier1Ids.has(s.wiki_entry_id));
       const latestMap = new Map<string, any>();
       for (const s of typedScores) {
+        // Skip entries created within 3 days to prevent ranking artifacts from incomplete data
+        const entryCreatedAt = s.wiki_entries?.created_at;
+        if (entryCreatedAt && entryCreatedAt > threeDaysAgo) continue;
         if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
       }
 
