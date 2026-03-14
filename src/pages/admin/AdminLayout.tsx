@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database, FlaskConical, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database, FlaskConical, ShieldAlert, ShieldCheck, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,7 @@ const navItems = [
   { label: '수집 모니터', path: '/admin/collection-monitor', icon: Database },
   { label: '데이터 품질 감시', path: '/admin/data-quality', icon: ShieldAlert },
   { label: 'Pipeline Guard', path: '/admin/pipeline-guard', icon: ShieldCheck },
+  { label: '이벤트 라벨링', path: '/admin/signal-events', icon: CalendarDays },
   { label: 'FES 분석 에이전트', path: '/admin/fes-analyst', icon: FlaskConical },
   { label: 'K-토큰 설정', path: '/admin/points', icon: Coins },
   { label: '상품 관리', path: '/admin/products', icon: ShoppingBag },

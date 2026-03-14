@@ -47,3 +47,12 @@ verify_jwt = false
 
 [functions.ktrenz-yt-sentiment]
 verify_jwt = false
+
+[functions.ktrenz-pipeline-guard]
+verify_jwt = false
+
+[functions.ktrenz-fandom-pulse]
+verify_jwt = false
+
+[functions.ktrenz-attention-map]
+verify_jwt = false

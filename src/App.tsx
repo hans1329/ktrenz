@@ -38,6 +38,7 @@ import AdminCollectionMonitor from "./pages/admin/AdminCollectionMonitor";
 import AdminFesAnalyst from "./pages/admin/AdminFesAnalyst";
 import AdminDataQuality from "./pages/admin/AdminDataQuality";
 import AdminPipelineGuard from "./pages/admin/AdminPipelineGuard";
+import AdminSignalEvents from "./pages/admin/AdminSignalEvents";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -85,6 +86,7 @@ const App = () => (
               <Route path="fes-analyst" element={<AdminFesAnalyst />} />
               <Route path="data-quality" element={<AdminDataQuality />} />
               <Route path="pipeline-guard" element={<AdminPipelineGuard />} />
+              <Route path="signal-events" element={<AdminSignalEvents />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
