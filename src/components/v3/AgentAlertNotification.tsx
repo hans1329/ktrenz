@@ -208,16 +208,16 @@ export default function AgentAlertNotification({
         </div>
 
         {/* Rotating caption - single line at a time */}
-        <div className="min-h-[80px] flex items-center justify-center w-full">
+        <div className="min-h-[100px] flex items-center justify-center w-full">
           <p
             key={currentLine}
-            className={`text-center font-semibold leading-relaxed caption-rotate ${
+            className={`text-center font-bold leading-snug caption-rotate rounded-2xl px-5 py-3 ${
               isTitle
-                ? "text-xl text-white"
-                : "text-[15px] text-white/85"
+                ? "text-2xl text-white bg-white/10 backdrop-blur-md"
+                : "text-lg text-white/90 bg-white/8 backdrop-blur-md"
             }`}
             style={{
-              textShadow: "0 2px 24px rgba(0,0,0,0.6)",
+              textShadow: "0 1px 8px rgba(0,0,0,0.4)",
             }}
           >
             {captionLines[currentLine]}
