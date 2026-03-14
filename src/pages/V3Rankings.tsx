@@ -97,10 +97,11 @@ const V3Rankings = () => {
       const typedScores = (allScores as any[]).filter(s => tier1Ids.has(s.wiki_entry_id));
       const latestMap = new Map<string, any>();
       for (const s of typedScores) {
-        // Skip entries created within 3 days to prevent ranking artifacts from incomplete data
-        const entryCreatedAt = s.wiki_entries?.created_at;
-        if (entryCreatedAt && entryCreatedAt > threeDaysAgo) continue;
-        if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
+        if (!latestMap.has(s.wiki_entry_id)) {
+          const entryCreatedAt = s.wiki_entries?.created_at;
+          const isNew = entryCreatedAt ? entryCreatedAt > threeDaysAgo : false;
+          latestMap.set(s.wiki_entry_id, { ...s, isNew });
+        }
       }
 
       return Array.from(latestMap.values()).map((item) => ({
@@ -230,6 +231,7 @@ const V3Rankings = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-base font-bold text-foreground truncate">{entry.title}</p>
+                              {item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold shrink-0 leading-none">NEW</span>}
                               {item.energy_score >= 300 && <span className="text-[10px] shrink-0">🔥</span>}
                               {item.energy_score >= 150 && item.energy_score < 300 && <span className="text-[10px] shrink-0">⚡</span>}
                             </div>
@@ -276,6 +278,7 @@ const V3Rankings = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className={cn("font-semibold text-foreground truncate", rank <= 3 ? "text-base" : "text-sm")}>{entry.title}</p>
+                        {item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold shrink-0 leading-none">NEW</span>}
                         {item.energy_score >= 300 && <span className="text-[10px] shrink-0">🔥</span>}
                         {item.energy_score >= 150 && item.energy_score < 300 && <span className="text-[10px] shrink-0">⚡</span>}
                       </div>
