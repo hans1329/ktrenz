@@ -25,6 +25,7 @@ const BoxParticles = ({
   color = "hsl(11, 100%, 46%)",
   speed = 0.5,
   density = 0.5,
+  shape = "circle",
 }: BoxParticlesProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -45,9 +46,7 @@ const BoxParticles = ({
     };
     resize();
 
-    // speed → velocity magnitude (0.1 ~ 1.8)
     const velBase = 0.1 + speed * 1.7;
-    // density → particle size (0.5 ~ 2) and opacity (0.1 ~ 0.5)
     const sizeBase = 0.5 + density * 1.5;
     const opacityBase = 0.1 + density * 0.4;
 
@@ -60,6 +59,21 @@ const BoxParticles = ({
       opacity: Math.random() * opacityBase + 0.1,
     }));
 
+    const drawStar = (cx: number, cy: number, r: number, spikes: number) => {
+      const outerR = r;
+      const innerR = r * 0.4;
+      ctx.beginPath();
+      for (let i = 0; i < spikes * 2; i++) {
+        const radius = i % 2 === 0 ? outerR : innerR;
+        const angle = (Math.PI * i) / spikes - Math.PI / 2;
+        const sx = cx + Math.cos(angle) * radius;
+        const sy = cy + Math.sin(angle) * radius;
+        if (i === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.closePath();
+    };
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const p of particlesRef.current) {
@@ -68,10 +82,15 @@ const BoxParticles = ({
         if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
         ctx.globalAlpha = p.opacity;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = color;
-        ctx.fill();
+        if (shape === "star") {
+          drawStar(p.x, p.y, p.size * 1.8, 5);
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       animRef.current = requestAnimationFrame(draw);
     };
@@ -84,7 +103,7 @@ const BoxParticles = ({
       cancelAnimationFrame(animRef.current);
       ro.disconnect();
     };
-  }, [count, color, speed, density]);
+  }, [count, color, speed, density, shape]);
 
   return (
     <canvas
