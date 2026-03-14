@@ -545,7 +545,7 @@ const V3ArtistDetail = () => {
   ) : null;
 
   if (isMobile) {
-    return (<><SEO title={`${pageTitle} – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} /><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div>{dataRunDialog}</>);
+    return (<><SEO title={`${pageTitle} – KTrenZ`} titleKo={`${pageTitle} 트렌드 분석 – KTrenZ`} description={`${pageTitle} real-time trend score, YouTube stats, buzz mentions & energy chart on KTrenZ.`} descriptionKo={`${pageTitle}의 실시간 트렌드 점수, 유튜브·버즈·음원 데이터 분석.`} path={`/artist/${slug}`} ogImage={entry?.image_url ?? undefined} jsonLd={{ "@context": "https://schema.org", "@type": "Person", name: pageTitle, url: `https://ktrenz.lovable.app/artist/${slug}`, image: entry?.image_url }} /><MobileHeader /><div className="pt-14 overflow-x-hidden"><PageContent /></div>{dataRunDialog}</>);
   }
 
   return (
