@@ -1458,7 +1458,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // ── Chat messages ──
   const renderMessages = () => (
     <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 max-w-[800px] mx-auto w-full scrollbar-hide">
-      {messages.map((msg, i) => (
+      {isViewingHistory && (
+        <div className="flex items-center justify-center gap-2 py-2 mb-2">
+          <div className="text-xs font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <CalendarDays className="w-3 h-3" />
+            {format(selectedDate!, "yyyy년 M월 d일", { locale: ko })}
+          </div>
+          <button
+            onClick={() => setSelectedDate(null)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+      {filteredMessages.map((msg, i) => (
         <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
             <button type="button" onClick={() => setShowAgentProfileModal(true)} className="shrink-0 hover:opacity-80 transition-opacity">
