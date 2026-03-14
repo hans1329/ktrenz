@@ -12,6 +12,7 @@ const navItems = [
   { label: '데이터 헬스', path: '/admin/data-health', icon: HeartPulse },
   { label: '수집 모니터', path: '/admin/collection-monitor', icon: Database },
   { label: '데이터 품질 감시', path: '/admin/data-quality', icon: ShieldAlert },
+  { label: 'Pipeline Guard', path: '/admin/pipeline-guard', icon: ShieldCheck },
   { label: 'FES 분석 에이전트', path: '/admin/fes-analyst', icon: FlaskConical },
   { label: 'K-토큰 설정', path: '/admin/points', icon: Coins },
   { label: '상품 관리', path: '/admin/products', icon: ShoppingBag },

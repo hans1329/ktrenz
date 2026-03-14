@@ -82,6 +82,7 @@ const App = () => (
               <Route path="collection-monitor" element={<AdminCollectionMonitor />} />
               <Route path="fes-analyst" element={<AdminFesAnalyst />} />
               <Route path="data-quality" element={<AdminDataQuality />} />
+              <Route path="pipeline-guard" element={<AdminPipelineGuard />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
