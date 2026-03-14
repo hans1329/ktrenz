@@ -72,7 +72,7 @@ export default function AgentAlertNotification({
         const next = prev + 1;
         return next < captionLines.length ? next : 0;
       });
-    }, 1200);
+    }, 1400);
 
     return () => {
       clearTimeout(startTimer);
