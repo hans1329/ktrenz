@@ -61,6 +61,8 @@ const AdminListingRequests = () => {
           wiki_entry_id: entry.id,
           tier: 1,
           display_name: req.artist_name,
+          name_ko: null,
+          youtube_channel_id: req.youtube_url ? extractYoutubeChannelId(req.youtube_url) : null,
           instagram_handle: req.instagram_url ? extractHandle(req.instagram_url) : null,
           x_handle: req.x_url ? extractHandle(req.x_url) : null,
           tiktok_handle: req.tiktok_url ? extractHandle(req.tiktok_url) : null,
@@ -210,6 +212,22 @@ const AdminListingRequests = () => {
 function extractHandle(url: string): string {
   try {
     const path = new URL(url).pathname.replace(/\/$/, '');
+    const parts = path.split('/').filter(Boolean);
+    return parts[parts.length - 1]?.replace('@', '') || url;
+  } catch {
+    return url;
+  }
+}
+
+/** YouTube URL에서 채널 ID 또는 핸들 추출 */
+function extractYoutubeChannelId(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/$/, '');
+    // /channel/UC... 형태
+    const channelMatch = path.match(/\/channel\/(UC[a-zA-Z0-9_-]+)/);
+    if (channelMatch) return channelMatch[1];
+    // /@handle 또는 /c/name 형태 → 핸들 반환
     const parts = path.split('/').filter(Boolean);
     return parts[parts.length - 1]?.replace('@', '') || url;
   } catch {
