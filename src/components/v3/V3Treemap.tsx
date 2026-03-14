@@ -241,8 +241,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
           youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, fan_change_24h, social_change_24h,
           scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, created_at)`)
-        .order("total_score", { ascending: false })
-        .limit(100);
+        .order("scored_at", { ascending: false })
+        .limit(200);
       if (error) throw error;
       if (!data?.length) return [];
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
@@ -251,7 +251,10 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       for (const s of typedData) {
         const entryCreatedAt = s.wiki_entries?.created_at;
         if (entryCreatedAt && entryCreatedAt > threeDaysAgo) continue;
-        if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
+        const prev = latestMap.get(s.wiki_entry_id);
+        if (!prev || new Date(s.scored_at).getTime() > new Date(prev.scored_at).getTime()) {
+          latestMap.set(s.wiki_entry_id, s);
+        }
       }
 
       const allCandidates = Array.from(latestMap.values())
