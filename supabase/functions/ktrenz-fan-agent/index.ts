@@ -2146,7 +2146,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { messages, mode, language, agent_slot_id, quick_action } = body;
     const userLang = language || "ko";
-    const quickActionHint = typeof quick_action === "string" ? quick_action : null;
+
+    const quickActionRaw = typeof quick_action === "string" ? quick_action.trim().toLowerCase() : "";
+    const quickActionHintMap: Record<string, "live_rankings" | "trend_analysis" | "streaming_guide" | "fan_activity"> = {
+      live_rankings: "live_rankings",
+      rankings: "live_rankings",
+      liverankings: "live_rankings",
+      trend_analysis: "trend_analysis",
+      trendanalysis: "trend_analysis",
+      streaming_guide: "streaming_guide",
+      streamingguide: "streaming_guide",
+      fan_activity: "fan_activity",
+      fanactivity: "fan_activity",
+    };
+    const quickActionHint = quickActionRaw ? quickActionHintMap[quickActionRaw] ?? null : null;
     const isBriefingMode = mode === "briefing";
     const isClearChatMode = mode === "clear_chat";
 
@@ -2365,6 +2378,16 @@ Deno.serve(async (req) => {
 
     // Save user message
     const lastUserMsg = messages[messages.length - 1];
+    const normalizedLastUserText = typeof lastUserMsg?.content === "string"
+      ? lastUserMsg.content.replace(/\s+/g, " ").trim().toLowerCase()
+      : "";
+    const isLiveRankingPrompt = [
+      "실시간 트렌드 랭킹 top 10 보여줘",
+      "실시간 랭킹 top 10 보여줘",
+      "show me the live trend rankings top 10",
+      "show me the live rankings top 10",
+    ].includes(normalizedLastUserText);
+
     if (lastUserMsg?.role === "user") {
       await adminClient.from("ktrenz_fan_agent_messages").insert({
         user_id: userId,
@@ -2449,7 +2472,8 @@ Deno.serve(async (req) => {
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
 
           // Fast-path for quick action buttons to reduce latency and force distinct card types
-          if (quickActionHint === "live_rankings") {
+          const shouldForceLiveRankings = quickActionHint === "live_rankings" || isLiveRankingPrompt;
+          if (shouldForceLiveRankings) {
             const rankingLabel = toolStatusMap.get_rankings?.[userLang] || toolStatusMap.get_rankings?.en || "Checking rankings…";
             sendStatus(controller, rankingLabel);
 
