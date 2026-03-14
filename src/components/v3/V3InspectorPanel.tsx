@@ -24,11 +24,13 @@ export interface InspectorItem {
   albumSalesScore: number;
   musicScore: number;
   fanScore: number;
+  socialScore: number;
   youtubeChange24h: number;
   buzzChange24h: number;
   albumChange24h: number;
   musicChange24h: number;
   fanChange24h: number;
+  socialChange24h: number;
   metadata?: any;
   youtubeChannelId?: string | null;
   latestYoutubeVideoId?: string | null;
