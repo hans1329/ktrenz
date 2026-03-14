@@ -230,7 +230,7 @@ export default function AgentAlertNotification({
           </button>
           <button
             onClick={handleGoToChat}
-            className="flex-1 h-11 rounded-2xl bg-primary/90 text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary shadow-[0_0_24px_rgba(234,88,12,0.3)]"
+            className="flex-1 h-11 rounded-2xl bg-primary/90 border border-primary/60 text-sm font-semibold text-primary-foreground flex items-center justify-center gap-1.5 transition-colors hover:bg-primary shadow-[0_0_24px_rgba(234,88,12,0.3)]"
           >
             <MessageCircle className="w-4 h-4" />
             {t("alert.viewInChat")}
