@@ -224,7 +224,7 @@ export default function AgentAlertNotification({
         }`}>
           <button
             onClick={handleClose}
-            className="flex-1 h-11 rounded-2xl bg-white/8 border border-white/10 text-sm font-medium text-white/70 transition-colors hover:bg-white/15"
+            className="flex-1 h-11 rounded-2xl bg-white/8 border border-white/30 text-sm font-medium text-white/80 transition-colors hover:bg-white/15"
           >
             {t("alert.dismiss")}
           </button>
