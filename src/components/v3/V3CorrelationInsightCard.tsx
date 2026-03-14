@@ -91,17 +91,17 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
         "bg-gradient-to-br from-indigo-500/15 via-blue-500/10 to-cyan-500/5",
       )}
     >
-      <div className="relative p-4 space-y-3">
+      <div className="relative p-4 sm:p-5 space-y-3">
         {/* Header */}
         <div className="flex items-center gap-1.5">
-          <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">
+          <BarChart3 className="w-4 h-4 text-indigo-400" />
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-300">
             {t("correlationInsight.title")}
           </span>
         </div>
 
         {/* Channel strength bars */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {analysis.catScores.map(cat => {
             const maxScore = Math.max(analysis.fes, ...analysis.catScores.map(c => c.score), 1);
             const pct = Math.min((cat.score / maxScore) * 100, 100);
@@ -110,9 +110,9 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
 
             return (
               <div key={cat.key} className="flex items-center gap-2">
-                <span className="text-xs w-5 text-center">{cat.emoji}</span>
-                <span className="text-[10px] w-12 font-medium text-foreground/70">{cat.label}</span>
-                <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                <span className="text-sm w-6 text-center">{cat.emoji}</span>
+                <span className="text-xs w-14 font-medium text-foreground/70">{cat.label}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-white/5 overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all",
@@ -122,10 +122,10 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
                   />
                 </div>
                 <span className={cn(
-                  "text-[10px] font-bold w-8 text-right",
+                  "text-xs font-bold w-10 text-right tabular-nums",
                   isWeak ? "text-amber-400" : isStrong ? "text-emerald-400" : "text-foreground/50"
                 )}>
-                  {cat.score}
+                  {Math.round(cat.score)}
                 </span>
               </div>
             );
@@ -135,12 +135,12 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
         {/* Action insight */}
         <div className="rounded-xl bg-white/[0.07] border border-white/10 px-3 py-2.5 space-y-1">
           <div className="flex items-center gap-1.5">
-            <Zap className="w-3 h-3 text-amber-400" />
-            <p className="text-[10px] font-bold text-amber-300/80 uppercase tracking-wider">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <p className="text-xs font-bold text-amber-300/80 uppercase tracking-wider">
               {t("correlationInsight.focusArea")}
             </p>
           </div>
-          <p className="text-sm text-foreground/90 font-medium leading-snug">
+          <p className="text-sm sm:text-base text-foreground/90 font-medium leading-snug">
             {analysis.weakest.emoji} {t("correlationInsight.weakChannel")
               .replace("{channel}", analysis.weakest.label)
               .replace("{artist}", artistName)}
@@ -150,19 +150,19 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
         {/* Catch-up badge */}
         {analysis.catchUp && (
           <div className={cn(
-            "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[10px] font-bold",
+            "flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold",
             analysis.catchUp.type === "catchup"
               ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
               : "bg-amber-500/10 border border-amber-500/30 text-amber-400"
           )}>
             {analysis.catchUp.type === "catchup" ? (
               <>
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                <ArrowUpRight className="w-4 h-4" />
                 <span>{t("correlationInsight.catchUpHint").replace("{channel}", analysis.catchUp.category)}</span>
               </>
             ) : (
               <>
-                <ArrowDownRight className="w-3.5 h-3.5" />
+                <ArrowDownRight className="w-4 h-4" />
                 <span>{t("correlationInsight.laggingHint").replace("{channel}", analysis.catchUp.category)}</span>
               </>
             )}
