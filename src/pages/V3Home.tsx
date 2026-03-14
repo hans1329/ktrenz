@@ -28,9 +28,10 @@ const V3Home = () => {
         emoji: "🔥",
         title: "🔥 aespa 에너지 급등 감지!",
         body: "지난 6시간 동안 에너지 점수가 +18.7% 급등했습니다. YouTube 조회수와 소셜 언급량이 동시에 폭발적으로 증가하고 있습니다.",
-        slot: { avatar_url: null },
-        createdAt: Date.now(),
-      });
+        wikiEntryId: "test",
+        slot: { id: "t", user_id: "t", slot_index: 0, artist_name: "aespa", wiki_entry_id: null, avatar_url: null, is_active: true, created_at: "" },
+        timestamp: Date.now(),
+      } as any);
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
