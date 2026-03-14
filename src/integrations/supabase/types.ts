@@ -2626,6 +2626,8 @@ export type Database = {
       ktrenz_data_snapshots: {
         Row: {
           collected_at: string
+          guard_flagged: boolean
+          guard_log_id: string | null
           id: string
           metrics: Json
           platform: string
@@ -2634,6 +2636,8 @@ export type Database = {
         }
         Insert: {
           collected_at?: string
+          guard_flagged?: boolean
+          guard_log_id?: string | null
           id?: string
           metrics?: Json
           platform: string
@@ -2642,6 +2646,8 @@ export type Database = {
         }
         Update: {
           collected_at?: string
+          guard_flagged?: boolean
+          guard_log_id?: string | null
           id?: string
           metrics?: Json
           platform?: string
@@ -2649,6 +2655,13 @@ export type Database = {
           wiki_entry_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ktrenz_data_snapshots_guard_log_id_fkey"
+            columns: ["guard_log_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_guard_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ktrenz_data_snapshots_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
@@ -2982,6 +2995,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ktrenz_geo_fan_data_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_guard_logs: {
+        Row: {
+          action: string
+          created_at: string
+          current_value: Json
+          delta_pct: number | null
+          engine_run_id: string | null
+          guard_rule: string
+          id: string
+          module: string
+          previous_value: Json | null
+          resolved: boolean
+          snapshot_id: string | null
+          wiki_entry_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          current_value?: Json
+          delta_pct?: number | null
+          engine_run_id?: string | null
+          guard_rule: string
+          id?: string
+          module: string
+          previous_value?: Json | null
+          resolved?: boolean
+          snapshot_id?: string | null
+          wiki_entry_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          current_value?: Json
+          delta_pct?: number | null
+          engine_run_id?: string | null
+          guard_rule?: string
+          id?: string
+          module?: string
+          previous_value?: Json | null
+          resolved?: boolean
+          snapshot_id?: string | null
+          wiki_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_guard_logs_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
             isOneToOne: false
             referencedRelation: "wiki_entries"
