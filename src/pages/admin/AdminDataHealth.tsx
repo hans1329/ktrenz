@@ -42,7 +42,7 @@ const AdminDataHealth = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, instagram_handle, x_handle, tiktok_handle, wiki_entries!inner(title, image_url)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -56,9 +56,6 @@ const AdminDataHealth = () => {
         youtube_topic_channel_id: row.youtube_topic_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
-        instagram_handle: row.instagram_handle,
-        x_handle: row.x_handle,
-        tiktok_handle: row.tiktok_handle,
         wiki_title: row.wiki_entries.title,
         wiki_image: row.wiki_entries.image_url,
       })) as ArtistHealth[];
