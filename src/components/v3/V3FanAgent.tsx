@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, forwardRef } from "react";
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock, Newspaper } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock, Newspaper, CalendarDays } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
 import { useAgentSlots } from "@/hooks/useAgentSlots";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -508,6 +511,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [showAgentProfileModal, setShowAgentProfileModal] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [showKPointsDrawer, setShowKPointsDrawer] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
     queryKey: ["ktrenz-watched-artists", user?.id],
@@ -539,6 +544,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Bias registration is determined by the active slot having a wiki_entry_id
   const hasBiasRegistered = !!activeSlot?.wiki_entry_id;
 
+  // Fetch all messages (200 limit)
   const { data: chatHistory, isLoading: isChatHistoryLoading } = useQuery({
     queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id],
     queryFn: async () => {
@@ -548,7 +554,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         .select("role, content, created_at, metadata")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
-        .limit(50);
+        .limit(200);
       if (activeSlot?.id) {
         if (activeSlot.slot_index === 0) {
           queryBuilder.or(`agent_slot_id.eq.${activeSlot.id},agent_slot_id.is.null`);
@@ -574,6 +580,24 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     staleTime: 1000 * 10,
     refetchOnWindowFocus: true,
   });
+
+  // Dates that have chat data (for calendar)
+  const chatDatesSet = useMemo(() => {
+    const dates = new Set<string>();
+    for (const msg of chatHistory ?? []) {
+      if (msg.timestamp) dates.add(msg.timestamp.slice(0, 10));
+    }
+    return dates;
+  }, [chatHistory]);
+
+  // Filter messages by selected date
+  const filteredMessages = useMemo(() => {
+    if (!selectedDate) return messages;
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    return (chatHistory ?? []).filter((m: ChatMessage) => m.timestamp?.slice(0, 10) === dateStr);
+  }, [selectedDate, messages, chatHistory]);
+
+  const isViewingHistory = selectedDate !== null;
 
   const shouldShowWelcome = !slotsLoading && !isChatHistoryLoading && !hasStarted && messages.length === 0 && (chatHistory?.length ?? 0) === 0;
 
@@ -1291,9 +1315,56 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </PopoverContent>
         </Popover>
 
-        {/* Right: usage indicator */}
-        <div className="min-w-[72px] flex justify-end">
-          {agentUsage && (
+        {/* Right: date picker + usage indicator */}
+        <div className="min-w-[72px] flex items-center justify-end gap-1">
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("rounded-full w-8 h-8", isViewingHistory && "text-primary bg-primary/10")}
+              >
+                <CalendarDays className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end" sideOffset={8}>
+              <div className="p-2 border-b border-border/50">
+                <p className="text-xs text-muted-foreground text-center">{t("agent.chatHistory")}</p>
+              </div>
+              <Calendar
+                mode="single"
+                selected={selectedDate ?? undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const dateStr = format(date, "yyyy-MM-dd");
+                    if (chatDatesSet.has(dateStr)) {
+                      setSelectedDate(date);
+                    }
+                  }
+                  setShowDatePicker(false);
+                }}
+                disabled={(date) => {
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  return !chatDatesSet.has(dateStr);
+                }}
+                className="p-3 pointer-events-auto"
+                locale={ko}
+              />
+              {isViewingHistory && (
+                <div className="p-2 border-t border-border/50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-lg text-xs"
+                    onClick={() => { setSelectedDate(null); setShowDatePicker(false); }}
+                  >
+                    {t("agent.backToLive")}
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          {agentUsage && !isViewingHistory && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/80 text-xs font-medium text-muted-foreground">
               <MessageCircle className="w-3 h-3" />
               <span className={cn(
@@ -1387,7 +1458,21 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // ── Chat messages ──
   const renderMessages = () => (
     <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-3 max-w-[800px] mx-auto w-full scrollbar-hide">
-      {messages.map((msg, i) => (
+      {isViewingHistory && (
+        <div className="flex items-center justify-center gap-2 py-2 mb-2">
+          <div className="text-xs font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+            <CalendarDays className="w-3 h-3" />
+            {format(selectedDate!, "yyyy년 M월 d일", { locale: ko })}
+          </div>
+          <button
+            onClick={() => setSelectedDate(null)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+      {filteredMessages.map((msg, i) => (
         <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
             <button type="button" onClick={() => setShowAgentProfileModal(true)} className="shrink-0 hover:opacity-80 transition-opacity">
@@ -1681,52 +1766,68 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
       {/* Input area */}
       <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border/30 max-w-screen-lg mx-auto w-full">
-        {hasStarted && messages.length > 0 && !isStreaming && (
-          <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
-            {!hasBiasRegistered && (
-              <button
-                onClick={() => handleSend(t("agent.prompt.alertSetup"))}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary font-medium hover:bg-primary/20 transition-all shrink-0"
-              >
-                <Heart className="w-3 h-3" />
-                {t("agent.registerBias")}
-              </button>
-            )}
-            {QUICK_ACTIONS.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.label}
-                  onClick={() => handleQuickAction(action)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted/50 border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all shrink-0"
-                >
-                  <Icon className={cn("w-3 h-3", action.color)} />
-                  {action.label}
-                </button>
-              );
-            })}
+        {isViewingHistory ? (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <p className="text-xs text-muted-foreground">{t("agent.viewingHistory")}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full text-xs h-7 px-3"
+              onClick={() => setSelectedDate(null)}
+            >
+              {t("agent.backToLive")}
+            </Button>
           </div>
+        ) : (
+          <>
+            {hasStarted && messages.length > 0 && !isStreaming && (
+              <div className="flex gap-1.5 mb-2 overflow-x-auto scrollbar-hide pb-1">
+                {!hasBiasRegistered && (
+                  <button
+                    onClick={() => handleSend(t("agent.prompt.alertSetup"))}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary font-medium hover:bg-primary/20 transition-all shrink-0"
+                  >
+                    <Heart className="w-3 h-3" />
+                    {t("agent.registerBias")}
+                  </button>
+                )}
+                {QUICK_ACTIONS.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.label}
+                      onClick={() => handleQuickAction(action)}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted/50 border border-border/30 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all shrink-0"
+                    >
+                      <Icon className={cn("w-3 h-3", action.color)} />
+                      {action.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex items-center gap-2 bg-card border border-border/50 rounded-2xl px-4 py-2.5 focus-within:border-primary/40 transition-colors">
+              <input
+                ref={inputRef}
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder={t("agent.inputPlaceholder")}
+                className="flex-1 bg-transparent text-sm md:text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
+                disabled={isStreaming}
+              />
+              <Button
+                size="icon"
+                className="rounded-full w-8 h-8 shrink-0"
+                onClick={() => handleSend()}
+                disabled={!chatInput.trim() || isStreaming}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </>
         )}
-        <div className="flex items-center gap-2 bg-card border border-border/50 rounded-2xl px-4 py-2.5 focus-within:border-primary/40 transition-colors">
-          <input
-            ref={inputRef}
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder={t("agent.inputPlaceholder")}
-            className="flex-1 bg-transparent text-sm md:text-[15px] text-foreground placeholder:text-muted-foreground/60 outline-none"
-            disabled={isStreaming}
-          />
-          <Button
-            size="icon"
-            className="rounded-full w-8 h-8 shrink-0"
-            onClick={() => handleSend()}
-            disabled={!chatInput.trim() || isStreaming}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
       {/* Agent Profile Modal */}
       <Drawer open={showAgentProfileModal} onOpenChange={setShowAgentProfileModal}>
