@@ -8,6 +8,7 @@ import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
 import V3AIPredictionCard from "@/components/v3/V3AIPredictionCard";
 import V3CorrelationPanel from "@/components/v3/V3CorrelationPanel";
+import V3CorrelationInsightCard from "@/components/v3/V3CorrelationInsightCard";
 
 export interface InspectorItem {
   id: string;
@@ -238,6 +239,9 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
             )}
 
             <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
+            <div className="w-12 h-px bg-border mx-auto" />
+
+            <V3CorrelationInsightCard wikiEntryId={item.id} artistName={item.title} />
             <div className="w-12 h-px bg-border mx-auto" />
 
             <V3CorrelationPanel wikiEntryId={item.id} artistName={item.title} />

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import AgencyAIActions from '@/components/v3/AgencyAIActions';
 import AgencySignalRadarPanel from '@/components/v3/AgencySignalRadarPanel';
+import V3CorrelationPanel from '@/components/v3/V3CorrelationPanel';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -1981,7 +1982,24 @@ Artist: ${context.artist}
             </CardContent>
           </Card>
 
-          {/* ═══ Row 9.3: Signal Radar Panel ═══ */}
+          {/* ═══ Row 9.6: FES vs Outcome Correlation (심화 분석) ═══ */}
+          {selectedArtistId && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <GitCompareArrows className="w-4 h-4 text-indigo-500" /> FES vs 성과 상관관계 (심화)
+                </CardTitle>
+                <CardDescription className="text-xs">FES 선행 지표와 실제 성과(YouTube, Buzz, Album, Music, Social) 간의 Gap/추이/분포를 다각도로 분석합니다</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <V3CorrelationPanel
+                  wikiEntryId={selectedArtistId}
+                  artistName={artists?.find((a: any) => a.wiki_entry_id === selectedArtistId)?.display_name || ''}
+                />
+              </CardContent>
+            </Card>
+          )}
+
           {selectedArtistId && (
             <AgencySignalRadarPanel
               wikiEntryId={selectedArtistId}
