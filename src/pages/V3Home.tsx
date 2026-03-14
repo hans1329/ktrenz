@@ -17,6 +17,24 @@ const V3Home = () => {
   const isSubPage = activeTab === "agent";
   const { pendingAlert, dismissAlert } = useAgentAlerts();
 
+  // ── TEST ALERT (remove after testing) ──
+  const [testAlert, setTestAlert] = useState<import("@/hooks/useAgentAlerts").AgentAlert | null>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTestAlert({
+        id: "test-ko",
+        type: "energy_spike",
+        artistName: "aespa",
+        emoji: "🔥",
+        title: "🔥 aespa 에너지 급등 감지!",
+        body: "지난 6시간 동안 에너지 점수가 +18.7% 급등했습니다. YouTube 조회수와 소셜 언급량이 동시에 폭발적으로 증가하고 있습니다.",
+        slot: { avatar_url: null },
+        createdAt: Date.now(),
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
 
   // V3 다크 테마 적용
   useEffect(() => {
