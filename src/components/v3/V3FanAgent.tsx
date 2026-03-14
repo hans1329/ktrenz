@@ -1828,10 +1828,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </div>
           </>
         )}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
       {/* Agent Profile Modal */}
       <Drawer open={showAgentProfileModal} onOpenChange={setShowAgentProfileModal}>
