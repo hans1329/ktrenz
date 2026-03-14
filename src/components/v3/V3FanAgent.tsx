@@ -511,6 +511,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const [showAgentProfileModal, setShowAgentProfileModal] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [showKPointsDrawer, setShowKPointsDrawer] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   // Check if user has watched artists (alert ON)
   const { data: watchedArtists } = useQuery({
     queryKey: ["ktrenz-watched-artists", user?.id],
