@@ -1337,7 +1337,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 onSelect={(date) => {
                   if (date) {
                     const dateStr = format(date, "yyyy-MM-dd");
-                    if (chatDatesSet.has(dateStr)) {
+                    const todayStr = format(new Date(), "yyyy-MM-dd");
+                    if (dateStr === todayStr) {
+                      setSelectedDate(null); // today = live mode
+                    } else if (chatDatesSet.has(dateStr)) {
                       setSelectedDate(date);
                     }
                   }
