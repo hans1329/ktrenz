@@ -252,11 +252,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       const typedData = (data as any[]).filter(s => tier1Ids.has(s.wiki_entry_id));
       const latestMap = new Map<string, any>();
       for (const s of typedData) {
-        const entryCreatedAt = s.wiki_entries?.created_at;
-        if (entryCreatedAt && entryCreatedAt > threeDaysAgo) continue;
         const prev = latestMap.get(s.wiki_entry_id);
         if (!prev || new Date(s.scored_at).getTime() > new Date(prev.scored_at).getTime()) {
-          latestMap.set(s.wiki_entry_id, s);
+          const entryCreatedAt = s.wiki_entries?.created_at;
+          const isNew = entryCreatedAt ? entryCreatedAt > threeDaysAgo : false;
+          latestMap.set(s.wiki_entry_id, { ...s, isNew });
         }
       }
 
