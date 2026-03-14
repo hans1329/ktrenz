@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: artists } = await sb.from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name")
+      .select("wiki_entry_id, display_name, name_ko")
       .eq("tier", 1);
 
     if (!artists?.length) {
@@ -249,20 +249,29 @@ Deno.serve(async (req) => {
     let processed = 0, matched = 0;
     for (const artist of artists) {
       const name = artist.display_name || "";
-      if (!name) continue;
+      const nameKo = (artist as any).name_ko || "";
+      if (!name && !nameKo) continue;
 
-      const normalizedArtist = normalizeName(name);
-      const variants = normalizedArtist.split("|").filter(Boolean);
+      // Build all name variants for matching (display_name + name_ko)
+      const allVariants: string[] = [];
+      if (name) {
+        const normalized = normalizeName(name);
+        allVariants.push(...normalized.split("|").filter(Boolean));
+      }
+      if (nameKo) {
+        const normalizedKo = normalizeName(nameKo);
+        allVariants.push(...normalizedKo.split("|").filter(Boolean));
+      }
 
       // Find matches across platforms
       const findMatch = (lookup: Map<string, PlatformEntry>): PlatformEntry | null => {
-        for (const variant of variants) {
+        for (const variant of allVariants) {
           const match = lookup.get(variant);
           if (match) return match;
         }
         // Fallback: partial matching
         for (const [key, entry] of lookup.entries()) {
-          for (const variant of variants) {
+          for (const variant of allVariants) {
             if (variant && key && (key.includes(variant) || variant.includes(key)) && variant.length >= 2) {
               return entry;
             }
