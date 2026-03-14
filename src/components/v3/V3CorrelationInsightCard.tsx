@@ -9,6 +9,7 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Minus, Zap, Bar
 interface Props {
   wikiEntryId: string;
   artistName: string;
+  artistSlug?: string;
 }
 
 const CATEGORIES = [
