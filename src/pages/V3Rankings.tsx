@@ -174,7 +174,7 @@ const V3Rankings = () => {
 
   return (
     <>
-      <SEO title="K-Pop Trend Rankings – KTrenZ" titleKo="K-Pop 트렌드 순위 – KTrenZ" description="Full K-Pop artist trend rankings by energy score, YouTube, buzz, and music data." descriptionKo="에너지 점수 기반 K-Pop 아티스트 전체 트렌드 순위." path="/rankings" />
+      <SEO title="K-Pop Energy Analysis & Prediction – KTrenZ" titleKo="K-Pop 에너지 분석 및 예측 – KTrenZ" description="Real-time K-Pop artist energy analysis with AI-powered trend prediction across YouTube, social, music, and buzz data." descriptionKo="유튜브·소셜·음원·버즈 데이터 기반 K-Pop 아티스트 에너지 실시간 분석과 AI 트렌드 예측." path="/rankings" />
       {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
       {!isMobile && <V3DesktopHero />}
       <main className={cn("max-w-3xl mx-auto px-4 pb-20", isMobile ? "pt-16" : "pt-4")}>
