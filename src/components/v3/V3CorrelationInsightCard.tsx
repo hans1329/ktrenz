@@ -111,13 +111,15 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
           </span>
         </div>
 
-        {/* Channel strength bars */}
+        {/* Channel 7-day momentum bars */}
         <div className="space-y-2">
-          {analysis.catScores.map(cat => {
-            const maxScore = Math.max(analysis.fes, ...analysis.catScores.map(c => c.score), 1);
-            const pct = Math.min((cat.score / maxScore) * 100, 100);
+          {analysis.catDeltas.map(cat => {
+            const absDelta = Math.abs(cat.delta);
+            const maxDelta = Math.max(...analysis.catDeltas.map(c => Math.abs(c.delta)), 1);
+            const pct = Math.min((absDelta / maxDelta) * 100, 100);
             const isWeak = cat.key === analysis.weakest.key;
             const isStrong = cat.key === analysis.strongest.key;
+            const isPositive = cat.delta >= 0;
 
             return (
               <div key={cat.key} className="flex items-center gap-2">
@@ -127,16 +129,17 @@ export default function V3CorrelationInsightCard({ wikiEntryId, artistName }: Pr
                   <div
                     className={cn(
                       "h-full rounded-full transition-all",
-                      isWeak ? "bg-amber-400/70" : isStrong ? "bg-emerald-400/70" : "bg-foreground/20"
+                      isWeak ? "bg-amber-400/70" : isStrong ? "bg-emerald-400/70" : isPositive ? "bg-foreground/25" : "bg-red-400/40"
                     )}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
                 <span className={cn(
-                  "text-xs font-bold w-10 text-right tabular-nums",
-                  isWeak ? "text-amber-400" : isStrong ? "text-emerald-400" : "text-foreground/50"
+                  "text-xs font-bold w-12 text-right tabular-nums flex items-center justify-end gap-0.5",
+                  isWeak ? "text-amber-400" : isStrong ? "text-emerald-400" : isPositive ? "text-foreground/50" : "text-red-400/70"
                 )}>
-                  {Math.round(cat.score)}
+                  {isPositive ? <TrendingUp className="w-3 h-3" /> : cat.delta < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                  {isPositive ? "+" : ""}{cat.delta}%
                 </span>
               </div>
             );
