@@ -117,6 +117,7 @@ const V3Rankings = () => {
       case "buzz": return item.buzz_change_24h ?? 0;
       case "album": return item.album_change_24h ?? 0;
       case "music": return item.music_change_24h ?? 0;
+      case "social": return item.social_change_24h ?? 0;
       case "fan": return item.fan_change_24h ?? 0;
       default: return item.energy_change_24h ?? 0;
     }
