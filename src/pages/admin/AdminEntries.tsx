@@ -227,9 +227,14 @@ const AdminEntries = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((e: any) => (
+            {filtered.map((e: any) => {
+              const isNew = (Date.now() - new Date(e.created_at).getTime()) < 7 * 24 * 60 * 60 * 1000;
+              return (
               <TableRow key={e.id}>
-                <TableCell className="font-medium text-sm">{e.title}</TableCell>
+                <TableCell className="font-medium text-sm flex items-center gap-1.5">
+                  {e.title}
+                  {isNew && <Badge className="text-[9px] px-1 py-0 bg-emerald-500/90 text-white border-0">NEW</Badge>}
+                </TableCell>
                 <TableCell><Badge variant="outline" className="text-xs capitalize">{e.schema_type}</Badge></TableCell>
                 <TableCell>
                   {e.tierInfo ? (
@@ -249,7 +254,8 @@ const AdminEntries = () => {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
