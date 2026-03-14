@@ -210,6 +210,7 @@ export default function AgentAlertNotification({
 
       localStorage.setItem("ktrenz_agent_seed", JSON.stringify({
         artistName: alert.artistName,
+        slotId: alert.slot.id,
         message,
         createdAt: Date.now(),
       }));
