@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: artists } = await sb.from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name")
+      .select("wiki_entry_id, display_name, name_ko")
       .eq("tier", 1);
 
     if (!artists?.length) {
