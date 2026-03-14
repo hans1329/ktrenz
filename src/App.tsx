@@ -66,6 +66,7 @@ const App = () => (
             <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/pitchdeck" element={<PitchDeck />} />
             <Route path="/deck" element={<Deck />} />
+            <Route path="/signal" element={<SignalRadar />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
