@@ -272,9 +272,9 @@ const SignalRadar = () => {
           <div className="space-y-3">
             {[
               { phase: "Phase 1", status: "✅", title: "Pipeline Guard", desc: "Guard 테이블 + Edge Function + Admin UI + data-engine 통합" },
-              { phase: "Phase 2", status: "⬜", title: "Event Label System", desc: "ktrenz_artist_events 테이블 + Admin 등록 UI + Agency 대시보드 타임라인" },
-              { phase: "Phase 3", status: "⬜", title: "Fandom Pulse Aggregator", desc: "ktrenz_fandom_signals 테이블 + Daily Cron + Agency 대시보드 게이지" },
-              { phase: "Phase 4", status: "⬜", title: "Attention Map Aggregator", desc: "ktrenz_attention_signals 테이블 + Daily Cron + 히트맵 UI" },
+              { phase: "Phase 2", status: "✅", title: "Event Label System", desc: "ktrenz_artist_events 테이블 + Admin 등록 UI (/admin/signal-events)" },
+              { phase: "Phase 3", status: "✅", title: "Fandom Pulse Aggregator", desc: "ktrenz_fandom_signals 테이블 + Daily Cron (04:30 UTC)" },
+              { phase: "Phase 4", status: "✅", title: "Attention Map Aggregator", desc: "ktrenz_attention_signals 테이블 + Daily Cron (04:35 UTC)" },
               { phase: "Phase 5", status: "⬜", title: "FES Predictor v4", desc: "Signal Layer 데이터를 예측 모델에 주입 → 8차원 예측" },
             ].map(({ phase, status, title, desc }) => (
               <div key={phase} className="flex gap-3 items-start">
