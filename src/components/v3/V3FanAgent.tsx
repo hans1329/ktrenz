@@ -544,6 +544,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   // Bias registration is determined by the active slot having a wiki_entry_id
   const hasBiasRegistered = !!activeSlot?.wiki_entry_id;
 
+  // Fetch all messages (200 limit)
   const { data: chatHistory, isLoading: isChatHistoryLoading } = useQuery({
     queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id],
     queryFn: async () => {
@@ -553,7 +554,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         .select("role, content, created_at, metadata")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
-        .limit(50);
+        .limit(200);
       if (activeSlot?.id) {
         if (activeSlot.slot_index === 0) {
           queryBuilder.or(`agent_slot_id.eq.${activeSlot.id},agent_slot_id.is.null`);
@@ -579,6 +580,24 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     staleTime: 1000 * 10,
     refetchOnWindowFocus: true,
   });
+
+  // Dates that have chat data (for calendar)
+  const chatDatesSet = useMemo(() => {
+    const dates = new Set<string>();
+    for (const msg of chatHistory ?? []) {
+      if (msg.timestamp) dates.add(msg.timestamp.slice(0, 10));
+    }
+    return dates;
+  }, [chatHistory]);
+
+  // Filter messages by selected date
+  const filteredMessages = useMemo(() => {
+    if (!selectedDate) return messages;
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    return (chatHistory ?? []).filter((m: ChatMessage) => m.timestamp?.slice(0, 10) === dateStr);
+  }, [selectedDate, messages, chatHistory]);
+
+  const isViewingHistory = selectedDate !== null;
 
   const shouldShowWelcome = !slotsLoading && !isChatHistoryLoading && !hasStarted && messages.length === 0 && (chatHistory?.length ?? 0) === 0;
 
