@@ -116,7 +116,8 @@ export default function AgentAlertNotification({
       return isCJK(trimmed) ? splitKorean(trimmed) : splitEnglish(trimmed);
     }
 
-    const sentences = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
+    // Split sentences but protect decimals (e.g. +18.7%) from being split
+    const sentences = raw.split(/(?<!\d)(?<=[.!?。！？])\s+/).filter(Boolean);
     const chunks = sentences.flatMap(s => splitChunk(s));
     return [alert.title, ...chunks];
   }, [alert]);
