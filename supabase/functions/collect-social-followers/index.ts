@@ -106,12 +106,12 @@ Deno.serve(async (req) => {
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     console.log(`[Social] Starting kpop-radar full scrape (4 platforms)...`);
 
-    // Step 1: Scrape all 4 platforms sequentially (avoid rate limit)
+    // Step 1: Scrape all 4 platforms sequentially
     const platformData: Record<string, PlatformEntry[]> = {};
     for (const platform of SCRAPE_PLATFORMS) {
       try { platformData[platform.key] = await scrapePlatform(FIRECRAWL_API_KEY, platform.url); }
       catch (e) { console.error(`[Social] Scrape ${platform.key} failed:`, e.message); platformData[platform.key] = []; }
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 300));
     }
     console.log(`[Social] Scraped totals: ${Object.entries(platformData).map(([k, v]) => `${k}=${v.length}`).join(", ")}`);
 
@@ -136,8 +136,40 @@ Deno.serve(async (req) => {
       platformLookups[key] = lookup;
     }
 
-    // Step 4: Process each artist
-    let processed = 0, matched = 0;
+    // Step 4: Batch fetch previous snapshots for all artists at once
+    const allWikiIds = artists.map(a => a.wiki_entry_id);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: prevSnapshots } = await sb.from("ktrenz_data_snapshots")
+      .select("wiki_entry_id, metrics, collected_at")
+      .in("wiki_entry_id", allWikiIds)
+      .eq("platform", "social_followers")
+      .lte("collected_at", oneDayAgo)
+      .order("collected_at", { ascending: false })
+      .limit(500);
+
+    // Build prev metrics map (take latest per artist)
+    const prevMetricsMap = new Map<string, SocialMetrics>();
+    for (const snap of (prevSnapshots || []) as any[]) {
+      if (prevMetricsMap.has(snap.wiki_entry_id)) continue;
+      prevMetricsMap.set(snap.wiki_entry_id, {
+        instagram_followers: snap.metrics?.instagram_followers ?? null,
+        tiktok_followers: snap.metrics?.tiktok_followers ?? null,
+        spotify_followers: snap.metrics?.spotify_followers ?? null,
+        twitter_followers: snap.metrics?.twitter_followers ?? null,
+      });
+    }
+
+    // Step 5: Batch fetch existing scores
+    const { data: existingScores } = await sb.from("v3_scores_v2")
+      .select("id, wiki_entry_id")
+      .in("wiki_entry_id", allWikiIds);
+    const scoreIdMap = new Map((existingScores || []).map((s: any) => [s.wiki_entry_id, s.id]));
+
+    // Step 6: Process all artists and collect batch operations
+    const snapshotsToInsert: any[] = [];
+    const scoreUpdates: { id: string; social_score: number }[] = [];
+    let matched = 0;
+    const sampleMatches: string[] = [];
 
     for (const artist of artists) {
       const name = artist.display_name || "";
@@ -171,31 +203,18 @@ Deno.serve(async (req) => {
       };
 
       const hasAnyData = Object.values(metrics).some(v => v != null);
-      if (!hasAnyData) { processed++; continue; }
+      if (!hasAnyData) continue;
       matched++;
 
-      // Previous snapshot for delta
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: prevSnap } = await sb.from("ktrenz_data_snapshots")
-        .select("metrics")
-        .eq("wiki_entry_id", artist.wiki_entry_id)
-        .eq("platform", "social_followers")
-        .lte("collected_at", oneDayAgo)
-        .order("collected_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Log first 5 matches for debugging
+      if (sampleMatches.length < 5) {
+        sampleMatches.push(`${name}: ig=${igMatch?.total ?? '-'}, tw=${twMatch?.total ?? '-'}, tk=${tkMatch?.total ?? '-'}, sp=${spMatch?.total ?? '-'}`);
+      }
 
-      const prevMetrics: SocialMetrics | null = prevSnap?.metrics ? {
-        instagram_followers: prevSnap.metrics.instagram_followers ?? null,
-        tiktok_followers: prevSnap.metrics.tiktok_followers ?? null,
-        spotify_followers: prevSnap.metrics.spotify_followers ?? null,
-        twitter_followers: prevSnap.metrics.twitter_followers ?? null,
-      } : null;
-
+      const prevMetrics = prevMetricsMap.get(artist.wiki_entry_id) || null;
       const socialScore = calculateSocialScore(metrics, prevMetrics);
 
-      // Store snapshot
-      await sb.from("ktrenz_data_snapshots").insert({
+      snapshotsToInsert.push({
         wiki_entry_id: artist.wiki_entry_id,
         platform: "social_followers",
         metrics: {
@@ -208,21 +227,32 @@ Deno.serve(async (req) => {
         },
       });
 
-      // Update score
-      const { data: existing } = await sb.from("v3_scores_v2")
-        .select("id").eq("wiki_entry_id", artist.wiki_entry_id).maybeSingle();
-      if (existing) {
-        await sb.from("v3_scores_v2").update({ social_score: socialScore }).eq("id", existing.id);
-      }
-
-      processed++;
+      const scoreId = scoreIdMap.get(artist.wiki_entry_id);
+      if (scoreId) scoreUpdates.push({ id: scoreId, social_score: socialScore });
     }
 
-    console.log(`[Social] Done: ${processed} processed, ${matched} matched`);
+    // Step 7: Batch insert snapshots (chunks of 20)
+    for (let i = 0; i < snapshotsToInsert.length; i += 20) {
+      const chunk = snapshotsToInsert.slice(i, i + 20);
+      await sb.from("ktrenz_data_snapshots").insert(chunk);
+    }
+
+    // Step 8: Batch update scores (parallel chunks of 10)
+    const SCORE_CHUNK = 10;
+    for (let i = 0; i < scoreUpdates.length; i += SCORE_CHUNK) {
+      const chunk = scoreUpdates.slice(i, i + SCORE_CHUNK);
+      await Promise.all(chunk.map(u =>
+        sb.from("v3_scores_v2").update({ social_score: u.social_score }).eq("id", u.id)
+      ));
+    }
+
+    console.log(`[Social] Samples: ${sampleMatches.join(" | ")}`);
+    console.log(`[Social] Done: ${artists.length} artists, ${matched} matched, ${snapshotsToInsert.length} snapshots, ${scoreUpdates.length} scores updated`);
 
     return new Response(JSON.stringify({
-      success: true, processed, matched,
+      success: true, total: artists.length, matched,
       platformCounts: Object.fromEntries(Object.entries(platformData).map(([k, v]) => [k, v.length])),
+      samples: sampleMatches,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
     console.error("[Social] Fatal:", err);
