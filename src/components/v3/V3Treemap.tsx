@@ -604,6 +604,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                       speed={Math.max(0.1, Math.min(1, absChange / maxAbsChange))}
                       density={isTop3 ? 0.75 : 0.5}
                       color="hsl(0, 0%, 100%)"
+                      shape={isFirst ? "star" : "circle"}
                     />
                   );
                 })()}
