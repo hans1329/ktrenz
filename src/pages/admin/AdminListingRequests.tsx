@@ -219,4 +219,20 @@ function extractHandle(url: string): string {
   }
 }
 
+/** YouTube URL에서 채널 ID 또는 핸들 추출 */
+function extractYoutubeChannelId(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/$/, '');
+    // /channel/UC... 형태
+    const channelMatch = path.match(/\/channel\/(UC[a-zA-Z0-9_-]+)/);
+    if (channelMatch) return channelMatch[1];
+    // /@handle 또는 /c/name 형태 → 핸들 반환
+    const parts = path.split('/').filter(Boolean);
+    return parts[parts.length - 1]?.replace('@', '') || url;
+  } catch {
+    return url;
+  }
+}
+
 export default AdminListingRequests;
