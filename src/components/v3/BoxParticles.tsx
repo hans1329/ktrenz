@@ -18,6 +18,8 @@ interface Particle {
   vy: number;
   size: number;
   opacity: number;
+  rotation: number;
+  rotationSpeed: number;
 }
 
 const BoxParticles = ({
