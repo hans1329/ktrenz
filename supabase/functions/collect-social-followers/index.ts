@@ -43,6 +43,7 @@ async function getSpotifyToken(): Promise<string> {
   const data = await resp.json();
   spotifyToken = data.access_token;
   spotifyTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  console.log(`[Social/Spotify] Token acquired, expires_in: ${data.expires_in}s, client_id starts with: ${clientId.substring(0, 8)}...`);
   return spotifyToken!;
 }
 
