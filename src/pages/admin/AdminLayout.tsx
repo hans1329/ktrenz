@@ -22,6 +22,7 @@ const navItems = [
   { label: '인텐트 모니터', path: '/admin/intent-monitor', icon: Activity },
   { label: '참조 유튜브 목록', path: '/admin/watched-channels', icon: MonitorPlay },
   { label: '에이전시 샘플', path: '/admin/agency-sample', icon: Building2 },
+  { label: '등록 요청', path: '/admin/listing-requests', icon: UserPlus },
   { label: 'Wiki 항목', path: '/admin/entries', icon: FileText },
 ];
 
