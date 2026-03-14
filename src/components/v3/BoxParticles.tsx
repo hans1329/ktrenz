@@ -88,8 +88,13 @@ const BoxParticles = ({
         ctx.globalAlpha = p.opacity;
         ctx.fillStyle = color;
         if (shape === "star") {
-          drawStar(p.x, p.y, p.size * 3.5, 5);
+          p.rotation += p.rotationSpeed;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          drawStar(0, 0, p.size * 3.5, 5);
           ctx.fill();
+          ctx.restore();
         } else {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
