@@ -163,12 +163,6 @@ export default function AgentAlertNotification({
       onClick={handleClose}
     >
       {/* Close */}
-      <button
-        onClick={(e) => { e.stopPropagation(); handleClose(); }}
-        className="absolute top-4 right-4 p-2 rounded-full text-white/40 hover:text-white/80 transition-colors z-10"
-      >
-        <X className="w-5 h-5" />
-      </button>
 
       {/* Dot indicators */}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 flex gap-1.5">
