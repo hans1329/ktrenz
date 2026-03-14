@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Loader2, AlertTriangle, Wand2, Music, Youtube, Headphones, Pencil } from 'lucide-react';
+import { Loader2, AlertTriangle, Wand2, Music, Youtube, Headphones, Pencil, Instagram } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ArtistHealth {
