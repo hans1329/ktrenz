@@ -2468,6 +2468,8 @@ Deno.serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Forced bias artist detection (for direct registration prompts)
+          let forcedBiasArtist: string | null = null;
           // Initial "thinking" status
           sendStatus(controller, thinkingLabels[userLang] || thinkingLabels.en);
 
