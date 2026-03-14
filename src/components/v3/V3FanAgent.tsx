@@ -601,7 +601,16 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [activeSlot?.id]);
 
   useEffect(() => {
+    console.log("[FanAgent] chatHistory effect:", {
+      chatHistoryLen: chatHistory?.length,
+      hasStarted,
+      messagesLen: messages.length,
+      isChatHistoryLoading,
+      slotsLoading,
+      activeSlotId: activeSlot?.id,
+    });
     if (chatHistory && chatHistory.length > 0 && !hasStarted) {
+      console.log("[FanAgent] Loading chat history into messages:", chatHistory.length);
       setMessages(chatHistory);
       setHasStarted(true);
     }
