@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight, ArrowDownRight, Zap, BarChart3 } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Minus, Zap, BarChart3 } from "lucide-react";
 
 interface Props {
   wikiEntryId: string;
