@@ -72,7 +72,7 @@ export default function AgentAlertNotification({
         const next = prev + 1;
         return next < captionLines.length ? next : 0;
       });
-    }, 1200);
+    }, 1400);
 
     return () => {
       clearTimeout(startTimer);
@@ -207,7 +207,7 @@ export default function AgentAlertNotification({
             key={currentLine}
             className={`text-center font-bold leading-snug caption-rotate ${
               isTitle
-                ? "text-xl text-white"
+                ? "text-2xl text-white"
                 : "text-xl text-white/95 rounded-2xl px-6 py-4 bg-black/20 backdrop-blur-md"
             }`}
             style={{
