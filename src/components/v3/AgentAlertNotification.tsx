@@ -159,7 +159,7 @@ export default function AgentAlertNotification({
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity duration-500 ${
         isExiting ? "opacity-0" : "opacity-100"
       }`}
-      style={{ background: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(0, 0, 0, 0.25)", backdropFilter: "blur(8px)" }}
       onClick={handleClose}
     >
       {/* Close */}
