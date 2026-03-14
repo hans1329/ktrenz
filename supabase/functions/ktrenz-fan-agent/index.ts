@@ -2378,6 +2378,16 @@ Deno.serve(async (req) => {
 
     // Save user message
     const lastUserMsg = messages[messages.length - 1];
+    const normalizedLastUserText = typeof lastUserMsg?.content === "string"
+      ? lastUserMsg.content.replace(/\s+/g, " ").trim().toLowerCase()
+      : "";
+    const isLiveRankingPrompt = [
+      "실시간 트렌드 랭킹 top 10 보여줘",
+      "실시간 랭킹 top 10 보여줘",
+      "show me the live trend rankings top 10",
+      "show me the live rankings top 10",
+    ].includes(normalizedLastUserText);
+
     if (lastUserMsg?.role === "user") {
       await adminClient.from("ktrenz_fan_agent_messages").insert({
         user_id: userId,
