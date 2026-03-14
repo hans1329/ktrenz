@@ -86,7 +86,7 @@ export default function AgentAlertNotification({
 
     return () => {
       clearTimeout(startTimer);
-      clearInterval(interval);
+      clearTimeout(timerId);
     };
   }, [visible, phase, captionLines.length]);
 
