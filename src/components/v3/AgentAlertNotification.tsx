@@ -187,7 +187,7 @@ export default function AgentAlertNotification({
         <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${
           isExiting ? "opacity-0 scale-90" : "opacity-100 scale-100"
         }`}>
-          <Avatar className="w-16 h-16 border border-primary/30 shadow-[0_0_40px_rgba(234,88,12,0.2)]">
+          <Avatar className="w-24 h-24 border border-primary/30 shadow-[0_0_40px_rgba(234,88,12,0.2)]">
             {alert.slot.avatar_url ? (
               <AvatarImage src={alert.slot.avatar_url} alt={alert.artistName} className="object-cover" />
             ) : (
