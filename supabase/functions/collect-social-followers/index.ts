@@ -114,10 +114,13 @@ async function searchSpotifyArtist(name: string): Promise<{ id: string; follower
       a.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "") === nameLower
     );
     const best = exact || artists[0];
+
+    // Search API returns incomplete follower data — fetch full artist details
+    const fullData = await getSpotifyArtist(best.id);
     return {
       id: best.id,
-      followers: best.followers?.total ?? 0,
-      popularity: best.popularity ?? 0,
+      followers: fullData?.followers ?? best.followers?.total ?? 0,
+      popularity: fullData?.popularity ?? best.popularity ?? 0,
     };
   } catch (e) {
     console.warn(`[Social/Spotify] Search error for ${name}:`, e.message);
