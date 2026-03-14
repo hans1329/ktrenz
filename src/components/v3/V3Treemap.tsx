@@ -640,17 +640,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                     />
                   )}
                   {rectIndex === 0 ? (
-                    <span className="relative w-full text-center">
+                    <span className="w-full text-center block">
                       <span
-                        className="absolute left-0 top-1/2 -translate-y-1/2"
                         style={{
                           fontSize: `${Math.max(12, sizeFactor * 2.5)}px`,
                           lineHeight: 1,
                           filter: "drop-shadow(0 0 6px rgba(251, 146, 60, 0.7))",
                           animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+                          marginRight: '2px',
                         }}
                       >🔥</span>
-                      <span className="font-black text-white truncate leading-tight drop-shadow-lg"
+                      <span className="font-black text-white leading-tight drop-shadow-lg"
                         style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
                     </span>
                   ) : (
