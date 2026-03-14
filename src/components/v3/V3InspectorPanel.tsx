@@ -65,7 +65,7 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0);
+  const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0) + (item.socialScore || 0);
   const surging = isSurging(item.energyChange24h);
 
   const encodedName = encodeURIComponent(item.title);
