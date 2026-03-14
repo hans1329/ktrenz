@@ -8,6 +8,7 @@ import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
 import V3AIPredictionCard from "@/components/v3/V3AIPredictionCard";
 import V3CorrelationPanel from "@/components/v3/V3CorrelationPanel";
+import V3CorrelationInsightCard from "@/components/v3/V3CorrelationInsightCard";
 
 export interface InspectorItem {
   id: string;

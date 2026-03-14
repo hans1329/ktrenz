@@ -438,6 +438,13 @@ const translations: Record<string, Record<Language, string>> = {
   "correlation.noData": { en: "Not enough data yet", ko: "데이터가 아직 부족합니다", ja: "データが不足しています", zh: "数据不足" },
   "correlation.catchUpBadge": { en: "Outcome likely to catch up in ~3 days (avg gap: {gap})", ko: "약 3일 후 성과가 따라붙을 가능성 높음 (평균 갭: {gap})", ja: "約3日後に成果が追いつく可能性あり (平均ギャップ: {gap})", zh: "预计约3天后成果跟上 (平均差距: {gap})" },
   "correlation.laggingBadge": { en: "FES lagging behind outcome (avg gap: {gap})", ko: "FES가 성과 대비 뒤처지는 중 (평균 갭: {gap})", ja: "FESが成果に遅れている (平均ギャップ: {gap})", zh: "FES落后于成果 (平均差距: {gap})" },
+
+  // ── Correlation Insight Card (Fan) ──
+  "correlationInsight.title": { en: "Channel Strength", ko: "채널별 강도", ja: "チャネル強度", zh: "频道强度" },
+  "correlationInsight.focusArea": { en: "Focus Area", ko: "집중 포인트", ja: "注目ポイント", zh: "关注重点" },
+  "correlationInsight.weakChannel": { en: "{channel} needs a push — stream & engage for {artist}!", ko: "{channel} 채널이 약해요 — {artist}를 위해 스트리밍 & 참여하세요!", ja: "{channel}を強化しよう — {artist}のために再生&参加!", zh: "{channel}频道较弱 — 为{artist}串流和参与!" },
+  "correlationInsight.catchUpHint": { en: "{channel} results likely coming in ~3 days — keep pushing!", ko: "{channel} 성과가 약 3일 후 나올 가능성 높아요 — 계속 밀어주세요!", ja: "{channel}の成果が約3日後に出る可能性あり — 続けよう!", zh: "{channel}成果预计约3天后到来 — 继续加油!" },
+  "correlationInsight.laggingHint": { en: "{channel} is outperforming attention — great momentum!", ko: "{channel}이 관심도보다 성과가 높아요 — 좋은 기세!", ja: "{channel}が注目度を上回る成果 — 好調!", zh: "{channel}成果超过关注度 — 好势头!" },
 };
 
 export default translations;
