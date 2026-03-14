@@ -43,12 +43,21 @@ function isSurging(change: number): boolean {
 
 function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
+  const pctLabel =
+    value > 0 && total > 0
+      ? pct < 1
+        ? "<1%"
+        : pct < 10
+          ? `${pct.toFixed(1)}%`
+          : `${pct.toFixed(0)}%`
+      : "0%";
+
   const content = (
     <div className={cn("space-y-1.5 p-2.5 rounded-xl border border-border bg-muted/40 transition-all", href && "hover:border-primary/40 hover:bg-muted/70 cursor-pointer active:scale-[0.98]")}>
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-xs font-semibold text-foreground">{icon} {label}</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold text-foreground">{Math.round(value)} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span></span>
+          <span className="text-xs font-bold text-foreground">{Math.round(value)} <span className="text-muted-foreground">({pctLabel})</span></span>
           {href && <ExternalLink className="w-3 h-3 text-muted-foreground" />}
         </div>
       </div>
