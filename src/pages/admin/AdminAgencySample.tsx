@@ -1981,6 +1981,14 @@ Artist: ${context.artist}
             </CardContent>
           </Card>
 
+          {/* ═══ Row 9.3: Signal Radar Panel ═══ */}
+          {selectedArtistId && (
+            <AgencySignalRadarPanel
+              wikiEntryId={selectedArtistId}
+              artistName={artists?.find((a: any) => a.wiki_entry_id === selectedArtistId)?.display_name || ''}
+            />
+          )}
+
           {/* ═══ Row 9.5: AI Strategic Action Items (v3) ═══ */}
           {selectedArtistId && (
             <AgencyAIActions
