@@ -43,34 +43,40 @@ async function getSpotifyToken(): Promise<string> {
   const data = await resp.json();
   spotifyToken = data.access_token;
   spotifyTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  console.log(`[Social/Spotify] Token acquired, expires_in: ${data.expires_in}s, client_id starts with: ${clientId.substring(0, 8)}...`);
   return spotifyToken!;
 }
 
-/** Batch fetch artists (max 50 per call) — only 2 calls for 66 artists */
+/** Fetch all artists using parallel individual calls (10 concurrent) */
 async function getSpotifyArtistsBatch(artistIds: string[]): Promise<Map<string, SpotifyArtistData>> {
   const result = new Map<string, SpotifyArtistData>();
   if (!artistIds.length) return result;
   try {
     const token = await getSpotifyToken();
-    for (let i = 0; i < artistIds.length; i += 50) {
-      const batch = artistIds.slice(i, i + 50);
-      const resp = await fetch(`https://api.spotify.com/v1/artists?ids=${batch.join(",")}`, {
-        headers: { Authorization: `Bearer ${token}` },
+    const CONCURRENCY = 10;
+
+    for (let i = 0; i < artistIds.length; i += CONCURRENCY) {
+      const chunk = artistIds.slice(i, i + CONCURRENCY);
+      const promises = chunk.map(async (id, idx) => {
+        try {
+          const resp = await fetch(`https://api.spotify.com/v1/artists/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!resp.ok) { await resp.text(); return; }
+          const a = await resp.json();
+          // Log first artist's full followers structure for debugging
+          if (i === 0 && idx === 0) {
+            console.log(`[Social/Spotify] Sample response for ${a.name}: followers=${JSON.stringify(a.followers)}, popularity=${a.popularity}`);
+          }
+          if (a) result.set(a.id, { followers: a.followers?.total ?? 0, popularity: a.popularity ?? 0, name: a.name ?? "" });
+        } catch { /* skip */ }
       });
-      if (!resp.ok) {
-        const errText = await resp.text();
-        console.warn(`[Social/Spotify] Batch ${i / 50} failed: ${resp.status} ${errText}`);
-        continue;
-      }
-      const data = await resp.json();
-      for (const a of (data.artists || [])) {
-        if (a) result.set(a.id, { followers: a.followers?.total ?? 0, popularity: a.popularity ?? 0, name: a.name ?? "" });
-      }
-      if (i + 50 < artistIds.length) await new Promise(r => setTimeout(r, 300));
+      await Promise.all(promises);
+      if (i + CONCURRENCY < artistIds.length) await new Promise(r => setTimeout(r, 200));
     }
-    console.log(`[Social/Spotify] Batch fetched ${result.size} artists`);
+    console.log(`[Social/Spotify] Fetched ${result.size}/${artistIds.length} artists (parallel individual calls)`);
   } catch (e) {
-    console.warn(`[Social/Spotify] Batch error:`, e.message);
+    console.warn(`[Social/Spotify] Fetch error:`, e.message);
   }
   return result;
 }
