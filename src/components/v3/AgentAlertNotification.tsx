@@ -66,13 +66,23 @@ export default function AgentAlertNotification({
       setCurrentLine(0);
     }, 300);
 
-    // Cycle lines every 2.5s
-    const interval = setInterval(() => {
+    // Cycle lines — title stays longer
+    const advance = () => {
       setCurrentLine((prev) => {
         const next = prev + 1;
         return next < captionLines.length ? next : 0;
       });
-    }, 1400);
+    };
+    let timerId: ReturnType<typeof setTimeout>;
+    const schedule = (line: number) => {
+      const delay = line === 0 ? 2800 : 1400;
+      timerId = setTimeout(() => {
+        advance();
+        // schedule next based on updated line
+        setCurrentLine((cur) => { schedule(cur); return cur; });
+      }, delay);
+    };
+    schedule(0);
 
     return () => {
       clearTimeout(startTimer);
