@@ -1,6 +1,7 @@
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Radar, Tag, MessageCircle, Eye, ShieldCheck, Layers, Target } from "lucide-react";
+import SignalRadarIntelligenceSection from "@/components/v3/SignalRadarIntelligenceSection";
 import { Button } from "@/components/ui/button";
 
 const SignalRadar = () => {
