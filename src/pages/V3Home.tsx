@@ -68,7 +68,7 @@ const V3Home = () => {
           {renderContent()}
         </div>
         <V3TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-        <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
+        <AgentAlertNotification alert={testAlert || pendingAlert} onDismiss={() => { setTestAlert(null); dismissAlert(); }} />
       </>
     );
   }
