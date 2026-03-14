@@ -212,7 +212,7 @@ const SignalRadar = () => {
               <li className="flex gap-2"><span className="text-primary">▸</span> <strong>숨은 관심 아티스트</strong>: FES 낮지만 클릭 급증 → 주목 대상 발굴</li>
               <li className="flex gap-2"><span className="text-primary">▸</span> <strong>섹션 관심 분포</strong>: 팬들이 YouTube 섹션 집중 → 마케팅 근거</li>
               <li className="flex gap-2"><span className="text-primary">▸</span> <strong>이벤트 임팩트 정량화</strong>: 이벤트 전후 조회수 변화 측정</li>
-              <li className="flex gap-2"><span className="text-primary">▸</span> <strong>Tier 자동 승격</strong>: attention 지속 상승 → Tier 2→1 추천</li>
+              
             </ul>
           </div>
 
