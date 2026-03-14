@@ -22,31 +22,38 @@ export default function AgentAlertNotification({
   const captionLines = useMemo(() => {
     if (!alert) return [];
     const raw = alert.body || "";
-    // Split on sentence-ending punctuation, then further split long chunks (~30 chars) at commas or mid-point
-    const sentences = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
-    const chunks: string[] = [];
-    for (const s of sentences) {
-      if (s.length <= 35) {
-        chunks.push(s);
-      } else {
-        // Try splitting at comma/semicolon first
-        const subParts = s.split(/(?<=[,;，；])\s*/).filter(Boolean);
-        if (subParts.length > 1) {
-          chunks.push(...subParts);
-        } else {
-          // Split roughly in half at nearest space
-          const mid = Math.floor(s.length / 2);
-          const spaceAfter = s.indexOf(" ", mid);
-          const spaceBefore = s.lastIndexOf(" ", mid);
-          const splitAt = spaceAfter !== -1 ? spaceAfter : spaceBefore !== -1 ? spaceBefore : mid;
-          if (splitAt > 0 && splitAt < s.length) {
-            chunks.push(s.slice(0, splitAt).trim(), s.slice(splitAt).trim());
-          } else {
-            chunks.push(s);
-          }
-        }
+    // Aggressively split into short chunks (~20 chars target)
+    const MAX_LEN = 25;
+
+    function splitChunk(text: string): string[] {
+      const trimmed = text.trim();
+      if (!trimmed) return [];
+      if (trimmed.length <= MAX_LEN) return [trimmed];
+
+      // Try comma/semicolon split
+      const commaParts = trimmed.split(/(?<=[,;，；])\s*/).filter(Boolean);
+      if (commaParts.length > 1) {
+        return commaParts.flatMap(p => splitChunk(p));
       }
+
+      // Split at nearest space to midpoint
+      const mid = Math.floor(trimmed.length / 2);
+      let splitAt = -1;
+      for (let d = 0; d <= mid; d++) {
+        if (mid + d < trimmed.length && trimmed[mid + d] === " ") { splitAt = mid + d; break; }
+        if (mid - d >= 0 && trimmed[mid - d] === " ") { splitAt = mid - d; break; }
+      }
+      if (splitAt > 0 && splitAt < trimmed.length - 1) {
+        return [
+          ...splitChunk(trimmed.slice(0, splitAt)),
+          ...splitChunk(trimmed.slice(splitAt + 1)),
+        ];
+      }
+      return [trimmed];
     }
+
+    const sentences = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
+    const chunks = sentences.flatMap(s => splitChunk(s));
     return [alert.title, ...chunks];
   }, [alert]);
 
