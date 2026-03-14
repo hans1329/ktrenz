@@ -42,6 +42,7 @@ const CATEGORY_CHIPS: { key: EnergyCategory; label: string; icon: React.ReactNod
   { key: "buzz", label: "Buzz", icon: <Twitter className="w-3 h-3" /> },
   { key: "album", label: "Album", icon: <Disc3 className="w-3 h-3" /> },
   { key: "music", label: "Music", icon: <Music className="w-3 h-3" /> },
+  { key: "social", label: "Social", icon: <Star className="w-3 h-3" /> },
   { key: "fan", label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" /> },
 ];
 
@@ -84,8 +85,8 @@ const V3Rankings = () => {
 
       const { data: allScores, error } = await supabase
         .from("v3_scores_v2" as any)
-        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score,
-          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, scored_at,
+        .select(`wiki_entry_id, youtube_score, total_score, energy_score, energy_change_24h, buzz_score, album_sales_score, music_score, social_score,
+          youtube_change_24h, buzz_change_24h, album_change_24h, music_change_24h, social_change_24h, scored_at,
           wiki_entries:wiki_entry_id (id, title, slug, image_url, metadata, schema_type, created_at)`)
         .order("scored_at", { ascending: false });
 
@@ -116,6 +117,7 @@ const V3Rankings = () => {
       case "buzz": return item.buzz_change_24h ?? 0;
       case "album": return item.album_change_24h ?? 0;
       case "music": return item.music_change_24h ?? 0;
+      case "social": return item.social_change_24h ?? 0;
       case "fan": return item.fan_change_24h ?? 0;
       default: return item.energy_change_24h ?? 0;
     }
@@ -127,6 +129,7 @@ const V3Rankings = () => {
       case "buzz": return Number(item.buzz_score ?? 0);
       case "album": return Number(item.album_sales_score ?? 0);
       case "music": return Number(item.music_score ?? 0);
+      case "social": return Number(item.social_score ?? 0);
       case "fan": return Number(item.fan_score ?? 0);
       default: return Number(item.total_score ?? 0);
     }
@@ -171,7 +174,7 @@ const V3Rankings = () => {
 
   return (
     <>
-      <SEO title="K-Pop Trend Rankings – KTrenZ" titleKo="K-Pop 트렌드 순위 – KTrenZ" description="Full K-Pop artist trend rankings by energy score, YouTube, buzz, and music data." descriptionKo="에너지 점수 기반 K-Pop 아티스트 전체 트렌드 순위." path="/rankings" />
+      <SEO title="K-Pop Energy Analysis & Prediction – KTrenZ" titleKo="K-Pop 에너지 분석 및 예측 – KTrenZ" description="Real-time K-Pop artist energy analysis with AI-powered trend prediction across YouTube, social, music, and buzz data." descriptionKo="유튜브·소셜·음원·버즈 데이터 기반 K-Pop 아티스트 에너지 실시간 분석과 AI 트렌드 예측." path="/rankings" />
       {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
       {!isMobile && <V3DesktopHero />}
       <main className={cn("max-w-3xl mx-auto px-4 pb-20", isMobile ? "pt-16" : "pt-4")}>

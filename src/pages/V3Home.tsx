@@ -34,10 +34,10 @@ const V3Home = () => {
     return (
       <>
         <SEO
-          title="KTrenZ – Live K-Pop Trend Rankings"
-          titleKo="KTrenZ – 실시간 K-Pop 트렌드 순위"
-          description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X, and music charts. Updated every 6 hours."
-          descriptionKo="유튜브·X·음원 데이터 기반 실시간 K-Pop 아티스트 에너지 점수와 트렌드 순위."
+          title="KTrenZ – K-Pop Energy Analysis & AI Prediction"
+          titleKo="KTrenZ – K-Pop 에너지 분석 및 AI 예측"
+          description="Analyze real-time K-Pop artist energy across YouTube, social, music, and buzz data. AI-powered trend prediction updated every 6 hours."
+          descriptionKo="유튜브·소셜·음원·버즈 데이터 기반 K-Pop 에너지 실시간 분석과 AI 트렌드 예측."
           path="/"
         />
         {!isSubPage && <V3Header />}
@@ -57,10 +57,10 @@ const V3Home = () => {
   return (
     <>
       <SEO
-        title="KTrenZ – Live K-Pop Trend Rankings"
-        titleKo="KTrenZ – 실시간 K-Pop 트렌드 순위"
-        description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X, and music charts. Updated every 6 hours."
-        descriptionKo="유튜브·X·음원 데이터 기반 실시간 K-Pop 아티스트 에너지 점수와 트렌드 순위."
+        title="KTrenZ – K-Pop Energy Analysis & AI Prediction"
+        titleKo="KTrenZ – K-Pop 에너지 분석 및 AI 예측"
+        description="Analyze real-time K-Pop artist energy across YouTube, social, music, and buzz data. AI-powered trend prediction updated every 6 hours."
+        descriptionKo="유튜브·소셜·음원·버즈 데이터 기반 K-Pop 에너지 실시간 분석과 AI 트렌드 예측."
         path="/"
       />
       <div className="min-h-screen flex flex-col">

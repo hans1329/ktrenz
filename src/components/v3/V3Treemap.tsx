@@ -12,7 +12,7 @@ import BoxParticles from "@/components/v3/BoxParticles";
 import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
-export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music" | "fan";
+export type EnergyCategory = "all" | "youtube" | "buzz" | "album" | "music" | "social" | "fan";
 
 interface TreemapItem {
   id: string; slug: string; title: string; imageUrl: string | null;
@@ -86,6 +86,7 @@ export function getCategoryScore(item: TreemapItem, category: EnergyCategory): n
     case "buzz": return item.buzzScore;
     case "album": return item.albumSalesScore;
     case "music": return item.musicScore;
+    case "social": return item.socialScore;
     case "fan": return item.fanScore;
     default: return item.energyScore;
   }
@@ -97,6 +98,7 @@ export function getCategoryChange(item: TreemapItem, category: EnergyCategory): 
     case "buzz": return item.buzzChange24h;
     case "album": return item.albumChange24h;
     case "music": return item.musicChange24h;
+    case "social": return item.socialChange24h;
     case "fan": return item.fanChange24h;
     default: return item.energyChange24h;
   }
@@ -108,7 +110,8 @@ const CATEGORY_CONFIG: Record<EnergyCategory, { label: string; icon: React.React
   buzz: { label: "Buzz", icon: <MessageCircle className="w-3 h-3" />, color: "hsl(280, 60%, 55%)" },
   album: { label: "Album", icon: <Disc3 className="w-3 h-3" />, color: "hsl(35, 80%, 50%)" },
   music: { label: "Music", icon: <Music className="w-3 h-3" />, color: "hsl(145, 60%, 45%)" },
-  fan: { label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(200, 80%, 50%)" },
+  social: { label: "Social", icon: <Twitter className="w-3 h-3" />, color: "hsl(195, 85%, 45%)" },
+  fan: { label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(330, 70%, 50%)" },
 };
 
 // ── Sparkline ──
