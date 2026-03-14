@@ -76,7 +76,7 @@ const SignalRadarIntelligenceSection = () => {
               팬덤 활성화
             </div>
             <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            <div className="px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 font-medium">
+            <div className="px-3 py-2 rounded-lg bg-accent/10 text-accent-foreground font-medium">
               Performance ↑
             </div>
           </div>
