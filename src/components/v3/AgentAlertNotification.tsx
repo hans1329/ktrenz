@@ -22,9 +22,32 @@ export default function AgentAlertNotification({
   const captionLines = useMemo(() => {
     if (!alert) return [];
     const raw = alert.body || "";
-    const parts = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
-    // Prepend title as the first "hero" line
-    return [alert.title, ...parts];
+    // Split on sentence-ending punctuation, then further split long chunks (~30 chars) at commas or mid-point
+    const sentences = raw.split(/(?<=[.!?。！？])\s*/).filter(Boolean);
+    const chunks: string[] = [];
+    for (const s of sentences) {
+      if (s.length <= 35) {
+        chunks.push(s);
+      } else {
+        // Try splitting at comma/semicolon first
+        const subParts = s.split(/(?<=[,;，；])\s*/).filter(Boolean);
+        if (subParts.length > 1) {
+          chunks.push(...subParts);
+        } else {
+          // Split roughly in half at nearest space
+          const mid = Math.floor(s.length / 2);
+          const spaceAfter = s.indexOf(" ", mid);
+          const spaceBefore = s.lastIndexOf(" ", mid);
+          const splitAt = spaceAfter !== -1 ? spaceAfter : spaceBefore !== -1 ? spaceBefore : mid;
+          if (splitAt > 0 && splitAt < s.length) {
+            chunks.push(s.slice(0, splitAt).trim(), s.slice(splitAt).trim());
+          } else {
+            chunks.push(s);
+          }
+        }
+      }
+    }
+    return [alert.title, ...chunks];
   }, [alert]);
 
   // Rotate through lines
