@@ -61,6 +61,8 @@ const AdminListingRequests = () => {
           wiki_entry_id: entry.id,
           tier: 1,
           display_name: req.artist_name,
+          name_ko: null,
+          youtube_channel_id: req.youtube_url ? extractYoutubeChannelId(req.youtube_url) : null,
           instagram_handle: req.instagram_url ? extractHandle(req.instagram_url) : null,
           x_handle: req.x_url ? extractHandle(req.x_url) : null,
           tiktok_handle: req.tiktok_url ? extractHandle(req.tiktok_url) : null,
