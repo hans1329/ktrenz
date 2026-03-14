@@ -205,10 +205,10 @@ export default function AgentAlertNotification({
         <div className="min-h-[100px] flex items-center justify-center w-full">
           <p
             key={currentLine}
-            className={`text-center font-bold leading-snug caption-rotate rounded-2xl px-6 py-4 ${
+            className={`text-center font-bold leading-snug caption-rotate ${
               isTitle
-                ? "text-xl text-white bg-black/25 backdrop-blur-md"
-                : "text-xl text-white/95 bg-black/20 backdrop-blur-md"
+                ? "text-xl text-white"
+                : "text-xl text-white/95 rounded-2xl px-6 py-4 bg-black/20 backdrop-blur-md"
             }`}
             style={{
               textShadow: "0 1px 8px rgba(0,0,0,0.4)",
