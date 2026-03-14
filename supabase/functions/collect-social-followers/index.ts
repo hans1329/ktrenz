@@ -265,13 +265,13 @@ Deno.serve(async (req) => {
 
       // Find matches across platforms
       const findMatch = (lookup: Map<string, PlatformEntry>): PlatformEntry | null => {
-        for (const variant of variants) {
+        for (const variant of allVariants) {
           const match = lookup.get(variant);
           if (match) return match;
         }
         // Fallback: partial matching
         for (const [key, entry] of lookup.entries()) {
-          for (const variant of variants) {
+          for (const variant of allVariants) {
             if (variant && key && (key.includes(variant) || variant.includes(key)) && variant.length >= 2) {
               return entry;
             }
