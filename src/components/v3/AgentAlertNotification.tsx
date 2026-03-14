@@ -57,32 +57,26 @@ export default function AgentAlertNotification({
     return [alert.title, ...chunks];
   }, [alert]);
 
-  // Rotate through lines
+  // Rotate through lines — title stays longer
+  const currentLineRef = React.useRef(0);
   useEffect(() => {
     if (!visible || phase === "exit" || captionLines.length === 0) return;
 
-    // Start showing first line after enter
-    const startTimer = setTimeout(() => {
-      setCurrentLine(0);
-    }, 300);
+    currentLineRef.current = 0;
+    setCurrentLine(0);
 
-    // Cycle lines — title stays longer
-    const advance = () => {
-      setCurrentLine((prev) => {
-        const next = prev + 1;
-        return next < captionLines.length ? next : 0;
-      });
-    };
     let timerId: ReturnType<typeof setTimeout>;
-    const schedule = (line: number) => {
-      const delay = line === 0 ? 2800 : 1400;
+    const tick = () => {
+      const cur = currentLineRef.current;
+      const delay = cur === 0 ? 2800 : 1400;
       timerId = setTimeout(() => {
-        advance();
-        // schedule next based on updated line
-        setCurrentLine((cur) => { schedule(cur); return cur; });
+        const next = (cur + 1) % captionLines.length;
+        currentLineRef.current = next;
+        setCurrentLine(next);
+        tick();
       }, delay);
     };
-    schedule(0);
+    const startTimer = setTimeout(() => tick(), 300);
 
     return () => {
       clearTimeout(startTimer);
