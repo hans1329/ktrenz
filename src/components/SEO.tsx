@@ -5,15 +5,33 @@ const DEFAULT_OG_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploa
 
 interface SEOProps {
   title: string;
+  titleKo?: string;
   description: string;
+  descriptionKo?: string;
   path?: string;
   ogImage?: string;
   type?: "website" | "article";
   jsonLd?: Record<string, unknown>;
 }
 
-export default function SEO({ title, description, path = "/", ogImage = DEFAULT_OG_IMAGE, type = "website", jsonLd }: SEOProps) {
+export default function SEO({
+  title,
+  titleKo,
+  description,
+  descriptionKo,
+  path = "/",
+  ogImage = DEFAULT_OG_IMAGE,
+  type = "website",
+  jsonLd,
+}: SEOProps) {
   const url = `${SITE_URL}${path}`;
+
+  // Detect language from window (set by LanguageContext)
+  const lang = typeof window !== "undefined" ? (window as any).__ktrenz_lang || "ko" : "ko";
+  const isKo = lang === "ko";
+
+  const displayTitle = isKo && titleKo ? titleKo : title;
+  const displayDesc = isKo && descriptionKo ? descriptionKo : description;
 
   const defaultJsonLd = {
     "@context": "https://schema.org",
@@ -21,6 +39,7 @@ export default function SEO({ title, description, path = "/", ogImage = DEFAULT_
     name: "KTrenZ",
     url: SITE_URL,
     description: "Real-time K-Pop trend rankings powered by YouTube, X, and music data",
+    inLanguage: ["en", "ko", "ja"],
     potentialAction: {
       "@type": "SearchAction",
       target: `${SITE_URL}/artist/{search_term_string}`,
@@ -30,17 +49,26 @@ export default function SEO({ title, description, path = "/", ogImage = DEFAULT_
 
   return (
     <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
+      <html lang={lang} />
+      <title>{displayTitle}</title>
+      <meta name="description" content={displayDesc} />
       <link rel="canonical" href={url} />
+
+      {/* Hreflang */}
+      <link rel="alternate" hreflang="en" href={url} />
+      <link rel="alternate" hreflang="ko" href={url} />
+      <link rel="alternate" hreflang="ja" href={url} />
+      <link rel="alternate" hreflang="x-default" href={url} />
 
       {/* Open Graph */}
       <meta property="og:type" content={type} />
       <meta property="og:url" content={url} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
+      <meta property="og:title" content={titleKo || title} />
+      <meta property="og:description" content={descriptionKo || description} />
       <meta property="og:image" content={ogImage} />
       <meta property="og:site_name" content="KTrenZ" />
+      <meta property="og:locale" content="ko_KR" />
+      <meta property="og:locale:alternate" content="en_US" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
