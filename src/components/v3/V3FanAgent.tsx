@@ -601,20 +601,23 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [activeSlot?.id]);
 
   useEffect(() => {
-    console.log("[FanAgent] chatHistory effect:", {
-      chatHistoryLen: chatHistory?.length,
-      hasStarted,
-      messagesLen: messages.length,
-      isChatHistoryLoading,
-      slotsLoading,
-      activeSlotId: activeSlot?.id,
+    if (!chatHistory) return;
+
+    const messageKey = (msg: ChatMessage) => `${msg.role}|${msg.timestamp}|${msg.content}`;
+
+    setMessages((prev) => {
+      if (chatHistory.length === 0) return prev;
+      if (prev.length === 0) return chatHistory;
+
+      const historyKeys = new Set(chatHistory.map(messageKey));
+      const pendingMessages = prev.filter((msg) => !historyKeys.has(messageKey(msg)));
+      return pendingMessages.length > 0 ? [...chatHistory, ...pendingMessages] : chatHistory;
     });
-    if (chatHistory && chatHistory.length > 0 && !hasStarted) {
-      console.log("[FanAgent] Loading chat history into messages:", chatHistory.length);
-      setMessages(chatHistory);
+
+    if (chatHistory.length > 0) {
       setHasStarted(true);
     }
-  }, [chatHistory, hasStarted]);
+  }, [chatHistory]);
 
   const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
