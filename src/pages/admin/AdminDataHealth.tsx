@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Loader2, AlertTriangle, Wand2, Music, Youtube, Headphones, Pencil } from 'lucide-react';
+import { Loader2, AlertTriangle, Wand2, Music, Youtube, Headphones, Pencil, Instagram } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ArtistHealth {
@@ -22,6 +22,9 @@ interface ArtistHealth {
   youtube_topic_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
+  instagram_handle: string | null;
+  x_handle: string | null;
+  tiktok_handle: string | null;
   wiki_title: string;
   wiki_image: string | null;
 }
@@ -35,6 +38,9 @@ const AdminDataHealth = () => {
     youtube_topic_channel_id: '',
     lastfm_artist_name: '',
     deezer_artist_id: '',
+    instagram_handle: '',
+    x_handle: '',
+    tiktok_handle: '',
   });
 
   const { data: artists = [], isLoading } = useQuery({
@@ -42,7 +48,7 @@ const AdminDataHealth = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, instagram_handle, x_handle, tiktok_handle, wiki_entries!inner(title, image_url)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -56,6 +62,9 @@ const AdminDataHealth = () => {
         youtube_topic_channel_id: row.youtube_topic_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
+        instagram_handle: row.instagram_handle,
+        x_handle: row.x_handle,
+        tiktok_handle: row.tiktok_handle,
         wiki_title: row.wiki_entries.title,
         wiki_image: row.wiki_entries.image_url,
       })) as ArtistHealth[];
@@ -69,6 +78,9 @@ const AdminDataHealth = () => {
       youtube_topic_channel_id: artist.youtube_topic_channel_id || '',
       lastfm_artist_name: artist.lastfm_artist_name || '',
       deezer_artist_id: artist.deezer_artist_id || '',
+      instagram_handle: artist.instagram_handle || '',
+      x_handle: artist.x_handle || '',
+      tiktok_handle: artist.tiktok_handle || '',
     });
   };
 
@@ -92,6 +104,9 @@ const AdminDataHealth = () => {
           youtube_topic_channel_id: editFields.youtube_topic_channel_id.trim() || null,
           lastfm_artist_name: editFields.lastfm_artist_name.trim() || null,
           deezer_artist_id: editFields.deezer_artist_id.trim() || null,
+          instagram_handle: editFields.instagram_handle.trim() || null,
+          x_handle: editFields.x_handle.trim() || null,
+          tiktok_handle: editFields.tiktok_handle.trim() || null,
         } as any)
         .eq('id', editArtist.id);
       if (error) throw error;
