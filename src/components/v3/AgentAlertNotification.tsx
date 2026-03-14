@@ -223,7 +223,7 @@ export default function AgentAlertNotification({
               </AvatarFallback>
             )}
           </Avatar>
-          <span className="text-[9px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 font-bold tracking-widest uppercase animate-pulse">
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 font-bold tracking-widest uppercase animate-pulse">
             {t("alert.liveAlert")}
           </span>
         </div>
