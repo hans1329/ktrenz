@@ -35,7 +35,9 @@ const V3Home = () => {
       <>
         <SEO
           title="KTrenZ – Live K-Pop Trend Rankings"
-          description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X (Twitter), and music charts. Updated every hour."
+          titleKo="KTrenZ – 실시간 K-Pop 트렌드 순위"
+          description="Track real-time K-Pop artist popularity with FES energy scores from YouTube, X, and music charts. Updated every 6 hours."
+          descriptionKo="유튜브·X·음원 데이터 기반 실시간 K-Pop 아티스트 에너지 점수와 트렌드 순위."
           path="/"
         />
         {!isSubPage && <V3Header />}
