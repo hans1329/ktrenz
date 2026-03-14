@@ -18,6 +18,8 @@ interface Particle {
   vy: number;
   size: number;
   opacity: number;
+  rotation: number;
+  rotationSpeed: number;
 }
 
 const BoxParticles = ({
@@ -57,6 +59,8 @@ const BoxParticles = ({
       vy: (Math.random() - 0.5) * 2 * velBase,
       size: Math.random() * sizeBase + 0.8,
       opacity: Math.random() * opacityBase + 0.1,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.02,
     }));
 
     const drawStar = (cx: number, cy: number, r: number, spikes: number) => {
@@ -84,8 +88,13 @@ const BoxParticles = ({
         ctx.globalAlpha = p.opacity;
         ctx.fillStyle = color;
         if (shape === "star") {
-          drawStar(p.x, p.y, p.size * 3.5, 5);
+          p.rotation += p.rotationSpeed;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          drawStar(0, 0, p.size * 3.5, 5);
           ctx.fill();
+          ctx.restore();
         } else {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
