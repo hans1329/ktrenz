@@ -17,6 +17,25 @@ const V3Home = () => {
   const isSubPage = activeTab === "agent";
   const { pendingAlert, dismissAlert } = useAgentAlerts();
 
+  // ── TEST: fake alert for dev ──
+  const [testAlert, setTestAlert] = useState<any>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTestAlert({
+        id: "test-1",
+        type: "energy_spike" as const,
+        artistName: "aespa",
+        wikiEntryId: "test",
+        title: "🔥 aespa Energy Surging!",
+        body: "Energy score jumped +12.4% in the last 6 hours. YouTube views and social mentions are driving the spike, likely linked to a new music video teaser drop.",
+        emoji: "🔥",
+        slot: { avatar_url: null } as any,
+        timestamp: Date.now(),
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   // V3 다크 테마 적용
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
