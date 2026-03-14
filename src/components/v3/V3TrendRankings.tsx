@@ -558,9 +558,11 @@ const V3TrendRankings = () => {
 
       const latestMap = new Map<string, any>();
       for (const s of typedScores) {
-        const entryCreatedAt = s.wiki_entries?.created_at;
-        if (entryCreatedAt && entryCreatedAt > threeDaysAgo) continue;
-        if (!latestMap.has(s.wiki_entry_id)) latestMap.set(s.wiki_entry_id, s);
+        if (!latestMap.has(s.wiki_entry_id)) {
+          const entryCreatedAt = s.wiki_entries?.created_at;
+          const isNew = entryCreatedAt ? entryCreatedAt > threeDaysAgo : false;
+          latestMap.set(s.wiki_entry_id, { ...s, isNew });
+        }
       }
 
       return Array.from(latestMap.values()).map((item) => ({
