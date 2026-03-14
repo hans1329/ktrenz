@@ -38,6 +38,9 @@ const AdminDataHealth = () => {
     youtube_topic_channel_id: '',
     lastfm_artist_name: '',
     deezer_artist_id: '',
+    instagram_handle: '',
+    x_handle: '',
+    tiktok_handle: '',
   });
 
   const { data: artists = [], isLoading } = useQuery({
