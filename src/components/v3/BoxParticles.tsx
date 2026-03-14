@@ -7,6 +7,8 @@ interface BoxParticlesProps {
   speed?: number;
   /** 0~1, higher = larger/brighter particles */
   density?: number;
+  /** Particle shape: "circle" (default) or "star" */
+  shape?: "circle" | "star";
 }
 
 interface Particle {
