@@ -78,6 +78,7 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
     { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 70%, 45%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
     { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 90%, 42%)", change: item.albumChange24h },
     { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 70%, 38%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "Social", value: item.socialScore, color: "hsl(210, 80%, 50%)", change: item.socialChange24h },
     { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Fan Activity", value: item.fanScore, color: "hsl(200, 80%, 50%)", change: item.fanChange24h },
   ].filter(c => c.value > 0);
 
