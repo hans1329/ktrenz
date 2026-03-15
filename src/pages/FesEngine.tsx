@@ -357,14 +357,16 @@ normalized_fes (분석용):
       </div>
 
       {/* ── 정규화 분석 테이블 ── */}
-      <SectionHeader icon={FlaskConical} title="v6 데이터 저장소" color="bg-violet-600" />
-      <p className="text-sm text-muted-foreground">FES v6의 Z-Score 정규화, 기여도, 트렌드 데이터가 저장되는 테이블입니다.</p>
+      <SectionHeader icon={FlaskConical} title="v6.1 데이터 저장소" color="bg-violet-600" />
+      <p className="text-sm text-muted-foreground">FES v6.1의 에너지 계산, Z-Score 분석, 트렌드 데이터가 저장되는 테이블입니다.</p>
 
       <VarTable rows={[
-        { name: "ktrenz_fes_contributions", desc: "카테고리별 z-score + 기여도 + normalized_fes + 주도 카테고리 (스냅샷당)", source: "Supabase" },
+        { name: "v3_scores_v2.energy_score", desc: "calculate-energy-score가 직접 관리하는 최종 에너지 온도 (10°~250°)", source: "Supabase" },
+        { name: "v3_energy_snapshots_v2", desc: "카테고리별 velocity, intensity, social, fan 포함 에너지 스냅샷 (1h 중복 방지)", source: "Supabase" },
+        { name: "v3_energy_baselines_v2", desc: "7d/30d EMA 베이스라인 (α=0.15/0.05)", source: "Supabase" },
+        { name: "ktrenz_fes_contributions", desc: "카테고리별 z-score + 기여도 + normalized_fes + 주도 카테고리 (분석 전용, energy_score 미덮어쓰기)", source: "Supabase" },
         { name: "ktrenz_category_trends", desc: "카테고리별 7d/30d 독립 트렌드 (방향/모멘텀/변동률)", source: "Supabase" },
-        { name: "ktrenz_normalization_stats", desc: "전체 아티스트 분포 기준 통계 (평균/σ/중앙값/샘플수)", source: "Supabase" },
-        { name: "v3_scores_v2.energy_score", desc: "FES Analyst가 덮어쓰는 최종 에너지 점수", source: "Supabase" },
+        { name: "ktrenz_normalization_stats", desc: "Tier 1 아티스트 분포 기준 통계 (평균/σ/중앙값/샘플수)", source: "Supabase" },
       ]} />
 
       {/* ── AI 예측 에이전트 (NEW) ── */}
