@@ -1096,7 +1096,7 @@ async function collectForSingleArtist(
         const circleData = await scrapeWithFirecrawl(circleUrl, keys.firecrawl, false, 12000, 30000);
         const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
         const circleParsed = parseCircleChart(circleMd);
-        console.log(`[DataCollector] Circle Chart parsed ${circleParsed.length} entries`);
+        console.log(`[DataCollector] Circle Chart: rawParsed=${circleParsed.length} (single-artist mode)`);
         
         // 아티스트 매칭
         for (const entry of circleParsed) {
