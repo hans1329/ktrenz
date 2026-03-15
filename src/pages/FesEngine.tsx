@@ -7,7 +7,7 @@ import V3Sidebar from "@/components/v3/V3Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart, Globe, MapPin, Brain, FlaskConical, Target } from "lucide-react";
+import { ArrowLeft, Home, Flame, Youtube, Zap, Music, TrendingUp, Activity, Gauge, Server, Headphones, Disc3, BarChart3, Users, Heart, Globe, MapPin, Brain, FlaskConical, Target, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SectionHeader = ({ icon: Icon, title, color }: { icon: any; title: string; color: string }) => (
@@ -55,7 +55,7 @@ const FesEngine = () => {
       <Card className="p-5 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 border-primary/20">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center"><Gauge className="w-7 h-7 text-primary" /></div>
-          <div><h1 className="text-xl font-black text-foreground">KTRENDZ 스코어링 엔진</h1><p className="text-sm text-muted-foreground mt-0.5">FES v6 — Z-Score 정규화 기반 팬 에너지 스코어링 시스템</p></div>
+          <div><h1 className="text-xl font-black text-foreground">KTRENDZ 스코어링 엔진</h1><p className="text-sm text-muted-foreground mt-0.5">FES v6.1 — 가중 변동률 직접 매핑 기반 팬 에너지 스코어링 시스템</p></div>
         </div>
       </Card>
 
@@ -76,13 +76,13 @@ const FesEngine = () => {
       <FormulaCard title="정규화 가중 합산" formula={`TotalTrendScore =
   min(ytScore / 310, 100) × 30   ← YouTube 30%
 + min(buzzScore / 15, 100) × 25  ← Buzz 25%
-+ min(albumScore / 40, 100) × 25 ← Album Sales 25%
++ min(albumScore / 40, 100) × 25 ← Sales 25%
 + min(musicScore / 2, 100) × 20  ← Music 20%`} description="각 구성 요소는 정규화 상수로 나눈 후 100으로 제한됩니다. 최종 점수는 DB의 GENERATED 컬럼으로, 하위 점수 업데이트 시 자동 재계산됩니다." />
 
       <div className="grid grid-cols-4 gap-2">
         <Card className="p-3 bg-card border-border/50 text-center"><Youtube className="w-5 h-5 mx-auto text-destructive" /><p className="text-sm font-bold text-foreground mt-1">30%</p><p className="text-xs text-muted-foreground">YouTube</p></Card>
         <Card className="p-3 bg-card border-border/50 text-center"><Zap className="w-5 h-5 mx-auto text-amber-500" /><p className="text-sm font-bold text-foreground mt-1">25%</p><p className="text-xs text-muted-foreground">Buzz</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><BarChart3 className="w-5 h-5 mx-auto text-emerald-500" /><p className="text-sm font-bold text-foreground mt-1">25%</p><p className="text-xs text-muted-foreground">Album Sales</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><DollarSign className="w-5 h-5 mx-auto text-emerald-500" /><p className="text-sm font-bold text-foreground mt-1">25%</p><p className="text-xs text-muted-foreground">Sales</p></Card>
         <Card className="p-3 bg-card border-border/50 text-center"><Music className="w-5 h-5 mx-auto text-purple-500" /><p className="text-sm font-bold text-foreground mt-1">20%</p><p className="text-xs text-muted-foreground">Music</p></Card>
       </div>
 
@@ -135,33 +135,54 @@ External Videos:  1.2x  ← 외부 채널 출연`}</code>
         <p className="text-xs text-muted-foreground mt-2">네이버 뉴스 수집이 Buzz보다 먼저 실행되어 한국 미디어 데이터가 집계에 포함됩니다.</p>
       </Card>
 
-      {/* ── 앨범 판매 스코어 ── */}
-      <SectionHeader icon={BarChart3} title="앨범 판매 스코어 (멀티 소스)" color="bg-emerald-600" />
-      <p className="text-sm text-muted-foreground"><strong>한터 차트</strong>의 앨범/실물 판매량 + <strong>Apple Music RSS</strong> 및 <strong>Billboard</strong> (Firecrawl 스크래핑)의 글로벌 차트 성적을 결합합니다.</p>
-      <FormulaCard title="공식" formula={`AlbumScore = baseScore × 0.30 + deltaScore × 0.70 + chartBonus
+      {/* ── Sales 스코어 ── */}
+      <SectionHeader icon={DollarSign} title="Sales 스코어 (Revenue/Performance)" color="bg-emerald-600" />
+      <p className="text-sm text-muted-foreground">실물 판매 + 글로벌 차트 성과 + 스트리밍 수익 지표를 통합한 <strong>수익/성과 중심</strong> 카테고리입니다. 한터/Circle 판매 데이터가 없어도 차트·스트리밍 성적만으로 점수를 생성할 수 있습니다.</p>
+      <FormulaCard title="공식" formula={`SalesScore = baseScore × 0.30 + deltaScore × 0.70
+           + chartBonus + circleBonus + streamingBonus
 
 baseScore  = log10(dailySales) × 200
 deltaScore = (dailySales − prevDailySales) / 10K × 500
-chartBonus = appleBonus + billboardBonus`} description="차트 보너스는 가산식입니다 — 글로벌 차트에 진입한 아티스트는 한터 판매 데이터가 없어도 차트 성적만으로 점수를 받을 수 있습니다." />
+
+chartBonus     = appleBonus + billboardBonus
+circleBonus    = rankBonus + log10(weeklySales) × 30
+streamingBonus = koreanChartBonus + spotifyListenersBonus`} description="streamingBonus는 v2에서 추가. Spotify 리스너와 멜론/지니 차트 순위가 Sales(수익) 지표로 통합되었습니다." />
       <Card className="p-4 bg-card border-border/50">
-        <p className="text-sm text-muted-foreground font-medium mb-1.5">차트 보너스 포인트</p>
+        <p className="text-sm text-muted-foreground font-medium mb-1.5">차트 & 스트리밍 보너스 포인트</p>
         <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`Apple Music (국가별, 10개국):
   Top 10:  +150pt    Top 50:  +80pt    Top 100: +30pt
 
 Billboard (차트별: 200, Hot 100, Global 200, Global Excl. US):
   Top 10:  +300pt    Top 50:  +150pt
-  Top 100: +60pt     Top 200: +20pt`}</code>
-        <p className="text-xs text-muted-foreground mt-2">예시: Apple Music KR #3 + US #45 + Billboard Global 200 #80 → 150 + 80 + 60 = +290pt 차트 보너스</p>
+  Top 100: +60pt     Top 200: +20pt
+
+Circle Chart (주간 앨범):
+  Top 5:   +200pt    Top 10:  +150pt   Top 30:  +80pt
+  Top 50:  +40pt     Top 100: +15pt
+  + log10(weeklySales) × 30
+
+Melon/Genie TOP100 (한국 스트리밍):
+  Top 10:  +200pt    Top 30:  +120pt
+  Top 50:  +70pt     Top 100: +30pt
+
+Spotify Monthly Listeners:
+  Base:    log10(listeners) × 15  (1M=90pt, 10M=120pt)
+  Change:  ±log10(|dailyChange|+1) × 10  (최대 ±50pt)`}</code>
+        <p className="text-xs text-muted-foreground mt-2">예시: Hanteo 일간 5만장 + Apple KR #3 + Spotify 12M listeners (+50K/day) + Melon #8 → 높은 Sales 점수</p>
       </Card>
       <VarTable rows={[
-        { name: "dailySales", desc: "한터 일일 앨범 판매량", source: "한터 차트 API" },
+        { name: "dailySales", desc: "한터 일일 앨범 판매량", source: "한터 차트 (Firecrawl)" },
+        { name: "weeklySales", desc: "Circle 주간 앨범 판매량", source: "Circle Chart (Firecrawl)" },
         { name: "appleChartPos", desc: "국가별 앨범 차트 순위 (10개국)", source: "Apple Music RSS" },
         { name: "billboardPos", desc: "4개 Billboard 차트 순위", source: "Firecrawl (billboard.com)" },
+        { name: "spotifyListeners", desc: "Spotify 월간 리스너 수", source: "kworb.net (collect-spotify-listeners)" },
+        { name: "koreanChartRank", desc: "멜론/지니 TOP100 최고 순위", source: "collect-korean-charts" },
         { name: "prevDailySales", desc: "델타 계산용 24시간 전 판매량", source: "ktrenz_data_snapshots" },
       ]} />
 
       {/* ── Music 스코어 ── */}
-      <SectionHeader icon={Music} title="Music 스코어 (v2 델타-오버-델타)" color="bg-purple-600" />
+      <SectionHeader icon={Music} title="Music 스코어 (Engagement/참여)" color="bg-purple-600" />
+      <p className="text-sm text-muted-foreground">순수 <strong>청취 활동/관심도</strong> 지표만 사용합니다. Spotify 리스너와 멜론 차트는 v2에서 Sales(수익) 카테고리로 이동하여, Music은 비수익 참여 행위에 집중합니다.</p>
       <FormulaCard title="공식" formula={`MusicScore = baseScore × 0.30 + deltaScore × 0.70
 
 baseScore = log10(playcount)×10 + log10(listeners)×8
@@ -174,6 +195,15 @@ deltaScore = Σ incrementDeltaScore(metric, 24시간전, 48시간전, scale)
   └─ YT Music topicViews (scale=40)
   └─ MV views (scale=50)`}
         description="모든 누적 지표는 델타-오버-델타를 사용합니다: 오늘 증분 대 어제 증분의 비율 (가속도 0.3x~5.0x). deltaScore는 max(baseScore × 5, 500)으로 제한됩니다." />
+
+      <Card className="p-4 bg-purple-500/5 border-purple-500/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v2 카테고리 재편 — Sales vs Music 분리 기준</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+          <li><strong className="text-foreground">Sales (수익/성과):</strong> Hanteo, Circle, Apple Music, Billboard, Spotify Listeners, Melon TOP100 — 직접적 매출·차트 성과 연결</li>
+          <li><strong className="text-foreground">Music (참여/관심):</strong> Last.fm, Deezer, YT Music Topic, MV 조회 — 비수익 청취·탐색 행위</li>
+          <li><strong className="text-foreground">철학:</strong> "Fan Activity → Revenue" 전환율 분석의 기반 — Buzz/Music(관심)이 Sales(성과)로 이어지는 인과 관계 추적</li>
+        </ul>
+      </Card>
 
       <Card className="p-4 bg-primary/5 border-primary/20">
         <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">incrementDeltaScore 함수</p>
@@ -232,89 +262,111 @@ Twitter/X: 1.0x  ← 기준선`}</code>
         <p className="text-xs text-muted-foreground mt-2">ktrenz_user_events 테이블에서 수집. 팬 스코어 = Σ(event_weight) / 아티스트 / 24시간</p>
       </Card>
 
-      {/* ── FES v6 ── */}
-      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v6" color="bg-red-600" />
-      <p className="text-sm text-muted-foreground">Z-Score 정규화 기반의 5개 카테고리 가중 에너지 스코어. YouTube 편중 문제를 해결하고 카테고리별 상대적 성장을 균형 있게 반영합니다. <Badge variant="outline" className="text-xs ml-1">최소 10 · 최대 250</Badge></p>
+      {/* ── FES v6.1 ── */}
+      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v6.1" color="bg-red-600" />
+      <p className="text-sm text-muted-foreground">가중 변동률을 에너지 온도에 직접 매핑하는 <strong>6개 카테고리</strong> 에너지 스코어. "온도가 높다 = 지금 변동이 크다"는 가장 직관적인 원칙을 따릅니다. <Badge variant="outline" className="text-xs ml-1">최소 10° · 최대 250°</Badge></p>
 
       <Card className="p-4 bg-primary/5 border-primary/20">
-        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v6 아키텍처 — v5.4 대비 주요 변경점</p>
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v6.1 아키텍처 — 핵심 설계 원칙</p>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li><strong className="text-foreground">Z-Score 정규화:</strong> v5.4의 시그모이드+퍼센타일 방식 대신, 전체 아티스트 분포 기준 Z-Score로 정규화하여 YouTube의 절대 변동이 다른 카테고리를 마스킹하지 않음</li>
-          <li><strong className="text-foreground">5개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Social 5% (Fan Activity는 별도 트래킹)</li>
-          <li><strong className="text-foreground">시그모이드 FES 변환:</strong> 가중 Z-Score 합산 → 시그모이드 함수로 10~250 스케일 매핑</li>
-          <li><strong className="text-foreground">기여도 정량화:</strong> 매 스냅샷마다 각 카테고리가 FES 변동에 기여한 비율을 자동 계산</li>
-          <li><strong className="text-foreground">독립 트렌드:</strong> 7일/30일 롤링 통계로 카테고리별 방향·모멘텀을 독립적으로 추적</li>
-          <li><strong className="text-foreground">AI 예측 통합:</strong> GPT-4o-mini 기반 24–48h FES 방향 예측 + 자동 검증 파이프라인</li>
-          <li><strong className="text-foreground">v3_scores_v2 덮어쓰기:</strong> FES Analyst의 normalized_fes가 메인 energy_score 컬럼을 직접 업데이트</li>
+          <li><strong className="text-foreground">직접 매핑:</strong> 가중 변동률(%) → 지수 감쇄 함수로 10°~250° 온도에 직접 매핑 (중간 변환 없음)</li>
+          <li><strong className="text-foreground">6개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Sales 14% | Social 5% | Fan 3%</li>
+          <li><strong className="text-foreground">비대칭 감쇄:</strong> 상승은 그대로, 하락은 30% 감쇄 적용하여 급냉 방지</li>
+          <li><strong className="text-foreground">Low-base 캡:</strong> 이전값 {"<"} 5이면 변동률 ±100%로 제한 (저기저 효과 방지)</li>
+          <li><strong className="text-foreground">유효 카테고리만:</strong> 이전 데이터가 없는 카테고리는 가중 평균에서 제외하고 나머지 가중치 재정규화</li>
+          <li><strong className="text-foreground">Fallback:</strong> 24h 전 스냅샷이 없으면 Intensity(퍼센타일) 기반 초기 온도 설정</li>
         </ul>
       </Card>
 
-      <FormulaCard title="v6 핵심 공식 — Z-Score 정규화 FES" formula={`1단계: 카테고리별 24h 변동률
+      <FormulaCard title="v6.1 핵심 공식 — 가중 변동률 → 온도 직접 매핑" formula={`1단계: 카테고리별 24h 변동률
   change_cat = (현재_스코어 − 24h전_스코어) / 24h전_스코어 × 100
+  ※ 이전값 < 5이면 ±100% 캡 (low-base effect 방지)
 
-2단계: 전체 아티스트 분포 통계
-  mean_cat  = avg(모든 아티스트의 change_cat)
-  stddev_cat = stddev(모든 아티스트의 change_cat)
+2단계: 가중 평균 변동률 (유효 카테고리만)
+  overallChange = Σ(change_cat × weight_cat) / Σ(weight_cat)
+  ※ 이전 데이터 없는 카테고리는 제외, 가중치 재정규화
 
-3단계: Z-Score 정규화
-  z_cat = (change_cat − mean_cat) / stddev_cat
+3단계: 지수 감쇄 매핑 → 온도
+  mapped = 250 × (1 − e^(−|overallChange| / 100))
 
-4단계: 가중 합산 → 시그모이드 변환
-  weightedZ = Σ(z_cat × weight_cat)
-  sigmoid   = 1 / (1 + e^(−weightedZ × 0.5))
-  FES       = 10 + sigmoid × 240  →  범위: 10 ~ 250`}
-        description="Z-Score를 통해 YouTube의 5% 변동과 Buzz의 50% 변동을 동일 스케일에서 비교할 수 있습니다. 시그모이드 변환으로 극단값을 자연스럽게 제한합니다." />
+  상승(≥0%): energyScore = clamp(mapped, 10, 250)
+  하락(<0%): energyScore = clamp(mapped × 0.3, 10, 250)`}
+        description="0% → 10°, ~50% → ~88°, ~100% → ~150°, ~200% → ~215°, 500%+ → ~250°. 하락은 30% 감쇄로 급냉을 방지합니다." />
 
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-6 gap-1.5">
         <Card className="p-2.5 bg-card border-border/50 text-center"><Youtube className="w-4 h-4 mx-auto text-destructive" /><p className="text-xs font-bold text-foreground mt-1">37%</p><p className="text-[10px] text-muted-foreground">YouTube</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Zap className="w-4 h-4 mx-auto text-amber-500" /><p className="text-xs font-bold text-foreground mt-1">23%</p><p className="text-[10px] text-muted-foreground">Buzz</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">18%</p><p className="text-[10px] text-muted-foreground">Music</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Disc3 className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">14%</p><p className="text-[10px] text-muted-foreground">Album</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Users className="w-4 h-4 mx-auto text-pink-500" /><p className="text-xs font-bold text-foreground mt-1">5%</p><p className="text-[10px] text-muted-foreground">Social</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><DollarSign className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">14%</p><p className="text-[10px] text-muted-foreground">Sales</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Users className="w-4 h-4 mx-auto text-cyan-500" /><p className="text-xs font-bold text-foreground mt-1">5%</p><p className="text-[10px] text-muted-foreground">Social</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Heart className="w-4 h-4 mx-auto text-pink-500" /><p className="text-xs font-bold text-foreground mt-1">3%</p><p className="text-[10px] text-muted-foreground">Fan</p></Card>
       </div>
 
-      <FormulaCard title="기여도 계산" formula={`가중 |z| = |z_cat| × weight_cat
-기여도_cat = 가중|z|_cat / Σ(가중|z|_all) × 100%
+      <FormulaCard title="보조 지표 — Velocity & Intensity" formula={`Velocity (카테고리별):
+  velocity = sign(change) × 250 × (1 − e^(−|change| / 50))
+  → 0% = 0점, ±50% = ±125점, ±100%+ = ±250 근처
 
-주도 카테고리 = max(기여도_cat)`}
-        description="예: YouTube z=0.5(기여 25%), Buzz z=2.1(기여 40%), Album z=-0.3(기여 5%) → 주도 카테고리: Buzz" />
+Intensity (카테고리별):
+  intensity = clamp(percentile × 250, 0, 250)
+  → 전체 아티스트 내 절대 수준 순위 (0~1 퍼센타일)`}
+        description="Velocity는 모멘텀(방향), Intensity는 절대 규모를 나타냅니다. 인스펙터 패널에서 카테고리별로 표시됩니다." />
+
+      <FormulaCard title="v6.1 파이프라인 흐름" formula={`calculate-energy-score (v6.1 메인 엔진)
+  → v3_scores_v2.energy_score 직접 업데이트
+  → v3_energy_snapshots_v2 스냅샷 저장 (1h 중복 방지)
+  → v3_energy_baselines_v2 EMA 업데이트 (7d α=0.15, 30d α=0.05)
+
+ktrenz-fes-analyst (독립 분석 레이어)
+  → Z-Score 정규화 + 기여도 → ktrenz_fes_contributions (분석 전용)
+  → 독립 트렌드 → ktrenz_category_trends
+  ※ energy_score를 덮어쓰지 않음 — 분석/AI 에이전트용 독립 데이터`}
+        description="calculate-energy-score가 최종 에너지 온도를 관리합니다. FES Analyst는 분석 전용으로 독립 운영됩니다." />
+
+      <FormulaCard title="FES Analyst — Z-Score 정규화 (분석 레이어)" formula={`정규화 (Tier 1 아티스트만 대조군):
+  z_cat = (change_cat − mean_cat) / stddev_cat
+
+기여도:
+  가중|z|_cat / Σ(가중|z|_all) × 100%
+
+normalized_fes (분석용):
+  weightedZ = Σ(z_cat × weight_cat)
+  magnitude = 120 × (1 − e^(−|weightedZ| / 1.5))
+  normalized_fes = clamp(130 + sign(weightedZ) × magnitude, 10, 250)`}
+        description="normalized_fes는 ktrenz_fes_contributions에만 저장됩니다. AI 예측 및 에이전시 분석의 입력 피처로 활용됩니다." />
 
       <FormulaCard title="독립 트렌드 (7d/30d)" formula={`카테고리별 롤링 통계:
   avg_7d    = 최근 7일 z-score 평균
   stddev_7d = 최근 7일 z-score 표준편차
   change_7d = z_최신 − z_7일전
 
-모멘텀 = (avg_7d − avg_30d) / |avg_30d| × 100
+모멘텀 = (avg_7d − avg_30d) / max(|avg_30d|, stddev_30d, 0.1)
 
 트렌드 방향:
-  rising  — change_7d > 0.5
-  falling — change_7d < -0.5
-  spike   — |change_7d| > 2.0
-  flat    — 그 외`}
-        description="모멘텀이 양수면 7일 평균이 30일 평균을 상회하는 상승 추세, 음수면 하락 추세를 나타냅니다." />
-
-      <FormulaCard title="v5.4 → v6 파이프라인 흐름" formula={`calculate-energy-score (v5.4 베이스라인)
-  → ktrenz-fes-analyst (Z-Score 정규화 → normalized_fes)
-    → v3_scores_v2.energy_score 덮어쓰기
-  → ktrenz-fes-predictor (AI 예측 생성 + 과거 검증)`}
-        description="v5.4 energy 계산은 여전히 실행되지만, FES Analyst가 최종 normalized_fes로 메인 에너지 점수를 덮어씁니다." />
+  spike   — |change_7d| > 2.0 (양수만)
+  rising  — change_7d > 0.3
+  falling — change_7d < -0.3
+  flat    — 그 외
+  ※ momentum > 1.5이면 flat → rising 보정`}
+        description="모멘텀이 양수면 7일 평균이 30일 평균을 상회하는 상승 추세, 음수면 하락 추세를 나타냅니다. Spike는 양수 변동에만 적용됩니다." />
 
       <div className="grid grid-cols-4 gap-2">
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💤</span><p className="text-sm font-bold text-foreground mt-1">&lt; 80</p><p className="text-xs text-muted-foreground">Low</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💫</span><p className="text-sm font-bold text-foreground mt-1">80–150</p><p className="text-xs text-muted-foreground">Normal</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">⚡</span><p className="text-sm font-bold text-foreground mt-1">150–200</p><p className="text-xs text-muted-foreground">Active</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">🔥</span><p className="text-sm font-bold text-foreground mt-1">200+</p><p className="text-xs text-muted-foreground">Explosive</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💤</span><p className="text-sm font-bold text-foreground mt-1">&lt; 80°</p><p className="text-xs text-muted-foreground">Low</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💫</span><p className="text-sm font-bold text-foreground mt-1">80–150°</p><p className="text-xs text-muted-foreground">Normal</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">⚡</span><p className="text-sm font-bold text-foreground mt-1">150–200°</p><p className="text-xs text-muted-foreground">Active</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">🔥</span><p className="text-sm font-bold text-foreground mt-1">200°+</p><p className="text-xs text-muted-foreground">Explosive</p></Card>
       </div>
 
       {/* ── 정규화 분석 테이블 ── */}
-      <SectionHeader icon={FlaskConical} title="v6 데이터 저장소" color="bg-violet-600" />
-      <p className="text-sm text-muted-foreground">FES v6의 Z-Score 정규화, 기여도, 트렌드 데이터가 저장되는 테이블입니다.</p>
+      <SectionHeader icon={FlaskConical} title="v6.1 데이터 저장소" color="bg-violet-600" />
+      <p className="text-sm text-muted-foreground">FES v6.1의 에너지 계산, Z-Score 분석, 트렌드 데이터가 저장되는 테이블입니다.</p>
 
       <VarTable rows={[
-        { name: "ktrenz_fes_contributions", desc: "카테고리별 z-score + 기여도 + normalized_fes + 주도 카테고리 (스냅샷당)", source: "Supabase" },
+        { name: "v3_scores_v2.energy_score", desc: "calculate-energy-score가 직접 관리하는 최종 에너지 온도 (10°~250°)", source: "Supabase" },
+        { name: "v3_energy_snapshots_v2", desc: "카테고리별 velocity, intensity, social, fan 포함 에너지 스냅샷 (1h 중복 방지)", source: "Supabase" },
+        { name: "v3_energy_baselines_v2", desc: "7d/30d EMA 베이스라인 (α=0.15/0.05)", source: "Supabase" },
+        { name: "ktrenz_fes_contributions", desc: "카테고리별 z-score + 기여도 + normalized_fes + 주도 카테고리 (분석 전용, energy_score 미덮어쓰기)", source: "Supabase" },
         { name: "ktrenz_category_trends", desc: "카테고리별 7d/30d 독립 트렌드 (방향/모멘텀/변동률)", source: "Supabase" },
-        { name: "ktrenz_normalization_stats", desc: "전체 아티스트 분포 기준 통계 (평균/σ/중앙값/샘플수)", source: "Supabase" },
-        { name: "v3_scores_v2.energy_score", desc: "FES Analyst가 덮어쓰는 최종 에너지 점수", source: "Supabase" },
+        { name: "ktrenz_normalization_stats", desc: "Tier 1 아티스트 분포 기준 통계 (평균/σ/중앙값/샘플수)", source: "Supabase" },
       ]} />
 
       {/* ── AI 예측 에이전트 (NEW) ── */}
@@ -482,7 +534,7 @@ spikeDirection = changeRate > 0 ? "surge" : "drop"
 
       <FormulaCard title="Squarify 알고리즘 요약" formula={`1. 총 에너지 합산 → 아티스트별 면적 비율 계산\n2. 최악 종횡비를 최소화하며 행 배치\n3. 긴 축을 따라 반복적으로 분할\n4. 결과: 정사각형에 가까운 타일 레이아웃 → 가독성 ↑`} description="참조: finviz.com/map, kaito.ai 스타일 히트맵 레이아웃" />
 
-      <p className="text-xs text-muted-foreground text-center mt-6">최종 업데이트: 2026년 3월 12일 · KTRENDZ FES Engine v6 (Z-Score 정규화 + AI 예측)</p>
+      <p className="text-xs text-muted-foreground text-center mt-6">최종 업데이트: 2026년 3월 15일 · KTRENDZ FES Engine v6.1 (가중 변동률 직접 매핑 + Sales 카테고리 통합)</p>
     </div>
   );
 
