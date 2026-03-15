@@ -1086,7 +1086,7 @@ Artist: ${context.artist}
                     <Line type="monotone" dataKey="YouTube" stroke="#ef4444" strokeWidth={1.5} dot={false} />
                     <Line type="monotone" dataKey="Buzz" stroke="#8b5cf6" strokeWidth={1.5} dot={false} />
                     <Line type="monotone" dataKey="Music" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="Album" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="Album" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Sales" />
                     <Line type="monotone" dataKey="Social" stroke="#ec4899" strokeWidth={1.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
