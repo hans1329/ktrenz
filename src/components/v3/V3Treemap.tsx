@@ -626,11 +626,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
                 {isMedium && catChange !== 0 && (
                   <span className={cn(
-                    "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
+                    "absolute top-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
+                    rect.item.isNew ? "right-6" : "right-1",
                     catChange >= 15 ? "text-white" : catChange > 0 ? "text-green-200" : "text-blue-200"
                   )}>
                     {catChange > 0 ? "▲" : "▼"}{Math.abs(catChange).toFixed(1)}%
                   </span>
+                )}
+
+                {rect.item.isNew && (
+                  <span className="absolute top-0 right-0 z-30 bg-emerald-500 text-white font-black rounded-bl-md flex items-center justify-center"
+                    style={{ fontSize: `${Math.max(7, badgeFontSize * 0.65)}px`, padding: '1px 4px 2px 4px' }}>N</span>
                 )}
 
                 <div
@@ -650,10 +656,6 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                       style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
-                  {rect.item.isNew && isMedium && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold leading-none animate-pulse"
-                      style={{ fontSize: `${Math.max(7, badgeFontSize * 0.7)}px` }}>NEW</span>
-                  )}
                   <span className="font-black text-white drop-shadow-lg"
                     style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}°</span>
                   {isLarge && (
