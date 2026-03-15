@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.collect-billboard-charts]
 verify_jwt = false
 
+[functions.collect-korean-charts]
+verify_jwt = false
+
 [functions.ktrenz-fes-analyst]
 verify_jwt = false
 
