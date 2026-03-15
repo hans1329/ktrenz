@@ -1989,7 +1989,7 @@ Artist: ${context.artist}
                 <CardTitle className="text-sm flex items-center gap-2">
                   <GitCompareArrows className="w-4 h-4 text-indigo-500" /> FES vs 성과 상관관계 (심화)
                 </CardTitle>
-                <CardDescription className="text-xs">FES 선행 지표와 실제 성과(YouTube, Buzz, Album, Music, Social) 간의 Gap/추이/분포를 다각도로 분석합니다</CardDescription>
+                <CardDescription className="text-xs">FES 선행 지표와 실제 성과(YouTube, Buzz, Sales, Music, Social) 간의 Gap/추이/분포를 다각도로 분석합니다</CardDescription>
               </CardHeader>
               <CardContent>
                 <V3CorrelationPanel
