@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     }
 
     // Also load wiki_entries titles for broader matching
-    const wikiIds = artists.map((a: any) => a.wiki_entry_id);
+    const wikiIds = [...new Set(artists.map((a: any) => a.wiki_entry_id).filter(Boolean))];
     const { data: wikiEntries } = await sb
       .from("wiki_entries")
       .select("id, title")
