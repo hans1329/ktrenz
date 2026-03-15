@@ -235,12 +235,12 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       // Tier 1 아티스트만 가져오기
       const { data: tier1Entries } = await supabase
         .from("v3_artist_tiers" as any)
-        .select("wiki_entry_id, updated_at")
+        .select("wiki_entry_id, created_at")
         .eq("tier", 1);
       const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id));
-      const tier1UpdatedMap = new Map<string, string>();
+      const tier1CreatedMap = new Map<string, string>();
       for (const t of (tier1Entries || []) as any[]) {
-        if (t.wiki_entry_id && t.updated_at) tier1UpdatedMap.set(t.wiki_entry_id, t.updated_at);
+        if (t.wiki_entry_id && t.created_at) tier1CreatedMap.set(t.wiki_entry_id, t.created_at);
       }
 
       const { data, error } = await supabase.from("v3_scores_v2" as any)
