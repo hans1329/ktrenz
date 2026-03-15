@@ -102,8 +102,8 @@ const V3Rankings = () => {
       const latestMap = new Map<string, any>();
       for (const s of typedScores) {
         if (!latestMap.has(s.wiki_entry_id)) {
-          const tierUpdatedAt = tier1UpdatedMap.get(s.wiki_entry_id);
-          const isNew = tierUpdatedAt ? tierUpdatedAt > threeDaysAgo : false;
+          const tierCreatedAt = tier1CreatedMap.get(s.wiki_entry_id);
+          const isNew = tierCreatedAt ? tierCreatedAt > threeDaysAgo : false;
           latestMap.set(s.wiki_entry_id, { ...s, isNew });
         }
       }
