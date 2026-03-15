@@ -655,7 +655,25 @@ Deno.serve(async (req) => {
     }
 
     // ── 이전 모듈의 딜레이 대기 (체이닝에서 전달된 경우) ──
+    // 60초 Edge Function 타임아웃 보호: waitBeforeMs가 MAX_SAFE_WAIT 초과 시 릴레이 호출
+    const MAX_SAFE_WAIT_MS = 45_000;
     const waitMs = waitBeforeMs || 0;
+    if (waitMs > MAX_SAFE_WAIT_MS) {
+      const remainingWait = waitMs - MAX_SAFE_WAIT_MS;
+      console.log(`[data-engine] waitBeforeMs=${waitMs}ms exceeds safe limit. Sleeping ${MAX_SAFE_WAIT_MS}ms then relaying with ${remainingWait}ms remaining...`);
+      await new Promise(r => setTimeout(r, MAX_SAFE_WAIT_MS));
+      // 남은 대기시간을 가진 릴레이 호출 (자기 자신 재호출)
+      const relayPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+        body: JSON.stringify({ module: mod, runId: currentRunId, chain, waitBeforeMs: remainingWait }),
+      }).catch((e) => console.warn(`[data-engine] Delay relay failed:`, e.message));
+      fireAndForget(relayPromise);
+      return new Response(
+        JSON.stringify({ success: true, module: mod, runId: currentRunId, relayed: true, remainingWaitMs: remainingWait }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     if (waitMs > 0) {
       console.log(`[data-engine] Waiting ${waitMs}ms before executing ${mod}...`);
       await new Promise(r => setTimeout(r, waitMs));
