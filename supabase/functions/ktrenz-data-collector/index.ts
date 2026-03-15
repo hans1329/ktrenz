@@ -455,8 +455,70 @@ function parseHanteoDaily(markdown: string): Array<{ rank: number; album: string
   return results;
 }
 
+// ══════════════════════════════════════
+// Circle Chart (Weekly Album Sales)
+// ══════════════════════════════════════
+
+function parseCircleChart(markdown: string): Array<{ rank: number; album: string; artist: string; weekly_sales: number }> {
+  const results: Array<any> = [];
+  const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
+  
+  // Circle Chart 테이블 파싱: Rank | Album/Artist | Sales | Distribution
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // 테이블 row 패턴: "| 1 | ... |" 또는 숫자로 시작하는 줄
+    // 마크다운 테이블 형식: | Rank | Album/Artist | Sales | Distribution |
+    const tableMatch = line.match(/\|\s*(\d+)\s*\|/);
+    if (tableMatch) {
+      const cols = line.split("|").map(c => c.trim()).filter(Boolean);
+      if (cols.length >= 3) {
+        const rank = parseInt(cols[0]);
+        if (rank > 0 && rank <= 200) {
+          // Sales 열에서 숫자 추출
+          const salesCol = cols.find((c, idx) => idx >= 2 && /^[\d,]+$/.test(c.replace(/,/g, "")));
+          const sales = salesCol ? parseInt(salesCol.replace(/,/g, "")) : 0;
+          // Album/Artist 열 파싱
+          const albumArtistCol = cols[1] || "";
+          results.push({ rank, album: albumArtistCol, artist: "", weekly_sales: sales });
+        }
+      }
+      continue;
+    }
+    
+    // 비-테이블 형식: 순위, 앨범명, 아티스트명, 판매량이 별도 줄로 나열
+    const rankMatch = line.match(/^(\d+)$/);
+    if (rankMatch) {
+      const rank = parseInt(rankMatch[1]);
+      if (rank > 0 && rank <= 200) {
+        // 다음 줄들에서 앨범명, 아티스트명, 판매량 찾기
+        let album = "", artist = "", sales = 0;
+        for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
+          const salesMatch = lines[j].match(/^([\d,]+)$/);
+          if (salesMatch) {
+            const val = parseInt(salesMatch[1].replace(/,/g, ""));
+            if (val > 100) { sales = val; break; }
+          }
+          if (!album && !lines[j].startsWith("!") && !lines[j].startsWith("[") && !lines[j].match(/^(new|HOT|↑|↓|\-)\s*$/i) && lines[j].length > 1) {
+            album = lines[j];
+          } else if (album && !artist && !lines[j].startsWith("!") && !lines[j].startsWith("[") && !lines[j].match(/^(new|HOT|↑|↓|\-)\s*$/i) && lines[j].length > 1) {
+            artist = lines[j];
+          }
+        }
+        if (album && sales > 0) {
+          // 아티스트명이 괄호 안에 있을 수 있음: "TUNEXX (류넥스)" → artist 추출
+          const bracketMatch = artist.match(/^(.+?)\s*[\(（](.+?)[\)）]$/);
+          const cleanArtist = bracketMatch ? bracketMatch[1].trim() : artist;
+          results.push({ rank, album, artist: cleanArtist || album, weekly_sales: sales });
+        }
+      }
+    }
+  }
+  return results;
+}
+
 /** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
-function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0): number {
+function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0, circleBonus: number = 0): number {
   const baseScore = dailySales > 0 ? Math.log10(dailySales) * 200 : 0;
 
   let deltaScore = 0;
@@ -469,9 +531,24 @@ function calculateAlbumScore(dailySales: number, previousDailySales: number | nu
 
   deltaScore = clampDelta(deltaScore, baseScore);
 
-  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + chartBonus);
-  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
+  const totalBonus = chartBonus + circleBonus;
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
+  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} circleBonus=${circleBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
   return finalScore;
+}
+
+/** Circle Chart 주간 순위 기반 보너스 점수 */
+function calculateCircleBonus(rank: number, weeklySales: number): number {
+  let rankBonus = 0;
+  if (rank <= 5) rankBonus = 200;
+  else if (rank <= 10) rankBonus = 150;
+  else if (rank <= 30) rankBonus = 80;
+  else if (rank <= 50) rankBonus = 40;
+  else if (rank <= 100) rankBonus = 15;
+  
+  // 판매량 기반 추가 보너스 (로그 스케일)
+  const salesBonus = weeklySales > 0 ? Math.round(Math.log10(weeklySales) * 30) : 0;
+  return rankBonus + salesBonus;
 }
 
 /**
