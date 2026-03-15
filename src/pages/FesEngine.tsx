@@ -262,78 +262,98 @@ Twitter/X: 1.0x  ← 기준선`}</code>
         <p className="text-xs text-muted-foreground mt-2">ktrenz_user_events 테이블에서 수집. 팬 스코어 = Σ(event_weight) / 아티스트 / 24시간</p>
       </Card>
 
-      {/* ── FES v6 ── */}
-      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v6" color="bg-red-600" />
-      <p className="text-sm text-muted-foreground">Z-Score 정규화 기반의 5개 카테고리 가중 에너지 스코어. YouTube 편중 문제를 해결하고 카테고리별 상대적 성장을 균형 있게 반영합니다. <Badge variant="outline" className="text-xs ml-1">최소 10 · 최대 250</Badge></p>
+      {/* ── FES v6.1 ── */}
+      <SectionHeader icon={Flame} title="Fan Energy Score (FES) v6.1" color="bg-red-600" />
+      <p className="text-sm text-muted-foreground">가중 변동률을 에너지 온도에 직접 매핑하는 <strong>6개 카테고리</strong> 에너지 스코어. "온도가 높다 = 지금 변동이 크다"는 가장 직관적인 원칙을 따릅니다. <Badge variant="outline" className="text-xs ml-1">최소 10° · 최대 250°</Badge></p>
 
       <Card className="p-4 bg-primary/5 border-primary/20">
-        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v6 아키텍처 — v5.4 대비 주요 변경점</p>
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v6.1 아키텍처 — 핵심 설계 원칙</p>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li><strong className="text-foreground">Z-Score 정규화:</strong> v5.4의 시그모이드+퍼센타일 방식 대신, 전체 아티스트 분포 기준 Z-Score로 정규화하여 YouTube의 절대 변동이 다른 카테고리를 마스킹하지 않음</li>
-          <li><strong className="text-foreground">5개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Album 14% | Social 5% (Fan Activity는 별도 트래킹)</li>
-          <li><strong className="text-foreground">시그모이드 FES 변환:</strong> 가중 Z-Score 합산 → 시그모이드 함수로 10~250 스케일 매핑</li>
-          <li><strong className="text-foreground">기여도 정량화:</strong> 매 스냅샷마다 각 카테고리가 FES 변동에 기여한 비율을 자동 계산</li>
-          <li><strong className="text-foreground">독립 트렌드:</strong> 7일/30일 롤링 통계로 카테고리별 방향·모멘텀을 독립적으로 추적</li>
-          <li><strong className="text-foreground">AI 예측 통합:</strong> GPT-4o-mini 기반 24–48h FES 방향 예측 + 자동 검증 파이프라인</li>
-          <li><strong className="text-foreground">v3_scores_v2 덮어쓰기:</strong> FES Analyst의 normalized_fes가 메인 energy_score 컬럼을 직접 업데이트</li>
+          <li><strong className="text-foreground">직접 매핑:</strong> 가중 변동률(%) → 지수 감쇄 함수로 10°~250° 온도에 직접 매핑 (중간 변환 없음)</li>
+          <li><strong className="text-foreground">6개 카테고리:</strong> YouTube 37% | Buzz 23% | Music 18% | Sales 14% | Social 5% | Fan 3%</li>
+          <li><strong className="text-foreground">비대칭 감쇄:</strong> 상승은 그대로, 하락은 30% 감쇄 적용하여 급냉 방지</li>
+          <li><strong className="text-foreground">Low-base 캡:</strong> 이전값 {"<"} 5이면 변동률 ±100%로 제한 (저기저 효과 방지)</li>
+          <li><strong className="text-foreground">유효 카테고리만:</strong> 이전 데이터가 없는 카테고리는 가중 평균에서 제외하고 나머지 가중치 재정규화</li>
+          <li><strong className="text-foreground">Fallback:</strong> 24h 전 스냅샷이 없으면 Intensity(퍼센타일) 기반 초기 온도 설정</li>
         </ul>
       </Card>
 
-      <FormulaCard title="v6 핵심 공식 — Z-Score 정규화 FES" formula={`1단계: 카테고리별 24h 변동률
+      <FormulaCard title="v6.1 핵심 공식 — 가중 변동률 → 온도 직접 매핑" formula={`1단계: 카테고리별 24h 변동률
   change_cat = (현재_스코어 − 24h전_스코어) / 24h전_스코어 × 100
+  ※ 이전값 < 5이면 ±100% 캡 (low-base effect 방지)
 
-2단계: 전체 아티스트 분포 통계
-  mean_cat  = avg(모든 아티스트의 change_cat)
-  stddev_cat = stddev(모든 아티스트의 change_cat)
+2단계: 가중 평균 변동률 (유효 카테고리만)
+  overallChange = Σ(change_cat × weight_cat) / Σ(weight_cat)
+  ※ 이전 데이터 없는 카테고리는 제외, 가중치 재정규화
 
-3단계: Z-Score 정규화
-  z_cat = (change_cat − mean_cat) / stddev_cat
+3단계: 지수 감쇄 매핑 → 온도
+  mapped = 250 × (1 − e^(−|overallChange| / 100))
 
-4단계: 가중 합산 → 시그모이드 변환
-  weightedZ = Σ(z_cat × weight_cat)
-  sigmoid   = 1 / (1 + e^(−weightedZ × 0.5))
-  FES       = 10 + sigmoid × 240  →  범위: 10 ~ 250`}
-        description="Z-Score를 통해 YouTube의 5% 변동과 Buzz의 50% 변동을 동일 스케일에서 비교할 수 있습니다. 시그모이드 변환으로 극단값을 자연스럽게 제한합니다." />
+  상승(≥0%): energyScore = clamp(mapped, 10, 250)
+  하락(<0%): energyScore = clamp(mapped × 0.3, 10, 250)`}
+        description="0% → 10°, ~50% → ~88°, ~100% → ~150°, ~200% → ~215°, 500%+ → ~250°. 하락은 30% 감쇄로 급냉을 방지합니다." />
 
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-6 gap-1.5">
         <Card className="p-2.5 bg-card border-border/50 text-center"><Youtube className="w-4 h-4 mx-auto text-destructive" /><p className="text-xs font-bold text-foreground mt-1">37%</p><p className="text-[10px] text-muted-foreground">YouTube</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Zap className="w-4 h-4 mx-auto text-amber-500" /><p className="text-xs font-bold text-foreground mt-1">23%</p><p className="text-[10px] text-muted-foreground">Buzz</p></Card>
         <Card className="p-2.5 bg-card border-border/50 text-center"><Music className="w-4 h-4 mx-auto text-purple-500" /><p className="text-xs font-bold text-foreground mt-1">18%</p><p className="text-[10px] text-muted-foreground">Music</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Disc3 className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">14%</p><p className="text-[10px] text-muted-foreground">Album</p></Card>
-        <Card className="p-2.5 bg-card border-border/50 text-center"><Users className="w-4 h-4 mx-auto text-pink-500" /><p className="text-xs font-bold text-foreground mt-1">5%</p><p className="text-[10px] text-muted-foreground">Social</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><DollarSign className="w-4 h-4 mx-auto text-emerald-500" /><p className="text-xs font-bold text-foreground mt-1">14%</p><p className="text-[10px] text-muted-foreground">Sales</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Users className="w-4 h-4 mx-auto text-cyan-500" /><p className="text-xs font-bold text-foreground mt-1">5%</p><p className="text-[10px] text-muted-foreground">Social</p></Card>
+        <Card className="p-2.5 bg-card border-border/50 text-center"><Heart className="w-4 h-4 mx-auto text-pink-500" /><p className="text-xs font-bold text-foreground mt-1">3%</p><p className="text-[10px] text-muted-foreground">Fan</p></Card>
       </div>
 
-      <FormulaCard title="기여도 계산" formula={`가중 |z| = |z_cat| × weight_cat
-기여도_cat = 가중|z|_cat / Σ(가중|z|_all) × 100%
+      <FormulaCard title="보조 지표 — Velocity & Intensity" formula={`Velocity (카테고리별):
+  velocity = sign(change) × 250 × (1 − e^(−|change| / 50))
+  → 0% = 0점, ±50% = ±125점, ±100%+ = ±250 근처
 
-주도 카테고리 = max(기여도_cat)`}
-        description="예: YouTube z=0.5(기여 25%), Buzz z=2.1(기여 40%), Album z=-0.3(기여 5%) → 주도 카테고리: Buzz" />
+Intensity (카테고리별):
+  intensity = clamp(percentile × 250, 0, 250)
+  → 전체 아티스트 내 절대 수준 순위 (0~1 퍼센타일)`}
+        description="Velocity는 모멘텀(방향), Intensity는 절대 규모를 나타냅니다. 인스펙터 패널에서 카테고리별로 표시됩니다." />
+
+      <FormulaCard title="v6.1 파이프라인 흐름" formula={`calculate-energy-score (v6.1 메인 엔진)
+  → v3_scores_v2.energy_score 직접 업데이트
+  → v3_energy_snapshots_v2 스냅샷 저장 (1h 중복 방지)
+  → v3_energy_baselines_v2 EMA 업데이트 (7d α=0.15, 30d α=0.05)
+
+ktrenz-fes-analyst (독립 분석 레이어)
+  → Z-Score 정규화 + 기여도 → ktrenz_fes_contributions (분석 전용)
+  → 독립 트렌드 → ktrenz_category_trends
+  ※ energy_score를 덮어쓰지 않음 — 분석/AI 에이전트용 독립 데이터`}
+        description="calculate-energy-score가 최종 에너지 온도를 관리합니다. FES Analyst는 분석 전용으로 독립 운영됩니다." />
+
+      <FormulaCard title="FES Analyst — Z-Score 정규화 (분석 레이어)" formula={`정규화 (Tier 1 아티스트만 대조군):
+  z_cat = (change_cat − mean_cat) / stddev_cat
+
+기여도:
+  가중|z|_cat / Σ(가중|z|_all) × 100%
+
+normalized_fes (분석용):
+  weightedZ = Σ(z_cat × weight_cat)
+  magnitude = 120 × (1 − e^(−|weightedZ| / 1.5))
+  normalized_fes = clamp(130 + sign(weightedZ) × magnitude, 10, 250)`}
+        description="normalized_fes는 ktrenz_fes_contributions에만 저장됩니다. AI 예측 및 에이전시 분석의 입력 피처로 활용됩니다." />
 
       <FormulaCard title="독립 트렌드 (7d/30d)" formula={`카테고리별 롤링 통계:
   avg_7d    = 최근 7일 z-score 평균
   stddev_7d = 최근 7일 z-score 표준편차
   change_7d = z_최신 − z_7일전
 
-모멘텀 = (avg_7d − avg_30d) / |avg_30d| × 100
+모멘텀 = (avg_7d − avg_30d) / max(|avg_30d|, stddev_30d, 0.1)
 
 트렌드 방향:
-  rising  — change_7d > 0.5
-  falling — change_7d < -0.5
-  spike   — |change_7d| > 2.0
-  flat    — 그 외`}
-        description="모멘텀이 양수면 7일 평균이 30일 평균을 상회하는 상승 추세, 음수면 하락 추세를 나타냅니다." />
-
-      <FormulaCard title="v5.4 → v6 파이프라인 흐름" formula={`calculate-energy-score (v5.4 베이스라인)
-  → ktrenz-fes-analyst (Z-Score 정규화 → normalized_fes)
-    → v3_scores_v2.energy_score 덮어쓰기
-  → ktrenz-fes-predictor (AI 예측 생성 + 과거 검증)`}
-        description="v5.4 energy 계산은 여전히 실행되지만, FES Analyst가 최종 normalized_fes로 메인 에너지 점수를 덮어씁니다." />
+  spike   — |change_7d| > 2.0 (양수만)
+  rising  — change_7d > 0.3
+  falling — change_7d < -0.3
+  flat    — 그 외
+  ※ momentum > 1.5이면 flat → rising 보정`}
+        description="모멘텀이 양수면 7일 평균이 30일 평균을 상회하는 상승 추세, 음수면 하락 추세를 나타냅니다. Spike는 양수 변동에만 적용됩니다." />
 
       <div className="grid grid-cols-4 gap-2">
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💤</span><p className="text-sm font-bold text-foreground mt-1">&lt; 80</p><p className="text-xs text-muted-foreground">Low</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💫</span><p className="text-sm font-bold text-foreground mt-1">80–150</p><p className="text-xs text-muted-foreground">Normal</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">⚡</span><p className="text-sm font-bold text-foreground mt-1">150–200</p><p className="text-xs text-muted-foreground">Active</p></Card>
-        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">🔥</span><p className="text-sm font-bold text-foreground mt-1">200+</p><p className="text-xs text-muted-foreground">Explosive</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💤</span><p className="text-sm font-bold text-foreground mt-1">&lt; 80°</p><p className="text-xs text-muted-foreground">Low</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">💫</span><p className="text-sm font-bold text-foreground mt-1">80–150°</p><p className="text-xs text-muted-foreground">Normal</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">⚡</span><p className="text-sm font-bold text-foreground mt-1">150–200°</p><p className="text-xs text-muted-foreground">Active</p></Card>
+        <Card className="p-3 bg-card border-border/50 text-center"><span className="text-xl">🔥</span><p className="text-sm font-bold text-foreground mt-1">200°+</p><p className="text-xs text-muted-foreground">Explosive</p></Card>
       </div>
 
       {/* ── 정규화 분석 테이블 ── */}
