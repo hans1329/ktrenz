@@ -388,7 +388,7 @@ function FeedbackDrawer({
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent className="mx-2 mb-2 rounded-2xl">
+      <DrawerContent className="mx-auto mb-2 rounded-2xl max-w-[500px]">
         <div className="px-5 py-5 space-y-4">
           {/* Header with agent avatar */}
           <div className="flex items-start gap-3">
