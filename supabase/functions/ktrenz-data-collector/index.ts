@@ -366,14 +366,14 @@ function calculateYouTubeScore(data: {
 // Hanteo Chart (Firecrawl scraping)
 // ══════════════════════════════════════
 
-async function scrapeWithFirecrawl(url: string, apiKey: string, onlyMainContent = true): Promise<any> {
+async function scrapeWithFirecrawl(url: string, apiKey: string, onlyMainContent = true, waitFor = 8000): Promise<any> {
   const resp = await fetch("https://api.firecrawl.dev/v1/scrape", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent, waitFor: 8000 }),
+    body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent, waitFor }),
   });
   if (!resp.ok) {
     const err = await resp.text();
