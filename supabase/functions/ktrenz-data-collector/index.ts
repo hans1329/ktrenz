@@ -1394,17 +1394,22 @@ async function collectForSingleArtist(
           .maybeSingle();
         const prevDailySales = prevSnap?.metrics?.total_daily_sales ?? null;
         
-        const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-        const score = calculateAlbumScore(totalDailySales, prevDailySales, chartBonus, circleBonus);
+        const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+          calculateChartBonus(adminClient, wikiEntryId),
+          calculateKoreanChartBonus(adminClient, wikiEntryId),
+          calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+        ]);
+        const streamingBonus = koreanChartBonus + spotifyData.bonus;
+        const score = calculateAlbumScore(totalDailySales, prevDailySales, chartBonus, circleBonus, streamingBonus);
         await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
         
         await adminClient.from("ktrenz_data_snapshots").insert({
           wiki_entry_id: wikiEntryId, platform: "hanteo_daily",
-          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales", chart_bonus: chartBonus, circle_bonus: circleBonus },
+          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales", chart_bonus: chartBonus, circle_bonus: circleBonus, streaming_bonus: streamingBonus },
         });
         
-        results.hanteo = { type: "daily+circle", albums: matchedDaily.length, score, totalDailySales, prevDailySales, chartBonus, circleBonus, circle: circleResult };
-        console.log(`[DataCollector] Hanteo+Circle: ${artistTitle} → score=${score}, daily=${totalDailySales}, chartBonus=${chartBonus}, circleBonus=${circleBonus}`);
+        results.hanteo = { type: "daily+circle", albums: matchedDaily.length, score, totalDailySales, prevDailySales, chartBonus, circleBonus, streamingBonus, circle: circleResult };
+        console.log(`[DataCollector] Hanteo+Circle: ${artistTitle} → score=${score}, daily=${totalDailySales}, chartBonus=${chartBonus}, circleBonus=${circleBonus}, streamingBonus=${streamingBonus}`);
       } else {
         // 한터 일간 차트에 없으면 → Circle Chart 단독 or 초동 fallback
         if (circleBonus > 0) {
