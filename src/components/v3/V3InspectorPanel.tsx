@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, X, Users } from "lucide-react";
+import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, X, Users, AlertTriangle, ArrowUpRight, Zap } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
 import V3NextScheduleCard from "@/components/v3/V3NextScheduleCard";
