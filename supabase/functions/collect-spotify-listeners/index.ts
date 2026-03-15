@@ -136,6 +136,17 @@ Deno.serve(async (req) => {
     const page2Html = page2Resp.ok ? await page2Resp.text() : "";
     console.log(`[SpotifyListeners] HTML length: page1=${page1Html.length}, page2=${page2Html.length}`);
     
+    // Debug: HTML 샘플 출력
+    if (page1Html.length > 0) {
+      const trSample = page1Html.match(/<tr[^>]*>.*?<\/tr>/s);
+      console.log(`[SpotifyListeners] First TR sample: ${trSample ? trSample[0].slice(0, 300) : 'NO TR FOUND'}`);
+      // 테이블 포함 여부 확인
+      const tableIdx = page1Html.indexOf('<table');
+      console.log(`[SpotifyListeners] Table tag at index: ${tableIdx}`);
+    } else {
+      console.log(`[SpotifyListeners] page1 empty! Headers: ${JSON.stringify(Object.fromEntries(page1Resp.headers.entries()))}`);
+    }
+    
     const entries1 = parseKworbListeners(page1Html);
     const entries2 = parseKworbListeners(page2Html);
     const allEntries = [...entries1, ...entries2];
