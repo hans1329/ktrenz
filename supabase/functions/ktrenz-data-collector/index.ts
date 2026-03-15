@@ -1551,10 +1551,17 @@ Deno.serve(async (req) => {
                 entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
                 artistWikiCache.set(entry.artist, entryWikiId);
               }
-              if (!artistAlbums[entry.artist]) artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
+
+              if (!entryWikiId || !tier1IdSet.has(entryWikiId)) {
+                continue;
+              }
+
+              if (!artistAlbums[entry.artist]) {
+                artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
+              }
               artistAlbums[entry.artist].albums.push(entry);
               saved++;
-              if (entryWikiId) matched++;
+              matched++;
             }
             
             for (const [, data] of Object.entries(artistAlbums)) {
