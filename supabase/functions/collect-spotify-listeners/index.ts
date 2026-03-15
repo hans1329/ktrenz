@@ -118,18 +118,23 @@ Deno.serve(async (req) => {
 
     console.log(`[SpotifyListeners] Loaded ${nameLookup.size} name lookups for ${artists.length} tier 1 artists`);
 
-    // 2) kworb.net 두 페이지 동시 fetch (1~2500, 2501~5000)
+    // 2) kworb.net 두 페이지 동시 fetch
+    const fetchOpts = {
+      headers: { 
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    };
     const [page1Resp, page2Resp] = await Promise.all([
-      fetch("https://kworb.net/spotify/listeners.html", {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenz/1.0)" },
-      }),
-      fetch("https://kworb.net/spotify/listeners2.html", {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenz/1.0)" },
-      }),
+      fetch("https://kworb.net/spotify/listeners.html", fetchOpts),
+      fetch("https://kworb.net/spotify/listeners2.html", fetchOpts),
     ]);
 
+    console.log(`[SpotifyListeners] Fetch status: page1=${page1Resp.status}, page2=${page2Resp.status}`);
     const page1Html = page1Resp.ok ? await page1Resp.text() : "";
     const page2Html = page2Resp.ok ? await page2Resp.text() : "";
+    console.log(`[SpotifyListeners] HTML length: page1=${page1Html.length}, page2=${page2Html.length}`);
     
     const entries1 = parseKworbListeners(page1Html);
     const entries2 = parseKworbListeners(page2Html);
