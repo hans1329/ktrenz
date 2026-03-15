@@ -896,7 +896,7 @@ Artist: ${context.artist}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">에너지 카테고리 분석</CardTitle>
-                <CardDescription className="text-xs">YouTube / Buzz / Music / Album</CardDescription>
+                <CardDescription className="text-xs">YouTube / Buzz / Music / Sales</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
