@@ -235,7 +235,7 @@ const V3Rankings = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-base font-bold text-foreground truncate">{entry.title}</p>
-                              {item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold shrink-0 leading-none">NEW</span>}
+{item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-400 text-black font-bold shrink-0 leading-none">NEW</span>}
                               {item.energy_score >= 300 && <span className="text-[10px] shrink-0">🔥</span>}
                               {item.energy_score >= 150 && item.energy_score < 300 && <span className="text-[10px] shrink-0">⚡</span>}
                             </div>
