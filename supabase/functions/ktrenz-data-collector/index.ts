@@ -1603,13 +1603,18 @@ Deno.serve(async (req) => {
                 entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
                 artistWikiCache.set(entry.artist, entryWikiId);
               }
+
+              if (!entryWikiId || !tier1IdSet.has(entryWikiId)) {
+                continue;
+              }
+
               if (!artistDailyData[entry.artist]) {
                 artistDailyData[entry.artist] = { wikiEntryId: entryWikiId, albums: [], totalDailySales: 0 };
               }
               artistDailyData[entry.artist].albums.push(entry);
               artistDailyData[entry.artist].totalDailySales += entry.daily_sales;
               saved++;
-              if (entryWikiId) matched++;
+              matched++;
             }
             
             // 아티스트별 점수 계산 (delta 모델 + Circle 보너스)
