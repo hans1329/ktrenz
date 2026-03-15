@@ -490,8 +490,20 @@ function splitAlbumArtist(
   // e.g., "GOLDEN HOUR : Part.4ATEEZ (에이티즈)" → artist: "ATEEZ"
   const bracketMatch = trimmed.match(/^(.+?)\s*[\(（]([^)）]+)[\)）]\s*$/);
 
+  // ARTIST_NAME_MAP의 alias도 knownArtists에 추가
+  const enrichedArtists = [...knownArtists];
+  for (const [korName, aliases] of Object.entries(ARTIST_NAME_MAP)) {
+    // 이미 knownArtists에 없는 alias만 추가
+    const allNames = [korName, ...aliases];
+    for (const alias of allNames) {
+      if (!enrichedArtists.some(a => a.name === alias || a.nameKo === alias)) {
+        enrichedArtists.push({ name: alias, nameKo: korName });
+      }
+    }
+  }
+
   // 아티스트명을 긴 순서로 정렬 (긴 이름부터 매칭해야 "LE SSERAFIM"이 "IM"보다 먼저 매칭)
-  const sortedArtists = [...knownArtists].sort((a, b) => {
+  const sortedArtists = [...enrichedArtists].sort((a, b) => {
     const aMax = Math.max(a.name.length, (a.nameKo || "").length);
     const bMax = Math.max(b.name.length, (b.nameKo || "").length);
     return bMax - aMax;
@@ -642,22 +654,28 @@ function refineCircleEntries(
   entries: Array<{ rank: number; album: string; artist: string; weekly_sales: number }>,
   knownArtists: Array<{ name: string; nameKo?: string }>,
 ): Array<{ rank: number; album: string; artist: string; weekly_sales: number }> {
-  return entries.map(entry => {
+  let splitCount = 0;
+  const result = entries.map(entry => {
     // album === artist인 경우 합쳐진 것이므로 분리 시도
     if (entry.album === entry.artist) {
       const split = splitAlbumArtist(entry.album, knownArtists);
       if (split) {
+        splitCount++;
+        console.log(`[CircleRefine] Split: "${entry.album}" → album="${split.album}", artist="${split.artist}"`);
         return { ...entry, album: split.album, artist: split.artist };
       }
     }
     // album !== artist이지만 artist에 앨범명이 포함된 경우도 처리
-    // e.g., album="SPAGHETTILE SSERAFIM (르세라핌)" artist="SPAGHETTILE SSERAFIM"
     const split = splitAlbumArtist(entry.album, knownArtists);
     if (split && split.artist !== entry.album) {
+      splitCount++;
+      console.log(`[CircleRefine] Split2: "${entry.album}" → album="${split.album}", artist="${split.artist}"`);
       return { ...entry, album: split.album, artist: split.artist };
     }
     return entry;
   });
+  console.log(`[CircleRefine] Total: ${entries.length} entries, ${splitCount} split successfully`);
+  return result;
 }
 
 /** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
