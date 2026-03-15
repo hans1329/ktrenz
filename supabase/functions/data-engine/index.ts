@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "music", "korean_charts", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
+const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "korean_charts", "spotify_listeners", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -23,10 +23,11 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
   yt_sentiment: 10,
   external_videos: 10,
+  korean_charts: 5,       // Firecrawl 멜론+지니 → 빠름
+  spotify_listeners: 5,   // kworb.net direct fetch → 빠름
   music: 45,      // Last.fm + Deezer 65명 → fire-and-forget 후 충분한 대기
   hanteo: 30,     // 한터 스크래핑 → 대기
   apple_music_charts: 5,
-  korean_charts: 5,
   billboard_charts: 5,
   social: 30,
   buzz: 120,
@@ -453,6 +454,19 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
     console.log(`[data-engine] Korean Charts: matched=${parsed?.matched ?? 0}, melon=${parsed?.melonParsed ?? 0}, genie=${parsed?.genieParsed ?? 0}`);
     return { status: resp.ok ? "completed" : "error", module: "korean_charts", ...parsed };
+  },
+  spotify_listeners: async (url, key) => {
+    console.log("[data-engine] Running Spotify Listeners (kworb.net)...");
+    const resp = await fetch(`${url}/functions/v1/collect-spotify-listeners`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Spotify Listeners: matched=${parsed?.matched ?? 0}, totalParsed=${parsed?.totalParsed ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "spotify_listeners", ...parsed };
   },
   billboard_charts: async (url, key) => {
     console.log("[data-engine] Running Billboard Charts...");

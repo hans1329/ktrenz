@@ -856,6 +856,48 @@ async function calculateKoreanChartBonus(adminClient: any, wikiEntryId: string):
   return bonus;
 }
 
+/**
+ * Spotify Monthly Listeners Bonus (kworb.net 데이터)
+ * listeners의 로그 스케일 + daily change 반영:
+ * - Base: log10(listeners) * 15 (1M=90, 10M=120, 50M=~115, 100M=120)
+ * - Daily change bonus: sign(change) * log10(|change|+1) * 10
+ */
+async function calculateSpotifyListenersBonus(adminClient: any, wikiEntryId: string): Promise<{ bonus: number; listeners: number | null; dailyChange: number | null }> {
+  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const { data: entries } = await adminClient
+    .from("ktrenz_data_snapshots")
+    .select("metrics")
+    .eq("wiki_entry_id", wikiEntryId)
+    .eq("platform", "spotify_listeners")
+    .gte("collected_at", sixHoursAgo)
+    .order("collected_at", { ascending: false })
+    .limit(1);
+
+  if (!entries || entries.length === 0) return { bonus: 0, listeners: null, dailyChange: null };
+
+  const listeners = entries[0].metrics?.monthly_listeners ?? 0;
+  const dailyChange = entries[0].metrics?.daily_change ?? 0;
+
+  if (listeners <= 0) return { bonus: 0, listeners: 0, dailyChange };
+
+  // Base: 로그 스케일 (1M=90pt, 10M=120pt, 100M=150pt)
+  const base = Math.round(Math.log10(listeners) * 15);
+  
+  // Daily change bonus: 증가면 가산, 감소면 감산 (최대 ±50pt)
+  let changePt = 0;
+  if (dailyChange !== 0) {
+    const absChange = Math.abs(dailyChange);
+    changePt = Math.round(Math.sign(dailyChange) * Math.log10(absChange + 1) * 10);
+    changePt = Math.max(-50, Math.min(50, changePt));
+  }
+
+  const bonus = Math.max(0, base + changePt);
+  if (bonus > 0) {
+    console.log(`[DataCollector] Spotify Listeners Bonus: ${(listeners / 1e6).toFixed(1)}M (daily ${dailyChange > 0 ? '+' : ''}${dailyChange}) → +${bonus}pt`);
+  }
+  return { bonus, listeners, dailyChange };
+}
+
 function calculateMusicScore(
   lastfm: any, deezer: any,
   ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null,
@@ -863,6 +905,7 @@ function calculateMusicScore(
   prevMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
   prev48hMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
   koreanChartBonus: number = 0,
+  spotifyListenersBonus: number = 0,
 ): number {
   // ── Base Score (30%): log scale 절대값 ──
   let baseScore = 0;
@@ -912,7 +955,7 @@ function calculateMusicScore(
     }
   }
 
-  if (!hasPrev && koreanChartBonus === 0) {
+  if (!hasPrev && koreanChartBonus === 0 && spotifyListenersBonus === 0) {
     return baseScore;
   }
 
@@ -920,8 +963,9 @@ function calculateMusicScore(
     deltaScore = clampDelta(deltaScore, baseScore);
   }
 
-  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + koreanChartBonus);
-  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} koreanChart=${koreanChartBonus} final=${finalScore}`);
+  const totalBonus = koreanChartBonus + spotifyListenersBonus;
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
+  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} koreanChart=${koreanChartBonus} spotify=${spotifyListenersBonus} final=${finalScore}`);
   return finalScore;
 }
 
@@ -1206,15 +1250,18 @@ async function collectForSingleArtist(
           mv_views: prev48hYtSnap?.data?.metrics?.musicVideoViews ?? 0,
         };
 
-        const koreanChartBonus = await calculateKoreanChartBonus(adminClient, wikiEntryId);
-        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics, koreanChartBonus);
+        const [koreanChartBonus, spotifyData] = await Promise.all([
+          calculateKoreanChartBonus(adminClient, wikiEntryId),
+          calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+        ]);
+        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics, koreanChartBonus, spotifyData.bonus);
         await upsertV3Score(adminClient, wikiEntryId, {
           music_score: musicScore,
         });
         if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
         if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
-        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData, koreanChartBonus };
-        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${koreanChartBonus ? ` (+KR Chart ${koreanChartBonus})` : ''}`);
+        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData, koreanChartBonus, spotifyBonus: spotifyData.bonus, spotifyListeners: spotifyData.listeners };
+        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${koreanChartBonus ? ` (+KR ${koreanChartBonus})` : ''}${spotifyData.bonus ? ` (+Spotify ${spotifyData.bonus})` : ''}`);
       }
     } catch (e) { results.music = { error: (e as any).message }; }
   }
@@ -1980,15 +2027,18 @@ Deno.serve(async (req) => {
             topic_views: prevYtmS2?.data?.metrics?.topicTotalViews ?? 0,
             mv_views: prevYtS2?.data?.metrics?.musicVideoViews ?? 0,
           };
-          const krBonus = await calculateKoreanChartBonus(adminClient, artist.id);
-          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM, undefined, krBonus);
+          const [krBonus, spData] = await Promise.all([
+            calculateKoreanChartBonus(adminClient, artist.id),
+            calculateSpotifyListenersBonus(adminClient, artist.id),
+          ]);
+          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM, undefined, krBonus, spData.bonus);
           await upsertV3Score(adminClient, artist.id, {
             music_score: musicScore,
           });
           if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
           if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
           musicUpdated++;
-          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${krBonus ? ` (+KR ${krBonus})` : ''}`);
+          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${krBonus ? ` (+KR ${krBonus})` : ''}${spData.bonus ? ` (+SP ${spData.bonus})` : ''}`);
         } catch (e) { musicErrors++; }
       }
       await adminClient.from("ktrenz_collection_log").insert({ platform: "music", status: musicUpdated > 0 ? "success" : "partial", records_collected: musicUpdated });
