@@ -780,7 +780,7 @@ Artist: ${context.artist}
                   { key: 'youtube', label: 'YouTube', icon: <Youtube className="w-4 h-4" />, color: '#ef4444', data: cats.youtube },
                   { key: 'buzz', label: 'Buzz / Social', icon: <MessageSquare className="w-4 h-4" />, color: '#8b5cf6', data: cats.buzz },
                   { key: 'music', label: 'Music Streaming', icon: <Music className="w-4 h-4" />, color: '#3b82f6', data: cats.music },
-                  { key: 'album', label: 'Album Sales', icon: <Disc3 className="w-4 h-4" />, color: '#f59e0b', data: cats.album },
+                  { key: 'album', label: 'Sales (Streaming + Physical)', icon: <Disc3 className="w-4 h-4" />, color: '#f59e0b', data: cats.album },
                 ].filter(e => e.data);
 
                 // Sort by absolute change to highlight hottest
