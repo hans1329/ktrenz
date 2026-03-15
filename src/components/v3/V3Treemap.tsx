@@ -26,6 +26,7 @@ interface TreemapItem {
   youtubeChannelId?: string | null;
   latestYoutubeVideoId?: string | null;
   latestYoutubeVideoTitle?: string | null;
+  isNew?: boolean;
 }
 
 type TrendLabel = "🔥 SURGE" | "↑ Rising" | "→ Stable" | "↘ Cooling" | "↓ Falling";
