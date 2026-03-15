@@ -169,12 +169,6 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Treemap / Drawer ──
   "drawer.categoryChanges": { en: "Category Changes", ko: "카테고리 변동", ja: "カテゴリ変動", zh: "分类变化" },
-  "inspector.boost.youtube": { en: "Increase video uploads & engagement", ko: "영상 업로드와 반응을 늘려보세요", ja: "動画のアップロードとエンゲージメントを増やしましょう", zh: "增加视频上传和互动" },
-  "inspector.boost.buzz": { en: "Share on X & TikTok to build buzz", ko: "X와 TikTok에서 공유해 화제성을 높여보세요", ja: "XやTikTokでシェアして話題を作りましょう", zh: "在X和TikTok上分享以制造话题" },
-  "inspector.boost.sales": { en: "Support album sales & streaming charts", ko: "앨범 판매와 스트리밍 차트를 지원해보세요", ja: "アルバム販売とストリーミングチャートをサポートしましょう", zh: "支持专辑销量和流媒体排行" },
-  "inspector.boost.music": { en: "Listen on Last.fm & Deezer to boost plays", ko: "Last.fm과 Deezer에서 청취 수를 올려보세요", ja: "Last.fmやDeezerで再生数を増やしましょう", zh: "在Last.fm和Deezer上增加播放量" },
-  "inspector.boost.social": { en: "Grow social presence & follower count", ko: "소셜 미디어 팔로워를 늘려보세요", ja: "ソーシャルメディアのフォロワーを増やしましょう", zh: "增加社交媒体关注度" },
-  "inspector.boost.fan": { en: "Engage on K-Trendz to earn Fan points", ko: "K-Trendz에서 활동하여 팬 포인트를 쌓아보세요", ja: "K-Trendzで活動してファンポイントを獲得しましょう", zh: "在K-Trendz上活动以获取粉丝积分" },
   "drawer.scoreMomentum": { en: "Score Momentum", ko: "스코어 모멘텀", ja: "スコアモメンタム", zh: "评分趋势" },
   "drawer.energySurging": { en: "Energy Surging", ko: "에너지 급상승", ja: "エネルギー急上昇", zh: "能量飙升" },
   "drawer.surgingLocation": { en: "Energy Surging Location", ko: "에너지 급상승 위치", ja: "エネルギー急上昇の位置", zh: "能量飙升位置" },
