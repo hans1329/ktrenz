@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Activity } from "lucide-react";
+import { Link2 } from "lucide-react";
 
 interface Props {
   wikiEntryId: string;
@@ -11,12 +11,40 @@ interface Props {
 }
 
 const CATS = [
-  { key: "youtube", label: "YouTube", hot: "🔥", warm: "😊", cold: "❄️" },
-  { key: "buzz", label: "Buzz", hot: "🔥", warm: "😊", cold: "❄️" },
-  { key: "album", label: "Sales", hot: "🔥", warm: "😊", cold: "❄️" },
-  { key: "music", label: "Music", hot: "🔥", warm: "😊", cold: "❄️" },
-  { key: "social", label: "Social", hot: "🔥", warm: "😊", cold: "❄️" },
+  { key: "youtube", label: "YouTube" },
+  { key: "buzz", label: "Buzz" },
+  { key: "album", label: "Sales" },
+  { key: "music", label: "Music" },
+  { key: "social", label: "Social" },
 ] as const;
+
+// Known causal pairs: [driver, follower, translationKeySuffix]
+const CAUSAL_PAIRS: [string, string, string][] = [
+  ["youtube", "music", "ytToMusic"],     // MV views → streams
+  ["youtube", "buzz", "ytToBuzz"],       // MV views → online buzz
+  ["buzz", "album", "buzzToSales"],      // buzz → album sales
+  ["social", "buzz", "socialToBuzz"],    // follower growth → buzz
+  ["music", "social", "musicToSocial"],  // chart performance → follower gain
+  ["buzz", "music", "buzzToMusic"],      // viral buzz → streaming spike
+  ["album", "buzz", "salesToBuzz"],      // sales records → media buzz
+];
+
+function pearsonR(xs: number[], ys: number[]): number {
+  const n = xs.length;
+  if (n < 3) return 0;
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - mx;
+    const dy = ys[i] - my;
+    num += dx * dy;
+    dx2 += dx * dx;
+    dy2 += dy * dy;
+  }
+  const denom = Math.sqrt(dx2 * dy2);
+  return denom === 0 ? 0 : num / denom;
+}
 
 export default function V3CorrelationSummaryCard({ wikiEntryId, artistName }: Props) {
   const { t } = useLanguage();
@@ -36,55 +64,67 @@ export default function V3CorrelationSummaryCard({ wikiEntryId, artistName }: Pr
     staleTime: 5 * 60_000,
   });
 
-  const result = useMemo(() => {
-    if (!snapshots?.length || snapshots.length < 3) return null;
+  const insight = useMemo(() => {
+    if (!snapshots?.length || snapshots.length < 4) return null;
 
     const byDay = new Map<string, any>();
     for (const s of snapshots) byDay.set(s.snapshot_at.slice(0, 10), s);
     const days = [...byDay.values()];
-    if (days.length < 3) return null;
-
-    const latest = days[days.length - 1];
-    const weekAgoIdx = Math.max(0, days.length - 8);
-    const weekAgo = days[weekAgoIdx];
+    if (days.length < 4) return null;
 
     const getScore = (d: any, key: string) =>
       d[`${key}_score`] || (key === "social" ? d.fan_score || 0 : 0);
 
-    const channels = CATS.map(c => {
-      const now = getScore(latest, c.key);
-      const prev = getScore(weekAgo, c.key);
-      const delta = prev > 0 ? ((now - prev) / prev) * 100 : now > 0 ? 100 : 0;
-      const temp: "hot" | "warm" | "cold" = delta > 15 ? "hot" : delta >= -5 ? "warm" : "cold";
-      return { ...c, delta: Math.round(delta), temp };
-    });
+    // Build time series per category
+    const series: Record<string, number[]> = {};
+    for (const c of CATS) {
+      series[c.key] = days.map(d => getScore(d, c.key));
+    }
 
-    const hotCount = channels.filter(c => c.temp === "hot").length;
-    const coldCount = channels.filter(c => c.temp === "cold").length;
+    // Find strongest causal pair with lag-1 correlation
+    // Driver's values at t correlate with follower's values at t+1
+    let bestPair: { driver: string; follower: string; r: number; tKey: string } | null = null;
 
-    // Generate one-line summary
-    let summaryKey: string;
-    if (hotCount >= 3) {
-      summaryKey = "correlationSummary.allHot";
-    } else if (coldCount >= 3) {
-      summaryKey = "correlationSummary.needsAttention";
-    } else {
-      const hotCh = channels.find(c => c.temp === "hot");
-      const coldCh = channels.find(c => c.temp === "cold");
-      if (hotCh && coldCh) {
-        summaryKey = "correlationSummary.mixed";
-      } else {
-        summaryKey = "correlationSummary.steady";
+    for (const [driverKey, followerKey, tKey] of CAUSAL_PAIRS) {
+      const driverSeries = series[driverKey];
+      const followerSeries = series[followerKey];
+      if (!driverSeries || !followerSeries) continue;
+
+      // Lag-1: driver[0..n-2] vs follower[1..n-1]
+      const xs = driverSeries.slice(0, -1);
+      const ys = followerSeries.slice(1);
+      const r = pearsonR(xs, ys);
+
+      if (Math.abs(r) > (bestPair?.r ?? 0.3)) {
+        bestPair = { driver: driverKey, follower: followerKey, r: Math.abs(r), tKey };
       }
     }
 
-    const hotCh = channels.find(c => c.temp === "hot");
-    const coldCh = channels.sort((a, b) => a.delta - b.delta).find(c => c.temp === "cold");
+    if (!bestPair) return null;
 
-    return { channels, summaryKey, hotCh, coldCh, artistName };
-  }, [snapshots, artistName]);
+    const driverLabel = CATS.find(c => c.key === bestPair!.driver)!.label;
+    const followerLabel = CATS.find(c => c.key === bestPair!.follower)!.label;
 
-  if (!result) return null;
+    // Determine direction: is driver rising or falling?
+    const dSeries = series[bestPair.driver];
+    const recent = dSeries.slice(-3);
+    const earlier = dSeries.slice(-6, -3);
+    const avgRecent = recent.reduce((a, b) => a + b, 0) / recent.length;
+    const avgEarlier = earlier.length ? earlier.reduce((a, b) => a + b, 0) / earlier.length : avgRecent;
+    const rising = avgRecent >= avgEarlier;
+
+    const strengthKey = bestPair.r > 0.7 ? "strong" : "moderate";
+
+    return {
+      tKey: bestPair.tKey,
+      driverLabel,
+      followerLabel,
+      rising,
+      strengthKey,
+    };
+  }, [snapshots]);
+
+  if (!insight) return null;
 
   return (
     <div className={cn(
@@ -92,32 +132,27 @@ export default function V3CorrelationSummaryCard({ wikiEntryId, artistName }: Pr
       "border border-foreground/[0.06]",
       "bg-foreground/[0.03]",
     )}>
-      <div className="px-4 py-3 space-y-2.5">
-        {/* Header */}
+      <div className="px-4 py-3 space-y-1.5">
         <div className="flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-foreground/40" />
+          <Link2 className="w-3.5 h-3.5 text-foreground/40" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">
-            {t("correlationSummary.title")}
+            {t("causalInsight.title")}
           </span>
         </div>
 
-        {/* Emoji temperature strip */}
-        <div className="flex items-center justify-between gap-1">
-          {result.channels.map(ch => (
-            <div key={ch.key} className="flex flex-col items-center gap-0.5 flex-1">
-              <span className="text-lg leading-none">{ch[ch.temp]}</span>
-              <span className="text-[9px] font-medium text-foreground/50">{ch.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* One-line summary */}
-        <p className="text-xs text-foreground/70 leading-relaxed">
-          {t(result.summaryKey)
-            .replace("{artist}", result.artistName)
-            .replace("{hot}", result.hotCh?.label || "")
-            .replace("{cold}", result.coldCh?.label || "")}
+        <p className="text-xs text-foreground/80 leading-relaxed">
+          {t(`causalInsight.${insight.tKey}.${insight.rising ? "up" : "down"}`)
+            .replace("{artist}", artistName)}
         </p>
+
+        <span className={cn(
+          "inline-block text-[10px] font-bold px-2 py-0.5 rounded-full",
+          insight.strengthKey === "strong"
+            ? "bg-emerald-500/10 text-emerald-400"
+            : "bg-foreground/5 text-foreground/40"
+        )}>
+          {t(`causalInsight.strength.${insight.strengthKey}`)}
+        </span>
       </div>
     </div>
   );

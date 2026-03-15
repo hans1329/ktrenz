@@ -457,12 +457,31 @@ const translations: Record<string, Record<Language, string>> = {
   "boostGuide.tip.music": { en: "Tip: Stream with the screen on & volume up for it to count", ko: "팁: 화면 켜고 볼륨 올린 상태에서 스트리밍해야 카운트돼요", ja: "ヒント: 画面オン&音量ありで再生するとカウントされます", zh: "提示: 屏幕亮着且有音量才会计入播放量" },
   "boostGuide.tip.social": { en: "Tip: Like, comment & repost within the first hour of posting", ko: "팁: 게시 후 1시간 이내에 좋아요, 댓글, 리포스트하세요", ja: "ヒント: 投稿後1時間以内にいいね・コメント・リポスト", zh: "提示: 在发帖后1小时内点赞、评论和转发" },
 
-  // ── Correlation Summary Card (Fan-facing) ──
-  "correlationSummary.title": { en: "Channel Pulse", ko: "채널 온도", ja: "チャネルパルス", zh: "频道脉搏" },
-  "correlationSummary.allHot": { en: "{artist} is trending across all channels right now! 🔥", ko: "지금 {artist}이(가) 전 채널에서 뜨겁게 달아오르고 있어요! 🔥", ja: "{artist}が全チャネルでトレンド中！🔥", zh: "{artist}正在全频道爆火！🔥" },
-  "correlationSummary.needsAttention": { en: "{artist}'s channels are cooling down — your support matters now! ❄️", ko: "{artist}의 채널이 식어가고 있어요 — 지금 여러분의 응원이 필요해요! ❄️", ja: "{artist}のチャネルが冷めてきてます — 今こそ応援を！❄️", zh: "{artist}的频道正在降温 — 现在需要你的支持！❄️" },
-  "correlationSummary.mixed": { en: "{hot} is doing great, but {cold} could use a boost from fans!", ko: "{hot}은(는) 잘하고 있지만, {cold}은(는) 팬들의 힘이 필요해요!", ja: "{hot}は好調ですが、{cold}はファンの力が必要！", zh: "{hot}表现很好，但{cold}需要粉丝助力！" },
-  "correlationSummary.steady": { en: "{artist} is holding steady — keep the energy going! ✨", ko: "{artist}이(가) 꾸준히 유지 중이에요 — 이 에너지를 계속 가져가요! ✨", ja: "{artist}が安定を維持中 — このエネルギーを続けよう！✨", zh: "{artist}保持稳定 — 继续保持这份能量！✨" },
+  // ── Causal Insight Card (Fan-facing) ──
+  "causalInsight.title": { en: "Cause & Effect", ko: "인과 분석", ja: "因果分析", zh: "因果分析" },
+  "causalInsight.strength.strong": { en: "Strong correlation", ko: "높은 상관관계", ja: "強い相関", zh: "强相关" },
+  "causalInsight.strength.moderate": { en: "Moderate correlation", ko: "보통 상관관계", ja: "中程度の相関", zh: "中等相关" },
+
+  "causalInsight.ytToMusic.up": { en: "{artist}'s YouTube views are rising → music streams are following!", ko: "{artist}의 YouTube 조회수 상승 → 음원 스트리밍도 따라 올라가고 있어요!", ja: "{artist}のYouTube再生数上昇 → 音源ストリーミングも追随中！", zh: "{artist}的YouTube播放量上升 → 音乐串流随之增长！" },
+  "causalInsight.ytToMusic.down": { en: "{artist}'s YouTube views are dipping → music streams may slow down soon.", ko: "{artist}의 YouTube 조회수 하락 → 음원 스트리밍도 곧 둔화될 수 있어요.", ja: "{artist}のYouTube再生数低下 → 音源ストリーミングも鈍化する可能性。", zh: "{artist}的YouTube播放量下降 → 音乐串流可能即将放缓。" },
+
+  "causalInsight.ytToBuzz.up": { en: "{artist}'s MV hype is sparking online buzz — the conversation is growing!", ko: "{artist}의 MV 인기가 온라인 버즈를 만들고 있어요 — 화제가 커지고 있어요!", ja: "{artist}のMV人気がオンラインバズを生んでいます！", zh: "{artist}的MV热度正在引发网络讨论！" },
+  "causalInsight.ytToBuzz.down": { en: "{artist}'s MV activity is slowing → online buzz may cool down.", ko: "{artist}의 MV 활동이 줄어들고 있어요 → 온라인 버즈도 줄어들 수 있어요.", ja: "{artist}のMV活動が減少中 → オンラインバズも冷める可能性。", zh: "{artist}的MV活动减少 → 网络讨论可能降温。" },
+
+  "causalInsight.buzzToSales.up": { en: "Rising buzz around {artist} is driving album sales up!", ko: "{artist}에 대한 버즈 상승이 앨범 판매를 끌어올리고 있어요!", ja: "{artist}のバズ上昇がアルバム売上を押し上げています！", zh: "围绕{artist}的热议正在推动专辑销售！" },
+  "causalInsight.buzzToSales.down": { en: "Buzz around {artist} is fading → album sales may be affected.", ko: "{artist}에 대한 버즈가 줄고 있어요 → 앨범 판매에 영향이 있을 수 있어요.", ja: "{artist}のバズが減少中 → アルバム売上に影響の可能性。", zh: "围绕{artist}的讨论减少 → 可能影响专辑销售。" },
+
+  "causalInsight.socialToBuzz.up": { en: "{artist}'s growing fanbase is fueling online conversations!", ko: "{artist}의 팬덤 성장이 온라인 대화를 만들고 있어요!", ja: "{artist}のファン増加がオンラインの話題を生んでいます！", zh: "{artist}粉丝增长正在推动网络讨论！" },
+  "causalInsight.socialToBuzz.down": { en: "{artist}'s social growth is slowing → online buzz may dip.", ko: "{artist}의 소셜 성장이 둔화 중 → 온라인 버즈도 줄어들 수 있어요.", ja: "{artist}のソーシャル成長が鈍化 → バズも減少する可能性。", zh: "{artist}的社交增长放缓 → 网络讨论可能减少。" },
+
+  "causalInsight.musicToSocial.up": { en: "{artist}'s chart performance is attracting new followers!", ko: "{artist}의 차트 성과가 새 팔로워를 끌어오고 있어요!", ja: "{artist}のチャート成績が新しいフォロワーを引きつけています！", zh: "{artist}的榜单表现正在吸引新粉丝！" },
+  "causalInsight.musicToSocial.down": { en: "{artist}'s chart momentum is slowing → follower growth may stall.", ko: "{artist}의 차트 모멘텀이 둔화 중 → 팔로워 증가가 멈출 수 있어요.", ja: "{artist}のチャート勢いが鈍化 → フォロワー増加が停滞する可能性。", zh: "{artist}的榜单势头放缓 → 粉丝增长可能停滞。" },
+
+  "causalInsight.buzzToMusic.up": { en: "Viral buzz is pushing {artist}'s streaming numbers up!", ko: "바이럴 버즈가 {artist}의 스트리밍 수치를 올리고 있어요!", ja: "バイラルバズが{artist}のストリーミング数を押し上げています！", zh: "病毒式传播正在推动{artist}的串流数据上升！" },
+  "causalInsight.buzzToMusic.down": { en: "Buzz is cooling → {artist}'s streaming growth may slow.", ko: "버즈가 식어가는 중 → {artist}의 스트리밍 성장이 둔화될 수 있어요.", ja: "バズが冷めてきて → {artist}のストリーミング成長が鈍化する可能性。", zh: "讨论降温 → {artist}的串流增长可能放缓。" },
+
+  "causalInsight.salesToBuzz.up": { en: "{artist}'s album sales records are generating media attention!", ko: "{artist}의 앨범 판매 기록이 미디어 관심을 끌고 있어요!", ja: "{artist}のアルバム売上記録がメディアの注目を集めています！", zh: "{artist}的专辑销售记录正在引发媒体关注！" },
+  "causalInsight.salesToBuzz.down": { en: "{artist}'s sales momentum is easing → media coverage may decline.", ko: "{artist}의 판매 모멘텀이 줄어들고 있어요 → 미디어 보도가 줄 수 있어요.", ja: "{artist}の売上勢いが緩和 → メディア報道が減少する可能性。", zh: "{artist}的销售势头放缓 → 媒体报道可能减少。" },
 };
 
 export default translations;
