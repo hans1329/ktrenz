@@ -43,6 +43,12 @@ function isSurging(change: number): boolean {
   return change >= 25;
 }
 
+function calcPercentChange(now: number, prev: number): number {
+  if (prev > 0) return ((now - prev) / prev) * 100;
+  if (now > 0) return 100;
+  return 0;
+}
+
 function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   const pctLabel =
