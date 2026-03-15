@@ -678,8 +678,10 @@ function refineCircleEntries(
   return result;
 }
 
-/** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
-function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0, circleBonus: number = 0): number {
+/** 앨범(매출) 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart/streaming bonus
+ *  v2: Spotify Listeners, 멜론 차트 보너스를 매출 지표로 통합 (Music → Album 이동)
+ */
+function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0, circleBonus: number = 0, streamingBonus: number = 0): number {
   const baseScore = dailySales > 0 ? Math.log10(dailySales) * 200 : 0;
 
   let deltaScore = 0;
@@ -692,9 +694,9 @@ function calculateAlbumScore(dailySales: number, previousDailySales: number | nu
 
   deltaScore = clampDelta(deltaScore, baseScore);
 
-  const totalBonus = chartBonus + circleBonus;
+  const totalBonus = chartBonus + circleBonus + streamingBonus;
   const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
-  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} circleBonus=${circleBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
+  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} circleBonus=${circleBonus} streamingBonus=${streamingBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
   return finalScore;
 }
 
