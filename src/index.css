@@ -273,5 +273,5 @@ html {
 }
 
 .caption-rotate {
-  animation: caption-rotate-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: caption-rotate-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

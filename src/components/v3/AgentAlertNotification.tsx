@@ -136,7 +136,7 @@ export default function AgentAlertNotification({
       const line = captionLines[cur] || "";
       // Title: 3s base, body: ~80ms per char, min 1s, max 3s
       const delay = cur === 0
-        ? 3000
+        ? 2500
         : Math.min(3000, Math.max(1000, line.length * 80));
       timerId = setTimeout(() => {
         const next = (cur + 1) % captionLines.length;
