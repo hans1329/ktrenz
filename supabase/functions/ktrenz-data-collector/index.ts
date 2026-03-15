@@ -490,8 +490,20 @@ function splitAlbumArtist(
   // e.g., "GOLDEN HOUR : Part.4ATEEZ (에이티즈)" → artist: "ATEEZ"
   const bracketMatch = trimmed.match(/^(.+?)\s*[\(（]([^)）]+)[\)）]\s*$/);
 
+  // ARTIST_NAME_MAP의 alias도 knownArtists에 추가
+  const enrichedArtists = [...knownArtists];
+  for (const [korName, aliases] of Object.entries(ARTIST_NAME_MAP)) {
+    // 이미 knownArtists에 없는 alias만 추가
+    const allNames = [korName, ...aliases];
+    for (const alias of allNames) {
+      if (!enrichedArtists.some(a => a.name === alias || a.nameKo === alias)) {
+        enrichedArtists.push({ name: alias, nameKo: korName });
+      }
+    }
+  }
+
   // 아티스트명을 긴 순서로 정렬 (긴 이름부터 매칭해야 "LE SSERAFIM"이 "IM"보다 먼저 매칭)
-  const sortedArtists = [...knownArtists].sort((a, b) => {
+  const sortedArtists = [...enrichedArtists].sort((a, b) => {
     const aMax = Math.max(a.name.length, (a.nameKo || "").length);
     const bMax = Math.max(b.name.length, (b.nameKo || "").length);
     return bMax - aMax;
