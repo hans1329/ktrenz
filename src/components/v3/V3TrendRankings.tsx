@@ -171,7 +171,7 @@ const PodiumCard = ({ item, rank, maxScore, energyData, onTrack, onItemClick }: 
           <div className="flex-1 min-w-0">
             <p className={cn("font-bold text-foreground truncate flex items-center gap-1.5", rankStyles.isFirst ? "text-lg" : "text-sm")}>
               {entry.title}
-              {item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold shrink-0 leading-none">NEW</span>}
+{item.isNew && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-400 text-black font-bold shrink-0 leading-none">NEW</span>}
             </p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {item.youtube_score > 0 && (
