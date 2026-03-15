@@ -35,31 +35,36 @@ const SignalRadarIntelligenceSection = () => {
             <div className="text-xs font-medium text-accent-foreground">A Data × Performance</div>
             <div className="text-sm font-semibold text-foreground">현재 매출 성과</div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Hanteo 판매량</li>
-              <li>• Apple Music Charts</li>
-              <li>• Billboard Charts</li>
-              <li>• Deezer / Last.fm</li>
+              <li>• Hanteo 실물 판매량</li>
+              <li>• Spotify Monthly Listeners</li>
+              <li>• 멜론 차트 순위</li>
+              <li>• Apple Music / Billboard Charts</li>
             </ul>
             <div className="text-[10px] text-muted-foreground/60 mt-1">
-              → Signal-D 매핑 (신규)
+              → Signal-D 매핑 (Revenue Pulse)
             </div>
           </div>
 
           <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">B Data × Buzz</div>
-            <div className="text-sm font-semibold text-foreground">관심 예측</div>
+            <div className="text-xs font-medium text-muted-foreground">A Data × Engagement</div>
+            <div className="text-sm font-semibold text-foreground">청취 행동/관심</div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• FES Predictor: YouTube/Buzz 예측</li>
-              <li>• 이벤트 기반 관심 변동 예상</li>
+              <li>• Last.fm Scrobbles/Listeners</li>
+              <li>• Deezer Favorites</li>
+              <li>• YouTube Music Topic Views</li>
             </ul>
+            <div className="text-[10px] text-muted-foreground/60 mt-1">
+              매출 전 단계 — 관심 → 매출 전환 추적
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">B Data × Performance</div>
-            <div className="text-sm font-semibold text-foreground">매출 예측</div>
+            <div className="text-xs font-medium text-muted-foreground">B Data × Prediction</div>
+            <div className="text-sm font-semibold text-foreground">매출/관심 예측</div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• FES Predictor: Music/Sales 예측</li>
+              <li>• FES Predictor: 카테고리별 예측</li>
               <li>• 컴백 시 초동 판매 추정</li>
+              <li>• 이벤트 기반 변동 예상</li>
             </ul>
           </div>
         </div>
@@ -93,9 +98,9 @@ const SignalRadarIntelligenceSection = () => {
           Signal-D: Revenue Pulse
         </h3>
         <p className="text-sm text-muted-foreground">
-          매출 연동 데이터(Hanteo, Apple Music Charts, Billboard)를 일별 집계하여
+          매출 연동 데이터(Hanteo, Spotify, 멜론, Apple Music, Billboard)를 일별 집계하여
           <strong> Buzz 대비 실제 수익 전환율</strong>을 정량화합니다.
-          관심(Buzz)과 성과(Performance)의 괴리를 발견하는 핵심 시그널입니다.
+          관심(Buzz)과 성과(Revenue)의 괴리를 발견하는 핵심 시그널입니다.
         </p>
 
         <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -113,6 +118,8 @@ const SignalRadarIntelligenceSection = () => {
               <tr><td className="px-3 py-1.5 font-mono">hanteo_daily_sales</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">한터 일별 판매량</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">apple_chart_position</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">Apple Music 차트 순위 (null = 미진입)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">billboard_position</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">Billboard 차트 순위</td></tr>
+              <tr><td className="px-3 py-1.5 font-mono">spotify_listeners</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">Spotify 월간 리스너 수</td></tr>
+              <tr><td className="px-3 py-1.5 font-mono">melon_chart_rank</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">멜론 TOP100 순위 (null = 미진입)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">music_score</td><td className="px-3 py-1.5">numeric</td><td className="px-3 py-1.5 text-muted-foreground">FES Music Score (종합)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">buzz_to_perf_ratio</td><td className="px-3 py-1.5">numeric</td><td className="px-3 py-1.5 text-muted-foreground">Buzz Score ÷ Performance Score (전환율)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">conversion_tier</td><td className="px-3 py-1.5">text</td><td className="px-3 py-1.5 text-muted-foreground">high / medium / low / dormant</td></tr>

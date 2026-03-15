@@ -678,8 +678,10 @@ function refineCircleEntries(
   return result;
 }
 
-/** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
-function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0, circleBonus: number = 0): number {
+/** 앨범(매출) 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart/streaming bonus
+ *  v2: Spotify Listeners, 멜론 차트 보너스를 매출 지표로 통합 (Music → Album 이동)
+ */
+function calculateAlbumScore(dailySales: number, previousDailySales: number | null, chartBonus: number = 0, circleBonus: number = 0, streamingBonus: number = 0): number {
   const baseScore = dailySales > 0 ? Math.log10(dailySales) * 200 : 0;
 
   let deltaScore = 0;
@@ -692,9 +694,9 @@ function calculateAlbumScore(dailySales: number, previousDailySales: number | nu
 
   deltaScore = clampDelta(deltaScore, baseScore);
 
-  const totalBonus = chartBonus + circleBonus;
+  const totalBonus = chartBonus + circleBonus + streamingBonus;
   const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
-  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} circleBonus=${circleBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
+  console.log(`[DataCollector] Album Score: base=${Math.round(baseScore)} delta=${deltaScore} chartBonus=${chartBonus} circleBonus=${circleBonus} streamingBonus=${streamingBonus} final=${finalScore} (daily=${dailySales}, prev=${previousDailySales})`);
   return finalScore;
 }
 
@@ -898,14 +900,15 @@ async function calculateSpotifyListenersBonus(adminClient: any, wikiEntryId: str
   return { bonus, listeners, dailyChange };
 }
 
+/** Music(Engagement) 점수: 순수 청취 활동/관심도 지표만 사용
+ *  v2: Spotify/멜론 보너스는 Album(Revenue)으로 이동, 여기는 Last.fm/Deezer/YT Music만 유지
+ */
 function calculateMusicScore(
   lastfm: any, deezer: any,
   ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null,
   ytMusicVideos?: { musicVideoViews?: number; musicVideoCount?: number } | null,
   prevMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
   prev48hMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
-  koreanChartBonus: number = 0,
-  spotifyListenersBonus: number = 0,
 ): number {
   // ── Base Score (30%): log scale 절대값 ──
   let baseScore = 0;
@@ -921,7 +924,6 @@ function calculateMusicScore(
   let hasPrev = false;
 
   if (prevMetrics) {
-    // Last.fm playcount — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.lastfm_playcount && prevMetrics.lastfm_playcount > 0 && lastfm?.playcount > 0) {
       deltaScore += incrementDeltaScore(
         lastfm.playcount, prevMetrics.lastfm_playcount,
@@ -929,7 +931,6 @@ function calculateMusicScore(
       );
       hasPrev = true;
     }
-    // Deezer fans — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.deezer_fans && prevMetrics.deezer_fans > 0 && deezer?.fans > 0) {
       deltaScore += incrementDeltaScore(
         deezer.fans, prevMetrics.deezer_fans,
@@ -937,7 +938,6 @@ function calculateMusicScore(
       );
       hasPrev = true;
     }
-    // YT Music topic views — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.topic_views && prevMetrics.topic_views > 0 && ytMusic?.topicTotalViews) {
       deltaScore += incrementDeltaScore(
         ytMusic.topicTotalViews, prevMetrics.topic_views,
@@ -945,7 +945,6 @@ function calculateMusicScore(
       );
       hasPrev = true;
     }
-    // MV views — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.mv_views && prevMetrics.mv_views > 0 && ytMusicVideos?.musicVideoViews) {
       deltaScore += incrementDeltaScore(
         ytMusicVideos.musicVideoViews, prevMetrics.mv_views,
@@ -955,17 +954,14 @@ function calculateMusicScore(
     }
   }
 
-  if (!hasPrev && koreanChartBonus === 0 && spotifyListenersBonus === 0) {
+  if (!hasPrev) {
     return baseScore;
   }
 
-  if (hasPrev) {
-    deltaScore = clampDelta(deltaScore, baseScore);
-  }
+  deltaScore = clampDelta(deltaScore, baseScore);
 
-  const totalBonus = koreanChartBonus + spotifyListenersBonus;
-  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
-  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} koreanChart=${koreanChartBonus} spotify=${spotifyListenersBonus} final=${finalScore}`);
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
+  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} final=${finalScore}`);
   return finalScore;
 }
 
@@ -1250,18 +1246,14 @@ async function collectForSingleArtist(
           mv_views: prev48hYtSnap?.data?.metrics?.musicVideoViews ?? 0,
         };
 
-        const [koreanChartBonus, spotifyData] = await Promise.all([
-          calculateKoreanChartBonus(adminClient, wikiEntryId),
-          calculateSpotifyListenersBonus(adminClient, wikiEntryId),
-        ]);
-        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics, koreanChartBonus, spotifyData.bonus);
+        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics);
         await upsertV3Score(adminClient, wikiEntryId, {
           music_score: musicScore,
         });
         if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
         if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
-        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData, koreanChartBonus, spotifyBonus: spotifyData.bonus, spotifyListeners: spotifyData.listeners };
-        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${koreanChartBonus ? ` (+KR ${koreanChartBonus})` : ''}${spotifyData.bonus ? ` (+Spotify ${spotifyData.bonus})` : ''}`);
+        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData };
+        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}`);
       }
     } catch (e) { results.music = { error: (e as any).message }; }
   }
@@ -1402,25 +1394,35 @@ async function collectForSingleArtist(
           .maybeSingle();
         const prevDailySales = prevSnap?.metrics?.total_daily_sales ?? null;
         
-        const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-        const score = calculateAlbumScore(totalDailySales, prevDailySales, chartBonus, circleBonus);
+        const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+          calculateChartBonus(adminClient, wikiEntryId),
+          calculateKoreanChartBonus(adminClient, wikiEntryId),
+          calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+        ]);
+        const streamingBonus = koreanChartBonus + spotifyData.bonus;
+        const score = calculateAlbumScore(totalDailySales, prevDailySales, chartBonus, circleBonus, streamingBonus);
         await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
         
         await adminClient.from("ktrenz_data_snapshots").insert({
           wiki_entry_id: wikiEntryId, platform: "hanteo_daily",
-          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales", chart_bonus: chartBonus, circle_bonus: circleBonus },
+          metrics: { total_daily_sales: totalDailySales, albums: matchedDaily, chart_type: "daily_sales", chart_bonus: chartBonus, circle_bonus: circleBonus, streaming_bonus: streamingBonus },
         });
         
-        results.hanteo = { type: "daily+circle", albums: matchedDaily.length, score, totalDailySales, prevDailySales, chartBonus, circleBonus, circle: circleResult };
-        console.log(`[DataCollector] Hanteo+Circle: ${artistTitle} → score=${score}, daily=${totalDailySales}, chartBonus=${chartBonus}, circleBonus=${circleBonus}`);
+        results.hanteo = { type: "daily+circle", albums: matchedDaily.length, score, totalDailySales, prevDailySales, chartBonus, circleBonus, streamingBonus, circle: circleResult };
+        console.log(`[DataCollector] Hanteo+Circle: ${artistTitle} → score=${score}, daily=${totalDailySales}, chartBonus=${chartBonus}, circleBonus=${circleBonus}, streamingBonus=${streamingBonus}`);
       } else {
         // 한터 일간 차트에 없으면 → Circle Chart 단독 or 초동 fallback
         if (circleBonus > 0) {
-          const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-          const totalBonus = chartBonus + circleBonus;
+          const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+            calculateChartBonus(adminClient, wikiEntryId),
+            calculateKoreanChartBonus(adminClient, wikiEntryId),
+            calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+          ]);
+          const streamingBonus = koreanChartBonus + spotifyData.bonus;
+          const totalBonus = chartBonus + circleBonus + streamingBonus;
           await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: totalBonus });
-          results.hanteo = { type: "circle_only", albums: 0, score: totalBonus, chartBonus, circleBonus, circle: circleResult };
-          console.log(`[DataCollector] Album: ${artistTitle} → circle+chart-only score=${totalBonus}`);
+          results.hanteo = { type: "circle_only", albums: 0, score: totalBonus, chartBonus, circleBonus, streamingBonus, circle: circleResult };
+          console.log(`[DataCollector] Album: ${artistTitle} → circle+chart+streaming score=${totalBonus}`);
         } else {
           // 초동 fallback
           console.log(`[DataCollector] Hanteo Daily: ${artistTitle} not on daily chart, trying initial...`);
@@ -1439,16 +1441,27 @@ async function collectForSingleArtist(
           
           if (matchedAlbums.length > 0) {
             const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
-            const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-            const score = Math.round(Math.sqrt(totalSales / 10) * 10) + chartBonus;
+            const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+              calculateChartBonus(adminClient, wikiEntryId),
+              calculateKoreanChartBonus(adminClient, wikiEntryId),
+              calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+            ]);
+            const streamingBonus = koreanChartBonus + spotifyData.bonus;
+            const score = Math.round(Math.sqrt(totalSales / 10) * 10) + chartBonus + streamingBonus;
             await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
-            results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales, chartBonus };
+            results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales, chartBonus, streamingBonus };
           } else {
-            const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-            if (chartBonus > 0) {
-              await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: chartBonus });
-              results.hanteo = { type: "chart_only", albums: 0, score: chartBonus, chartBonus, message: "No Hanteo/Circle data, chart bonus only" };
-              console.log(`[DataCollector] Album: ${artistTitle} → chart-only score=${chartBonus}`);
+            const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+              calculateChartBonus(adminClient, wikiEntryId),
+              calculateKoreanChartBonus(adminClient, wikiEntryId),
+              calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+            ]);
+            const streamingBonus = koreanChartBonus + spotifyData.bonus;
+            const totalBonus = chartBonus + streamingBonus;
+            if (totalBonus > 0) {
+              await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: totalBonus });
+              results.hanteo = { type: "chart+streaming_only", albums: 0, score: totalBonus, chartBonus, streamingBonus, message: "No Hanteo/Circle data, chart+streaming bonus only" };
+              console.log(`[DataCollector] Album: ${artistTitle} → chart+streaming score=${totalBonus}`);
             } else {
               results.hanteo = { albums: 0, message: "No matching albums on any chart" };
             }
@@ -1907,12 +1920,17 @@ Deno.serve(async (req) => {
                 
                 const circleInfo = circleMatchMap.get(data.wikiEntryId);
                 const circleBonus = circleInfo?.bonus ?? 0;
-                const score = calculateAlbumScore(data.totalDailySales, prevDailySales, 0, circleBonus);
+                const [krBonus, spData] = await Promise.all([
+                  calculateKoreanChartBonus(adminClient, data.wikiEntryId),
+                  calculateSpotifyListenersBonus(adminClient, data.wikiEntryId),
+                ]);
+                const streamingBonus = krBonus + spData.bonus;
+                const score = calculateAlbumScore(data.totalDailySales, prevDailySales, 0, circleBonus, streamingBonus);
                 await upsertV3Score(adminClient, data.wikiEntryId, { album_sales_score: score });
                 
                 await adminClient.from("ktrenz_data_snapshots").insert({
                   wiki_entry_id: data.wikiEntryId, platform: "hanteo_daily",
-                  metrics: { total_daily_sales: data.totalDailySales, albums: data.albums, chart_type: "daily_sales", circle_bonus: circleBonus },
+                  metrics: { total_daily_sales: data.totalDailySales, albums: data.albums, chart_type: "daily_sales", circle_bonus: circleBonus, streaming_bonus: streamingBonus },
                 });
                 
                 scoresUpdated++;
@@ -2027,18 +2045,14 @@ Deno.serve(async (req) => {
             topic_views: prevYtmS2?.data?.metrics?.topicTotalViews ?? 0,
             mv_views: prevYtS2?.data?.metrics?.musicVideoViews ?? 0,
           };
-          const [krBonus, spData] = await Promise.all([
-            calculateKoreanChartBonus(adminClient, artist.id),
-            calculateSpotifyListenersBonus(adminClient, artist.id),
-          ]);
-          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM, undefined, krBonus, spData.bonus);
+          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM, undefined);
           await upsertV3Score(adminClient, artist.id, {
             music_score: musicScore,
           });
           if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
           if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
           musicUpdated++;
-          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${krBonus ? ` (+KR ${krBonus})` : ''}${spData.bonus ? ` (+SP ${spData.bonus})` : ''}`);
+          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}`);
         } catch (e) { musicErrors++; }
       }
       await adminClient.from("ktrenz_collection_log").insert({ platform: "music", status: musicUpdated > 0 ? "success" : "partial", records_collected: musicUpdated });
