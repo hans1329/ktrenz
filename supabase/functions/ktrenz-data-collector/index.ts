@@ -473,6 +473,77 @@ function isCircleNoiseCell(value: string): boolean {
   return /^(new|hot|↑|↓|↔|-)$/i.test(normalized) || /^\d+$/.test(normalized);
 }
 
+/**
+ * 합쳐진 앨범+아티스트 문자열을 분리하는 공통 후처리 함수.
+ * DB에서 가져온 아티스트명 목록을 사용하여 문자열 끝에서부터 아티스트명을 매칭.
+ * 예: "DEADLINEBLACKPINK" → { album: "DEADLINE", artist: "BLACKPINK" }
+ * 예: "WINGS방탄소년단" → { album: "WINGS", artist: "방탄소년단" }
+ */
+function splitAlbumArtist(
+  combined: string,
+  knownArtists: Array<{ name: string; nameKo?: string }>,
+): { album: string; artist: string } | null {
+  if (!combined) return null;
+  const trimmed = combined.trim();
+
+  // 이미 분리된 경우 (괄호 안 한글 아티스트명 패턴)
+  // e.g., "GOLDEN HOUR : Part.4ATEEZ (에이티즈)" → artist: "ATEEZ"
+  const bracketMatch = trimmed.match(/^(.+?)\s*[\(（]([^)）]+)[\)）]\s*$/);
+
+  // 아티스트명을 긴 순서로 정렬 (긴 이름부터 매칭해야 "LE SSERAFIM"이 "IM"보다 먼저 매칭)
+  const sortedArtists = [...knownArtists].sort((a, b) => {
+    const aMax = Math.max(a.name.length, (a.nameKo || "").length);
+    const bMax = Math.max(b.name.length, (b.nameKo || "").length);
+    return bMax - aMax;
+  });
+
+  for (const artist of sortedArtists) {
+    // 영문명 매칭 (문자열 끝에서)
+    for (const candidateName of [artist.name, artist.nameKo || ""].filter(Boolean)) {
+      if (candidateName.length < 2) continue;
+
+      // Case-insensitive 끝부분 매칭
+      const lowerCombined = trimmed.toLowerCase();
+      const lowerCandidate = candidateName.toLowerCase();
+
+      // 1) 정확히 끝에 있는 경우: "DEADLINEBLACKPINK" → "BLACKPINK"
+      if (lowerCombined.endsWith(lowerCandidate) && trimmed.length > candidateName.length) {
+        const albumPart = trimmed.slice(0, trimmed.length - candidateName.length).trim();
+        if (albumPart.length >= 1) {
+          return { album: albumPart, artist: candidateName };
+        }
+      }
+
+      // 2) 괄호 앞에 있는 경우: "GOLDEN HOUR : Part.4ATEEZ (에이티즈)"
+      if (bracketMatch) {
+        const beforeBracket = bracketMatch[1].trim();
+        const lowerBefore = beforeBracket.toLowerCase();
+        if (lowerBefore.endsWith(lowerCandidate) && beforeBracket.length > candidateName.length) {
+          const albumPart = beforeBracket.slice(0, beforeBracket.length - candidateName.length).trim();
+          if (albumPart.length >= 1) {
+            return { album: albumPart, artist: candidateName };
+          }
+        }
+      }
+    }
+  }
+
+  // 3) 한글↔영문 경계 기반 분리 (DB 매칭 실패시 fallback)
+  // e.g., "WINGS방탄소년단" → 영문부분 + 한글부분
+  const langBoundary = trimmed.match(/^([A-Za-z0-9\s:.\-'&!?]+)([\uAC00-\uD7AF][\uAC00-\uD7AF\s]*)$/);
+  if (langBoundary && langBoundary[1].trim() && langBoundary[2].trim()) {
+    return { album: langBoundary[1].trim(), artist: langBoundary[2].trim() };
+  }
+
+  // 4) 한글→영문 경계
+  const langBoundary2 = trimmed.match(/^([\uAC00-\uD7AF][\uAC00-\uD7AF\s:.\-'&!?]*[:\s])([A-Za-z].+)$/);
+  if (langBoundary2 && langBoundary2[1].trim() && langBoundary2[2].trim()) {
+    return { album: langBoundary2[1].trim(), artist: langBoundary2[2].trim() };
+  }
+
+  return null;
+}
+
 function parseCircleChart(markdown: string): Array<{ rank: number; album: string; artist: string; weekly_sales: number }> {
   const results: Array<any> = [];
   const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
@@ -513,6 +584,7 @@ function parseCircleChart(markdown: string): Array<{ rank: number; album: string
             album = textCols[textCols.length - 2];
             artist = textCols[textCols.length - 1];
           } else if (textCols.length === 1) {
+            // 합쳐진 경우 — 나중에 splitAlbumArtist로 후처리
             album = textCols[0];
             artist = textCols[0];
           }
@@ -560,6 +632,32 @@ function parseCircleChart(markdown: string): Array<{ rank: number; album: string
     }
   }
   return results;
+}
+
+/**
+ * Circle Chart 파싱 결과에 대해 DB 아티스트명을 사용한 album/artist 분리 후처리.
+ * parseCircleChart → refineCircleEntries 순서로 호출.
+ */
+function refineCircleEntries(
+  entries: Array<{ rank: number; album: string; artist: string; weekly_sales: number }>,
+  knownArtists: Array<{ name: string; nameKo?: string }>,
+): Array<{ rank: number; album: string; artist: string; weekly_sales: number }> {
+  return entries.map(entry => {
+    // album === artist인 경우 합쳐진 것이므로 분리 시도
+    if (entry.album === entry.artist) {
+      const split = splitAlbumArtist(entry.album, knownArtists);
+      if (split) {
+        return { ...entry, album: split.album, artist: split.artist };
+      }
+    }
+    // album !== artist이지만 artist에 앨범명이 포함된 경우도 처리
+    // e.g., album="SPAGHETTILE SSERAFIM (르세라핌)" artist="SPAGHETTILE SSERAFIM"
+    const split = splitAlbumArtist(entry.album, knownArtists);
+    if (split && split.artist !== entry.album) {
+      return { ...entry, album: split.album, artist: split.artist };
+    }
+    return entry;
+  });
 }
 
 /** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
@@ -1140,8 +1238,16 @@ async function collectForSingleArtist(
         const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
         const circleData = await scrapeWithFirecrawl(circleUrl, keys.firecrawl, false, 12000, 30000);
         const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
-        const circleParsed = parseCircleChart(circleMd);
-        console.log(`[DataCollector] Circle Chart: rawParsed=${circleParsed.length} (single-artist mode)`);
+        const circleRaw = parseCircleChart(circleMd);
+        
+        // DB 아티스트명 목록으로 album/artist 분리 후처리
+        const { data: knownArtistsData } = await adminClient
+          .from("v3_artist_tiers")
+          .select("display_name, name_ko")
+          .eq("tier", 1);
+        const knownArtists = (knownArtistsData || []).map((a: any) => ({ name: a.display_name || "", nameKo: a.name_ko || "" })).filter((a: any) => a.name);
+        const circleParsed = refineCircleEntries(circleRaw, knownArtists);
+        console.log(`[DataCollector] Circle Chart: rawParsed=${circleParsed.length} (single-artist mode, refined)`);
         
         // 아티스트 매칭
         for (const entry of circleParsed) {
@@ -1523,7 +1629,15 @@ Deno.serve(async (req) => {
             const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
             const circleData = await scrapeWithFirecrawl(circleUrl, FIRECRAWL_API_KEY, false, 12000, 30000);
             const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
-            const circleParsed = parseCircleChart(circleMd);
+            const circleRaw = parseCircleChart(circleMd);
+            
+            // DB 아티스트명 목록으로 album/artist 분리 후처리 (v3_artist_tiers에서 display_name, name_ko 가져오기)
+            const { data: knownArtistsData } = await adminClient
+              .from("v3_artist_tiers")
+              .select("display_name, name_ko")
+              .eq("tier", 1);
+            const knownArtists = (knownArtistsData || []).map((a: any) => ({ name: a.display_name || "", nameKo: a.name_ko || "" })).filter((a: any) => a.name);
+            const circleParsed = refineCircleEntries(circleRaw, knownArtists);
             circleRawParsed = circleParsed.length;
 
             const circleWikiCache = new Map<string, string | null>();
