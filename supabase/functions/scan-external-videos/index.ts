@@ -227,6 +227,7 @@ Deno.serve(async (req) => {
         videosScanned: totalVideosScanned,
         totalMatches,
         artistsAffected: Object.keys(artistMetrics).length,
+        tierSnapshotAt,
         metrics: artistMetrics,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
