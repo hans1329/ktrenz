@@ -1585,10 +1585,25 @@ Deno.serve(async (req) => {
     // 완료 기록
     await adminClient.from("system_jobs").update({
       status: "completed", completed_at: new Date().toISOString(),
-      metadata: { ...results, processed: actualTotal, total: actualTotal },
+      metadata: {
+        ...results,
+        processed: actualTotal,
+        total: totalCandidates,
+        batchSize,
+        batchOffset,
+        tierSnapshotAt,
+      },
     }).eq("id", "daily-data-crawl");
 
-    return new Response(JSON.stringify({ success: true, results }), {
+    return new Response(JSON.stringify({
+      success: true,
+      results,
+      processed: actualTotal,
+      totalCandidates,
+      batchSize,
+      batchOffset,
+      tierSnapshotAt,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
