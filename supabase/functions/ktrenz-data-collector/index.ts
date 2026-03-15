@@ -1441,16 +1441,27 @@ async function collectForSingleArtist(
           
           if (matchedAlbums.length > 0) {
             const totalSales = matchedAlbums.reduce((sum, d) => sum + d.first_week_sales, 0);
-            const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-            const score = Math.round(Math.sqrt(totalSales / 10) * 10) + chartBonus;
+            const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+              calculateChartBonus(adminClient, wikiEntryId),
+              calculateKoreanChartBonus(adminClient, wikiEntryId),
+              calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+            ]);
+            const streamingBonus = koreanChartBonus + spotifyData.bonus;
+            const score = Math.round(Math.sqrt(totalSales / 10) * 10) + chartBonus + streamingBonus;
             await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: score });
-            results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales, chartBonus };
+            results.hanteo = { type: "initial_fallback", albums: matchedAlbums.length, score, totalSales, chartBonus, streamingBonus };
           } else {
-            const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-            if (chartBonus > 0) {
-              await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: chartBonus });
-              results.hanteo = { type: "chart_only", albums: 0, score: chartBonus, chartBonus, message: "No Hanteo/Circle data, chart bonus only" };
-              console.log(`[DataCollector] Album: ${artistTitle} → chart-only score=${chartBonus}`);
+            const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+              calculateChartBonus(adminClient, wikiEntryId),
+              calculateKoreanChartBonus(adminClient, wikiEntryId),
+              calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+            ]);
+            const streamingBonus = koreanChartBonus + spotifyData.bonus;
+            const totalBonus = chartBonus + streamingBonus;
+            if (totalBonus > 0) {
+              await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: totalBonus });
+              results.hanteo = { type: "chart+streaming_only", albums: 0, score: totalBonus, chartBonus, streamingBonus, message: "No Hanteo/Circle data, chart+streaming bonus only" };
+              console.log(`[DataCollector] Album: ${artistTitle} → chart+streaming score=${totalBonus}`);
             } else {
               results.hanteo = { albums: 0, message: "No matching albums on any chart" };
             }
