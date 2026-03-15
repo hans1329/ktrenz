@@ -137,7 +137,7 @@ External Videos:  1.2x  ← 외부 채널 출연`}</code>
 
       {/* ── Sales 스코어 ── */}
       <SectionHeader icon={DollarSign} title="Sales 스코어 (Revenue/Performance)" color="bg-emerald-600" />
-      <p className="text-sm text-muted-foreground">실물 판매 + 글로벌 차트 성과 + 스트리밍 수익 지표를 통합한 <strong>수익/성과 중심</strong> 카테고리입니다. 한터/Circle 판매 데이터가 없어도 차트·스트리밍 성적만으로 점수를 생성할 수 있습니다.</p>
+      <p className="text-sm text-muted-foreground">실물 판매 + 글로벌 차트 성과 + 스트리밍 수익 지표를 통합한 <strong>수익/성과 중심</strong> 카테고리입니다. 한터/Circle 판매 데이터가 없어도 차트·스트리밍 성적만으로 점수를 생성할 수 있습니다. 한터 일간 차트에 아티스트가 없을 경우 Circle 주간 판매량 ÷ 7로 추정 일간 판매량을 산출하는 <strong>폴백 로직</strong>이 적용됩니다 (<code className="text-xs bg-muted px-1 rounded">source: "circle_estimated"</code> 플래그).</p>
       <FormulaCard title="공식" formula={`SalesScore = baseScore × 0.30 + deltaScore × 0.70
            + chartBonus + circleBonus + streamingBonus
 
