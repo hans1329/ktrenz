@@ -259,8 +259,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       for (const s of typedData) {
         const prev = latestMap.get(s.wiki_entry_id);
         if (!prev || new Date(s.scored_at).getTime() > new Date(prev.scored_at).getTime()) {
-          const tierCreatedAt = tier1CreatedMap.get(s.wiki_entry_id);
-          const isNew = tierCreatedAt ? tierCreatedAt > threeDaysAgo : false;
+          const promotedAt = tier1PromotedMap.get(s.wiki_entry_id);
+          const isNew = promotedAt ? promotedAt > threeDaysAgo : false;
           latestMap.set(s.wiki_entry_id, { ...s, isNew });
         }
       }
