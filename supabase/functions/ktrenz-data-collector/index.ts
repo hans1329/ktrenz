@@ -1629,7 +1629,11 @@ Deno.serve(async (req) => {
             const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
             const circleData = await scrapeWithFirecrawl(circleUrl, FIRECRAWL_API_KEY, false, 12000, 30000);
             const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
-            const circleParsed = parseCircleChart(circleMd);
+            const circleRaw = parseCircleChart(circleMd);
+            
+            // DB 아티스트명 목록으로 album/artist 분리 후처리
+            const knownArtists = artists.map(a => ({ name: a.title || "", nameKo: (a as any).name_ko || "" })).filter(a => a.name);
+            const circleParsed = refineCircleEntries(circleRaw, knownArtists);
             circleRawParsed = circleParsed.length;
 
             const circleWikiCache = new Map<string, string | null>();
