@@ -235,12 +235,12 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       // Tier 1 아티스트만 가져오기
       const { data: tier1Entries } = await supabase
         .from("v3_artist_tiers" as any)
-        .select("wiki_entry_id, created_at")
+        .select("wiki_entry_id, promoted_at")
         .eq("tier", 1);
       const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id));
-      const tier1CreatedMap = new Map<string, string>();
+      const tier1PromotedMap = new Map<string, string>();
       for (const t of (tier1Entries || []) as any[]) {
-        if (t.wiki_entry_id && t.created_at) tier1CreatedMap.set(t.wiki_entry_id, t.created_at);
+        if (t.wiki_entry_id && t.promoted_at) tier1PromotedMap.set(t.wiki_entry_id, t.promoted_at);
       }
 
       const { data, error } = await supabase.from("v3_scores_v2" as any)
@@ -259,8 +259,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
       for (const s of typedData) {
         const prev = latestMap.get(s.wiki_entry_id);
         if (!prev || new Date(s.scored_at).getTime() > new Date(prev.scored_at).getTime()) {
-          const tierCreatedAt = tier1CreatedMap.get(s.wiki_entry_id);
-          const isNew = tierCreatedAt ? tierCreatedAt > threeDaysAgo : false;
+          const promotedAt = tier1PromotedMap.get(s.wiki_entry_id);
+          const isNew = promotedAt ? promotedAt > threeDaysAgo : false;
           latestMap.set(s.wiki_entry_id, { ...s, isNew });
         }
       }
