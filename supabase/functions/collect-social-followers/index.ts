@@ -62,10 +62,16 @@ async function scrapePlatform(firecrawlKey: string, url: string): Promise<Platfo
 }
 
 function normalizeName(name: string): string {
-  const parenMatch = name.match(/\(([^)]+)\)/);
+  // Extract ALL parenthetical groups as separate variants
+  const parenMatches = [...name.matchAll(/\(([^)]+)\)/g)].map(m => m[1].trim());
+  // Main name: remove all parenthetical groups
   const mainName = name.replace(/\s*\([^)]*\)\s*/g, "").trim();
-  const parenName = parenMatch?.[1]?.trim() || "";
-  return `${mainName}|${parenName}`.toLowerCase().replace(/[^a-z0-9가-힣|]/g, "");
+  // Build variants: main name + all paren contents
+  const variants = [mainName, ...parenMatches]
+    .filter(Boolean)
+    .map(v => v.toLowerCase().replace(/[^a-z0-9가-힣]/g, ""))
+    .filter(v => v.length >= 2);
+  return variants.join("|");
 }
 
 function calculateSocialScore(current: SocialMetrics, previous: SocialMetrics | null): number {
