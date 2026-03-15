@@ -642,22 +642,28 @@ function refineCircleEntries(
   entries: Array<{ rank: number; album: string; artist: string; weekly_sales: number }>,
   knownArtists: Array<{ name: string; nameKo?: string }>,
 ): Array<{ rank: number; album: string; artist: string; weekly_sales: number }> {
-  return entries.map(entry => {
+  let splitCount = 0;
+  const result = entries.map(entry => {
     // album === artist인 경우 합쳐진 것이므로 분리 시도
     if (entry.album === entry.artist) {
       const split = splitAlbumArtist(entry.album, knownArtists);
       if (split) {
+        splitCount++;
+        console.log(`[CircleRefine] Split: "${entry.album}" → album="${split.album}", artist="${split.artist}"`);
         return { ...entry, album: split.album, artist: split.artist };
       }
     }
     // album !== artist이지만 artist에 앨범명이 포함된 경우도 처리
-    // e.g., album="SPAGHETTILE SSERAFIM (르세라핌)" artist="SPAGHETTILE SSERAFIM"
     const split = splitAlbumArtist(entry.album, knownArtists);
     if (split && split.artist !== entry.album) {
+      splitCount++;
+      console.log(`[CircleRefine] Split2: "${entry.album}" → album="${split.album}", artist="${split.artist}"`);
       return { ...entry, album: split.album, artist: split.artist };
     }
     return entry;
   });
+  console.log(`[CircleRefine] Total: ${entries.length} entries, ${splitCount} split successfully`);
+  return result;
 }
 
 /** 앨범 점수: 30% base(로그 스케일) + 70% delta(24h 변동) + chart bonus */
