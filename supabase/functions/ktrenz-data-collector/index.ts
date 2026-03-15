@@ -1469,16 +1469,18 @@ Deno.serve(async (req) => {
             .eq("id", "default")
             .maybeSingle();
           
-          // ── Circle Chart 주간 앨범 1회 스크래핑 ──
+          // ── Circle Chart 주간 앨범 1회 스크래핑 (Tier1만 반영) ──
           const circleMatchMap = new Map<string, { rank: number; album: string; artist: string; weekly_sales: number; bonus: number }>();
+          let circleRawParsed = 0;
+          let circleTier1Matched = 0;
           try {
             console.log("[DataCollector] Scraping Circle Chart Weekly...");
             const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
             const circleData = await scrapeWithFirecrawl(circleUrl, FIRECRAWL_API_KEY, false, 12000, 30000);
             const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
             const circleParsed = parseCircleChart(circleMd);
-            console.log(`[DataCollector] Circle Chart parsed ${circleParsed.length} entries`);
-            
+            circleRawParsed = circleParsed.length;
+
             const circleWikiCache = new Map<string, string | null>();
             for (const entry of circleParsed) {
               const nameToMatch = entry.artist || entry.album;
@@ -1489,17 +1491,29 @@ Deno.serve(async (req) => {
                 entryWikiId = await matchArtistToWikiEntry(adminClient, nameToMatch);
                 circleWikiCache.set(nameToMatch, entryWikiId);
               }
-              if (entryWikiId && !circleMatchMap.has(entryWikiId)) {
-                const bonus = calculateCircleBonus(entry.rank, entry.weekly_sales);
-                circleMatchMap.set(entryWikiId, { ...entry, bonus });
-                // 스냅샷 저장
-                await adminClient.from("ktrenz_data_snapshots").insert({
-                  wiki_entry_id: entryWikiId, platform: "circle_chart",
-                  metrics: { rank: entry.rank, album: entry.album, artist: entry.artist, weekly_sales: entry.weekly_sales, chart_type: "weekly" },
-                });
+
+              if (!entryWikiId || !tier1IdSet.has(entryWikiId) || circleMatchMap.has(entryWikiId)) {
+                continue;
               }
+
+              const bonus = calculateCircleBonus(entry.rank, entry.weekly_sales);
+              circleMatchMap.set(entryWikiId, { ...entry, bonus });
+              circleTier1Matched++;
+
+              // 스냅샷 저장 (Tier1만)
+              await adminClient.from("ktrenz_data_snapshots").insert({
+                wiki_entry_id: entryWikiId,
+                platform: "circle_chart",
+                metrics: {
+                  rank: entry.rank,
+                  album: entry.album,
+                  artist: entry.artist,
+                  weekly_sales: entry.weekly_sales,
+                  chart_type: "weekly",
+                },
+              });
             }
-            console.log(`[DataCollector] Circle Chart: ${circleMatchMap.size} artists matched`);
+            console.log(`[DataCollector] Circle Chart: rawParsed=${circleRawParsed}, tier1Matched=${circleTier1Matched}`);
           } catch (circleErr: any) {
             console.error("[DataCollector] Circle Chart error:", circleErr.message);
           }
