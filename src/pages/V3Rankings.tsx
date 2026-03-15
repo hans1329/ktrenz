@@ -79,12 +79,12 @@ const V3Rankings = () => {
     queryFn: async () => {
       const { data: tier1Entries } = await supabase
         .from("v3_artist_tiers" as any)
-        .select("wiki_entry_id, updated_at")
+        .select("wiki_entry_id, created_at")
         .eq("tier", 1);
       const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id));
-      const tier1UpdatedMap = new Map<string, string>();
+      const tier1CreatedMap = new Map<string, string>();
       for (const t of (tier1Entries || []) as any[]) {
-        if (t.wiki_entry_id && t.updated_at) tier1UpdatedMap.set(t.wiki_entry_id, t.updated_at);
+        if (t.wiki_entry_id && t.created_at) tier1CreatedMap.set(t.wiki_entry_id, t.created_at);
       }
 
       const { data: allScores, error } = await supabase
@@ -102,8 +102,8 @@ const V3Rankings = () => {
       const latestMap = new Map<string, any>();
       for (const s of typedScores) {
         if (!latestMap.has(s.wiki_entry_id)) {
-          const tierUpdatedAt = tier1UpdatedMap.get(s.wiki_entry_id);
-          const isNew = tierUpdatedAt ? tierUpdatedAt > threeDaysAgo : false;
+          const tierCreatedAt = tier1CreatedMap.get(s.wiki_entry_id);
+          const isNew = tierCreatedAt ? tierCreatedAt > threeDaysAgo : false;
           latestMap.set(s.wiki_entry_id, { ...s, isNew });
         }
       }
