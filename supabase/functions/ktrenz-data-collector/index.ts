@@ -1336,6 +1336,7 @@ Deno.serve(async (req) => {
     }
 
     const orderedTier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+    const tier1IdSet = new Set<string>(orderedTier1Ids);
 
     if (orderedTier1Ids.length === 0) {
       console.log("[DataCollector] No tier 1 artists found, skipping batch.");
