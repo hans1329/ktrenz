@@ -118,6 +118,8 @@ const SignalRadarIntelligenceSection = () => {
               <tr><td className="px-3 py-1.5 font-mono">hanteo_daily_sales</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">한터 일별 판매량</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">apple_chart_position</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">Apple Music 차트 순위 (null = 미진입)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">billboard_position</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">Billboard 차트 순위</td></tr>
+              <tr><td className="px-3 py-1.5 font-mono">spotify_listeners</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">Spotify 월간 리스너 수</td></tr>
+              <tr><td className="px-3 py-1.5 font-mono">melon_chart_rank</td><td className="px-3 py-1.5">int</td><td className="px-3 py-1.5 text-muted-foreground">멜론 TOP100 순위 (null = 미진입)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">music_score</td><td className="px-3 py-1.5">numeric</td><td className="px-3 py-1.5 text-muted-foreground">FES Music Score (종합)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">buzz_to_perf_ratio</td><td className="px-3 py-1.5">numeric</td><td className="px-3 py-1.5 text-muted-foreground">Buzz Score ÷ Performance Score (전환율)</td></tr>
               <tr><td className="px-3 py-1.5 font-mono">conversion_tier</td><td className="px-3 py-1.5">text</td><td className="px-3 py-1.5 text-muted-foreground">high / medium / low / dormant</td></tr>
