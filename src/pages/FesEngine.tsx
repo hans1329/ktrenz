@@ -181,7 +181,8 @@ Spotify Monthly Listeners:
       ]} />
 
       {/* ── Music 스코어 ── */}
-      <SectionHeader icon={Music} title="Music 스코어 (v2 델타-오버-델타)" color="bg-purple-600" />
+      <SectionHeader icon={Music} title="Music 스코어 (Engagement/참여)" color="bg-purple-600" />
+      <p className="text-sm text-muted-foreground">순수 <strong>청취 활동/관심도</strong> 지표만 사용합니다. Spotify 리스너와 멜론 차트는 v2에서 Sales(수익) 카테고리로 이동하여, Music은 비수익 참여 행위에 집중합니다.</p>
       <FormulaCard title="공식" formula={`MusicScore = baseScore × 0.30 + deltaScore × 0.70
 
 baseScore = log10(playcount)×10 + log10(listeners)×8
@@ -194,6 +195,15 @@ deltaScore = Σ incrementDeltaScore(metric, 24시간전, 48시간전, scale)
   └─ YT Music topicViews (scale=40)
   └─ MV views (scale=50)`}
         description="모든 누적 지표는 델타-오버-델타를 사용합니다: 오늘 증분 대 어제 증분의 비율 (가속도 0.3x~5.0x). deltaScore는 max(baseScore × 5, 500)으로 제한됩니다." />
+
+      <Card className="p-4 bg-purple-500/5 border-purple-500/20">
+        <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">v2 카테고리 재편 — Sales vs Music 분리 기준</p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+          <li><strong className="text-foreground">Sales (수익/성과):</strong> Hanteo, Circle, Apple Music, Billboard, Spotify Listeners, Melon TOP100 — 직접적 매출·차트 성과 연결</li>
+          <li><strong className="text-foreground">Music (참여/관심):</strong> Last.fm, Deezer, YT Music Topic, MV 조회 — 비수익 청취·탐색 행위</li>
+          <li><strong className="text-foreground">철학:</strong> "Fan Activity → Revenue" 전환율 분석의 기반 — Buzz/Music(관심)이 Sales(성과)로 이어지는 인과 관계 추적</li>
+        </ul>
+      </Card>
 
       <Card className="p-4 bg-primary/5 border-primary/20">
         <p className="text-xs text-muted-foreground mb-1.5 uppercase font-bold tracking-wider">incrementDeltaScore 함수</p>
