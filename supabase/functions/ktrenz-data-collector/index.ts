@@ -1529,7 +1529,7 @@ Deno.serve(async (req) => {
           }
           
           const dailyParsed = parseHanteoDaily(dailyMd);
-          console.log(`[DataCollector] Hanteo Daily: 파싱된 앨범 ${dailyParsed.length}건`);
+          console.log(`[DataCollector] Hanteo Daily: rawParsed=${dailyParsed.length} (Tier1-only scoring enabled)`);
           
           if (dailyParsed.length === 0) {
             // 일간 차트 파싱 실패 시 초동 fallback
