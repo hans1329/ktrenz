@@ -1093,7 +1093,7 @@ async function collectForSingleArtist(
       try {
         console.log(`[DataCollector] Scraping Circle Chart Weekly for ${artistTitle}...`);
         const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
-        const circleData = await scrapeWithFirecrawl(circleUrl, keys.firecrawl, false, 15000, 45000);
+        const circleData = await scrapeWithFirecrawl(circleUrl, keys.firecrawl, false, 12000, 30000);
         const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
         const circleParsed = parseCircleChart(circleMd);
         console.log(`[DataCollector] Circle Chart parsed ${circleParsed.length} entries`);
