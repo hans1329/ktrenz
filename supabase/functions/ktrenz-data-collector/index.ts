@@ -955,7 +955,7 @@ function calculateMusicScore(
     }
   }
 
-  if (!hasPrev && koreanChartBonus === 0) {
+  if (!hasPrev && koreanChartBonus === 0 && spotifyListenersBonus === 0) {
     return baseScore;
   }
 
@@ -963,8 +963,9 @@ function calculateMusicScore(
     deltaScore = clampDelta(deltaScore, baseScore);
   }
 
-  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + koreanChartBonus);
-  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} koreanChart=${koreanChartBonus} final=${finalScore}`);
+  const totalBonus = koreanChartBonus + spotifyListenersBonus;
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
+  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} koreanChart=${koreanChartBonus} spotify=${spotifyListenersBonus} final=${finalScore}`);
   return finalScore;
 }
 
