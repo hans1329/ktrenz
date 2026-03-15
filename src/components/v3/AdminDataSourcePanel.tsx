@@ -51,6 +51,7 @@ const COLLECT_MODULE_MAP: Record<string, string> = {
   apple_music: "apple_music_charts",
   billboard: "billboard_charts",
   hanteo: "hanteo",
+  circle_chart: "hanteo",
   buzz_x: "buzz_x",
   buzz_reddit: "buzz_reddit",
   buzz_naver: "buzz_naver",
