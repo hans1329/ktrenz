@@ -110,7 +110,7 @@ const MiniCategoryBars = ({ data }: { data: Record<string, { velocity: number; i
   const cats = [
     { key: "youtube", label: "YT", color: "from-red-500 to-orange-500" },
     { key: "buzz", label: "BZ", color: "from-purple-500 to-violet-500" },
-    { key: "album", label: "AL", color: "from-amber-500 to-yellow-500" },
+    { key: "album", label: "SL", color: "from-amber-500 to-yellow-500" },
     { key: "music", label: "MU", color: "from-teal-400 to-cyan-500" },
   ];
   return (
