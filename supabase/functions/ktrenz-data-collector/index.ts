@@ -680,7 +680,7 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
   for (const name of unique) {
     const { data } = await adminClient
       .from("wiki_entries").select("id, title")
-      .eq("title", name).eq("schema_type", "artist").limit(1);
+      .eq("title", name).in("schema_type", ["artist", "member"]).limit(1);
     if (data?.[0]) return data[0].id;
   }
   
@@ -689,7 +689,7 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
     if (name.length <= 3) continue; // "BTS" 등 짧은 이름은 partial match 스킵 (오매칭 방지)
     const { data } = await adminClient
       .from("wiki_entries").select("id, title")
-      .ilike("title", `%${name}%`).eq("schema_type", "artist").limit(1);
+      .ilike("title", `%${name}%`).in("schema_type", ["artist", "member"]).limit(1);
     if (data?.[0]) return data[0].id;
   }
   return null;
