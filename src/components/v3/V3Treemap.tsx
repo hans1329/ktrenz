@@ -626,11 +626,17 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
 
                 {isMedium && catChange !== 0 && (
                   <span className={cn(
-                    "absolute top-1 right-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
+                    "absolute top-1 z-20 text-[8px] md:text-[10px] font-bold drop-shadow-md",
+                    rect.item.isNew ? "right-6" : "right-1",
                     catChange >= 15 ? "text-white" : catChange > 0 ? "text-green-200" : "text-blue-200"
                   )}>
                     {catChange > 0 ? "▲" : "▼"}{Math.abs(catChange).toFixed(1)}%
                   </span>
+                )}
+
+                {rect.item.isNew && (
+                  <span className="absolute top-0 right-0 z-30 bg-emerald-500 text-white font-black rounded-bl-md flex items-center justify-center"
+                    style={{ fontSize: `${Math.max(7, badgeFontSize * 0.65)}px`, padding: '1px 4px 2px 4px' }}>N</span>
                 )}
 
                 <div
