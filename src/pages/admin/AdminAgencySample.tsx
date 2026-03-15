@@ -927,7 +927,7 @@ Artist: ${context.artist}
                     { key: 'youtube', label: 'YouTube', color: '#ef4444', contrib: fesContrib.youtube_contrib, z: fesContrib.youtube_z },
                     { key: 'buzz', label: 'Buzz', color: '#8b5cf6', contrib: fesContrib.buzz_contrib, z: fesContrib.buzz_z },
                     { key: 'music', label: 'Music', color: '#3b82f6', contrib: fesContrib.music_contrib, z: fesContrib.music_z },
-                    { key: 'album', label: 'Album', color: '#f59e0b', contrib: fesContrib.album_contrib, z: fesContrib.album_z },
+                    { key: 'album', label: 'Sales', color: '#f59e0b', contrib: fesContrib.album_contrib, z: fesContrib.album_z },
                     { key: 'social', label: 'Social', color: '#ec4899', contrib: fesContrib.social_contrib, z: fesContrib.social_z },
                   ];
                   return (
