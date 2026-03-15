@@ -1631,8 +1631,12 @@ Deno.serve(async (req) => {
             const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
             const circleRaw = parseCircleChart(circleMd);
             
-            // DB 아티스트명 목록으로 album/artist 분리 후처리
-            const knownArtists = artists.map(a => ({ name: a.title || "", nameKo: (a as any).name_ko || "" })).filter(a => a.name);
+            // DB 아티스트명 목록으로 album/artist 분리 후처리 (v3_artist_tiers에서 display_name, name_ko 가져오기)
+            const { data: knownArtistsData } = await adminClient
+              .from("v3_artist_tiers")
+              .select("display_name, name_ko")
+              .eq("tier", 1);
+            const knownArtists = (knownArtistsData || []).map((a: any) => ({ name: a.display_name || "", nameKo: a.name_ko || "" })).filter((a: any) => a.name);
             const circleParsed = refineCircleEntries(circleRaw, knownArtists);
             circleRawParsed = circleParsed.length;
 
