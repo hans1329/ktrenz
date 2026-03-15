@@ -459,54 +459,99 @@ function parseHanteoDaily(markdown: string): Array<{ rank: number; album: string
 // Circle Chart (Weekly Album Sales)
 // ══════════════════════════════════════
 
+function cleanCircleCell(value: string): string {
+  return value
+    .replace(/!\[[^\]]*\]\([^\)]*\)/g, "")
+    .replace(/\[([^\]]+)\]\([^\)]*\)/g, "$1")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isCircleNoiseCell(value: string): boolean {
+  const normalized = value.toLowerCase().trim();
+  return /^(new|hot|↑|↓|↔|-)$/i.test(normalized) || /^\d+$/.test(normalized);
+}
+
 function parseCircleChart(markdown: string): Array<{ rank: number; album: string; artist: string; weekly_sales: number }> {
   const results: Array<any> = [];
   const lines = markdown.split("\n").map(l => l.trim()).filter(Boolean);
-  
-  // Circle Chart 테이블 파싱: Rank | Album/Artist | Sales | Distribution
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
-    // 테이블 row 패턴: "| 1 | ... |" 또는 숫자로 시작하는 줄
-    // 마크다운 테이블 형식: | Rank | Album/Artist | Sales | Distribution |
-    const tableMatch = line.match(/\|\s*(\d+)\s*\|/);
-    if (tableMatch) {
-      const cols = line.split("|").map(c => c.trim()).filter(Boolean);
-      if (cols.length >= 3) {
-        const rank = parseInt(cols[0]);
-        if (rank > 0 && rank <= 200) {
-          // Sales 열에서 숫자 추출
-          const salesCol = cols.find((c, idx) => idx >= 2 && /^[\d,]+$/.test(c.replace(/,/g, "")));
-          const sales = salesCol ? parseInt(salesCol.replace(/,/g, "")) : 0;
-          // Album/Artist 열 파싱
-          const albumArtistCol = cols[1] || "";
-          results.push({ rank, album: albumArtistCol, artist: "", weekly_sales: sales });
+
+    // 테이블 row: rank | (change) | album | artist | sales ...
+    if (line.includes("|")) {
+      const cols = line.split("|").map(cleanCircleCell).filter(Boolean);
+      const rank = Number.parseInt(cols[0] || "", 10);
+
+      if (Number.isFinite(rank) && rank > 0 && rank <= 200 && cols.length >= 4) {
+        let salesIdx = -1;
+        let sales = 0;
+
+        for (let c = cols.length - 1; c >= 1; c--) {
+          if (/^\d[\d,]*$/.test(cols[c])) {
+            const parsed = Number.parseInt(cols[c].replace(/,/g, ""), 10);
+            if (parsed > 0) {
+              salesIdx = c;
+              sales = parsed;
+              break;
+            }
+          }
+        }
+
+        if (salesIdx > 1 && sales > 0) {
+          const textCols = cols
+            .slice(1, salesIdx)
+            .map(cleanCircleCell)
+            .filter(c => c && !isCircleNoiseCell(c) && !/^\d[\d,]*$/.test(c));
+
+          let album = "";
+          let artist = "";
+
+          if (textCols.length >= 2) {
+            album = textCols[textCols.length - 2];
+            artist = textCols[textCols.length - 1];
+          } else if (textCols.length === 1) {
+            album = textCols[0];
+            artist = textCols[0];
+          }
+
+          if (album || artist) {
+            const bracketMatch = artist.match(/^(.+?)\s*[\(（](.+?)[\)）]$/);
+            const cleanArtist = bracketMatch ? bracketMatch[1].trim() : artist;
+            results.push({
+              rank,
+              album: album || cleanArtist,
+              artist: cleanArtist || album,
+              weekly_sales: sales,
+            });
+            continue;
+          }
         }
       }
-      continue;
     }
-    
-    // 비-테이블 형식: 순위, 앨범명, 아티스트명, 판매량이 별도 줄로 나열
+
+    // 비-테이블 형식 fallback: 순위, 앨범명, 아티스트명, 판매량이 줄 단위로 존재
     const rankMatch = line.match(/^(\d+)$/);
     if (rankMatch) {
       const rank = parseInt(rankMatch[1]);
       if (rank > 0 && rank <= 200) {
-        // 다음 줄들에서 앨범명, 아티스트명, 판매량 찾기
         let album = "", artist = "", sales = 0;
         for (let j = i + 1; j < Math.min(lines.length, i + 8); j++) {
-          const salesMatch = lines[j].match(/^([\d,]+)$/);
+          const current = cleanCircleCell(lines[j]);
+          const salesMatch = current.match(/^([\d,]+)$/);
           if (salesMatch) {
             const val = parseInt(salesMatch[1].replace(/,/g, ""));
             if (val > 100) { sales = val; break; }
           }
-          if (!album && !lines[j].startsWith("!") && !lines[j].startsWith("[") && !lines[j].match(/^(new|HOT|↑|↓|\-)\s*$/i) && lines[j].length > 1) {
-            album = lines[j];
-          } else if (album && !artist && !lines[j].startsWith("!") && !lines[j].startsWith("[") && !lines[j].match(/^(new|HOT|↑|↓|\-)\s*$/i) && lines[j].length > 1) {
-            artist = lines[j];
+          if (!album && current && !isCircleNoiseCell(current)) {
+            album = current;
+          } else if (album && !artist && current && !isCircleNoiseCell(current)) {
+            artist = current;
           }
         }
         if (album && sales > 0) {
-          // 아티스트명이 괄호 안에 있을 수 있음: "TUNEXX (류넥스)" → artist 추출
           const bracketMatch = artist.match(/^(.+?)\s*[\(（](.+?)[\)）]$/);
           const cleanArtist = bracketMatch ? bracketMatch[1].trim() : artist;
           results.push({ rank, album, artist: cleanArtist || album, weekly_sales: sales });
