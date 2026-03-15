@@ -1672,7 +1672,17 @@ Deno.serve(async (req) => {
             await adminClient.from("ktrenz_collection_log").insert({
               platform: "hanteo", status: "success", records_collected: saved,
             });
-            results.hanteo = { type: "daily+circle", parsed: dailyParsed.length, saved, matched, scoresUpdated, circleMatched: circleMatchMap.size, url: dailyUrl };
+            results.hanteo = {
+              type: "daily+circle",
+              parsed: dailyParsed.length,
+              saved,
+              matched,
+              scoresUpdated,
+              circleMatched: circleMatchMap.size,
+              circleRawParsed,
+              circleTier1Matched,
+              url: dailyUrl,
+            };
           }
         } catch (e) {
           console.error("[DataCollector] Hanteo+Circle error:", e);
