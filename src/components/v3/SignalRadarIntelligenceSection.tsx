@@ -35,31 +35,36 @@ const SignalRadarIntelligenceSection = () => {
             <div className="text-xs font-medium text-accent-foreground">A Data × Performance</div>
             <div className="text-sm font-semibold text-foreground">현재 매출 성과</div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Hanteo 판매량</li>
-              <li>• Apple Music Charts</li>
-              <li>• Billboard Charts</li>
-              <li>• Deezer / Last.fm</li>
+              <li>• Hanteo 실물 판매량</li>
+              <li>• Spotify Monthly Listeners</li>
+              <li>• 멜론 차트 순위</li>
+              <li>• Apple Music / Billboard Charts</li>
             </ul>
             <div className="text-[10px] text-muted-foreground/60 mt-1">
-              → Signal-D 매핑 (신규)
+              → Signal-D 매핑 (Revenue Pulse)
             </div>
           </div>
 
           <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">B Data × Buzz</div>
-            <div className="text-sm font-semibold text-foreground">관심 예측</div>
+            <div className="text-xs font-medium text-muted-foreground">A Data × Engagement</div>
+            <div className="text-sm font-semibold text-foreground">청취 행동/관심</div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• FES Predictor: YouTube/Buzz 예측</li>
-              <li>• 이벤트 기반 관심 변동 예상</li>
+              <li>• Last.fm Scrobbles/Listeners</li>
+              <li>• Deezer Favorites</li>
+              <li>• YouTube Music Topic Views</li>
             </ul>
+            <div className="text-[10px] text-muted-foreground/60 mt-1">
+              매출 전 단계 — 관심 → 매출 전환 추적
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
-            <div className="text-xs font-medium text-muted-foreground">B Data × Performance</div>
-            <div className="text-sm font-semibold text-foreground">매출 예측</div>
+            <div className="text-xs font-medium text-muted-foreground">B Data × Prediction</div>
+            <div className="text-sm font-semibold text-foreground">매출/관심 예측</div>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• FES Predictor: Music/Sales 예측</li>
+              <li>• FES Predictor: 카테고리별 예측</li>
               <li>• 컴백 시 초동 판매 추정</li>
+              <li>• 이벤트 기반 변동 예상</li>
             </ul>
           </div>
         </div>
