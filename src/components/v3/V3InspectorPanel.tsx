@@ -195,104 +195,77 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
               </div>
             </div>
 
-            {channels.length > 0 && (
-              <div className="space-y-3 rounded-xl bg-muted/30 border border-border p-4">
-                <p className="text-base text-foreground uppercase tracking-wider font-extrabold flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" /> {t("drawer.categoryChanges")}
-                </p>
-                {(() => {
-                  const changeChannels = channels.map(ch => ({ ...ch, absChange: Math.abs(ch.change) }));
-                  const totalChange = changeChannels.reduce((sum, ch) => sum + ch.absChange, 0);
-                  const activeChannels = changeChannels.filter(ch => ch.absChange > 0);
-                  if (activeChannels.length === 0 || totalChange === 0) return null;
+            {channels.length > 0 && (() => {
+              // 약한 카테고리 찾기: 점수가 낮거나 하락 중인 항목
+              const boostTargets = channels
+                .map(ch => {
+                  const shortLabel = ch.label.split(' · ')[0];
+                  // 약점 우선순위: 하락 중 > 점수 비중 낮음
+                  const weakness = ch.change < -5 ? 3 : ch.change < 0 ? 2 : (ch.value / Math.max(total, 1)) < 0.1 ? 1 : 0;
+                  return { ...ch, shortLabel, weakness };
+                })
+                .filter(ch => ch.weakness > 0)
+                .sort((a, b) => b.weakness - a.weakness || a.value - b.value)
+                .slice(0, 3);
 
-                  const maxChange = Math.max(...activeChannels.map(ch => ch.absChange));
-                  const dominantIndex = activeChannels.findIndex(ch => ch.absChange === maxChange);
+              const boostTips: Record<string, { tip: string; action: string }> = {
+                YouTube: { tip: t("inspector.boost.youtube") || "Increase video uploads & engagement", action: "Watch & Like" },
+                Buzz: { tip: t("inspector.boost.buzz") || "Share on X & TikTok to build buzz", action: "Share on X" },
+                Sales: { tip: t("inspector.boost.sales") || "Support album sales & streaming charts", action: "Stream Now" },
+                Music: { tip: t("inspector.boost.music") || "Listen on Last.fm & Deezer to boost plays", action: "Listen" },
+                Social: { tip: t("inspector.boost.social") || "Grow social presence & follower count", action: "Follow" },
+                "Fan Activity": { tip: t("inspector.boost.fan") || "Engage on K-Trendz to earn Fan points", action: "Explore" },
+              };
 
-                  const stops: { offset: string; color: string }[] = [];
-                  let cumPct = 0;
-                  const blendSize = 3;
-                  activeChannels.forEach((ch, i) => {
-                    const pct = (ch.absChange / totalChange) * 100;
-                    if (i === 0) {
-                      stops.push({ offset: `${cumPct}%`, color: ch.color });
-                    } else {
-                      stops.push({ offset: `${Math.max(cumPct - blendSize, 0)}%`, color: activeChannels[i - 1].color });
-                      stops.push({ offset: `${Math.min(cumPct + blendSize, 100)}%`, color: ch.color });
-                    }
-                    cumPct += pct;
-                  });
-                  stops.push({ offset: `100%`, color: activeChannels[activeChannels.length - 1].color });
-                  const gradId = `cat-grad-${item.id}`;
-
-                  let domStart = 0;
-                  for (let i = 0; i < dominantIndex; i++) {
-                    domStart += (activeChannels[i].absChange / totalChange) * 200;
-                  }
-                  const domWidth = (activeChannels[dominantIndex].absChange / totalChange) * 200;
-                  const domLeftPct = (domStart / 200) * 100;
-                  const domWidthPct = (domWidth / 200) * 100;
-
-                  return (
-                    <div className="relative">
-                      <svg className="w-full h-7" preserveAspectRatio="none" viewBox="0 0 200 14"
-                        style={{ borderRadius: '9999px', overflow: 'hidden', display: 'block' }}>
-                        <defs>
-                          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                            {stops.map((s, i) => <stop key={i} offset={s.offset} stopColor={s.color} />)}
-                          </linearGradient>
-                        </defs>
-                        <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill="hsl(var(--muted))" opacity="0.3" />
-                        <rect x="0" y="0" width="200" height="14" rx="7" ry="7" fill={`url(#${gradId})`}>
-                          <animate attributeName="width" from="0" to="200" dur="0.8s" fill="freeze"
-                            calcMode="spline" keySplines="0.25 0.1 0.25 1" keyTimes="0;1" />
-                        </rect>
-                      </svg>
-                      <div className="absolute top-0 pointer-events-none"
-                        style={{
-                          left: `${domLeftPct}%`,
-                          width: `${domWidthPct}%`,
-                          height: '100%',
-                          borderRadius: '9999px',
-                          overflow: 'hidden',
-                        }}>
-                        <BoxParticles count={18} color="hsl(0, 0%, 95%)" speed={0.4} density={0.45} />
-                      </div>
+              if (boostTargets.length === 0) {
+                return (
+                  <div className="rounded-xl bg-green-500/5 border border-green-500/20 p-4">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-green-500" />
+                      <p className="text-sm font-bold text-green-500">All channels performing well!</p>
                     </div>
-                  );
-                })()}
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {(() => {
-                    const maxAbsChange = Math.max(...channels.map(ch => Math.abs(ch.change)));
-                    return channels.map(ch => {
-                      const shortLabel = ch.label.split(' · ')[0];
-                      const isDominant = Math.abs(ch.change) === maxAbsChange && maxAbsChange > 0;
-                      return (
-                        <a key={ch.label} href={ch.href} target="_blank" rel="noopener noreferrer"
-                          className={cn(
-                            "flex items-center justify-between px-2.5 py-2 rounded-lg border transition-colors",
-                            "bg-card/50 border-border/50 hover:border-border",
-                            ch.href && "cursor-pointer",
-                            isDominant && "border-primary/30 bg-primary/5 animate-[shake_0.5s_ease-in-out_1s_1]"
-                          )}>
-                          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-foreground">
-                            <span className={cn("w-2.5 h-2.5 rounded-sm shrink-0", isDominant && "animate-pulse")}
-                              style={{ background: ch.color }} />
-                            {ch.icon} {shortLabel}
+                    <p className="text-[10px] text-muted-foreground mt-1">All categories are growing — keep the momentum going.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-2 rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    <p className="text-sm font-extrabold text-foreground uppercase tracking-wider">Boost Opportunity</p>
+                  </div>
+                  {boostTargets.map(ch => {
+                    const tipData = boostTips[ch.shortLabel] || { tip: "Room for growth", action: "View" };
+                    return (
+                      <a key={ch.shortLabel} href={ch.href} target="_blank" rel="noopener noreferrer"
+                        className="flex items-start gap-3 p-3 rounded-xl border border-border bg-card/60 hover:border-amber-500/30 hover:bg-card transition-all cursor-pointer group">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ background: `${ch.color}20` }}>
+                          {ch.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-foreground">{ch.shortLabel}</span>
+                            <span className={cn("text-[10px] font-bold",
+                              ch.change < 0 ? "text-red-400" : "text-muted-foreground"
+                            )}>
+                              {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{tipData.tip}</p>
+                        </div>
+                        <div className="shrink-0 self-center">
+                          <span className="flex items-center gap-0.5 text-[9px] font-bold text-amber-500 group-hover:text-amber-400 transition-colors">
+                            {tipData.action} <ArrowUpRight className="w-3 h-3" />
                           </span>
-                          <span className={cn("text-[10px] font-bold",
-                            ch.change > 0 ? "text-green-500" : ch.change < 0 ? "text-red-400" : "text-muted-foreground",
-                            isDominant && "text-[11px]"
-                          )}>
-                            {ch.change > 0 ? "+" : ""}{ch.change.toFixed(1)}%
-                          </span>
-                        </a>
-                      );
-                    });
-                  })()}
+                        </div>
+                      </a>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
             <V3CorrelationInsightCard wikiEntryId={item.id} artistName={item.title} artistSlug={item.slug} />
