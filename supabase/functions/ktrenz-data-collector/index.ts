@@ -1246,18 +1246,14 @@ async function collectForSingleArtist(
           mv_views: prev48hYtSnap?.data?.metrics?.musicVideoViews ?? 0,
         };
 
-        const [koreanChartBonus, spotifyData] = await Promise.all([
-          calculateKoreanChartBonus(adminClient, wikiEntryId),
-          calculateSpotifyListenersBonus(adminClient, wikiEntryId),
-        ]);
-        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics, koreanChartBonus, spotifyData.bonus);
+        const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMusicMetrics, prev48hMusicMetrics);
         await upsertV3Score(adminClient, wikiEntryId, {
           music_score: musicScore,
         });
         if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
         if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: wikiEntryId, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
-        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData, koreanChartBonus, spotifyBonus: spotifyData.bonus, spotifyListeners: spotifyData.listeners };
-        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${koreanChartBonus ? ` (+KR ${koreanChartBonus})` : ''}${spotifyData.bonus ? ` (+Spotify ${spotifyData.bonus})` : ''}`);
+        results.music = { score: musicScore, includesYtMusic: !!ytMusicData, includesYtMv: !!ytMvData };
+        console.log(`[DataCollector] Music: ${artistTitle} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}`);
       }
     } catch (e) { results.music = { error: (e as any).message }; }
   }
