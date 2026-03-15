@@ -22,18 +22,27 @@ interface SpotifyListenerEntry {
 function parseKworbListeners(html: string): SpotifyListenerEntry[] {
   const entries: SpotifyListenerEntry[] = [];
   
-  // 테이블 행 패턴: <tr><td>rank</td><td><a href="...artist/ID_songs.html">Name</a></td><td>listeners</td><td>daily</td><td>peak</td><td>peakListeners</td></tr>
-  const rowRegex = /<tr><td>(\d+)<\/td><td><a href="[^"]*?artist\/([^_"]+)_songs\.html">([^<]+)<\/a><\/td><td>([\d,]+)<\/td><td>([+-]?[\d,]+)<\/td><td>(\d+)<\/td><td>([\d,]+)<\/td><\/tr>/g;
+  // 더 유연한 파싱: 각 <tr> 블록을 추출 후 <td> 내용 분리
+  const trBlocks = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
   
-  let match;
-  while ((match = rowRegex.exec(html)) !== null) {
-    const rank = parseInt(match[1]);
-    const spotifyId = match[2];
-    const artist = match[3].trim();
-    const listeners = parseInt(match[4].replace(/,/g, ""));
-    const dailyChange = parseInt(match[5].replace(/,/g, ""));
-    const peak = parseInt(match[6]);
-    const peakListeners = parseInt(match[7].replace(/,/g, ""));
+  for (const tr of trBlocks) {
+    // <td> 내용 추출
+    const tds = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m => m[1].trim());
+    if (tds.length < 6) continue;
+    
+    const rank = parseInt(tds[0]);
+    if (isNaN(rank) || rank < 1) continue;
+    
+    // 아티스트명 + Spotify ID 추출
+    const artistLink = tds[1].match(/<a[^>]*href="[^"]*artist\/([^_"]+)_songs[^"]*"[^>]*>([^<]+)<\/a>/i);
+    if (!artistLink) continue;
+    
+    const spotifyId = artistLink[1];
+    const artist = artistLink[2].trim();
+    const listeners = parseInt(tds[2].replace(/,/g, "").replace(/<[^>]*>/g, ""));
+    const dailyChange = parseInt(tds[3].replace(/,/g, "").replace(/<[^>]*>/g, ""));
+    const peak = parseInt(tds[4].replace(/,/g, "").replace(/<[^>]*>/g, ""));
+    const peakListeners = parseInt(tds[5].replace(/,/g, "").replace(/<[^>]*>/g, ""));
     
     if (!isNaN(rank) && !isNaN(listeners)) {
       entries.push({ rank, artist, listeners, dailyChange, peak, peakListeners, spotifyId });
