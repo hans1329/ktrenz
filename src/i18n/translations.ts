@@ -439,12 +439,23 @@ const translations: Record<string, Record<Language, string>> = {
   "correlation.catchUpBadge": { en: "Outcome likely to catch up in ~3 days (avg gap: {gap})", ko: "약 3일 후 성과가 따라붙을 가능성 높음 (평균 갭: {gap})", ja: "約3日後に成果が追いつく可能性あり (平均ギャップ: {gap})", zh: "预计约3天后成果跟上 (平均差距: {gap})" },
   "correlation.laggingBadge": { en: "FES lagging behind outcome (avg gap: {gap})", ko: "FES가 성과 대비 뒤처지는 중 (평균 갭: {gap})", ja: "FESが成果に遅れている (平均ギャップ: {gap})", zh: "FES落后于成果 (平均差距: {gap})" },
 
-  // ── Correlation Insight Card (Fan) ──
-  "correlationInsight.title": { en: "Channel Strength", ko: "채널별 강도", ja: "チャネル強度", zh: "频道强度" },
-  "correlationInsight.focusArea": { en: "Focus Area", ko: "집중 포인트", ja: "注目ポイント", zh: "关注重点" },
-  "correlationInsight.weakChannel": { en: "{channel} needs a push — stream & engage for {artist}!", ko: "{channel} 채널이 약해요 — {artist}를 위해 스트리밍 & 참여하세요!", ja: "{channel}を強化しよう — {artist}のために再生&参加!", zh: "{channel}频道较弱 — 为{artist}串流和参与!" },
-  "correlationInsight.catchUpHint": { en: "{channel} results likely coming in ~3 days — keep pushing!", ko: "{channel} 성과가 약 3일 후 나올 가능성 높아요 — 계속 밀어주세요!", ja: "{channel}の成果が約3日後に出る可能性あり — 続けよう!", zh: "{channel}成果预计约3天后到来 — 继续加油!" },
-  "correlationInsight.laggingHint": { en: "{channel} is outperforming attention — great momentum!", ko: "{channel}이 관심도보다 성과가 높아요 — 좋은 기세!", ja: "{channel}が注目度を上回る成果 — 好調!", zh: "{channel}成果超过关注度 — 好势头!" },
+  // ── Fan Boost Guide Card ──
+  "boostGuide.title": { en: "Fan Boost Guide", ko: "팬 부스트 가이드", ja: "ファンブーストガイド", zh: "粉丝助力指南" },
+  "boostGuide.goodMomentum": { en: "Good momentum!", ko: "좋은 흐름!", ja: "好調!", zh: "势头很好!" },
+  "boostGuide.weeklyChange": { en: "7d change", ko: "7일 변동", ja: "7日変動", zh: "7日变化" },
+  "boostGuide.strongChannel": { en: "{channel} is on fire with {delta} growth — keep it up! 🔥", ko: "{channel}이 {delta} 성장으로 불타고 있어요 — 계속 가세요! 🔥", ja: "{channel}が{delta}成長で好調 — 続けよう！🔥", zh: "{channel}以{delta}增长势头强劲 — 继续加油！🔥" },
+
+  "boostGuide.action.youtube": { en: "Stream {artist}'s MVs on repeat & leave a comment with the timestamp you love!", ko: "{artist}의 MV를 반복 재생하고 좋아하는 타임스탬프에 댓글을 남겨보세요!", ja: "{artist}のMVをリピート再生して、好きなタイムスタンプにコメントしよう！", zh: "循环播放{artist}的MV，在喜欢的时间点留下评论！" },
+  "boostGuide.action.buzz": { en: "Post about {artist} on X/forums — reactions & shares count!", ko: "X/포럼에서 {artist}에 대해 포스팅하세요 — 반응과 공유가 중요해요!", ja: "X/掲示板で{artist}について投稿しよう — 反応&シェアが重要！", zh: "在X/论坛上发布关于{artist}的内容 — 互动和分享很重要！" },
+  "boostGuide.action.album": { en: "Pre-order or buy {artist}'s latest album — every copy counts!", ko: "{artist}의 최신 앨범을 예약구매하세요 — 한 장 한 장이 중요해요!", ja: "{artist}の最新アルバムを予約購入しよう — 一枚一枚が大切！", zh: "预购或购买{artist}的最新专辑 — 每一张都很重要！" },
+  "boostGuide.action.music": { en: "Add {artist}'s songs to your playlists & stream on Spotify/Apple Music!", ko: "{artist}의 곡을 플레이리스트에 추가하고 Spotify/Apple Music에서 스트리밍하세요!", ja: "{artist}の曲をプレイリストに追加してSpotify/Apple Musicで再生しよう！", zh: "将{artist}的歌曲添加到播放列表，在Spotify/Apple Music上串流！" },
+  "boostGuide.action.social": { en: "Follow {artist}'s official accounts & engage with their posts!", ko: "{artist}의 공식 계정을 팔로우하고 게시물에 참여하세요!", ja: "{artist}の公式アカウントをフォローして投稿に参加しよう！", zh: "关注{artist}的官方账号并与帖子互动！" },
+
+  "boostGuide.tip.youtube": { en: "Tip: Watch full MVs without skipping for better algorithm reach", ko: "팁: 건너뛰기 없이 풀 MV를 시청하면 알고리즘에 유리해요", ja: "ヒント: フルMVをスキップなしで視聴するとアルゴリズムに有利", zh: "提示: 完整观看MV不跳过，有利于算法推荐" },
+  "boostGuide.tip.buzz": { en: "Tip: Use trending hashtags & tag official accounts", ko: "팁: 트렌딩 해시태그를 사용하고 공식 계정을 태그하세요", ja: "ヒント: トレンドハッシュタグを使い公式アカウントをタグ", zh: "提示: 使用热门标签并标记官方账号" },
+  "boostGuide.tip.album": { en: "Tip: Buy from stores that count toward charts (Hanteo/Circle)", ko: "팁: 한터/써클 차트에 반영되는 매장에서 구매하세요", ja: "ヒント: チャート反映店舗で購入しよう（Hanteo/Circle）", zh: "提示: 在计入排行榜的商店购买（Hanteo/Circle）" },
+  "boostGuide.tip.music": { en: "Tip: Stream with the screen on & volume up for it to count", ko: "팁: 화면 켜고 볼륨 올린 상태에서 스트리밍해야 카운트돼요", ja: "ヒント: 画面オン&音量ありで再生するとカウントされます", zh: "提示: 屏幕亮着且有音量才会计入播放量" },
+  "boostGuide.tip.social": { en: "Tip: Like, comment & repost within the first hour of posting", ko: "팁: 게시 후 1시간 이내에 좋아요, 댓글, 리포스트하세요", ja: "ヒント: 投稿後1時間以内にいいね・コメント・リポスト", zh: "提示: 在发帖后1小时内点赞、评论和转发" },
 };
 
 export default translations;
