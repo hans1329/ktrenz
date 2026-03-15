@@ -2045,18 +2045,14 @@ Deno.serve(async (req) => {
             topic_views: prevYtmS2?.data?.metrics?.topicTotalViews ?? 0,
             mv_views: prevYtS2?.data?.metrics?.musicVideoViews ?? 0,
           };
-          const [krBonus, spData] = await Promise.all([
-            calculateKoreanChartBonus(adminClient, artist.id),
-            calculateSpotifyListenersBonus(adminClient, artist.id),
-          ]);
-          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM, undefined, krBonus, spData.bonus);
+          const musicScore = calculateMusicScore(lastfm, deezer, ytMusicData, ytMvData, prevMM, undefined);
           await upsertV3Score(adminClient, artist.id, {
             music_score: musicScore,
           });
           if (lastfm) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "lastfm", metrics: { playcount: lastfm.playcount, listeners: lastfm.listeners } });
           if (deezer) await adminClient.from("ktrenz_data_snapshots").insert({ wiki_entry_id: artist.id, platform: "deezer", metrics: { fans: deezer.fans, nb_album: deezer.nbAlbum } });
           musicUpdated++;
-          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}${krBonus ? ` (+KR ${krBonus})` : ''}${spData.bonus ? ` (+SP ${spData.bonus})` : ''}`);
+          console.log(`[DataCollector] Music batch: ${artist.title} → ${musicScore}${ytMusicData ? ' (+YT Music)' : ''}${ytMvData ? ' (+MV)' : ''}`);
         } catch (e) { musicErrors++; }
       }
       await adminClient.from("ktrenz_collection_log").insert({ platform: "music", status: musicUpdated > 0 ? "success" : "partial", records_collected: musicUpdated });
