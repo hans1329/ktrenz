@@ -1588,7 +1588,16 @@ Deno.serve(async (req) => {
               platform: "hanteo", status: "partial", records_collected: saved,
               error_message: "일간 차트 파싱 실패, 초동 fallback 사용",
             });
-            results.hanteo = { type: "initial_fallback", parsed: parsed.length, saved, matched, scoresUpdated, circleMatched: circleMatchMap.size };
+            results.hanteo = {
+              type: "initial_fallback",
+              parsed: parsed.length,
+              saved,
+              matched,
+              scoresUpdated,
+              circleMatched: circleMatchMap.size,
+              circleRawParsed,
+              circleTier1Matched,
+            };
           } else {
             // 일간 차트 성공
             let saved = 0, matched = 0, scoresUpdated = 0;
