@@ -534,7 +534,7 @@ spikeDirection = changeRate > 0 ? "surge" : "drop"
 
       <FormulaCard title="Squarify 알고리즘 요약" formula={`1. 총 에너지 합산 → 아티스트별 면적 비율 계산\n2. 최악 종횡비를 최소화하며 행 배치\n3. 긴 축을 따라 반복적으로 분할\n4. 결과: 정사각형에 가까운 타일 레이아웃 → 가독성 ↑`} description="참조: finviz.com/map, kaito.ai 스타일 히트맵 레이아웃" />
 
-      <p className="text-xs text-muted-foreground text-center mt-6">최종 업데이트: 2026년 3월 12일 · KTRENDZ FES Engine v6 (Z-Score 정규화 + AI 예측)</p>
+      <p className="text-xs text-muted-foreground text-center mt-6">최종 업데이트: 2026년 3월 15일 · KTRENDZ FES Engine v6.1 (가중 변동률 직접 매핑 + Sales 카테고리 통합)</p>
     </div>
   );
 
