@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "music", "korean_charts", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
+const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "korean_charts", "spotify_listeners", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -23,10 +23,11 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
   yt_sentiment: 10,
   external_videos: 10,
+  korean_charts: 5,       // Firecrawl 멜론+지니 → 빠름
+  spotify_listeners: 5,   // kworb.net direct fetch → 빠름
   music: 45,      // Last.fm + Deezer 65명 → fire-and-forget 후 충분한 대기
   hanteo: 30,     // 한터 스크래핑 → 대기
   apple_music_charts: 5,
-  korean_charts: 5,
   billboard_charts: 5,
   social: 30,
   buzz: 120,
