@@ -112,7 +112,7 @@ const AdminV3Artists = () => {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
+    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
       let ytChannelId = payload.youtube_channel_id;
       if (ytChannelId && !ytChannelId.startsWith('UC')) {
         ytChannelId = await resolveYoutubeChannelId(ytChannelId);
@@ -130,6 +130,13 @@ const AdminV3Artists = () => {
         } as any)
         .eq('id', payload.id);
       if (error) throw error;
+      // Also sync image_url to wiki_entries for consistency
+      if (payload.image_url && payload.wiki_entry_id) {
+        await supabase
+          .from('wiki_entries')
+          .update({ image_url: payload.image_url })
+          .eq('id', payload.wiki_entry_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-v3-artists'] });
@@ -263,7 +270,7 @@ const AdminV3Artists = () => {
                     <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
                     <TableCell>
                       <Avatar className="w-9 h-9 rounded-lg">
-                        <AvatarImage src={a.image_url || a.wiki_image || undefined} className="object-cover" />
+                        <AvatarImage src={a.wiki_image || a.image_url || undefined} className="object-cover" />
                         <AvatarFallback className="rounded-lg text-[10px]">{(a.display_name || a.wiki_title || '').slice(0, 2)}</AvatarFallback>
                       </Avatar>
                     </TableCell>
@@ -449,6 +456,7 @@ const AdminV3Artists = () => {
                   if (!editArtist) return;
                   updateMutation.mutate({
                     id: editArtist.id,
+                    wiki_entry_id: editArtist.wiki_entry_id,
                     display_name: editDisplayName,
                     name_ko: editNameKo,
                     image_url: editImageUrl,
