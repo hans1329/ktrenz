@@ -27,6 +27,10 @@ Deno.serve(async (req) => {
     }
 
     const sb = createClient(supabaseUrl, serviceKey);
+    const body = await req.json().catch(() => ({}));
+    const tierSnapshotAt = typeof body?.tierSnapshotAt === "string" && !Number.isNaN(Date.parse(body.tierSnapshotAt))
+      ? body.tierSnapshotAt
+      : null;
 
     // 1) 활성화된 watched channels 가져오기
     const { data: channels, error: chErr } = await sb
@@ -42,25 +46,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2) Tier1 아티스트 + 한글/영문 매핑 가져오기
-    const { data: tier1Entries } = await sb
+    // 2) Tier1 아티스트 + 한글/영문 매핑 가져오기 (snapshot 고정 + 정렬)
+    let tierQuery = sb
       .from("v3_artist_tiers")
       .select("wiki_entry_id")
-      .eq("tier", 1);
-    const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
+      .eq("tier", 1)
+      .order("wiki_entry_id", { ascending: true });
 
-    if (!tier1Ids.length) {
+    if (tierSnapshotAt) {
+      tierQuery = tierQuery.lte("updated_at", tierSnapshotAt);
+    }
+
+    const { data: tier1Entries } = await tierQuery;
+    const orderedTier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+
+    if (!orderedTier1Ids.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No tier 1 artists" }),
+        JSON.stringify({ success: true, message: "No tier 1 artists", tierSnapshotAt }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { data: artists } = await sb
+    const { data: allArtists } = await sb
       .from("wiki_entries")
       .select("id, title, metadata")
-      .eq("schema_type", "artist")
-      .in("id", tier1Ids);
+      .in("schema_type", ["artist", "member"])
+      .in("id", orderedTier1Ids);
+
+    const artistMap = new Map<string, any>((allArtists || []).map((a: any) => [a.id, a]));
+    const artists = orderedTier1Ids.map((id: string) => artistMap.get(id)).filter(Boolean);
 
     if (!artists?.length) {
       return new Response(
