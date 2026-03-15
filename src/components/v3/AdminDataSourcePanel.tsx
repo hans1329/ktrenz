@@ -26,6 +26,7 @@ const SOURCE_CONFIG = [
   { key: "deezer", label: "Deezer", icon: Headphones, color: "text-purple-500", platform: "deezer" },
   { key: "apple_music", label: "Apple Music", icon: Music, color: "text-pink-500", platform: "apple_music_chart" },
   { key: "billboard", label: "Billboard", icon: BarChart3, color: "text-blue-600", platform: "billboard_chart" },
+  { key: "circle_chart", label: "Circle Chart", icon: BarChart3, color: "text-cyan-500", platform: "circle_chart" },
   // Sales
   { key: "hanteo", label: "Album Data", icon: Disc3, color: "text-amber-500", platform: "hanteo_daily" },
   // Buzz (multi-source breakdown)
@@ -50,6 +51,7 @@ const COLLECT_MODULE_MAP: Record<string, string> = {
   apple_music: "apple_music_charts",
   billboard: "billboard_charts",
   hanteo: "hanteo",
+  circle_chart: "hanteo",
   buzz_x: "buzz_x",
   buzz_reddit: "buzz_reddit",
   buzz_naver: "buzz_naver",
@@ -138,7 +140,7 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
   const { data: snapshots, isLoading, refetch } = useQuery({
     queryKey: ["admin-source-snapshots", wikiEntryId],
     queryFn: async () => {
-      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_chart", "billboard_chart", "hanteo_daily", "buzz_multi", "naver_news", "social_followers"];
+      const platforms = ["youtube", "youtube_music", "lastfm", "deezer", "apple_music_chart", "billboard_chart", "circle_chart", "hanteo_daily", "buzz_multi", "naver_news", "social_followers"];
       const results: Record<string, any> = {};
 
       const promises = platforms.map(async (platform) => {
