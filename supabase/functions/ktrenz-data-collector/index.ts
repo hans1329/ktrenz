@@ -1513,6 +1513,11 @@ Deno.serve(async (req) => {
                 },
               });
             }
+            // 매칭 디버그: 처음 5개 엔트리의 이름 출력
+            if (circleParsed.length > 0) {
+              const sample = circleParsed.slice(0, 5).map(e => `rank=${e.rank} album="${e.album}" artist="${e.artist}" sales=${e.weekly_sales}`);
+              console.log(`[DataCollector] Circle Chart samples: ${sample.join(" | ")}`);
+            }
             console.log(`[DataCollector] Circle Chart: rawParsed=${circleRawParsed}, tier1Matched=${circleTier1Matched}`);
           } catch (circleErr: any) {
             console.error("[DataCollector] Circle Chart error:", circleErr.message);
