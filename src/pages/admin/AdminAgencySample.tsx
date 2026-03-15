@@ -596,7 +596,7 @@ const AdminAgencySample = () => {
     { metric: 'Buzz', [selectedArtist?.display_name ?? 'A']: scoreData?.buzz_score ?? 0, [compareArtistName]: compareScoreData.scores?.buzz_score ?? 0 },
     { metric: 'YouTube', [selectedArtist?.display_name ?? 'A']: scoreData?.youtube_score ?? 0, [compareArtistName]: compareScoreData.scores?.youtube_score ?? 0 },
     { metric: 'Music', [selectedArtist?.display_name ?? 'A']: scoreData?.music_score ?? 0, [compareArtistName]: compareScoreData.scores?.music_score ?? 0 },
-    { metric: 'Album', [selectedArtist?.display_name ?? 'A']: scoreData?.album_score ?? 0, [compareArtistName]: compareScoreData.scores?.album_score ?? 0 },
+    { metric: 'Sales', [selectedArtist?.display_name ?? 'A']: scoreData?.album_score ?? 0, [compareArtistName]: compareScoreData.scores?.album_score ?? 0 },
   ] : [];
 
   // Milestone icons
