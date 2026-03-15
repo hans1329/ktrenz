@@ -401,7 +401,7 @@ const V3TrendRankings = () => {
     const interval = setInterval(async () => {
       try {
         const elapsed = Math.round((Date.now() - startedAt) / 1000);
-        const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
+        const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Sales" : "Music";
 
         // ktrenz_data_snapshots에서 최근 스냅샷 확인 (모든 모듈 공통)
         const snapshotPlatformMap: Record<string, string> = { youtube: "youtube", buzz: "buzz_multi", album: "hanteo", music: "lastfm" };
