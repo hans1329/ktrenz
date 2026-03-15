@@ -191,7 +191,7 @@ const AdminRankings = () => {
       const [tiersRes, scoresRes, snapshotsRes] = await Promise.all([
         supabase
           .from('v3_artist_tiers')
-          .select('tier, is_manual_override, wiki_entry_id, wiki_entries!inner(title, slug, image_url, schema_type, trending_score)')
+          .select('tier, is_manual_override, wiki_entry_id, image_url, wiki_entries!inner(title, slug, image_url, schema_type, trending_score)')
           .order('tier', { ascending: true }),
         supabase
           .from('v3_scores_v2')
