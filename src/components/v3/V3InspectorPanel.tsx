@@ -1,7 +1,9 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { Youtube, Twitter, Music, MessageCircle, TrendingUp, ExternalLink, Disc3, MapPin, X, Users } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import V3MissionCards from "@/components/v3/V3MissionCards";
@@ -41,6 +43,12 @@ function isSurging(change: number): boolean {
   return change >= 25;
 }
 
+function calcPercentChange(now: number, prev: number): number {
+  if (prev > 0) return ((now - prev) / prev) * 100;
+  if (now > 0) return 100;
+  return 0;
+}
+
 function ChannelBar({ icon, label, value, total, color, href }: { icon: React.ReactNode; label: string; value: number; total: number; color: string; href?: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   const pctLabel =
@@ -74,6 +82,50 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  const { data: snapshotChanges } = useQuery({
+    queryKey: ["inspector-category-changes", item.id],
+    enabled: !!item.id,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+      const [latestRes, prevRes] = await Promise.all([
+        supabase
+          .from("v3_energy_snapshots_v2" as any)
+          .select("youtube_score, buzz_score, album_score, music_score, social_score, fan_score, snapshot_at")
+          .eq("wiki_entry_id", item.id)
+          .order("snapshot_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("v3_energy_snapshots_v2" as any)
+          .select("youtube_score, buzz_score, album_score, music_score, social_score, fan_score, snapshot_at")
+          .eq("wiki_entry_id", item.id)
+          .lte("snapshot_at", oneDayAgo)
+          .order("snapshot_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const latest = latestRes.data as any;
+      const prev = prevRes.data as any;
+
+      if (!latest || !prev) return null;
+
+      return {
+        youtube: calcPercentChange(Number(latest.youtube_score ?? 0), Number(prev.youtube_score ?? 0)),
+        buzz: calcPercentChange(Number(latest.buzz_score ?? 0), Number(prev.buzz_score ?? 0)),
+        album: calcPercentChange(Number(latest.album_score ?? 0), Number(prev.album_score ?? 0)),
+        music: calcPercentChange(Number(latest.music_score ?? 0), Number(prev.music_score ?? 0)),
+        social: calcPercentChange(
+          Number((latest.social_score ?? latest.fan_score) ?? 0),
+          Number((prev.social_score ?? prev.fan_score) ?? 0),
+        ),
+        fan: calcPercentChange(Number(latest.fan_score ?? 0), Number(prev.fan_score ?? 0)),
+      };
+    },
+  });
+
   const total = (item.youtubeScore || 0) + (item.buzzScore || 0) + (item.twitterScore || 0) + (item.albumSalesScore || 0) + (item.musicScore || 0) + (item.socialScore || 0);
   const surging = isSurging(item.energyChange24h);
 
@@ -83,12 +135,12 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
   const musicSearchQuery = latestSong ? encodeURIComponent(`${item.title} ${latestSong}`) : encodedName;
 
   const channels = [
-    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 80%, 45%)", change: item.youtubeChange24h, href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
-    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 70%, 45%)", change: item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
-    { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 90%, 42%)", change: item.albumChange24h },
-    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 70%, 38%)", change: item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
-    { icon: <Users className="w-3.5 h-3.5" />, label: "Social", value: item.socialScore, color: "hsl(195, 85%, 45%)", change: item.socialChange24h },
-    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Fan Activity", value: item.fanScore, color: "hsl(330, 70%, 50%)", change: item.fanChange24h },
+    { icon: <Youtube className="w-3.5 h-3.5" />, label: item.latestYoutubeVideoTitle ? `YouTube · ${item.latestYoutubeVideoTitle}` : "YouTube", value: item.youtubeScore, color: "hsl(0, 80%, 45%)", change: snapshotChanges?.youtube ?? item.youtubeChange24h, href: item.latestYoutubeVideoId ? `https://www.youtube.com/watch?v=${item.latestYoutubeVideoId}` : item.youtubeChannelId ? `https://www.youtube.com/channel/${item.youtubeChannelId}/videos` : `https://www.youtube.com/results?search_query=${encodedName}` },
+    { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Buzz", value: item.buzzScore, color: "hsl(280, 70%, 45%)", change: snapshotChanges?.buzz ?? item.buzzChange24h, href: `https://x.com/search?q=${encodedName}&src=typed_query` },
+    { icon: <Disc3 className="w-3.5 h-3.5" />, label: "Album Sales", value: item.albumSalesScore, color: "hsl(35, 90%, 42%)", change: snapshotChanges?.album ?? item.albumChange24h },
+    { icon: <Music className="w-3.5 h-3.5" />, label: latestSong ? `Music · ${latestSong}` : "Music", value: item.musicScore, color: "hsl(145, 70%, 38%)", change: snapshotChanges?.music ?? item.musicChange24h, href: `https://open.spotify.com/search/${musicSearchQuery}` },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "Social", value: item.socialScore, color: "hsl(195, 85%, 45%)", change: snapshotChanges?.social ?? item.socialChange24h },
+    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Fan Activity", value: item.fanScore, color: "hsl(330, 70%, 50%)", change: snapshotChanges?.fan ?? item.fanChange24h },
   ].filter(c => c.value > 0);
 
   return (
