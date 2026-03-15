@@ -135,28 +135,48 @@ External Videos:  1.2x  ← 외부 채널 출연`}</code>
         <p className="text-xs text-muted-foreground mt-2">네이버 뉴스 수집이 Buzz보다 먼저 실행되어 한국 미디어 데이터가 집계에 포함됩니다.</p>
       </Card>
 
-      {/* ── 앨범 판매 스코어 ── */}
-      <SectionHeader icon={BarChart3} title="앨범 판매 스코어 (멀티 소스)" color="bg-emerald-600" />
-      <p className="text-sm text-muted-foreground"><strong>한터 차트</strong>의 앨범/실물 판매량 + <strong>Apple Music RSS</strong> 및 <strong>Billboard</strong> (Firecrawl 스크래핑)의 글로벌 차트 성적을 결합합니다.</p>
-      <FormulaCard title="공식" formula={`AlbumScore = baseScore × 0.30 + deltaScore × 0.70 + chartBonus
+      {/* ── Sales 스코어 ── */}
+      <SectionHeader icon={DollarSign} title="Sales 스코어 (Revenue/Performance)" color="bg-emerald-600" />
+      <p className="text-sm text-muted-foreground">실물 판매 + 글로벌 차트 성과 + 스트리밍 수익 지표를 통합한 <strong>수익/성과 중심</strong> 카테고리입니다. 한터/Circle 판매 데이터가 없어도 차트·스트리밍 성적만으로 점수를 생성할 수 있습니다.</p>
+      <FormulaCard title="공식" formula={`SalesScore = baseScore × 0.30 + deltaScore × 0.70
+           + chartBonus + circleBonus + streamingBonus
 
 baseScore  = log10(dailySales) × 200
 deltaScore = (dailySales − prevDailySales) / 10K × 500
-chartBonus = appleBonus + billboardBonus`} description="차트 보너스는 가산식입니다 — 글로벌 차트에 진입한 아티스트는 한터 판매 데이터가 없어도 차트 성적만으로 점수를 받을 수 있습니다." />
+
+chartBonus     = appleBonus + billboardBonus
+circleBonus    = rankBonus + log10(weeklySales) × 30
+streamingBonus = koreanChartBonus + spotifyListenersBonus`} description="streamingBonus는 v2에서 추가. Spotify 리스너와 멜론/지니 차트 순위가 Sales(수익) 지표로 통합되었습니다." />
       <Card className="p-4 bg-card border-border/50">
-        <p className="text-sm text-muted-foreground font-medium mb-1.5">차트 보너스 포인트</p>
+        <p className="text-sm text-muted-foreground font-medium mb-1.5">차트 & 스트리밍 보너스 포인트</p>
         <code className="block text-sm font-mono text-primary bg-primary/5 rounded px-2.5 py-2 whitespace-pre-wrap">{`Apple Music (국가별, 10개국):
   Top 10:  +150pt    Top 50:  +80pt    Top 100: +30pt
 
 Billboard (차트별: 200, Hot 100, Global 200, Global Excl. US):
   Top 10:  +300pt    Top 50:  +150pt
-  Top 100: +60pt     Top 200: +20pt`}</code>
-        <p className="text-xs text-muted-foreground mt-2">예시: Apple Music KR #3 + US #45 + Billboard Global 200 #80 → 150 + 80 + 60 = +290pt 차트 보너스</p>
+  Top 100: +60pt     Top 200: +20pt
+
+Circle Chart (주간 앨범):
+  Top 5:   +200pt    Top 10:  +150pt   Top 30:  +80pt
+  Top 50:  +40pt     Top 100: +15pt
+  + log10(weeklySales) × 30
+
+Melon/Genie TOP100 (한국 스트리밍):
+  Top 10:  +200pt    Top 30:  +120pt
+  Top 50:  +70pt     Top 100: +30pt
+
+Spotify Monthly Listeners:
+  Base:    log10(listeners) × 15  (1M=90pt, 10M=120pt)
+  Change:  ±log10(|dailyChange|+1) × 10  (최대 ±50pt)`}</code>
+        <p className="text-xs text-muted-foreground mt-2">예시: Hanteo 일간 5만장 + Apple KR #3 + Spotify 12M listeners (+50K/day) + Melon #8 → 높은 Sales 점수</p>
       </Card>
       <VarTable rows={[
-        { name: "dailySales", desc: "한터 일일 앨범 판매량", source: "한터 차트 API" },
+        { name: "dailySales", desc: "한터 일일 앨범 판매량", source: "한터 차트 (Firecrawl)" },
+        { name: "weeklySales", desc: "Circle 주간 앨범 판매량", source: "Circle Chart (Firecrawl)" },
         { name: "appleChartPos", desc: "국가별 앨범 차트 순위 (10개국)", source: "Apple Music RSS" },
         { name: "billboardPos", desc: "4개 Billboard 차트 순위", source: "Firecrawl (billboard.com)" },
+        { name: "spotifyListeners", desc: "Spotify 월간 리스너 수", source: "kworb.net (collect-spotify-listeners)" },
+        { name: "koreanChartRank", desc: "멜론/지니 TOP100 최고 순위", source: "collect-korean-charts" },
         { name: "prevDailySales", desc: "델타 계산용 24시간 전 판매량", source: "ktrenz_data_snapshots" },
       ]} />
 
