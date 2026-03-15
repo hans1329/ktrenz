@@ -1920,12 +1920,17 @@ Deno.serve(async (req) => {
                 
                 const circleInfo = circleMatchMap.get(data.wikiEntryId);
                 const circleBonus = circleInfo?.bonus ?? 0;
-                const score = calculateAlbumScore(data.totalDailySales, prevDailySales, 0, circleBonus);
+                const [krBonus, spData] = await Promise.all([
+                  calculateKoreanChartBonus(adminClient, data.wikiEntryId),
+                  calculateSpotifyListenersBonus(adminClient, data.wikiEntryId),
+                ]);
+                const streamingBonus = krBonus + spData.bonus;
+                const score = calculateAlbumScore(data.totalDailySales, prevDailySales, 0, circleBonus, streamingBonus);
                 await upsertV3Score(adminClient, data.wikiEntryId, { album_sales_score: score });
                 
                 await adminClient.from("ktrenz_data_snapshots").insert({
                   wiki_entry_id: data.wikiEntryId, platform: "hanteo_daily",
-                  metrics: { total_daily_sales: data.totalDailySales, albums: data.albums, chart_type: "daily_sales", circle_bonus: circleBonus },
+                  metrics: { total_daily_sales: data.totalDailySales, albums: data.albums, chart_type: "daily_sales", circle_bonus: circleBonus, streaming_bonus: streamingBonus },
                 });
                 
                 scoresUpdated++;
