@@ -84,12 +84,89 @@ async function runCollectorModule(
   return { status: "completed", module: source, ...payload };
 }
 
-async function runYouTube(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
-  return runCollectorModule(supabaseUrl, serviceKey, "youtube", waitForCompletion);
+async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
+  // YouTube 수집은 아티스트당 ~2초 소요 → 66명 = ~132초로 60초 타임아웃 초과
+  // Buzz와 동일한 배치 + fire-and-forget 패턴 적용
+  console.log(`[data-engine] Running YouTube module (dynamic batching)...`);
+
+  const sb = createClient(supabaseUrl, serviceKey);
+  const { data: tier1Entries } = await sb
+    .from("v3_artist_tiers")
+    .select("wiki_entry_id, youtube_channel_id")
+    .eq("tier", 1);
+
+  const validArtists = (tier1Entries || []).filter((t: any) => t.youtube_channel_id);
+  const tier1Count = validArtists.length;
+
+  if (tier1Count === 0) {
+    console.warn(`[data-engine] YouTube: No Tier 1 artists with channel ID found`);
+    return { status: "no_artists", launched: 0 };
+  }
+
+  // 10명씩 배치 (아티스트당 ~2초 → 10명 = ~20초, 60초 타임아웃 내 안전)
+  const BATCH_SIZE = 10;
+  const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
+
+  // 배치 간 딜레이: YouTube API rate limit 보호 (최대 25초 사용)
+  const MAX_LAUNCH_TIME_MS = 25_000;
+  const delayMs = totalBatches > 1 ? Math.min(3000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
+
+  console.log(`[data-engine] YouTube: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms`);
+
+  let launched = 0;
+  for (let i = 0; i < totalBatches; i++) {
+    const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ source: "youtube", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+    }).catch((e) => console.warn(`[data-engine] YouTube batch ${i} fire error:`, e.message));
+    fireAndForget(p);
+    launched++;
+    if (i < totalBatches - 1) await new Promise(r => setTimeout(r, delayMs));
+  }
+
+  console.log(`[data-engine] YouTube: launched ${launched} batches for ${tier1Count} artists`);
+  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count };
 }
 
-async function runMusic(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
-  return runCollectorModule(supabaseUrl, serviceKey, "music", waitForCompletion);
+async function runMusic(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
+  // Music도 아티스트당 Last.fm + Deezer + DB 조회 → ~2초, 66명 = ~130초
+  // 배치 + fire-and-forget 패턴 적용
+  console.log(`[data-engine] Running Music module (dynamic batching)...`);
+
+  const sb = createClient(supabaseUrl, serviceKey);
+  const { data: tier1Entries } = await sb
+    .from("v3_artist_tiers")
+    .select("wiki_entry_id")
+    .eq("tier", 1);
+
+  const tier1Count = (tier1Entries || []).length;
+  if (tier1Count === 0) {
+    console.warn(`[data-engine] Music: No Tier 1 artists found`);
+    return { status: "no_artists", launched: 0 };
+  }
+
+  const BATCH_SIZE = 15;
+  const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
+  const MAX_LAUNCH_TIME_MS = 25_000;
+  const delayMs = totalBatches > 1 ? Math.min(3000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
+
+  console.log(`[data-engine] Music: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms`);
+
+  let launched = 0;
+  for (let i = 0; i < totalBatches; i++) {
+    const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ source: "music", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+    }).catch((e) => console.warn(`[data-engine] Music batch ${i} fire error:`, e.message));
+    fireAndForget(p);
+    launched++;
+    if (i < totalBatches - 1) await new Promise(r => setTimeout(r, delayMs));
+  }
+
+  console.log(`[data-engine] Music: launched ${launched} batches for ${tier1Count} artists`);
+  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count };
 }
 
 async function runHanteo(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
