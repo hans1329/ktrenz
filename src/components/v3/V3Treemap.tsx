@@ -650,6 +650,10 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
                   )}
                   <span className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                       style={{ fontSize: `${titleSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{rect.item.title}</span>
+                  {rect.item.isNew && isMedium && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/90 text-white font-bold leading-none animate-pulse"
+                      style={{ fontSize: `${Math.max(7, badgeFontSize * 0.7)}px` }}>NEW</span>
+                  )}
                   <span className="font-black text-white drop-shadow-lg"
                     style={{ fontSize: `${scoreSize}px`, opacity: scoreOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.1)' }}>{Math.round(catScore)}°</span>
                   {isLarge && (
