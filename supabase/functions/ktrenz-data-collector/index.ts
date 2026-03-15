@@ -900,14 +900,15 @@ async function calculateSpotifyListenersBonus(adminClient: any, wikiEntryId: str
   return { bonus, listeners, dailyChange };
 }
 
+/** Music(Engagement) 점수: 순수 청취 활동/관심도 지표만 사용
+ *  v2: Spotify/멜론 보너스는 Album(Revenue)으로 이동, 여기는 Last.fm/Deezer/YT Music만 유지
+ */
 function calculateMusicScore(
   lastfm: any, deezer: any,
   ytMusic?: { topicTotalViews?: number; topicSubscribers?: number } | null,
   ytMusicVideos?: { musicVideoViews?: number; musicVideoCount?: number } | null,
   prevMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
   prev48hMetrics?: { lastfm_playcount?: number; deezer_fans?: number; topic_views?: number; mv_views?: number } | null,
-  koreanChartBonus: number = 0,
-  spotifyListenersBonus: number = 0,
 ): number {
   // ── Base Score (30%): log scale 절대값 ──
   let baseScore = 0;
@@ -923,7 +924,6 @@ function calculateMusicScore(
   let hasPrev = false;
 
   if (prevMetrics) {
-    // Last.fm playcount — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.lastfm_playcount && prevMetrics.lastfm_playcount > 0 && lastfm?.playcount > 0) {
       deltaScore += incrementDeltaScore(
         lastfm.playcount, prevMetrics.lastfm_playcount,
@@ -931,7 +931,6 @@ function calculateMusicScore(
       );
       hasPrev = true;
     }
-    // Deezer fans — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.deezer_fans && prevMetrics.deezer_fans > 0 && deezer?.fans > 0) {
       deltaScore += incrementDeltaScore(
         deezer.fans, prevMetrics.deezer_fans,
@@ -939,7 +938,6 @@ function calculateMusicScore(
       );
       hasPrev = true;
     }
-    // YT Music topic views — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.topic_views && prevMetrics.topic_views > 0 && ytMusic?.topicTotalViews) {
       deltaScore += incrementDeltaScore(
         ytMusic.topicTotalViews, prevMetrics.topic_views,
@@ -947,7 +945,6 @@ function calculateMusicScore(
       );
       hasPrev = true;
     }
-    // MV views — 누적 메트릭 → incrementDeltaScore
     if (prevMetrics.mv_views && prevMetrics.mv_views > 0 && ytMusicVideos?.musicVideoViews) {
       deltaScore += incrementDeltaScore(
         ytMusicVideos.musicVideoViews, prevMetrics.mv_views,
@@ -957,17 +954,14 @@ function calculateMusicScore(
     }
   }
 
-  if (!hasPrev && koreanChartBonus === 0 && spotifyListenersBonus === 0) {
+  if (!hasPrev) {
     return baseScore;
   }
 
-  if (hasPrev) {
-    deltaScore = clampDelta(deltaScore, baseScore);
-  }
+  deltaScore = clampDelta(deltaScore, baseScore);
 
-  const totalBonus = koreanChartBonus + spotifyListenersBonus;
-  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7 + totalBonus);
-  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} koreanChart=${koreanChartBonus} spotify=${spotifyListenersBonus} final=${finalScore}`);
+  const finalScore = Math.round(baseScore * 0.3 + deltaScore * 0.7);
+  console.log(`[DataCollector] Music Score: base=${baseScore} delta=${deltaScore} final=${finalScore}`);
   return finalScore;
 }
 
