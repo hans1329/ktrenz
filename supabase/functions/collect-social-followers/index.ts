@@ -11,6 +11,7 @@ const corsHeaders = {
 
 interface PlatformEntry { rank: number; artistName: string; growth: number; total: number; }
 interface SocialMetrics { instagram_followers: number | null; tiktok_followers: number | null; spotify_followers: number | null; twitter_followers: number | null; }
+interface GrowthMetrics { instagram_growth: number | null; tiktok_growth: number | null; spotify_growth: number | null; twitter_growth: number | null; }
 
 const SCRAPE_PLATFORMS = [
   { key: "instagram", url: "https://www.kpop-radar.com/instagram" },
@@ -74,12 +75,12 @@ function normalizeName(name: string): string {
   return variants.join("|");
 }
 
-function calculateSocialScore(current: SocialMetrics, previous: SocialMetrics | null): number {
+function calculateSocialScore(current: SocialMetrics, previous: SocialMetrics | null, weeklyGrowth: GrowthMetrics | null): number {
   const platforms = [
-    { current: current.instagram_followers, prev: previous?.instagram_followers, weight: 1.2 },
-    { current: current.tiktok_followers, prev: previous?.tiktok_followers, weight: 1.3 },
-    { current: current.spotify_followers, prev: previous?.spotify_followers, weight: 1.5 },
-    { current: current.twitter_followers, prev: previous?.twitter_followers, weight: 1.0 },
+    { current: current.instagram_followers, prev: previous?.instagram_followers, growth: weeklyGrowth?.instagram_growth, weight: 1.2 },
+    { current: current.tiktok_followers, prev: previous?.tiktok_followers, growth: weeklyGrowth?.tiktok_growth, weight: 1.3 },
+    { current: current.spotify_followers, prev: previous?.spotify_followers, growth: weeklyGrowth?.spotify_growth, weight: 1.5 },
+    { current: current.twitter_followers, prev: previous?.twitter_followers, growth: weeklyGrowth?.twitter_growth, weight: 1.0 },
   ];
   let totalScore = 0, activeCount = 0;
   for (const p of platforms) {
@@ -87,10 +88,17 @@ function calculateSocialScore(current: SocialMetrics, previous: SocialMetrics | 
     activeCount++;
     const baseScore = Math.log10(p.current) * 100;
     let deltaScore = 0;
-    if (p.prev != null && p.prev > 0) {
-      const growth = p.current - p.prev;
-      if (growth > 0) deltaScore = Math.round((growth / p.prev) * 1000);
+
+    // Priority 1: Use kpop-radar weekly growth (more reliable than snapshot diff)
+    if (p.growth != null && p.growth > 0 && p.current > 0) {
+      deltaScore = Math.round((p.growth / p.current) * 1000);
     }
+    // Priority 2: Fall back to snapshot-to-snapshot diff
+    else if (p.prev != null && p.prev > 0) {
+      const diff = p.current - p.prev;
+      if (diff > 0) deltaScore = Math.round((diff / p.prev) * 1000);
+    }
+
     totalScore += (baseScore * 0.3 + Math.max(deltaScore, baseScore * 0.1) * 0.7) * p.weight;
   }
   return activeCount > 0 ? Math.round(totalScore / activeCount) : 0;
@@ -218,7 +226,13 @@ Deno.serve(async (req) => {
       }
 
       const prevMetrics = prevMetricsMap.get(artist.wiki_entry_id) || null;
-      const socialScore = calculateSocialScore(metrics, prevMetrics);
+      const weeklyGrowth: GrowthMetrics = {
+        instagram_growth: igMatch?.growth ?? null,
+        tiktok_growth: tkMatch?.growth ?? null,
+        spotify_growth: spMatch?.growth ?? null,
+        twitter_growth: twMatch?.growth ?? null,
+      };
+      const socialScore = calculateSocialScore(metrics, prevMetrics, weeklyGrowth);
 
       snapshotsToInsert.push({
         wiki_entry_id: artist.wiki_entry_id,
