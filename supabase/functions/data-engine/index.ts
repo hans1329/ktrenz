@@ -286,7 +286,7 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 
   if (tier1Ids.length === 0) return { status: "no_artists" };
 
-  const { data: artists } = await sb.from("wiki_entries").select("id, title, metadata").eq("schema_type", "artist").in("id", tier1Ids);
+  const { data: artists } = await sb.from("wiki_entries").select("id, title, metadata").in("schema_type", ["artist", "member"]).in("id", tier1Ids);
   if (!artists?.length) return { status: "no_artists" };
 
   let launched = 0;
