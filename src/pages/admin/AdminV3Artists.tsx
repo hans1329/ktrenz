@@ -270,7 +270,7 @@ const AdminV3Artists = () => {
                     <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
                     <TableCell>
                       <Avatar className="w-9 h-9 rounded-lg">
-                        <AvatarImage src={a.image_url || a.wiki_image || undefined} className="object-cover" />
+                        <AvatarImage src={a.wiki_image || a.image_url || undefined} className="object-cover" />
                         <AvatarFallback className="rounded-lg text-[10px]">{(a.display_name || a.wiki_title || '').slice(0, 2)}</AvatarFallback>
                       </Avatar>
                     </TableCell>
