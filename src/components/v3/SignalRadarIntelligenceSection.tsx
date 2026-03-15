@@ -98,9 +98,9 @@ const SignalRadarIntelligenceSection = () => {
           Signal-D: Revenue Pulse
         </h3>
         <p className="text-sm text-muted-foreground">
-          매출 연동 데이터(Hanteo, Apple Music Charts, Billboard)를 일별 집계하여
+          매출 연동 데이터(Hanteo, Spotify, 멜론, Apple Music, Billboard)를 일별 집계하여
           <strong> Buzz 대비 실제 수익 전환율</strong>을 정량화합니다.
-          관심(Buzz)과 성과(Performance)의 괴리를 발견하는 핵심 시그널입니다.
+          관심(Buzz)과 성과(Revenue)의 괴리를 발견하는 핵심 시그널입니다.
         </p>
 
         <div className="rounded-lg border border-border bg-card overflow-hidden">
