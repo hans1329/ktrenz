@@ -191,7 +191,7 @@ const AdminRankings = () => {
       const [tiersRes, scoresRes, snapshotsRes] = await Promise.all([
         supabase
           .from('v3_artist_tiers')
-          .select('tier, is_manual_override, wiki_entry_id, wiki_entries!inner(title, slug, image_url, schema_type, trending_score)')
+          .select('tier, is_manual_override, wiki_entry_id, image_url, wiki_entries!inner(title, slug, image_url, schema_type, trending_score)')
           .order('tier', { ascending: true }),
         supabase
           .from('v3_scores_v2')
@@ -254,7 +254,7 @@ const AdminRankings = () => {
         wiki_entry_id: row.wiki_entry_id,
         title: row.wiki_entries.title,
         slug: row.wiki_entries.slug,
-        image_url: row.wiki_entries.image_url,
+        image_url: row.wiki_entries.image_url || row.image_url,
         schema_type: row.wiki_entries.schema_type,
         trending_score: row.wiki_entries.trending_score ?? 0,
         scores: scoreMap.get(row.wiki_entry_id) || null,
