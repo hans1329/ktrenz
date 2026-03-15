@@ -1096,7 +1096,7 @@ async function collectForSingleArtist(
         const circleData = await scrapeWithFirecrawl(circleUrl, keys.firecrawl, false, 12000, 30000);
         const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
         const circleParsed = parseCircleChart(circleMd);
-        console.log(`[DataCollector] Circle Chart parsed ${circleParsed.length} entries`);
+        console.log(`[DataCollector] Circle Chart: rawParsed=${circleParsed.length} (single-artist mode)`);
         
         // 아티스트 매칭
         for (const entry of circleParsed) {
@@ -1336,6 +1336,7 @@ Deno.serve(async (req) => {
     }
 
     const orderedTier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+    const tier1IdSet = new Set<string>(orderedTier1Ids);
 
     if (orderedTier1Ids.length === 0) {
       console.log("[DataCollector] No tier 1 artists found, skipping batch.");
@@ -1468,16 +1469,18 @@ Deno.serve(async (req) => {
             .eq("id", "default")
             .maybeSingle();
           
-          // ── Circle Chart 주간 앨범 1회 스크래핑 ──
+          // ── Circle Chart 주간 앨범 1회 스크래핑 (Tier1만 반영) ──
           const circleMatchMap = new Map<string, { rank: number; album: string; artist: string; weekly_sales: number; bonus: number }>();
+          let circleRawParsed = 0;
+          let circleTier1Matched = 0;
           try {
             console.log("[DataCollector] Scraping Circle Chart Weekly...");
             const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
             const circleData = await scrapeWithFirecrawl(circleUrl, FIRECRAWL_API_KEY, false, 12000, 30000);
             const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
             const circleParsed = parseCircleChart(circleMd);
-            console.log(`[DataCollector] Circle Chart parsed ${circleParsed.length} entries`);
-            
+            circleRawParsed = circleParsed.length;
+
             const circleWikiCache = new Map<string, string | null>();
             for (const entry of circleParsed) {
               const nameToMatch = entry.artist || entry.album;
@@ -1488,17 +1491,29 @@ Deno.serve(async (req) => {
                 entryWikiId = await matchArtistToWikiEntry(adminClient, nameToMatch);
                 circleWikiCache.set(nameToMatch, entryWikiId);
               }
-              if (entryWikiId && !circleMatchMap.has(entryWikiId)) {
-                const bonus = calculateCircleBonus(entry.rank, entry.weekly_sales);
-                circleMatchMap.set(entryWikiId, { ...entry, bonus });
-                // 스냅샷 저장
-                await adminClient.from("ktrenz_data_snapshots").insert({
-                  wiki_entry_id: entryWikiId, platform: "circle_chart",
-                  metrics: { rank: entry.rank, album: entry.album, artist: entry.artist, weekly_sales: entry.weekly_sales, chart_type: "weekly" },
-                });
+
+              if (!entryWikiId || !tier1IdSet.has(entryWikiId) || circleMatchMap.has(entryWikiId)) {
+                continue;
               }
+
+              const bonus = calculateCircleBonus(entry.rank, entry.weekly_sales);
+              circleMatchMap.set(entryWikiId, { ...entry, bonus });
+              circleTier1Matched++;
+
+              // 스냅샷 저장 (Tier1만)
+              await adminClient.from("ktrenz_data_snapshots").insert({
+                wiki_entry_id: entryWikiId,
+                platform: "circle_chart",
+                metrics: {
+                  rank: entry.rank,
+                  album: entry.album,
+                  artist: entry.artist,
+                  weekly_sales: entry.weekly_sales,
+                  chart_type: "weekly",
+                },
+              });
             }
-            console.log(`[DataCollector] Circle Chart: ${circleMatchMap.size} artists matched`);
+            console.log(`[DataCollector] Circle Chart: rawParsed=${circleRawParsed}, tier1Matched=${circleTier1Matched}`);
           } catch (circleErr: any) {
             console.error("[DataCollector] Circle Chart error:", circleErr.message);
           }
@@ -1514,7 +1529,7 @@ Deno.serve(async (req) => {
           }
           
           const dailyParsed = parseHanteoDaily(dailyMd);
-          console.log(`[DataCollector] Hanteo Daily: 파싱된 앨범 ${dailyParsed.length}건`);
+          console.log(`[DataCollector] Hanteo Daily: rawParsed=${dailyParsed.length} (Tier1-only scoring enabled)`);
           
           if (dailyParsed.length === 0) {
             // 일간 차트 파싱 실패 시 초동 fallback
@@ -1536,10 +1551,17 @@ Deno.serve(async (req) => {
                 entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
                 artistWikiCache.set(entry.artist, entryWikiId);
               }
-              if (!artistAlbums[entry.artist]) artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
+
+              if (!entryWikiId || !tier1IdSet.has(entryWikiId)) {
+                continue;
+              }
+
+              if (!artistAlbums[entry.artist]) {
+                artistAlbums[entry.artist] = { wikiEntryId: entryWikiId, albums: [] };
+              }
               artistAlbums[entry.artist].albums.push(entry);
               saved++;
-              if (entryWikiId) matched++;
+              matched++;
             }
             
             for (const [, data] of Object.entries(artistAlbums)) {
@@ -1566,7 +1588,16 @@ Deno.serve(async (req) => {
               platform: "hanteo", status: "partial", records_collected: saved,
               error_message: "일간 차트 파싱 실패, 초동 fallback 사용",
             });
-            results.hanteo = { type: "initial_fallback", parsed: parsed.length, saved, matched, scoresUpdated, circleMatched: circleMatchMap.size };
+            results.hanteo = {
+              type: "initial_fallback",
+              parsed: parsed.length,
+              saved,
+              matched,
+              scoresUpdated,
+              circleMatched: circleMatchMap.size,
+              circleRawParsed,
+              circleTier1Matched,
+            };
           } else {
             // 일간 차트 성공
             let saved = 0, matched = 0, scoresUpdated = 0;
@@ -1581,13 +1612,18 @@ Deno.serve(async (req) => {
                 entryWikiId = await matchArtistToWikiEntry(adminClient, entry.artist);
                 artistWikiCache.set(entry.artist, entryWikiId);
               }
+
+              if (!entryWikiId || !tier1IdSet.has(entryWikiId)) {
+                continue;
+              }
+
               if (!artistDailyData[entry.artist]) {
                 artistDailyData[entry.artist] = { wikiEntryId: entryWikiId, albums: [], totalDailySales: 0 };
               }
               artistDailyData[entry.artist].albums.push(entry);
               artistDailyData[entry.artist].totalDailySales += entry.daily_sales;
               saved++;
-              if (entryWikiId) matched++;
+              matched++;
             }
             
             // 아티스트별 점수 계산 (delta 모델 + Circle 보너스)
@@ -1636,7 +1672,17 @@ Deno.serve(async (req) => {
             await adminClient.from("ktrenz_collection_log").insert({
               platform: "hanteo", status: "success", records_collected: saved,
             });
-            results.hanteo = { type: "daily+circle", parsed: dailyParsed.length, saved, matched, scoresUpdated, circleMatched: circleMatchMap.size, url: dailyUrl };
+            results.hanteo = {
+              type: "daily+circle",
+              parsed: dailyParsed.length,
+              saved,
+              matched,
+              scoresUpdated,
+              circleMatched: circleMatchMap.size,
+              circleRawParsed,
+              circleTier1Matched,
+              url: dailyUrl,
+            };
           }
         } catch (e) {
           console.error("[DataCollector] Hanteo+Circle error:", e);
