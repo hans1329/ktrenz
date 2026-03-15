@@ -456,6 +456,13 @@ const translations: Record<string, Record<Language, string>> = {
   "boostGuide.tip.album": { en: "Tip: Buy from stores that count toward charts (Hanteo/Circle)", ko: "팁: 한터/써클 차트에 반영되는 매장에서 구매하세요", ja: "ヒント: チャート反映店舗で購入しよう（Hanteo/Circle）", zh: "提示: 在计入排行榜的商店购买（Hanteo/Circle）" },
   "boostGuide.tip.music": { en: "Tip: Stream with the screen on & volume up for it to count", ko: "팁: 화면 켜고 볼륨 올린 상태에서 스트리밍해야 카운트돼요", ja: "ヒント: 画面オン&音量ありで再生するとカウントされます", zh: "提示: 屏幕亮着且有音量才会计入播放量" },
   "boostGuide.tip.social": { en: "Tip: Like, comment & repost within the first hour of posting", ko: "팁: 게시 후 1시간 이내에 좋아요, 댓글, 리포스트하세요", ja: "ヒント: 投稿後1時間以内にいいね・コメント・リポスト", zh: "提示: 在发帖后1小时内点赞、评论和转发" },
+
+  // ── Correlation Summary Card (Fan-facing) ──
+  "correlationSummary.title": { en: "Channel Pulse", ko: "채널 온도", ja: "チャネルパルス", zh: "频道脉搏" },
+  "correlationSummary.allHot": { en: "{artist} is trending across all channels right now! 🔥", ko: "지금 {artist}이(가) 전 채널에서 뜨겁게 달아오르고 있어요! 🔥", ja: "{artist}が全チャネルでトレンド中！🔥", zh: "{artist}正在全频道爆火！🔥" },
+  "correlationSummary.needsAttention": { en: "{artist}'s channels are cooling down — your support matters now! ❄️", ko: "{artist}의 채널이 식어가고 있어요 — 지금 여러분의 응원이 필요해요! ❄️", ja: "{artist}のチャネルが冷めてきてます — 今こそ応援を！❄️", zh: "{artist}的频道正在降温 — 现在需要你的支持！❄️" },
+  "correlationSummary.mixed": { en: "{hot} is doing great, but {cold} could use a boost from fans!", ko: "{hot}은(는) 잘하고 있지만, {cold}은(는) 팬들의 힘이 필요해요!", ja: "{hot}は好調ですが、{cold}はファンの力が必要！", zh: "{hot}表现很好，但{cold}需要粉丝助力！" },
+  "correlationSummary.steady": { en: "{artist} is holding steady — keep the energy going! ✨", ko: "{artist}이(가) 꾸준히 유지 중이에요 — 이 에너지를 계속 가져가요! ✨", ja: "{artist}が安定を維持中 — このエネルギーを続けよう！✨", zh: "{artist}保持稳定 — 继续保持这份能量！✨" },
 };
 
 export default translations;
