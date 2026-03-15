@@ -561,7 +561,7 @@ const AdminAgencySample = () => {
     { cat: 'YouTube', value: latestEnergy?.youtube_velocity != null ? Math.round((latestEnergy.youtube_velocity * 0.6 + (latestEnergy.youtube_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Buzz', value: latestEnergy?.buzz_velocity != null ? Math.round((latestEnergy.buzz_velocity * 0.6 + (latestEnergy.buzz_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Music', value: latestEnergy?.music_velocity != null ? Math.round((latestEnergy.music_velocity * 0.6 + (latestEnergy.music_intensity ?? 0) * 0.4) * 100) : 0 },
-    { cat: 'Album', value: latestEnergy?.album_velocity != null ? Math.round((latestEnergy.album_velocity * 0.6 + (latestEnergy.album_intensity ?? 0) * 0.4) * 100) : 0 },
+    { cat: 'Sales', value: latestEnergy?.album_velocity != null ? Math.round((latestEnergy.album_velocity * 0.6 + (latestEnergy.album_intensity ?? 0) * 0.4) * 100) : 0 },
     { cat: 'Social', value: latestEnergy?.social_velocity != null ? Math.round((latestEnergy.social_velocity * 0.6 + (latestEnergy.social_intensity ?? 0) * 0.4) * 100) : 0 },
   ];
 
@@ -596,7 +596,7 @@ const AdminAgencySample = () => {
     { metric: 'Buzz', [selectedArtist?.display_name ?? 'A']: scoreData?.buzz_score ?? 0, [compareArtistName]: compareScoreData.scores?.buzz_score ?? 0 },
     { metric: 'YouTube', [selectedArtist?.display_name ?? 'A']: scoreData?.youtube_score ?? 0, [compareArtistName]: compareScoreData.scores?.youtube_score ?? 0 },
     { metric: 'Music', [selectedArtist?.display_name ?? 'A']: scoreData?.music_score ?? 0, [compareArtistName]: compareScoreData.scores?.music_score ?? 0 },
-    { metric: 'Album', [selectedArtist?.display_name ?? 'A']: scoreData?.album_score ?? 0, [compareArtistName]: compareScoreData.scores?.album_score ?? 0 },
+    { metric: 'Sales', [selectedArtist?.display_name ?? 'A']: scoreData?.album_score ?? 0, [compareArtistName]: compareScoreData.scores?.album_score ?? 0 },
   ] : [];
 
   // Milestone icons
@@ -780,7 +780,7 @@ Artist: ${context.artist}
                   { key: 'youtube', label: 'YouTube', icon: <Youtube className="w-4 h-4" />, color: '#ef4444', data: cats.youtube },
                   { key: 'buzz', label: 'Buzz / Social', icon: <MessageSquare className="w-4 h-4" />, color: '#8b5cf6', data: cats.buzz },
                   { key: 'music', label: 'Music Streaming', icon: <Music className="w-4 h-4" />, color: '#3b82f6', data: cats.music },
-                  { key: 'album', label: 'Album Sales', icon: <Disc3 className="w-4 h-4" />, color: '#f59e0b', data: cats.album },
+                  { key: 'album', label: 'Sales (Streaming + Physical)', icon: <Disc3 className="w-4 h-4" />, color: '#f59e0b', data: cats.album },
                 ].filter(e => e.data);
 
                 // Sort by absolute change to highlight hottest
@@ -896,7 +896,7 @@ Artist: ${context.artist}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">에너지 카테고리 분석</CardTitle>
-                <CardDescription className="text-xs">YouTube / Buzz / Music / Album</CardDescription>
+                <CardDescription className="text-xs">YouTube / Buzz / Music / Sales</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={220}>
@@ -927,7 +927,7 @@ Artist: ${context.artist}
                     { key: 'youtube', label: 'YouTube', color: '#ef4444', contrib: fesContrib.youtube_contrib, z: fesContrib.youtube_z },
                     { key: 'buzz', label: 'Buzz', color: '#8b5cf6', contrib: fesContrib.buzz_contrib, z: fesContrib.buzz_z },
                     { key: 'music', label: 'Music', color: '#3b82f6', contrib: fesContrib.music_contrib, z: fesContrib.music_z },
-                    { key: 'album', label: 'Album', color: '#f59e0b', contrib: fesContrib.album_contrib, z: fesContrib.album_z },
+                    { key: 'album', label: 'Sales', color: '#f59e0b', contrib: fesContrib.album_contrib, z: fesContrib.album_z },
                     { key: 'social', label: 'Social', color: '#ec4899', contrib: fesContrib.social_contrib, z: fesContrib.social_z },
                   ];
                   return (
@@ -1086,7 +1086,7 @@ Artist: ${context.artist}
                     <Line type="monotone" dataKey="YouTube" stroke="#ef4444" strokeWidth={1.5} dot={false} />
                     <Line type="monotone" dataKey="Buzz" stroke="#8b5cf6" strokeWidth={1.5} dot={false} />
                     <Line type="monotone" dataKey="Music" stroke="#3b82f6" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="Album" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
+                    <Line type="monotone" dataKey="Album" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Sales" />
                     <Line type="monotone" dataKey="Social" stroke="#ec4899" strokeWidth={1.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1989,7 +1989,7 @@ Artist: ${context.artist}
                 <CardTitle className="text-sm flex items-center gap-2">
                   <GitCompareArrows className="w-4 h-4 text-indigo-500" /> FES vs 성과 상관관계 (심화)
                 </CardTitle>
-                <CardDescription className="text-xs">FES 선행 지표와 실제 성과(YouTube, Buzz, Album, Music, Social) 간의 Gap/추이/분포를 다각도로 분석합니다</CardDescription>
+                <CardDescription className="text-xs">FES 선행 지표와 실제 성과(YouTube, Buzz, Sales, Music, Social) 간의 Gap/추이/분포를 다각도로 분석합니다</CardDescription>
               </CardHeader>
               <CardContent>
                 <V3CorrelationPanel

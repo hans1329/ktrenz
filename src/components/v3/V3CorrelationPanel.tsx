@@ -40,7 +40,7 @@ const TIME_RANGES: { key: TimeRange; label: string; days: number }[] = [
 const OUTCOME_CATEGORIES = [
   { key: "youtube", label: "YouTube", color: "hsl(0, 80%, 45%)", field: "youtube_score" },
   { key: "buzz", label: "Buzz", color: "hsl(280, 70%, 45%)", field: "buzz_score" },
-  { key: "album", label: "Album", color: "hsl(35, 90%, 42%)", field: "album_score" },
+  { key: "album", label: "Sales", color: "hsl(35, 90%, 42%)", field: "album_score" },
   { key: "music", label: "Music", color: "hsl(145, 70%, 38%)", field: "music_score" },
   { key: "social", label: "Social", color: "hsl(200, 80%, 50%)", field: "social_score" },
 ];

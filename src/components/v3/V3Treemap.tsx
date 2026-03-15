@@ -109,7 +109,7 @@ const CATEGORY_CONFIG: Record<EnergyCategory, { label: string; icon: React.React
   all: { label: "전체", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(var(--primary))" },
   youtube: { label: "YouTube", icon: <Youtube className="w-3 h-3" />, color: "hsl(0, 70%, 50%)" },
   buzz: { label: "Buzz", icon: <MessageCircle className="w-3 h-3" />, color: "hsl(280, 60%, 55%)" },
-  album: { label: "Album", icon: <Disc3 className="w-3 h-3" />, color: "hsl(35, 80%, 50%)" },
+  album: { label: "Sales", icon: <Disc3 className="w-3 h-3" />, color: "hsl(35, 80%, 50%)" },
   music: { label: "Music", icon: <Music className="w-3 h-3" />, color: "hsl(145, 60%, 45%)" },
   social: { label: "Social", icon: <Twitter className="w-3 h-3" />, color: "hsl(195, 85%, 45%)" },
   fan: { label: "Fan Activity", icon: <TrendingUp className="w-3 h-3" />, color: "hsl(330, 70%, 50%)" },

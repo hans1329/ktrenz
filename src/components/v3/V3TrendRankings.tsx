@@ -110,7 +110,7 @@ const MiniCategoryBars = ({ data }: { data: Record<string, { velocity: number; i
   const cats = [
     { key: "youtube", label: "YT", color: "from-red-500 to-orange-500" },
     { key: "buzz", label: "BZ", color: "from-purple-500 to-violet-500" },
-    { key: "album", label: "AL", color: "from-amber-500 to-yellow-500" },
+    { key: "album", label: "SL", color: "from-amber-500 to-yellow-500" },
     { key: "music", label: "MU", color: "from-teal-400 to-cyan-500" },
   ];
   return (
@@ -401,7 +401,7 @@ const V3TrendRankings = () => {
     const interval = setInterval(async () => {
       try {
         const elapsed = Math.round((Date.now() - startedAt) / 1000);
-        const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Album" : "Music";
+        const label = source === "youtube" ? "YouTube" : source === "buzz" ? "Buzz" : source === "album" ? "Sales" : "Music";
 
         // ktrenz_data_snapshots에서 최근 스냅샷 확인 (모든 모듈 공통)
         const snapshotPlatformMap: Record<string, string> = { youtube: "youtube", buzz: "buzz_multi", album: "hanteo", music: "lastfm" };
@@ -460,7 +460,7 @@ const V3TrendRankings = () => {
     const labelMap = {
       youtube: "YouTube",
       buzz: "Buzz",
-      album: "Album",
+      album: "Sales",
       music: "Music",
     } as const;
 
@@ -491,7 +491,7 @@ const V3TrendRankings = () => {
   const ADMIN_COLLECT_BUTTONS = [
     { key: "youtube", label: "YT", icon: <Youtube className="w-3 h-3" /> },
     { key: "buzz", label: "BZ", icon: <Twitter className="w-3 h-3" /> },
-    { key: "album", label: "AL", icon: <Disc3 className="w-3 h-3" /> },
+    { key: "album", label: "SL", icon: <Disc3 className="w-3 h-3" /> },
     { key: "music", label: "MU", icon: <Music className="w-3 h-3" /> },
   ];
 
