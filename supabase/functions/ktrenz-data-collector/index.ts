@@ -328,7 +328,7 @@ function calculateYouTubeScore(data: {
   const viewBase = data.totalViewCount > 0 ? Math.log10(data.totalViewCount) * 30 : 0;
   const baseScore = subBase + viewBase;
 
-  // ── Delta Score (70%): 24h 변동분 기반 ──
+  // ── Delta Score (70%): 최근 10개 영상의 24h 변동분 기반 ──
   let deltaScore = 0;
 
   // 최근 영상 조회수 변동
@@ -348,15 +348,10 @@ function calculateYouTubeScore(data: {
     deltaScore += Math.round((data.recentTotalLikes / 100_000) * 20);
   }
 
-  // 총 조회수 변동 (채널 전체) — delta-over-delta 적용
-  if (data.previousTotalViewCount && data.previousTotalViewCount > 0) {
-    const totalViewDeltaScore = incrementDeltaScore(
-      data.totalViewCount,
-      data.previousTotalViewCount,
-      data.prev48hTotalViewCount ?? null,
-      50,
-    );
-    deltaScore += totalViewDeltaScore;
+  // 댓글 변동
+  if (data.previousRecentTotalComments && data.previousRecentTotalComments > 0 && data.recentTotalComments) {
+    const commentDelta = data.recentTotalComments - data.previousRecentTotalComments;
+    deltaScore += Math.round((commentDelta / 5_000) * 30);
   }
 
   // deltaScore: 최소 0, 최대 baseScore * 5 (이상치 방지)
