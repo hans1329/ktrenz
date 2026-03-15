@@ -1413,11 +1413,16 @@ async function collectForSingleArtist(
       } else {
         // 한터 일간 차트에 없으면 → Circle Chart 단독 or 초동 fallback
         if (circleBonus > 0) {
-          const chartBonus = await calculateChartBonus(adminClient, wikiEntryId);
-          const totalBonus = chartBonus + circleBonus;
+          const [chartBonus, koreanChartBonus, spotifyData] = await Promise.all([
+            calculateChartBonus(adminClient, wikiEntryId),
+            calculateKoreanChartBonus(adminClient, wikiEntryId),
+            calculateSpotifyListenersBonus(adminClient, wikiEntryId),
+          ]);
+          const streamingBonus = koreanChartBonus + spotifyData.bonus;
+          const totalBonus = chartBonus + circleBonus + streamingBonus;
           await upsertV3Score(adminClient, wikiEntryId, { album_sales_score: totalBonus });
-          results.hanteo = { type: "circle_only", albums: 0, score: totalBonus, chartBonus, circleBonus, circle: circleResult };
-          console.log(`[DataCollector] Album: ${artistTitle} → circle+chart-only score=${totalBonus}`);
+          results.hanteo = { type: "circle_only", albums: 0, score: totalBonus, chartBonus, circleBonus, streamingBonus, circle: circleResult };
+          console.log(`[DataCollector] Album: ${artistTitle} → circle+chart+streaming score=${totalBonus}`);
         } else {
           // 초동 fallback
           console.log(`[DataCollector] Hanteo Daily: ${artistTitle} not on daily chart, trying initial...`);
