@@ -680,7 +680,7 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
   for (const name of unique) {
     const { data } = await adminClient
       .from("wiki_entries").select("id, title")
-      .eq("title", name).eq("schema_type", "artist").limit(1);
+      .eq("title", name).in("schema_type", ["artist", "member"]).limit(1);
     if (data?.[0]) return data[0].id;
   }
   
@@ -689,7 +689,7 @@ async function matchArtistToWikiEntry(adminClient: any, artistName: string): Pro
     if (name.length <= 3) continue; // "BTS" 등 짧은 이름은 partial match 스킵 (오매칭 방지)
     const { data } = await adminClient
       .from("wiki_entries").select("id, title")
-      .ilike("title", `%${name}%`).eq("schema_type", "artist").limit(1);
+      .ilike("title", `%${name}%`).in("schema_type", ["artist", "member"]).limit(1);
     if (data?.[0]) return data[0].id;
   }
   return null;
@@ -1147,7 +1147,14 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { source = "all", wikiEntryId, batchSize: rawBatchSize, batchOffset: rawBatchOffset, batchIndex: rawBatchIndex } = body;
+    const {
+      source = "all",
+      wikiEntryId,
+      batchSize: rawBatchSize,
+      batchOffset: rawBatchOffset,
+      batchIndex: rawBatchIndex,
+      tierSnapshotAt: rawTierSnapshotAt,
+    } = body;
     const batchSize = Math.min(200, Math.max(1, Number(rawBatchSize) || 100));
     // batchIndex(페이지 기반) → batchOffset(절대 오프셋) 자동 변환
     const batchOffset = rawBatchOffset != null
@@ -1155,6 +1162,9 @@ Deno.serve(async (req) => {
       : rawBatchIndex != null
         ? Math.max(0, Number(rawBatchIndex)) * batchSize
         : 0;
+    const tierSnapshotAt = typeof rawTierSnapshotAt === "string" && !Number.isNaN(Date.parse(rawTierSnapshotAt))
+      ? rawTierSnapshotAt
+      : null;
 
     const keys = { youtube: YOUTUBE_API_KEY, firecrawl: FIRECRAWL_API_KEY, lastfm: LASTFM_API_KEY };
 
@@ -1188,40 +1198,66 @@ Deno.serve(async (req) => {
     // ── 배치 모드 ──
     const collectSources = source === "all" ? ["youtube", "hanteo", "music", "buzz"] : [source];
 
-    // 1군(tier=1) 아티스트만 수집 대상
-    const { data: tier1Entries } = await adminClient
+    // Tier1 스냅샷(선택) + 결정론적 정렬 기반으로 대상 고정
+    let tierQuery = adminClient
       .from("v3_artist_tiers")
       .select("wiki_entry_id, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id")
-      .eq("tier", 1);
+      .eq("tier", 1)
+      .order("wiki_entry_id", { ascending: true });
+
+    if (tierSnapshotAt) {
+      tierQuery = tierQuery.lte("updated_at", tierSnapshotAt);
+    }
+
+    const { data: tier1Entries } = await tierQuery;
     const tier1Map = new Map<string, { youtube_channel_id?: string | null; youtube_topic_channel_id?: string | null; lastfm_artist_name?: string | null; deezer_artist_id?: string | null }>();
     for (const t of (tier1Entries || [])) {
-      if (t.wiki_entry_id) tier1Map.set(t.wiki_entry_id, { youtube_channel_id: t.youtube_channel_id, youtube_topic_channel_id: t.youtube_topic_channel_id, lastfm_artist_name: t.lastfm_artist_name, deezer_artist_id: t.deezer_artist_id });
+      if (t.wiki_entry_id) {
+        tier1Map.set(t.wiki_entry_id, {
+          youtube_channel_id: t.youtube_channel_id,
+          youtube_topic_channel_id: t.youtube_topic_channel_id,
+          lastfm_artist_name: t.lastfm_artist_name,
+          deezer_artist_id: t.deezer_artist_id,
+        });
+      }
     }
-    const tier1Ids = new Set(tier1Map.keys());
 
-    if (tier1Ids.size === 0) {
+    const orderedTier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+
+    if (orderedTier1Ids.length === 0) {
       console.log("[DataCollector] No tier 1 artists found, skipping batch.");
       await adminClient.from("system_jobs").upsert({
         id: "daily-data-crawl", status: "completed", completed_at: new Date().toISOString(),
-        metadata: { message: "No tier 1 artists" },
+        metadata: { message: "No tier 1 artists", tierSnapshotAt },
       }, { onConflict: "id" });
-      return new Response(JSON.stringify({ success: true, message: "No tier 1 artists" }), {
+      return new Response(JSON.stringify({ success: true, message: "No tier 1 artists", tierSnapshotAt }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { data: allArtists } = await adminClient
       .from("wiki_entries").select("id, title, metadata")
-      .eq("schema_type", "artist")
-      .in("id", [...tier1Ids]);
+      .in("schema_type", ["artist", "member"])
+      .in("id", orderedTier1Ids);
 
-    const artists = (allArtists || []).slice(batchOffset, batchOffset + batchSize);
+    const artistMap = new Map<string, any>((allArtists || []).map((a: any) => [a.id, a]));
+    const orderedArtists = orderedTier1Ids.map((id: string) => artistMap.get(id)).filter(Boolean);
+    const artists = orderedArtists.slice(batchOffset, batchOffset + batchSize);
 
     const actualTotal = artists.length;
+    const totalCandidates = orderedArtists.length;
 
     await adminClient.from("system_jobs").upsert({
       id: "daily-data-crawl", status: "running", started_at: new Date().toISOString(),
-      metadata: { processed: 0, total: actualTotal, sources: collectSources, batchSize, batchOffset },
+      metadata: {
+        processed: 0,
+        total: totalCandidates,
+        batchProcessed: actualTotal,
+        sources: collectSources,
+        batchSize,
+        batchOffset,
+        tierSnapshotAt,
+      },
     }, { onConflict: "id" });
 
     const results: Record<string, any> = {};
@@ -1549,10 +1585,25 @@ Deno.serve(async (req) => {
     // 완료 기록
     await adminClient.from("system_jobs").update({
       status: "completed", completed_at: new Date().toISOString(),
-      metadata: { ...results, processed: actualTotal, total: actualTotal },
+      metadata: {
+        ...results,
+        processed: actualTotal,
+        total: totalCandidates,
+        batchSize,
+        batchOffset,
+        tierSnapshotAt,
+      },
     }).eq("id", "daily-data-crawl");
 
-    return new Response(JSON.stringify({ success: true, results }), {
+    return new Response(JSON.stringify({
+      success: true,
+      results,
+      processed: actualTotal,
+      totalCandidates,
+      batchSize,
+      batchOffset,
+      tierSnapshotAt,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

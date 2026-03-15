@@ -50,7 +50,9 @@ Deno.serve(async (req) => {
     // 1) Load all artists with aliases for matching
     const { data: artists } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko, tier");
+      .select("wiki_entry_id, display_name, name_ko")
+      .eq("tier", 1)
+      .order("wiki_entry_id", { ascending: true });
     if (!artists || artists.length === 0) {
       return new Response(JSON.stringify({ error: "No artists found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -65,7 +67,7 @@ Deno.serve(async (req) => {
     }
 
     // Also load wiki_entries titles for broader matching
-    const wikiIds = artists.map((a: any) => a.wiki_entry_id);
+    const wikiIds = [...new Set(artists.map((a: any) => a.wiki_entry_id).filter(Boolean))];
     const { data: wikiEntries } = await sb
       .from("wiki_entries")
       .select("id, title")

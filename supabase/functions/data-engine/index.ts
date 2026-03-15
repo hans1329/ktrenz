@@ -90,17 +90,25 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
   console.log(`[data-engine] Running YouTube module (dynamic batching)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const { data: tier1Entries } = await sb
+  const tierSnapshotAt = new Date().toISOString();
+  let tierQuery = sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id, youtube_channel_id")
-    .eq("tier", 1);
+    .eq("tier", 1)
+    .lte("updated_at", tierSnapshotAt)
+    .order("wiki_entry_id", { ascending: true });
 
-  const validArtists = (tier1Entries || []).filter((t: any) => t.youtube_channel_id);
-  const tier1Count = validArtists.length;
+  const { data: tier1Entries } = await tierQuery;
+
+  const validTier1Ids = [...new Set((tier1Entries || [])
+    .filter((t: any) => t.youtube_channel_id)
+    .map((t: any) => t.wiki_entry_id)
+    .filter(Boolean))];
+  const tier1Count = validTier1Ids.length;
 
   if (tier1Count === 0) {
     console.warn(`[data-engine] YouTube: No Tier 1 artists with channel ID found`);
-    return { status: "no_artists", launched: 0 };
+    return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
   // 10명씩 배치 (아티스트당 ~2초 → 10명 = ~20초, 60초 타임아웃 내 안전)
@@ -111,14 +119,14 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
   const MAX_LAUNCH_TIME_MS = 25_000;
   const delayMs = totalBatches > 1 ? Math.min(3000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
 
-  console.log(`[data-engine] YouTube: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms`);
+  console.log(`[data-engine] YouTube: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms, snapshotAt=${tierSnapshotAt}`);
 
   let launched = 0;
   for (let i = 0; i < totalBatches; i++) {
     const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ source: "youtube", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+      body: JSON.stringify({ source: "youtube", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE, tierSnapshotAt }),
     }).catch((e) => console.warn(`[data-engine] YouTube batch ${i} fire error:`, e.message));
     fireAndForget(p);
     launched++;
@@ -126,7 +134,7 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
   }
 
   console.log(`[data-engine] YouTube: launched ${launched} batches for ${tier1Count} artists`);
-  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count };
+  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count, tierSnapshotAt };
 }
 
 async function runMusic(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
@@ -135,15 +143,19 @@ async function runMusic(supabaseUrl: string, serviceKey: string, _waitForComplet
   console.log(`[data-engine] Running Music module (dynamic batching)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
+  const tierSnapshotAt = new Date().toISOString();
   const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id")
-    .eq("tier", 1);
+    .eq("tier", 1)
+    .lte("updated_at", tierSnapshotAt)
+    .order("wiki_entry_id", { ascending: true });
 
-  const tier1Count = (tier1Entries || []).length;
+  const tier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+  const tier1Count = tier1Ids.length;
   if (tier1Count === 0) {
     console.warn(`[data-engine] Music: No Tier 1 artists found`);
-    return { status: "no_artists", launched: 0 };
+    return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
   const BATCH_SIZE = 15;
@@ -151,14 +163,14 @@ async function runMusic(supabaseUrl: string, serviceKey: string, _waitForComplet
   const MAX_LAUNCH_TIME_MS = 25_000;
   const delayMs = totalBatches > 1 ? Math.min(3000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
 
-  console.log(`[data-engine] Music: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms`);
+  console.log(`[data-engine] Music: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms, snapshotAt=${tierSnapshotAt}`);
 
   let launched = 0;
   for (let i = 0; i < totalBatches; i++) {
     const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ source: "music", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+      body: JSON.stringify({ source: "music", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE, tierSnapshotAt }),
     }).catch((e) => console.warn(`[data-engine] Music batch ${i} fire error:`, e.message));
     fireAndForget(p);
     launched++;
@@ -166,7 +178,7 @@ async function runMusic(supabaseUrl: string, serviceKey: string, _waitForComplet
   }
 
   console.log(`[data-engine] Music: launched ${launched} batches for ${tier1Count} artists`);
-  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count };
+  return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count, tierSnapshotAt };
 }
 
 async function runHanteo(supabaseUrl: string, serviceKey: string, waitForCompletion: boolean = false): Promise<any> {
@@ -274,7 +286,7 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 
   if (tier1Ids.length === 0) return { status: "no_artists" };
 
-  const { data: artists } = await sb.from("wiki_entries").select("id, title, metadata").eq("schema_type", "artist").in("id", tier1Ids);
+  const { data: artists } = await sb.from("wiki_entries").select("id, title, metadata").in("schema_type", ["artist", "member"]).in("id", tier1Ids);
   if (!artists?.length) return { status: "no_artists" };
 
   let launched = 0;
@@ -323,7 +335,7 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
     if (t.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
   }
 
-  const { data: artists } = await sb.from("wiki_entries").select("id, title").eq("schema_type", "artist").in("id", tier1Ids);
+  const { data: artists } = await sb.from("wiki_entries").select("id, title").in("schema_type", ["artist", "member"]).in("id", tier1Ids);
   if (!artists?.length) return { status: "no_artists" };
 
   // 동적 딜레이: 총 대상 수 기반으로 안전한 실행 시간 내 완료
