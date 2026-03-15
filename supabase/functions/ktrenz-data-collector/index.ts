@@ -1238,8 +1238,16 @@ async function collectForSingleArtist(
         const circleUrl = "https://circlechart.kr/page_chart/album.circle?termGbn=week";
         const circleData = await scrapeWithFirecrawl(circleUrl, keys.firecrawl, false, 12000, 30000);
         const circleMd = circleData?.data?.markdown || circleData?.markdown || "";
-        const circleParsed = parseCircleChart(circleMd);
-        console.log(`[DataCollector] Circle Chart: rawParsed=${circleParsed.length} (single-artist mode)`);
+        const circleRaw = parseCircleChart(circleMd);
+        
+        // DB 아티스트명 목록으로 album/artist 분리 후처리
+        const { data: knownArtistsData } = await adminClient
+          .from("v3_artist_tiers")
+          .select("display_name, name_ko")
+          .eq("tier", 1);
+        const knownArtists = (knownArtistsData || []).map((a: any) => ({ name: a.display_name || "", nameKo: a.name_ko || "" })).filter((a: any) => a.name);
+        const circleParsed = refineCircleEntries(circleRaw, knownArtists);
+        console.log(`[DataCollector] Circle Chart: rawParsed=${circleParsed.length} (single-artist mode, refined)`);
         
         // 아티스트 매칭
         for (const entry of circleParsed) {
