@@ -453,7 +453,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   "boostGuide.tip.youtube": { en: "Tip: Watch full MVs without skipping for better algorithm reach", ko: "팁: 건너뛰기 없이 풀 MV를 시청하면 알고리즘에 유리해요", ja: "ヒント: フルMVをスキップなしで視聴するとアルゴリズムに有利", zh: "提示: 完整观看MV不跳过，有利于算法推荐" },
   "boostGuide.tip.buzz": { en: "Tip: Use trending hashtags & tag official accounts", ko: "팁: 트렌딩 해시태그를 사용하고 공식 계정을 태그하세요", ja: "ヒント: トレンドハッシュタグを使い公式アカウントをタグ", zh: "提示: 使用热门标签并标记官方账号" },
-  "boostGuide.tip.album": { en: "Tip: Buy from stores that count toward charts (Hanteo/Circle)", ko: "팁: 한터/써클 차트에 반영되는 매장에서 구매하세요", ja: "ヒント: チャート反映店舗で購入しよう（Hanteo/Circle）", zh: "提示: 在计入排行榜的商店购买（Hanteo/Circle）" },
+  "boostGuide.tip.album": { en: "Tip: Buy from official stores & fan shops to maximize impact", ko: "팁: 공식 스토어와 팬샵에서 구매하면 효과가 극대화돼요", ja: "ヒント: 公式ストアやファンショップで購入すると効果最大", zh: "提示: 在官方商店和粉丝店购买效果最大化" },
   "boostGuide.tip.music": { en: "Tip: Stream with the screen on & volume up for it to count", ko: "팁: 화면 켜고 볼륨 올린 상태에서 스트리밍해야 카운트돼요", ja: "ヒント: 画面オン&音量ありで再生するとカウントされます", zh: "提示: 屏幕亮着且有音量才会计入播放量" },
   "boostGuide.tip.social": { en: "Tip: Like, comment & repost within the first hour of posting", ko: "팁: 게시 후 1시간 이내에 좋아요, 댓글, 리포스트하세요", ja: "ヒント: 投稿後1時間以内にいいね・コメント・リポスト", zh: "提示: 在发帖后1小时内点赞、评论和转发" },
 
