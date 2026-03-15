@@ -491,7 +491,7 @@ const V3TrendRankings = () => {
   const ADMIN_COLLECT_BUTTONS = [
     { key: "youtube", label: "YT", icon: <Youtube className="w-3 h-3" /> },
     { key: "buzz", label: "BZ", icon: <Twitter className="w-3 h-3" /> },
-    { key: "album", label: "AL", icon: <Disc3 className="w-3 h-3" /> },
+    { key: "album", label: "SL", icon: <Disc3 className="w-3 h-3" /> },
     { key: "music", label: "MU", icon: <Music className="w-3 h-3" /> },
   ];
 
