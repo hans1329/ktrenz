@@ -296,7 +296,7 @@ export default function V3InspectorPanel({ item, onClose }: { item: InspectorIte
 
             <V3AIPredictionCard wikiEntryId={item.id} artistName={item.title} />
             <V3CorrelationInsightCard wikiEntryId={item.id} artistName={item.title} artistSlug={item.slug} />
-            <V3CorrelationPanel wikiEntryId={item.id} artistName={item.title} />
+            <V3CorrelationSummaryCard wikiEntryId={item.id} artistName={item.title} />
 
             <V3MissionCards
               wikiEntryId={item.id}
