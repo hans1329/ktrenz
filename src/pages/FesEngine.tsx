@@ -169,6 +169,7 @@ Spotify Monthly Listeners:
   Base:    log10(listeners) × 15  (1M=90pt, 10M=120pt)
   Change:  ±log10(|dailyChange|+1) × 10  (최대 ±50pt)`}</code>
         <p className="text-xs text-muted-foreground mt-2">예시: Hanteo 일간 5만장 + Apple KR #3 + Spotify 12M listeners (+50K/day) + Melon #8 → 높은 Sales 점수</p>
+        <p className="text-xs text-muted-foreground mt-1.5 border-t border-border/30 pt-1.5"><strong>Fallback:</strong> 한터 일간 차트에 없고 Circle 주간 차트에 있을 경우 → <code className="bg-muted px-1 rounded">estimatedDaily = Math.round(weeklySales / 7)</code> 로 base/delta 계산 수행. 스냅샷에 <code className="bg-muted px-1 rounded">source: "circle_estimated"</code> 플래그 기록.</p>
       </Card>
       <VarTable rows={[
         { name: "dailySales", desc: "한터 일일 앨범 판매량", source: "한터 차트 (Firecrawl)" },
