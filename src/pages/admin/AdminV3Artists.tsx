@@ -456,6 +456,7 @@ const AdminV3Artists = () => {
                   if (!editArtist) return;
                   updateMutation.mutate({
                     id: editArtist.id,
+                    wiki_entry_id: editArtist.wiki_entry_id,
                     display_name: editDisplayName,
                     name_ko: editNameKo,
                     image_url: editImageUrl,
