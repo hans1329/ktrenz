@@ -335,7 +335,7 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
     if (t.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
   }
 
-  const { data: artists } = await sb.from("wiki_entries").select("id, title").eq("schema_type", "artist").in("id", tier1Ids);
+  const { data: artists } = await sb.from("wiki_entries").select("id, title").in("schema_type", ["artist", "member"]).in("id", tier1Ids);
   if (!artists?.length) return { status: "no_artists" };
 
   // 동적 딜레이: 총 대상 수 기반으로 안전한 실행 시간 내 완료
