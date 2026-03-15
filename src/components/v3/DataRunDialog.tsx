@@ -43,7 +43,7 @@ const MODULES: ModuleConfig[] = [
   { id: "youtube", label: "YouTube", icon: Youtube, color: "bg-destructive", description: "구독자, 조회수, 최근 영상" },
   { id: "buzz", label: "Buzz", icon: MessageSquare, color: "bg-amber-500", description: "X 멘션, 감성 분석" },
   { id: "music", label: "Music", icon: Music, color: "bg-primary", description: "Last.fm, Deezer, MusicBrainz" },
-  { id: "album", label: "Album", icon: Disc3, color: "bg-emerald-500", description: "한터차트 앨범 데이터" },
+  { id: "album", label: "Sales", icon: Disc3, color: "bg-emerald-500", description: "한터차트 + Spotify + 멜론 + Apple/Billboard" },
   { id: "all", label: "전체 수집", icon: Zap, color: "bg-gradient-to-r from-primary to-amber-500", description: "모든 데이터 한번에 수집" },
 ];
 

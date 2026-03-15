@@ -13,7 +13,7 @@ interface InsightsPanelProps {
 const CATEGORY_META: Record<string, { label: string; color: string; icon: string }> = {
   youtube: { label: "YouTube", color: "hsl(0, 80%, 45%)", icon: "🎬" },
   buzz: { label: "Buzz", color: "hsl(280, 70%, 45%)", icon: "💬" },
-  album: { label: "Album", color: "hsl(35, 90%, 42%)", icon: "💿" },
+  album: { label: "Sales", color: "hsl(35, 90%, 42%)", icon: "💿" },
   music: { label: "Music", color: "hsl(145, 70%, 38%)", icon: "🎵" },
   social: { label: "Social", color: "hsl(200, 80%, 50%)", icon: "👥" },
 };

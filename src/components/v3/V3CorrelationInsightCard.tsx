@@ -15,7 +15,7 @@ interface Props {
 const CATEGORIES = [
   { key: "youtube", label: "YouTube", emoji: "📺" },
   { key: "buzz", label: "Buzz", emoji: "💬" },
-  { key: "album", label: "Album", emoji: "💿" },
+  { key: "album", label: "Sales", emoji: "💿" },
   { key: "music", label: "Music", emoji: "🎵" },
   { key: "social", label: "Social", emoji: "📱" },
 ] as const;

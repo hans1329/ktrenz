@@ -112,7 +112,7 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
   const categoryLabel: Record<string, string> = {
     youtube: "YouTube",
     buzz: "Buzz / SNS",
-    album: "Album",
+    album: "Sales",
     music: "Music",
     social: "Social",
   };
