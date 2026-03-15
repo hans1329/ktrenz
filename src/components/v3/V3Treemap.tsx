@@ -330,6 +330,7 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
           youtubeChannelId: ytChannelMap.get(s.wiki_entry_id)?.channelId || null,
           latestYoutubeVideoId: ytChannelMap.get(s.wiki_entry_id)?.videoId || null,
           latestYoutubeVideoTitle: ytChannelMap.get(s.wiki_entry_id)?.videoTitle || null,
+          isNew: s.isNew || false,
         };
       });
     },
