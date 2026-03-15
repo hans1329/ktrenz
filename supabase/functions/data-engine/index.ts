@@ -455,6 +455,19 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     console.log(`[data-engine] Korean Charts: matched=${parsed?.matched ?? 0}, melon=${parsed?.melonParsed ?? 0}, genie=${parsed?.genieParsed ?? 0}`);
     return { status: resp.ok ? "completed" : "error", module: "korean_charts", ...parsed };
   },
+  spotify_listeners: async (url, key) => {
+    console.log("[data-engine] Running Spotify Listeners (kworb.net)...");
+    const resp = await fetch(`${url}/functions/v1/collect-spotify-listeners`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Spotify Listeners: matched=${parsed?.matched ?? 0}, totalParsed=${parsed?.totalParsed ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "spotify_listeners", ...parsed };
+  },
   billboard_charts: async (url, key) => {
     console.log("[data-engine] Running Billboard Charts...");
     const resp = await fetch(`${url}/functions/v1/collect-billboard-charts`, {
