@@ -460,7 +460,7 @@ const V3TrendRankings = () => {
     const labelMap = {
       youtube: "YouTube",
       buzz: "Buzz",
-      album: "Album",
+      album: "Sales",
       music: "Music",
     } as const;
 
