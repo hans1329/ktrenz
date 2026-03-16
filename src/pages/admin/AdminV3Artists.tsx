@@ -25,6 +25,7 @@ interface V3Artist {
   youtube_topic_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
+  spotify_artist_name: string | null;
   // from wiki_entries join
   wiki_title: string;
   wiki_image: string | null;
@@ -47,6 +48,7 @@ const AdminV3Artists = () => {
   const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
   const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
   const [editYoutubeTopicChannelId, setEditYoutubeTopicChannelId] = useState('');
+  const [editSpotifyArtistName, setEditSpotifyArtistName] = useState('');
   const [editAliases, setEditAliases] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +58,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, aliases, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type, metadata)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, aliases, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, spotify_artist_name, wiki_entries!inner(title, image_url, schema_type, metadata)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -73,6 +75,7 @@ const AdminV3Artists = () => {
         youtube_topic_channel_id: row.youtube_topic_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
+        spotify_artist_name: row.spotify_artist_name,
         wiki_title: row.wiki_entries.title,
         wiki_image: row.wiki_entries.image_url || (row.wiki_entries.metadata as any)?.profile_image || null,
         wiki_schema_type: row.wiki_entries.schema_type,
@@ -115,7 +118,7 @@ const AdminV3Artists = () => {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; aliases: string[]; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
+    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; aliases: string[]; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string; spotify_artist_name: string }) => {
       let ytChannelId = payload.youtube_channel_id;
       if (ytChannelId && !ytChannelId.startsWith('UC')) {
         ytChannelId = await resolveYoutubeChannelId(ytChannelId);
@@ -131,6 +134,7 @@ const AdminV3Artists = () => {
           youtube_topic_channel_id: payload.youtube_topic_channel_id || null,
           lastfm_artist_name: payload.lastfm_artist_name || null,
           deezer_artist_id: payload.deezer_artist_id || null,
+          spotify_artist_name: payload.spotify_artist_name || null,
         } as any)
         .eq('id', payload.id);
       if (error) throw error;
@@ -205,6 +209,7 @@ const AdminV3Artists = () => {
     setEditYoutubeTopicChannelId(artist.youtube_topic_channel_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
     setEditDeezerArtistId(artist.deezer_artist_id || '');
+    setEditSpotifyArtistName(artist.spotify_artist_name || '');
   };
 
   const filtered = search
@@ -452,6 +457,11 @@ const AdminV3Artists = () => {
                   <Input value={editDeezerArtistId} onChange={(e) => setEditDeezerArtistId(e.target.value)} placeholder={`현재: "${editArtist?.wiki_title}" 검색`} className="h-8 text-xs" />
                 </div>
                 <div className="space-y-1 col-span-2">
+                  <Label className="text-[11px]">Spotify Artist Name (kworb.net)</Label>
+                  <Input value={editSpotifyArtistName} onChange={(e) => setEditSpotifyArtistName(e.target.value)} placeholder={`현재: "${editArtist?.display_name || editArtist?.wiki_title}" 이름 매칭`} className="h-8 text-xs" />
+                  <p className="text-[10px] text-muted-foreground">kworb.net에 표시되는 정확한 아티스트명 (ONF→NF 같은 오매칭 방지)</p>
+                </div>
+                <div className="space-y-1 col-span-2">
                   <Label className="text-[11px]">YT Music Topic Channel ID</Label>
                   <Input value={editYoutubeTopicChannelId} onChange={(e) => setEditYoutubeTopicChannelId(e.target.value)} placeholder="UC... (YouTube Music Topic 채널)" className="h-8 text-xs" />
                   <p className="text-[10px] text-muted-foreground">YouTube Music 스트리밍 데이터 수집용 Topic 채널 ID</p>
@@ -475,6 +485,7 @@ const AdminV3Artists = () => {
                     youtube_topic_channel_id: editYoutubeTopicChannelId,
                     lastfm_artist_name: editLastfmArtistName,
                     deezer_artist_id: editDeezerArtistId,
+                    spotify_artist_name: editSpotifyArtistName,
                   });
                 }}
               >
