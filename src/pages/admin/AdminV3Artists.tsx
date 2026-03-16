@@ -469,6 +469,7 @@ const AdminV3Artists = () => {
                     wiki_entry_id: editArtist.wiki_entry_id,
                     display_name: editDisplayName,
                     name_ko: editNameKo,
+                    aliases: editAliases.split(',').map(s => s.trim()).filter(Boolean),
                     image_url: editImageUrl,
                     youtube_channel_id: editYoutubeChannelId,
                     youtube_topic_channel_id: editYoutubeTopicChannelId,
