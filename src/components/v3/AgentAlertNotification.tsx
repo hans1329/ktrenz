@@ -203,8 +203,8 @@ export default function AgentAlertNotification({
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity duration-500 ${
-        isExiting ? "opacity-0" : "opacity-100"
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center transition-opacity duration-500 ${
+        isExiting ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       style={{ background: "rgba(0, 0, 0, 0.20)", backdropFilter: "blur(12px)" }}
       onClick={handleClose}
