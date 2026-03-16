@@ -169,15 +169,23 @@ Deno.serve(async (req) => {
       .order("collected_at", { ascending: false })
       .limit(500);
 
-    // Build prev metrics map (take latest per artist)
-    const prevMetricsMap = new Map<string, SocialMetrics>();
+    // Build prev metrics map (take latest per artist) - include growth for acceleration
+    const prevMetricsMap = new Map<string, { metrics: SocialMetrics; growth: PrevGrowthMetrics }>();
     for (const snap of (prevSnapshots || []) as any[]) {
       if (prevMetricsMap.has(snap.wiki_entry_id)) continue;
       prevMetricsMap.set(snap.wiki_entry_id, {
-        instagram_followers: snap.metrics?.instagram_followers ?? null,
-        tiktok_followers: snap.metrics?.tiktok_followers ?? null,
-        spotify_followers: snap.metrics?.spotify_followers ?? null,
-        twitter_followers: snap.metrics?.twitter_followers ?? null,
+        metrics: {
+          instagram_followers: snap.metrics?.instagram_followers ?? null,
+          tiktok_followers: snap.metrics?.tiktok_followers ?? null,
+          spotify_followers: snap.metrics?.spotify_followers ?? null,
+          twitter_followers: snap.metrics?.twitter_followers ?? null,
+        },
+        growth: {
+          instagram_growth: snap.metrics?.instagram_growth ?? null,
+          tiktok_growth: snap.metrics?.tiktok_growth ?? null,
+          spotify_growth: snap.metrics?.spotify_growth ?? null,
+          twitter_growth: snap.metrics?.twitter_growth ?? null,
+        },
       });
     }
 
