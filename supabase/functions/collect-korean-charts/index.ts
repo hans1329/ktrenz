@@ -116,30 +116,40 @@ function normalizeArtistName(name: string): string {
     .replace(/[^a-z0-9가-힣]/g, "");
 }
 
-/** 아티스트 매칭: chart artist name → wiki_entry_id */
+/** 아티스트 매칭: chart artist name → wiki_entry_id (melon lookup 우선) */
 function matchArtist(
   artistName: string,
+  melonNameLookup: Map<string, string>,
   nameLookup: Map<string, string>,
 ): string | null {
   const lower = artistName.toLowerCase().trim();
+
+  // 1) melon_artist_name 전용 매칭 (최우선)
+  if (melonNameLookup.has(lower)) return melonNameLookup.get(lower)!;
+
+  // 2) 기존 name lookup 매칭
   if (nameLookup.has(lower)) return nameLookup.get(lower)!;
 
   const normalized = normalizeArtistName(artistName);
   if (nameLookup.has(normalized)) return nameLookup.get(normalized)!;
 
+  // 3) 괄호 안/밖 분리 매칭
   const parenMatch = artistName.match(/\(([^)]+)\)/);
   if (parenMatch) {
     const inner = parenMatch[1].toLowerCase().trim();
+    if (melonNameLookup.has(inner)) return melonNameLookup.get(inner)!;
     if (nameLookup.has(inner)) return nameLookup.get(inner)!;
     const innerNormalized = normalizeArtistName(inner);
     if (nameLookup.has(innerNormalized)) return nameLookup.get(innerNormalized)!;
 
     const outer = artistName.replace(/\s*\([^)]*\)/, "").toLowerCase().trim();
+    if (melonNameLookup.has(outer)) return melonNameLookup.get(outer)!;
     if (nameLookup.has(outer)) return nameLookup.get(outer)!;
     const outerNormalized = normalizeArtistName(outer);
     if (nameLookup.has(outerNormalized)) return nameLookup.get(outerNormalized)!;
   }
 
+  // 4) 부분 매칭 (4자 이상만)
   for (const [key, id] of nameLookup) {
     if (key.length >= 4 && normalized.length >= 4 && (key.includes(normalized) || normalized.includes(key))) {
       return id;
@@ -181,17 +191,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 1) Tier 1 아티스트 목록 로드
+    // 1) Tier 1 아티스트 목록 로드 (melon_artist_name 포함)
     const { data: artists } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko, aliases")
+      .select("wiki_entry_id, display_name, name_ko, aliases, melon_artist_name")
       .eq("tier", 1);
     if (!artists || artists.length === 0) {
       return new Response(JSON.stringify({ error: "No tier 1 artists" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // name lookup 구축: 원본 키 + 공백 제거 정규화 키를 모두 저장
+    // melon_artist_name 전용 lookup (최우선 매칭)
+    const melonNameLookup = new Map<string, string>();
+    for (const a of artists) {
+      if (a.melon_artist_name) {
+        melonNameLookup.set(a.melon_artist_name.toLowerCase().trim(), a.wiki_entry_id);
+        // 괄호 안/밖 이름도 별도 등록
+        const parenMatch = a.melon_artist_name.match(/^(.+?)\s*\((.+)\)$/);
+        if (parenMatch) {
+          melonNameLookup.set(parenMatch[1].trim().toLowerCase(), a.wiki_entry_id);
+          melonNameLookup.set(parenMatch[2].trim().toLowerCase(), a.wiki_entry_id);
+        }
+      }
+    }
+
+    // name lookup 구축: 원본 키 + 공백 제거 정규화 키를 모두 저장 (fallback)
     const nameLookup = new Map<string, string>();
     const addLookup = (value: string | null | undefined, wikiEntryId: string) => {
       if (!value) return;
@@ -216,7 +240,7 @@ Deno.serve(async (req) => {
       addLookup(w.title, w.id);
     }
 
-    console.log(`[KoreanCharts] Loaded ${nameLookup.size} name lookups for ${artists.length} tier 1 artists`);
+    console.log(`[KoreanCharts] Loaded ${melonNameLookup.size} melon names + ${nameLookup.size} fallback lookups for ${artists.length} tier 1 artists`);
 
     // 2) 멜론 + 지니 동시 스크래핑
     const [melonMd, genieMd] = await Promise.all([
@@ -234,7 +258,7 @@ Deno.serve(async (req) => {
     const artistBestRank = new Map<string, { bestRank: number; source: string; melonRank: number | null; genieRank: number | null; songTitle: string }>();
 
     for (const entry of [...melonEntries, ...genieEntries]) {
-      const wikiId = matchArtist(entry.artist, nameLookup);
+      const wikiId = matchArtist(entry.artist, melonNameLookup, nameLookup);
       if (!wikiId) continue;
 
       const existing = artistBestRank.get(wikiId);
