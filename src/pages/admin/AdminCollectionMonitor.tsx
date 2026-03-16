@@ -304,6 +304,33 @@ const AdminCollectionMonitor = () => {
     staleTime: 30_000,
   });
 
+  // ── External video scan stats ──
+  const { data: extVideoStats } = useQuery({
+    queryKey: ['collection-monitor-ext-videos'],
+    queryFn: async () => {
+      const [{ count: watchedChannels }, { data: matchData, count: totalMatches }] = await Promise.all([
+        supabase.from('ktrenz_watched_channels' as any).select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('ktrenz_external_video_matches' as any).select('wiki_entry_id, channel_id, collected_at', { count: 'exact' }).order('collected_at', { ascending: false }).limit(500),
+      ]);
+      const uniqueArtists = new Set<string>();
+      const uniqueChannels = new Set<string>();
+      let lastScan: string | null = null;
+      (matchData ?? []).forEach((r: any) => {
+        uniqueArtists.add(r.wiki_entry_id);
+        uniqueChannels.add(r.channel_id);
+        if (!lastScan) lastScan = r.collected_at;
+      });
+      return {
+        watchedChannels: watchedChannels ?? 0,
+        totalMatches: totalMatches ?? 0,
+        matchedArtists: uniqueArtists.size,
+        matchedChannels: uniqueChannels.size,
+        lastScan,
+      };
+    },
+    staleTime: 60_000,
+  });
+
   // ── Schedule entries count ──
   const { data: scheduleCount } = useQuery({
     queryKey: ['collection-monitor-schedules'],
@@ -477,6 +504,35 @@ const AdminCollectionMonitor = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+                {/* External Videos scan detail */}
+                {source.id === 'external_videos' && extVideoStats && (
+                  <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+                    <p className="text-[10px] font-medium text-muted-foreground">스캔 현황:</p>
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.watchedChannels}</p>
+                        <p className="text-[9px] text-muted-foreground">감시 채널</p>
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.totalMatches}</p>
+                        <p className="text-[9px] text-muted-foreground">매칭 영상</p>
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.matchedArtists}</p>
+                        <p className="text-[9px] text-muted-foreground">매칭 아티스트</p>
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.matchedChannels}</p>
+                        <p className="text-[9px] text-muted-foreground">활성 채널</p>
+                      </div>
+                    </div>
+                    {extVideoStats.lastScan && (
+                      <p className="text-[9px] text-muted-foreground text-center">
+                        최근 스캔: {formatDistanceToNow(new Date(extVideoStats.lastScan), { addSuffix: true })}
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
