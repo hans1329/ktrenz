@@ -120,7 +120,16 @@ Deno.serve(async (req) => {
       if (lower) nameLookup.set(lower, wikiEntryId);
       if (normalized) nameLookup.set(normalized, wikiEntryId);
     };
+    // spotify_artist_name이 설정된 경우 해당 이름을 최우선으로 사용
+    const spotifyNameMap = new Map<string, string>();
     for (const a of artists) {
+      if (a.spotify_artist_name) {
+        const lower = a.spotify_artist_name.toLowerCase().trim();
+        spotifyNameMap.set(lower, a.wiki_entry_id);
+        nameLookup.set(lower, a.wiki_entry_id);
+        const normalized = normalizeArtistName(a.spotify_artist_name);
+        if (normalized) nameLookup.set(normalized, a.wiki_entry_id);
+      }
       addLookup(a.display_name, a.wiki_entry_id);
       addLookup(a.name_ko, a.wiki_entry_id);
       if (a.aliases && Array.isArray(a.aliases)) {

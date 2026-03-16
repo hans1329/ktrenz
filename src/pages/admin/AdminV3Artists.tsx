@@ -25,6 +25,7 @@ interface V3Artist {
   youtube_topic_channel_id: string | null;
   lastfm_artist_name: string | null;
   deezer_artist_id: string | null;
+  spotify_artist_name: string | null;
   // from wiki_entries join
   wiki_title: string;
   wiki_image: string | null;
