@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
     const artistBestRank = new Map<string, { bestRank: number; source: string; melonRank: number | null; genieRank: number | null; songTitle: string }>();
 
     for (const entry of [...melonEntries, ...genieEntries]) {
-      const wikiId = matchArtist(entry.artist, nameLookup);
+      const wikiId = matchArtist(entry.artist, melonNameLookup, nameLookup);
       if (!wikiId) continue;
 
       const existing = artistBestRank.get(wikiId);
