@@ -6452,6 +6452,7 @@ export type Database = {
           name_ko: string | null
           promoted_at: string | null
           spotify_artist_id: string | null
+          spotify_artist_name: string | null
           tier: number
           tiktok_handle: string | null
           updated_at: string
@@ -6476,6 +6477,7 @@ export type Database = {
           name_ko?: string | null
           promoted_at?: string | null
           spotify_artist_id?: string | null
+          spotify_artist_name?: string | null
           tier?: number
           tiktok_handle?: string | null
           updated_at?: string
@@ -6500,6 +6502,7 @@ export type Database = {
           name_ko?: string | null
           promoted_at?: string | null
           spotify_artist_id?: string | null
+          spotify_artist_name?: string | null
           tier?: number
           tiktok_handle?: string | null
           updated_at?: string
