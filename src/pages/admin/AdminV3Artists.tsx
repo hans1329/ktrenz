@@ -47,6 +47,7 @@ const AdminV3Artists = () => {
   const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
   const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
   const [editYoutubeTopicChannelId, setEditYoutubeTopicChannelId] = useState('');
+  const [editAliases, setEditAliases] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
