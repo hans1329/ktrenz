@@ -6452,6 +6452,7 @@ export type Database = {
           melon_artist_name: string | null
           name_ko: string | null
           promoted_at: string | null
+          social_radar_name: string | null
           spotify_artist_id: string | null
           spotify_artist_name: string | null
           tier: number
@@ -6478,6 +6479,7 @@ export type Database = {
           melon_artist_name?: string | null
           name_ko?: string | null
           promoted_at?: string | null
+          social_radar_name?: string | null
           spotify_artist_id?: string | null
           spotify_artist_name?: string | null
           tier?: number
@@ -6504,6 +6506,7 @@ export type Database = {
           melon_artist_name?: string | null
           name_ko?: string | null
           promoted_at?: string | null
+          social_radar_name?: string | null
           spotify_artist_id?: string | null
           spotify_artist_name?: string | null
           tier?: number
