@@ -123,6 +123,11 @@ Deno.serve(async (req) => {
     for (const a of artists) {
       addLookup(a.display_name, a.wiki_entry_id);
       addLookup(a.name_ko, a.wiki_entry_id);
+      if (a.aliases && Array.isArray(a.aliases)) {
+        for (const alias of a.aliases) {
+          addLookup(alias, a.wiki_entry_id);
+        }
+      }
     }
     const wikiIds = [...new Set(artists.map(a => a.wiki_entry_id).filter(Boolean))];
     const { data: wikiEntries } = await sb.from("wiki_entries").select("id, title").in("id", wikiIds);
