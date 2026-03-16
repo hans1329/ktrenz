@@ -6,14 +6,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// 필수 플랫폼: 모든 Tier 1 아티스트에 반드시 있어야 하는 데이터
 const REQUIRED_PLATFORMS = [
   "youtube",
   "youtube_music",
   "buzz_multi",
-  "hanteo_daily",
   "lastfm",
   "deezer",
   "naver_news",
+] as const;
+
+// 선택 플랫폼: 데이터가 없어도 정상인 플랫폼 (차트 진입자만, 감성분석 대상만 등)
+const OPTIONAL_PLATFORMS = [
+  "hanteo_daily",
   "yt_sentiment",
 ] as const;
 
