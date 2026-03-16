@@ -12,6 +12,7 @@ const corsHeaders = {
 interface PlatformEntry { rank: number; artistName: string; growth: number; total: number; }
 interface SocialMetrics { instagram_followers: number | null; tiktok_followers: number | null; spotify_followers: number | null; twitter_followers: number | null; }
 interface GrowthMetrics { instagram_growth: number | null; tiktok_growth: number | null; spotify_growth: number | null; twitter_growth: number | null; }
+interface PrevGrowthMetrics { instagram_growth: number | null; tiktok_growth: number | null; spotify_growth: number | null; twitter_growth: number | null; }
 
 const SCRAPE_PLATFORMS = [
   { key: "instagram", url: "https://www.kpop-radar.com/instagram" },
