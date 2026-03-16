@@ -56,22 +56,20 @@ function parseKworbListeners(html: string): SpotifyListenerEntry[] {
 function normalizeArtistName(name: string): string {
   return name
     .replace(/\s*\([^)]*\)\s*/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]/g, "");
 }
 
 /** 아티스트 매칭 */
 function matchArtist(artistName: string, nameLookup: Map<string, string>): string | null {
   const lower = artistName.toLowerCase().trim();
   if (nameLookup.has(lower)) return nameLookup.get(lower)!;
-  
+
   const normalized = normalizeArtistName(artistName);
   if (nameLookup.has(normalized)) return nameLookup.get(normalized)!;
-  
-  // 부분 매칭
+
   for (const [key, id] of nameLookup) {
-    if (key.includes(normalized) || normalized.includes(key)) {
+    if (key.length >= 4 && normalized.length >= 4 && (key.includes(normalized) || normalized.includes(key))) {
       return id;
     }
   }
@@ -115,14 +113,21 @@ Deno.serve(async (req) => {
     }
 
     const nameLookup = new Map<string, string>();
+    const addLookup = (value: string | null | undefined, wikiEntryId: string) => {
+      if (!value) return;
+      const lower = value.toLowerCase().trim();
+      const normalized = normalizeArtistName(value);
+      if (lower) nameLookup.set(lower, wikiEntryId);
+      if (normalized) nameLookup.set(normalized, wikiEntryId);
+    };
     for (const a of artists) {
-      if (a.display_name) nameLookup.set(a.display_name.toLowerCase(), a.wiki_entry_id);
-      if (a.name_ko) nameLookup.set(a.name_ko.toLowerCase(), a.wiki_entry_id);
+      addLookup(a.display_name, a.wiki_entry_id);
+      addLookup(a.name_ko, a.wiki_entry_id);
     }
     const wikiIds = [...new Set(artists.map(a => a.wiki_entry_id).filter(Boolean))];
     const { data: wikiEntries } = await sb.from("wiki_entries").select("id, title").in("id", wikiIds);
     for (const w of (wikiEntries || [])) {
-      if (w.title) nameLookup.set(w.title.toLowerCase(), w.id);
+      addLookup(w.title, w.id);
     }
 
     console.log(`[SpotifyListeners] Loaded ${nameLookup.size} name lookups for ${artists.length} tier 1 artists`);
