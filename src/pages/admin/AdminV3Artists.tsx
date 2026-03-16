@@ -200,6 +200,7 @@ const AdminV3Artists = () => {
     setEditDisplayName(artist.display_name || artist.wiki_title || '');
     setEditNameKo(artist.name_ko || '');
     setEditImageUrl(artist.image_url || artist.wiki_image || '');
+    setEditAliases((artist.aliases || []).join(', '));
     setEditYoutubeChannelId(artist.youtube_channel_id || '');
     setEditYoutubeTopicChannelId(artist.youtube_topic_channel_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
