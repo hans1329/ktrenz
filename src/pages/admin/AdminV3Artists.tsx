@@ -115,7 +115,7 @@ const AdminV3Artists = () => {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
+    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; aliases: string[]; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
       let ytChannelId = payload.youtube_channel_id;
       if (ytChannelId && !ytChannelId.startsWith('UC')) {
         ytChannelId = await resolveYoutubeChannelId(ytChannelId);
