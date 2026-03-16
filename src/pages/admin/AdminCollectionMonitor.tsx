@@ -506,6 +506,35 @@ const AdminCollectionMonitor = () => {
                     </div>
                   </div>
                 )}
+                {/* External Videos scan detail */}
+                {source.id === 'external_videos' && extVideoStats && (
+                  <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+                    <p className="text-[10px] font-medium text-muted-foreground">스캔 현황:</p>
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.watchedChannels}</p>
+                        <p className="text-[9px] text-muted-foreground">감시 채널</p>
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.totalMatches}</p>
+                        <p className="text-[9px] text-muted-foreground">매칭 영상</p>
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.matchedArtists}</p>
+                        <p className="text-[9px] text-muted-foreground">매칭 아티스트</p>
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-foreground">{extVideoStats.matchedChannels}</p>
+                        <p className="text-[9px] text-muted-foreground">활성 채널</p>
+                      </div>
+                    </div>
+                    {extVideoStats.lastScan && (
+                      <p className="text-[9px] text-muted-foreground text-center">
+                        최근 스캔: {formatDistanceToNow(new Date(extVideoStats.lastScan), { addSuffix: true })}
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
