@@ -191,17 +191,24 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // name lookup 구축 (소문자)
+    // name lookup 구축: 원본 키 + 공백 제거 정규화 키를 모두 저장
     const nameLookup = new Map<string, string>();
+    const addLookup = (value: string | null | undefined, wikiEntryId: string) => {
+      if (!value) return;
+      const lower = value.toLowerCase().trim();
+      const normalized = normalizeArtistName(value);
+      if (lower) nameLookup.set(lower, wikiEntryId);
+      if (normalized) nameLookup.set(normalized, wikiEntryId);
+    };
     for (const a of artists) {
-      if (a.display_name) nameLookup.set(a.display_name.toLowerCase(), a.wiki_entry_id);
-      if (a.name_ko) nameLookup.set(a.name_ko.toLowerCase(), a.wiki_entry_id);
+      addLookup(a.display_name, a.wiki_entry_id);
+      addLookup(a.name_ko, a.wiki_entry_id);
     }
     // wiki_entries title도 추가
     const wikiIds = [...new Set(artists.map(a => a.wiki_entry_id).filter(Boolean))];
     const { data: wikiEntries } = await sb.from("wiki_entries").select("id, title").in("id", wikiIds);
     for (const w of (wikiEntries || [])) {
-      if (w.title) nameLookup.set(w.title.toLowerCase(), w.id);
+      addLookup(w.title, w.id);
     }
 
     console.log(`[KoreanCharts] Loaded ${nameLookup.size} name lookups for ${artists.length} tier 1 artists`);
