@@ -76,29 +76,36 @@ function normalizeName(name: string): string {
   return variants.join("|");
 }
 
-function calculateSocialScore(current: SocialMetrics, previous: SocialMetrics | null, weeklyGrowth: GrowthMetrics | null): number {
+function calculateSocialScore(current: SocialMetrics, weeklyGrowth: GrowthMetrics | null, prevGrowth: PrevGrowthMetrics | null): number {
   const platforms = [
-    { current: current.instagram_followers, prev: previous?.instagram_followers, growth: weeklyGrowth?.instagram_growth, weight: 1.2 },
-    { current: current.tiktok_followers, prev: previous?.tiktok_followers, growth: weeklyGrowth?.tiktok_growth, weight: 1.3 },
-    { current: current.spotify_followers, prev: previous?.spotify_followers, growth: weeklyGrowth?.spotify_growth, weight: 1.5 },
-    { current: current.twitter_followers, prev: previous?.twitter_followers, growth: weeklyGrowth?.twitter_growth, weight: 1.0 },
+    { current: current.instagram_followers, growth: weeklyGrowth?.instagram_growth, prevGrowth: prevGrowth?.instagram_growth, weight: 1.2 },
+    { current: current.tiktok_followers, growth: weeklyGrowth?.tiktok_growth, prevGrowth: prevGrowth?.tiktok_growth, weight: 1.3 },
+    { current: current.spotify_followers, growth: weeklyGrowth?.spotify_growth, prevGrowth: prevGrowth?.spotify_growth, weight: 1.5 },
+    { current: current.twitter_followers, growth: weeklyGrowth?.twitter_growth, prevGrowth: prevGrowth?.twitter_growth, weight: 1.0 },
   ];
   let totalScore = 0, activeCount = 0;
   for (const p of platforms) {
     if (p.current == null || p.current <= 0) continue;
     activeCount++;
     const baseScore = Math.log10(p.current) * 100;
-    let deltaScore = 0;
 
-    // Priority 1: Use kpop-radar weekly growth (more reliable than snapshot diff)
-    if (p.growth != null && p.growth > 0 && p.current > 0) {
-      deltaScore = Math.round((p.growth / p.current) * 1000);
+    let deltaScore = 0;
+    if (p.growth != null && p.growth > 0) {
+      // Acceleration: compare current growth to previous growth
+      // If prevGrowth exists, acceleration = currentGrowth / prevGrowth (clamped 0.3~5.0)
+      // If no prevGrowth, use growth directly as baseline
+      if (p.prevGrowth != null && p.prevGrowth > 0) {
+        const acceleration = Math.min(5.0, Math.max(0.3, p.growth / p.prevGrowth));
+        deltaScore = Math.round(p.growth * acceleration * 0.01);
+      } else {
+        // First cycle: use raw growth as delta
+        deltaScore = Math.round(p.growth * 0.01);
+      }
     }
-    // Priority 2: Fall back to snapshot-to-snapshot diff
-    else if (p.prev != null && p.prev > 0) {
-      const diff = p.current - p.prev;
-      if (diff > 0) deltaScore = Math.round((diff / p.prev) * 1000);
-    }
+
+    // Cap deltaScore at 5x baseScore or 500, whichever is larger
+    const deltaCap = Math.max(baseScore * 5, 500);
+    deltaScore = Math.min(deltaScore, deltaCap);
 
     totalScore += (baseScore * 0.3 + Math.max(deltaScore, baseScore * 0.1) * 0.7) * p.weight;
   }
