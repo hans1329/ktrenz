@@ -1,4 +1,5 @@
-// Fan Energy Score (FES) v6 — Velocity 주도 온도: 변동률이 크면 온도가 높다
+// Fan Energy Score (FES) v7 — Hybrid Model: Velocity 70% + Intensity 30%
+// 미수집 카테고리 자동 제외 + Album 활동 중만 반영
 // YouTube 37%, Buzz 23%, Music 18%, Album 14%, Social 5%, Fan 3%
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -8,8 +9,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const WEIGHTS = { youtube: 0.37, buzz: 0.23, music: 0.18, album: 0.14, social: 0.05, fan: 0.03 };
+// 기본 가중치 — 데이터 가용성에 따라 동적으로 재분배됨
+const BASE_WEIGHTS = { youtube: 0.37, buzz: 0.23, music: 0.18, album: 0.14, social: 0.05, fan: 0.03 };
 const MAX_SCORE = 250;
+
+// Hybrid ratio: Velocity vs Intensity
+const VELOCITY_RATIO = 0.7;
+const INTENSITY_RATIO = 0.3;
 
 function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
@@ -21,25 +27,19 @@ function pctChange(current: number, previous: number | null): number | null {
   if (previous == null) return null;
   if (previous <= 0) return current > 0 ? 100 : 0;
   const raw = ((current - previous) / previous) * 100;
-  // 기저값이 낮으면 변동률을 ±100%로 제한 (low-base effect 방지)
   if (previous < LOW_BASE_THRESHOLD) return Math.max(-100, Math.min(100, raw));
   return raw;
 }
 
-/** 
- * Velocity 스코어: 변화율을 0~MAX_SCORE 범위로 매핑
- * v5.5: 0% 변화 = 0점 (중립), 양수/음수 비대칭 스케일링
- * - 0% → 0, ±50% → ±125, ±100%+ → ±MAX_SCORE 근처
- */
+/** Velocity 스코어: 변화율을 0~MAX_SCORE 범위로 매핑 */
 function changeToScore(change: number): number {
   if (change === 0) return 0;
-  // 비선형 매핑: sign * MAX_SCORE * (1 - e^(-|change|/50))
   const absChange = Math.abs(change);
   const magnitude = MAX_SCORE * (1 - Math.exp(-absChange / 50));
   return Math.round(Math.sign(change) * magnitude);
 }
 
-/** 퍼센타일 함수: 정렬 후 각 값의 순위를 0~1로 변환 */
+/** 퍼센타일 함수 */
 function toPercentiles(values: number[]): number[] {
   const sorted = [...values].sort((a, b) => a - b);
   return values.map(v => {
@@ -49,12 +49,55 @@ function toPercentiles(values: number[]): number[] {
   });
 }
 
-/** 단일 아티스트의 Velocity/Intensity/Energy 계산 */
+/**
+ * 데이터 가용성 판단
+ * - "available": 실제 데이터가 수집됨 (점수 > 0 또는 수집은 성공했으나 실제 0)
+ * - "unavailable": 미수집 (채널 없음, API 실패 등)
+ */
+export interface DataAvailability {
+  youtube: boolean;
+  buzz: boolean;
+  music: boolean;
+  album: boolean;  // album_sales_score > 0이어야 "활동 중"
+  social: boolean;
+  fan: boolean;     // fan은 항상 available (유저 행동 기반)
+}
+
+/**
+ * 가용한 카테고리만의 가중치를 재분배
+ * 예: youtube 미수집 → youtube 37%를 나머지에 비례 분배
+ */
+function redistributeWeights(availability: DataAvailability): Record<string, number> {
+  const entries: [string, number][] = [];
+  if (availability.youtube) entries.push(["youtube", BASE_WEIGHTS.youtube]);
+  if (availability.buzz) entries.push(["buzz", BASE_WEIGHTS.buzz]);
+  if (availability.music) entries.push(["music", BASE_WEIGHTS.music]);
+  if (availability.album) entries.push(["album", BASE_WEIGHTS.album]);
+  if (availability.social) entries.push(["social", BASE_WEIGHTS.social]);
+  if (availability.fan) entries.push(["fan", BASE_WEIGHTS.fan]);
+
+  if (entries.length === 0) {
+    // 모든 카테고리 미수집 → 균등 분배 fallback
+    return { youtube: 1/6, buzz: 1/6, music: 1/6, album: 1/6, social: 1/6, fan: 1/6 };
+  }
+
+  const totalRaw = entries.reduce((s, [, w]) => s + w, 0);
+  const result: Record<string, number> = { youtube: 0, buzz: 0, music: 0, album: 0, social: 0, fan: 0 };
+  for (const [key, w] of entries) {
+    result[key] = w / totalRaw; // 비례 재분배하여 합계 = 1.0
+  }
+  return result;
+}
+
+/** 단일 아티스트의 Velocity/Intensity/Energy 계산 (v7 Hybrid) */
 export function calculateArtistEnergy(
   current: { yt: number; buzz: number; album: number; music: number; social: number; fan: number },
   prev24h: { youtube_score: number; buzz_score: number; album_score: number; music_score: number; social_score?: number; fan_score?: number } | null,
   percentiles: { yt: number; buzz: number; album: number; music: number; social: number; fan: number },
+  availability: DataAvailability,
 ) {
+  const weights = redistributeWeights(availability);
+
   const ytPrev = prev24h ? Number(prev24h.youtube_score) || 0 : null;
   const buzzPrev = prev24h ? Number(prev24h.buzz_score) || 0 : null;
   const albumPrev = prev24h ? Number(prev24h.album_score) || 0 : null;
@@ -62,30 +105,31 @@ export function calculateArtistEnergy(
   const socialPrev = prev24h ? Number(prev24h.social_score ?? 0) : null;
   const fanPrev = prev24h ? Number(prev24h.fan_score ?? 0) : null;
 
-  const ytChange = pctChange(current.yt, ytPrev);
-  const buzzChange = pctChange(current.buzz, buzzPrev);
-  const albumChange = pctChange(current.album, albumPrev);
-  const musicChange = pctChange(current.music, musicPrev);
-  const socialChange = pctChange(current.social, socialPrev);
-  const fanChange = pctChange(current.fan, fanPrev);
+  // 미수집 카테고리는 change를 null로 유지하여 변동률 계산에서 제외
+  const ytChange = availability.youtube ? pctChange(current.yt, ytPrev) : null;
+  const buzzChange = availability.buzz ? pctChange(current.buzz, buzzPrev) : null;
+  const albumChange = availability.album ? pctChange(current.album, albumPrev) : null;
+  const musicChange = availability.music ? pctChange(current.music, musicPrev) : null;
+  const socialChange = availability.social ? pctChange(current.social, socialPrev) : null;
+  const fanChange = pctChange(current.fan, fanPrev); // fan은 항상 계산
 
-  // 비교 가능한 항목만으로 가중 변동률 계산
+  // 가용 카테고리만으로 가중 변동률 계산
   let overallChange: number | null = null;
   if (prev24h) {
     const parts: { weight: number; change: number }[] = [];
-    if (ytChange != null) parts.push({ weight: WEIGHTS.youtube, change: ytChange });
-    if (buzzChange != null) parts.push({ weight: WEIGHTS.buzz, change: buzzChange });
-    if (musicChange != null) parts.push({ weight: WEIGHTS.music, change: musicChange });
-    if (albumChange != null) parts.push({ weight: WEIGHTS.album, change: albumChange });
-    if (socialChange != null) parts.push({ weight: WEIGHTS.social, change: socialChange });
-    if (fanChange != null) parts.push({ weight: WEIGHTS.fan, change: fanChange });
+    if (ytChange != null && availability.youtube) parts.push({ weight: weights.youtube, change: ytChange });
+    if (buzzChange != null && availability.buzz) parts.push({ weight: weights.buzz, change: buzzChange });
+    if (musicChange != null && availability.music) parts.push({ weight: weights.music, change: musicChange });
+    if (albumChange != null && availability.album) parts.push({ weight: weights.album, change: albumChange });
+    if (socialChange != null && availability.social) parts.push({ weight: weights.social, change: socialChange });
+    if (fanChange != null) parts.push({ weight: weights.fan, change: fanChange });
     if (parts.length > 0) {
       const totalWeight = parts.reduce((s, p) => s + p.weight, 0);
       overallChange = parts.reduce((s, p) => s + p.change * (p.weight / totalWeight), 0);
     }
   }
 
-  // ── Velocity (각 카테고리별) — v5.5: 0% = 0점 ──
+  // ── Velocity (각 카테고리별) ──
   const ytVelocity = ytChange != null ? changeToScore(ytChange) : null;
   const buzzVelocity = buzzChange != null ? changeToScore(buzzChange) : null;
   const albumVelocity = albumChange != null ? changeToScore(albumChange) : null;
@@ -93,53 +137,66 @@ export function calculateArtistEnergy(
   const socialVelocity = socialChange != null ? changeToScore(socialChange) : null;
   const fanVelocity = fanChange != null ? changeToScore(fanChange) : null;
 
-  // ── Intensity (각 카테고리별) ──
-  const ytIntensity = clamp(Math.round(percentiles.yt * MAX_SCORE), 0, MAX_SCORE);
-  const buzzIntensity = clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE);
-  const albumIntensity = clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE);
-  const musicIntensity = clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE);
-  const socialIntensity = clamp(Math.round(percentiles.social * MAX_SCORE), 0, MAX_SCORE);
+  // ── Intensity (각 카테고리별) — 미수집은 0으로 처리 ──
+  const ytIntensity = availability.youtube ? clamp(Math.round(percentiles.yt * MAX_SCORE), 0, MAX_SCORE) : 0;
+  const buzzIntensity = availability.buzz ? clamp(Math.round(percentiles.buzz * MAX_SCORE), 0, MAX_SCORE) : 0;
+  const albumIntensity = availability.album ? clamp(Math.round(percentiles.album * MAX_SCORE), 0, MAX_SCORE) : 0;
+  const musicIntensity = availability.music ? clamp(Math.round(percentiles.music * MAX_SCORE), 0, MAX_SCORE) : 0;
+  const socialIntensity = availability.social ? clamp(Math.round(percentiles.social * MAX_SCORE), 0, MAX_SCORE) : 0;
   const fanIntensity = clamp(Math.round(percentiles.fan * MAX_SCORE), 0, MAX_SCORE);
 
-  // ── Energy Score v6.1: overallChange → 온도 직접 매핑 ──
-  // "온도가 높다 = 지금 가중 변동률이 크다" — 가장 직관적인 매핑
-  // overallChange(%)를 지수 감쇄로 10~250° 스케일에 매핑
-  // Intensity는 이전 데이터 없을 때만 fallback으로 사용
+  // ── Energy Score v7: Hybrid (Velocity 70% + Intensity 30%) ──
+  let velocityScore: number;
+  let intensityScore: number;
   let energyScore: number;
 
+  // Velocity component
   if (overallChange != null) {
-    // 가중 변동률을 온도에 직접 매핑 (decay constant = 100으로 넓은 스프레드)
-    // 0% → 10°, ~50% → ~88°, ~100% → ~150°, ~200% → ~215°, ~500%+ → ~250°
     const absChange = Math.abs(overallChange);
     const mapped = MAX_SCORE * (1 - Math.exp(-absChange / 100));
-    // 하락(음수 변동)은 온도를 낮추되 급냉 방지 (30% 감쇄)
     if (overallChange >= 0) {
-      energyScore = clamp(Math.round(mapped), 10, MAX_SCORE);
+      velocityScore = clamp(Math.round(mapped), 10, MAX_SCORE);
     } else {
-      energyScore = clamp(Math.round(mapped * 0.3), 10, MAX_SCORE);
+      velocityScore = clamp(Math.round(mapped * 0.3), 10, MAX_SCORE);
     }
   } else {
-    // 이전 데이터 없음 → Intensity 기반 fallback (신규 아티스트)
-    const categories = [
-      { w: WEIGHTS.youtube, int: ytIntensity, raw: current.yt },
-      { w: WEIGHTS.buzz, int: buzzIntensity, raw: current.buzz },
-      { w: WEIGHTS.music, int: musicIntensity, raw: current.music },
-      { w: WEIGHTS.album, int: albumIntensity, raw: current.album },
-      { w: WEIGHTS.social, int: socialIntensity, raw: current.social },
-      { w: WEIGHTS.fan, int: fanIntensity, raw: current.fan },
-    ];
-    const active = categories.filter(c => c.raw > 0);
+    velocityScore = 10; // 이전 데이터 없음
+  }
+
+  // Intensity component: 가용 카테고리의 가중 평균 퍼센타일
+  {
+    const cats: { w: number; int: number; raw: number }[] = [];
+    if (availability.youtube) cats.push({ w: weights.youtube, int: ytIntensity, raw: current.yt });
+    if (availability.buzz) cats.push({ w: weights.buzz, int: buzzIntensity, raw: current.buzz });
+    if (availability.music) cats.push({ w: weights.music, int: musicIntensity, raw: current.music });
+    if (availability.album) cats.push({ w: weights.album, int: albumIntensity, raw: current.album });
+    if (availability.social) cats.push({ w: weights.social, int: socialIntensity, raw: current.social });
+    cats.push({ w: weights.fan, int: fanIntensity, raw: current.fan });
+
+    const active = cats.filter(c => c.raw > 0);
     if (active.length > 0) {
       const totalW = active.reduce((s, c) => s + c.w, 0);
-      const avg = active.reduce((s, c) => s + c.int * (c.w / totalW), 0);
-      energyScore = clamp(Math.round(avg), 10, MAX_SCORE);
+      intensityScore = clamp(Math.round(active.reduce((s, c) => s + c.int * (c.w / totalW), 0)), 10, MAX_SCORE);
     } else {
-      energyScore = 10;
+      intensityScore = 10;
     }
+  }
+
+  // Hybrid: 70% Velocity + 30% Intensity
+  if (overallChange != null) {
+    energyScore = clamp(
+      Math.round(velocityScore * VELOCITY_RATIO + intensityScore * INTENSITY_RATIO),
+      10, MAX_SCORE
+    );
+  } else {
+    // 이전 데이터 없으면 Intensity 100% (신규 아티스트)
+    energyScore = intensityScore;
   }
 
   return {
     energyScore,
+    velocityScore,
+    intensityScore,
     ytVelocity, ytIntensity,
     buzzVelocity, buzzIntensity,
     albumVelocity, albumIntensity,
@@ -153,6 +210,7 @@ export function calculateArtistEnergy(
     musicChange: musicChange != null ? Math.round(musicChange * 10) / 10 : null,
     socialChange: socialChange != null ? Math.round(socialChange * 10) / 10 : null,
     fanChange: fanChange != null ? Math.round(fanChange * 10) / 10 : null,
+    weights, // 디버깅용: 실제 적용된 가중치
   };
 }
 
@@ -167,12 +225,22 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const isBaseline: boolean = body.isBaseline === true;
 
-    // ── 1) 1군(tier=1) 아티스트 목록 ──
+    // ── 1) Tier 1 아티스트 목록 + 채널 정보 ──
     const { data: tier1Entries } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id")
+      .select("wiki_entry_id, youtube_channel_id, youtube_topic_channel_id")
       .eq("tier", 1);
-    const tier1Ids = new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean));
+
+    const tier1Map = new Map<string, { hasYtChannel: boolean; hasYtTopic: boolean }>();
+    for (const t of (tier1Entries || [])) {
+      if (t.wiki_entry_id) {
+        tier1Map.set(t.wiki_entry_id, {
+          hasYtChannel: !!t.youtube_channel_id,
+          hasYtTopic: !!t.youtube_topic_channel_id,
+        });
+      }
+    }
+    const tier1Ids = new Set(tier1Map.keys());
 
     const { data: v2Scores } = await sb
       .from("v3_scores_v2")
@@ -194,9 +262,32 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    console.log(`[FES-v5.5] Processing ${entryIds.length} artists... (isBaseline=${isBaseline})`);
+    console.log(`[FES-v7] Processing ${entryIds.length} artists... (isBaseline=${isBaseline})`);
 
-    // ── 2) 롤링 24h 윈도우: ~24시간 전 스냅샷과 비교 (일괄 조회) ──
+    // ── 2) 최근 YouTube 스냅샷으로 수집 성공 여부 판단 ──
+    const ytSnapshotCutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const { data: recentYtSnaps } = await sb
+      .from("ktrenz_data_snapshots")
+      .select("wiki_entry_id, metrics")
+      .eq("platform", "youtube")
+      .in("wiki_entry_id", entryIds)
+      .gte("collected_at", ytSnapshotCutoff)
+      .order("collected_at", { ascending: false })
+      .limit(entryIds.length * 2);
+
+    // 각 아티스트의 최신 youtube 스냅샷에서 subscriberCount > 0이면 수집 성공
+    const ytCollectedOk = new Set<string>();
+    const seenYt = new Set<string>();
+    for (const snap of (recentYtSnaps || [])) {
+      if (seenYt.has(snap.wiki_entry_id)) continue;
+      seenYt.add(snap.wiki_entry_id);
+      const metrics = snap.metrics as any;
+      if (metrics && (Number(metrics.subscriberCount) > 0 || Number(metrics.totalViewCount) > 0)) {
+        ytCollectedOk.add(snap.wiki_entry_id);
+      }
+    }
+
+    // ── 3) 롤링 24h 윈도우 ──
     const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: allPrevSnaps } = await sb
       .from("v3_energy_snapshots_v2")
@@ -218,7 +309,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 3) 베이스라인 일괄 조회 ──
+    // ── 4) 베이스라인 일괄 조회 ──
     const { data: allBaselines } = await sb
       .from("v3_energy_baselines_v2")
       .select("*")
@@ -226,7 +317,7 @@ Deno.serve(async (req) => {
     const baselineMap = new Map<string, any>();
     for (const b of (allBaselines || [])) baselineMap.set(b.wiki_entry_id, b);
 
-    // ── 4) Fan Activity 집계 (24시간 이내 유저 활동) ──
+    // ── 5) Fan Activity 집계 ──
     const fanCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: wikiEntries } = await sb
       .from("wiki_entries")
@@ -261,29 +352,65 @@ Deno.serve(async (req) => {
       fanScoreMap.set(eid, (fanScoreMap.get(eid) || 0) + weight);
     }
 
-    // ── 5) 퍼센타일 기반 에너지 스코어 계산 ──
-    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; social: number; fan: number; prev: any; current: any }[] = [];
+    // ── 6) 데이터 가용성 결정 + 퍼센타일 ──
+    const rawData: { eid: string; yt: number; buzz: number; album: number; music: number; social: number; fan: number; prev: any; current: any; availability: DataAvailability }[] = [];
+
     for (const eid of entryIds) {
       const current = scoreMap.get(eid)!;
+      const tierInfo = tier1Map.get(eid);
+      const ytScore = Number(current.youtube_score) || 0;
+      const buzzScore = Number(current.buzz_score) || 0;
+      const musicScore = Number(current.music_score) || 0;
+      const albumScore = Number(current.album_sales_score) || 0;
+      const socialScore = Number(current.social_score) || 0;
+
+      // YouTube 가용성: 채널이 있고 최근 수집이 성공적이거나, 실제 점수가 있는 경우
+      const ytAvailable = ytScore > 0 || ytCollectedOk.has(eid);
+      
+      // Album 가용성: 점수가 > 0인 경우만 (활동 중인 아티스트만)
+      const albumAvailable = albumScore > 0;
+      
+      // Social 가용성: 점수가 > 0인 경우 (팔로워 데이터가 있는 아티스트)
+      const socialAvailable = socialScore > 0;
+
+      const availability: DataAvailability = {
+        youtube: ytAvailable,
+        buzz: buzzScore > 0 || true, // buzz는 항상 수집 시도됨 (0이어도 valid)
+        music: musicScore > 0 || true, // music도 항상 수집됨
+        album: albumAvailable,
+        social: socialAvailable,
+        fan: true, // fan은 항상 available
+      };
+
       rawData.push({
         eid,
-        yt: Number(current.youtube_score) || 0,
-        buzz: Number(current.buzz_score) || 0,
-        album: Number(current.album_sales_score) || 0,
-        music: Number(current.music_score) || 0,
-        social: Number(current.social_score) || 0,
+        yt: ytScore,
+        buzz: buzzScore,
+        album: albumScore,
+        music: musicScore,
+        social: socialScore,
         fan: fanScoreMap.get(eid) || 0,
         prev: prevMap.get(eid) || null,
         current,
+        availability,
       });
     }
 
+    // 퍼센타일은 가용한 데이터끼리만 비교 (0값은 0 퍼센타일로 자연 처리)
     const ytPcts = toPercentiles(rawData.map(d => d.yt));
     const buzzPcts = toPercentiles(rawData.map(d => d.buzz));
     const albumPcts = toPercentiles(rawData.map(d => d.album));
     const musicPcts = toPercentiles(rawData.map(d => d.music));
     const socialPcts = toPercentiles(rawData.map(d => d.social));
     const fanPcts = toPercentiles(rawData.map(d => d.fan));
+
+    // 가용성별 아티스트 수 로깅
+    const availStats = {
+      noYt: rawData.filter(d => !d.availability.youtube).length,
+      noAlbum: rawData.filter(d => !d.availability.album).length,
+      noSocial: rawData.filter(d => !d.availability.social).length,
+    };
+    console.log(`[FES-v7] Data availability: noYT=${availStats.noYt}, noAlbum=${availStats.noAlbum}, noSocial=${availStats.noSocial}`);
 
     const results: any[] = [];
     for (let i = 0; i < rawData.length; i++) {
@@ -293,6 +420,7 @@ Deno.serve(async (req) => {
           { yt: r.yt, buzz: r.buzz, album: r.album, music: r.music, social: r.social, fan: r.fan },
           r.prev,
           { yt: ytPcts[i], buzz: buzzPcts[i], album: albumPcts[i], music: musicPcts[i], social: socialPcts[i], fan: fanPcts[i] },
+          r.availability,
         );
 
         results.push({
@@ -303,17 +431,17 @@ Deno.serve(async (req) => {
           scoreId: r.current.id,
           baseline: baselineMap.get(r.eid),
           prevSnapshotAt: r.prev?.snapshot_at || null,
+          availability: r.availability,
         });
       } catch (e) {
-        console.error(`[FES-v5.5] Error for ${rawData[i].eid}:`, e);
+        console.error(`[FES-v7] Error for ${rawData[i].eid}:`, e);
       }
     }
 
-    // ── 6) DB writes — 스냅샷 중복 방지 (1시간 이내 스냅샷 존재시 스킵) ──
-    console.log(`[FES-v5.5] Writing ${results.length} results... (isBaseline=${isBaseline})`);
+    // ── 7) DB writes — 스냅샷 중복 방지 ──
+    console.log(`[FES-v7] Writing ${results.length} results... (isBaseline=${isBaseline})`);
 
-    // 최근 스냅샷 시간 확인 (중복 방지)
-    const recentCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1시간 전
+    const recentCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { data: recentSnaps } = await sb
       .from("v3_energy_snapshots_v2")
       .select("wiki_entry_id")
@@ -323,7 +451,6 @@ Deno.serve(async (req) => {
 
     const recentSnapSet = new Set((recentSnaps || []).map((s: any) => s.wiki_entry_id));
 
-    // 중복되지 않는 아티스트만 스냅샷 insert
     const snapshotRows = results
       .filter(r => !recentSnapSet.has(r.eid))
       .map(r => ({
@@ -352,10 +479,10 @@ Deno.serve(async (req) => {
 
     if (snapshotRows.length > 0) {
       const { error: snapErr } = await sb.from("v3_energy_snapshots_v2").insert(snapshotRows);
-      if (snapErr) console.error("[FES-v5.5] Snapshot insert error:", snapErr.message);
-      console.log(`[FES-v5.5] Snapshots: ${snapshotRows.length} inserted, ${recentSnapSet.size} skipped (recent)`);
+      if (snapErr) console.error("[FES-v7] Snapshot insert error:", snapErr.message);
+      console.log(`[FES-v7] Snapshots: ${snapshotRows.length} inserted, ${recentSnapSet.size} skipped (recent)`);
     } else {
-      console.log(`[FES-v5.5] All ${results.length} snapshots skipped (recent duplicates)`);
+      console.log(`[FES-v7] All ${results.length} snapshots skipped (recent duplicates)`);
     }
 
     // scores 업데이트 (10개씩 배치)
@@ -379,7 +506,7 @@ Deno.serve(async (req) => {
       ));
     }
 
-    // baseline 업데이트 (배치)
+    // baseline 업데이트
     const baselineUpdates = results.filter(r => r.baseline);
     if (baselineUpdates.length > 0) {
       await Promise.all(baselineUpdates.map(r => {
@@ -392,9 +519,9 @@ Deno.serve(async (req) => {
       }));
     }
 
-    console.log(`[FES-v5.5] All writes completed`);
+    console.log(`[FES-v7] All writes completed`);
 
-    // ── 7) energy_rank 업데이트 + 미처리 아티스트 초기화 ──
+    // ── 8) energy_rank 업데이트 ──
     const { data: allV2Scores } = await sb
       .from("v3_scores_v2")
       .select("id, wiki_entry_id, energy_score")
@@ -434,10 +561,10 @@ Deno.serve(async (req) => {
       }
 
       await Promise.all(rankOps);
-      console.log(`[FES-v5.5] Ranks updated: ${scoredEntries.length} total, ${processedEids.size} processed`);
+      console.log(`[FES-v7] Ranks updated: ${scoredEntries.length} total, ${processedEids.size} processed`);
     }
 
-    // ── 8) 마일스톤 감지 ──
+    // ── 9) 마일스톤 감지 ──
     try {
       const today = new Date().toISOString().slice(0, 10);
       const totalScoreRanked = [...(allV2Scores || [])]
@@ -471,25 +598,30 @@ Deno.serve(async (req) => {
         });
       }
     } catch (e) {
-      console.error("[FES-v5.5] Milestone error:", e);
+      console.error("[FES-v7] Milestone error:", e);
     }
 
     return new Response(JSON.stringify({
       success: true,
+      version: "v7-hybrid",
       processed: results.length,
       snapshotsInserted: snapshotRows.length,
       snapshotsSkipped: recentSnapSet.size,
       isBaseline,
-      sample: results.slice(0, 3).map(r => ({
-        eid: r.eid, energy: r.energyScore, change: r.change24h,
+      availability: availStats,
+      sample: results.slice(0, 5).map(r => ({
+        eid: r.eid, energy: r.energyScore, velocity: r.velocityScore, intensity: r.intensityScore,
+        change: r.change24h,
         yt: r.ytChange, buzz: r.buzzChange, album: r.albumChange, music: r.musicChange,
         social: r.socialChange, fan: r.fanChange, fanScore: r.fanCurrent,
         prevSnapshotAt: r.prevSnapshotAt,
+        weights: r.weights,
+        available: r.availability,
       })),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
-    console.error("[FES-v5.5] Fatal:", err);
+    console.error("[FES-v7] Fatal:", err);
     return new Response(JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
