@@ -429,6 +429,7 @@ const translations: Record<string, Record<Language, string>> = {
   "alert.dismiss": { en: "Got it", ko: "확인", ja: "了解", zh: "知道了" },
   "alert.viewInChat": { en: "View in Chat", ko: "채팅에서 보기", ja: "チャットで見る", zh: "在聊天中查看" },
   "alert.liveAlert": { en: "Live Alert", ko: "실시간 알림", ja: "リアルタイム通知", zh: "实时提醒" },
+  "alert.digestHeader": { en: "Here's important news about {artist}!", ko: "{artist}의 중요 소식을 전합니다!", ja: "{artist}の重要なお知らせです！", zh: "为您带来{artist}的重要消息！" },
 
   // ── Correlation Panel ──
   "correlation.title": { en: "FES vs Outcome", ko: "FES vs 성과 상관관계", ja: "FES vs 成果", zh: "FES vs 成果" },

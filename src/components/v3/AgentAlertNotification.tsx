@@ -75,8 +75,9 @@ export default function AgentAlertNotification({
     // Artist name as header, then each alert's title + body lines
     const lines: { text: string; isTitle: boolean; alertIndex: number }[] = [];
 
-    // Overall artist header
-    lines.push({ text: `📢 ${group.artistName}`, isTitle: true, alertIndex: -1 });
+    // Overall artist header with digest message
+    const digestMsg = t("alert.digestHeader").replace("{artist}", group.artistName);
+    lines.push({ text: `📢 ${digestMsg}`, isTitle: true, alertIndex: -1 });
 
     for (let i = 0; i < group.alerts.length; i++) {
       const alert = group.alerts[i];
