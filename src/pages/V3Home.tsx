@@ -15,7 +15,7 @@ const V3Home = () => {
   const [activeTab, setActiveTab] = useState<V3Tab>("rankings");
   const isMobile = useIsMobile();
   const isSubPage = activeTab === "agent";
-  const { pendingAlert, dismissAlert } = useAgentAlerts();
+  const { pendingGroup, dismissAlert } = useAgentAlerts();
 
 
 
