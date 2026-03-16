@@ -74,7 +74,7 @@ const V3Home = () => {
           </div>
         </main>
       </div>
-      <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
+      <AgentAlertNotification group={pendingGroup} onDismiss={dismissAlert} />
     </>
   );
 };
