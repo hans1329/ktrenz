@@ -304,6 +304,33 @@ const AdminCollectionMonitor = () => {
     staleTime: 30_000,
   });
 
+  // ── External video scan stats ──
+  const { data: extVideoStats } = useQuery({
+    queryKey: ['collection-monitor-ext-videos'],
+    queryFn: async () => {
+      const [{ count: watchedChannels }, { data: matchData, count: totalMatches }] = await Promise.all([
+        supabase.from('ktrenz_watched_channels' as any).select('*', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('ktrenz_external_video_matches' as any).select('wiki_entry_id, channel_id, collected_at', { count: 'exact' }).order('collected_at', { ascending: false }).limit(500),
+      ]);
+      const uniqueArtists = new Set<string>();
+      const uniqueChannels = new Set<string>();
+      let lastScan: string | null = null;
+      (matchData ?? []).forEach((r: any) => {
+        uniqueArtists.add(r.wiki_entry_id);
+        uniqueChannels.add(r.channel_id);
+        if (!lastScan) lastScan = r.collected_at;
+      });
+      return {
+        watchedChannels: watchedChannels ?? 0,
+        totalMatches: totalMatches ?? 0,
+        matchedArtists: uniqueArtists.size,
+        matchedChannels: uniqueChannels.size,
+        lastScan,
+      };
+    },
+    staleTime: 60_000,
+  });
+
   // ── Schedule entries count ──
   const { data: scheduleCount } = useQuery({
     queryKey: ['collection-monitor-schedules'],
