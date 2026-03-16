@@ -208,6 +208,7 @@ const AdminV3Artists = () => {
     setEditYoutubeTopicChannelId(artist.youtube_topic_channel_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
     setEditDeezerArtistId(artist.deezer_artist_id || '');
+    setEditSpotifyArtistName(artist.spotify_artist_name || '');
   };
 
   const filtered = search
