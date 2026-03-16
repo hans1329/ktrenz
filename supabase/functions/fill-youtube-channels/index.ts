@@ -224,39 +224,131 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    // ── 핸들 검증 모드 ──
+    if (body.verifyHandles) {
+      const tierFilter = body.tier ?? 1;
+      const { data: artists, error: fetchErr } = await sb
+        .from("v3_artist_tiers")
+        .select("id, display_name, youtube_channel_id")
+        .eq("tier", tierFilter)
+        .not("youtube_channel_id", "is", null)
+        .order("display_name");
+      if (fetchErr) throw fetchErr;
+
+      const results: Array<{
+        id: string;
+        display_name: string;
+        stored_value: string;
+        type: "handle" | "channel_id";
+        resolved_channel_id: string | null;
+        channel_title: string | null;
+        subscriber_count: number;
+        status: "valid" | "not_found" | "mismatch" | "skipped";
+      }> = [];
+
+      for (const artist of (artists || []) as any[]) {
+        const stored = artist.youtube_channel_id as string;
+        const isHandle = stored.startsWith("@");
+
+        if (isHandle) {
+          // 핸들 → forHandle API로 검증
+          const handle = stored.slice(1);
+          const url = `https://www.googleapis.com/youtube/v3/channels?forHandle=${encodeURIComponent(handle)}&part=id,snippet,statistics&key=${ytApiKey}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            results.push({ id: artist.id, display_name: artist.display_name, stored_value: stored, type: "handle", resolved_channel_id: null, channel_title: null, subscriber_count: 0, status: "not_found" });
+            await new Promise(r => setTimeout(r, 200));
+            continue;
+          }
+          const data = await res.json();
+          const item = data.items?.[0];
+          if (!item) {
+            results.push({ id: artist.id, display_name: artist.display_name, stored_value: stored, type: "handle", resolved_channel_id: null, channel_title: null, subscriber_count: 0, status: "not_found" });
+          } else {
+            results.push({
+              id: artist.id,
+              display_name: artist.display_name,
+              stored_value: stored,
+              type: "handle",
+              resolved_channel_id: item.id,
+              channel_title: item.snippet?.title || "",
+              subscriber_count: parseInt(item.statistics?.subscriberCount || "0", 10),
+              status: "valid",
+            });
+          }
+        } else {
+          // UC... 채널 ID → channels API로 검증
+          const url = `https://www.googleapis.com/youtube/v3/channels?id=${encodeURIComponent(stored)}&part=snippet,statistics&key=${ytApiKey}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            results.push({ id: artist.id, display_name: artist.display_name, stored_value: stored, type: "channel_id", resolved_channel_id: null, channel_title: null, subscriber_count: 0, status: "not_found" });
+            await new Promise(r => setTimeout(r, 200));
+            continue;
+          }
+          const data = await res.json();
+          const item = data.items?.[0];
+          if (!item) {
+            results.push({ id: artist.id, display_name: artist.display_name, stored_value: stored, type: "channel_id", resolved_channel_id: null, channel_title: null, subscriber_count: 0, status: "not_found" });
+          } else {
+            const customUrl = item.snippet?.customUrl || "";
+            results.push({
+              id: artist.id,
+              display_name: artist.display_name,
+              stored_value: stored,
+              type: "channel_id",
+              resolved_channel_id: stored,
+              channel_title: item.snippet?.title || "",
+              subscriber_count: parseInt(item.statistics?.subscriberCount || "0", 10),
+              status: "valid",
+              ...(customUrl ? { custom_url: customUrl } : {}),
+            } as any);
+          }
+        }
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      const valid = results.filter(r => r.status === "valid").length;
+      const notFound = results.filter(r => r.status === "not_found").length;
+
+      return new Response(
+        JSON.stringify({ mode: "verifyHandles", tier: tierFilter, total: results.length, valid, notFound, results }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ── Aliases 일괄 업데이트 모드 ──
     if (body.updateAliases) {
       const ALIAS_MAP: Record<string, string[]> = {
-        "166ca010-2e10-4be4-a282-c2f47839d10b": ["Jung Kook", "Jungkook", "전정국"],           // BTS Jungkook
-        "531cfadc-415c-4c64-a82f-01fc9dc43da8": ["V", "Kim Taehyung", "김태형"],               // BTS V
-        "94ce1b6c-30a6-43a3-b3aa-0a035ac2cbe9": ["G-Dragon", "G Dragon", "KWON JI YONG", "권지용"], // GD
-        "af1ae758-8778-42c3-9ea4-08775a04c410": ["Hwasa", "HWASA"],                            // Hwa Sa
-        "7118c729-984b-4da2-b8c2-17a25f9ca688": ["Girls' Generation", "SNSD", "소녀시대"],      // Girls Generation
-        "27e7ea7c-2d84-4e5a-8035-ddf985fc527e": ["GIDLE", "G I-DLE", "여자아이들"],             // (G)I-DLE
-        "088db5d0-57a8-4637-8e54-8649bf9b8d06": ["LISA", "LALISA", "라리사"],                   // Lisa
-        "db088ca0-6cc7-4161-9492-b80c542f3547": ["NCT DREAM"],                                 // NCT Dream
-        "4dcc86a7-f6c5-4d07-b0b0-86ed2cf2864a": ["TOMORROW X TOGETHER", "투모로우바이투게더"],   // TXT
-        "cfbe972f-b1c9-408b-962a-d71b936d1cc2": ["ZEROBASEONE", "ZB1", "제로베이스원"],         // Zero Base One
-        "d57eaee5-96a4-4f16-86de-956bf68c9957": ["BABYMONSTER"],                               // Babymonster
-        "4de189b9-ec1c-486e-8ef4-8d3dd9056156": ["NAYEON"],                                    // Nayeon
-        "b489a0c4-ff13-43bd-bd8a-455bfe4fa234": ["BOY NEXT DOOR"],                             // BOYNEXTDOOR
-        "7ea48f0f-c3a8-43f0-97ae-9a0b7884c2b6": ["TVXQ!", "Tohoshinki"],                       // TVXQ
-        "525add07-eb76-44ee-8bc0-b04d09959cf8": ["MONSTA X", "MONSTAX"],                       // Monsta X
-        "23e48ef5-6e48-4503-a228-3acecd281ab3": ["HOT", "에이치오티"],                          // H.O.T
-        "5e830b2a-8043-4fe3-bce9-5d305db10dba": ["IVE"],                                       // Ive
-        "5a8a1fa4-32d1-421a-9a3e-f1c4a7165be8": ["SKZ"],                                       // Stray Kids
-        "0a9efea6-6fdf-4ac7-bcc3-b098658f1d37": ["SVT"],                                       // SEVENTEEN
-        "8d75ec24-3277-4665-8f3f-1a5cb5d5aca3": ["ALLDAY PROJECT", "올데이 프로젝트", "ALLDAY"], // All Day Project
-        "482194d3-a350-45af-a725-311cc74b797c": ["아이유", "Lee Ji-eun"],                       // IU
-        "2d9176a8-93d9-4ce8-8c5f-82d9340c8dad": ["KEP1ER"],                                    // Kep1er
-        "f7eff844-2a2d-49d2-9d7d-bd2b9828d98c": ["KIOF"],                                      // KISS OF LIFE
-        "24b4238e-cbbc-4b08-bf5d-5ab77290b8d5": ["NJZ"],                                       // NewJeans
-        "97a3bcfe-0607-4e4a-807b-52f1148620d8": ["DPR Live"],                                   // DPR LIVE
-        "d132b43e-dffd-408c-ae8d-3c6b01c336bd": ["威神V"],                                      // WayV
-        "4bc64831-2ac0-4e11-9c0f-cb8b10ed10bd": ["방탄소년단", "Bangtan"],                       // BTS
-        "c825661c-d18d-40fb-a879-5bd787f1b72d": ["엑스지"],                                     // XG
-        "e5083a0b-1bf2-4ab6-8b32-49a965ef53ae": ["ONEUS"],                                     // ONEUS
-        "6071e57a-4f0e-4d8d-bfb8-7e0c71a2b7ee": ["온앤오프"],                                   // ONF
+        "166ca010-2e10-4be4-a282-c2f47839d10b": ["Jung Kook", "Jungkook", "전정국"],
+        "531cfadc-415c-4c64-a82f-01fc9dc43da8": ["V", "Kim Taehyung", "김태형"],
+        "94ce1b6c-30a6-43a3-b3aa-0a035ac2cbe9": ["G-Dragon", "G Dragon", "KWON JI YONG", "권지용"],
+        "af1ae758-8778-42c3-9ea4-08775a04c410": ["Hwasa", "HWASA"],
+        "7118c729-984b-4da2-b8c2-17a25f9ca688": ["Girls' Generation", "SNSD", "소녀시대"],
+        "27e7ea7c-2d84-4e5a-8035-ddf985fc527e": ["GIDLE", "G I-DLE", "여자아이들"],
+        "088db5d0-57a8-4637-8e54-8649bf9b8d06": ["LISA", "LALISA", "라리사"],
+        "db088ca0-6cc7-4161-9492-b80c542f3547": ["NCT DREAM"],
+        "4dcc86a7-f6c5-4d07-b0b0-86ed2cf2864a": ["TOMORROW X TOGETHER", "투모로우바이투게더"],
+        "cfbe972f-b1c9-408b-962a-d71b936d1cc2": ["ZEROBASEONE", "ZB1", "제로베이스원"],
+        "d57eaee5-96a4-4f16-86de-956bf68c9957": ["BABYMONSTER"],
+        "4de189b9-ec1c-486e-8ef4-8d3dd9056156": ["NAYEON"],
+        "b489a0c4-ff13-43bd-bd8a-455bfe4fa234": ["BOY NEXT DOOR"],
+        "7ea48f0f-c3a8-43f0-97ae-9a0b7884c2b6": ["TVXQ!", "Tohoshinki"],
+        "525add07-eb76-44ee-8bc0-b04d09959cf8": ["MONSTA X", "MONSTAX"],
+        "23e48ef5-6e48-4503-a228-3acecd281ab3": ["HOT", "에이치오티"],
+        "5e830b2a-8043-4fe3-bce9-5d305db10dba": ["IVE"],
+        "5a8a1fa4-32d1-421a-9a3e-f1c4a7165be8": ["SKZ"],
+        "0a9efea6-6fdf-4ac7-bcc3-b098658f1d37": ["SVT"],
+        "8d75ec24-3277-4665-8f3f-1a5cb5d5aca3": ["ALLDAY PROJECT", "올데이 프로젝트", "ALLDAY"],
+        "482194d3-a350-45af-a725-311cc74b797c": ["아이유", "Lee Ji-eun"],
+        "2d9176a8-93d9-4ce8-8c5f-82d9340c8dad": ["KEP1ER"],
+        "f7eff844-2a2d-49d2-9d7d-bd2b9828d98c": ["KIOF"],
+        "24b4238e-cbbc-4b08-bf5d-5ab77290b8d5": ["NJZ"],
+        "97a3bcfe-0607-4e4a-807b-52f1148620d8": ["DPR Live"],
+        "d132b43e-dffd-408c-ae8d-3c6b01c336bd": ["威神V"],
+        "4bc64831-2ac0-4e11-9c0f-cb8b10ed10bd": ["방탄소년단", "Bangtan"],
+        "c825661c-d18d-40fb-a879-5bd787f1b72d": ["엑스지"],
+        "e5083a0b-1bf2-4ab6-8b32-49a965ef53ae": ["ONEUS"],
+        "6071e57a-4f0e-4d8d-bfb8-7e0c71a2b7ee": ["온앤오프"],
       };
 
       const dryRun = body.dryRun ?? false;
