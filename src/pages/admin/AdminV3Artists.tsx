@@ -484,6 +484,7 @@ const AdminV3Artists = () => {
                     youtube_topic_channel_id: editYoutubeTopicChannelId,
                     lastfm_artist_name: editLastfmArtistName,
                     deezer_artist_id: editDeezerArtistId,
+                    spotify_artist_name: editSpotifyArtistName,
                   });
                 }}
               >
