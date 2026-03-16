@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       return { id, terms: [...new Set(terms.filter(Boolean))] };
     });
 
-    console.log(`[scan-external] Scanning ${channels.length} channels for ${artists.length} artists${tierSnapshotAt ? ` (snapshotAt=${tierSnapshotAt})` : ""}`);
+    console.log(`[scan-external] Scanning ${channels.length} channels for ${orderedTier1Ids.length} artists${tierSnapshotAt ? ` (snapshotAt=${tierSnapshotAt})` : ""}`);
 
     let totalMatches = 0;
     let totalVideosScanned = 0;
