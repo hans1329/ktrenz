@@ -181,17 +181,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 1) Tier 1 아티스트 목록 로드
+    // 1) Tier 1 아티스트 목록 로드 (melon_artist_name 포함)
     const { data: artists } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko, aliases")
+      .select("wiki_entry_id, display_name, name_ko, aliases, melon_artist_name")
       .eq("tier", 1);
     if (!artists || artists.length === 0) {
       return new Response(JSON.stringify({ error: "No tier 1 artists" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // name lookup 구축: 원본 키 + 공백 제거 정규화 키를 모두 저장
+    // melon_artist_name 전용 lookup (최우선 매칭)
+    const melonNameLookup = new Map<string, string>();
+    for (const a of artists) {
+      if (a.melon_artist_name) {
+        melonNameLookup.set(a.melon_artist_name.toLowerCase().trim(), a.wiki_entry_id);
+        // 괄호 안/밖 이름도 별도 등록
+        const parenMatch = a.melon_artist_name.match(/^(.+?)\s*\((.+)\)$/);
+        if (parenMatch) {
+          melonNameLookup.set(parenMatch[1].trim().toLowerCase(), a.wiki_entry_id);
+          melonNameLookup.set(parenMatch[2].trim().toLowerCase(), a.wiki_entry_id);
+        }
+      }
+    }
+
+    // name lookup 구축: 원본 키 + 공백 제거 정규화 키를 모두 저장 (fallback)
     const nameLookup = new Map<string, string>();
     const addLookup = (value: string | null | undefined, wikiEntryId: string) => {
       if (!value) return;
