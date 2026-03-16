@@ -15,7 +15,7 @@ const V3Home = () => {
   const [activeTab, setActiveTab] = useState<V3Tab>("rankings");
   const isMobile = useIsMobile();
   const isSubPage = activeTab === "agent";
-  const { pendingAlert, dismissAlert } = useAgentAlerts();
+  const { pendingGroup, dismissAlert } = useAgentAlerts();
 
 
 
@@ -51,7 +51,7 @@ const V3Home = () => {
           {renderContent()}
         </div>
         <V3TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-        <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
+        <AgentAlertNotification group={pendingGroup} onDismiss={dismissAlert} />
       </>
     );
   }
@@ -74,7 +74,7 @@ const V3Home = () => {
           </div>
         </main>
       </div>
-      <AgentAlertNotification alert={pendingAlert} onDismiss={dismissAlert} />
+      <AgentAlertNotification group={pendingGroup} onDismiss={dismissAlert} />
     </>
   );
 };
