@@ -116,30 +116,40 @@ function normalizeArtistName(name: string): string {
     .replace(/[^a-z0-9가-힣]/g, "");
 }
 
-/** 아티스트 매칭: chart artist name → wiki_entry_id */
+/** 아티스트 매칭: chart artist name → wiki_entry_id (melon lookup 우선) */
 function matchArtist(
   artistName: string,
+  melonNameLookup: Map<string, string>,
   nameLookup: Map<string, string>,
 ): string | null {
   const lower = artistName.toLowerCase().trim();
+
+  // 1) melon_artist_name 전용 매칭 (최우선)
+  if (melonNameLookup.has(lower)) return melonNameLookup.get(lower)!;
+
+  // 2) 기존 name lookup 매칭
   if (nameLookup.has(lower)) return nameLookup.get(lower)!;
 
   const normalized = normalizeArtistName(artistName);
   if (nameLookup.has(normalized)) return nameLookup.get(normalized)!;
 
+  // 3) 괄호 안/밖 분리 매칭
   const parenMatch = artistName.match(/\(([^)]+)\)/);
   if (parenMatch) {
     const inner = parenMatch[1].toLowerCase().trim();
+    if (melonNameLookup.has(inner)) return melonNameLookup.get(inner)!;
     if (nameLookup.has(inner)) return nameLookup.get(inner)!;
     const innerNormalized = normalizeArtistName(inner);
     if (nameLookup.has(innerNormalized)) return nameLookup.get(innerNormalized)!;
 
     const outer = artistName.replace(/\s*\([^)]*\)/, "").toLowerCase().trim();
+    if (melonNameLookup.has(outer)) return melonNameLookup.get(outer)!;
     if (nameLookup.has(outer)) return nameLookup.get(outer)!;
     const outerNormalized = normalizeArtistName(outer);
     if (nameLookup.has(outerNormalized)) return nameLookup.get(outerNormalized)!;
   }
 
+  // 4) 부분 매칭 (4자 이상만)
   for (const [key, id] of nameLookup) {
     if (key.length >= 4 && normalized.length >= 4 && (key.includes(normalized) || normalized.includes(key))) {
       return id;
