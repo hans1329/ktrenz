@@ -133,6 +133,7 @@ const AdminV3Artists = () => {
           youtube_topic_channel_id: payload.youtube_topic_channel_id || null,
           lastfm_artist_name: payload.lastfm_artist_name || null,
           deezer_artist_id: payload.deezer_artist_id || null,
+          spotify_artist_name: payload.spotify_artist_name || null,
         } as any)
         .eq('id', payload.id);
       if (error) throw error;
