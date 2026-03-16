@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
     // Step 2: Get tier-1 artists
     const { data: artists } = await sb.from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko")
+      .select("wiki_entry_id, display_name, name_ko, aliases, social_radar_name")
       .eq("tier", 1);
     if (!artists?.length) {
       return new Response(JSON.stringify({ success: true, message: "No artists" }), {
