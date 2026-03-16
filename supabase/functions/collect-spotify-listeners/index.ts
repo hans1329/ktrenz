@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     // 1) Tier 1 아티스트 목록
     const { data: artists } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko")
+      .select("wiki_entry_id, display_name, name_ko, aliases")
       .eq("tier", 1);
     if (!artists || artists.length === 0) {
       return new Response(JSON.stringify({ error: "No tier 1 artists" }),
