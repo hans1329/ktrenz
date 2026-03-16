@@ -358,6 +358,11 @@ const AdminV3Artists = () => {
               <Input id="name_ko" value={editNameKo} onChange={(e) => setEditNameKo(e.target.value)} placeholder="한글 이름" />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="aliases">별칭 (쉼표 구분)</Label>
+              <Input id="aliases" value={editAliases} onChange={(e) => setEditAliases(e.target.value)} placeholder="ALLDAY PROJECT, 올데이 프로젝트" />
+              <p className="text-[10px] text-muted-foreground">차트 매칭에 사용되는 추가 이름들 (쉼표로 구분)</p>
+            </div>
+            <div className="space-y-2">
               <Label>프로필 이미지</Label>
               <div className="flex items-center gap-3">
                 <Avatar className="w-16 h-16 rounded-lg border border-border">
