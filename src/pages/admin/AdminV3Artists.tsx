@@ -17,6 +17,7 @@ interface V3Artist {
   tier: number;
   display_name: string | null;
   name_ko: string | null;
+  aliases: string[] | null;
   image_url: string | null;
   is_manual_override: boolean;
   updated_at: string;
