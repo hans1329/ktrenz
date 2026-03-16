@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
     // 1) Load artists for matching
     const { data: artists } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name, name_ko")
+      .select("wiki_entry_id, display_name, name_ko, aliases")
       .eq("tier", 1)
       .order("wiki_entry_id", { ascending: true });
     if (!artists || artists.length === 0) {
@@ -161,6 +161,11 @@ Deno.serve(async (req) => {
     for (const a of artists) {
       if (a.display_name) nameLookup.set(a.display_name.toLowerCase(), a.wiki_entry_id);
       if (a.name_ko) nameLookup.set(a.name_ko.toLowerCase(), a.wiki_entry_id);
+      if (a.aliases && Array.isArray(a.aliases)) {
+        for (const alias of a.aliases) {
+          if (alias) nameLookup.set(alias.toLowerCase(), a.wiki_entry_id);
+        }
+      }
     }
 
     // Also load wiki_entries titles for broader matching
