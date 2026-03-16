@@ -6,14 +6,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// 필수 플랫폼: 모든 Tier 1 아티스트에 반드시 있어야 하는 데이터
 const REQUIRED_PLATFORMS = [
   "youtube",
   "youtube_music",
   "buzz_multi",
-  "hanteo_daily",
   "lastfm",
   "deezer",
   "naver_news",
+] as const;
+
+// 선택 플랫폼: 데이터가 없어도 정상인 플랫폼 (차트 진입자만, 감성분석 대상만 등)
+const OPTIONAL_PLATFORMS = [
+  "hanteo_daily",
   "yt_sentiment",
 ] as const;
 
@@ -165,10 +170,12 @@ async function runFastFullAudit(
 
   const snapshotsByKey = new Map<string, any[]>();
 
+  const allPlatforms = [...REQUIRED_PLATFORMS, ...OPTIONAL_PLATFORMS];
+
   // Query per platform to avoid global LIMIT cutting off artist-platform combos
   const batches = chunk(wikiIds, 20);
   for (const ids of batches) {
-    for (const platform of REQUIRED_PLATFORMS) {
+    for (const platform of allPlatforms) {
       const { data: snapshots } = await supabase
         .from("ktrenz_data_snapshots")
         .select("wiki_entry_id, platform, collected_at, metrics")
@@ -186,6 +193,20 @@ async function runFastFullAudit(
     }
   }
 
+  // 소셜 팔로워 스냅샷 존재 여부 확인용
+  const socialSnapshotSet = new Set<string>();
+  for (const ids of batches) {
+    const { data: socialSnaps } = await supabase
+      .from("ktrenz_data_snapshots")
+      .select("wiki_entry_id")
+      .in("wiki_entry_id", ids)
+      .eq("platform", "social_followers")
+      .limit(ids.length);
+    for (const s of socialSnaps ?? []) {
+      socialSnapshotSet.add(s.wiki_entry_id);
+    }
+  }
+
   const { data: scores } = await supabase
     .from("v3_scores_v2")
     .select("wiki_entry_id, youtube_score, music_score, buzz_score, social_score")
@@ -193,13 +214,20 @@ async function runFastFullAudit(
 
   const scoreMap = new Map((scores ?? []).map((s) => [s.wiki_entry_id, s]));
 
+  const optionalPlatformSet = new Set<string>(OPTIONAL_PLATFORMS);
+
   for (const artist of artists) {
     const wikiId = artist.wiki_entry_id;
     const artistName = artist.display_name;
 
-    for (const platform of REQUIRED_PLATFORMS) {
+    for (const platform of allPlatforms) {
+      const isOptional = optionalPlatformSet.has(platform);
       const snapshots = snapshotsByKey.get(`${wikiId}|${platform}`) ?? [];
+
       if (snapshots.length === 0) {
+        // 선택 플랫폼은 스냅샷 없어도 이슈 아님
+        if (isOptional) continue;
+
         issues.push({
           wiki_entry_id: wikiId,
           artist_name: artistName,
@@ -218,12 +246,13 @@ async function runFastFullAudit(
       const latestTime = new Date(latest.collected_at).getTime();
       if (now - latestTime > staleThresholdMs) {
         const hoursAgo = Math.round((now - latestTime) / (1000 * 60 * 60));
+        // 선택 플랫폼 stale은 medium severity
         issues.push({
           wiki_entry_id: wikiId,
           artist_name: artistName,
           issue_type: "stale_data",
           platform,
-          severity: hoursAgo > 48 ? "high" : "medium",
+          severity: isOptional ? "medium" : (hoursAgo > 48 ? "high" : "medium"),
           title: `${artistName}: ${platform} 수집 지연 (${hoursAgo}h)`,
           description: `${hoursAgo}시간 전에 마지막 수집됨`,
           expected_value: "≤26h",
@@ -265,7 +294,6 @@ async function runFastFullAudit(
         { key: "youtube_score", label: "YouTube Score" },
         { key: "music_score", label: "Music Score" },
         { key: "buzz_score", label: "Buzz Score" },
-        { key: "social_score", label: "Social Score" },
       ];
       for (const sf of scoreFields) {
         const val = score[sf.key];
@@ -280,6 +308,24 @@ async function runFastFullAudit(
             description: `${sf.label} 값이 0/null 입니다.`,
             expected_value: "> 0",
             actual_value: String(val ?? "null"),
+          });
+        }
+      }
+
+      // social_score: 소셜 스냅샷이 존재하는데 0이면 이슈, 스냅샷 자체가 없으면 skip
+      if (socialSnapshotSet.has(wikiId)) {
+        const socialVal = score.social_score;
+        if (socialVal === 0 || socialVal === null) {
+          issues.push({
+            wiki_entry_id: wikiId,
+            artist_name: artistName,
+            issue_type: "zero_score",
+            platform: "social_score",
+            severity: "medium",
+            title: `${artistName}: Social Score = 0`,
+            description: `소셜 데이터가 수집되었으나 점수가 0입니다.`,
+            expected_value: "> 0",
+            actual_value: String(socialVal ?? "null"),
           });
         }
       }
