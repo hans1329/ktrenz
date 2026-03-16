@@ -1,0 +1,1 @@
+ALTER TABLE public.v3_artist_tiers ADD COLUMN IF NOT EXISTS social_radar_name text DEFAULT NULL;
