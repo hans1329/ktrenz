@@ -241,14 +241,15 @@ Deno.serve(async (req) => {
         sampleMatches.push(`${name}: ig=${igMatch?.total ?? '-'}, tw=${twMatch?.total ?? '-'}, tk=${tkMatch?.total ?? '-'}, sp=${spMatch?.total ?? '-'}`);
       }
 
-      const prevMetrics = prevMetricsMap.get(artist.wiki_entry_id) || null;
+      const prev = prevMetricsMap.get(artist.wiki_entry_id) || null;
       const weeklyGrowth: GrowthMetrics = {
         instagram_growth: igMatch?.growth ?? null,
         tiktok_growth: tkMatch?.growth ?? null,
         spotify_growth: spMatch?.growth ?? null,
         twitter_growth: twMatch?.growth ?? null,
       };
-      const socialScore = calculateSocialScore(metrics, prevMetrics, weeklyGrowth);
+      const prevGrowth: PrevGrowthMetrics | null = prev?.growth ?? null;
+      const socialScore = calculateSocialScore(metrics, weeklyGrowth, prevGrowth);
 
       snapshotsToInsert.push({
         wiki_entry_id: artist.wiki_entry_id,
