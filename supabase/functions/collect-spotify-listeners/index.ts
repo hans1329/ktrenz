@@ -56,22 +56,20 @@ function parseKworbListeners(html: string): SpotifyListenerEntry[] {
 function normalizeArtistName(name: string): string {
   return name
     .replace(/\s*\([^)]*\)\s*/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]/g, "");
 }
 
 /** 아티스트 매칭 */
 function matchArtist(artistName: string, nameLookup: Map<string, string>): string | null {
   const lower = artistName.toLowerCase().trim();
   if (nameLookup.has(lower)) return nameLookup.get(lower)!;
-  
+
   const normalized = normalizeArtistName(artistName);
   if (nameLookup.has(normalized)) return nameLookup.get(normalized)!;
-  
-  // 부분 매칭
+
   for (const [key, id] of nameLookup) {
-    if (key.includes(normalized) || normalized.includes(key)) {
+    if (key.length >= 4 && normalized.length >= 4 && (key.includes(normalized) || normalized.includes(key))) {
       return id;
     }
   }

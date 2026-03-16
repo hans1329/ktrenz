@@ -108,13 +108,12 @@ async function scrapeWithFirecrawl(url: string, apiKey: string, waitFor?: number
   }
 }
 
-/** 아티스트명 정규화: 괄호/공백 제거, 소문자 */
+/** 아티스트명 정규화: 괄호/구분자 제거, 붙여쓴 형태까지 동일 키로 변환 */
 function normalizeArtistName(name: string): string {
   return name
-    .replace(/\s*\([^)]*\)\s*/g, "") // 괄호 내용 제거
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+    .replace(/\s*\([^)]*\)\s*/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]/g, "");
 }
 
 /** 아티스트 매칭: chart artist name → wiki_entry_id */
@@ -123,31 +122,30 @@ function matchArtist(
   nameLookup: Map<string, string>,
 ): string | null {
   const lower = artistName.toLowerCase().trim();
-  
-  // 1) 직접 매칭
   if (nameLookup.has(lower)) return nameLookup.get(lower)!;
-  
-  // 2) 정규화 매칭
+
   const normalized = normalizeArtistName(artistName);
   if (nameLookup.has(normalized)) return nameLookup.get(normalized)!;
-  
-  // 3) 괄호 안 이름으로 매칭: "IVE (아이브)" → "아이브" or "IVE"
+
   const parenMatch = artistName.match(/\(([^)]+)\)/);
   if (parenMatch) {
     const inner = parenMatch[1].toLowerCase().trim();
     if (nameLookup.has(inner)) return nameLookup.get(inner)!;
-    // 괄호 밖 이름
+    const innerNormalized = normalizeArtistName(inner);
+    if (nameLookup.has(innerNormalized)) return nameLookup.get(innerNormalized)!;
+
     const outer = artistName.replace(/\s*\([^)]*\)/, "").toLowerCase().trim();
     if (nameLookup.has(outer)) return nameLookup.get(outer)!;
+    const outerNormalized = normalizeArtistName(outer);
+    if (nameLookup.has(outerNormalized)) return nameLookup.get(outerNormalized)!;
   }
-  
-  // 4) 부분 매칭 (lookup 키에 chart 이름이 포함되는 경우)
+
   for (const [key, id] of nameLookup) {
-    if (key.includes(normalized) || normalized.includes(key)) {
+    if (key.length >= 4 && normalized.length >= 4 && (key.includes(normalized) || normalized.includes(key))) {
       return id;
     }
   }
-  
+
   return null;
 }
 
