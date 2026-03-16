@@ -125,6 +125,7 @@ const AdminV3Artists = () => {
         .update({
           display_name: payload.display_name || null,
           name_ko: payload.name_ko || null,
+          aliases: payload.aliases.length > 0 ? payload.aliases : [],
           image_url: payload.image_url || null,
           youtube_channel_id: ytChannelId || null,
           youtube_topic_channel_id: payload.youtube_topic_channel_id || null,
