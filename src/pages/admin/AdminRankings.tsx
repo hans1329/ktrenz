@@ -327,18 +327,30 @@ const AdminRankings = () => {
     queryFn: async () => {
       if (!pipelineStartTime) return null;
       const since = new Date(pipelineStartTime).toISOString();
-      const { data, error } = await supabase
-        .from('ktrenz_data_snapshots')
-        .select('platform, wiki_entry_id, metrics')
-        .gte('collected_at', since);
-      if (error) throw error;
+
+      // Fetch all snapshots with pagination to avoid 1000-row default limit
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('ktrenz_data_snapshots')
+          .select('platform, wiki_entry_id, metrics')
+          .gte('collected_at', since)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
 
       // Count unique artists per platform
       const platformCounts: Record<string, number> = {};
       const buzzSources: Record<string, number> = {};
       const seenPerPlatform: Record<string, Set<string>> = {};
 
-      (data || []).forEach((s: any) => {
+      allData.forEach((s: any) => {
         const p = s.platform;
         const wid = s.wiki_entry_id || 'unknown';
         if (!seenPerPlatform[p]) seenPerPlatform[p] = new Set();
@@ -357,7 +369,7 @@ const AdminRankings = () => {
         }
       });
 
-      return { platformCounts, buzzSources, totalSnapshots: data?.length || 0 };
+      return { platformCounts, buzzSources, totalSnapshots: allData.length };
     },
     enabled: !!pipelineStartTime && !!pipelineRunId,
     refetchInterval: pipelineRunId ? 3000 : false,
