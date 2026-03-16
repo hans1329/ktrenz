@@ -6437,6 +6437,7 @@ export type Database = {
       }
       v3_artist_tiers: {
         Row: {
+          aliases: string[] | null
           created_at: string
           deezer_artist_id: string | null
           display_name: string | null
@@ -6460,6 +6461,7 @@ export type Database = {
           youtube_topic_channel_id: string | null
         }
         Insert: {
+          aliases?: string[] | null
           created_at?: string
           deezer_artist_id?: string | null
           display_name?: string | null
@@ -6483,6 +6485,7 @@ export type Database = {
           youtube_topic_channel_id?: string | null
         }
         Update: {
+          aliases?: string[] | null
           created_at?: string
           deezer_artist_id?: string | null
           display_name?: string | null

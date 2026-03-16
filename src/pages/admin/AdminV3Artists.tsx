@@ -17,6 +17,7 @@ interface V3Artist {
   tier: number;
   display_name: string | null;
   name_ko: string | null;
+  aliases: string[] | null;
   image_url: string | null;
   is_manual_override: boolean;
   updated_at: string;
@@ -46,6 +47,7 @@ const AdminV3Artists = () => {
   const [editLastfmArtistName, setEditLastfmArtistName] = useState('');
   const [editDeezerArtistId, setEditDeezerArtistId] = useState('');
   const [editYoutubeTopicChannelId, setEditYoutubeTopicChannelId] = useState('');
+  const [editAliases, setEditAliases] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +56,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type, metadata)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, aliases, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type, metadata)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
@@ -63,6 +65,7 @@ const AdminV3Artists = () => {
         tier: row.tier,
         display_name: row.display_name,
         name_ko: row.name_ko,
+        aliases: row.aliases || [],
         image_url: row.image_url,
         is_manual_override: row.is_manual_override,
         updated_at: row.updated_at,
@@ -112,7 +115,7 @@ const AdminV3Artists = () => {
   };
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
+    mutationFn: async (payload: { id: string; wiki_entry_id?: string; display_name: string; name_ko: string; aliases: string[]; image_url: string; youtube_channel_id: string; youtube_topic_channel_id: string; lastfm_artist_name: string; deezer_artist_id: string }) => {
       let ytChannelId = payload.youtube_channel_id;
       if (ytChannelId && !ytChannelId.startsWith('UC')) {
         ytChannelId = await resolveYoutubeChannelId(ytChannelId);
@@ -122,6 +125,7 @@ const AdminV3Artists = () => {
         .update({
           display_name: payload.display_name || null,
           name_ko: payload.name_ko || null,
+          aliases: payload.aliases.length > 0 ? payload.aliases : [],
           image_url: payload.image_url || null,
           youtube_channel_id: ytChannelId || null,
           youtube_topic_channel_id: payload.youtube_topic_channel_id || null,
@@ -196,6 +200,7 @@ const AdminV3Artists = () => {
     setEditDisplayName(artist.display_name || artist.wiki_title || '');
     setEditNameKo(artist.name_ko || '');
     setEditImageUrl(artist.image_url || artist.wiki_image || '');
+    setEditAliases((artist.aliases || []).join(', '));
     setEditYoutubeChannelId(artist.youtube_channel_id || '');
     setEditYoutubeTopicChannelId(artist.youtube_topic_channel_id || '');
     setEditLastfmArtistName(artist.lastfm_artist_name || '');
@@ -353,6 +358,11 @@ const AdminV3Artists = () => {
               <Input id="name_ko" value={editNameKo} onChange={(e) => setEditNameKo(e.target.value)} placeholder="한글 이름" />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="aliases">별칭 (쉼표 구분)</Label>
+              <Input id="aliases" value={editAliases} onChange={(e) => setEditAliases(e.target.value)} placeholder="ALLDAY PROJECT, 올데이 프로젝트" />
+              <p className="text-[10px] text-muted-foreground">차트 매칭에 사용되는 추가 이름들 (쉼표로 구분)</p>
+            </div>
+            <div className="space-y-2">
               <Label>프로필 이미지</Label>
               <div className="flex items-center gap-3">
                 <Avatar className="w-16 h-16 rounded-lg border border-border">
@@ -459,6 +469,7 @@ const AdminV3Artists = () => {
                     wiki_entry_id: editArtist.wiki_entry_id,
                     display_name: editDisplayName,
                     name_ko: editNameKo,
+                    aliases: editAliases.split(',').map(s => s.trim()).filter(Boolean),
                     image_url: editImageUrl,
                     youtube_channel_id: editYoutubeChannelId,
                     youtube_topic_channel_id: editYoutubeTopicChannelId,
