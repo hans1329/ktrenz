@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
       addLookup(w.title, w.id);
     }
 
-    console.log(`[KoreanCharts] Loaded ${nameLookup.size} name lookups for ${artists.length} tier 1 artists`);
+    console.log(`[KoreanCharts] Loaded ${melonNameLookup.size} melon names + ${nameLookup.size} fallback lookups for ${artists.length} tier 1 artists`);
 
     // 2) 멜론 + 지니 동시 스크래핑
     const [melonMd, genieMd] = await Promise.all([
