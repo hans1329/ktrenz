@@ -65,6 +65,7 @@ const AdminV3Artists = () => {
         tier: row.tier,
         display_name: row.display_name,
         name_ko: row.name_ko,
+        aliases: row.aliases || [],
         image_url: row.image_url,
         is_manual_override: row.is_manual_override,
         updated_at: row.updated_at,
