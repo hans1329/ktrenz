@@ -204,16 +204,28 @@ Deno.serve(async (req) => {
     for (const artist of artists) {
       const name = artist.display_name || "";
       const nameKo = (artist as any).name_ko || "";
-      if (!name && !nameKo) continue;
+      const socialRadarName = (artist as any).social_radar_name || "";
+      const aliases: string[] = Array.isArray((artist as any).aliases) ? (artist as any).aliases : [];
+      if (!name && !nameKo && !socialRadarName && !aliases.length) continue;
 
       const allVariants: string[] = [];
+      // social_radar_name gets highest priority (added first)
+      if (socialRadarName) allVariants.push(...normalizeName(socialRadarName).split("|").filter(Boolean));
       if (name) allVariants.push(...normalizeName(name).split("|").filter(Boolean));
       if (nameKo) allVariants.push(...normalizeName(nameKo).split("|").filter(Boolean));
+      // Add all aliases
+      for (const alias of aliases) {
+        if (alias) allVariants.push(...normalizeName(alias).split("|").filter(Boolean));
+      }
+      // Deduplicate
+      const uniqueVariants = [...new Set(allVariants)];
 
       const findMatch = (lookup: Map<string, PlatformEntry>): PlatformEntry | null => {
-        for (const v of allVariants) { const m = lookup.get(v); if (m) return m; }
+        for (const v of uniqueVariants) { const m = lookup.get(v); if (m) return m; }
         for (const [k, e] of lookup.entries()) {
-          for (const v of allVariants) {
+          for (const v of uniqueVariants) {
+            // Short names (<=3 chars): exact match only to avoid false positives
+            if (v.length <= 3) { if (k === v) return e; continue; }
             if (v && k && (k.includes(v) || v.includes(k)) && v.length >= 2) return e;
           }
         }
