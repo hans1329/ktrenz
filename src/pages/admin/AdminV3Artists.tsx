@@ -74,6 +74,7 @@ const AdminV3Artists = () => {
         youtube_topic_channel_id: row.youtube_topic_channel_id,
         lastfm_artist_name: row.lastfm_artist_name,
         deezer_artist_id: row.deezer_artist_id,
+        spotify_artist_name: row.spotify_artist_name,
         wiki_title: row.wiki_entries.title,
         wiki_image: row.wiki_entries.image_url || (row.wiki_entries.metadata as any)?.profile_image || null,
         wiki_schema_type: row.wiki_entries.schema_type,
