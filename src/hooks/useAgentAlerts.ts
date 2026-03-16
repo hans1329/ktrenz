@@ -19,6 +19,13 @@ export interface AgentAlert {
   timestamp: number;
 }
 
+export interface GroupedAgentAlert {
+  artistName: string;
+  wikiEntryId: string;
+  slot: AgentSlot;
+  alerts: AgentAlert[];
+}
+
 // ── Alert message templates ──
 function buildAlertMessages(
   type: AgentAlert["type"],
@@ -60,8 +67,8 @@ function buildAlertMessages(
 }
 
 // ── Threshold constants ──
-const SPIKE_THRESHOLD = 15; // ±15% 24h change
-const ALERT_COOLDOWN_MS = 6 * 60 * 60 * 1000; // 6h cooldown per alert type per artist
+const SPIKE_THRESHOLD = 15;
+const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h cooldown — once per day
 
 function getAlertCooldownKey(wikiEntryId: string, type: string) {
   return `ktrenz_alert_${type}_${wikiEntryId}`;
@@ -109,13 +116,11 @@ export function useAgentAlerts() {
   const { user } = useAuth();
   const { slots } = useAgentSlots();
   const { language } = useLanguage();
-  const [pendingAlert, setPendingAlert] = useState<AgentAlert | null>(null);
+  const [pendingGroup, setPendingGroup] = useState<GroupedAgentAlert | null>(null);
 
-  // Only check for agent slots with registered artists
   const registeredSlots = slots.filter(s => s.wiki_entry_id);
   const wikiEntryIds = registeredSlots.map(s => s.wiki_entry_id!);
 
-  // Fetch scores for registered artists
   const { data: scores } = useQuery({
     queryKey: ["agent-alert-scores", ...wikiEntryIds],
     queryFn: async () => {
@@ -127,11 +132,10 @@ export function useAgentAlerts() {
       return (data ?? []) as any[];
     },
     enabled: !!user?.id && wikiEntryIds.length > 0,
-    staleTime: 1000 * 60 * 5, // 5 min
-    refetchInterval: 1000 * 60 * 10, // refetch every 10 min
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: 1000 * 60 * 10,
   });
 
-  // Fetch unnotified milestones
   const { data: milestones } = useQuery({
     queryKey: ["agent-alert-milestones", ...wikiEntryIds],
     queryFn: async () => {
@@ -147,32 +151,24 @@ export function useAgentAlerts() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Process alerts
   const processAlerts = useCallback(() => {
-    if (!user?.id || !scores || pendingAlert) return;
+    if (!user?.id || !scores || pendingGroup) return;
 
-    const alerts: AgentAlert[] = [];
+    const allAlerts: AgentAlert[] = [];
 
     for (const score of scores) {
       const slot = registeredSlots.find(s => s.wiki_entry_id === score.wiki_entry_id);
       if (!slot) continue;
       const artistName = slot.artist_name ?? "Artist";
 
-      // Rank #1 alert
       if (score.energy_rank === 1 && !isAlertCoolingDown(score.wiki_entry_id, "rank_1")) {
         const msg = buildAlertMessages("rank_1", artistName, language);
-        alerts.push({
-          id: `rank_1_${score.wiki_entry_id}`,
-          type: "rank_1",
-          artistName,
-          wikiEntryId: score.wiki_entry_id,
-          ...msg,
-          slot,
-          timestamp: Date.now(),
+        allAlerts.push({
+          id: `rank_1_${score.wiki_entry_id}`, type: "rank_1", artistName,
+          wikiEntryId: score.wiki_entry_id, ...msg, slot, timestamp: Date.now(),
         });
       }
 
-      // Energy spike/drop per category
       const categories = [
         { key: "YouTube", change: score.youtube_change_24h },
         { key: "Buzz", change: score.buzz_change_24h },
@@ -187,21 +183,15 @@ export function useAgentAlerts() {
           const alertKey = `${type}_${cat.key}`;
           if (!isAlertCoolingDown(score.wiki_entry_id, alertKey)) {
             const msg = buildAlertMessages(type, artistName, language, { change, category: cat.key });
-            alerts.push({
-              id: `${alertKey}_${score.wiki_entry_id}`,
-              type,
-              artistName,
-              wikiEntryId: score.wiki_entry_id,
-              ...msg,
-              slot,
-              timestamp: Date.now(),
+            allAlerts.push({
+              id: `${alertKey}_${score.wiki_entry_id}`, type, artistName,
+              wikiEntryId: score.wiki_entry_id, ...msg, slot, timestamp: Date.now(),
             });
           }
         }
       }
     }
 
-    // Milestone alerts
     if (milestones) {
       for (const m of milestones) {
         const slot = registeredSlots.find(s => s.wiki_entry_id === m.wiki_entry_id);
@@ -210,26 +200,40 @@ export function useAgentAlerts() {
         const alertKey = `milestone_${m.event_type}`;
         if (!isAlertCoolingDown(m.wiki_entry_id, alertKey)) {
           const msg = buildAlertMessages("milestone", artistName, language, { milestoneType: m.event_type, milestoneData: m.event_data });
-          alerts.push({
-            id: `${alertKey}_${m.wiki_entry_id}`,
-            type: "milestone",
-            artistName,
-            wikiEntryId: m.wiki_entry_id,
-            ...msg,
-            slot,
-            timestamp: Date.now(),
+          allAlerts.push({
+            id: `${alertKey}_${m.wiki_entry_id}`, type: "milestone", artistName,
+            wikiEntryId: m.wiki_entry_id, ...msg, slot, timestamp: Date.now(),
           });
         }
       }
     }
 
-    // Show the first alert (queue style — one at a time)
-    if (alerts.length > 0) {
-      const alert = alerts[0];
-      markAlertSent(alert.wikiEntryId, alert.id.split(`_${alert.wikiEntryId}`)[0]);
+    if (allAlerts.length === 0) return;
+
+    // Group alerts by artist (wikiEntryId)
+    const grouped = new Map<string, GroupedAgentAlert>();
+    for (const alert of allAlerts) {
+      if (!grouped.has(alert.wikiEntryId)) {
+        grouped.set(alert.wikiEntryId, {
+          artistName: alert.artistName,
+          wikiEntryId: alert.wikiEntryId,
+          slot: alert.slot,
+          alerts: [],
+        });
+      }
+      grouped.get(alert.wikiEntryId)!.alerts.push(alert);
+    }
+
+    // Pick the first artist group to show
+    const firstGroup = [...grouped.values()][0];
+    if (!firstGroup || firstGroup.alerts.length === 0) return;
+
+    // Mark all alerts in this group as sent & save to chat
+    for (const alert of firstGroup.alerts) {
+      const cooldownKey = alert.id.split(`_${alert.wikiEntryId}`)[0];
+      markAlertSent(alert.wikiEntryId, cooldownKey);
       saveAlertToChat(user.id, alert.slot.id, alert.title, alert.body, alert.emoji);
 
-      // Mark milestone as notified
       if (alert.type === "milestone" && milestones) {
         const milestone = milestones.find(m => m.wiki_entry_id === alert.wikiEntryId);
         if (milestone) {
@@ -240,18 +244,17 @@ export function useAgentAlerts() {
             .then(() => {});
         }
       }
-
-      setPendingAlert(alert);
     }
-  }, [user?.id, scores, milestones, registeredSlots, language, pendingAlert]);
+
+    setPendingGroup(firstGroup);
+  }, [user?.id, scores, milestones, registeredSlots, language, pendingGroup]);
 
   useEffect(() => {
-    // Small delay to avoid blocking initial render
     const timer = setTimeout(processAlerts, 3000);
     return () => clearTimeout(timer);
   }, [processAlerts]);
 
-  const dismissAlert = useCallback(() => setPendingAlert(null), []);
+  const dismissAlert = useCallback(() => setPendingGroup(null), []);
 
-  return { pendingAlert, dismissAlert };
+  return { pendingGroup, dismissAlert };
 }
