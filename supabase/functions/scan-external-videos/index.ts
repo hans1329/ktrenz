@@ -46,10 +46,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2) Tier1 아티스트 + 한글/영문 매핑 가져오기 (snapshot 고정 + 정렬)
+    // 2) Tier1 아티스트 + v3_artist_tiers에서 display_name, name_ko, aliases 가져오기
     let tierQuery = sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id")
+      .select("wiki_entry_id, display_name, name_ko, aliases")
       .eq("tier", 1)
       .order("wiki_entry_id", { ascending: true });
 
@@ -58,43 +58,65 @@ Deno.serve(async (req) => {
     }
 
     const { data: tier1Entries } = await tierQuery;
-    const orderedTier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
-
-    if (!orderedTier1Ids.length) {
+    if (!tier1Entries?.length) {
       return new Response(
         JSON.stringify({ success: true, message: "No tier 1 artists", tierSnapshotAt }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // 중복 wiki_entry_id 제거 (첫 번째 것 유지)
+    const seenIds = new Set<string>();
+    const uniqueTierEntries = tier1Entries.filter((t: any) => {
+      if (!t.wiki_entry_id || seenIds.has(t.wiki_entry_id)) return false;
+      seenIds.add(t.wiki_entry_id);
+      return true;
+    });
+
+    const orderedTier1Ids = uniqueTierEntries.map((t: any) => t.wiki_entry_id);
+
+    // wiki_entries에서 기본 정보도 가져오기 (title, metadata 보조용)
     const { data: allArtists } = await sb
       .from("wiki_entries")
       .select("id, title, metadata")
       .in("schema_type", ["artist", "member"])
       .in("id", orderedTier1Ids);
 
-    const artistMap = new Map<string, any>((allArtists || []).map((a: any) => [a.id, a]));
-    const artists = orderedTier1Ids.map((id: string) => artistMap.get(id)).filter(Boolean);
+    const wikiMap = new Map<string, any>((allArtists || []).map((a: any) => [a.id, a]));
 
-    if (!artists?.length) {
+    // v3_artist_tiers 기준 매핑으로 tierEntry를 먼저 사용
+    const tierMap = new Map<string, any>(uniqueTierEntries.map((t: any) => [t.wiki_entry_id, t]));
+
+    if (!orderedTier1Ids.length) {
       return new Response(
         JSON.stringify({ success: true, message: "No artists found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 아티스트 검색 키워드 생성 (한글명 + 영문명 + 별칭)
-    const artistSearchTerms: { id: string; terms: string[] }[] = artists.map((a: any) => {
-      const terms = [a.title];
-      const meta = a.metadata as any;
+    // 아티스트 검색 키워드 생성 (v3_artist_tiers 우선 + wiki_entries 보조)
+    const artistSearchTerms: { id: string; terms: string[] }[] = orderedTier1Ids.map((id: string) => {
+      const tier = tierMap.get(id);
+      const wiki = wikiMap.get(id);
+      const terms: string[] = [];
+
+      // v3_artist_tiers: display_name (영문 기준), name_ko, aliases
+      if (tier?.display_name) terms.push(tier.display_name);
+      if (tier?.name_ko) terms.push(tier.name_ko);
+      if (Array.isArray(tier?.aliases)) terms.push(...tier.aliases);
+
+      // wiki_entries 보조: title, metadata
+      if (wiki?.title && !terms.includes(wiki.title)) terms.push(wiki.title);
+      const meta = wiki?.metadata as any;
       if (meta?.english_name) terms.push(meta.english_name);
       if (meta?.korean_name) terms.push(meta.korean_name);
-      if (meta?.aliases) terms.push(...meta.aliases);
-      if (meta?.hashtags) terms.push(...meta.hashtags);
-      return { id: a.id, terms: [...new Set(terms.filter(Boolean))] };
+      if (Array.isArray(meta?.aliases)) terms.push(...meta.aliases);
+      if (Array.isArray(meta?.hashtags)) terms.push(...meta.hashtags);
+
+      return { id, terms: [...new Set(terms.filter(Boolean))] };
     });
 
-    console.log(`[scan-external] Scanning ${channels.length} channels for ${artists.length} artists${tierSnapshotAt ? ` (snapshotAt=${tierSnapshotAt})` : ""}`);
+    console.log(`[scan-external] Scanning ${channels.length} channels for ${orderedTier1Ids.length} artists${tierSnapshotAt ? ` (snapshotAt=${tierSnapshotAt})` : ""}`);
 
     let totalMatches = 0;
     let totalVideosScanned = 0;
