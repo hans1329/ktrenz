@@ -57,7 +57,7 @@ const AdminV3Artists = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('v3_artist_tiers')
-        .select('id, wiki_entry_id, tier, display_name, name_ko, aliases, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, wiki_entries!inner(title, image_url, schema_type, metadata)')
+        .select('id, wiki_entry_id, tier, display_name, name_ko, aliases, image_url, is_manual_override, updated_at, youtube_channel_id, youtube_topic_channel_id, lastfm_artist_name, deezer_artist_id, spotify_artist_name, wiki_entries!inner(title, image_url, schema_type, metadata)')
         .order('tier', { ascending: true }) as any;
       if (error) throw error;
       return (data || []).map((row: any) => ({
