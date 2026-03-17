@@ -1491,7 +1491,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <AgentAvatar avatarUrl={avatarUrl} size="sm" />
             </button>
           )}
-          <div className={cn("flex flex-col max-w-[85%] min-w-0", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
+          <div className={cn("flex flex-col max-w-[85%] min-w-0 overflow-hidden", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
             <div
               className={cn(
                 "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
