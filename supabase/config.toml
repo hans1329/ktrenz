@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.ktrenz-attention-map]
 verify_jwt = false
+
+[functions.ktrenz-buzz-enhancer]
+verify_jwt = false
