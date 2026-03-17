@@ -31,6 +31,7 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   billboard_charts: 5,
   social: 30,
   buzz: 120,
+  buzz_enhancer: 60,  // AI 필터 + Perplexity 보강 대기
   energy: 5,
   detect_geo_changes: 5,
   fes_analyst: 5,
