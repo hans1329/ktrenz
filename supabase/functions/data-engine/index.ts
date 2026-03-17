@@ -9,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "korean_charts", "spotify_listeners", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
+const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "korean_charts", "spotify_listeners", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "buzz_enhancer", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
