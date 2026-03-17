@@ -508,6 +508,33 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     console.log(`[data-engine] FES Predictor: ${parsed?.predictions?.length ?? 0} predictions`);
     return { status: resp.ok ? "completed" : "error", module: "fes_predictor", ...parsed };
   },
+  buzz_enhancer: async (url, key) => {
+    console.log("[data-engine] Running Buzz Enhancer (AI filter + Perplexity boost)...");
+    // 배치 처리: 10명씩
+    const sb = createClient(url, key);
+    const { data: tiers } = await sb
+      .from("v3_artist_tiers")
+      .select("wiki_entry_id")
+      .eq("tier", 1)
+      .order("wiki_entry_id", { ascending: true });
+    const ids = (tiers || []).map((t: any) => t.wiki_entry_id);
+    const BATCH_SIZE = 10;
+    const totalBatches = Math.ceil(ids.length / BATCH_SIZE);
+
+    let launched = 0;
+    for (let i = 0; i < totalBatches; i++) {
+      const p = fetch(`${url}/functions/v1/ktrenz-buzz-enhancer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ mode: "batch", batchSize: BATCH_SIZE, batchOffset: i * BATCH_SIZE }),
+      }).catch((e) => console.warn(`[data-engine] buzz_enhancer batch ${i} error:`, e.message));
+      fireAndForget(p);
+      launched++;
+      if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 2000));
+    }
+    console.log(`[data-engine] Buzz Enhancer: launched ${launched} batches for ${ids.length} artists`);
+    return { status: "launched", launched, totalBatches, totalArtists: ids.length };
+  },
   // buzz 개별 소스
   ...Object.fromEntries(
     BUZZ_SOURCES.map(mod => [mod, (url: string, key: string) => runBuzzSource(url, key, mod)])
