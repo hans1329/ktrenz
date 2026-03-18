@@ -266,6 +266,7 @@ const AdminStars = () => {
       wiki_entry_id: s.wiki_entry_id ?? "",
       group_star_id: s.group_star_id ?? "",
       namuwiki_url: (s as any).namuwiki_url ?? "",
+      agency: (s as any).agency ?? "",
       is_active: s.is_active ?? true,
     });
     setNamuUrl((s as any).namuwiki_url ?? "");
