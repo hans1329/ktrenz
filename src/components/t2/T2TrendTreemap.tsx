@@ -460,11 +460,11 @@ const T2TrendTreemap = () => {
                 const sizeFactor = Math.sqrt(boxArea) / 10;
                 const isTopThree = rectIndex < 3;
                 const keywordSize = isTopThree
-                  ? Math.max(18, Math.min(40, sizeFactor * 5))
+                  ? Math.max(22, Math.min(48, sizeFactor * 6))
                   : isTop20
-                    ? Math.max(14, Math.min(32, sizeFactor * 4.5))
-                    : Math.max(9, Math.min(16, sizeFactor * 2.2));
-                const scoreSize = Math.max(10, Math.min(30, sizeFactor * 3.2));
+                    ? Math.max(16, Math.min(38, sizeFactor * 5.5))
+                    : Math.max(12, Math.min(24, sizeFactor * 3.5));
+                const scoreSize = Math.max(12, Math.min(36, sizeFactor * 4));
 
                 return (
                   <button
