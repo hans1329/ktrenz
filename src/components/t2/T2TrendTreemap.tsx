@@ -377,8 +377,9 @@ const T2TrendTreemap = () => {
               const top = (rect.y / containerHeight) * 100;
               const width = (rect.w / containerWidth) * 100;
               const height = (rect.h / containerHeight) * 100;
-              const isLarge = width > 18 && height > 15;
-              const isMedium = width > 10 && height > 8;
+               const isTop20 = rectIndex < 20;
+               const isLarge = width > 18 && height > 15;
+               const isMedium = isTop20 || (width > 10 && height > 8);
               const isSelected = selectedTile?.id === rect.item.id;
               const config = CATEGORY_CONFIG[rect.item.category];
               const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
