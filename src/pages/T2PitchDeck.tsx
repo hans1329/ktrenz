@@ -200,7 +200,7 @@ const t = {
       { label: "영향력 지수", value: "Δ%", desc: "기준에서 최고점까지의 성장률 — 아티스트 영향력의 진정한 척도" },
     ],
     scoringExample: "예시: NCT 태용 × Loewe",
-    scoringExampleDesc: "네이버 뉴스를 통해 기준 점수 72에서 감지. 2시간 추적 후 최고 점수 75 도달.",
+    scoringExampleDesc: "국내 뉴스를 통해 기준 점수 72에서 감지. 2시간 추적 후 최고 점수 75 도달.",
     scoringExampleBold: " 영향력 지수: +4.17%",
     scoringExampleTail: " — 바이럴 급등이 아닌 안정적이고 지속적인 관심을 나타냅니다. 이 패턴은 확립된 럭셔리 브랜드 앰배서더십의 전형적인 모습입니다.",
 
