@@ -164,7 +164,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   const voteMutation = useMutation({
     mutationFn: async (voteType: "up" | "down") => {
-      if (!user || !tile) return;
+      if (!user || !tile) return { isNew: false };
       const currentVote = voteData?.myVote;
       if (currentVote === voteType) {
         // Remove vote
@@ -173,6 +173,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           .delete()
           .eq("trigger_id", tile.id)
           .eq("user_id", user.id);
+        return { isNew: false };
       } else if (currentVote) {
         // Change vote
         await supabase
@@ -180,14 +181,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           .update({ vote_type: voteType, updated_at: new Date().toISOString() } as any)
           .eq("trigger_id", tile.id)
           .eq("user_id", user.id);
+        return { isNew: false };
       } else {
-        // New vote
+        // New vote — award 1 point
         await supabase
           .from("ktrenz_keyword_votes" as any)
           .insert({ trigger_id: tile.id, user_id: user.id, vote_type: voteType } as any);
+        await supabase.rpc("ktrenz_increment_points" as any, { p_user_id: user.id, p_amount: 1 });
+        return { isNew: true };
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["t2-keyword-votes", tile?.id] }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["t2-keyword-votes", tile?.id] });
+      if (result?.isNew) {
+        queryClient.invalidateQueries({ queryKey: ["user-points"] });
+        toast.success("+1 K-Point");
+      }
+    },
   });
 
   const handleVote = (voteType: "up" | "down") => {
