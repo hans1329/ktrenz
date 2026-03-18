@@ -359,7 +359,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               <div className="px-3 pb-2 flex justify-end">
                 <span className={cn(
                   "text-[10px] font-medium",
-                  hasReadBoosted ? "text-primary" : "text-muted-foreground"
+                  hasReadBoosted ? "text-emerald-400" : "text-emerald-500/70"
                 )}>
                   {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
                 </span>
