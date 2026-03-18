@@ -140,7 +140,7 @@ const t = {
     ctaTag: "Get Started",
     ctaTitle: ["See the ", "Trend Radar", " Live"],
     ctaDesc: "Explore real-time keyword detections, influence scores, and commercial insights across 100+ K-Pop artists.",
-    ctaCta1: "Open T2 Radar",
+    ctaCta1: "Open KTRENZ Radar",
     ctaCta2: "View Full Platform Deck",
     ctaFooter: "ecosystem — Real-time K-Pop intelligence platform",
   },
