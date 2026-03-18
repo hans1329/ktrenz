@@ -76,20 +76,14 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
             {/* Header — keyword + artist row */}
             <div className="px-3.5 pt-3 pb-2">
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-black text-foreground leading-tight truncate">
-                    {getLocalizedKeyword(item, language)}
-                  </h3>
+              <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <MessageCircle className="w-4 h-4 text-primary shrink-0" />
+                    <h3 className="text-base font-black text-foreground leading-tight truncate">
+                      {getLocalizedKeyword(item, language)}
+                    </h3>
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="w-5 h-5 rounded-full overflow-hidden border border-border bg-muted shrink-0">
-                      {item.artistImageUrl ? (
-                        <img src={item.artistImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <TrendingUp className="w-2.5 h-2.5 text-muted-foreground/50" />
-                        </div>
-                      )}
-                    </div>
                     <span className="text-xs font-semibold text-muted-foreground truncate">
                       {getLocalizedArtistName(item, language)}
                     </span>
