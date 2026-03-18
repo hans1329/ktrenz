@@ -647,40 +647,53 @@ export default function T2PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 9. TECH ARCHITECTURE ───── */}
-      <Section id="architecture">
+      {/* ───── 9. PRODUCT-LED LOOP ───── */}
+      <Section id="pll">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Database className="w-3.5 h-3.5" /> {l.archTag}</SectionTag>
+            <SectionTag><RefreshCw className="w-3.5 h-3.5" /> {l.pllTag}</SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              {l.archTitle[0]}<span className="text-primary">{l.archTitle[1]}</span>
+              {l.pllTitle[0]}<span className="text-primary">{l.pllTitle[1]}</span>
             </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{l.pllDesc}</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
-              <h3 className="font-bold text-lg text-foreground mb-4">{l.archPipeline}</h3>
-              <div className="space-y-3 text-sm">
-                {l.archPipelineItems.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    <span className="text-muted-foreground">{item}</span>
+          {/* Flywheel visual */}
+          <div className="relative">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {l.pllSteps.map((step, i) => (
+                <div key={i} className="relative rounded-2xl border border-border/50 bg-card/40 p-6 group hover:border-primary/30 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
+                      {step.emoji}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-primary/60">STEP {i + 1}</span>
+                      </div>
+                      <h3 className="font-bold text-lg text-foreground mb-2">{step.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                    </div>
                   </div>
-                ))}
+                  {/* Arrow connector */}
+                  {i < l.pllSteps.length - 1 && (
+                    <div className="hidden sm:block absolute -bottom-4 left-1/2 -translate-x-1/2 text-primary/40 text-lg z-10">
+                      {i % 2 === 0 ? "→" : "↓"}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Loop indicator */}
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: "4s" }} />
+                <span className="text-xs font-bold text-primary">
+                  {lang === "ko" ? "자기 강화 사이클 반복" : "Self-reinforcing cycle"}
+                </span>
               </div>
             </div>
-
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
-              <h3 className="font-bold text-lg text-foreground mb-4">{l.archQuality}</h3>
-              <div className="space-y-3 text-sm">
-                {l.archQualityItems.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          </div>
           </div>
         </div>
       </Section>
