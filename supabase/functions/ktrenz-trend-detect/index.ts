@@ -66,11 +66,12 @@ Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル",
       body: JSON.stringify({
         model: "sonar",
         messages: [
-          { role: "system", content: "You are a trend analysis expert that extracts commercial entities from K-pop news. Return ONLY valid JSON arrays." },
+          { role: "system", content: "You are a trend analysis expert. Extract commercial entities ONLY from the provided article texts. Never use external knowledge about the artist's endorsement history. If articles are about music charts or awards with no commercial entities, return []. Return ONLY valid JSON arrays." },
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
         max_tokens: 1000,
+        search_recency_filter: "week",
       }),
     });
 
