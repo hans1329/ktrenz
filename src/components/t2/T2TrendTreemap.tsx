@@ -439,7 +439,7 @@ const T2TrendTreemap = () => {
         </div>
       ) : viewMode === "list" ? (
         <T2TrendList
-          items={filteredItems}
+          items={visibleItems}
           watchedSet={watchedSet}
           onTileClick={handleTileClick}
           selectedTileId={selectedTile?.id ?? null}
