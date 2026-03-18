@@ -9,9 +9,12 @@ import { TrendingUp, Clock } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 
 // ── Types ──
-interface TrendTile {
+export interface TrendTile {
   id: string;
   keyword: string;
+  keywordKo: string | null;
+  keywordJa: string | null;
+  keywordZh: string | null;
   category: string;
   artistName: string;
   wikiEntryId: string;
@@ -21,6 +24,15 @@ interface TrendTile {
   baselineScore: number | null;
   peakScore: number | null;
   status: string;
+}
+
+function getLocalizedKeyword(tile: TrendTile, lang: string): string {
+  switch (lang) {
+    case "ko": return tile.keywordKo || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keyword;
+    default: return tile.keyword;
+  }
 }
 
 type TrendCategory = "all" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
