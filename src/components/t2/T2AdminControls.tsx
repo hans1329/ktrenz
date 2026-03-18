@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Search, TrendingUp, Zap, Database, Globe } from "lucide-react";
+import { Loader2, Search, TrendingUp, Zap, Database, Globe, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import T2PipelineProgress from "./T2PipelineProgress";
 
 interface PipelineRun {
@@ -15,6 +17,7 @@ interface PipelineRun {
 
 const T2AdminControls = () => {
   const { isAdmin, loading } = useAdminAuth();
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [pipelineRun, setPipelineRun] = useState<PipelineRun | null>(null);
@@ -100,6 +103,44 @@ const T2AdminControls = () => {
 
   const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullMutation.isPending || detectGlobalMutation.isPending;
 
+  // Mobile: collapse into dropdown menu
+  if (isMobile) {
+    return (
+      <div className="space-y-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={isAnyRunning}>
+              {isAnyRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MoreHorizontal className="w-3.5 h-3.5" />}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[140px]">
+            <DropdownMenuItem onClick={() => fullMutation.mutate()} disabled={isAnyRunning}>
+              <Zap className="w-3.5 h-3.5 mr-2" /> 전체 수집
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => detectMutation.mutate()} disabled={isAnyRunning}>
+              <Search className="w-3.5 h-3.5 mr-2" /> 감지
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => detectGlobalMutation.mutate()} disabled={isAnyRunning}>
+              <Globe className="w-3.5 h-3.5 mr-2" /> 글로벌
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => trackMutation.mutate()} disabled={isAnyRunning}>
+              <TrendingUp className="w-3.5 h-3.5 mr-2" /> 추적
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/admin/stars")}>
+              <Database className="w-3.5 h-3.5 mr-2" /> 스타 관리
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <T2PipelineProgress
+          run={pipelineRun}
+          onClose={() => setPipelineRun(null)}
+        />
+      </div>
+    );
+  }
+
+  // Desktop: inline buttons
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5 flex-wrap">
