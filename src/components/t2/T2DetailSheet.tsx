@@ -62,6 +62,10 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
+  voteYes: { en: "Yes 🔥", ko: "그럼 🔥", ja: "はい 🔥", zh: "会的 🔥" },
+  voteNo: { en: "Nah 🤷", ko: "글쎄 🤷", ja: "いいえ 🤷", zh: "不会 🤷" },
+  votesCount: { en: "votes", ko: "명 참여", ja: "票", zh: "票" },
+  voteReward: { en: "+1 K-Point for voting!", ko: "투표하면 +1 K-Point!", ja: "投票で+1 K-Point!", zh: "投票得+1 K-Point!" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
@@ -73,6 +77,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   alreadyShareBoosted: { en: "Already boosted", ko: "이미 밀어주기 완료", ja: "すでに応援済み", zh: "已推动" },
   shareBoostReward: { en: "Share & boost +5 K-Point", ko: "공유하고 밀어주기 +5 K-Point", ja: "共有して応援 +5 K-Point", zh: "分享推动 +5 K-Point" },
   alreadyShareBoostedDone: { en: "✓ Share boosted +5P", ko: "✓ 공유 밀어주기 완료 +5P", ja: "✓ 共有応援済み +5P", zh: "✓ 分享推动完成 +5P" },
+  viewFullAnalysis: { en: "View Full Analysis", ko: "상세 분석 보기", ja: "詳細分析を見る", zh: "查看完整分析" },
 };
 
 function t(key: string, lang: string): string {
