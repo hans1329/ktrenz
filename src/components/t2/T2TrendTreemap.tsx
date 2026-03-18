@@ -133,6 +133,9 @@ const T2TrendTreemap = () => {
       return ((data ?? []) as any[]).map((t): TrendTile => ({
         id: t.id,
         keyword: t.keyword,
+        keywordKo: t.keyword_ko || null,
+        keywordJa: t.keyword_ja || null,
+        keywordZh: t.keyword_zh || null,
         category: t.keyword_category || "brand",
         artistName: t.artist_name || "Unknown",
         wikiEntryId: t.wiki_entry_id,
