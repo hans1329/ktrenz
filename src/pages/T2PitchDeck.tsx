@@ -358,8 +358,8 @@ export default function T2PitchDeck() {
   return (
     <div className="bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="T2 Trend Intelligence — Real-Time K-Pop Commercial Keyword Radar"
-        description="T2 detects which brands, products, and items K-Pop artists are associated with — before the market catches on."
+        title="KTRENZ Trend Intelligence — Real-Time K-Pop Commercial Keyword Radar"
+        description="KTRENZ detects which brands, products, and items K-Pop artists are associated with — before the market catches on."
         path="/pd"
       />
 
