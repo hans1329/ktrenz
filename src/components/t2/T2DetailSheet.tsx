@@ -75,7 +75,7 @@ function formatAge(dateStr: string): string {
 
 const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | null; rank?: number; totalCount?: number; onClose: () => void }) => {
   const { language } = useLanguage();
-  // Fetch tracking history for this trigger
+  const navigate = useNavigate();
   const { data: tracking } = useQuery({
     queryKey: ["t2-tracking-detail", tile?.id],
     queryFn: async () => {
