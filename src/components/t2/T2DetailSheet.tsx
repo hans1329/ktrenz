@@ -21,6 +21,15 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
+function getLocalizedSourceTitle(tile: TrendTile, lang: string): string {
+  if (lang === "en" || !tile.sourceTitle) return tile.sourceTitle || "";
+  const ctx = lang === "ko" ? tile.contextKo
+    : lang === "ja" ? tile.contextJa
+    : lang === "zh" ? tile.contextZh
+    : null;
+  return ctx || tile.sourceTitle;
+}
+
 function getLocalizedArtistName(tile: TrendTile, lang: string): string {
   if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
   return tile.artistName;
