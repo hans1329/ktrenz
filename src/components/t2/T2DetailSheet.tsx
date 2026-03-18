@@ -120,7 +120,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 {tile.context}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground italic">No context available yet.</p>
+              <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
             )}
             {tile.sourceTitle && (
               <div className="flex items-start gap-2 pt-1 border-t border-border/50">
