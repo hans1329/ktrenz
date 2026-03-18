@@ -494,6 +494,75 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             </div>
           )}
 
+          {/* Vote & Boost */}
+          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
+            {/* Vote */}
+            <div>
+              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                <ThumbsUp className="w-3.5 h-3.5 text-primary" />
+                {t("voteRelevance", language)}
+              </h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={voteData?.myVote === "up" ? "default" : "outline"}
+                  className={cn("gap-1.5 text-xs", voteData?.myVote === "up" && "bg-green-600 hover:bg-green-700 border-green-600")}
+                  onClick={() => handleVote("up")}
+                  disabled={voteMutation.isPending}
+                >
+                  <ThumbsUp className="w-3.5 h-3.5" />
+                  {voteData?.ups ?? 0}
+                </Button>
+                <Button
+                  size="sm"
+                  variant={voteData?.myVote === "down" ? "default" : "outline"}
+                  className={cn("gap-1.5 text-xs", voteData?.myVote === "down" && "bg-red-600 hover:bg-red-700 border-red-600")}
+                  onClick={() => handleVote("down")}
+                  disabled={voteMutation.isPending}
+                >
+                  <ThumbsDown className="w-3.5 h-3.5" />
+                  {voteData?.downs ?? 0}
+                </Button>
+                <div className="flex-1" />
+                <span className="text-[10px] text-muted-foreground">
+                  {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} votes
+                </span>
+              </div>
+            </div>
+
+            {/* Boost */}
+            <div className="border-t border-border/50 pt-3">
+              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                <Rocket className="w-3.5 h-3.5 text-primary" />
+                {t("boostTrend", language)}
+                {(boostCount ?? 0) > 0 && (
+                  <Badge variant="outline" className="text-[10px] ml-1 border-primary/30 text-primary">
+                    🔥 {boostCount}
+                  </Badge>
+                )}
+              </h3>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs flex-1"
+                  onClick={() => handleBoost("x")}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  {t("shareX", language)}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs"
+                  onClick={() => handleBoost("copy")}
+                >
+                  📋
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* Detail page button */}
           <Button
             className="w-full gap-2"
