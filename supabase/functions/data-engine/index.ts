@@ -99,20 +99,23 @@ async function runCollectorModule(
 }
 
 async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // YouTube 수집은 아티스트당 ~2초 소요 → 66명 = ~132초로 60초 타임아웃 초과
-  // Buzz와 동일한 배치 + fire-and-forget 패턴 적용
   console.log(`[data-engine] Running YouTube module (dynamic batching)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) {
+    console.warn(`[data-engine] YouTube: No namuwiki-linked artists found`);
+    return { status: "no_artists", launched: 0 };
+  }
+
   const tierSnapshotAt = new Date().toISOString();
-  let tierQuery = sb
+  const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id, youtube_channel_id")
     .eq("tier", 1)
+    .in("wiki_entry_id", namuwikiIds)
     .lte("updated_at", tierSnapshotAt)
     .order("wiki_entry_id", { ascending: true });
-
-  const { data: tier1Entries } = await tierQuery;
 
   const validTier1Ids = [...new Set((tier1Entries || [])
     .filter((t: any) => t.youtube_channel_id)
@@ -121,7 +124,7 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
   const tier1Count = validTier1Ids.length;
 
   if (tier1Count === 0) {
-    console.warn(`[data-engine] YouTube: No Tier 1 artists with channel ID found`);
+    console.warn(`[data-engine] YouTube: No Tier 1 namuwiki-linked artists with channel ID found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
