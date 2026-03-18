@@ -238,6 +238,8 @@ const AdminStars = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // 연관된 trend_triggers 먼저 삭제
+      await (supabase.from("ktrenz_trend_triggers") as any).delete().eq("star_id", id);
       const { error } = await supabase.from("ktrenz_stars").delete().eq("id", id);
       if (error) throw error;
     },
