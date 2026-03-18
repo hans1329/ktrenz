@@ -47,9 +47,9 @@ interface MemberRelation {
 
 // ─── MusicBrainz API helpers ───
 
-async function searchArtist(name: string): Promise<MBArtist | null> {
+async function searchArtist(name: string, requireKpop = true): Promise<MBArtist | null> {
   const query = encodeURIComponent(name);
-  const url = `${MB_BASE}/artist/?query=${query}&fmt=json&limit=5`;
+  const url = `${MB_BASE}/artist/?query=${query}&fmt=json&limit=10`;
 
   const resp = await fetch(url, {
     headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
@@ -67,15 +67,42 @@ async function searchArtist(name: string): Promise<MBArtist | null> {
 
   const normalizedSearch = name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
 
+  // K-pop friendly countries
+  const kpopCountries = new Set(["KR", "JP", ""]);
+
   for (const a of artists) {
     const normalizedResult = a.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
     const score = a.score ?? 0;
-    if (normalizedResult === normalizedSearch && score >= 80) return a;
-    if (score >= 95) return a;
+    const country = a.country || "";
+
+    // Skip non-Korean artists when names are generic/ambiguous
+    if (requireKpop && country && !kpopCountries.has(country) && normalizedResult !== normalizedSearch) {
+      continue;
+    }
+
+    // Exact name match with decent score
+    if (normalizedResult === normalizedSearch && score >= 80) {
+      // Prefer Korean artists for exact matches
+      if (country === "KR") return a;
+      // For non-KR exact matches, only accept if no KR match exists
+      const krMatch = artists.find(
+        (b) => b.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "") === normalizedSearch && b.country === "KR" && (b.score ?? 0) >= 70,
+      );
+      if (krMatch) return krMatch;
+      return a;
+    }
   }
 
-  if (artists[0]?.score && artists[0].score >= 90) return artists[0];
-  return null;
+  // Fallback: highest-scoring Korean artist with score >= 90
+  const koreanHigh = artists.find((a) => a.country === "KR" && (a.score ?? 0) >= 90);
+  if (koreanHigh) return koreanHigh;
+
+  // Only accept non-Korean if exact name match and high score
+  const exactHighScore = artists.find((a) => {
+    const norm = a.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+    return norm === normalizedSearch && (a.score ?? 0) >= 95;
+  });
+  return exactHighScore || null;
 }
 
 async function getArtistRelations(mbid: string): Promise<MBRelationUrl[]> {
