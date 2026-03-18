@@ -435,7 +435,7 @@ const T2TrendTreemap = () => {
                   <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
                     <span
                       className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                      style={{ fontSize: `${keywordSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                      style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
                     >
                       {getLocalizedKeyword(rect.item, language)}
                     </span>
