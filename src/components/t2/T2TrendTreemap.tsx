@@ -6,9 +6,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Clock, Star, ChevronRight } from "lucide-react";
+import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 import T2AdminControls from "./T2AdminControls";
+import T2TrendList from "./T2TrendList";
 
 // ── Types ──
 export interface TrendTile {
