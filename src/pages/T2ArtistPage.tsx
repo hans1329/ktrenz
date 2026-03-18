@@ -283,7 +283,7 @@ const T2ArtistPage = () => {
 
   return (
     <>
-      <SEO title={`${displayName} – Kinterest`} path={`/t2/artist/${starId}`} />
+      <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
       <div className="min-h-screen flex flex-col">
         <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />
         <main className="flex-1 pt-4">{content}</main>
