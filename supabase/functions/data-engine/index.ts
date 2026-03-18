@@ -54,6 +54,17 @@ function launchCollector(supabaseUrl: string, serviceKey: string, source: string
   fireAndForget(p);
 }
 
+// ── 유틸: 나무위키 연결된 Tier1 아티스트만 필터링 ──
+async function getNamuwikiLinkedTier1Ids(sb: any): Promise<string[]> {
+  const { data: starRows } = await sb
+    .from("ktrenz_stars")
+    .select("wiki_entry_id")
+    .not("wiki_entry_id", "is", null);
+  const starWikiIds = new Set((starRows || []).map((r: any) => r.wiki_entry_id).filter(Boolean));
+  console.log(`[data-engine] ktrenz_stars linked wiki_entry_ids: ${starWikiIds.size}`);
+  return [...starWikiIds] as string[];
+}
+
 // ── 모듈 실행기: 기본 파이프라인 ──
 
 async function runCollectorModule(
