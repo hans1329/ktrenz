@@ -502,9 +502,6 @@ export default function T2PitchDeck() {
                 )
               )}
             </div>
-            <p className="text-center text-muted-foreground text-sm mt-4">
-              {l.pipelineFlowNote} <code className="text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded text-xs">ktrenz-trend-cron</code> {l.pipelineFlowNote2}
-            </p>
           </div>
         </div>
       </Section>
