@@ -200,14 +200,14 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID");
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    if (!perplexityKey) {
+    if (!openaiKey) {
       return new Response(
-        JSON.stringify({ success: false, error: "PERPLEXITY_API_KEY not configured" }),
+        JSON.stringify({ success: false, error: "OPENAI_API_KEY not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
