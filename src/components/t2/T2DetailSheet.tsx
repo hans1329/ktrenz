@@ -199,7 +199,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   return (
     <Sheet open={!!tile} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70dvh] overflow-y-auto border-border sm:max-w-lg sm:mx-auto">
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[80dvh] overflow-y-auto border-border sm:max-w-lg sm:mx-auto">
         <SheetHeader className="pb-3">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
