@@ -13,6 +13,7 @@ interface PipelineRun {
 interface RecentKeyword {
   id: string;
   keyword: string;
+  keyword_ko: string | null;
   artist_name: string;
   detected_at: string;
   keyword_category: string;
@@ -60,7 +61,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, artist_name, detected_at, keyword_category")
+        .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
         .gte("detected_at", run.startedAt.toISOString())
         .order("detected_at", { ascending: false })
         .limit(50);
@@ -167,7 +168,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
                   className="flex items-center gap-2 text-[11px] py-1 px-2 rounded-lg bg-background/60"
                 >
                   <Zap className="w-3 h-3 text-primary shrink-0" />
-                  <span className="font-bold text-foreground truncate">{kw.keyword}</span>
+                  <span className="font-bold text-foreground truncate">{kw.keyword_ko || kw.keyword}</span>
                   <span className="text-muted-foreground truncate">· {kw.artist_name}</span>
                   <span className="text-muted-foreground/60 text-[9px] ml-auto shrink-0">
                     {kw.keyword_category}
