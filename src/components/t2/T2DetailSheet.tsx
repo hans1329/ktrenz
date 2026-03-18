@@ -534,7 +534,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               navigate(`/t2/${tile.id}`);
             }}
           >
-            View Full Analysis
+            {t("viewFullAnalysis", language)}
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
