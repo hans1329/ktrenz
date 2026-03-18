@@ -40,14 +40,14 @@ const t = {
     // Pipeline
     pipelineTag: "Detection Pipeline",
     pipelineTitle: ["4-Phase ", "AI Pipeline"],
-    pipelineDesc: "Automated keyword detection across domestic news, global web, and YouTube — then validated with real-time search volume tracking.",
+    pipelineDesc: "Automated commercial keyword detection across news, social media, YouTube, and global sources — then validated with real-time search volume tracking.",
     pipelineSteps: [
-      { title: "Detect (Naver)", desc: "Scan 50+ Korean news articles per artist via Naver API. GPT-4o-mini extracts brand/product entities with text-match verification." },
-      { title: "Detect (Global)", desc: "Perplexity AI scans global news and social media for international brand collaborations and viral product mentions." },
-      { title: "Detect (YouTube)", desc: "YouTube Data API searches recent videos. AI analyzes titles and descriptions for product placements and brand features." },
-      { title: "Track (Google Trends)", desc: "SerpAPI validates detected keywords against real-time Google Trends search volume. Measures actual market interest." },
+      { title: "Collect", desc: "Aggregate 50+ domestic news articles and social media posts per artist. AI extracts brand/product entities with text-match verification." },
+      { title: "Detect", desc: "Scan global news, social media, and web sources for international brand collaborations and viral product mentions across multiple markets." },
+      { title: "Analyze", desc: "Process recent YouTube videos, trending content, and cross-platform mentions. AI analyzes metadata for product placements and brand features." },
+      { title: "Track", desc: "Validate detected keywords against real-time search volume data. Measure actual market interest and consumer response over time." },
     ],
-    pipelineFlowLabels: ["Naver News", "Global Web", "YouTube", "Google Trends", "Live Radar"],
+    pipelineFlowLabels: ["News & Social", "Global Web", "YouTube", "Search Volume", "Live Radar"],
     pipelineFlowNote: "Fully automated orchestration via",
     pipelineFlowNote2: "— batch processing with rate-limit protection",
 
@@ -72,7 +72,7 @@ const t = {
       { label: "Influence Index", value: "Δ%", desc: "Percentage growth from baseline to peak — the true measure of artist impact" },
     ],
     scoringExample: "Example: NCT Taeyong × Loewe",
-    scoringExampleDesc: "Detected via Naver News at baseline score 72. After 2 hours of tracking, peak score reached 75.",
+    scoringExampleDesc: "Detected via domestic news at baseline score 72. After 2 hours of tracking, peak score reached 75.",
     scoringExampleBold: " Influence Index: +4.17%",
     scoringExampleTail: " — indicating steady, sustained interest rather than a viral spike. This pattern is typical of established luxury brand ambassadorships.",
 
@@ -82,14 +82,14 @@ const t = {
     detectionSources: "Detection Sources",
     validationSources: "Validation & Tracking",
     detectionItems: [
-      { label: "Naver News API", desc: "50+ articles per artist, 24h window, Korean language focus" },
-      { label: "Perplexity AI (Sonar)", desc: "Global web search for international brand news and social posts" },
-      { label: "YouTube Data API", desc: "15 recent videos per member, 3-day window, title + description analysis" },
+      { label: "Domestic News", desc: "50+ articles per artist, 24h window, Korean language focus" },
+      { label: "Global Web & Social", desc: "International brand news, social media posts, and web mentions across markets" },
+      { label: "YouTube & Video", desc: "15 recent videos per member, 3-day window, title + description analysis" },
     ],
     validationItems: [
-      { label: "Google Trends (SerpAPI)", desc: "Real-time search volume for keyword × artist combinations" },
-      { label: "OpenAI GPT-4o-mini", desc: "Commercial entity extraction with strict hallucination controls" },
-      { label: "Supabase Edge Functions", desc: "Serverless pipeline orchestration with batch processing" },
+      { label: "Search Volume Tracking", desc: "Real-time search volume for keyword × artist combinations" },
+      { label: "AI Entity Extraction", desc: "Commercial entity extraction with strict hallucination controls" },
+      { label: "Serverless Pipeline", desc: "Automated orchestration with batch processing and rate-limit protection" },
     ],
 
     // Categories
@@ -170,14 +170,14 @@ const t = {
 
     pipelineTag: "감지 파이프라인",
     pipelineTitle: ["4단계 ", "AI 파이프라인"],
-    pipelineDesc: "국내 뉴스, 글로벌 웹, YouTube를 아우르는 자동 키워드 감지 — 이후 실시간 검색량 추적으로 검증합니다.",
+    pipelineDesc: "국내 뉴스, 소셜 미디어, YouTube, 글로벌 소스를 아우르는 자동 상업 키워드 감지 — 이후 실시간 검색량 추적으로 검증합니다.",
     pipelineSteps: [
-      { title: "감지 (네이버)", desc: "네이버 API로 아티스트당 50개 이상의 한국 뉴스 기사를 스캔. GPT-4o-mini가 텍스트 매칭 검증과 함께 브랜드/제품 엔티티를 추출합니다." },
-      { title: "감지 (글로벌)", desc: "Perplexity AI가 글로벌 뉴스와 소셜 미디어에서 국제 브랜드 콜라보 및 바이럴 제품 언급을 스캔합니다." },
-      { title: "감지 (YouTube)", desc: "YouTube Data API가 최근 영상을 검색. AI가 제목과 설명을 분석하여 제품 배치와 브랜드 피처를 감지합니다." },
-      { title: "추적 (Google Trends)", desc: "SerpAPI가 감지된 키워드를 실시간 Google Trends 검색량과 대조하여 검증합니다. 실제 시장 관심도를 측정합니다." },
+      { title: "수집", desc: "아티스트당 50개 이상의 국내 뉴스 기사와 소셜 미디어 포스트를 수집. AI가 텍스트 매칭 검증과 함께 브랜드/제품 엔티티를 추출합니다." },
+      { title: "감지", desc: "글로벌 뉴스, 소셜 미디어, 웹 소스에서 국제 브랜드 콜라보 및 바이럴 제품 언급을 다양한 시장에 걸쳐 감지합니다." },
+      { title: "분석", desc: "최근 YouTube 영상, 트렌딩 콘텐츠, 크로스 플랫폼 언급을 처리. AI가 메타데이터를 분석하여 제품 배치와 브랜드 피처를 감지합니다." },
+      { title: "추적", desc: "감지된 키워드를 실시간 검색량 데이터와 대조하여 검증합니다. 실제 시장 관심도와 소비자 반응을 시간에 따라 측정합니다." },
     ],
-    pipelineFlowLabels: ["네이버 뉴스", "글로벌 웹", "YouTube", "Google Trends", "라이브 레이더"],
+    pipelineFlowLabels: ["뉴스 & 소셜", "글로벌 웹", "YouTube", "검색량", "라이브 레이더"],
     pipelineFlowNote: "완전 자동화된 오케스트레이션:",
     pipelineFlowNote2: "— 속도 제한 보호 기능이 있는 배치 처리",
 
@@ -200,7 +200,7 @@ const t = {
       { label: "영향력 지수", value: "Δ%", desc: "기준에서 최고점까지의 성장률 — 아티스트 영향력의 진정한 척도" },
     ],
     scoringExample: "예시: NCT 태용 × Loewe",
-    scoringExampleDesc: "네이버 뉴스를 통해 기준 점수 72에서 감지. 2시간 추적 후 최고 점수 75 도달.",
+    scoringExampleDesc: "국내 뉴스를 통해 기준 점수 72에서 감지. 2시간 추적 후 최고 점수 75 도달.",
     scoringExampleBold: " 영향력 지수: +4.17%",
     scoringExampleTail: " — 바이럴 급등이 아닌 안정적이고 지속적인 관심을 나타냅니다. 이 패턴은 확립된 럭셔리 브랜드 앰배서더십의 전형적인 모습입니다.",
 
@@ -209,14 +209,14 @@ const t = {
     detectionSources: "감지 소스",
     validationSources: "검증 & 추적",
     detectionItems: [
-      { label: "네이버 뉴스 API", desc: "아티스트당 50개 이상 기사, 24시간 윈도우, 한국어 중심" },
-      { label: "Perplexity AI (Sonar)", desc: "국제 브랜드 뉴스 및 소셜 포스트 글로벌 웹 검색" },
-      { label: "YouTube Data API", desc: "멤버당 최근 15개 영상, 3일 윈도우, 제목 + 설명 분석" },
+      { label: "국내 뉴스", desc: "아티스트당 50개 이상 기사, 24시간 윈도우, 한국어 중심" },
+      { label: "글로벌 웹 & 소셜", desc: "국제 브랜드 뉴스, 소셜 미디어 포스트, 다양한 시장의 웹 언급" },
+      { label: "YouTube & 영상", desc: "멤버당 최근 15개 영상, 3일 윈도우, 제목 + 설명 분석" },
     ],
     validationItems: [
-      { label: "Google Trends (SerpAPI)", desc: "키워드 × 아티스트 조합의 실시간 검색량" },
-      { label: "OpenAI GPT-4o-mini", desc: "엄격한 환각 제어가 적용된 상업 엔티티 추출" },
-      { label: "Supabase Edge Functions", desc: "배치 처리가 가능한 서버리스 파이프라인 오케스트레이션" },
+      { label: "검색량 추적", desc: "키워드 × 아티스트 조합의 실시간 검색량" },
+      { label: "AI 엔티티 추출", desc: "엄격한 환각 제어가 적용된 상업 엔티티 추출" },
+      { label: "서버리스 파이프라인", desc: "배치 처리 및 속도 제한 보호 기능의 자동 오케스트레이션" },
     ],
 
     categoriesTag: "키워드 카테고리",
