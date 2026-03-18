@@ -435,7 +435,7 @@ export default function T2PitchDeck() {
       <Section id="problem">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><AlertTriangle className="w-3.5 h-3.5" /> {l.problemTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.problemTitle[0]}<span className="text-primary">{l.problemTitle[1]}</span>{l.problemTitle[2]}
             </h2>
