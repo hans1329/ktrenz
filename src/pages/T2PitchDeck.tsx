@@ -40,12 +40,12 @@ const t = {
     // Pipeline
     pipelineTag: "Detection Pipeline",
     pipelineTitle: ["4-Phase ", "AI Pipeline"],
-    pipelineDesc: "Automated commercial keyword detection across news, social media, YouTube, and global sources — then validated with real-time search volume tracking.",
+    pipelineDesc: "Collect data from domestic and global sources, detect commercial keywords with AI, verify against original text, and track real-time search volume.",
     pipelineSteps: [
-      { title: "Collect", desc: "Aggregate 50+ domestic news articles and social media posts per artist. AI extracts brand/product entities with text-match verification." },
-      { title: "Detect", desc: "Scan global news, social media, and web sources for international brand collaborations and viral product mentions across multiple markets." },
-      { title: "Analyze", desc: "Process recent YouTube videos, trending content, and cross-platform mentions. AI analyzes metadata for product placements and brand features." },
-      { title: "Track", desc: "Validate detected keywords against real-time search volume data. Measure actual market interest and consumer response over time." },
+      { title: "Collect", desc: "Aggregate news articles, social media posts, YouTube videos, and web content from both domestic and global sources for each artist." },
+      { title: "Detect", desc: "AI analyzes collected data to extract brand names, product mentions, and commercial entities — across all source types and markets." },
+      { title: "Verify", desc: "Every extracted keyword is cross-checked against original source text. Items not found in the actual content are filtered out to prevent false positives." },
+      { title: "Track", desc: "Validated keywords are monitored via real-time search volume data. Measures actual market interest and consumer response over time." },
     ],
     pipelineFlowLabels: ["News & Social", "Global Web", "YouTube", "Search Volume", "Live Radar"],
     pipelineFlowNote: "Fully automated orchestration via",
