@@ -151,16 +151,16 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {tile.influenceIndex > 0 ? (
                   <>
-                    Google Trends search volume surged <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> after {tile.artistName}'s news mention.
+                    {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {tile.artistName}{t("newsMention", language)}
                     {tile.baselineScore != null && tile.peakScore != null && (
-                      <> Baseline interest was <span className="font-bold text-foreground">{tile.baselineScore}</span>, peaked at <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
+                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
                     )}
                     {totalCount && totalCount > 1 && (
-                      <> This is the highest influence index among {totalCount} active keywords.</>
+                      <> {t("highestAmong", language)} {totalCount} {t("activeKeywords", language)}</>
                     )}
                   </>
                 ) : (
-                  <>Tracking just started — waiting for Google Trends data to calculate influence.</>
+                  <>{t("trackingStarted", language)}</>
                 )}
               </p>
             </div>
