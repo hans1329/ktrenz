@@ -200,7 +200,7 @@ const T2TrendTreemap = () => {
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
-        .limit(100);
+        .limit(500);
 
       const triggers = (data ?? []) as any[];
 
