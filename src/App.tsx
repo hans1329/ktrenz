@@ -90,6 +90,7 @@ const App = () => (
               <Route path="pipeline-guard" element={<AdminPipelineGuard />} />
               <Route path="signal-events" element={<AdminSignalEvents />} />
               <Route path="listing-requests" element={<AdminListingRequests />} />
+              <Route path="stars" element={<AdminStars />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
