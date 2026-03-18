@@ -240,16 +240,38 @@ const T2TrendTreemap = () => {
     return triggers.filter(t => watchedSet.has(t.wikiEntryId));
   }, [triggers, watchedSet]);
 
-  const filteredItems = useMemo(() => {
+  // Deduplicate: max 3 keywords per artist, sorted by influence then baseline
+  const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
+    const sorted = [...triggers].sort((a, b) => {
+      if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
+      if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
+      return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
+    });
+    const artistCount = new Map<string, number>();
+    return sorted.filter(t => {
+      const key = t.artistName;
+      const count = artistCount.get(key) || 0;
+      if (count >= 3) return false;
+      artistCount.set(key, count + 1);
+      return true;
+    });
+  }, [triggers]);
+
+  const filteredItems = useMemo(() => {
+    if (!dedupedTriggers.length) return [];
     const items = selectedCategory === "all"
-      ? triggers
-      : triggers.filter(t => t.category === selectedCategory);
-    return items.sort((a, b) => b.influenceIndex - a.influenceIndex);
-  }, [triggers, selectedCategory]);
+      ? dedupedTriggers
+      : dedupedTriggers.filter(t => t.category === selectedCategory);
+    return items.sort((a, b) => {
+      if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
+      if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
+      return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
+    });
+  }, [dedupedTriggers, selectedCategory]);
 
   const containerWidth = isMobile ? 360 : 780;
-  const containerHeight = isMobile ? 1400 : 1000;
+  const containerHeight = isMobile ? 1100 : 800;
 
   const rects = useMemo(() => {
     if (!filteredItems.length) return [];
