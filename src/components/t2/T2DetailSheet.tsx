@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info, Timer, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TrendTile } from "./T2TrendTreemap";
 
@@ -73,7 +75,7 @@ function formatAge(dateStr: string): string {
 
 const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | null; rank?: number; totalCount?: number; onClose: () => void }) => {
   const { language } = useLanguage();
-  // Fetch tracking history for this trigger
+  const navigate = useNavigate();
   const { data: tracking } = useQuery({
     queryKey: ["t2-tracking-detail", tile?.id],
     queryFn: async () => {
@@ -387,6 +389,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               </div>
             </div>
           )}
+
+          {/* Detail page button */}
+          <Button
+            className="w-full gap-2"
+            onClick={() => {
+              onClose();
+              navigate(`/t2/${tile.id}`);
+            }}
+          >
+            View Full Analysis
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
