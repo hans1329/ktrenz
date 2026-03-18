@@ -181,7 +181,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               </div>
             </div>
             <div className="rounded-lg bg-muted/30 border border-border p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">Peak</div>
+              <div className="text-[11px] text-muted-foreground mb-1">{t("peak", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.peakScore != null ? tile.peakScore : "—"}
               </div>
