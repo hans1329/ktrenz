@@ -478,9 +478,13 @@ const T2TrendTreemap = () => {
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       width: `${width}%`, height: `${height}%`,
-                      background: (rect.item.sourceImageUrl || rect.item.artistImageUrl)
-                        ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${rect.item.sourceImageUrl || rect.item.artistImageUrl}) center/cover no-repeat`
-                        : tileColor,
+                      background: (() => {
+                        const safeSourceImg = rect.item.sourceImageUrl?.startsWith('https://') ? rect.item.sourceImageUrl : null;
+                        const bgImg = safeSourceImg || rect.item.artistImageUrl;
+                        return bgImg
+                          ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${bgImg}) center/cover no-repeat`
+                          : tileColor;
+                      })(),
                     }}
                   >
                     {isMedium && rect.item.influenceIndex > 0 && (
