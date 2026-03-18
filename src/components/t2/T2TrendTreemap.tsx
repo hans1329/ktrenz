@@ -133,6 +133,7 @@ const T2TrendTreemap = () => {
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
     queryFn: async () => {
+      // Fetch triggers
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
@@ -140,24 +141,43 @@ const T2TrendTreemap = () => {
         .order("influence_index", { ascending: false })
         .limit(50);
 
-      return ((data ?? []) as any[]).map((t): TrendTile => ({
-        id: t.id,
-        keyword: t.keyword,
-        keywordKo: t.keyword_ko || null,
-        keywordJa: t.keyword_ja || null,
-        keywordZh: t.keyword_zh || null,
-        category: t.keyword_category || "brand",
-        artistName: t.artist_name || "Unknown",
-        wikiEntryId: t.wiki_entry_id,
-        influenceIndex: Number(t.influence_index) || 0,
-        context: t.context,
-        detectedAt: t.detected_at,
-        baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
-        peakScore: t.peak_score != null ? Number(t.peak_score) : null,
-        sourceUrl: t.source_url || null,
-        sourceTitle: t.source_title || null,
-        status: t.status,
-      }));
+      const triggers = (data ?? []) as any[];
+
+      // Fetch star names for wiki_entry_ids
+      const wikiIds = [...new Set(triggers.map((t: any) => t.wiki_entry_id).filter(Boolean))];
+      const starMap = new Map<string, { display_name: string; name_ko: string | null }>();
+      if (wikiIds.length > 0) {
+        const { data: stars } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("wiki_entry_id, display_name, name_ko")
+          .in("wiki_entry_id", wikiIds);
+        (stars ?? []).forEach((s: any) => {
+          starMap.set(s.wiki_entry_id, { display_name: s.display_name, name_ko: s.name_ko });
+        });
+      }
+
+      return triggers.map((t: any): TrendTile => {
+        const star = starMap.get(t.wiki_entry_id);
+        return {
+          id: t.id,
+          keyword: t.keyword,
+          keywordKo: t.keyword_ko || null,
+          keywordJa: t.keyword_ja || null,
+          keywordZh: t.keyword_zh || null,
+          category: t.keyword_category || "brand",
+          artistName: star?.display_name || t.artist_name || "Unknown",
+          artistNameKo: star?.name_ko || null,
+          wikiEntryId: t.wiki_entry_id,
+          influenceIndex: Number(t.influence_index) || 0,
+          context: t.context,
+          detectedAt: t.detected_at,
+          baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
+          peakScore: t.peak_score != null ? Number(t.peak_score) : null,
+          sourceUrl: t.source_url || null,
+          sourceTitle: t.source_title || null,
+          status: t.status,
+        };
+      });
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
