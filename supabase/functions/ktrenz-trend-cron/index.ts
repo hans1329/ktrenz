@@ -1,5 +1,6 @@
-// T2 Trend Cron: trend-detect → trend-track 순차 오케스트레이션
-// detect 완료 후 track 시작, throttle 감지 시 체이닝 중단
+// T2 Trend Cron: detect → detect_global → track 순차 오케스트레이션
+// detect 완료 후 detect_global 시작, 그 후 track 시작
+// throttle 감지 시 체이닝 중단
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -44,15 +45,48 @@ Deno.serve(async (req) => {
       if (nextOffset < totalCandidates) {
         // 아직 detect할 아티스트 남음 → 다음 detect 배치 체이닝
         console.log(`[trend-cron] Chaining next detect batch: offset=${nextOffset}`);
-        await new Promise((r) => setTimeout(r, 5000)); // 5초 딜레이
+        await new Promise((r) => setTimeout(r, 5000));
         sb.functions.invoke("ktrenz-trend-cron", {
           body: { phase: "detect", batchOffset: nextOffset, batchSize },
         }).catch((e: any) => console.warn(`[trend-cron] Chain error: ${e.message}`));
         results.nextBatch = nextOffset;
       } else {
-        // 모든 detect 완료 → track phase 시작
-        console.log(`[trend-cron] All detect done (${totalCandidates} artists). Starting track phase after 10s delay.`);
-        await new Promise((r) => setTimeout(r, 10000)); // 10초 딜레이
+        // 모든 detect 완료 → detect_global phase 시작
+        console.log(`[trend-cron] All detect done (${totalCandidates} artists). Starting detect_global phase after 10s delay.`);
+        await new Promise((r) => setTimeout(r, 10000));
+        sb.functions.invoke("ktrenz-trend-cron", {
+          body: { phase: "detect_global", batchOffset: 0, batchSize },
+        }).catch((e: any) => console.warn(`[trend-cron] detect_global invoke error: ${e.message}`));
+        results.nextPhase = "detect_global";
+      }
+    } else if (phase === "detect_global") {
+      console.log(`[trend-cron] Phase: DETECT_GLOBAL, offset=${batchOffset}, size=${batchSize}`);
+
+      const { data: globalData, error: globalError } = await sb.functions.invoke(
+        "ktrenz-trend-detect-global",
+        { body: { batchSize, batchOffset } }
+      );
+
+      if (globalError) throw new Error(`trend-detect-global failed: ${globalError.message}`);
+
+      const parsed = typeof globalData === "string" ? JSON.parse(globalData) : globalData;
+      results.detect_global = parsed;
+
+      const totalCandidates = parsed?.totalCandidates ?? 0;
+      const nextOffset = batchOffset + batchSize;
+
+      if (nextOffset < totalCandidates) {
+        // 아직 detect_global할 아티스트 남음
+        console.log(`[trend-cron] Chaining next detect_global batch: offset=${nextOffset}`);
+        await new Promise((r) => setTimeout(r, 5000));
+        sb.functions.invoke("ktrenz-trend-cron", {
+          body: { phase: "detect_global", batchOffset: nextOffset, batchSize },
+        }).catch((e: any) => console.warn(`[trend-cron] Chain error: ${e.message}`));
+        results.nextBatch = nextOffset;
+      } else {
+        // 모든 detect_global 완료 → track phase 시작
+        console.log(`[trend-cron] All detect_global done. Starting track phase after 10s delay.`);
+        await new Promise((r) => setTimeout(r, 10000));
         sb.functions.invoke("ktrenz-trend-track", {
           body: { batchSize: 5, batchOffset: 0, regions: ["worldwide"] },
         }).catch((e: any) => console.warn(`[trend-cron] Track invoke error: ${e.message}`));
