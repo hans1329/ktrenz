@@ -198,6 +198,7 @@ const T2TrendTreemap = () => {
           category: t.keyword_category || "brand",
           artistName: star?.display_name || t.artist_name || "Unknown",
           artistNameKo: star?.name_ko || null,
+          artistImageUrl: star?.image_url || null,
           wikiEntryId: t.wiki_entry_id,
           influenceIndex: Number(t.influence_index) || 0,
           context: t.context,
