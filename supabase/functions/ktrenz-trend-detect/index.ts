@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
     // 단일 멤버 모드 (수동 테스트용)
     if (starId && memberName) {
       const result = await detectForMember(
-        sb, perplexityKey, naverClientId, naverClientSecret,
+        sb, openaiKey, naverClientId, naverClientSecret,
         { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_wiki_entry_id: wikiEntryId || null }
       );
       return new Response(
