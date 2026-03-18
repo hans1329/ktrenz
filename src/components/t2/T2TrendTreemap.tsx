@@ -452,7 +452,7 @@ const T2TrendTreemap = () => {
                     {rect.item.influenceIndex > 0 && (
                       <span
                         className="font-black text-white drop-shadow-lg"
-                        style={{ fontSize: `${scoreSize}px`, opacity: titleOpacity * 0.9, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                        style={{ fontSize: `${scoreSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
                       >
                         {rect.item.influenceIndex.toFixed(0)}
                       </span>
