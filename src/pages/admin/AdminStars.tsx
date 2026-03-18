@@ -166,14 +166,14 @@ const AdminStars = () => {
         is_active: form.is_active,
       };
       if (isEdit && editingStar) {
-        const { error } = await supabase
-          .from("ktrenz_stars")
+        const { error } = await (supabase
+          .from("ktrenz_stars") as any)
           .update(payload)
           .eq("id", editingStar.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("ktrenz_stars")
+        const { error } = await (supabase
+          .from("ktrenz_stars") as any)
           .insert(payload);
         if (error) throw error;
       }
