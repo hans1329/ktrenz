@@ -376,10 +376,52 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 14일 이상 추적된 트리거 자동 만료 + 라이프사이클 메트릭 계산
+      // 스마트 만료: 조기 만료 + 연장 추적
       if (!throttled) {
-        const triggerAge = Date.now() - new Date(trigger.detected_at).getTime();
-        if (triggerAge > 14 * 24 * 60 * 60 * 1000) {
+        const triggerAgeMs = Date.now() - new Date(trigger.detected_at).getTime();
+        const triggerAgeDays = triggerAgeMs / (24 * 60 * 60 * 1000);
+        const currentInfluence = trigger.influence_index ?? 0;
+
+        let shouldExpire = false;
+        let expireReason = "";
+
+        // 1) 조기 만료: 3일 이상 경과 & influence_index ≤ 5 이면 최근 3일 연속 낮은지 확인
+        if (triggerAgeDays >= 3 && currentInfluence <= 5) {
+          const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: recentScores } = await sb
+            .from("ktrenz_trend_tracking")
+            .select("interest_score")
+            .eq("trigger_id", trigger.id)
+            .gte("tracked_at", threeDaysAgo)
+            .order("tracked_at", { ascending: false })
+            .limit(10);
+
+          const scores = (recentScores ?? []).map((r: any) => r.interest_score);
+          // 최근 기록이 3개 이상이고 모두 기준 이하면 조기 만료
+          if (scores.length >= 3 && scores.every((s: number) => s <= (trigger.baseline_score ?? 10))) {
+            shouldExpire = true;
+            expireReason = "early_decay";
+          }
+        }
+
+        // 2) 14일 초과: influence_index > 20 이면 연장, 아니면 만료
+        if (!shouldExpire && triggerAgeDays > 14) {
+          if (currentInfluence > 20) {
+            // 연장 추적 — 만료하지 않음
+            console.log(`[trend-track] Extended tracking: ${trigger.keyword} (${trigger.artist_name}) — influence=${currentInfluence}, age=${Math.round(triggerAgeDays)}d`);
+          } else {
+            shouldExpire = true;
+            expireReason = "lifecycle_end";
+          }
+        }
+
+        // 3) 최대 30일 하드캡
+        if (!shouldExpire && triggerAgeDays > 30) {
+          shouldExpire = true;
+          expireReason = "hard_cap_30d";
+        }
+
+        if (shouldExpire) {
           const now = new Date();
           const lifetimeHours = Math.round((now.getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10;
           const peakDelayHours = trigger.peak_at
@@ -395,7 +437,7 @@ Deno.serve(async (req) => {
               peak_delay_hours: peakDelayHours,
             })
             .eq("id", trigger.id);
-          console.log(`[trend-track] Expired trigger: ${trigger.keyword} (${trigger.artist_name}) — lifetime=${lifetimeHours}h, peak_delay=${peakDelayHours}h`);
+          console.log(`[trend-track] Expired trigger (${expireReason}): ${trigger.keyword} (${trigger.artist_name}) — lifetime=${lifetimeHours}h, peak_delay=${peakDelayHours}h`);
         }
       }
     }
