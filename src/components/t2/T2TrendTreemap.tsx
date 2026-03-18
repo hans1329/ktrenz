@@ -155,6 +155,15 @@ const T2TrendTreemap = () => {
     setSelectedTile(prev => prev?.id === item.id ? null : item);
   }, []);
 
+  const categoryStats = useMemo(() => {
+    if (!triggers?.length) return {};
+    const stats: Record<string, number> = {};
+    for (const t of triggers) {
+      stats[t.category] = (stats[t.category] || 0) + 1;
+    }
+    return stats;
+  }, [triggers]);
+
   if (isLoading) {
     return (
       <div className="px-4 pb-4">
@@ -169,15 +178,6 @@ const T2TrendTreemap = () => {
       </div>
     );
   }
-
-  const categoryStats = useMemo(() => {
-    if (!triggers?.length) return {};
-    const stats: Record<string, number> = {};
-    for (const t of triggers) {
-      stats[t.category] = (stats[t.category] || 0) + 1;
-    }
-    return stats;
-  }, [triggers]);
 
   return (
     <div className="px-4 pb-4">
