@@ -14,9 +14,10 @@ async function translateContext(keyword: string, context: string): Promise<{ ko:
       method: "POST",
       headers: {
         "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a K-pop trend translator. Return only JSON with ko, ja, zh keys. Keep translations concise and natural for mobile UI." },
           { role: "user", content: `Translate this K-pop trend context into Korean, Japanese, and Chinese (Simplified).\n\nKeyword: ${keyword}\nContext: ${context}\n\nReturn JSON: {"ko":"...","ja":"...","zh":"..."}` },
