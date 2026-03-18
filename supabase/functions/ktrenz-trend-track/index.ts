@@ -28,49 +28,46 @@ async function fetchGoogleTrends(
   artistName: string,
   region: string = "worldwide"
 ): Promise<TrendResult | null> {
-  const queries = [`${artistName} ${keyword}`, keyword];
+  // 단일 쿼리: "아티스트 + 키워드" 조합만 사용 (6시간 크론으로 전체 순회하므로 충분)
+  const query = `${artistName} ${keyword}`;
 
-  for (const query of queries) {
-    const params = new URLSearchParams({
-      engine: "google_trends",
-      q: query,
-      data_type: "TIMESERIES",
-      date: "now 7-d",
-      api_key: serpApiKey,
-    });
+  const params = new URLSearchParams({
+    engine: "google_trends",
+    q: query,
+    data_type: "TIMESERIES",
+    date: "now 7-d",
+    api_key: serpApiKey,
+  });
 
-    if (region !== "worldwide") {
-      params.set("geo", region);
-    }
-
-    const response = await fetch(`https://serpapi.com/search.json?${params}`);
-    if (!response.ok) {
-      const err = await response.text();
-      if (err.includes("throttled") || err.includes("exceeded") || response.status === 429) {
-        throw new ThrottleError(`SerpAPI throttled: ${err.slice(0, 100)}`);
-      }
-      console.warn(`[trend-track] SerpAPI error for "${query}": ${err.slice(0, 150)}`);
-      continue;
-    }
-
-    const data = await response.json();
-    const timelineData = data.interest_over_time?.timeline_data || [];
-
-    if (!timelineData.length) continue;
-
-    const timeline = timelineData.map((t: any) => ({
-      date: t.date || "",
-      value: t.values?.[0]?.extracted_value ?? 0,
-    }));
-
-    const latestValue = timeline[timeline.length - 1]?.value ?? 0;
-
-    if (latestValue > 0 || timeline.some((t: any) => t.value > 0)) {
-      return { keyword, interest_score: latestValue, region, timeline };
-    }
+  if (region !== "worldwide") {
+    params.set("geo", region);
   }
 
-  return { keyword, interest_score: 0, region, timeline: [] };
+  const response = await fetch(`https://serpapi.com/search.json?${params}`);
+  if (!response.ok) {
+    const err = await response.text();
+    if (err.includes("throttled") || err.includes("exceeded") || response.status === 429) {
+      throw new ThrottleError(`SerpAPI throttled: ${err.slice(0, 100)}`);
+    }
+    console.warn(`[trend-track] SerpAPI error for "${query}": ${err.slice(0, 150)}`);
+    return { keyword, interest_score: 0, region, timeline: [] };
+  }
+
+  const data = await response.json();
+  const timelineData = data.interest_over_time?.timeline_data || [];
+
+  if (!timelineData.length) {
+    return { keyword, interest_score: 0, region, timeline: [] };
+  }
+
+  const timeline = timelineData.map((t: any) => ({
+    date: t.date || "",
+    value: t.values?.[0]?.extracted_value ?? 0,
+  }));
+
+  const latestValue = timeline[timeline.length - 1]?.value ?? 0;
+
+  return { keyword, interest_score: latestValue, region, timeline };
 }
 
 // 인과관계 지표 업데이트: baseline 설정 + peak/influence 갱신
