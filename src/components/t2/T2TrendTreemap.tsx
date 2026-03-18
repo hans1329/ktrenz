@@ -451,46 +451,8 @@ const T2TrendTreemap = () => {
         })}
       </div>
 
-      {/* My Artists' Keywords */}
-      {myKeywords.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-2">
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            My Artists' Keywords
-            <span className="text-[10px] text-muted-foreground font-normal ml-1">{myKeywords.length}</span>
-          </h3>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {myKeywords.map((kw) => {
-              const catConfig = CATEGORY_CONFIG[kw.category];
-              return (
-                <button
-                  key={kw.id}
-                  onClick={() => handleTileClick(kw)}
-                  className={cn(
-                    "shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all",
-                    selectedTile?.id === kw.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-muted/30 hover:bg-muted/50"
-                  )}
-                >
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
-                  />
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-foreground leading-tight">
-                      {getLocalizedKeyword(kw, language)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground leading-tight">
-                      {getLocalizedArtistName(kw, language)}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* My Artists' Keywords — compact banner */}
+      {myKeywords.length > 0 && <MyArtistsBanner myKeywords={myKeywords} language={language} />}
 
       {/* View Content */}
       {filteredItems.length === 0 ? (
