@@ -103,20 +103,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: tracking } = useQuery({
-    queryKey: ["t2-tracking-detail", tile?.id],
-    queryFn: async () => {
-      if (!tile) return [];
-      const { data } = await supabase
-        .from("ktrenz_trend_tracking" as any)
-        .select("*")
-        .eq("trigger_id", tile.id)
-        .order("tracked_at", { ascending: false })
-        .limit(20);
-      return (data ?? []) as any[];
-    },
-    enabled: !!tile,
-  });
+
+
 
   // Vote data
   const { data: voteData } = useQuery({
