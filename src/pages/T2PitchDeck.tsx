@@ -148,8 +148,8 @@ const t = {
   },
   ko: {
     heroTag: "T2 · 트렌드 인텔리전스 엔진",
-    heroTitle1: "K-Pop이",
-    heroTitle2: "움직이는 것을",
+    heroTitle1: "K-Pop이 만드는",
+    heroTitle2: "상업적 움직임을",
     heroTitle3: "시장보다 먼저 감지",
     heroDesc: "어떤 브랜드 콜라보가 주목받고 있나? 어떤 제품 PPL이 바이럴 되었나?",
     heroDescBold: "T2는 노이즈가 되기 전에 시그널을 찾습니다.",
