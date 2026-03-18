@@ -16,6 +16,7 @@ interface ExtractedKeyword {
   category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
   confidence: number;
   context: string;
+  source_article_index?: number;
 }
 
 // Perplexity API로 뉴스 기사에서 상업 키워드 추출
@@ -53,8 +54,10 @@ STRICT Rules:
 - For each keyword, also provide translations: keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese simplified)
 - If the entity is already well-known in that language, use the commonly used name (e.g. keyword: "Chanel", keyword_ko: "샤넬", keyword_ja: "シャネル", keyword_zh: "香奈儿")
 
+- For each keyword, also include "source_article_index": the 1-based article number from the list above that MOST directly mentions this entity. If multiple articles mention it, pick the most relevant one.
+
 Return ONLY a JSON array. If no commercial entities found in the articles, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]"}]`;
+Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","source_article_index":1}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -272,24 +275,36 @@ async function detectForArtist(
   const newKeywords = keywords.filter((k) => !existingKeywords.has(k.keyword.toLowerCase()));
 
   if (newKeywords.length > 0) {
-    const rows = newKeywords.map((k) => ({
-      wiki_entry_id: wikiEntryId,
-      star_id: starId || null,
-      trigger_type: "news_mention",
-      trigger_source: "naver_news",
-      artist_name: artistName,
-      keyword: k.keyword,
-      keyword_ko: k.keyword_ko || null,
-      keyword_ja: k.keyword_ja || null,
-      keyword_zh: k.keyword_zh || null,
-      keyword_category: k.category,
-      context: k.context,
-      confidence: k.confidence,
-      source_url: articles[0]?.url || null,
-      source_title: articles[0]?.title || null,
-      status: "active",
-      metadata: { article_count: articles.length },
-    }));
+    const rows = newKeywords.map((k) => {
+      // Parse source_article_index from AI response, fallback to parsing [N] from context
+      let articleIdx = 0; // 0-based
+      if (k.source_article_index && k.source_article_index > 0) {
+        articleIdx = k.source_article_index - 1;
+      } else {
+        const refMatch = k.context?.match(/\[(\d+)\]/);
+        if (refMatch) articleIdx = parseInt(refMatch[1], 10) - 1;
+      }
+      const sourceArticle = articles[articleIdx] || articles[0];
+
+      return {
+        wiki_entry_id: wikiEntryId,
+        star_id: starId || null,
+        trigger_type: "news_mention",
+        trigger_source: "naver_news",
+        artist_name: artistName,
+        keyword: k.keyword,
+        keyword_ko: k.keyword_ko || null,
+        keyword_ja: k.keyword_ja || null,
+        keyword_zh: k.keyword_zh || null,
+        keyword_category: k.category,
+        context: k.context,
+        confidence: k.confidence,
+        source_url: sourceArticle?.url || null,
+        source_title: sourceArticle?.title || null,
+        status: "active",
+        metadata: { article_count: articles.length },
+      };
+    });
 
     await sb.from("ktrenz_trend_triggers").insert(rows);
     console.log(`[trend-detect] ${artistName}: inserted ${newKeywords.length} new keywords (${newKeywords.map((k) => k.keyword).join(", ")})`);
