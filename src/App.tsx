@@ -40,6 +40,7 @@ import AdminDataQuality from "./pages/admin/AdminDataQuality";
 import AdminPipelineGuard from "./pages/admin/AdminPipelineGuard";
 import AdminSignalEvents from "./pages/admin/AdminSignalEvents";
 import AdminListingRequests from "./pages/admin/AdminListingRequests";
+import AdminStars from "./pages/admin/AdminStars";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
