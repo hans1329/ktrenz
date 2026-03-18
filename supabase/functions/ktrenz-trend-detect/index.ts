@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     // 배치 모드: Tier 1 아티스트 순회
     const { data: tier1 } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, name_en")
+      .select("wiki_entry_id, display_name")
       .eq("tier", 1)
       .order("wiki_entry_id", { ascending: true });
 
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     // 아티스트 이름 매핑
     const nameMap = new Map<string, string>();
     for (const t of tier1 || []) {
-      if (t?.wiki_entry_id && t?.name_en) nameMap.set(t.wiki_entry_id, t.name_en);
+      if (t?.wiki_entry_id && t?.display_name) nameMap.set(t.wiki_entry_id, t.display_name);
     }
 
     // star_id 매핑
@@ -212,9 +212,9 @@ async function detectForArtist(
     return { keywordsFound: 0, keywords: [] };
   }
 
-  // 뉴스 기사 목록 추출
+  // 뉴스 기사 목록 추출 (다양한 raw_response 구조 지원)
   const articles: { title: string; description?: string; url?: string }[] = [];
-  const rawItems = snap.raw_response?.items || snap.raw_response?.articles || [];
+  const rawItems = snap.raw_response?.items || snap.raw_response?.articles || snap.raw_response?.top_items || [];
   for (const item of rawItems) {
     articles.push({
       title: (item.title || "").replace(/<[^>]*>/g, ""),
@@ -223,14 +223,14 @@ async function detectForArtist(
     });
   }
 
-  // 메타데이터의 top_articles도 확인
-  const topArticles = snap.metrics?.top_articles || [];
-  for (const item of topArticles) {
+  // 메타데이터의 top_articles / top_items도 확인
+  const topItems = snap.metrics?.top_articles || snap.metrics?.top_items || [];
+  for (const item of topItems) {
     if (!articles.find((a) => a.title === item.title)) {
       articles.push({
-        title: item.title || "",
-        description: item.description || "",
-        url: item.url || "",
+        title: (item.title || "").replace(/<[^>]*>/g, ""),
+        description: (item.description || "").replace(/<[^>]*>/g, ""),
+        url: item.url || item.link || "",
       });
     }
   }

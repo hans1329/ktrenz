@@ -23,48 +23,54 @@ async function fetchGoogleTrends(
   region: string = "worldwide"
 ): Promise<TrendResult | null> {
   try {
-    // 아티스트명 + 키워드 조합으로 검색 (연관성 확보)
-    const query = `${artistName} ${keyword}`;
-    const params = new URLSearchParams({
-      engine: "google_trends",
-      q: query,
-      data_type: "TIMESERIES",
-      date: "now 7-d", // 최근 7일
-      api_key: serpApiKey,
-    });
+    // 전략 1: 아티스트+키워드 조합, 전략 2: 키워드 단독
+    // 조합 검색에서 데이터가 없으면 키워드 단독으로 폴백
+    const queries = [`${artistName} ${keyword}`, keyword];
+    
+    for (const query of queries) {
+      const params = new URLSearchParams({
+        engine: "google_trends",
+        q: query,
+        data_type: "TIMESERIES",
+        date: "now 7-d",
+        api_key: serpApiKey,
+      });
 
-    if (region !== "worldwide") {
-      params.set("geo", region);
+      if (region !== "worldwide") {
+        params.set("geo", region);
+      }
+
+      const response = await fetch(`https://serpapi.com/search.json?${params}`);
+      if (!response.ok) {
+        const err = await response.text();
+        console.warn(`[trend-track] SerpAPI error for "${query}": ${err.slice(0, 200)}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const timelineData = data.interest_over_time?.timeline_data || [];
+
+      if (!timelineData.length) continue;
+
+      const timeline = timelineData.map((t: any) => ({
+        date: t.date || "",
+        value: t.values?.[0]?.extracted_value ?? 0,
+      }));
+
+      const latestValue = timeline[timeline.length - 1]?.value ?? 0;
+      
+      // 유의미한 데이터가 있으면 반환
+      if (latestValue > 0 || timeline.some((t: any) => t.value > 0)) {
+        return {
+          keyword,
+          interest_score: latestValue,
+          region,
+          timeline,
+        };
+      }
     }
 
-    const response = await fetch(`https://serpapi.com/search.json?${params}`);
-    if (!response.ok) {
-      const err = await response.text();
-      console.warn(`[trend-track] SerpAPI error for "${query}": ${err.slice(0, 200)}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const timelineData = data.interest_over_time?.timeline_data || [];
-
-    if (!timelineData.length) {
-      return { keyword, interest_score: 0, region, timeline: [] };
-    }
-
-    // 최근 관심도 추출
-    const timeline = timelineData.map((t: any) => ({
-      date: t.date || "",
-      value: t.values?.[0]?.extracted_value ?? 0,
-    }));
-
-    const latestValue = timeline[timeline.length - 1]?.value ?? 0;
-
-    return {
-      keyword,
-      interest_score: latestValue,
-      region,
-      timeline,
-    };
+    return { keyword, interest_score: 0, region, timeline: [] };
   } catch (e) {
     console.warn(`[trend-track] Fetch error for "${keyword}": ${e.message}`);
     return null;
