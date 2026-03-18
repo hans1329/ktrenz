@@ -389,10 +389,10 @@ const T2TrendTreemap = () => {
               const sizeFactor = Math.sqrt(boxArea) / 10;
               const isTopThree = rectIndex < 3;
               const keywordSize = isTopThree
-                ? Math.max(14, Math.min(32, sizeFactor * 4.2))
+                ? Math.max(18, Math.min(40, sizeFactor * 5))
                 : isTop20
-                  ? Math.max(11, Math.min(26, sizeFactor * 3.5))
-                  : Math.max(9, Math.min(18, sizeFactor * 2.5));
+                  ? Math.max(14, Math.min(32, sizeFactor * 4.5))
+                  : Math.max(9, Math.min(16, sizeFactor * 2.2));
               const scoreSize = Math.max(10, Math.min(30, sizeFactor * 3.2));
               const titleOpacity = Math.max(0.65, Math.min(1, sizeFactor / 4));
 
