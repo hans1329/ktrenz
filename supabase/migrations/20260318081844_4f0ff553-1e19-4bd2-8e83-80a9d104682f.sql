@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_stars ADD COLUMN IF NOT EXISTS namuwiki_url text DEFAULT NULL;

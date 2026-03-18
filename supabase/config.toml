@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.ktrenz-trend-cron]
 verify_jwt = false
+
+[functions.parse-namuwiki]
+verify_jwt = false
