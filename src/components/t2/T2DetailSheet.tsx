@@ -80,6 +80,9 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   readBoostReward: { en: "Read & boost +3 K-Point", ko: "읽고 밀어주기 +3 K-Point", ja: "読んで応援 +3 K-Point", zh: "阅读推动 +3 K-Point" },
   readBoosted: { en: "Boosted! +3 K-Point", ko: "밀어주기 완료! +3 K-Point", ja: "応援完了！+3 K-Point", zh: "推动完成！+3 K-Point" },
   alreadyBoosted: { en: "✓ Boosted +3P", ko: "✓ 밀어주기 완료 +3P", ja: "✓ 応援済み +3P", zh: "✓ 已推动 +3P" },
+  alreadyShareBoosted: { en: "Already boosted", ko: "이미 밀어주기 완료", ja: "すでに応援済み", zh: "已推动" },
+  shareBoostReward: { en: "Share & boost +5 K-Point", ko: "공유하고 밀어주기 +5 K-Point", ja: "共有して応援 +5 K-Point", zh: "分享推动 +5 K-Point" },
+  alreadyShareBoostedDone: { en: "✓ Share boosted +5P", ko: "✓ 공유 밀어주기 완료 +5P", ja: "✓ 共有応援済み +5P", zh: "✓ 分享推动完成 +5P" },
 };
 
 function t(key: string, lang: string): string {
