@@ -61,7 +61,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
-  voteRelevance: { en: "Is this relevant?", ko: "이 트렌드가 관련 있나요?", ja: "関連性がありますか？", zh: "这个趋势相关吗？" },
+  voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
