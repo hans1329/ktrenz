@@ -147,6 +147,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile,
   });
 
+  // Read boost check (has user already read-boosted this keyword?)
+  const { data: hasReadBoosted } = useQuery({
+    queryKey: ["t2-read-boost", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .eq("platform", "read")
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
   const voteMutation = useMutation({
     mutationFn: async (voteType: "up" | "down") => {
       if (!user || !tile) return;
