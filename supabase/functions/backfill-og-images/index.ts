@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       .eq("status", "active")
       .not("source_url", "is", null)
       .is("source_image_url", null)
-      .limit(50);
+      .limit(10);
 
     if (error) throw error;
     if (!rows?.length) {
