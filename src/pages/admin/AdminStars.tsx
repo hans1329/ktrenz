@@ -361,6 +361,7 @@ const AdminStars = () => {
                   <th className="text-left px-3 py-2 font-medium">한글명</th>
                   <th className="text-left px-3 py-2 font-medium">타입</th>
                   <th className="text-left px-3 py-2 font-medium">소속 그룹</th>
+                  <th className="text-left px-3 py-2 font-medium">소속사</th>
                   <th className="text-left px-3 py-2 font-medium">나무위키</th>
                   <th className="text-left px-3 py-2 font-medium">상태</th>
                   <th className="text-right px-3 py-2 font-medium">관리</th>
