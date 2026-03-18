@@ -112,9 +112,12 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 mt-2 mb-1">
-                    <span className="text-xs font-semibold text-muted-foreground truncate">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (item.starId) navigate(`/t2/artist/${item.starId}`); }}
+                      className="text-xs font-semibold text-muted-foreground truncate hover:text-primary transition-colors"
+                    >
                       {getLocalizedArtistName(item, language)}
-                    </span>
+                    </button>
                     {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
                     <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                       <Clock className="w-2.5 h-2.5" />
