@@ -76,7 +76,7 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
         const isWatched = watchedSet.has(group.wikiEntryId);
         return (
           <button
-            key={group.wikiEntryId}
+            key={group.groupKey}
             onClick={() => {
               if (group.starId) navigate(`/t2/artist/${group.starId}`);
             }}
