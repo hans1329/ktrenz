@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2, Star, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -616,29 +615,6 @@ const V3TrendRankings = () => {
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
   }, [rankings, energyCategory]);
 
-  // Grouped rankings by trend label
-  const groupedRankings = useMemo(() => {
-    if (!sortedRankings?.length) return [];
-    const groups: { label: string; emoji: string; color: string; items: any[] }[] = [
-      { label: "SURGE", emoji: "🔥", color: "text-red-500", items: [] },
-      { label: "Rising", emoji: "↑", color: "text-green-500", items: [] },
-      { label: "Stable", emoji: "→", color: "text-blue-400", items: [] },
-      { label: "Cooling", emoji: "↘", color: "text-amber-500", items: [] },
-      { label: "Falling", emoji: "↓", color: "text-purple-400", items: [] },
-    ];
-    sortedRankings.forEach((item: any, idx: number) => {
-      const change = item.changePercent ?? 0;
-      let groupIdx = 2; // Stable default
-      if (change >= 30) groupIdx = 0;
-      else if (change >= 10) groupIdx = 1;
-      else if (change > -5) groupIdx = 2;
-      else if (change > -15) groupIdx = 3;
-      else groupIdx = 4;
-      groups[groupIdx].items.push({ ...item, globalRank: idx + 1 });
-    });
-    return groups.filter(g => g.items.length > 0);
-  }, [sortedRankings]);
-
   // Pinned agent artists - extract from rankings
   const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
   const pinnedAgentItems = useMemo(() => {
@@ -796,7 +772,7 @@ const V3TrendRankings = () => {
           <div className="px-4 pt-2 pb-3 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-muted-foreground">Trend Rankings</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">실시간 트렌드 순위 · 그룹별 보기</p>
+              <p className="text-xs text-muted-foreground mt-0.5">실시간 트렌드 순위 · 멀티 플랫폼 트렌드 점수</p>
             </div>
             <div className="relative shrink-0" ref={periodRef}>
               <button onClick={() => setPeriodOpen(!periodOpen)}
@@ -817,37 +793,26 @@ const V3TrendRankings = () => {
               )}
             </div>
           </div>
-
-          {/* Pinned agent artists */}
-          <div className="px-4 mb-2">
+          <div className="px-4 space-y-3 mb-4">
             <MyAgentPinned items={pinnedAgentItems} onTrack={(item) => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
+            {top3.map((item, idx) => (
+              <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
+            ))}
           </div>
-
-          {/* Grouped list by trend label */}
-          {groupedRankings.map((group) => (
-            <div key={group.label} className="mb-4">
-              <div className="px-4 mb-2">
+          {rest.length > 0 && (
+            <>
+              <div className="px-4 mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-base">{group.emoji}</span>
-                  <span className={cn("text-sm font-black uppercase tracking-wider", group.color)}>{group.label}</span>
-                  <Badge variant="outline" className="text-[10px] border-border text-muted-foreground ml-1">{group.items.length}</Badge>
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">{t("rankings.fullRankings")}</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
               </div>
               <div className="px-4 space-y-1.5">
-                {group.items.map((item: any) => (
-                  <RankingRow
-                    key={item.wiki_entry_id}
-                    item={item}
-                    rank={item.globalRank}
-                    maxScore={maxScore}
-                    onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })}
-                    onItemClick={handleItemClick}
-                  />
-                ))}
+                {rest.map((item, idx) => <RankingRow key={item.wiki_entry_id} item={item} rank={idx + 4} maxScore={maxScore} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />)}
               </div>
-            </div>
-          ))}
+            </>
+          )}
           <ArtistListingRequestDialog />
         </>
       )}
