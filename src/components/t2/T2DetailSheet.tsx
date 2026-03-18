@@ -34,7 +34,7 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-const T2DetailSheet = ({ tile, onClose }: { tile: TrendTile | null; onClose: () => void }) => {
+const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | null; rank?: number; totalCount?: number; onClose: () => void }) => {
   const { language } = useLanguage();
   // Fetch tracking history for this trigger
   const { data: tracking } = useQuery({
