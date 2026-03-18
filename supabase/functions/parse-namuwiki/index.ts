@@ -106,19 +106,19 @@ Deno.serve(async (req) => {
 마크다운 내용:
 ${truncated}`;
 
-    const aiRes = await fetch("https://api.perplexity.ai/chat/completions", {
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${perplexityKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "sonar",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
             content:
-              "당신은 나무위키 K-POP 아티스트 페이지에서 구조화된 데이터를 추출하는 전문가입니다. 반드시 유효한 JSON만 반환하세요.",
+              "당신은 나무위키 K-POP 아티스트 페이지에서 구조화된 데이터를 추출하는 전문가입니다. 반드시 유효한 JSON만 반환하세요. 웹 검색을 하지 말고, 제공된 마크다운 텍스트에서만 정보를 추출하세요.",
           },
           { role: "user", content: extractPrompt },
         ],
