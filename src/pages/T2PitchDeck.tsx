@@ -385,10 +385,6 @@ export default function T2PitchDeck() {
         <div className="relative max-w-4xl mx-auto text-center z-10">
           <img src={ktrenzLogo} alt="K-TRENZ" className="h-8 w-auto mx-auto mb-6 opacity-60" />
 
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-8">
-            <Radar className="w-4 h-4" />
-            {l.heroTag}
-          </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.08] tracking-tight mb-6">
             <span className="text-foreground">{l.heroTitle1}</span>
@@ -439,7 +435,7 @@ export default function T2PitchDeck() {
       <Section id="problem">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><AlertTriangle className="w-3.5 h-3.5" /> {l.problemTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.problemTitle[0]}<span className="text-primary">{l.problemTitle[1]}</span>{l.problemTitle[2]}
             </h2>
@@ -458,7 +454,7 @@ export default function T2PitchDeck() {
       <Section id="pipeline">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Activity className="w-3.5 h-3.5" /> {l.pipelineTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.pipelineTitle[0]}<span className="text-primary">{l.pipelineTitle[1]}</span>
             </h2>
@@ -509,7 +505,7 @@ export default function T2PitchDeck() {
       <Section id="safeguards">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Shield className="w-3.5 h-3.5" /> {l.safeguardTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.safeguardTitle[0]}<span className="text-primary">{l.safeguardTitle[1]}</span>
             </h2>
@@ -528,7 +524,7 @@ export default function T2PitchDeck() {
       <Section id="scoring">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><LineChart className="w-3.5 h-3.5" /> {l.scoringTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.scoringTitle[0]}<span className="text-primary">{l.scoringTitle[1]}</span>{l.scoringTitle[2] || ""}
             </h2>
@@ -569,7 +565,7 @@ export default function T2PitchDeck() {
       <Section id="sources">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Radio className="w-3.5 h-3.5" /> {l.sourcesTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.sourcesTitle[0]}<span className="text-primary">{l.sourcesTitle[1]}</span>
             </h2>
@@ -623,7 +619,7 @@ export default function T2PitchDeck() {
       <Section id="categories">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Eye className="w-3.5 h-3.5" /> {l.categoriesTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.categoriesTitle[0]}<span className="text-primary">{l.categoriesTitle[1]}</span>
             </h2>
@@ -654,7 +650,7 @@ export default function T2PitchDeck() {
       <Section id="usecases">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Target className="w-3.5 h-3.5" /> {l.useCasesTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.useCasesTitle[0]}<span className="text-primary">{l.useCasesTitle[1]}</span>{l.useCasesTitle[2]}
             </h2>
@@ -672,7 +668,7 @@ export default function T2PitchDeck() {
       <Section id="pll">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><RefreshCw className="w-3.5 h-3.5" /> {l.pllTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.pllTitle[0]}<span className="text-primary">{l.pllTitle[1]}</span>
             </h2>
@@ -722,7 +718,7 @@ export default function T2PitchDeck() {
       <Section id="revenue">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Layers className="w-3.5 h-3.5" /> {l.revenueTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.revenueTitle[0]}<span className="text-primary">{l.revenueTitle[1]}</span>
             </h2>
@@ -765,7 +761,7 @@ export default function T2PitchDeck() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/8 rounded-full blur-[160px]" />
           </div>
 
-          <SectionTag><Zap className="w-3.5 h-3.5" /> {l.ctaTag}</SectionTag>
+          
 
           <h2 className="text-3xl md:text-5xl font-black mb-6">
             {l.ctaTitle[0]}<span className="text-primary">{l.ctaTitle[1]}</span>{l.ctaTitle[2]}
