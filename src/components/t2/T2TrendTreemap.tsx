@@ -410,9 +410,6 @@ const T2TrendTreemap = () => {
                     </p>
                     <p className="text-[10px] text-muted-foreground leading-tight">
                       {getLocalizedArtistName(kw, language)}
-                      {kw.influenceIndex > 0 && (
-                        <span className="ml-1 font-bold text-primary">+{kw.influenceIndex.toFixed(0)}%</span>
-                      )}
                     </p>
                   </div>
                 </button>
@@ -487,6 +484,11 @@ const T2TrendTreemap = () => {
                       })(),
                     }}
                   >
+                    {isMedium && rect.item.influenceIndex > 0 && (
+                      <span className="absolute top-1 right-1 z-20 text-[9px] font-bold text-white/80 drop-shadow-md">
+                        +{rect.item.influenceIndex.toFixed(0)}%
+                      </span>
+                    )}
                     {isMedium && (
                       <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/60">
                         {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
