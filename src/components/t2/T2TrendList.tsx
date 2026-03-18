@@ -74,16 +74,16 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
             )}
           >
             {/* Header — keyword + artist row */}
-            <div className="px-3.5 pt-3 pb-2">
+            <div className="px-3.5 pt-4 pb-3">
               <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 mt-1">
                     <MessageCircle className="w-4 h-4 text-primary shrink-0" />
                     <h3 className="text-lg font-black text-foreground leading-tight truncate">
                       {getLocalizedKeyword(item, language)}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-2 mb-1">
                     <span className="text-xs font-semibold text-muted-foreground truncate">
                       {getLocalizedArtistName(item, language)}
                     </span>
