@@ -3512,6 +3512,7 @@ export type Database = {
       }
       ktrenz_stars: {
         Row: {
+          agency: string | null
           created_at: string | null
           display_name: string
           group_star_id: string | null
@@ -3527,6 +3528,7 @@ export type Database = {
           wiki_entry_id: string | null
         }
         Insert: {
+          agency?: string | null
           created_at?: string | null
           display_name: string
           group_star_id?: string | null
@@ -3542,6 +3544,7 @@ export type Database = {
           wiki_entry_id?: string | null
         }
         Update: {
+          agency?: string | null
           created_at?: string | null
           display_name?: string
           group_star_id?: string | null
