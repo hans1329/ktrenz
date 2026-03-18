@@ -102,75 +102,63 @@ async function fetchOgImage(url: string): Promise<string | null> {
   }
 }
 
-// ─── Perplexity AI 키워드 추출 ───
+// ─── OpenAI 기반 키워드 추출 (기사 텍스트만 분석, 외부 검색 없음) ───
 async function extractCommercialKeywords(
-  perplexityKey: string,
+  openaiKey: string,
   memberName: string,
   groupName: string | null,
   articles: { title: string; description?: string; url?: string }[]
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
-  const artistLabel = groupName ? `${memberName} (member of ${groupName})` : memberName;
-
   const articleTexts = articles
     .slice(0, 10)
     .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
     .join("\n");
 
-  const prompt = `Analyze these recent Korean news articles and extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) that are DIRECTLY linked to K-pop artist "${memberName}"${groupName ? ` (member of ${groupName})` : ""}.
+  const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
+
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} as an INDIVIDUAL.
 
 Articles:
 ${articleTexts}
 
-CRITICAL ATTRIBUTION RULE:
-- You MUST only extract entities where "${memberName}" is the PRIMARY artist connected to that entity IN THE ARTICLE TEXT.
-- If the article mentions "${memberName}" only peripherally, do NOT extract entities from that article.
-- Ask yourself: "Is ${memberName} INDIVIDUALLY the REASON this entity is newsworthy?" If NO, skip it.
-- Group activities (group comeback, group concert) should NOT be extracted — only INDIVIDUAL member activities count.
+RULES:
+1. ONLY extract entities whose name literally appears in the article text above.
+2. "${memberName}" must be the PRIMARY INDIVIDUAL subject of the article for that entity. If the article is about the group or another member, skip it.
+3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, Billboard), or TV show names unless the artist is a guest/model.
+4. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
+5. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}" individually.
+6. Categories: brand, product, place, food, fashion, beauty, media.
+7. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
+8. Provide translations: keyword_ko, keyword_ja, keyword_zh.
+9. Include "source_article_index" (1-based) pointing to the article where the entity appears.
+10. Provide translated context: context, context_ko, context_ja, context_zh.
 
-STRICT Rules:
-- ONLY extract entities that are EXPLICITLY MENTIONED in the article text above
-- Do NOT use your own knowledge about the artist's past endorsements
-- Do NOT list brands/products that are NOT written in the articles
-- Only extract entities representing a CURRENT or UPCOMING commercial connection where "${memberName}" is the MAIN actor INDIVIDUALLY
-- Do NOT extract the artist name itself, their group name, or their agency/label
-- Do NOT extract generic music industry terms (album, concert, chart, Billboard, etc.)
-- Do NOT extract TV show names unless the artist is appearing as a guest/model
-- Assign confidence 0.0-1.0 based on how clearly the entity is linked to "${memberName}" specifically
-- Categorize each as: brand, product, place, food, fashion, beauty, or media
-- Maximum 5 keywords per batch
-- IMPORTANT: Always use the ENGLISH name of the entity as the keyword
-- If the entity is originally Korean, romanize it
-- For each keyword, also provide translations: keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese simplified)
-- For each keyword, include "source_article_index": the 1-based article number
-- For each keyword, provide translated context: "context_ko", "context_ja", "context_zh"
-
-Return ONLY a JSON array. If no commercial entities found where "${memberName}" is the primary individual actor, return [].
+If NO commercial entities are found, return [].
 Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","context_ko":"공항에서 샤넬 의상 착용[1]","context_ja":"空港でシャネルの衣装を着用[1]","context_zh":"在机场穿着香奈儿服装[1]","source_article_index":1}]`;
 
   try {
-    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${perplexityKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "sonar",
+        model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a trend analysis expert specializing in individual K-pop member activities. Extract commercial entities ONLY from the provided article texts. Focus on INDIVIDUAL member activities, not group activities. Never use external knowledge. Return ONLY valid JSON arrays." },
-          { role: "user", content: prompt },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
-        temperature: 0.1,
+        temperature: 0.05,
         max_tokens: 1000,
-        search_recency_filter: "week",
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.warn(`[trend-detect] Perplexity API error: ${err.slice(0, 200)}`);
+      console.warn(`[trend-detect] OpenAI API error: ${err.slice(0, 200)}`);
       return [];
     }
 
@@ -181,9 +169,20 @@ Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル",
     if (!jsonMatch) return [];
 
     const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
-    return parsed.filter(
-      (k) => k.keyword && k.category && typeof k.confidence === "number"
-    );
+
+    // 후검증: 추출된 키워드가 실제 기사 텍스트에 존재하는지 확인
+    const allText = articles.map(a => `${a.title} ${a.description || ""}`).join(" ").toLowerCase();
+    return parsed.filter((k) => {
+      if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
+      // 키워드 또는 한글명이 기사 텍스트에 존재해야 함
+      const kwLower = k.keyword.toLowerCase();
+      const kwKo = k.keyword_ko?.toLowerCase() || "";
+      const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
+      if (!existsInText) {
+        console.warn(`[trend-detect] Filtered out hallucinated keyword: "${k.keyword}" (not found in article text)`);
+      }
+      return existsInText;
+    });
   } catch (e) {
     console.warn(`[trend-detect] Extraction error: ${(e as Error).message}`);
     return [];
