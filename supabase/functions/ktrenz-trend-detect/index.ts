@@ -294,13 +294,14 @@ async function detectForArtist(
     return { keywordsFound: 0, keywords: [] };
   }
 
-  // 중복 방지: 같은 아티스트+키워드가 최근 7일 이내 이미 감지되었는지 확인
+  // 중복 방지: 같은 키워드가 최근 7일 이내 ANY 아티스트에서 이미 감지되었는지 확인 (크로스 아티스트 중복 방지)
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const keywordValues = keywords.map(k => k.keyword.toLowerCase());
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
-    .select("keyword")
-    .eq("wiki_entry_id", wikiEntryId)
-    .gte("detected_at", weekAgo);
+    .select("keyword, wiki_entry_id")
+    .gte("detected_at", weekAgo)
+    .in("keyword", keywords.map(k => k.keyword));
 
   const existingKeywords = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
   const newKeywords = keywords.filter((k) => !existingKeywords.has(k.keyword.toLowerCase()));
