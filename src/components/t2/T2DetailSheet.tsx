@@ -446,7 +446,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
             {/* Vote — casual poll style */}
             <div className="space-y-2.5">
-              <p className="text-base font-bold text-foreground text-center">
+              <p className="text-lg font-bold text-foreground text-center">
                 {t("voteRelevance", language)}
               </p>
               {!voteData?.myVote && (
