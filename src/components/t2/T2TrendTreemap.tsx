@@ -385,7 +385,10 @@ const T2TrendTreemap = () => {
       </div>
 
       {/* Category filter */}
-      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+      <div className={cn(
+        "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
+        isMobile && viewMode === "list" && "sticky top-14 z-20 bg-background pt-2 -mx-4 px-4"
+      )}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
           const config = cat === "all" ? null : CATEGORY_CONFIG[cat];
