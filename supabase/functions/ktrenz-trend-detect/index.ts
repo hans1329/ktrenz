@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
         totalKeywords += result.keywordsFound;
         console.log(`[trend-detect] ✓ ${member.display_name}: ${result.keywordsFound} keywords (${result.articlesFound} articles)`);
 
-        // Rate limit 방지: Naver API + Perplexity 간 간격
+        // Rate limit 방지: Naver API + OpenAI 간 간격
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
         console.error(`[trend-detect] ✗ ${member.display_name}: ${(e as Error).message}`);
