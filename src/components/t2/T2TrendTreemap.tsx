@@ -304,7 +304,7 @@ const T2TrendTreemap = () => {
                       className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                       style={{ fontSize: `${keywordSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
                     >
-                      {rect.item.keyword}
+                      {getLocalizedKeyword(rect.item, language)}
                     </span>
 
                     {isLarge && (
