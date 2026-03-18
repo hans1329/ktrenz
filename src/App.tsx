@@ -45,6 +45,7 @@ import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
 import T2TrendMap from "./pages/T2TrendMap";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
 import T2PitchDeck from "./pages/T2PitchDeck";
+import T2ArtistPage from "./pages/T2ArtistPage";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/signal" element={<SignalRadar />} />
             <Route path="/t2" element={<T2TrendMap />} />
             <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
+            <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
             <Route path="/pd" element={<T2PitchDeck />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
