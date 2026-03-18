@@ -67,6 +67,12 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         <div className="space-y-4">
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-2">
+            {rank != null && (
+              <Badge className="bg-primary/10 text-primary border-primary/30 text-[11px] font-black">
+                <Trophy className="w-3 h-3 mr-0.5" />
+                #{rank}
+              </Badge>
+            )}
             <Badge variant="outline" className={cn("text-[11px]", CATEGORY_COLORS[tile.category] || "")}>
               {tile.category}
             </Badge>
@@ -79,9 +85,61 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             </span>
           </div>
 
-          {/* Context */}
-          {tile.context && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{tile.context}</p>
+          {/* Evidence: Why this trend? */}
+          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
+            <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <Newspaper className="w-3.5 h-3.5 text-primary" />
+              Why this trend?
+            </h3>
+            {tile.context ? (
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {tile.context}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">No context available yet.</p>
+            )}
+            {tile.sourceTitle && (
+              <div className="flex items-start gap-2 pt-1 border-t border-border/50">
+                <ExternalLink className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
+                {tile.sourceUrl ? (
+                  <a
+                    href={tile.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline line-clamp-2"
+                  >
+                    {tile.sourceTitle}
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground line-clamp-2">{tile.sourceTitle}</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Ranking explanation: Why this rank? */}
+          {rank != null && (
+            <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
+              <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5 text-primary" />
+                Why #{rank}?
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {tile.influenceIndex > 0 ? (
+                  <>
+                    Google Trends search volume surged <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> after {tile.artistName}'s news mention.
+                    {tile.baselineScore != null && tile.peakScore != null && (
+                      <> Baseline interest was <span className="font-bold text-foreground">{tile.baselineScore}</span>, peaked at <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
+                    )}
+                    {totalCount && totalCount > 1 && (
+                      <> This is the highest influence index among {totalCount} active keywords.</>
+                    )}
+                  </>
+                ) : (
+                  <>Tracking just started — waiting for Google Trends data to calculate influence.</>
+                )}
+              </p>
+            </div>
           )}
 
           {/* Influence metrics */}
