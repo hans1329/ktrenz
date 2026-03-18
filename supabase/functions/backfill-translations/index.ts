@@ -5,19 +5,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
+const AI_URL = "https://api.openai.com/v1/chat/completions";
 
 async function translateContext(keyword: string, context: string): Promise<{ ko: string; ja: string; zh: string } | null> {
   try {
     const res = await fetch(AI_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a K-pop trend translator. Return only JSON with ko, ja, zh keys. Keep translations concise and natural for mobile UI." },
           { role: "user", content: `Translate this K-pop trend context into Korean, Japanese, and Chinese (Simplified).\n\nKeyword: ${keyword}\nContext: ${context}\n\nReturn JSON: {"ko":"...","ja":"...","zh":"..."}` },
