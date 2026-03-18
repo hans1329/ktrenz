@@ -433,12 +433,21 @@ const T2TrendTreemap = () => {
                       {getLocalizedKeyword(rect.item, language)}
                     </span>
 
-                    {isLarge && (
-                      <span
-                        className="font-bold text-white/70 truncate w-full text-center"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.6)}px` }}
-                      >
-                        by {getLocalizedArtistName(rect.item, language)}
+                    {isMedium && (
+                      <span className="flex items-center gap-1 truncate w-full justify-center">
+                        {rect.item.artistImageUrl && (
+                          <img
+                            src={rect.item.artistImageUrl}
+                            alt=""
+                            className="w-4 h-4 rounded-full object-cover border border-white/30 shrink-0"
+                          />
+                        )}
+                        <span
+                          className="font-bold text-white/70 truncate"
+                          style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px` }}
+                        >
+                          {getLocalizedArtistName(rect.item, language)}
+                        </span>
                       </span>
                     )}
 
@@ -450,13 +459,14 @@ const T2TrendTreemap = () => {
                         {rect.item.influenceIndex.toFixed(0)}
                       </span>
                     )}
-
-                    {isLarge && (
-                      <span className="text-[10px] font-bold text-white/50 bg-black/20 rounded-full px-2 py-0.5">
-                        {config?.label || rect.item.category}
-                      </span>
-                    )}
                   </div>
+
+                  {/* Bottom-right: category badge */}
+                  {isMedium && (
+                    <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
+                      {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
+                    </span>
+                  )}
 
                   {/* Inner glow for top items */}
                   {isTopThree && (
