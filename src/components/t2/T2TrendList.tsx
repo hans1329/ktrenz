@@ -156,7 +156,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
                   className="text-[10px] font-bold px-2 py-0.5 rounded-sm text-white"
                   style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
                 >
-                  {catConfig?.label || item.category}
+                  {getCategoryLabel(item.category, language)}
                 </span>
                 {item.influenceIndex > 0 && (
                   <span className="text-sm font-black text-primary">
