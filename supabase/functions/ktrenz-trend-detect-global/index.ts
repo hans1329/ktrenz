@@ -140,14 +140,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Tier 1 아티스트 가져오기
-    const { data: tier1 } = await sb
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name")
-      .eq("tier", 1)
-      .order("wiki_entry_id", { ascending: true });
+    // ktrenz_stars에서 active 아티스트 가져오기 (v3_artist_tiers 제거)
+    const { data: stars } = await sb
+      .from("ktrenz_stars")
+      .select("id, wiki_entry_id, display_name")
+      .eq("is_active", true)
+      .not("wiki_entry_id", "is", null)
+      .order("display_name", { ascending: true });
 
-    const uniqueIds = [...new Set((tier1 || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+    // wiki_entry_id 기준 중복 제거
+    const entryMap = new Map<string, { starId: string; displayName: string }>();
+    for (const s of (stars || [])) {
+      if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
+        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name });
+      }
+    }
+
+    const uniqueIds = [...entryMap.keys()];
     const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
@@ -155,22 +164,6 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: uniqueIds.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-    }
-
-    // 이름 매핑
-    const nameMap = new Map<string, string>();
-    for (const t of tier1 || []) {
-      if (t?.wiki_entry_id && t?.display_name) nameMap.set(t.wiki_entry_id, t.display_name);
-    }
-
-    // star_id 매핑
-    const { data: starData } = await sb
-      .from("ktrenz_stars")
-      .select("id, wiki_entry_id")
-      .in("wiki_entry_id", batch);
-    const starMap = new Map<string, string>();
-    for (const s of starData || []) {
-      if (s.wiki_entry_id) starMap.set(s.wiki_entry_id, s.id);
     }
 
     console.log(`[detect-global] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Perplexity only, no Firecrawl)`);
