@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Minus, Globe, Clock,
   ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronLeft,
-  BarChart3, Target, Activity, Calendar, Building2,
+  BarChart3, Target, Activity, Calendar, Building2, Sparkles,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from "recharts";
 
@@ -529,6 +529,65 @@ const T2KeywordDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* AI Trend Analysis */}
+        {(baselineScore != null || influenceIndex > 0) && (
+          <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 sm:p-6 mt-6 space-y-3">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              {language === "ko" ? "AI 트렌드 분석" : language === "ja" ? "AIトレンド分析" : language === "zh" ? "AI趋势分析" : "AI Trend Analysis"}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {(() => {
+                const peakDelay = trigger.peak_at
+                  ? (new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000
+                  : null;
+                const cat = CATEGORY_LABELS[category]?.toLowerCase() || category;
+
+                if (language === "ko") {
+                  const parts: string[] = [];
+                  parts.push(`${artistName} × ${keyword}는 ${trigger.trigger_source === "global_news" ? "글로벌 미디어" : "국내 뉴스"}를 통해 기준 점수 ${baselineScore ?? "N/A"}에서 감지되었습니다.`);
+                  if (peakScore != null && peakDelay != null) {
+                    parts.push(`${peakDelay.toFixed(1)}시간 추적 후 최고 점수 ${peakScore}에 도달했습니다.`);
+                  }
+                  if (influenceIndex > 0) {
+                    parts.push(`영향력 지수: +${influenceIndex.toFixed(2)}%`);
+                    if (influenceIndex >= 50) {
+                      parts.push(`— 강력한 소비자 관심 급등으로, ${cat} 카테고리에서 즉각적인 브랜드 활성화에 적합한 시그널입니다.`);
+                    } else if (influenceIndex >= 20) {
+                      parts.push(`— 의미 있는 관심 성장세를 보여주며, ${cat} 분야 파트너십 모니터링 가치가 있습니다.`);
+                    } else if (peakDelay != null && peakDelay < 6) {
+                      parts.push(`— 빠른 반응 속도로 바이럴 확산 가능성이 있는 초기 시그널입니다.`);
+                    } else {
+                      parts.push(`— 바이럴 급등이 아닌 안정적이고 지속적인 관심을 나타냅니다. 이 패턴은 확립된 ${cat} 카테고리 콜라보의 전형적인 모습입니다.`);
+                    }
+                  }
+                  return parts.join(" ");
+                }
+
+                // EN (default)
+                const parts: string[] = [];
+                parts.push(`${artistName} × ${keyword} was detected via ${trigger.trigger_source === "global_news" ? "global media" : "domestic news"} at baseline score ${baselineScore ?? "N/A"}.`);
+                if (peakScore != null && peakDelay != null) {
+                  parts.push(`After ${peakDelay.toFixed(1)} hours of tracking, peak score reached ${peakScore}.`);
+                }
+                if (influenceIndex > 0) {
+                  parts.push(`Influence Index: +${influenceIndex.toFixed(2)}%`);
+                  if (influenceIndex >= 50) {
+                    parts.push(`— a strong consumer interest surge, ideal for immediate brand activation in the ${cat} category.`);
+                  } else if (influenceIndex >= 20) {
+                    parts.push(`— meaningful interest growth, worth monitoring for ${cat} partnerships.`);
+                  } else if (peakDelay != null && peakDelay < 6) {
+                    parts.push(`— a fast-reacting early signal with viral potential.`);
+                  } else {
+                    parts.push(`— indicating steady, sustained interest rather than a viral spike. This pattern is typical of established ${cat} collaborations.`);
+                  }
+                }
+                return parts.join(" ");
+              })()}
+            </p>
+          </div>
+        )}
 
         {/* Tracking History Table */}
         {trackingHistory && trackingHistory.length > 0 && (
