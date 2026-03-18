@@ -52,21 +52,21 @@ Deno.serve(async (req) => {
 
         results.nextBatch = nextOffset;
       } else {
-        // 모든 detect 완료 → track phase 시작
+        // 모든 detect 완료 → track phase 시작 (배치로)
         console.log(`[trend-cron] All detect batches done. Starting track phase.`);
-        sb.functions.invoke("ktrenz-trend-cron", {
-          body: { phase: "track" },
+        sb.functions.invoke("ktrenz-trend-track", {
+          body: { batchSize: 5, batchOffset: 0 },
         }).catch((e: any) => console.warn(`[trend-cron] Track invoke error: ${e.message}`));
 
         results.nextPhase = "track";
       }
     } else if (phase === "track") {
-      // Step 2: trend-track 호출 (active 트리거 전체)
+      // Step 2: trend-track 호출 (배치 처리, self-chain 포함)
       console.log(`[trend-cron] Phase: TRACK`);
 
       const { data: trackData, error: trackError } = await sb.functions.invoke(
         "ktrenz-trend-track",
-        { body: { batchSize: 15 } }
+        { body: { batchSize: 5, batchOffset: 0 } }
       );
 
       if (trackError) throw new Error(`trend-track failed: ${trackError.message}`);

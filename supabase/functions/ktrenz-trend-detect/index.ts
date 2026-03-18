@@ -39,6 +39,8 @@ Rules:
 - Do NOT extract generic music industry terms (album, concert, chart, etc.)
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked to the artist
 - Categorize each as: brand, product, place, food, fashion, beauty, or media
+- IMPORTANT: Always use the ENGLISH name of the entity as the keyword (e.g. "Netflix" not "넷플릭스", "Lollapalooza" not "롤라팔루자")
+- If the entity is originally Korean, romanize it (e.g. "Mexicana Chicken" not "멕시카나치킨")
 
 Return ONLY a JSON array. If no commercial entities found, return [].
 Example: [{"keyword":"Chanel","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport"}]`;
