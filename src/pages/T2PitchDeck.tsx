@@ -701,15 +701,6 @@ export default function T2PitchDeck() {
                 )}
               </div>
             ))}
-            {/* Loop-back arrow */}
-            <div className="flex justify-center pt-2">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: "4s" }} />
-                <span className="text-xs font-bold text-primary">
-                  {lang === "ko" ? "자기 강화 사이클 반복" : "Self-reinforcing cycle"}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </Section>
