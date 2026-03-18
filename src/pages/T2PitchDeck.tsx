@@ -650,7 +650,7 @@ export default function T2PitchDeck() {
       <Section id="usecases">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Target className="w-3.5 h-3.5" /> {l.useCasesTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.useCasesTitle[0]}<span className="text-primary">{l.useCasesTitle[1]}</span>{l.useCasesTitle[2]}
             </h2>
