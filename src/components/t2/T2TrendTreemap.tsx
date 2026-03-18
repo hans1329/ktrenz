@@ -24,6 +24,8 @@ export interface TrendTile {
   detectedAt: string;
   baselineScore: number | null;
   peakScore: number | null;
+  sourceUrl: string | null;
+  sourceTitle: string | null;
   status: string;
 }
 
