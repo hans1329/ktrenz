@@ -102,6 +102,7 @@ Deno.serve(async (req) => {
 
     // 단일 트리거 모드
     let triggers: any[];
+    let totalTriggers = 0;
 
     if (triggerId) {
       const { data } = await sb
@@ -110,6 +111,7 @@ Deno.serve(async (req) => {
         .eq("id", triggerId)
         .single();
       triggers = data ? [data] : [];
+      totalTriggers = triggers.length;
     } else {
       // active 상태인 최근 트리거 (배치 처리)
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -121,16 +123,8 @@ Deno.serve(async (req) => {
         .order("detected_at", { ascending: false });
 
       const allTriggers = data || [];
+      totalTriggers = allTriggers.length;
       triggers = allTriggers.slice(batchOffset, batchOffset + batchSize);
-
-      // 남은 트리거가 있으면 다음 배치 self-invoke
-      const nextOffset = batchOffset + batchSize;
-      if (nextOffset < allTriggers.length) {
-        console.log(`[trend-track] Chaining next batch: offset=${nextOffset}, remaining=${allTriggers.length - nextOffset}`);
-        sb.functions.invoke("ktrenz-trend-track", {
-          body: { batchSize, batchOffset: nextOffset, regions },
-        }).catch((e: any) => console.warn(`[trend-track] Chain error: ${e.message}`));
-      }
     }
 
     if (!triggers.length) {
