@@ -565,7 +565,7 @@ export default function T2PitchDeck() {
       <Section id="sources">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Radio className="w-3.5 h-3.5" /> {l.sourcesTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.sourcesTitle[0]}<span className="text-primary">{l.sourcesTitle[1]}</span>
             </h2>
