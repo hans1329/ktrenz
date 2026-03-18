@@ -457,7 +457,11 @@ Deno.serve(async (req) => {
     }
 
     const summary = {
-      total: needsFill.length,
+      totalAll: needsFill.length,
+      batchSize: batch.length,
+      offset,
+      hasMore,
+      nextOffset: hasMore ? offset + limit : null,
       found: results.filter((r) => r.found).length,
       deezerFilled: results.filter((r) => r.updated.some((u) => u.startsWith("deezer="))).length,
       lastfmFilled: results.filter((r) => r.updated.some((u) => u.startsWith("lastfm="))).length,
@@ -469,7 +473,7 @@ Deno.serve(async (req) => {
     };
 
     console.log(
-      `[MB] Done: ${summary.found}/${summary.total} found, stars=${summary.starsCreated}, groups=${summary.groups}, members=${summary.membersLinked}`,
+      `[MB] Done batch: ${summary.found}/${summary.batchSize} found, stars=${summary.starsCreated}, hasMore=${hasMore}`,
     );
 
     return new Response(JSON.stringify({ success: true, dryRun, summary, results }), {
