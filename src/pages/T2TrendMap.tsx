@@ -44,7 +44,7 @@ const T2TrendMap = () => {
       <div className="min-h-screen flex flex-col">
         <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />
         <main className="flex-1">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-[90%] mx-auto">
             <T2TrendTreemap />
           </div>
         </main>
