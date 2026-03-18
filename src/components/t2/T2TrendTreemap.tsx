@@ -295,7 +295,32 @@ const T2TrendTreemap = () => {
             K-Pop driven consumer trends · Influence Index
           </p>
         </div>
-        <T2AdminControls />
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setViewMode("treemap")}
+              className={cn(
+                "p-1.5 transition-colors",
+                viewMode === "treemap" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              )}
+              aria-label="Treemap view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-1.5 transition-colors",
+                viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              )}
+              aria-label="List view"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+          <T2AdminControls />
+        </div>
       </div>
 
       {/* Category filter */}
