@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.parse-namuwiki]
 verify_jwt = false
+
+[functions.ktrenz-trend-detect-youtube]
+verify_jwt = false
