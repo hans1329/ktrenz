@@ -21,6 +21,15 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
+function getLocalizedSourceTitle(tile: TrendTile, lang: string): string {
+  if (lang === "en" || !tile.sourceTitle) return tile.sourceTitle || "";
+  const ctx = lang === "ko" ? tile.contextKo
+    : lang === "ja" ? tile.contextJa
+    : lang === "zh" ? tile.contextZh
+    : null;
+  return ctx || tile.sourceTitle;
+}
+
 function getLocalizedArtistName(tile: TrendTile, lang: string): string {
   if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
   return tile.artistName;
@@ -199,7 +208,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   return (
     <Sheet open={!!tile} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70dvh] overflow-y-auto border-border sm:max-w-lg sm:mx-auto">
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[80dvh] overflow-y-auto border-border sm:max-w-lg sm:mx-auto">
         <SheetHeader className="pb-3">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -250,7 +259,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
-                          {tile.sourceTitle}
+                          {getLocalizedSourceTitle(tile, language)}
                         </p>
                         <div className="flex items-center gap-1 mt-1">
                           <ExternalLink className="w-2.5 h-2.5 text-white/60" />
@@ -274,11 +283,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           rel="noopener noreferrer"
                           className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
                         >
-                          {tile.sourceTitle}
+                          {getLocalizedSourceTitle(tile, language)}
                         </a>
                       ) : (
                         <span className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
-                          {tile.sourceTitle}
+                          {getLocalizedSourceTitle(tile, language)}
                         </span>
                       )}
                       {tile.sourceUrl && (
