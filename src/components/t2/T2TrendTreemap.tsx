@@ -18,6 +18,7 @@ export interface TrendTile {
   keywordZh: string | null;
   category: string;
   artistName: string;
+  artistNameKo: string | null;
   wikiEntryId: string;
   influenceIndex: number;
   context: string | null;
@@ -27,6 +28,11 @@ export interface TrendTile {
   sourceUrl: string | null;
   sourceTitle: string | null;
   status: string;
+}
+
+function getLocalizedArtistName(tile: TrendTile, lang: string): string {
+  if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
+  return tile.artistName;
 }
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
