@@ -126,8 +126,9 @@ ${articleTexts}
 RULES:
 1. ONLY extract entities whose name literally appears in the article text above.
 2. "${memberName}" must be the PRIMARY INDIVIDUAL subject of the article for that entity. If the article is about the group or another member, skip it.
-3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, Billboard), or TV show names unless the artist is a guest/model.
-4. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
+3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, Billboard), TV show names unless the artist is a guest/model.
+4. Do NOT extract: chart names (Billboard, Circle Chart, Hanteo, Gaon, Oricon, iTunes), concert/tour/fan meeting names of the artist themselves, music festival names (Lollapalooza, Coachella, MAMA, etc.), generic words like "brand", "chart", "music", "award".
+5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 5. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}" individually.
 6. Categories: brand, product, place, food, fashion, beauty, media.
 7. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
