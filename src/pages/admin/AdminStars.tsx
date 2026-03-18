@@ -139,6 +139,7 @@ const AdminStars = () => {
         name_ko: parsed.name_ko || prev.name_ko,
         star_type: parsed.star_type || prev.star_type,
         namuwiki_url: url,
+        agency: parsed.agency || prev.agency,
       }));
 
       // Try to find group_star_id if member
