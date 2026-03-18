@@ -20,6 +20,7 @@ export interface TrendTile {
   category: string;
   artistName: string;
   artistNameKo: string | null;
+  artistImageUrl: string | null;
   wikiEntryId: string;
   influenceIndex: number;
   context: string | null;
@@ -173,14 +174,16 @@ const T2TrendTreemap = () => {
 
       // Fetch star names for wiki_entry_ids
       const wikiIds = [...new Set(triggers.map((t: any) => t.wiki_entry_id).filter(Boolean))];
-      const starMap = new Map<string, { display_name: string; name_ko: string | null }>();
+      const starMap = new Map<string, { display_name: string; name_ko: string | null; image_url: string | null }>();
       if (wikiIds.length > 0) {
-        const { data: stars } = await supabase
-          .from("ktrenz_stars" as any)
-          .select("wiki_entry_id, display_name, name_ko")
-          .in("wiki_entry_id", wikiIds);
+        const [{ data: stars }, { data: wikiEntries }] = await Promise.all([
+          supabase.from("ktrenz_stars" as any).select("wiki_entry_id, display_name, name_ko").in("wiki_entry_id", wikiIds),
+          supabase.from("wiki_entries").select("id, image_url").in("id", wikiIds),
+        ]);
+        const imageMap = new Map<string, string>();
+        (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
         (stars ?? []).forEach((s: any) => {
-          starMap.set(s.wiki_entry_id, { display_name: s.display_name, name_ko: s.name_ko });
+          starMap.set(s.wiki_entry_id, { display_name: s.display_name, name_ko: s.name_ko, image_url: imageMap.get(s.wiki_entry_id) || null });
         });
       }
 
@@ -195,6 +198,7 @@ const T2TrendTreemap = () => {
           category: t.keyword_category || "brand",
           artistName: star?.display_name || t.artist_name || "Unknown",
           artistNameKo: star?.name_ko || null,
+          artistImageUrl: star?.image_url || null,
           wikiEntryId: t.wiki_entry_id,
           influenceIndex: Number(t.influence_index) || 0,
           context: t.context,
@@ -429,12 +433,21 @@ const T2TrendTreemap = () => {
                       {getLocalizedKeyword(rect.item, language)}
                     </span>
 
-                    {isLarge && (
-                      <span
-                        className="font-bold text-white/70 truncate w-full text-center"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.6)}px` }}
-                      >
-                        by {getLocalizedArtistName(rect.item, language)}
+                    {isMedium && (
+                      <span className="flex items-center gap-1 truncate w-full justify-center">
+                        {rect.item.artistImageUrl && (
+                          <img
+                            src={rect.item.artistImageUrl}
+                            alt=""
+                            className="w-4 h-4 rounded-full object-cover border border-white/30 shrink-0"
+                          />
+                        )}
+                        <span
+                          className="font-bold text-white/70 truncate"
+                          style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px` }}
+                        >
+                          {getLocalizedArtistName(rect.item, language)}
+                        </span>
                       </span>
                     )}
 
@@ -446,13 +459,14 @@ const T2TrendTreemap = () => {
                         {rect.item.influenceIndex.toFixed(0)}
                       </span>
                     )}
-
-                    {isLarge && (
-                      <span className="text-[10px] font-bold text-white/50 bg-black/20 rounded-full px-2 py-0.5">
-                        {config?.label || rect.item.category}
-                      </span>
-                    )}
                   </div>
+
+                  {/* Bottom-right: category badge */}
+                  {isMedium && (
+                    <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
+                      {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
+                    </span>
+                  )}
 
                   {/* Inner glow for top items */}
                   {isTopThree && (
