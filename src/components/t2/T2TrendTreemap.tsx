@@ -172,7 +172,9 @@ const T2TrendTreemap = () => {
         .select("*")
         .eq("status", "active")
         .order("influence_index", { ascending: false })
-        .limit(50);
+        .order("baseline_score", { ascending: false })
+        .order("detected_at", { ascending: false })
+        .limit(200);
 
       const triggers = (data ?? []) as any[];
 
