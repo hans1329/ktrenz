@@ -135,7 +135,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
                   className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-bold px-2 py-0.5 rounded-sm text-white backdrop-blur-sm"
                   style={{ background: catConfig?.color ? `${catConfig.color.replace(')', ', 0.85)').replace('hsl(', 'hsla(')}` : "hsla(var(--muted-foreground), 0.85)" }}
                 >
-                  {catConfig?.label || item.category}
+                  {getCategoryLabel(item.category, language)}
                 </span>
                 {/* Influence badge — top right */}
                 {item.influenceIndex > 0 && (
