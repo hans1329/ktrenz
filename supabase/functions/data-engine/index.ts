@@ -393,9 +393,11 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
   yt_sentiment: async (url, key) => {
-    console.log("[data-engine] Running yt_sentiment batch for all Tier 1 artists...");
+    console.log("[data-engine] Running yt_sentiment batch (namuwiki-linked only)...");
     const sb = createClient(url, key);
-    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1);
+    const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+    if (namuwikiIds.length === 0) return { status: "no_artists" };
+    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
     const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
     const totalCount = targets.length;
 
