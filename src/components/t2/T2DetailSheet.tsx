@@ -26,6 +26,30 @@ const CATEGORY_COLORS: Record<string, string> = {
   media: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
 };
 
+const T2_LABELS: Record<string, Record<string, string>> = {
+  whyTrend: { en: "Why this trend?", ko: "왜 이 트렌드인가?", ja: "なぜこのトレンド？", zh: "为什么是这个趋势？" },
+  noContext: { en: "No context available yet.", ko: "아직 맥락 정보가 없습니다.", ja: "コンテキスト情報はまだありません。", zh: "尚无相关信息。" },
+  whyRank: { en: "Why", ko: "왜", ja: "なぜ", zh: "为什么" },
+  whyRankSuffix: { en: "?", ko: "위인가?", ja: "位？", zh: "位？" },
+  surged: { en: "Google Trends search volume surged", ko: "Google Trends 검색량이", ja: "Google Trendsの検索量が", zh: "Google Trends搜索量" },
+  surgedAfter: { en: "after", ko: "이후", ja: "のニュース後", zh: "新闻后" },
+  newsMention: { en: "'s news mention.", ko: "의 뉴스 언급 이후 급등.", ja: "に急増。", zh: "急增。" },
+  baselineWas: { en: "Baseline interest was", ko: "기본 관심도", ja: "ベースライン関心度", zh: "基础关注度" },
+  peakedAt: { en: ", peaked at", ko: ", 최고", ja: ", ピーク", zh: ", 峰值" },
+  highestAmong: { en: "This is the highest influence index among", ko: "이것은", ja: "これは", zh: "这是" },
+  activeKeywords: { en: "active keywords.", ko: "개 활성 키워드 중 가장 높은 영향력 지수입니다.", ja: "件のアクティブキーワードの中で最高の影響力指数です。", zh: "个活跃关键词中最高的影响力指数。" },
+  trackingStarted: { en: "Tracking just started — waiting for Google Trends data to calculate influence.", ko: "추적이 시작되었습니다 — 영향력 산출을 위해 Google Trends 데이터를 기다리고 있습니다.", ja: "トラッキングが開始されました — 影響力算出のためGoogle Trendsデータを待っています。", zh: "追踪刚开始 — 等待Google Trends数据计算影响力。" },
+  influence: { en: "Influence", ko: "영향력", ja: "影響力", zh: "影响力" },
+  baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
+  peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
+  trackingHistory: { en: "Tracking History", ko: "추적 기록", ja: "トラッキング履歴", zh: "追踪记录" },
+  by: { en: "by", ko: "by", ja: "by", zh: "by" },
+};
+
+function t(key: string, lang: string): string {
+  return T2_LABELS[key]?.[lang] || T2_LABELS[key]?.en || key;
+}
+
 function formatAge(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const hours = Math.floor(diff / 3600000);
@@ -77,7 +101,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {tile.category}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              by <span className="font-medium text-foreground">{tile.artistName}</span>
+              {t("by", language)} <span className="font-medium text-foreground">{tile.artistName}</span>
             </span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -89,14 +113,14 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
             <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <Newspaper className="w-3.5 h-3.5 text-primary" />
-              Why this trend?
+              {t("whyTrend", language)}
             </h3>
             {tile.context ? (
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {tile.context}
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground italic">No context available yet.</p>
+              <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
             )}
             {tile.sourceTitle && (
               <div className="flex items-start gap-2 pt-1 border-t border-border/50">
@@ -122,21 +146,21 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
               <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 text-primary" />
-                Why #{rank}?
+                {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {tile.influenceIndex > 0 ? (
                   <>
-                    Google Trends search volume surged <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> after {tile.artistName}'s news mention.
+                    {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {tile.artistName}{t("newsMention", language)}
                     {tile.baselineScore != null && tile.peakScore != null && (
-                      <> Baseline interest was <span className="font-bold text-foreground">{tile.baselineScore}</span>, peaked at <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
+                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
                     )}
                     {totalCount && totalCount > 1 && (
-                      <> This is the highest influence index among {totalCount} active keywords.</>
+                      <> {t("highestAmong", language)} {totalCount} {t("activeKeywords", language)}</>
                     )}
                   </>
                 ) : (
-                  <>Tracking just started — waiting for Google Trends data to calculate influence.</>
+                  <>{t("trackingStarted", language)}</>
                 )}
               </p>
             </div>
@@ -145,19 +169,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* Influence metrics */}
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-muted/30 border border-border p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">Influence</div>
+              <div className="text-[11px] text-muted-foreground mb-1">{t("influence", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.influenceIndex > 0 ? `+${tile.influenceIndex.toFixed(1)}%` : "—"}
               </div>
             </div>
             <div className="rounded-lg bg-muted/30 border border-border p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">Baseline</div>
+              <div className="text-[11px] text-muted-foreground mb-1">{t("baseline", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.baselineScore != null ? tile.baselineScore : "—"}
               </div>
             </div>
             <div className="rounded-lg bg-muted/30 border border-border p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">Peak</div>
+              <div className="text-[11px] text-muted-foreground mb-1">{t("peak", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.peakScore != null ? tile.peakScore : "—"}
               </div>
@@ -169,7 +193,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <div>
               <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-muted-foreground" />
-                Tracking History
+                {t("trackingHistory", language)}
               </h3>
               <div className="space-y-1.5">
                 {tracking.map((t: any) => (
