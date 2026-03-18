@@ -79,7 +79,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
               <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <MessageCircle className="w-4 h-4 text-primary shrink-0" />
-                    <h3 className="text-base font-black text-foreground leading-tight truncate">
+                    <h3 className="text-lg font-black text-foreground leading-tight truncate">
                       {getLocalizedKeyword(item, language)}
                     </h3>
                   </div>
