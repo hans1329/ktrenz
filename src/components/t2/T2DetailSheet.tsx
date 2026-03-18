@@ -49,6 +49,14 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   trackingHistory: { en: "Tracking History", ko: "추적 기록", ja: "トラッキング履歴", zh: "追踪记录" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
+  lifecycle: { en: "Keyword Lifecycle", ko: "키워드 수명", ja: "キーワードライフサイクル", zh: "关键词生命周期" },
+  elapsed: { en: "Elapsed", ko: "경과 시간", ja: "経過時間", zh: "已用时间" },
+  lifetime: { en: "Lifetime", ko: "총 수명", ja: "総寿命", zh: "总寿命" },
+  peakDelay: { en: "Time to Peak", ko: "피크까지", ja: "ピークまで", zh: "达到峰值" },
+  peakTime: { en: "Peaked", ko: "피크 시점", ja: "ピーク時", zh: "峰值时间" },
+  notPeakedYet: { en: "Not peaked yet", ko: "아직 피크 없음", ja: "未到達", zh: "尚未达到峰值" },
+  active: { en: "Active", ko: "활성", ja: "アクティブ", zh: "活跃" },
+  expired: { en: "Expired", ko: "만료", ja: "期限切れ", zh: "已过期" },
 };
 
 function t(key: string, lang: string): string {
