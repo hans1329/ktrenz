@@ -286,6 +286,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 : "text-muted-foreground cursor-default"
             )}
           >
+            <span className="text-xs text-muted-foreground">by</span>
             {getLocalizedArtistName(tile, language)}
             {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
           </button>
