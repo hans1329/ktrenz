@@ -1,5 +1,6 @@
 // buzz-cron: 아티스트별로 crawl-x-mentions를 순차 호출하는 오케스트레이터
 // batchSize / batchOffset 파라미터로 분할 처리 지원
+// 수집 대상: ktrenz_stars 테이블 (wiki_entry_id 연결 + is_active)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -17,43 +18,42 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const batchSize = Math.min(50, Math.max(1, Number(body.batchSize) || 5));
     const batchOffset = Math.max(0, Number(body.batchOffset) || 0);
-    const tierSnapshotAt = typeof body.tierSnapshotAt === "string" && !Number.isNaN(Date.parse(body.tierSnapshotAt))
-      ? body.tierSnapshotAt
-      : null;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // Tier 1 대상 스냅샷 고정 (run 도중 tier 변경에 따른 offset 누락 방지)
-    let tierQuery = sb
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, name_ko")
-      .eq("tier", 1)
+    // ktrenz_stars에서 active + wiki_entry_id 연결된 스타 목록
+    const { data: starRows } = await sb
+      .from("ktrenz_stars")
+      .select("wiki_entry_id, display_name, name_ko")
+      .eq("is_active", true)
+      .not("wiki_entry_id", "is", null)
       .order("wiki_entry_id", { ascending: true });
 
-    if (tierSnapshotAt) {
-      tierQuery = tierQuery.lte("updated_at", tierSnapshotAt);
-    }
-
-    const { data: tier1Entries } = await tierQuery;
-
-    const uniqueIds = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+    const allStars = (starRows || []).filter((s: any) => s.wiki_entry_id);
+    // wiki_entry_id 기준 중복 제거
+    const seen = new Set<string>();
+    const uniqueStars = allStars.filter((s: any) => {
+      if (seen.has(s.wiki_entry_id)) return false;
+      seen.add(s.wiki_entry_id);
+      return true;
+    });
 
     const koNameMap = new Map<string, string>();
-    for (const t of tier1Entries || []) {
-      if (t?.wiki_entry_id && t?.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
+    for (const s of uniqueStars) {
+      if (s.name_ko) koNameMap.set(s.wiki_entry_id, s.name_ko);
     }
 
-    const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
+    const batch = uniqueStars.slice(batchOffset, batchOffset + batchSize);
     if (batch.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No artists in this batch", batchOffset, batchSize, tierSnapshotAt, totalCandidates: uniqueIds.length }),
+        JSON.stringify({ success: true, message: "No artists in this batch", batchOffset, batchSize, totalCandidates: uniqueStars.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const entryIds = batch;
+    const entryIds = batch.map((s: any) => s.wiki_entry_id);
     const { data: artists } = await sb
       .from("wiki_entries")
       .select("id, title, metadata")
@@ -65,12 +65,12 @@ Deno.serve(async (req) => {
 
     if (!orderedArtists.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No matching artists", batchOffset, batchSize, tierSnapshotAt }),
+        JSON.stringify({ success: true, message: "No matching artists", batchOffset, batchSize }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[buzz-cron] Batch offset=${batchOffset} size=${batchSize}, processing ${orderedArtists.length} artists (tierCandidates=${uniqueIds.length}${tierSnapshotAt ? `, snapshotAt=${tierSnapshotAt}` : ""})`);
+    console.log(`[buzz-cron] Batch offset=${batchOffset} size=${batchSize}, processing ${orderedArtists.length} artists (totalCandidates=${uniqueStars.length})`);
 
     let successCount = 0;
     let errors = 0;
@@ -145,8 +145,7 @@ Deno.serve(async (req) => {
         batchOffset,
         batchSize,
         processed: orderedArtists.length,
-        totalCandidates: uniqueIds.length,
-        tierSnapshotAt,
+        totalCandidates: uniqueStars.length,
         successCount,
         errors,
       }),
