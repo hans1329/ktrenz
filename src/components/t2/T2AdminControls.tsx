@@ -21,7 +21,14 @@ const T2AdminControls = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`키워드 감지 완료: ${data?.detect?.totalKeywords ?? 0}건`);
+      const found = data?.detect?.totalKeywords ?? 0;
+      const total = data?.detect?.totalCandidates ?? 0;
+      const hasNext = data?.nextBatch !== undefined;
+      toast.success(
+        hasNext
+          ? `감지 1차 배치 완료 (${found}건). ${total}명 중 체이닝 진행 중...`
+          : `감지 완료: ${found}건 (${total}명 처리)`
+      );
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
     onError: (err) => toast.error(`감지 실패: ${(err as Error).message}`),
