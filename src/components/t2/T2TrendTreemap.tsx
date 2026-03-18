@@ -23,6 +23,9 @@ export interface TrendTile {
   wikiEntryId: string;
   influenceIndex: number;
   context: string | null;
+  contextKo: string | null;
+  contextJa: string | null;
+  contextZh: string | null;
   detectedAt: string;
   peakAt: string | null;
   expiredAt: string | null;
