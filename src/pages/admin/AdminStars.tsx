@@ -159,9 +159,9 @@ const AdminStars = () => {
     }
   };
 
-  /* ───── mutations ───── */
-  const saveMutation = useMutation({
-    mutationFn: async (isEdit: boolean) => {
+  /* ───── batch save members ───── */
+  const saveWithMembers = useMutation({
+    mutationFn: async ({ isEdit, includeMembers }: { isEdit: boolean; includeMembers: boolean }) => {
       const payload: any = {
         display_name: form.display_name,
         name_ko: form.name_ko || null,
@@ -171,21 +171,61 @@ const AdminStars = () => {
         namuwiki_url: form.namuwiki_url || null,
         is_active: form.is_active,
       };
+
+      let groupId: string | null = null;
+
       if (isEdit && editingStar) {
-        const { error } = await (supabase
-          .from("ktrenz_stars") as any)
+        const { error } = await (supabase.from("ktrenz_stars") as any)
           .update(payload)
           .eq("id", editingStar.id);
         if (error) throw error;
+        groupId = editingStar.id;
       } else {
-        const { error } = await (supabase
-          .from("ktrenz_stars") as any)
-          .insert(payload);
+        const { data, error } = await (supabase.from("ktrenz_stars") as any)
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        groupId = data?.id;
       }
+
+      // Batch insert members
+      if (includeMembers && namuResult?.members?.length && groupId && form.star_type === "group") {
+        const memberPayloads = namuResult.members.map((m) => ({
+          display_name: m.name_en,
+          name_ko: m.name_ko || null,
+          star_type: "member",
+          group_star_id: groupId,
+          namuwiki_url: m.namuwiki_url || null,
+          is_active: true,
+        }));
+
+        // Upsert: skip if display_name + group_star_id already exists
+        for (const mp of memberPayloads) {
+          const { data: existing } = await (supabase.from("ktrenz_stars") as any)
+            .select("id")
+            .eq("display_name", mp.display_name)
+            .eq("group_star_id", groupId)
+            .maybeSingle();
+
+          if (existing) {
+            await (supabase.from("ktrenz_stars") as any)
+              .update({ name_ko: mp.name_ko, namuwiki_url: mp.namuwiki_url })
+              .eq("id", existing.id);
+          } else {
+            await (supabase.from("ktrenz_stars") as any).insert(mp);
+          }
+        }
+
+        return { memberCount: memberPayloads.length };
+      }
+      return { memberCount: 0 };
     },
-    onSuccess: () => {
-      toast.success(editingStar ? "수정 완료" : "등록 완료");
+    onSuccess: (result) => {
+      const msg = result.memberCount > 0
+        ? `${editingStar ? "수정" : "등록"} 완료 + 멤버 ${result.memberCount}명 등록`
+        : (editingStar ? "수정 완료" : "등록 완료");
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ["admin-stars"] });
       closeDialog();
     },
