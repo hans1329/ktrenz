@@ -101,7 +101,8 @@ const T2KeywordDetail = () => {
         supabase.from("ktrenz_stars" as any).select("display_name, name_ko").eq("wiki_entry_id", trigger.wiki_entry_id).single(),
         supabase.from("wiki_entries").select("id, image_url").eq("id", trigger.wiki_entry_id).single(),
       ]);
-      return { displayName: star?.display_name || trigger.artist_name, nameKo: star?.name_ko, imageUrl: wiki?.image_url };
+      const s = star as any;
+      return { displayName: s?.display_name || trigger.artist_name, nameKo: s?.name_ko, imageUrl: (wiki as any)?.image_url };
     },
     enabled: !!trigger?.wiki_entry_id,
   });
