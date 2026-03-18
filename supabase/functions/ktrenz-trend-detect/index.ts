@@ -275,24 +275,36 @@ async function detectForArtist(
   const newKeywords = keywords.filter((k) => !existingKeywords.has(k.keyword.toLowerCase()));
 
   if (newKeywords.length > 0) {
-    const rows = newKeywords.map((k) => ({
-      wiki_entry_id: wikiEntryId,
-      star_id: starId || null,
-      trigger_type: "news_mention",
-      trigger_source: "naver_news",
-      artist_name: artistName,
-      keyword: k.keyword,
-      keyword_ko: k.keyword_ko || null,
-      keyword_ja: k.keyword_ja || null,
-      keyword_zh: k.keyword_zh || null,
-      keyword_category: k.category,
-      context: k.context,
-      confidence: k.confidence,
-      source_url: articles[0]?.url || null,
-      source_title: articles[0]?.title || null,
-      status: "active",
-      metadata: { article_count: articles.length },
-    }));
+    const rows = newKeywords.map((k) => {
+      // Parse source_article_index from AI response, fallback to parsing [N] from context
+      let articleIdx = 0; // 0-based
+      if (k.source_article_index && k.source_article_index > 0) {
+        articleIdx = k.source_article_index - 1;
+      } else {
+        const refMatch = k.context?.match(/\[(\d+)\]/);
+        if (refMatch) articleIdx = parseInt(refMatch[1], 10) - 1;
+      }
+      const sourceArticle = articles[articleIdx] || articles[0];
+
+      return {
+        wiki_entry_id: wikiEntryId,
+        star_id: starId || null,
+        trigger_type: "news_mention",
+        trigger_source: "naver_news",
+        artist_name: artistName,
+        keyword: k.keyword,
+        keyword_ko: k.keyword_ko || null,
+        keyword_ja: k.keyword_ja || null,
+        keyword_zh: k.keyword_zh || null,
+        keyword_category: k.category,
+        context: k.context,
+        confidence: k.confidence,
+        source_url: sourceArticle?.url || null,
+        source_title: sourceArticle?.title || null,
+        status: "active",
+        metadata: { article_count: articles.length },
+      };
+    });
 
     await sb.from("ktrenz_trend_triggers").insert(rows);
     console.log(`[trend-detect] ${artistName}: inserted ${newKeywords.length} new keywords (${newKeywords.map((k) => k.keyword).join(", ")})`);
