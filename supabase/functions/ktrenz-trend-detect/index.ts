@@ -296,16 +296,29 @@ async function detectForArtist(
   const newKeywords = keywords.filter((k) => !existingKeywords.has(k.keyword.toLowerCase()));
 
   if (newKeywords.length > 0) {
-    const rows = newKeywords.map((k) => {
-      // Parse source_article_index from AI response, fallback to parsing [N] from context
-      let articleIdx = 0; // 0-based
+    // Fetch OG images for source articles in parallel (best-effort)
+    const sourceArticles = newKeywords.map((k) => {
+      let articleIdx = 0;
       if (k.source_article_index && k.source_article_index > 0) {
         articleIdx = k.source_article_index - 1;
       } else {
         const refMatch = k.context?.match(/\[(\d+)\]/);
         if (refMatch) articleIdx = parseInt(refMatch[1], 10) - 1;
       }
-      const sourceArticle = articles[articleIdx] || articles[0];
+      return articles[articleIdx] || articles[0];
+    });
+
+    const uniqueUrls = [...new Set(sourceArticles.map(a => a?.url).filter(Boolean))] as string[];
+    const ogImageMap = new Map<string, string | null>();
+    await Promise.allSettled(
+      uniqueUrls.map(async (url) => {
+        ogImageMap.set(url, await fetchOgImage(url));
+      })
+    );
+
+    const rows = newKeywords.map((k, i) => {
+      const sourceArticle = sourceArticles[i];
+      const sourceUrl = sourceArticle?.url || null;
 
       return {
         wiki_entry_id: wikiEntryId,
@@ -320,8 +333,9 @@ async function detectForArtist(
         keyword_category: k.category,
         context: k.context,
         confidence: k.confidence,
-        source_url: sourceArticle?.url || null,
+        source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
+        source_image_url: sourceUrl ? ogImageMap.get(sourceUrl) || null : null,
         status: "active",
         metadata: { article_count: articles.length },
       };
