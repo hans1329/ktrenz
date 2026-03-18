@@ -234,7 +234,7 @@ const T2TrendTreemap = () => {
   }, [triggers, selectedCategory]);
 
   const containerWidth = isMobile ? 360 : 780;
-  const containerHeight = isMobile ? 720 : 600;
+  const containerHeight = isMobile ? 980 : 720;
 
   const rects = useMemo(() => {
     if (!filteredItems.length) return [];
