@@ -224,6 +224,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     }
   };
 
+  const handleReadBoost = async () => {
+    if (!tile || !user || hasReadBoosted) return;
+    await supabase
+      .from("ktrenz_keyword_boosts" as any)
+      .insert({ trigger_id: tile.id, user_id: user.id, platform: "read" } as any);
+    await supabase.rpc("increment_points" as any, { user_id: user.id, amount: 3 });
+    queryClient.invalidateQueries({ queryKey: ["t2-read-boost", tile.id, user.id] });
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile.id] });
+    toast.success(t("readBoosted", language));
+  };
+
   if (!tile) return null;
 
   return (
