@@ -299,10 +299,13 @@ const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
 
 async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule: BuzzSourceModule): Promise<any> {
   const sourceName = BUZZ_SOURCE_MAP[buzzModule];
-  console.log(`[data-engine] Launching Buzz source: ${sourceName} (fire-and-forget batches)...`);
+  console.log(`[data-engine] Launching Buzz source: ${sourceName} (namuwiki-linked only)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists" };
+
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
   const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
 
   if (tier1Ids.length === 0) return { status: "no_artists" };
