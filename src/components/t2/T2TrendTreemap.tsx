@@ -272,11 +272,22 @@ const T2TrendTreemap = () => {
     setVisibleCount(50);
   }, [selectedCategory]);
 
-  const visibleItems = useMemo(() => {
-    return filteredItems.slice(0, visibleCount);
-  }, [filteredItems, visibleCount]);
+  const visibleBoxItems = useMemo(() => {
+    return filteredItems.slice(0, 50);
+  }, [filteredItems]);
 
-  const hasMore = filteredItems.length > visibleCount;
+  const [listVisibleCount, setListVisibleCount] = useState(20);
+
+  // Reset list visible count when category changes
+  useEffect(() => {
+    setListVisibleCount(20);
+  }, [selectedCategory]);
+
+  const visibleListItems = useMemo(() => {
+    return filteredItems.slice(0, listVisibleCount);
+  }, [filteredItems, listVisibleCount]);
+
+  const hasMoreList = filteredItems.length > listVisibleCount;
 
   const rects = useMemo(() => {
     if (!visibleItems.length) return [];
