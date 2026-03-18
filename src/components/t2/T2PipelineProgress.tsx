@@ -100,8 +100,8 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2 min-w-0">
-          {isComplete ? (
-            <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+      {isComplete ? (
+            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
           ) : (
             <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
           )}
