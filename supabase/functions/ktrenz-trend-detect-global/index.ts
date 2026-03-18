@@ -43,6 +43,7 @@ STRICT Rules:
 - Only include entities from VERY RECENT news (last 24 hours)
 - Each entity must have a clear, direct connection to the artist
 - Do NOT include the artist name itself, their agency/label, or generic music terms
+- Do NOT include: chart names (Billboard, Circle Chart, Hanteo, Gaon, Oricon, iTunes), the artist's own concert/tour/fan meeting names, music festival names (Lollapalooza, Coachella, MAMA, etc.), generic words like "brand", "chart", "music", "award"
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked
 - Categorize as: brand, product, place, food, fashion, beauty, or media
 - Maximum 5 keywords

@@ -97,7 +97,7 @@ ${videoTexts}
 RULES:
 1. ONLY extract entities whose name literally appears in the video text above.
 2. "${memberName}" must be the PRIMARY INDIVIDUAL subject for that entity. If the video is about the group or another member, skip it.
-3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, MV, music video, official), or channel names.
+3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, MV, music video, official), channel names, chart names (Billboard, Circle Chart, Hanteo, Gaon, Oricon, iTunes), the artist's own concert/tour/fan meeting names, music festival names (Lollapalooza, Coachella, MAMA, etc.), generic words like "brand", "chart", "music", "award".
 4. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 5. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
 6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}" individually.
