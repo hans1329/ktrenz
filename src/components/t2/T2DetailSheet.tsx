@@ -279,6 +279,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
+                    onClick={handleReadBoost}
                   >
                     <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
                       <img
