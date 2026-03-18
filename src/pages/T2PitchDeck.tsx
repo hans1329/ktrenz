@@ -761,7 +761,7 @@ export default function T2PitchDeck() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/8 rounded-full blur-[160px]" />
           </div>
 
-          <SectionTag><Zap className="w-3.5 h-3.5" /> {l.ctaTag}</SectionTag>
+          
 
           <h2 className="text-3xl md:text-5xl font-black mb-6">
             {l.ctaTitle[0]}<span className="text-primary">{l.ctaTitle[1]}</span>{l.ctaTitle[2]}
