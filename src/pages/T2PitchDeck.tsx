@@ -125,6 +125,17 @@ const t = {
       { emoji: "📈", title: "Data Amplification", desc: "User engagement improves detection accuracy, enriches influence scoring, and expands coverage." },
     ],
 
+    // Revenue Model
+    revenueTag: "Revenue Model",
+    revenueTitle: ["How KTRENZ ", "Monetizes"],
+    revenueDesc: "A diversified revenue engine spanning B2B intelligence, B2C engagement, data licensing, and brand partnerships.",
+    revenueStreams: [
+      { emoji: "🏢", title: "B2B Intelligence", items: ["Agency dashboard subscriptions", "Custom trend reports & alerts", "API access for real-time data", "White-label analytics solutions"] },
+      { emoji: "👤", title: "B2C Fan Economy", items: ["K-Point in-app purchases", "K-Pass premium subscriptions", "Priority access to insights", "Exclusive trend badges & rewards"] },
+      { emoji: "📊", title: "Data Licensing", items: ["Trend data feeds for platforms", "Influence Index API for advertisers", "Artist-brand affinity datasets", "Market intelligence reports"] },
+      { emoji: "📢", title: "Ads & Sponsorship", items: ["Sponsored trend highlights", "Brand-featured keyword placements", "Agency-sponsored artist cards", "Cross-promotion partnerships"] },
+    ],
+
     // CTA
     ctaTag: "Get Started",
     ctaTitle: ["See the ", "Trend Radar", " Live"],
