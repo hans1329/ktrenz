@@ -372,14 +372,17 @@ const T2TrendTreemap = () => {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
-                !isActive && "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border"
               )}
-              style={isActive ? {
-                backgroundColor: config?.color ?? "hsl(var(--primary))",
-                color: "#fff",
-                borderColor: config?.color ?? "hsl(var(--primary))",
-              } : undefined}
+              style={{
+                backgroundColor: isActive
+                  ? (config?.color ?? "hsl(var(--primary))")
+                  : (config?.color ? `${config.color.replace(')', ', 0.12)').replace('hsl(', 'hsla(')}` : "hsl(var(--muted) / 0.5)"),
+                color: isActive ? "#fff" : (config?.color ?? "hsl(var(--muted-foreground))"),
+                borderColor: isActive
+                  ? (config?.color ?? "hsl(var(--primary))")
+                  : (config?.color ? `${config.color.replace(')', ', 0.25)').replace('hsl(', 'hsla(')}` : "hsl(var(--border))"),
+              }}
             >
               {cat === "all" ? "All" : config?.label}
               <span
