@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
