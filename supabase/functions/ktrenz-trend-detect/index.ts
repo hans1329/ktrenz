@@ -162,52 +162,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 배치 모드: Tier 1 아티스트 순회
-    const { data: tier1 } = await sb
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name")
-      .eq("tier", 1)
+    // 배치 모드: ktrenz_stars 테이블의 active 아티스트 순회
+    const { data: stars } = await sb
+      .from("ktrenz_stars")
+      .select("id, wiki_entry_id, display_name")
+      .eq("is_active", true)
+      .not("wiki_entry_id", "is", null)
       .order("wiki_entry_id", { ascending: true });
 
-    const uniqueIds = [...new Set((tier1 || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
-    const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
+    const allStars = (stars || []).filter((s: any) => s.wiki_entry_id);
+    const batch = allStars.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: uniqueIds.length }),
+        JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: allStars.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 아티스트 이름 매핑
-    const nameMap = new Map<string, string>();
-    for (const t of tier1 || []) {
-      if (t?.wiki_entry_id && t?.display_name) nameMap.set(t.wiki_entry_id, t.display_name);
-    }
-
-    // star_id 매핑
-    const { data: starData } = await sb
-      .from("ktrenz_stars")
-      .select("id, wiki_entry_id")
-      .in("wiki_entry_id", batch);
-    const starMap = new Map<string, string>();
-    for (const s of starData || []) {
-      if (s.wiki_entry_id) starMap.set(s.wiki_entry_id, s.id);
-    }
-
-    console.log(`[trend-detect] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists`);
+    console.log(`[trend-detect] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (total: ${allStars.length})`);
 
     let successCount = 0;
     let totalKeywords = 0;
 
-    for (const entryId of batch) {
+    for (const star of batch) {
       try {
-        const name = nameMap.get(entryId) || "Unknown";
-        const sid = starMap.get(entryId) || null;
-        const result = await detectForArtist(sb, perplexityKey, entryId, name, sid);
+        const result = await detectForArtist(sb, perplexityKey, star.wiki_entry_id, star.display_name, star.id);
         successCount++;
         totalKeywords += result.keywordsFound;
-        console.log(`[trend-detect] ✓ ${name}: ${result.keywordsFound} keywords`);
+        console.log(`[trend-detect] ✓ ${star.display_name}: ${result.keywordsFound} keywords`);
 
         // Rate limit 방지
         await new Promise((r) => setTimeout(r, 1500));
