@@ -72,7 +72,7 @@ const t = {
       { label: "Influence Index", value: "Δ%", desc: "Percentage growth from baseline to peak — the true measure of artist impact" },
     ],
     scoringExample: "Example: NCT Taeyong × Loewe",
-    scoringExampleDesc: "Detected via Naver News at baseline score 72. After 2 hours of tracking, peak score reached 75.",
+    scoringExampleDesc: "Detected via domestic news at baseline score 72. After 2 hours of tracking, peak score reached 75.",
     scoringExampleBold: " Influence Index: +4.17%",
     scoringExampleTail: " — indicating steady, sustained interest rather than a viral spike. This pattern is typical of established luxury brand ambassadorships.",
 
