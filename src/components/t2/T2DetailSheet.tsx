@@ -353,6 +353,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 );
               })()}
             </div>
+
+            {/* Read boost reward indicator */}
+            {user && (
+              <div className="px-3 pb-2 flex justify-end">
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  hasReadBoosted ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Ranking explanation: Why this rank? */}
