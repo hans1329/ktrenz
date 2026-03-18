@@ -201,6 +201,97 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             </div>
           </div>
 
+          {/* Keyword Lifecycle */}
+          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
+            <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <Timer className="w-3.5 h-3.5 text-primary" />
+              {t("lifecycle", language)}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Elapsed / Lifetime */}
+              <div className="rounded-lg bg-background/60 border border-border/50 p-2.5">
+                <div className="text-[10px] text-muted-foreground mb-0.5">
+                  {tile.expiredAt ? t("lifetime", language) : t("elapsed", language)}
+                </div>
+                <div className="text-sm font-bold text-foreground">
+                  {(() => {
+                    if (tile.lifetimeHours && tile.lifetimeHours > 0) {
+                      return tile.lifetimeHours >= 24
+                        ? `${(tile.lifetimeHours / 24).toFixed(1)}d`
+                        : `${tile.lifetimeHours.toFixed(1)}h`;
+                    }
+                    const elapsed = (Date.now() - new Date(tile.detectedAt).getTime()) / 3600000;
+                    return elapsed >= 24
+                      ? `${(elapsed / 24).toFixed(1)}d`
+                      : `${elapsed.toFixed(1)}h`;
+                  })()}
+                </div>
+              </div>
+              {/* Time to Peak */}
+              <div className="rounded-lg bg-background/60 border border-border/50 p-2.5">
+                <div className="text-[10px] text-muted-foreground mb-0.5">
+                  {t("peakDelay", language)}
+                </div>
+                <div className="text-sm font-bold text-foreground flex items-center gap-1">
+                  {tile.peakAt ? (
+                    <>
+                      <Zap className="w-3 h-3 text-amber-500" />
+                      {(() => {
+                        const delay = tile.peakDelayHours && tile.peakDelayHours > 0
+                          ? tile.peakDelayHours
+                          : (new Date(tile.peakAt).getTime() - new Date(tile.detectedAt).getTime()) / 3600000;
+                        return delay >= 24
+                          ? `${(delay / 24).toFixed(1)}d`
+                          : `${delay.toFixed(1)}h`;
+                      })()}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{t("notPeakedYet", language)}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Status + timeline bar */}
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={cn(
+                "text-[10px] font-bold",
+                tile.status === "active"
+                  ? "border-green-500/40 text-green-500 bg-green-500/10"
+                  : "border-muted-foreground/30 text-muted-foreground bg-muted/20"
+              )}>
+                {tile.status === "active" ? t("active", language) : t("expired", language)}
+              </Badge>
+              <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                {(() => {
+                  const maxDays = 14;
+                  const elapsed = tile.lifetimeHours && tile.lifetimeHours > 0
+                    ? tile.lifetimeHours
+                    : (Date.now() - new Date(tile.detectedAt).getTime()) / 3600000;
+                  const pct = Math.min(100, (elapsed / (maxDays * 24)) * 100);
+                  const peakPct = tile.peakAt
+                    ? Math.min(100, ((new Date(tile.peakAt).getTime() - new Date(tile.detectedAt).getTime()) / (maxDays * 24 * 3600000)) * 100)
+                    : null;
+                  return (
+                    <div className="relative h-full">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-primary/60"
+                        style={{ width: `${pct}%` }}
+                      />
+                      {peakPct != null && (
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-500 border border-background"
+                          style={{ left: `${peakPct}%` }}
+                          title="Peak"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              <span className="text-[10px] text-muted-foreground shrink-0">14d</span>
+            </div>
+          </div>
+
           {/* Tracking history */}
           {tracking && tracking.length > 0 && (
             <div>
