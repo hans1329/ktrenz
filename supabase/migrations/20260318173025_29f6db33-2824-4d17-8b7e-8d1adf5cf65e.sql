@@ -1,0 +1,1 @@
+SELECT cron.unschedule('geo-trends-daily');
