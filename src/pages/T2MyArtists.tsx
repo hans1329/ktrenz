@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Star, ArrowLeft, TrendingUp, Clock } from "lucide-react";
+import { Star, ArrowLeft, TrendingUp, Clock, ChevronRight } from "lucide-react";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
