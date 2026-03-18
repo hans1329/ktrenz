@@ -112,6 +112,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 mt-2 mb-1">
+                    <span className="text-[10px] text-muted-foreground">by</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); if (item.starId) navigate(`/t2/artist/${item.starId}`); }}
                       className={cn(
