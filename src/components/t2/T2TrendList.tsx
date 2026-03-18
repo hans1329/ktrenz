@@ -100,7 +100,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             )}
           >
             {/* Header — keyword + artist row */}
-            <div className="px-3.5 pt-4 pb-3">
+            <div className="px-3.5 pt-4 pb-3 lg:px-5 lg:pt-5 lg:pb-4">
               <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 mt-1">
