@@ -482,8 +482,7 @@ const T2TrendTreemap = () => {
                     key={rect.item.id}
                     onClick={() => handleTileClick(rect.item)}
                     className={cn(
-                      "absolute border flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none transition-all",
-                      isTopThree ? "overflow-visible" : "overflow-hidden",
+                      "absolute border flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none transition-all overflow-hidden",
                       isSelected
                         ? "border-primary ring-2 ring-primary/40 z-20 brightness-110"
                         : "border-background/20 hover:brightness-125 hover:z-10"
