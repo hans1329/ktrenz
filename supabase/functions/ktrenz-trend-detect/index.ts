@@ -54,8 +54,10 @@ STRICT Rules:
 - For each keyword, also provide translations: keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese simplified)
 - If the entity is already well-known in that language, use the commonly used name (e.g. keyword: "Chanel", keyword_ko: "샤넬", keyword_ja: "シャネル", keyword_zh: "香奈儿")
 
+- For each keyword, also include "source_article_index": the 1-based article number from the list above that MOST directly mentions this entity. If multiple articles mention it, pick the most relevant one.
+
 Return ONLY a JSON array. If no commercial entities found in the articles, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]"}]`;
+Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","source_article_index":1}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
