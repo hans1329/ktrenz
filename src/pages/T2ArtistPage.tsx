@@ -274,7 +274,7 @@ const T2ArtistPage = () => {
   if (isMobile) {
     return (
       <>
-        <SEO title={`${displayName} – Kinterest`} path={`/t2/artist/${starId}`} />
+        <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
         <V3Header />
         <div className="pt-14">{content}</div>
       </>
