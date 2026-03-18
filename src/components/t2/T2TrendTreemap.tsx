@@ -399,138 +399,134 @@ const T2TrendTreemap = () => {
         </div>
       )}
 
-      {/* Treemap */}
+      {/* View Content */}
       {filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center py-20">
           <p className="text-sm text-muted-foreground">No active trend keywords detected yet.</p>
         </div>
+      ) : viewMode === "list" ? (
+        <T2TrendList
+          items={filteredItems}
+          watchedSet={watchedSet}
+          onTileClick={handleTileClick}
+          selectedTileId={selectedTile?.id ?? null}
+        />
       ) : (
-        <div
-          className="relative w-full rounded-2xl overflow-hidden border border-border"
-          style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}
-        >
-          <div className="absolute inset-0">
-            {rects.map((rect, rectIndex) => {
-              const left = (rect.x / containerWidth) * 100;
-              const top = (rect.y / containerHeight) * 100;
-              const width = (rect.w / containerWidth) * 100;
-              const height = (rect.h / containerHeight) * 100;
-               const isTop20 = rectIndex < 20;
-               const isLarge = width > 18 && height > 15;
-               const isMedium = isTop20 || (width > 10 && height > 8);
-              const isSelected = selectedTile?.id === rect.item.id;
-              const config = CATEGORY_CONFIG[rect.item.category];
-              const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
-              const isMyArtist = watchedSet.has(rect.item.wikiEntryId);
+        <>
+          <div
+            className="relative w-full rounded-2xl overflow-hidden border border-border"
+            style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}
+          >
+            <div className="absolute inset-0">
+              {rects.map((rect, rectIndex) => {
+                const left = (rect.x / containerWidth) * 100;
+                const top = (rect.y / containerHeight) * 100;
+                const width = (rect.w / containerWidth) * 100;
+                const height = (rect.h / containerHeight) * 100;
+                 const isTop20 = rectIndex < 20;
+                 const isLarge = width > 18 && height > 15;
+                 const isMedium = isTop20 || (width > 10 && height > 8);
+                const isSelected = selectedTile?.id === rect.item.id;
+                const config = CATEGORY_CONFIG[rect.item.category];
+                const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
+                const isMyArtist = watchedSet.has(rect.item.wikiEntryId);
 
-              const boxArea = width * height;
-              const sizeFactor = Math.sqrt(boxArea) / 10;
-              const isTopThree = rectIndex < 3;
-              const keywordSize = isTopThree
-                ? Math.max(18, Math.min(40, sizeFactor * 5))
-                : isTop20
-                  ? Math.max(14, Math.min(32, sizeFactor * 4.5))
-                  : Math.max(9, Math.min(16, sizeFactor * 2.2));
-              const scoreSize = Math.max(10, Math.min(30, sizeFactor * 3.2));
+                const boxArea = width * height;
+                const sizeFactor = Math.sqrt(boxArea) / 10;
+                const isTopThree = rectIndex < 3;
+                const keywordSize = isTopThree
+                  ? Math.max(18, Math.min(40, sizeFactor * 5))
+                  : isTop20
+                    ? Math.max(14, Math.min(32, sizeFactor * 4.5))
+                    : Math.max(9, Math.min(16, sizeFactor * 2.2));
+                const scoreSize = Math.max(10, Math.min(30, sizeFactor * 3.2));
 
-
-              return (
-                <button
-                  key={rect.item.id}
-                  onClick={() => handleTileClick(rect.item)}
-                  className={cn(
-                    "absolute border flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none transition-all",
-                    isTopThree ? "overflow-visible" : "overflow-hidden",
-                    isSelected
-                      ? "border-primary ring-2 ring-primary/40 z-20 brightness-110"
-                      : "border-background/20 hover:brightness-125 hover:z-10"
-                  )}
-                  style={{
-                    left: `${left}%`, top: `${top}%`,
-                    width: `${width}%`, height: `${height}%`,
-                    background: (rect.item.sourceImageUrl || rect.item.artistImageUrl)
-                      ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${rect.item.sourceImageUrl || rect.item.artistImageUrl}) center/cover no-repeat`
-                      : tileColor,
-                  }}
-                >
-                  {/* Top-right: influence badge */}
-                  {isMedium && rect.item.influenceIndex > 0 && (
-                    <span className="absolute top-1 right-1 z-20 text-[9px] font-bold text-white/80 drop-shadow-md">
-                      +{rect.item.influenceIndex.toFixed(0)}%
-                    </span>
-                  )}
-
-                  {/* Top-left: age + star */}
-                  {isMedium && (
-                    <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/60">
-                      {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
-                      <Clock className="w-2.5 h-2.5" />
-                      {formatAge(rect.item.detectedAt)}
-                    </span>
-                  )}
-
-                  {/* Center content */}
-                  <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
-                    <span
-                      className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                      style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
-                    >
-                      {getLocalizedKeyword(rect.item, language)}
-                    </span>
-
+                return (
+                  <button
+                    key={rect.item.id}
+                    onClick={() => handleTileClick(rect.item)}
+                    className={cn(
+                      "absolute border flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none transition-all",
+                      isTopThree ? "overflow-visible" : "overflow-hidden",
+                      isSelected
+                        ? "border-primary ring-2 ring-primary/40 z-20 brightness-110"
+                        : "border-background/20 hover:brightness-125 hover:z-10"
+                    )}
+                    style={{
+                      left: `${left}%`, top: `${top}%`,
+                      width: `${width}%`, height: `${height}%`,
+                      background: (rect.item.sourceImageUrl || rect.item.artistImageUrl)
+                        ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${rect.item.sourceImageUrl || rect.item.artistImageUrl}) center/cover no-repeat`
+                        : tileColor,
+                    }}
+                  >
+                    {isMedium && rect.item.influenceIndex > 0 && (
+                      <span className="absolute top-1 right-1 z-20 text-[9px] font-bold text-white/80 drop-shadow-md">
+                        +{rect.item.influenceIndex.toFixed(0)}%
+                      </span>
+                    )}
                     {isMedium && (
-                      <span
-                        className="font-bold text-white truncate w-full text-center drop-shadow-md"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
-                      >
-                        {getLocalizedArtistName(rect.item, language)}
+                      <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/60">
+                        {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
+                        <Clock className="w-2.5 h-2.5" />
+                        {formatAge(rect.item.detectedAt)}
                       </span>
                     )}
-
-                    {rect.item.influenceIndex > 0 && (
+                    <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
                       <span
-                        className="font-black text-white drop-shadow-lg"
-                        style={{ fontSize: `${scoreSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                        className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
+                        style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
                       >
-                        {rect.item.influenceIndex.toFixed(0)}
+                        {getLocalizedKeyword(rect.item, language)}
+                      </span>
+                      {isMedium && (
+                        <span
+                          className="font-bold text-white truncate w-full text-center drop-shadow-md"
+                          style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                        >
+                          {getLocalizedArtistName(rect.item, language)}
+                        </span>
+                      )}
+                      {rect.item.influenceIndex > 0 && (
+                        <span
+                          className="font-black text-white drop-shadow-lg"
+                          style={{ fontSize: `${scoreSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                        >
+                          {rect.item.influenceIndex.toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                    {isMedium && (
+                      <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
+                        {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
                       </span>
                     )}
-                  </div>
-
-                  {/* Bottom-right: category badge */}
-                  {isMedium && (
-                    <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
-                      {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
-                    </span>
-                  )}
-
-                  {/* Inner glow for top items */}
-                  {isTopThree && (
-                    <div className="absolute inset-0 z-[1] pointer-events-none" style={{
-                      boxShadow: rectIndex === 0
-                        ? 'inset 0 0 25px 8px hsla(0, 0%, 100%, 0.5), inset 0 0 50px 16px hsla(0, 0%, 100%, 0.25)'
-                        : 'inset 0 0 15px 4px hsla(0, 0%, 100%, 0.3)',
-                      background: rectIndex === 0
-                        ? 'radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.1) 0%, transparent 60%)'
-                        : undefined,
-                    }} />
-                  )}
-                </button>
-              );
-            })}
+                    {isTopThree && (
+                      <div className="absolute inset-0 z-[1] pointer-events-none" style={{
+                        boxShadow: rectIndex === 0
+                          ? 'inset 0 0 25px 8px hsla(0, 0%, 100%, 0.5), inset 0 0 50px 16px hsla(0, 0%, 100%, 0.25)'
+                          : 'inset 0 0 15px 4px hsla(0, 0%, 100%, 0.3)',
+                        background: rectIndex === 0
+                          ? 'radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.1) 0%, transparent 60%)'
+                          : undefined,
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
+              <div key={key} className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: config.color }} />
+                <span className="text-[10px] text-muted-foreground">{config.label}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
-
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-2 mt-3">
-        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-          <div key={key} className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: config.color }} />
-            <span className="text-[10px] text-muted-foreground">{config.label}</span>
-          </div>
-        ))}
-      </div>
 
       {/* Detail Sheet */}
       <T2DetailSheet
