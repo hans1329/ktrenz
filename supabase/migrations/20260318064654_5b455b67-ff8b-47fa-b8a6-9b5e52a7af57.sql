@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_stars ALTER COLUMN wiki_entry_id DROP NOT NULL;
