@@ -615,6 +615,29 @@ const V3TrendRankings = () => {
       .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
   }, [rankings, energyCategory]);
 
+  // Grouped rankings by trend label
+  const groupedRankings = useMemo(() => {
+    if (!sortedRankings?.length) return [];
+    const groups: { label: string; emoji: string; color: string; items: any[] }[] = [
+      { label: "SURGE", emoji: "🔥", color: "text-red-500", items: [] },
+      { label: "Rising", emoji: "↑", color: "text-green-500", items: [] },
+      { label: "Stable", emoji: "→", color: "text-blue-400", items: [] },
+      { label: "Cooling", emoji: "↘", color: "text-amber-500", items: [] },
+      { label: "Falling", emoji: "↓", color: "text-purple-400", items: [] },
+    ];
+    sortedRankings.forEach((item: any, idx: number) => {
+      const change = item.changePercent ?? 0;
+      let groupIdx = 2; // Stable default
+      if (change >= 30) groupIdx = 0;
+      else if (change >= 10) groupIdx = 1;
+      else if (change > -5) groupIdx = 2;
+      else if (change > -15) groupIdx = 3;
+      else groupIdx = 4;
+      groups[groupIdx].items.push({ ...item, globalRank: idx + 1 });
+    });
+    return groups.filter(g => g.items.length > 0);
+  }, [sortedRankings]);
+
   // Pinned agent artists - extract from rankings
   const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
   const pinnedAgentItems = useMemo(() => {
