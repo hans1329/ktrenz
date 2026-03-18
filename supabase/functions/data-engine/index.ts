@@ -1,6 +1,7 @@
 // data-engine: 데이터 수집 오케스트레이터
 // 모듈: youtube, music, hanteo, buzz, energy + buzz 개별 소스(buzz_x, buzz_reddit, buzz_naver, buzz_tiktok) + naver_news
 // 모드: 개별 모듈 또는 "all" (체이닝 + 타임시프트)
+// 수집 대상: ktrenz_stars 테이블 (wiki_entry_id가 연결된 active 스타만)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -23,15 +24,15 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   youtube: 10,
   yt_sentiment: 10,
   external_videos: 10,
-  korean_charts: 5,       // Firecrawl 멜론+지니 → 빠름
-  spotify_listeners: 5,   // kworb.net direct fetch → 빠름
-  music: 45,      // Last.fm + Deezer 65명 → fire-and-forget 후 충분한 대기
-  hanteo: 30,     // 한터 스크래핑 → 대기
+  korean_charts: 5,
+  spotify_listeners: 5,
+  music: 45,
+  hanteo: 30,
   apple_music_charts: 5,
   billboard_charts: 5,
   social: 30,
   buzz: 120,
-  buzz_enhancer: 60,  // AI 필터 + Perplexity 보강 대기
+  buzz_enhancer: 60,
   energy: 5,
   detect_geo_changes: 5,
   fes_analyst: 5,
@@ -54,15 +55,32 @@ function launchCollector(supabaseUrl: string, serviceKey: string, source: string
   fireAndForget(p);
 }
 
-// ── 유틸: 나무위키 연결된 Tier1 아티스트만 필터링 ──
-async function getNamuwikiLinkedTier1Ids(sb: any): Promise<string[]> {
+// ── 유틸: ktrenz_stars에서 wiki_entry_id가 연결된 active 스타 목록 ──
+interface StarInfo {
+  wiki_entry_id: string;
+  display_name: string;
+  name_ko: string | null;
+}
+
+async function getActiveStarWikiIds(sb: any): Promise<string[]> {
   const { data: starRows } = await sb
     .from("ktrenz_stars")
     .select("wiki_entry_id")
+    .eq("is_active", true)
     .not("wiki_entry_id", "is", null);
-  const starWikiIds = new Set((starRows || []).map((r: any) => r.wiki_entry_id).filter(Boolean));
-  console.log(`[data-engine] ktrenz_stars linked wiki_entry_ids: ${starWikiIds.size}`);
-  return [...starWikiIds] as string[];
+  const ids = [...new Set((starRows || []).map((r: any) => r.wiki_entry_id).filter(Boolean))];
+  console.log(`[data-engine] ktrenz_stars active wiki_entry_ids: ${ids.length}`);
+  return ids;
+}
+
+async function getActiveStars(sb: any): Promise<StarInfo[]> {
+  const { data: starRows } = await sb
+    .from("ktrenz_stars")
+    .select("wiki_entry_id, display_name, name_ko")
+    .eq("is_active", true)
+    .not("wiki_entry_id", "is", null)
+    .order("wiki_entry_id", { ascending: true });
+  return (starRows || []).filter((r: any) => r.wiki_entry_id) as StarInfo[];
 }
 
 // ── 모듈 실행기: 기본 파이프라인 ──
@@ -99,44 +117,44 @@ async function runCollectorModule(
 }
 
 async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  console.log(`[data-engine] Running YouTube module (dynamic batching)...`);
+  console.log(`[data-engine] Running YouTube module (ktrenz_stars based)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-  if (namuwikiIds.length === 0) {
-    console.warn(`[data-engine] YouTube: No namuwiki-linked artists found`);
+  const wikiIds = await getActiveStarWikiIds(sb);
+  if (wikiIds.length === 0) {
+    console.warn(`[data-engine] YouTube: No active stars found`);
     return { status: "no_artists", launched: 0 };
   }
 
+  // wiki_entries에서 youtube_channel_id가 있는 아티스트만 필터 (v3_artist_tiers 대체)
+  // youtube_channel_id는 wiki_entries.metadata 또는 v3_artist_tiers에서 가져올 수 있음
+  // ktrenz_data_collector가 내부적으로 wiki_entry_id 기반으로 채널 ID를 조회하므로 여기서는 ID 목록만 전달
   const tierSnapshotAt = new Date().toISOString();
+
+  // 여전히 v3_artist_tiers에서 youtube_channel_id를 참조해야 함 (채널 ID 저장소)
   const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id, youtube_channel_id")
-    .eq("tier", 1)
-    .in("wiki_entry_id", namuwikiIds)
-    .lte("updated_at", tierSnapshotAt)
+    .in("wiki_entry_id", wikiIds)
     .order("wiki_entry_id", { ascending: true });
 
-  const validTier1Ids = [...new Set((tier1Entries || [])
+  const validIds = [...new Set((tier1Entries || [])
     .filter((t: any) => t.youtube_channel_id)
     .map((t: any) => t.wiki_entry_id)
     .filter(Boolean))];
-  const tier1Count = validTier1Ids.length;
+  const tier1Count = validIds.length;
 
   if (tier1Count === 0) {
-    console.warn(`[data-engine] YouTube: No Tier 1 namuwiki-linked artists with channel ID found`);
+    console.warn(`[data-engine] YouTube: No stars with youtube_channel_id found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
-  // 10명씩 배치 (아티스트당 ~2초 → 10명 = ~20초, 60초 타임아웃 내 안전)
   const BATCH_SIZE = 10;
   const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
-
-  // 배치 간 딜레이: YouTube API rate limit 보호 (최대 25초 사용)
   const MAX_LAUNCH_TIME_MS = 25_000;
   const delayMs = totalBatches > 1 ? Math.min(3000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
 
-  console.log(`[data-engine] YouTube: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms, snapshotAt=${tierSnapshotAt}`);
+  console.log(`[data-engine] YouTube: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms`);
 
   let launched = 0;
   for (let i = 0; i < totalBatches; i++) {
@@ -155,34 +173,21 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
 }
 
 async function runMusic(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  console.log(`[data-engine] Running Music module (dynamic batching)...`);
+  console.log(`[data-engine] Running Music module (ktrenz_stars based)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-  if (namuwikiIds.length === 0) return { status: "no_artists", launched: 0 };
+  const wikiIds = await getActiveStarWikiIds(sb);
+  if (wikiIds.length === 0) return { status: "no_artists", launched: 0 };
 
   const tierSnapshotAt = new Date().toISOString();
-  const { data: tier1Entries } = await sb
-    .from("v3_artist_tiers")
-    .select("wiki_entry_id")
-    .eq("tier", 1)
-    .in("wiki_entry_id", namuwikiIds)
-    .lte("updated_at", tierSnapshotAt)
-    .order("wiki_entry_id", { ascending: true });
-
-  const tier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
-  const tier1Count = tier1Ids.length;
-  if (tier1Count === 0) {
-    console.warn(`[data-engine] Music: No namuwiki-linked Tier 1 artists found`);
-    return { status: "no_artists", launched: 0, tierSnapshotAt };
-  }
+  const tier1Count = wikiIds.length;
 
   const BATCH_SIZE = 15;
   const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
   const MAX_LAUNCH_TIME_MS = 25_000;
   const delayMs = totalBatches > 1 ? Math.min(3000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
 
-  console.log(`[data-engine] Music: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms, snapshotAt=${tierSnapshotAt}`);
+  console.log(`[data-engine] Music: ${tier1Count} artists → ${totalBatches} batches of ~${BATCH_SIZE}, delay=${delayMs}ms`);
 
   let launched = 0;
   for (let i = 0; i < totalBatches; i++) {
@@ -205,37 +210,21 @@ async function runHanteo(supabaseUrl: string, serviceKey: string, waitForComplet
 }
 
 async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  console.log(`[data-engine] Running Buzz module (dynamic batching based on namuwiki-linked Tier 1)...`);
+  console.log(`[data-engine] Running Buzz module (ktrenz_stars based)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-  if (namuwikiIds.length === 0) return { status: "no_artists", launched: 0 };
+  const wikiIds = await getActiveStarWikiIds(sb);
+  if (wikiIds.length === 0) return { status: "no_artists", launched: 0 };
 
   const tierSnapshotAt = new Date().toISOString();
-  const { data: tier1Entries } = await sb
-    .from("v3_artist_tiers")
-    .select("wiki_entry_id")
-    .eq("tier", 1)
-    .in("wiki_entry_id", namuwikiIds)
-    .lte("updated_at", tierSnapshotAt)
-    .order("wiki_entry_id", { ascending: true });
-
-  const tier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
-  const tier1Count = tier1Ids.length;
-
-  if (tier1Count === 0) {
-    console.warn(`[data-engine] Buzz: No namuwiki-linked Tier 1 artists found`);
-    return { status: "no_artists", launched: 0, tierSnapshotAt };
-  }
+  const tier1Count = wikiIds.length;
 
   const BATCH_SIZE = 5;
   const totalBatches = Math.ceil(tier1Count / BATCH_SIZE);
-
-  // Edge Function 60초 타임아웃 내에서 안전하게 완료하기 위해 동적 딜레이 계산 (최대 25초 사용)
   const MAX_LAUNCH_TIME_MS = 25_000;
   const delayMs = totalBatches > 1 ? Math.min(2000, Math.floor(MAX_LAUNCH_TIME_MS / (totalBatches - 1))) : 0;
 
-  console.log(`[data-engine] Buzz: ${totalBatches} batches, delay=${delayMs}ms, estimated=${totalBatches > 1 ? (totalBatches - 1) * delayMs / 1000 : 0}s`);
+  console.log(`[data-engine] Buzz: ${totalBatches} batches, delay=${delayMs}ms`);
 
   let launched = 0;
   for (let i = 0; i < totalBatches; i++) {
@@ -248,7 +237,7 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
     launched++;
     if (i < totalBatches - 1) await new Promise(r => setTimeout(r, delayMs));
   }
-  console.log(`[data-engine] Buzz: launched ${launched} batches for ${tier1Count} Tier1 artists (snapshotAt=${tierSnapshotAt})`);
+  console.log(`[data-engine] Buzz: launched ${launched} batches for ${tier1Count} artists (snapshotAt=${tierSnapshotAt})`);
   return { status: "launched", launched, batchSize: BATCH_SIZE, totalBatches, tier1Count, tierSnapshotAt };
 }
 
@@ -289,7 +278,6 @@ async function runEnergy(supabaseUrl: string, serviceKey: string, isBaseline: bo
 }
 
 // ── 모듈 실행기: Buzz 개별 소스 ──
-// buzz_x → crawl-x-mentions에 sources=["x_twitter"]만 전달
 const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
   buzz_x: "x_twitter",
   buzz_reddit: "reddit",
@@ -299,18 +287,13 @@ const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
 
 async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule: BuzzSourceModule): Promise<any> {
   const sourceName = BUZZ_SOURCE_MAP[buzzModule];
-  console.log(`[data-engine] Launching Buzz source: ${sourceName} (namuwiki-linked only)...`);
+  console.log(`[data-engine] Launching Buzz source: ${sourceName} (ktrenz_stars based)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-  if (namuwikiIds.length === 0) return { status: "no_artists" };
+  const wikiIds = await getActiveStarWikiIds(sb);
+  if (wikiIds.length === 0) return { status: "no_artists" };
 
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
-  const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
-
-  if (tier1Ids.length === 0) return { status: "no_artists" };
-
-  const { data: artists } = await sb.from("wiki_entries").select("id, title, metadata").in("schema_type", ["artist", "member"]).in("id", tier1Ids);
+  const { data: artists } = await sb.from("wiki_entries").select("id, title, metadata").in("schema_type", ["artist", "member"]).in("id", wikiIds);
   if (!artists?.length) return { status: "no_artists" };
 
   let launched = 0;
@@ -331,13 +314,12 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
             artistName: artist.title,
             wikiEntryId: artist.id,
             hashtags,
-            sources: [sourceName], // 개별 소스만
+            sources: [sourceName],
           }),
         }).catch((e) => console.warn(`[data-engine] Buzz ${sourceName} for ${artist.title} error:`, e.message));
 
     fireAndForget(p);
     launched++;
-    // Firecrawl rate limit 방지
     if (launched % 3 === 0) await new Promise(r => setTimeout(r, 1000));
   }
 
@@ -347,27 +329,23 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 
 // ── 네이버 뉴스 전용 모듈 ──
 async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching Naver News (namuwiki-linked only)...");
+  console.log("[data-engine] Launching Naver News (ktrenz_stars based)...");
   const sb = createClient(supabaseUrl, serviceKey);
-  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-  if (namuwikiIds.length === 0) return { status: "no_artists" };
+  const stars = await getActiveStars(sb);
+  if (stars.length === 0) return { status: "no_artists" };
 
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
-  const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
-  if (!tier1Ids.length) return { status: "no_artists" };
-
-  // name_ko 매핑
+  // name_ko 매핑 (ktrenz_stars에서 직접)
   const koNameMap = new Map<string, string>();
-  for (const t of tier1Entries || []) {
-    if (t.name_ko) koNameMap.set(t.wiki_entry_id, t.name_ko);
+  for (const s of stars) {
+    if (s.name_ko) koNameMap.set(s.wiki_entry_id, s.name_ko);
   }
 
-  const { data: artists } = await sb.from("wiki_entries").select("id, title").in("schema_type", ["artist", "member"]).in("id", tier1Ids);
+  const wikiIds = stars.map(s => s.wiki_entry_id);
+  const { data: artists } = await sb.from("wiki_entries").select("id, title").in("schema_type", ["artist", "member"]).in("id", wikiIds);
   if (!artists?.length) return { status: "no_artists" };
 
-  // 동적 딜레이: 총 대상 수 기반으로 안전한 실행 시간 내 완료
   const totalCount = artists.length;
-  const groupSize = Math.max(5, Math.ceil(totalCount / 10)); // 최대 10그룹
+  const groupSize = Math.max(5, Math.ceil(totalCount / 10));
   const totalGroups = Math.ceil(totalCount / groupSize);
   const delayMs = totalGroups > 1 ? Math.min(500, Math.floor(15_000 / (totalGroups - 1))) : 0;
 
@@ -389,19 +367,19 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 }
 
 // ── 통합 모듈 러너 맵 ──
-// energy는 isBaseline 파라미터가 필요하므로 별도 처리
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
   yt_sentiment: async (url, key) => {
-    console.log("[data-engine] Running yt_sentiment batch (namuwiki-linked only)...");
+    console.log("[data-engine] Running yt_sentiment batch (ktrenz_stars based)...");
     const sb = createClient(url, key);
-    const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-    if (namuwikiIds.length === 0) return { status: "no_artists" };
-    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
-    const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
+    const wikiIds = await getActiveStarWikiIds(sb);
+    if (wikiIds.length === 0) return { status: "no_artists" };
+
+    // youtube_channel_id가 필요하므로 v3_artist_tiers에서 조회 (데이터 저장소 역할)
+    const { data: tiers } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").in("wiki_entry_id", wikiIds);
+    const targets = (tiers || []).filter((t: any) => t.youtube_channel_id);
     const totalCount = targets.length;
 
-    // 배치로 분할 (한 배치당 ~10명, Edge Function 타임아웃 고려)
     const BATCH_SIZE = 10;
     const batches: string[][] = [];
     for (let i = 0; i < totalCount; i += BATCH_SIZE) {
@@ -410,7 +388,6 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
 
     console.log(`[data-engine] yt_sentiment: ${totalCount} artists → ${batches.length} batches of ~${BATCH_SIZE}`);
 
-    // 각 배치를 별도 함수 호출로 발사 (2초 간격)
     let launched = 0;
     for (let i = 0; i < batches.length; i++) {
       const p = fetch(`${url}/functions/v1/ktrenz-yt-sentiment`, {
@@ -535,19 +512,13 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "fes_predictor", ...parsed };
   },
   buzz_enhancer: async (url, key) => {
-    console.log("[data-engine] Running Buzz Enhancer (namuwiki-linked only)...");
+    console.log("[data-engine] Running Buzz Enhancer (ktrenz_stars based)...");
     const sb = createClient(url, key);
-    const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
-    if (namuwikiIds.length === 0) return { status: "no_artists" };
-    const { data: tiers } = await sb
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id")
-      .eq("tier", 1)
-      .in("wiki_entry_id", namuwikiIds)
-      .order("wiki_entry_id", { ascending: true });
-    const ids = (tiers || []).map((t: any) => t.wiki_entry_id);
+    const wikiIds = await getActiveStarWikiIds(sb);
+    if (wikiIds.length === 0) return { status: "no_artists" };
+
     const BATCH_SIZE = 10;
-    const totalBatches = Math.ceil(ids.length / BATCH_SIZE);
+    const totalBatches = Math.ceil(wikiIds.length / BATCH_SIZE);
 
     let launched = 0;
     for (let i = 0; i < totalBatches; i++) {
@@ -560,8 +531,8 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
       launched++;
       if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 2000));
     }
-    console.log(`[data-engine] Buzz Enhancer: launched ${launched} batches for ${ids.length} artists`);
-    return { status: "launched", launched, totalBatches, totalArtists: ids.length };
+    console.log(`[data-engine] Buzz Enhancer: launched ${launched} batches for ${wikiIds.length} artists`);
+    return { status: "launched", launched, totalBatches, totalArtists: wikiIds.length };
   },
   // buzz 개별 소스
   ...Object.fromEntries(
@@ -597,7 +568,6 @@ Deno.serve(async (req) => {
     if (wikiEntryId && module !== "all") {
       console.log(`[data-engine] Single artist mode: ${wikiEntryId}, module: ${module}`);
       
-      // 개별 아티스트 수집 → 해당 collector 직접 호출 (fire-and-forget)
       if (module === "youtube" || module === "music" || module === "hanteo") {
         const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-data-collector`, {
           method: "POST",
@@ -611,7 +581,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // yt_sentiment 개별 아티스트
       if (module === "yt_sentiment") {
         const p = fetch(`${supabaseUrl}/functions/v1/ktrenz-yt-sentiment`, {
           method: "POST",
@@ -625,7 +594,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // buzz 개별 소스 (buzz_x 등) 또는 buzz 전체
       if (module === "buzz" || module.startsWith("buzz_")) {
         const { data: artist } = await sb.from("wiki_entries").select("title, metadata").eq("id", wikiEntryId).single();
         if (!artist) {
@@ -634,16 +602,17 @@ Deno.serve(async (req) => {
         }
         const meta = artist.metadata as any;
         const sources = module === "buzz"
-          ? undefined // 전체 소스
+          ? undefined
           : [BUZZ_SOURCE_MAP[module as BuzzSourceModule]];
 
         // buzz 전체 실행 시 Naver API를 먼저 동기 수집해 최신 snapshot 확보
         if (module === "buzz") {
-          const { data: tierKo } = await sb.from("v3_artist_tiers").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
+          // ktrenz_stars에서 name_ko 가져오기
+          const { data: starInfo } = await sb.from("ktrenz_stars").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
           const naverResp = await fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-            body: JSON.stringify({ artistName: artist.title, koreanName: tierKo?.name_ko || null, wikiEntryId }),
+            body: JSON.stringify({ artistName: artist.title, koreanName: starInfo?.name_ko || null, wikiEntryId }),
           });
           if (!naverResp.ok) {
             const naverErr = await naverResp.text();
@@ -675,11 +644,12 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({ success: false, error: "Artist not found" }),
             { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        const { data: tierInfo } = await sb.from("v3_artist_tiers").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
+        // ktrenz_stars에서 name_ko 가져오기
+        const { data: starInfo } = await sb.from("ktrenz_stars").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
         const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-          body: JSON.stringify({ artistName: artist.title, koreanName: tierInfo?.name_ko || null, wikiEntryId }),
+          body: JSON.stringify({ artistName: artist.title, koreanName: starInfo?.name_ko || null, wikiEntryId }),
         }).catch((e) => console.warn(`[data-engine] Naver News single fire error:`, e.message));
         fireAndForget(p);
         return new Response(
@@ -729,7 +699,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Tier1 전체 개별 모듈 실행 ──
+    // ── 전체 개별 모듈 실행 ──
     const mod = module;
     if (!MODULE_RUNNERS[mod]) {
       return new Response(
@@ -739,14 +709,12 @@ Deno.serve(async (req) => {
     }
 
     // ── 이전 모듈의 딜레이 대기 (체이닝에서 전달된 경우) ──
-    // 60초 Edge Function 타임아웃 보호: waitBeforeMs가 MAX_SAFE_WAIT 초과 시 릴레이 호출
     const MAX_SAFE_WAIT_MS = 45_000;
     const waitMs = waitBeforeMs || 0;
     if (waitMs > MAX_SAFE_WAIT_MS) {
       const remainingWait = waitMs - MAX_SAFE_WAIT_MS;
       console.log(`[data-engine] waitBeforeMs=${waitMs}ms exceeds safe limit. Sleeping ${MAX_SAFE_WAIT_MS}ms then relaying with ${remainingWait}ms remaining...`);
       await new Promise(r => setTimeout(r, MAX_SAFE_WAIT_MS));
-      // 남은 대기시간을 가진 릴레이 호출 (자기 자신 재호출)
       const relayPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
@@ -769,8 +737,7 @@ Deno.serve(async (req) => {
 
     console.log(`[data-engine] Executing module: ${mod} (run: ${currentRunId})`);
 
-    // ── 체이닝 준비: 모듈 실행 전에 다음 체인 호출을 예약 ──
-    // 모듈 실행과 체이닝을 분리하여 60초 타임아웃 문제 해결
+    // ── 체이닝 준비 ──
     if (chain && chain.length > 0) {
       const nextModule = chain[0];
       const remainingChain = chain.slice(1);
@@ -779,7 +746,6 @@ Deno.serve(async (req) => {
 
       console.log(`[data-engine] Pre-scheduling chain → ${nextModule} (will wait ${delaySec}s before executing)`);
 
-      // 다음 모듈을 즉시 호출하되, waitBeforeMs로 딜레이를 위임
       const chainPromise = fetch(`${supabaseUrl}/functions/v1/data-engine`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
@@ -788,7 +754,7 @@ Deno.serve(async (req) => {
       fireAndForget(chainPromise);
     }
 
-    // ── 모듈 실행 (fire-and-forget) ──
+    // ── 모듈 실행 ──
     const GUARD_MODULES = ["youtube", "music", "buzz", "social", "hanteo"];
     let result: any = {};
     try {
@@ -813,7 +779,7 @@ Deno.serve(async (req) => {
       }
       console.log(`[data-engine] Module ${mod} completed:`, JSON.stringify(result).slice(0, 300));
 
-      // ── Pipeline Guard: 수집 모듈 완료 후 이상치 검증 (fire-and-forget) ──
+      // ── Pipeline Guard ──
       if (GUARD_MODULES.includes(mod)) {
         const guardPromise = fetch(`${supabaseUrl}/functions/v1/ktrenz-pipeline-guard`, {
           method: "POST",
