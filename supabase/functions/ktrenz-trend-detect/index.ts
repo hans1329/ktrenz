@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
         // Rate limit 방지
         await new Promise((r) => setTimeout(r, 1500));
       } catch (e) {
-        console.error(`[trend-detect] ✗ ${entryId}: ${e.message}`);
+        console.error(`[trend-detect] ✗ ${star.display_name}: ${e.message}`);
       }
     }
 
