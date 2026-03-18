@@ -465,8 +465,7 @@ const AdminStars = () => {
                         ))}
                       </div>
                     </div>
-                  )}
-                  )}
+                  )
                   {namuResult.social_handles && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {Object.entries(namuResult.social_handles)
