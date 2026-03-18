@@ -155,23 +155,25 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
 }
 
 async function runMusic(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // Music도 아티스트당 Last.fm + Deezer + DB 조회 → ~2초, 66명 = ~130초
-  // 배치 + fire-and-forget 패턴 적용
   console.log(`[data-engine] Running Music module (dynamic batching)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists", launched: 0 };
+
   const tierSnapshotAt = new Date().toISOString();
   const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id")
     .eq("tier", 1)
+    .in("wiki_entry_id", namuwikiIds)
     .lte("updated_at", tierSnapshotAt)
     .order("wiki_entry_id", { ascending: true });
 
   const tier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
   const tier1Count = tier1Ids.length;
   if (tier1Count === 0) {
-    console.warn(`[data-engine] Music: No Tier 1 artists found`);
+    console.warn(`[data-engine] Music: No namuwiki-linked Tier 1 artists found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
