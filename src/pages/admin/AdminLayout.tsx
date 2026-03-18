@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database, FlaskConical, ShieldAlert, ShieldCheck, CalendarDays, UserPlus } from 'lucide-react';
+import { Loader2, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, Trophy, Coins, Music, HeartPulse, ShoppingBag, Brain, Activity, MonitorPlay, Building2, Database, FlaskConical, ShieldAlert, ShieldCheck, CalendarDays, UserPlus, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +23,7 @@ const navItems = [
   { label: '참조 유튜브 목록', path: '/admin/watched-channels', icon: MonitorPlay },
   { label: '에이전시 샘플', path: '/admin/agency-sample', icon: Building2 },
   { label: '등록 요청', path: '/admin/listing-requests', icon: UserPlus },
+  { label: '스타 관리', path: '/admin/stars', icon: Star },
   { label: 'Wiki 항목', path: '/admin/entries', icon: FileText },
 ];
 
