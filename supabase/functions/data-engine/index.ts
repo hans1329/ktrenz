@@ -347,9 +347,12 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 
 // ── 네이버 뉴스 전용 모듈 ──
 async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching Naver News (fire-and-forget)...");
+  console.log("[data-engine] Launching Naver News (namuwiki-linked only)...");
   const sb = createClient(supabaseUrl, serviceKey);
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").eq("tier", 1);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists" };
+
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
   const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
   if (!tier1Ids.length) return { status: "no_artists" };
 
