@@ -26,6 +26,30 @@ const CATEGORY_COLORS: Record<string, string> = {
   media: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
 };
 
+const T2_LABELS: Record<string, Record<string, string>> = {
+  whyTrend: { en: "Why this trend?", ko: "왜 이 트렌드인가?", ja: "なぜこのトレンド？", zh: "为什么是这个趋势？" },
+  noContext: { en: "No context available yet.", ko: "아직 맥락 정보가 없습니다.", ja: "コンテキスト情報はまだありません。", zh: "尚无相关信息。" },
+  whyRank: { en: "Why", ko: "왜", ja: "なぜ", zh: "为什么" },
+  whyRankSuffix: { en: "?", ko: "위인가?", ja: "位？", zh: "位？" },
+  surged: { en: "Google Trends search volume surged", ko: "Google Trends 검색량이", ja: "Google Trendsの検索量が", zh: "Google Trends搜索量" },
+  surgedAfter: { en: "after", ko: "이후", ja: "のニュース後", zh: "新闻后" },
+  newsMention: { en: "'s news mention.", ko: "의 뉴스 언급 이후 급등.", ja: "に急増。", zh: "急增。" },
+  baselineWas: { en: "Baseline interest was", ko: "기본 관심도", ja: "ベースライン関心度", zh: "基础关注度" },
+  peakedAt: { en: ", peaked at", ko: ", 최고", ja: ", ピーク", zh: ", 峰值" },
+  highestAmong: { en: "This is the highest influence index among", ko: "이것은", ja: "これは", zh: "这是" },
+  activeKeywords: { en: "active keywords.", ko: "개 활성 키워드 중 가장 높은 영향력 지수입니다.", ja: "件のアクティブキーワードの中で最高の影響力指数です。", zh: "个活跃关键词中最高的影响力指数。" },
+  trackingStarted: { en: "Tracking just started — waiting for Google Trends data to calculate influence.", ko: "추적이 시작되었습니다 — 영향력 산출을 위해 Google Trends 데이터를 기다리고 있습니다.", ja: "トラッキングが開始されました — 影響力算出のためGoogle Trendsデータを待っています。", zh: "追踪刚开始 — 等待Google Trends数据计算影响力。" },
+  influence: { en: "Influence", ko: "영향력", ja: "影響力", zh: "影响力" },
+  baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
+  peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
+  trackingHistory: { en: "Tracking History", ko: "추적 기록", ja: "トラッキング履歴", zh: "追踪记录" },
+  by: { en: "by", ko: "by", ja: "by", zh: "by" },
+};
+
+function t(key: string, lang: string): string {
+  return T2_LABELS[key]?.[lang] || T2_LABELS[key]?.en || key;
+}
+
 function formatAge(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const hours = Math.floor(diff / 3600000);
