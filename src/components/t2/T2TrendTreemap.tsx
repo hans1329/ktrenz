@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Clock } from "lucide-react";
+import { TrendingUp, Clock, Star, ChevronRight } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 import T2AdminControls from "./T2AdminControls";
 
