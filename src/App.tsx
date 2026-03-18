@@ -42,6 +42,7 @@ import AdminSignalEvents from "./pages/admin/AdminSignalEvents";
 import AdminListingRequests from "./pages/admin/AdminListingRequests";
 import AdminStars from "./pages/admin/AdminStars";
 import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
+import T2TrendMap from "./pages/T2TrendMap";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
