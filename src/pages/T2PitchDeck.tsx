@@ -619,7 +619,7 @@ export default function T2PitchDeck() {
       <Section id="categories">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Eye className="w-3.5 h-3.5" /> {l.categoriesTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.categoriesTitle[0]}<span className="text-primary">{l.categoriesTitle[1]}</span>
             </h2>
