@@ -3661,14 +3661,18 @@ export type Database = {
       ktrenz_trend_triggers: {
         Row: {
           artist_name: string
+          baseline_score: number | null
           confidence: number | null
           context: string | null
           created_at: string
           detected_at: string
           id: string
+          influence_index: number | null
           keyword: string
           keyword_category: string
           metadata: Json | null
+          peak_at: string | null
+          peak_score: number | null
           source_title: string | null
           source_url: string | null
           star_id: string | null
@@ -3679,14 +3683,18 @@ export type Database = {
         }
         Insert: {
           artist_name: string
+          baseline_score?: number | null
           confidence?: number | null
           context?: string | null
           created_at?: string
           detected_at?: string
           id?: string
+          influence_index?: number | null
           keyword: string
           keyword_category?: string
           metadata?: Json | null
+          peak_at?: string | null
+          peak_score?: number | null
           source_title?: string | null
           source_url?: string | null
           star_id?: string | null
@@ -3697,14 +3705,18 @@ export type Database = {
         }
         Update: {
           artist_name?: string
+          baseline_score?: number | null
           confidence?: number | null
           context?: string | null
           created_at?: string
           detected_at?: string
           id?: string
+          influence_index?: number | null
           keyword?: string
           keyword_category?: string
           metadata?: Json | null
+          peak_at?: string | null
+          peak_score?: number | null
           source_title?: string | null
           source_url?: string | null
           star_id?: string | null
