@@ -145,7 +145,7 @@ const t = {
     ctaFooter: "ecosystem — Real-time K-Pop intelligence platform",
   },
   ko: {
-    heroTag: "T2 · 트렌드 인텔리전스 엔진",
+    heroTag: "KTRENZ · 트렌드 인텔리전스 엔진",
     heroTitle1: "K-Pop이 만드는",
     heroTitle2: "상업적 움직임을",
     heroTitle3: "시장보다 먼저 감지",
