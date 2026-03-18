@@ -119,6 +119,7 @@ const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const isMobile = useIsMobile();
+  const { language } = useLanguage();
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
