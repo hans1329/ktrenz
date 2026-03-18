@@ -395,8 +395,9 @@ const AdminStars = () => {
                   onChange={(e) => setNamuUrl(e.target.value)}
                   className="h-9 text-xs"
                 />
-                <Button size="sm" variant="outline" onClick={parseNamuwiki} disabled={namuLoading}>
-                  {namuLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                <Button size="sm" onClick={parseNamuwiki} disabled={namuLoading} className="shrink-0">
+                  {namuLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Globe className="w-3.5 h-3.5 mr-1" />}
+                  {namuLoading ? "파싱 중..." : "파싱"}
                 </Button>
               </div>
               {namuResult && (
