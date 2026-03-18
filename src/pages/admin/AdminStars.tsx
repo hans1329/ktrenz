@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink,
+  Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink, Globe,
 } from "lucide-react";
 
 /* ───── types ───── */
@@ -30,17 +30,20 @@ interface StarRow {
   social_handles: Record<string, string> | null;
   influence_categories: string[] | null;
   musicbrainz_id: string | null;
+  namuwiki_url: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
 
-interface WikiEntry {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  schema_type: string | null;
-  metadata: Record<string, any> | null;
+interface ParsedArtist {
+  display_name: string;
+  name_ko: string;
+  star_type: string;
+  group_name: string | null;
+  members: string[];
+  debut_date: string | null;
+  agency: string | null;
+  social_handles: Record<string, string | null>;
 }
 
 const STAR_TYPE_OPTIONS = [
@@ -70,11 +73,12 @@ const AdminStars = () => {
     star_type: "group" as string,
     wiki_entry_id: "",
     group_star_id: "",
+    namuwiki_url: "",
     is_active: true,
   });
-  const [wikiLookupId, setWikiLookupId] = useState("");
-  const [wikiResult, setWikiResult] = useState<WikiEntry | null>(null);
-  const [wikiLoading, setWikiLoading] = useState(false);
+  const [namuUrl, setNamuUrl] = useState("");
+  const [namuLoading, setNamuLoading] = useState(false);
+  const [namuResult, setNamuResult] = useState<ParsedArtist | null>(null);
 
   /* ───── queries ───── */
   const { data: stars, isLoading } = useQuery({
@@ -101,47 +105,51 @@ const AdminStars = () => {
     return m;
   }, [groups]);
 
-  /* ───── wiki lookup ───── */
-  const lookupWiki = async () => {
-    const id = wikiLookupId.trim();
-    if (!id) return;
-    setWikiLoading(true);
-    setWikiResult(null);
+  /* ───── namuwiki parse ───── */
+  const parseNamuwiki = async () => {
+    const url = namuUrl.trim();
+    if (!url || !url.includes("namu.wiki")) {
+      toast.error("유효한 나무위키 URL을 입력하세요");
+      return;
+    }
+    setNamuLoading(true);
+    setNamuResult(null);
     try {
-      const { data, error } = await supabase
-        .from("wiki_entries")
-        .select("id, title, image_url, schema_type, metadata")
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke("parse-namuwiki", {
+        body: { namuwiki_url: url },
+      });
       if (error) throw error;
-      if (!data) {
-        toast.error("위키 항목을 찾을 수 없습니다");
-        return;
-      }
-      const w = { ...data, description: null } as WikiEntry;
-      setWikiResult(w);
-      // auto-fill
+      if (!data?.success) throw new Error(data?.error || "파싱 실패");
+
+      const parsed = data.data as ParsedArtist;
+      setNamuResult(parsed);
+
+      // Auto-fill form
       setForm((prev) => ({
         ...prev,
-        display_name: w.title || prev.display_name,
-        wiki_entry_id: w.id,
-        star_type:
-          w.schema_type === "member"
-            ? "member"
-            : w.schema_type === "solo"
-              ? "solo"
-              : prev.star_type,
+        display_name: parsed.display_name || prev.display_name,
+        name_ko: parsed.name_ko || prev.name_ko,
+        star_type: parsed.star_type || prev.star_type,
+        namuwiki_url: url,
       }));
-      // try to extract korean name from metadata
-      const meta = w.metadata as any;
-      if (meta?.korean_name) {
-        setForm((prev) => ({ ...prev, name_ko: meta.korean_name }));
+
+      // Try to find group_star_id if member
+      if (parsed.star_type === "member" && parsed.group_name) {
+        const matchedGroup = groups.find(
+          (g) =>
+            g.display_name.toLowerCase() === parsed.group_name!.toLowerCase() ||
+            (g.name_ko && g.name_ko === parsed.group_name),
+        );
+        if (matchedGroup) {
+          setForm((prev) => ({ ...prev, group_star_id: matchedGroup.id }));
+        }
       }
-      toast.success(`위키 항목 로드: ${w.title}`);
+
+      toast.success(`파싱 완료: ${parsed.display_name || parsed.name_ko}`);
     } catch (err: any) {
-      toast.error(`조회 실패: ${err.message}`);
+      toast.error(`파싱 실패: ${err.message}`);
     } finally {
-      setWikiLoading(false);
+      setNamuLoading(false);
     }
   };
 
@@ -154,6 +162,7 @@ const AdminStars = () => {
         star_type: form.star_type,
         wiki_entry_id: form.wiki_entry_id || null,
         group_star_id: form.group_star_id || null,
+        namuwiki_url: form.namuwiki_url || null,
         is_active: form.is_active,
       };
       if (isEdit && editingStar) {
@@ -192,9 +201,9 @@ const AdminStars = () => {
   /* ───── helpers ───── */
   const openCreate = () => {
     setEditingStar(null);
-    setForm({ display_name: "", name_ko: "", star_type: "group", wiki_entry_id: "", group_star_id: "", is_active: true });
-    setWikiLookupId("");
-    setWikiResult(null);
+    setForm({ display_name: "", name_ko: "", star_type: "group", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", is_active: true });
+    setNamuUrl("");
+    setNamuResult(null);
     setDialogOpen(true);
   };
 
@@ -206,17 +215,18 @@ const AdminStars = () => {
       star_type: s.star_type,
       wiki_entry_id: s.wiki_entry_id ?? "",
       group_star_id: s.group_star_id ?? "",
+      namuwiki_url: (s as any).namuwiki_url ?? "",
       is_active: s.is_active ?? true,
     });
-    setWikiLookupId(s.wiki_entry_id ?? "");
-    setWikiResult(null);
+    setNamuUrl((s as any).namuwiki_url ?? "");
+    setNamuResult(null);
     setDialogOpen(true);
   };
 
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingStar(null);
-    setWikiResult(null);
+    setNamuResult(null);
   };
 
   /* ───── filtered list ───── */
@@ -300,7 +310,7 @@ const AdminStars = () => {
                   <th className="text-left px-3 py-2 font-medium">한글명</th>
                   <th className="text-left px-3 py-2 font-medium">타입</th>
                   <th className="text-left px-3 py-2 font-medium">소속 그룹</th>
-                  <th className="text-left px-3 py-2 font-medium">위키</th>
+                  <th className="text-left px-3 py-2 font-medium">나무위키</th>
                   <th className="text-left px-3 py-2 font-medium">상태</th>
                   <th className="text-right px-3 py-2 font-medium">관리</th>
                 </tr>
@@ -319,14 +329,14 @@ const AdminStars = () => {
                       {s.group_star_id ? groupMap[s.group_star_id] ?? "—" : "—"}
                     </td>
                     <td className="px-3 py-2">
-                      {s.wiki_entry_id ? (
+                      {(s as any).namuwiki_url ? (
                         <a
-                          href={`/artist/${s.wiki_entry_id}`}
+                          href={(s as any).namuwiki_url}
                           target="_blank"
                           rel="noreferrer"
                           className="text-primary hover:underline text-xs flex items-center gap-1"
                         >
-                          <LinkIcon className="w-3 h-3" /> 연결됨
+                          <Globe className="w-3 h-3" /> 연결됨
                         </a>
                       ) : (
                         <span className="text-[10px] text-muted-foreground">미연결</span>
@@ -375,29 +385,42 @@ const AdminStars = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* wiki lookup */}
+            {/* namuwiki URL lookup */}
             <div>
-              <label className="text-xs font-medium mb-1 block">위키 항목 ID로 조회</label>
+              <label className="text-xs font-medium mb-1 block">🌿 나무위키 URL로 자동 파싱</label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="wiki_entry_id (UUID)"
-                  value={wikiLookupId}
-                  onChange={(e) => setWikiLookupId(e.target.value)}
-                  className="h-9 text-xs font-mono"
+                  placeholder="https://namu.wiki/w/아티스트명"
+                  value={namuUrl}
+                  onChange={(e) => setNamuUrl(e.target.value)}
+                  className="h-9 text-xs"
                 />
-                <Button size="sm" variant="outline" onClick={lookupWiki} disabled={wikiLoading}>
-                  {wikiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                <Button size="sm" variant="outline" onClick={parseNamuwiki} disabled={namuLoading}>
+                  {namuLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
                 </Button>
               </div>
-              {wikiResult && (
+              {namuResult && (
                 <div className="mt-2 p-2 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
-                  <p className="font-semibold">{wikiResult.title}</p>
-                  {wikiResult.description && (
-                    <p className="text-muted-foreground line-clamp-2">{wikiResult.description}</p>
-                  )}
+                  <p className="font-semibold">{namuResult.display_name} / {namuResult.name_ko}</p>
                   <p className="text-muted-foreground">
-                    type: {wikiResult.schema_type ?? "—"}
+                    타입: {namuResult.star_type}
+                    {namuResult.group_name && ` · 그룹: ${namuResult.group_name}`}
+                    {namuResult.agency && ` · 소속사: ${namuResult.agency}`}
                   </p>
+                  {namuResult.members && namuResult.members.length > 0 && (
+                    <p className="text-muted-foreground">멤버: {namuResult.members.join(", ")}</p>
+                  )}
+                  {namuResult.social_handles && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Object.entries(namuResult.social_handles)
+                        .filter(([, v]) => v)
+                        .map(([k, v]) => (
+                          <Badge key={k} variant="outline" className="text-[9px]">
+                            {k}: {v}
+                          </Badge>
+                        ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -458,14 +481,14 @@ const AdminStars = () => {
               </div>
             )}
 
-            {/* wiki_entry_id (hidden/manual) */}
+            {/* wiki_entry_id */}
             <div>
               <label className="text-xs font-medium mb-1 block">wiki_entry_id</label>
               <Input
                 value={form.wiki_entry_id}
                 onChange={(e) => setForm({ ...form, wiki_entry_id: e.target.value })}
                 className="h-9 text-xs font-mono"
-                placeholder="자동 입력됨"
+                placeholder="내부 위키 연결 (선택)"
               />
             </div>
           </div>
