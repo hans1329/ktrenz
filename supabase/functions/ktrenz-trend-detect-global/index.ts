@@ -173,8 +173,9 @@ Deno.serve(async (req) => {
 
     for (const entryId of batch) {
       try {
-        const name = nameMap.get(entryId) || "Unknown";
-        const sid = starMap.get(entryId) || null;
+        const entry = entryMap.get(entryId);
+        const name = entry?.displayName || "Unknown";
+        const sid = entry?.starId || null;
 
         // Perplexity 글로벌 트렌드 감지 (웹 검색 용도 — 의도된 사용)
         const allKeywords = await detectGlobalTrends(perplexityKey, name);
