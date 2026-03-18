@@ -1,5 +1,3 @@
-
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -20,7 +18,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 1: Scrape the Namuwiki page using Firecrawl
+    // Step 1: Scrape
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     if (!firecrawlKey) {
       return new Response(
@@ -61,7 +59,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 2: Use Perplexity to extract structured artist info
+    // Step 2: AI extraction
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     if (!perplexityKey) {
       return new Response(
@@ -70,8 +68,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Take first ~4000 chars to stay within token limits (the infobox is at the top)
-    const truncated = markdown.slice(0, 6000);
+    // Use more content for groups to capture member section
+    const truncated = markdown.slice(0, 8000);
 
     const extractPrompt = `아래는 나무위키에서 스크래핑한 K-POP 아티스트 페이지의 마크다운 내용입니다.
 
@@ -82,21 +80,27 @@ Deno.serve(async (req) => {
   "name_ko": "한글 활동명",
   "star_type": "group | solo | member 중 하나",
   "group_name": "소속 그룹명 (멤버인 경우, 없으면 null)",
-  "members": ["멤버1", "멤버2"] (그룹인 경우 멤버 목록, 아니면 빈 배열),
+  "members": [
+    {"name_en": "영문 활동명", "name_ko": "한글 활동명", "namuwiki_path": "나무위키 문서명 (URL 인코딩 전 원본)"}
+  ],
   "debut_date": "데뷔일 (있으면)",
   "agency": "소속사",
   "social_handles": {
-    "instagram": "인스타그램 핸들",
-    "twitter": "트위터/X 핸들",
+    "instagram": "인스타그램 핸들 (@제외)",
+    "twitter": "트위터/X 핸들 (@제외)",
     "youtube": "유튜브 채널명 또는 ID",
-    "tiktok": "틱톡 핸들"
+    "tiktok": "틱톡 핸들 (@제외)"
   }
 }
 
 규칙:
-- 영문명이 없으면 한글명을 로마자 표기로 변환
-- star_type은 그룹이면 "group", 솔로 가수면 "solo", 그룹의 멤버 개인 페이지면 "member"
-- social_handles에서 찾을 수 없는 항목은 null로
+- 영문명이 없으면 한글명을 공식 로마자 표기로 변환
+- star_type: 그룹이면 "group", 솔로 가수면 "solo", 그룹 멤버 개인 페이지면 "member"
+- members 배열: 그룹인 경우 현재 활동 중인 멤버만 포함. 탈퇴/졸업 멤버 제외
+  - namuwiki_path는 나무위키에서 해당 멤버 문서로 이동할 때 사용되는 문서 제목 (예: "장원영", "카리나(에스파)")
+  - 멤버의 영문명과 한글명을 반드시 포함
+- 솔로/멤버인 경우 members는 빈 배열
+- social_handles에서 찾을 수 없는 항목은 null
 - JSON만 반환하세요, 다른 텍스트 없이
 
 마크다운 내용:
@@ -134,7 +138,6 @@ ${truncated}`;
     const rawText = aiData.choices?.[0]?.message?.content || "";
     console.log("AI raw response:", rawText);
 
-    // Extract JSON from the response
     let parsed: any;
     try {
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -148,7 +151,22 @@ ${truncated}`;
       );
     }
 
-    console.log("Parsed artist data:", parsed);
+    // Normalize members to have namuwiki_url
+    if (parsed.members && Array.isArray(parsed.members)) {
+      parsed.members = parsed.members.map((m: any) => {
+        if (typeof m === "string") {
+          return { name_en: m, name_ko: m, namuwiki_url: null };
+        }
+        const path = m.namuwiki_path || m.name_ko || m.name_en;
+        return {
+          name_en: m.name_en || m.name_ko,
+          name_ko: m.name_ko || m.name_en,
+          namuwiki_url: path ? `https://namu.wiki/w/${encodeURIComponent(path)}` : null,
+        };
+      });
+    }
+
+    console.log("Parsed artist data:", JSON.stringify(parsed));
 
     return new Response(JSON.stringify({ success: true, data: parsed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
