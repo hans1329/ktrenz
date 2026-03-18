@@ -215,9 +215,9 @@ const t = {
       { label: "서버리스 파이프라인", desc: "배치 처리 및 속도 제한 보호 기능의 자동 오케스트레이션" },
     ],
 
-    categoriesTag: "키워드 카테고리",
-    categoriesTitle: ["7가지 상업 ", "버티컬"],
-    categoriesDesc: "감지된 모든 키워드는 7가지 상업 카테고리 중 하나로 분류됩니다 — 수직별 분석을 가능하게 합니다.",
+    categoriesTag: "트렌드 카테고리",
+    categoriesTitle: ["모든 K-컬쳐의 ", "트렌드"],
+    categoriesDesc: "감지된 모든 키워드는 K-컬쳐 전반의 트렌드 카테고리로 분류됩니다 — 수직별 분석을 가능하게 합니다.",
     categoryItems: [
       { emoji: "👜", label: "패션", desc: "럭셔리 브랜드, 의류, 액세서리" },
       { emoji: "💄", label: "뷰티", desc: "화장품, 스킨케어, 향수" },
