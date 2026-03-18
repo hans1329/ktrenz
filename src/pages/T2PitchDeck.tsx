@@ -48,8 +48,6 @@ const t = {
       { title: "Track", desc: "Validated keywords are monitored via real-time search volume data. Measures actual market interest and consumer response over time." },
     ],
     pipelineFlowLabels: ["News & Social", "Global Web", "YouTube", "Search Volume", "Live Radar"],
-    pipelineFlowNote: "Fully automated orchestration via",
-    pipelineFlowNote2: "— batch processing with rate-limit protection",
 
     // Safeguards
     safeguardTag: "AI Safeguards",
