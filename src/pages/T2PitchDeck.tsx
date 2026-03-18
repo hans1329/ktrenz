@@ -91,9 +91,9 @@ const t = {
     ],
 
     // Categories
-    categoriesTag: "Keyword Categories",
-    categoriesTitle: ["7 Commercial ", "Verticals"],
-    categoriesDesc: "Every detected keyword is classified into one of seven commercial categories — enabling vertical-specific analytics.",
+    categoriesTag: "Trend Categories",
+    categoriesTitle: ["All K-Culture ", "Trends"],
+    categoriesDesc: "Every detected keyword is classified into trend categories across the full spectrum of K-Culture — enabling vertical-specific analytics.",
     categoryItems: [
       { emoji: "👜", label: "Fashion", desc: "Luxury brands, clothing, accessories" },
       { emoji: "💄", label: "Beauty", desc: "Cosmetics, skincare, fragrances" },
