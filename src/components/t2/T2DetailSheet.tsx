@@ -443,19 +443,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
           {/* Vote & Boost */}
-          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
+          <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
             {/* Vote — casual poll style */}
-            <div>
-              <p className="text-sm font-bold text-foreground text-center mb-1">
+            <div className="space-y-2.5">
+              <p className="text-base font-bold text-foreground text-center">
                 {t("voteRelevance", language)}
               </p>
-              {!voteData?.myVote && !user && (
-                <p className="text-[10px] text-center text-muted-foreground mb-2">{t("voteReward", language)}</p>
+              {!voteData?.myVote && (
+                <p className="text-[11px] text-center text-muted-foreground">{t("voteReward", language)}</p>
               )}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   className={cn(
-                    "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
                     voteData?.myVote === "up"
                       ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 scale-[1.02]"
                       : "bg-muted/50 text-muted-foreground border border-border hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
@@ -463,11 +463,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   onClick={() => handleVote("up")}
                   disabled={voteMutation.isPending}
                 >
-                  {t("voteYes", language)} <span className="ml-1 text-xs opacity-70">{voteData?.ups ?? 0}</span>
+                  {t("voteYes", language)} <span className="ml-1 text-xs opacity-60">{voteData?.ups ?? 0}</span>
                 </button>
                 <button
                   className={cn(
-                    "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
                     voteData?.myVote === "down"
                       ? "bg-rose-500/20 text-rose-400 border-2 border-rose-500/50 scale-[1.02]"
                       : "bg-muted/50 text-muted-foreground border border-border hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
@@ -475,18 +475,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   onClick={() => handleVote("down")}
                   disabled={voteMutation.isPending}
                 >
-                  {t("voteNo", language)} <span className="ml-1 text-xs opacity-70">{voteData?.downs ?? 0}</span>
+                  {t("voteNo", language)} <span className="ml-1 text-xs opacity-60">{voteData?.downs ?? 0}</span>
                 </button>
               </div>
-              <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+              <p className="text-[11px] text-muted-foreground text-center">
                 {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} {t("votesCount", language)}
               </p>
             </div>
 
             {/* Boost */}
             <div className="border-t border-border/50 pt-3">
-              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-                <Rocket className="w-3.5 h-3.5 text-primary" />
+              <h3 className="text-sm font-bold text-foreground mb-2.5 flex items-center gap-1.5">
+                <Rocket className="w-4 h-4 text-primary" />
                 {t("boostTrend", language)}
                 {(boostCount ?? 0) > 0 && (
                   <Badge variant="outline" className="text-[10px] ml-1 border-primary/30 text-primary">
