@@ -76,7 +76,7 @@ const T2AdminControls = () => {
 
   if (loading || !isAdmin) return null;
 
-  const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullMutation.isPending;
+  const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullMutation.isPending || detectGlobalMutation.isPending;
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
