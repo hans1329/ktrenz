@@ -60,7 +60,7 @@ const T2DetailSheet = ({ tile, onClose }: { tile: TrendTile | null; onClose: () 
         <SheetHeader className="pb-3">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
-            {tile.keyword}
+            {getLocalizedKeyword(tile, language)}
           </SheetTitle>
         </SheetHeader>
 
