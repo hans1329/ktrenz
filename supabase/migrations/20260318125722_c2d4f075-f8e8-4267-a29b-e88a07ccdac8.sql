@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_trend_triggers ALTER COLUMN wiki_entry_id DROP NOT NULL;

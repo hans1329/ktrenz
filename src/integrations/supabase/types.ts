@@ -3695,7 +3695,7 @@ export type Database = {
           status: string
           trigger_source: string
           trigger_type: string
-          wiki_entry_id: string
+          wiki_entry_id: string | null
         }
         Insert: {
           artist_name: string
@@ -3727,7 +3727,7 @@ export type Database = {
           status?: string
           trigger_source?: string
           trigger_type?: string
-          wiki_entry_id: string
+          wiki_entry_id?: string | null
         }
         Update: {
           artist_name?: string
@@ -3759,7 +3759,7 @@ export type Database = {
           status?: string
           trigger_source?: string
           trigger_type?: string
-          wiki_entry_id?: string
+          wiki_entry_id?: string | null
         }
         Relationships: [
           {
