@@ -5,7 +5,7 @@ import {
   BarChart3, Eye, Radio, Layers, ArrowRight,
   ChevronDown, Newspaper, Youtube, Activity,
   AlertTriangle, Sparkles, Shield, Clock,
-  Database, LineChart, Radar, MessageSquare
+  Database, LineChart, Radar, MessageSquare, RefreshCw
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
@@ -114,26 +114,15 @@ const t = {
       { title: "Market Researchers", desc: "Quantify the real-time commercial impact of K-Pop on consumer behavior. Access structured data on artist–brand associations across categories." },
     ],
 
-    // Architecture
-    archTag: "Architecture",
-    archTitle: ["Built for ", "Scale"],
-    archPipeline: "Pipeline Architecture",
-    archPipelineItems: [
-      "Batch processing: 3–5 artists per invocation",
-      "Self-chaining via Edge Function orchestration",
-      "Rate-limit protection: 3s between API calls",
-      "Throttle detection with automatic chain break",
-      "7-day deduplication window across all artists",
-      "Backfill mode for missing translations & images",
-    ],
-    archQuality: "Data Quality Controls",
-    archQualityItems: [
-      "Text-match verification against source content",
-      "Cross-artist keyword deduplication",
-      "Confidence scoring (0.0–1.0) per keyword",
-      "Category classification (7 verticals)",
-      "Multi-language context (EN/KO/JA/ZH)",
-      "Source URL + OG image preservation",
+    // Product-Led Loop
+    pllTag: "Growth Flywheel",
+    pllTitle: ["Product-Led ", "Loop"],
+    pllDesc: "Every user interaction feeds back into better data — creating a self-reinforcing cycle that competitors cannot replicate.",
+    pllSteps: [
+      { emoji: "📦", title: "K-Product", desc: "Detect commercial keywords triggered by K-Pop artist activities across news, social, and video." },
+      { emoji: "🎯", title: "Artist Trigger", desc: "Artist actions (brand deals, PPL, viral moments) generate real-time trend signals in the radar." },
+      { emoji: "🗳️", title: "User Participation", desc: "Fans vote on trends, complete streaming missions, and engage with data — earning K-Points." },
+      { emoji: "📈", title: "Data Amplification", desc: "User engagement improves detection accuracy, enriches influence scoring, and expands coverage." },
     ],
 
     // CTA
@@ -237,25 +226,14 @@ const t = {
       { title: "시장 리서처", desc: "소비자 행동에 대한 K-Pop의 실시간 상업적 영향을 정량화합니다. 카테고리별 아티스트-브랜드 연관 구조화된 데이터에 접근합니다." },
     ],
 
-    archTag: "아키텍처",
-    archTitle: ["확장 가능한 ", "설계"],
-    archPipeline: "파이프라인 아키텍처",
-    archPipelineItems: [
-      "배치 처리: 호출당 3–5명의 아티스트",
-      "Edge Function 오케스트레이션을 통한 셀프 체이닝",
-      "속도 제한 보호: API 호출 간 3초",
-      "자동 체인 중단이 있는 스로틀 감지",
-      "모든 아티스트에 걸친 7일 중복 제거 윈도우",
-      "누락된 번역 및 이미지에 대한 백필 모드",
-    ],
-    archQuality: "데이터 품질 관리",
-    archQualityItems: [
-      "소스 콘텐츠 대비 텍스트 매칭 검증",
-      "크로스 아티스트 키워드 중복 제거",
-      "키워드당 신뢰도 점수 (0.0–1.0)",
-      "카테고리 분류 (7개 버티컬)",
-      "다국어 컨텍스트 (EN/KO/JA/ZH)",
-      "소스 URL + OG 이미지 보존",
+    pllTag: "성장 플라이휠",
+    pllTitle: ["제품 주도 ", "순환 루프"],
+    pllDesc: "모든 유저 인터랙션이 더 나은 데이터로 피드백됩니다 — 경쟁사가 복제할 수 없는 자기 강화 사이클을 만듭니다.",
+    pllSteps: [
+      { emoji: "📦", title: "K-Product", desc: "뉴스, 소셜, 영상에서 K-Pop 아티스트 활동으로 촉발된 상업 키워드를 감지합니다." },
+      { emoji: "🎯", title: "아티스트 트리거", desc: "아티스트 활동(브랜드 딜, PPL, 바이럴 모먼트)이 레이더에 실시간 트렌드 시그널을 생성합니다." },
+      { emoji: "🗳️", title: "유저 참여", desc: "팬들이 트렌드에 투표하고, 스트리밍 미션을 수행하며, 데이터와 상호작용합니다 — K-Point를 획득하면서." },
+      { emoji: "📈", title: "데이터 확산", desc: "유저 참여가 감지 정확도를 개선하고, 영향력 스코어링을 풍부하게 하며, 커버리지를 확장합니다." },
     ],
 
     ctaTag: "시작하기",
@@ -669,38 +647,50 @@ export default function T2PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 9. TECH ARCHITECTURE ───── */}
-      <Section id="architecture">
+      {/* ───── 9. PRODUCT-LED LOOP ───── */}
+      <Section id="pll">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Database className="w-3.5 h-3.5" /> {l.archTag}</SectionTag>
+            <SectionTag><RefreshCw className="w-3.5 h-3.5" /> {l.pllTag}</SectionTag>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              {l.archTitle[0]}<span className="text-primary">{l.archTitle[1]}</span>
+              {l.pllTitle[0]}<span className="text-primary">{l.pllTitle[1]}</span>
             </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{l.pllDesc}</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
-              <h3 className="font-bold text-lg text-foreground mb-4">{l.archPipeline}</h3>
-              <div className="space-y-3 text-sm">
-                {l.archPipelineItems.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    <span className="text-muted-foreground">{item}</span>
+          {/* Flywheel visual */}
+          <div className="relative">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {l.pllSteps.map((step, i) => (
+                <div key={i} className="relative rounded-2xl border border-border/50 bg-card/40 p-6 group hover:border-primary/30 transition-colors">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
+                      {step.emoji}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold text-primary/60">STEP {i + 1}</span>
+                      </div>
+                      <h3 className="font-bold text-lg text-foreground mb-2">{step.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
+                  {/* Arrow connector */}
+                  {i < l.pllSteps.length - 1 && (
+                    <div className="hidden sm:block absolute -bottom-4 left-1/2 -translate-x-1/2 text-primary/40 text-lg z-10">
+                      {i % 2 === 0 ? "→" : "↓"}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
-              <h3 className="font-bold text-lg text-foreground mb-4">{l.archQuality}</h3>
-              <div className="space-y-3 text-sm">
-                {l.archQualityItems.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </div>
-                ))}
+            {/* Loop indicator */}
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: "4s" }} />
+                <span className="text-xs font-bold text-primary">
+                  {lang === "ko" ? "자기 강화 사이클 반복" : "Self-reinforcing cycle"}
+                </span>
               </div>
             </div>
           </div>
