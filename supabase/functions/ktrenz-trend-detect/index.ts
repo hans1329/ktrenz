@@ -366,7 +366,7 @@ async function detectForMember(
 
   // AI로 상업 키워드 추출
   const keywords = await extractCommercialKeywords(
-    perplexityKey, member.display_name, member.group_name, articles
+    openaiKey, member.display_name, member.group_name, articles
   );
 
   if (!keywords.length) {
