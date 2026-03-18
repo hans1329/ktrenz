@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     // 아티스트 이름 매핑
     const nameMap = new Map<string, string>();
     for (const t of tier1 || []) {
-      if (t?.wiki_entry_id && t?.name_en) nameMap.set(t.wiki_entry_id, t.name_en);
+      if (t?.wiki_entry_id && t?.display_name) nameMap.set(t.wiki_entry_id, t.display_name);
     }
 
     // star_id 매핑
