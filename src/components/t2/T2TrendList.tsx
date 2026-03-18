@@ -68,6 +68,7 @@ interface T2TrendListProps {
 
 const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, onLoadMore }: T2TrendListProps) => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
