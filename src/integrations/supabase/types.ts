@@ -3670,6 +3670,9 @@ export type Database = {
           baseline_score: number | null
           confidence: number | null
           context: string | null
+          context_ja: string | null
+          context_ko: string | null
+          context_zh: string | null
           created_at: string
           detected_at: string
           expired_at: string | null
@@ -3699,6 +3702,9 @@ export type Database = {
           baseline_score?: number | null
           confidence?: number | null
           context?: string | null
+          context_ja?: string | null
+          context_ko?: string | null
+          context_zh?: string | null
           created_at?: string
           detected_at?: string
           expired_at?: string | null
@@ -3728,6 +3734,9 @@ export type Database = {
           baseline_score?: number | null
           confidence?: number | null
           context?: string | null
+          context_ja?: string | null
+          context_ko?: string | null
+          context_zh?: string | null
           created_at?: string
           detected_at?: string
           expired_at?: string | null

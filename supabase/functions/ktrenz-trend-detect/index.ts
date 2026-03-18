@@ -16,6 +16,9 @@ interface ExtractedKeyword {
   category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
   confidence: number;
   context: string;
+  context_ko?: string;
+  context_ja?: string;
+  context_zh?: string;
   source_article_index?: number;
 }
 
@@ -76,9 +79,10 @@ STRICT Rules:
 - If the entity is already well-known in that language, use the commonly used name (e.g. keyword: "Chanel", keyword_ko: "샤넬", keyword_ja: "シャネル", keyword_zh: "香奈儿")
 
 - For each keyword, also include "source_article_index": the 1-based article number from the list above that MOST directly mentions this entity. If multiple articles mention it, pick the most relevant one.
+- For each keyword, also provide translated context: "context_ko" (Korean), "context_ja" (Japanese), "context_zh" (Chinese simplified). The context should be a brief explanation of WHY this entity is trending, translated naturally.
 
 Return ONLY a JSON array. If no commercial entities found in the articles, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","source_article_index":1}]`;
+Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","context_ko":"공항에서 샤넬 의상 착용[1]","context_ja":"空港でシャネルの衣装を着用[1]","context_zh":"在机场穿着香奈儿服装[1]","source_article_index":1}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -332,6 +336,9 @@ async function detectForArtist(
         keyword_zh: k.keyword_zh || null,
         keyword_category: k.category,
         context: k.context,
+        context_ko: k.context_ko || null,
+        context_ja: k.context_ja || null,
+        context_zh: k.context_zh || null,
         confidence: k.confidence,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
