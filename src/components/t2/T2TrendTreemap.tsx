@@ -24,6 +24,8 @@ export interface TrendTile {
   detectedAt: string;
   baselineScore: number | null;
   peakScore: number | null;
+  sourceUrl: string | null;
+  sourceTitle: string | null;
   status: string;
 }
 
@@ -146,6 +148,8 @@ const T2TrendTreemap = () => {
         detectedAt: t.detected_at,
         baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
         peakScore: t.peak_score != null ? Number(t.peak_score) : null,
+        sourceUrl: t.source_url || null,
+        sourceTitle: t.source_title || null,
         status: t.status,
       }));
     },
@@ -365,7 +369,12 @@ const T2TrendTreemap = () => {
       </div>
 
       {/* Detail Sheet */}
-      <T2DetailSheet tile={selectedTile} onClose={() => setSelectedTile(null)} />
+      <T2DetailSheet
+        tile={selectedTile}
+        rank={selectedTile ? filteredItems.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
+        totalCount={filteredItems.length}
+        onClose={() => setSelectedTile(null)}
+      />
     </div>
   );
 };
