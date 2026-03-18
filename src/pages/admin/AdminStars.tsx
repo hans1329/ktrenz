@@ -35,12 +35,18 @@ interface StarRow {
   updated_at: string | null;
 }
 
+interface ParsedMember {
+  name_en: string;
+  name_ko: string;
+  namuwiki_url: string | null;
+}
+
 interface ParsedArtist {
   display_name: string;
   name_ko: string;
   star_type: string;
   group_name: string | null;
-  members: string[];
+  members: ParsedMember[];
   debut_date: string | null;
   agency: string | null;
   social_handles: Record<string, string | null>;
