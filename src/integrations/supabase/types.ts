@@ -3608,6 +3608,121 @@ export type Database = {
           },
         ]
       }
+      ktrenz_trend_tracking: {
+        Row: {
+          created_at: string
+          delta_pct: number | null
+          id: string
+          interest_score: number | null
+          keyword: string
+          raw_response: Json | null
+          region: string | null
+          search_volume: number | null
+          tracked_at: string
+          trigger_id: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta_pct?: number | null
+          id?: string
+          interest_score?: number | null
+          keyword: string
+          raw_response?: Json | null
+          region?: string | null
+          search_volume?: number | null
+          tracked_at?: string
+          trigger_id: string
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          delta_pct?: number | null
+          id?: string
+          interest_score?: number | null
+          keyword?: string
+          raw_response?: Json | null
+          region?: string | null
+          search_volume?: number | null
+          tracked_at?: string
+          trigger_id?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_tracking_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_trend_triggers: {
+        Row: {
+          artist_name: string
+          confidence: number | null
+          context: string | null
+          created_at: string
+          detected_at: string
+          id: string
+          keyword: string
+          keyword_category: string
+          metadata: Json | null
+          source_title: string | null
+          source_url: string | null
+          star_id: string | null
+          status: string
+          trigger_source: string
+          trigger_type: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          artist_name: string
+          confidence?: number | null
+          context?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          keyword: string
+          keyword_category?: string
+          metadata?: Json | null
+          source_title?: string | null
+          source_url?: string | null
+          star_id?: string | null
+          status?: string
+          trigger_source?: string
+          trigger_type?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          artist_name?: string
+          confidence?: number | null
+          context?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          keyword?: string
+          keyword_category?: string
+          metadata?: Json | null
+          source_title?: string | null
+          source_url?: string | null
+          star_id?: string | null
+          status?: string
+          trigger_source?: string
+          trigger_type?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_triggers_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_user_events: {
         Row: {
           created_at: string
