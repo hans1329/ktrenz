@@ -394,7 +394,7 @@ const T2TrendTreemap = () => {
                   ? Math.max(14, Math.min(32, sizeFactor * 4.5))
                   : Math.max(9, Math.min(16, sizeFactor * 2.2));
               const scoreSize = Math.max(10, Math.min(30, sizeFactor * 3.2));
-              
+
 
               return (
                 <button
