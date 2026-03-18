@@ -148,6 +148,8 @@ const T2TrendTreemap = () => {
         detectedAt: t.detected_at,
         baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
         peakScore: t.peak_score != null ? Number(t.peak_score) : null,
+        sourceUrl: t.source_url || null,
+        sourceTitle: t.source_title || null,
         status: t.status,
       }));
     },
