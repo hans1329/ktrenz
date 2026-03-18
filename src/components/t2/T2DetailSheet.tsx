@@ -80,6 +80,9 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   readBoostReward: { en: "Read & boost +3 K-Point", ko: "읽고 밀어주기 +3 K-Point", ja: "読んで応援 +3 K-Point", zh: "阅读推动 +3 K-Point" },
   readBoosted: { en: "Boosted! +3 K-Point", ko: "밀어주기 완료! +3 K-Point", ja: "応援完了！+3 K-Point", zh: "推动完成！+3 K-Point" },
   alreadyBoosted: { en: "✓ Boosted +3P", ko: "✓ 밀어주기 완료 +3P", ja: "✓ 応援済み +3P", zh: "✓ 已推动 +3P" },
+  alreadyShareBoosted: { en: "Already boosted", ko: "이미 밀어주기 완료", ja: "すでに応援済み", zh: "已推动" },
+  shareBoostReward: { en: "Share & boost +5 K-Point", ko: "공유하고 밀어주기 +5 K-Point", ja: "共有して応援 +5 K-Point", zh: "分享推动 +5 K-Point" },
+  alreadyShareBoostedDone: { en: "✓ Share boosted +5P", ko: "✓ 공유 밀어주기 완료 +5P", ja: "✓ 共有応援済み +5P", zh: "✓ 分享推动完成 +5P" },
 };
 
 function t(key: string, lang: string): string {
@@ -164,6 +167,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile && !!user,
   });
 
+  // Share boost check
+  const { data: hasShareBoosted } = useQuery({
+    queryKey: ["t2-share-boost", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id, platform")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .in("platform", ["x", "copy"])
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
   const voteMutation = useMutation({
     mutationFn: async (voteType: "up" | "down") => {
       if (!user || !tile) return;
@@ -214,13 +234,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       toast.success(t("copied", language));
     }
 
-    // Record boost
+    // Record boost + award points (check duplicate per platform)
     if (user) {
-      await supabase
+      const { data: existing } = await supabase
         .from("ktrenz_keyword_boosts" as any)
-        .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
-      queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
-      toast.success(t("boosted", language));
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .eq("platform", platform)
+        .limit(1);
+      if ((existing ?? []).length === 0) {
+        await supabase
+          .from("ktrenz_keyword_boosts" as any)
+          .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
+        await supabase.rpc("increment_points" as any, { user_id: user.id, amount: 5 });
+        queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
+        queryClient.invalidateQueries({ queryKey: ["t2-share-boost", tile.id, user.id] });
+        toast.success(t("boosted", language));
+      } else {
+        toast.info(t("alreadyShareBoosted", language));
+      }
     }
   };
 
@@ -359,7 +392,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               <div className="px-3 pb-2 flex justify-end">
                 <span className={cn(
                   "text-[10px] font-medium",
-                  hasReadBoosted ? "text-primary" : "text-muted-foreground"
+                  hasReadBoosted ? "text-emerald-400" : "text-emerald-500/70"
                 )}>
                   {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
                 </span>
@@ -614,6 +647,16 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   📋
                 </Button>
               </div>
+              {user && (
+                <div className="flex justify-end mt-2">
+                  <span className={cn(
+                    "text-[10px] font-medium",
+                    hasShareBoosted ? "text-emerald-400" : "text-emerald-500/70"
+                  )}>
+                    {hasShareBoosted ? t("alreadyShareBoostedDone", language) : t("shareBoostReward", language)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
