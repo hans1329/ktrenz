@@ -335,13 +335,20 @@ const T2KeywordDetail = () => {
           {/* Evidence: Why this trend? */}
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
             {/* Source thumbnail */}
-            {trigger.source_image_url && (
-              <a href={trigger.source_url || "#"} target="_blank" rel="noopener noreferrer" className="block">
+            {evidenceImageUrl && (
+              trigger.source_url ? (
+                <a href={trigger.source_url} target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                    <img src={evidenceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  </div>
+                </a>
+              ) : (
                 <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
-                  <img src={trigger.source_image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={evidenceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 </div>
-              </a>
+              )
             )}
             <div className="p-4 space-y-3">
               <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
