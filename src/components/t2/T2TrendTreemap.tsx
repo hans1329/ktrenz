@@ -271,15 +271,33 @@ const T2TrendTreemap = () => {
 
 
   const visibleBoxItems = useMemo(() => {
-    // Treemap: show only 1 keyword per artist (highest influence)
-    const seenArtists = new Set<string>();
+    // Treemap: prefer 1 keyword per artist, but fill up to 50 with extras if needed
+    const TARGET = 50;
+    const artistCount = new Map<string, number>();
     const deduped: typeof filteredItems = [];
+
+    // Pass 1: pick top keyword per artist
     for (const item of filteredItems) {
-      if (seenArtists.has(item.wikiEntryId)) continue;
-      seenArtists.add(item.wikiEntryId);
-      deduped.push(item);
-      if (deduped.length >= 50) break;
+      if (deduped.length >= TARGET) break;
+      const count = artistCount.get(item.wikiEntryId) ?? 0;
+      if (count === 0) {
+        artistCount.set(item.wikiEntryId, 1);
+        deduped.push(item);
+      }
     }
+
+    // Pass 2: fill remaining slots with next-best keywords (allow duplicates)
+    if (deduped.length < TARGET) {
+      for (const item of filteredItems) {
+        if (deduped.length >= TARGET) break;
+        const count = artistCount.get(item.wikiEntryId) ?? 0;
+        if (count >= 1 && !deduped.includes(item)) {
+          artistCount.set(item.wikiEntryId, count + 1);
+          deduped.push(item);
+        }
+      }
+    }
+
     return deduped;
   }, [filteredItems]);
 
