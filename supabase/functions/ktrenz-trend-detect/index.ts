@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
       try {
         const group = member.group_star_id ? groupMap[member.group_star_id] : null;
         const result = await detectForMember(
-          sb, perplexityKey, naverClientId, naverClientSecret,
+          sb, openaiKey, naverClientId, naverClientSecret,
           {
             id: member.id,
             display_name: member.display_name,
