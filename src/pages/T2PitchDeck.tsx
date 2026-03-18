@@ -107,7 +107,7 @@ const t = {
 
     // Use Cases
     useCasesTag: "Use Cases",
-    useCasesTitle: ["Who Needs ", "T2", "?"],
+    useCasesTitle: ["Who Needs ", "KTRENZ", "?"],
     useCaseCards: [
       { title: "Brand Managers", desc: "Monitor which K-Pop artists are organically driving interest in your products. Identify potential ambassadors based on real influence data, not social follower counts." },
       { title: "Entertainment Agencies", desc: "Understand your artists' commercial footprint. Track which endorsement deals generate genuine search interest and which ones go unnoticed." },
