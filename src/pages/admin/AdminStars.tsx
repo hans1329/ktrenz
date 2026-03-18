@@ -556,6 +556,17 @@ const AdminStars = () => {
                 placeholder="내부 위키 연결 (선택)"
               />
             </div>
+
+            {/* agency */}
+            <div>
+              <label className="text-xs font-medium mb-1 block">소속사</label>
+              <Input
+                value={form.agency}
+                onChange={(e) => setForm({ ...form, agency: e.target.value })}
+                className="h-9"
+                placeholder="예: SM엔터테인먼트"
+              />
+            </div>
           </div>
 
           <DialogFooter className="gap-2">
