@@ -40,14 +40,14 @@ const t = {
     // Pipeline
     pipelineTag: "Detection Pipeline",
     pipelineTitle: ["4-Phase ", "AI Pipeline"],
-    pipelineDesc: "Automated keyword detection across domestic news, global web, and YouTube — then validated with real-time search volume tracking.",
+    pipelineDesc: "Automated commercial keyword detection across news, social media, YouTube, and global sources — then validated with real-time search volume tracking.",
     pipelineSteps: [
-      { title: "Detect (Naver)", desc: "Scan 50+ Korean news articles per artist via Naver API. GPT-4o-mini extracts brand/product entities with text-match verification." },
-      { title: "Detect (Global)", desc: "Perplexity AI scans global news and social media for international brand collaborations and viral product mentions." },
-      { title: "Detect (YouTube)", desc: "YouTube Data API searches recent videos. AI analyzes titles and descriptions for product placements and brand features." },
-      { title: "Track (Google Trends)", desc: "SerpAPI validates detected keywords against real-time Google Trends search volume. Measures actual market interest." },
+      { title: "Collect", desc: "Aggregate 50+ domestic news articles and social media posts per artist. AI extracts brand/product entities with text-match verification." },
+      { title: "Detect", desc: "Scan global news, social media, and web sources for international brand collaborations and viral product mentions across multiple markets." },
+      { title: "Analyze", desc: "Process recent YouTube videos, trending content, and cross-platform mentions. AI analyzes metadata for product placements and brand features." },
+      { title: "Track", desc: "Validate detected keywords against real-time search volume data. Measure actual market interest and consumer response over time." },
     ],
-    pipelineFlowLabels: ["Naver News", "Global Web", "YouTube", "Google Trends", "Live Radar"],
+    pipelineFlowLabels: ["News & Social", "Global Web", "YouTube", "Search Volume", "Live Radar"],
     pipelineFlowNote: "Fully automated orchestration via",
     pipelineFlowNote2: "— batch processing with rate-limit protection",
 
