@@ -54,6 +54,17 @@ function launchCollector(supabaseUrl: string, serviceKey: string, source: string
   fireAndForget(p);
 }
 
+// ── 유틸: 나무위키 연결된 Tier1 아티스트만 필터링 ──
+async function getNamuwikiLinkedTier1Ids(sb: any): Promise<string[]> {
+  const { data: starRows } = await sb
+    .from("ktrenz_stars")
+    .select("wiki_entry_id")
+    .not("wiki_entry_id", "is", null);
+  const starWikiIds = new Set((starRows || []).map((r: any) => r.wiki_entry_id).filter(Boolean));
+  console.log(`[data-engine] ktrenz_stars linked wiki_entry_ids: ${starWikiIds.size}`);
+  return [...starWikiIds] as string[];
+}
+
 // ── 모듈 실행기: 기본 파이프라인 ──
 
 async function runCollectorModule(
@@ -88,20 +99,23 @@ async function runCollectorModule(
 }
 
 async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // YouTube 수집은 아티스트당 ~2초 소요 → 66명 = ~132초로 60초 타임아웃 초과
-  // Buzz와 동일한 배치 + fire-and-forget 패턴 적용
   console.log(`[data-engine] Running YouTube module (dynamic batching)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) {
+    console.warn(`[data-engine] YouTube: No namuwiki-linked artists found`);
+    return { status: "no_artists", launched: 0 };
+  }
+
   const tierSnapshotAt = new Date().toISOString();
-  let tierQuery = sb
+  const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id, youtube_channel_id")
     .eq("tier", 1)
+    .in("wiki_entry_id", namuwikiIds)
     .lte("updated_at", tierSnapshotAt)
     .order("wiki_entry_id", { ascending: true });
-
-  const { data: tier1Entries } = await tierQuery;
 
   const validTier1Ids = [...new Set((tier1Entries || [])
     .filter((t: any) => t.youtube_channel_id)
@@ -110,7 +124,7 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
   const tier1Count = validTier1Ids.length;
 
   if (tier1Count === 0) {
-    console.warn(`[data-engine] YouTube: No Tier 1 artists with channel ID found`);
+    console.warn(`[data-engine] YouTube: No Tier 1 namuwiki-linked artists with channel ID found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
@@ -141,23 +155,25 @@ async function runYouTube(supabaseUrl: string, serviceKey: string, _waitForCompl
 }
 
 async function runMusic(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // Music도 아티스트당 Last.fm + Deezer + DB 조회 → ~2초, 66명 = ~130초
-  // 배치 + fire-and-forget 패턴 적용
   console.log(`[data-engine] Running Music module (dynamic batching)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists", launched: 0 };
+
   const tierSnapshotAt = new Date().toISOString();
   const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id")
     .eq("tier", 1)
+    .in("wiki_entry_id", namuwikiIds)
     .lte("updated_at", tierSnapshotAt)
     .order("wiki_entry_id", { ascending: true });
 
   const tier1Ids = [...new Set((tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
   const tier1Count = tier1Ids.length;
   if (tier1Count === 0) {
-    console.warn(`[data-engine] Music: No Tier 1 artists found`);
+    console.warn(`[data-engine] Music: No namuwiki-linked Tier 1 artists found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
@@ -189,16 +205,18 @@ async function runHanteo(supabaseUrl: string, serviceKey: string, waitForComplet
 }
 
 async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // Buzz는 아티스트당 ~10초 소요 → edge function 타임아웃 초과 방지를 위해 fire-and-forget
-  console.log(`[data-engine] Running Buzz module (dynamic batching based on Tier 1 count)...`);
+  console.log(`[data-engine] Running Buzz module (dynamic batching based on namuwiki-linked Tier 1)...`);
 
-  // Tier 1 대상 스냅샷 시점 고정 (batch 간 대상 변동 방지)
   const sb = createClient(supabaseUrl, serviceKey);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists", launched: 0 };
+
   const tierSnapshotAt = new Date().toISOString();
   const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id")
     .eq("tier", 1)
+    .in("wiki_entry_id", namuwikiIds)
     .lte("updated_at", tierSnapshotAt)
     .order("wiki_entry_id", { ascending: true });
 
@@ -206,7 +224,7 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
   const tier1Count = tier1Ids.length;
 
   if (tier1Count === 0) {
-    console.warn(`[data-engine] Buzz: No Tier 1 artists found`);
+    console.warn(`[data-engine] Buzz: No namuwiki-linked Tier 1 artists found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
@@ -281,10 +299,13 @@ const BUZZ_SOURCE_MAP: Record<BuzzSourceModule, string> = {
 
 async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule: BuzzSourceModule): Promise<any> {
   const sourceName = BUZZ_SOURCE_MAP[buzzModule];
-  console.log(`[data-engine] Launching Buzz source: ${sourceName} (fire-and-forget batches)...`);
+  console.log(`[data-engine] Launching Buzz source: ${sourceName} (namuwiki-linked only)...`);
 
   const sb = createClient(supabaseUrl, serviceKey);
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists" };
+
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
   const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
 
   if (tier1Ids.length === 0) return { status: "no_artists" };
@@ -326,9 +347,12 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
 
 // ── 네이버 뉴스 전용 모듈 ──
 async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching Naver News (fire-and-forget)...");
+  console.log("[data-engine] Launching Naver News (namuwiki-linked only)...");
   const sb = createClient(supabaseUrl, serviceKey);
-  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").eq("tier", 1);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists" };
+
+  const { data: tier1Entries } = await sb.from("v3_artist_tiers").select("wiki_entry_id, name_ko").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
   const tier1Ids = (tier1Entries || []).map((t: any) => t.wiki_entry_id).filter(Boolean);
   if (!tier1Ids.length) return { status: "no_artists" };
 
@@ -369,9 +393,11 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
 const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>> = {
   youtube: runYouTube,
   yt_sentiment: async (url, key) => {
-    console.log("[data-engine] Running yt_sentiment batch for all Tier 1 artists...");
+    console.log("[data-engine] Running yt_sentiment batch (namuwiki-linked only)...");
     const sb = createClient(url, key);
-    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1);
+    const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+    if (namuwikiIds.length === 0) return { status: "no_artists" };
+    const { data: tier1 } = await sb.from("v3_artist_tiers").select("wiki_entry_id, youtube_channel_id").eq("tier", 1).in("wiki_entry_id", namuwikiIds);
     const targets = (tier1 || []).filter((t: any) => t.youtube_channel_id);
     const totalCount = targets.length;
 
@@ -509,13 +535,15 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "fes_predictor", ...parsed };
   },
   buzz_enhancer: async (url, key) => {
-    console.log("[data-engine] Running Buzz Enhancer (AI filter + Perplexity boost)...");
-    // 배치 처리: 10명씩
+    console.log("[data-engine] Running Buzz Enhancer (namuwiki-linked only)...");
     const sb = createClient(url, key);
+    const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+    if (namuwikiIds.length === 0) return { status: "no_artists" };
     const { data: tiers } = await sb
       .from("v3_artist_tiers")
       .select("wiki_entry_id")
       .eq("tier", 1)
+      .in("wiki_entry_id", namuwikiIds)
       .order("wiki_entry_id", { ascending: true });
     const ids = (tiers || []).map((t: any) => t.wiki_entry_id);
     const BATCH_SIZE = 10;
