@@ -193,16 +193,16 @@ async function detectForMember(
     return { keywordsFound: 0, videosFound: videos.length, keywords: [] };
   }
 
-  // 7일 내 동일 멤버 기존 키워드 중복 체크
+  // 7일 내 동일 멤버 기존 키워드 중복 체크 + 백필
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh")
+    .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
     .eq("star_id", member.id)
     .gte("detected_at", weekAgo)
     .in("keyword", keywords.map((k) => k.keyword));
 
-  const existingSet = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
+  const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
 
   // 크로스 아티스트 중복 제거
   const { data: crossExisting } = await sb
@@ -216,10 +216,12 @@ async function detectForMember(
 
   const rowsToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
+  const backfillPromises: PromiseLike<unknown>[] = [];
 
   for (const kw of keywords) {
     const kwLower = kw.keyword.toLowerCase();
-    if (existingSet.has(kwLower)) continue;
+
+    // 크로스 아티스트 중복 필터
     if (crossSet.has(kwLower)) {
       console.warn(`[detect-youtube] Cross-artist duplicate filtered: "${kw.keyword}"`);
       continue;
@@ -228,42 +230,79 @@ async function detectForMember(
     const videoIdx = (kw.source_video_index || 1) - 1;
     const sourceVideo = videos[videoIdx] || videos[0];
 
-    rowsToInsert.push({
-      wiki_entry_id: member.group_wiki_entry_id || null,
-      star_id: member.id || null,
-      trigger_type: "youtube_mention",
-      trigger_source: "youtube_search",
-      artist_name: member.display_name,
-      keyword: kw.keyword,
-      keyword_ko: kw.keyword_ko || null,
-      keyword_ja: kw.keyword_ja || null,
-      keyword_zh: kw.keyword_zh || null,
-      keyword_category: kw.category,
-      context: kw.context,
-      context_ko: kw.context_ko || null,
-      context_ja: kw.context_ja || null,
-      context_zh: kw.context_zh || null,
-      confidence: kw.confidence,
-      source_url: `https://www.youtube.com/watch?v=${sourceVideo.videoId}`,
-      source_title: sourceVideo.title,
-      source_image_url: sourceVideo.thumbnailUrl,
-      status: "active",
-      metadata: {
-        video_count: videos.length,
-        search_query: query,
-        group_name: member.group_name,
-        channel_title: sourceVideo.channelTitle,
-        source_type: "youtube",
-      },
-    });
-    insertedKeywords.push(kw);
+    const current = existingByKeyword.get(kwLower);
+
+    if (!current) {
+      rowsToInsert.push({
+        wiki_entry_id: member.group_wiki_entry_id || null,
+        star_id: member.id || null,
+        trigger_type: "youtube_mention",
+        trigger_source: "youtube_search",
+        artist_name: member.display_name,
+        keyword: kw.keyword,
+        keyword_ko: kw.keyword_ko || null,
+        keyword_ja: kw.keyword_ja || null,
+        keyword_zh: kw.keyword_zh || null,
+        keyword_category: kw.category,
+        context: kw.context,
+        context_ko: kw.context_ko || null,
+        context_ja: kw.context_ja || null,
+        context_zh: kw.context_zh || null,
+        confidence: kw.confidence,
+        source_url: `https://www.youtube.com/watch?v=${sourceVideo.videoId}`,
+        source_title: sourceVideo.title,
+        source_image_url: sourceVideo.thumbnailUrl,
+        status: "active",
+        metadata: {
+          video_count: videos.length,
+          search_query: query,
+          group_name: member.group_name,
+          channel_title: sourceVideo.channelTitle,
+          source_type: "youtube",
+        },
+      });
+      insertedKeywords.push(kw);
+      continue;
+    }
+
+    // 백필: 빈 필드 채우기
+    const patch: Record<string, unknown> = {};
+    const backfillFields = [
+      "keyword_ko", "keyword_ja", "keyword_zh",
+      "context", "context_ko", "context_ja", "context_zh",
+      "source_url", "source_title", "source_image_url",
+    ] as const;
+
+    for (const field of backfillFields) {
+      const currentValue = (current as Record<string, any>)[field];
+      let nextValue: unknown;
+      if (field === "source_url") nextValue = `https://www.youtube.com/watch?v=${sourceVideo.videoId}`;
+      else if (field === "source_title") nextValue = sourceVideo.title;
+      else if (field === "source_image_url") nextValue = sourceVideo.thumbnailUrl;
+      else nextValue = (kw as Record<string, any>)[field];
+      if ((currentValue == null || currentValue === "") && nextValue) {
+        patch[field] = nextValue;
+      }
+    }
+
+    if (Object.keys(patch).length > 0) {
+      backfillPromises.push(
+        sb.from("ktrenz_trend_triggers").update(patch).eq("id", current.id)
+      );
+    }
   }
 
   if (rowsToInsert.length > 0) {
     await sb.from("ktrenz_trend_triggers").insert(rowsToInsert);
   }
 
-  console.log(`[detect-youtube] ${member.display_name}: inserted ${rowsToInsert.length} new keywords from ${videos.length} videos`);
+  if (backfillPromises.length > 0) {
+    await Promise.allSettled(backfillPromises);
+  }
+
+  console.log(
+    `[detect-youtube] ${member.display_name}: inserted ${rowsToInsert.length} new keywords, backfilled ${backfillPromises.length} existing keywords (${videos.length} videos)`
+  );
 
   return { keywordsFound: rowsToInsert.length, videosFound: videos.length, keywords: insertedKeywords };
 }
