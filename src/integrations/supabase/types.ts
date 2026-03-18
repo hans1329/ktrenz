@@ -3510,6 +3510,66 @@ export type Database = {
           },
         ]
       }
+      ktrenz_stars: {
+        Row: {
+          created_at: string | null
+          display_name: string
+          group_star_id: string | null
+          id: string
+          influence_categories: string[] | null
+          is_active: boolean | null
+          musicbrainz_id: string | null
+          name_ko: string | null
+          social_handles: Json | null
+          star_type: string
+          updated_at: string | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_name: string
+          group_star_id?: string | null
+          id?: string
+          influence_categories?: string[] | null
+          is_active?: boolean | null
+          musicbrainz_id?: string | null
+          name_ko?: string | null
+          social_handles?: Json | null
+          star_type: string
+          updated_at?: string | null
+          wiki_entry_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string
+          group_star_id?: string | null
+          id?: string
+          influence_categories?: string[] | null
+          is_active?: boolean | null
+          musicbrainz_id?: string | null
+          name_ko?: string | null
+          social_handles?: Json | null
+          star_type?: string
+          updated_at?: string | null
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_stars_group_star_id_fkey"
+            columns: ["group_star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_stars_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: true
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_streaming_guides: {
         Row: {
           artist_name: string
