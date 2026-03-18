@@ -16,6 +16,11 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
+function getLocalizedArtistName(tile: TrendTile, lang: string): string {
+  if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
+  return tile.artistName;
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   brand: "bg-blue-500/10 text-blue-400 border-blue-500/30",
   product: "bg-purple-500/10 text-purple-400 border-purple-500/30",
@@ -80,7 +85,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   return (
     <Sheet open={!!tile} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70dvh] overflow-y-auto border-border">
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70dvh] overflow-y-auto border-border sm:max-w-lg sm:mx-auto">
         <SheetHeader className="pb-3">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -101,7 +106,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {tile.category}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {t("by", language)} <span className="font-medium text-foreground">{tile.artistName}</span>
+              {t("by", language)} <span className="font-medium text-foreground">{getLocalizedArtistName(tile, language)}</span>
             </span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -151,7 +156,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {tile.influenceIndex > 0 ? (
                   <>
-                    {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {tile.artistName}{t("newsMention", language)}
+                    {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {getLocalizedArtistName(tile, language)}{t("newsMention", language)}
                     {tile.baselineScore != null && tile.peakScore != null && (
                       <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
                     )}
