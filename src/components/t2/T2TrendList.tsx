@@ -82,7 +82,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   }, [hasMore, onLoadMore]);
 
   return (
-    <div className="max-w-lg mx-auto space-y-4">
+    <div className="max-w-lg lg:max-w-2xl mx-auto space-y-5 lg:space-y-6">
       {items.map((item, idx) => {
         const catConfig = CATEGORY_CONFIG[item.category];
         const isMyArtist = watchedSet.has(item.wikiEntryId);
@@ -100,12 +100,12 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             )}
           >
             {/* Header — keyword + artist row */}
-            <div className="px-3.5 pt-4 pb-3">
+            <div className="px-3.5 pt-4 pb-3 lg:px-5 lg:pt-5 lg:pb-4">
               <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 mt-1">
                     <MessageCircle className="w-4 h-4 text-primary shrink-0" />
-                    <h3 className="text-lg font-black text-foreground leading-tight truncate">
+                    <h3 className="text-lg lg:text-xl font-black text-foreground leading-tight truncate">
                       {getLocalizedKeyword(item, language)}
                     </h3>
                   </div>
@@ -137,7 +137,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {heroImage && (
               <button
                 onClick={() => onTileClick(item)}
-                className="relative w-full aspect-[4/3] bg-muted overflow-hidden group"
+                className="relative w-full aspect-[4/3] lg:aspect-[16/9] bg-muted overflow-hidden group"
               >
                 <img
                   src={heroImage}
@@ -182,9 +182,9 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             )}
 
             {/* Caption / context */}
-            <div className="px-3.5 py-2.5 space-y-1.5">
+            <div className="px-3.5 py-2.5 lg:px-5 lg:py-3.5 space-y-1.5 lg:space-y-2">
               {context && (
-                <p className="text-sm text-foreground leading-snug line-clamp-3">
+                <p className="text-sm lg:text-base text-foreground leading-snug line-clamp-3">
                   <span className="font-bold">{getLocalizedArtistName(item, language)}</span>{" "}
                   {context}
                 </p>
