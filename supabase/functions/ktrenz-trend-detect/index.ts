@@ -10,6 +10,9 @@ const corsHeaders = {
 
 interface ExtractedKeyword {
   keyword: string;
+  keyword_ko?: string;
+  keyword_ja?: string;
+  keyword_zh?: string;
   category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
   confidence: number;
   context: string;
@@ -42,8 +45,11 @@ Rules:
 - IMPORTANT: Always use the ENGLISH name of the entity as the keyword (e.g. "Netflix" not "넷플릭스", "Lollapalooza" not "롤라팔루자")
 - If the entity is originally Korean, romanize it (e.g. "Mexicana Chicken" not "멕시카나치킨")
 
+- For each keyword, also provide translations: keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese simplified)
+- If the entity is already well-known in that language, use the commonly used name (e.g. keyword: "Chanel", keyword_ko: "샤넬", keyword_ja: "シャネル", keyword_zh: "香奈儿")
+
 Return ONLY a JSON array. If no commercial entities found, return [].
-Example: [{"keyword":"Chanel","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport"}]`;
+Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport"}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -267,6 +273,9 @@ async function detectForArtist(
       trigger_source: "naver_news",
       artist_name: artistName,
       keyword: k.keyword,
+      keyword_ko: k.keyword_ko || null,
+      keyword_ja: k.keyword_ja || null,
+      keyword_zh: k.keyword_zh || null,
       keyword_category: k.category,
       context: k.context,
       confidence: k.confidence,

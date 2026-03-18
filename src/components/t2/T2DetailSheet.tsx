@@ -1,22 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { TrendTile } from "./T2TrendTreemap";
 
-interface TrendTile {
-  id: string;
-  keyword: string;
-  category: string;
-  artistName: string;
-  wikiEntryId: string;
-  influenceIndex: number;
-  context: string | null;
-  detectedAt: string;
-  baselineScore: number | null;
-  peakScore: number | null;
-  status: string;
+function getLocalizedKeyword(tile: TrendTile, lang: string): string {
+  switch (lang) {
+    case "ko": return tile.keywordKo || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keyword;
+    default: return tile.keyword;
+  }
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -38,6 +35,7 @@ function formatAge(dateStr: string): string {
 }
 
 const T2DetailSheet = ({ tile, onClose }: { tile: TrendTile | null; onClose: () => void }) => {
+  const { language } = useLanguage();
   // Fetch tracking history for this trigger
   const { data: tracking } = useQuery({
     queryKey: ["t2-tracking-detail", tile?.id],
@@ -62,7 +60,7 @@ const T2DetailSheet = ({ tile, onClose }: { tile: TrendTile | null; onClose: () 
         <SheetHeader className="pb-3">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
-            {tile.keyword}
+            {getLocalizedKeyword(tile, language)}
           </SheetTitle>
         </SheetHeader>
 

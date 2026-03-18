@@ -2,15 +2,19 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 
 // ── Types ──
-interface TrendTile {
+export interface TrendTile {
   id: string;
   keyword: string;
+  keywordKo: string | null;
+  keywordJa: string | null;
+  keywordZh: string | null;
   category: string;
   artistName: string;
   wikiEntryId: string;
@@ -20,6 +24,15 @@ interface TrendTile {
   baselineScore: number | null;
   peakScore: number | null;
   status: string;
+}
+
+function getLocalizedKeyword(tile: TrendTile, lang: string): string {
+  switch (lang) {
+    case "ko": return tile.keywordKo || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keyword;
+    default: return tile.keyword;
+  }
 }
 
 type TrendCategory = "all" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
@@ -106,6 +119,7 @@ const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const isMobile = useIsMobile();
+  const { language } = useLanguage();
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
@@ -120,6 +134,9 @@ const T2TrendTreemap = () => {
       return ((data ?? []) as any[]).map((t): TrendTile => ({
         id: t.id,
         keyword: t.keyword,
+        keywordKo: t.keyword_ko || null,
+        keywordJa: t.keyword_ja || null,
+        keywordZh: t.keyword_zh || null,
         category: t.keyword_category || "brand",
         artistName: t.artist_name || "Unknown",
         wikiEntryId: t.wiki_entry_id,
@@ -287,7 +304,7 @@ const T2TrendTreemap = () => {
                       className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                       style={{ fontSize: `${keywordSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
                     >
-                      {rect.item.keyword}
+                      {getLocalizedKeyword(rect.item, language)}
                     </span>
 
                     {isLarge && (

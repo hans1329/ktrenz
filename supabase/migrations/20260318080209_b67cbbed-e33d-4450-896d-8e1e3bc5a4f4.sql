@@ -1,0 +1,4 @@
+ALTER TABLE ktrenz_trend_triggers
+ADD COLUMN IF NOT EXISTS keyword_ko TEXT,
+ADD COLUMN IF NOT EXISTS keyword_ja TEXT,
+ADD COLUMN IF NOT EXISTS keyword_zh TEXT;

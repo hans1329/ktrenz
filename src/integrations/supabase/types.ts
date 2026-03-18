@@ -3670,6 +3670,9 @@ export type Database = {
           influence_index: number | null
           keyword: string
           keyword_category: string
+          keyword_ja: string | null
+          keyword_ko: string | null
+          keyword_zh: string | null
           metadata: Json | null
           peak_at: string | null
           peak_score: number | null
@@ -3692,6 +3695,9 @@ export type Database = {
           influence_index?: number | null
           keyword: string
           keyword_category?: string
+          keyword_ja?: string | null
+          keyword_ko?: string | null
+          keyword_zh?: string | null
           metadata?: Json | null
           peak_at?: string | null
           peak_score?: number | null
@@ -3714,6 +3720,9 @@ export type Database = {
           influence_index?: number | null
           keyword?: string
           keyword_category?: string
+          keyword_ja?: string | null
+          keyword_ko?: string | null
+          keyword_zh?: string | null
           metadata?: Json | null
           peak_at?: string | null
           peak_score?: number | null
