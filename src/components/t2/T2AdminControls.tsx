@@ -103,6 +103,16 @@ const T2AdminControls = () => {
       <Button
         size="sm"
         variant="outline"
+        onClick={() => detectGlobalMutation.mutate()}
+        disabled={isAnyRunning}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {detectGlobalMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
+        글로벌
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
         onClick={() => trackMutation.mutate()}
         disabled={isAnyRunning}
         className="gap-1 text-xs h-7 px-2"
