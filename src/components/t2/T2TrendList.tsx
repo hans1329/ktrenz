@@ -112,7 +112,6 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 mt-2 mb-1">
-                    <span className="text-[10px] text-muted-foreground">by</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); if (item.starId) navigate(`/t2/artist/${item.starId}`); }}
                       className={cn(
@@ -122,7 +121,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                           : "text-muted-foreground"
                       )}
                     >
-                      {getLocalizedArtistName(item, language)}
+                      <span className="text-muted-foreground font-normal">by</span> {getLocalizedArtistName(item, language)}
                     </button>
                     {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
                     <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
