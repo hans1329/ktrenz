@@ -81,6 +81,7 @@ const AdminStars = () => {
     wiki_entry_id: "",
     group_star_id: "",
     namuwiki_url: "",
+    agency: "",
     is_active: true,
   });
   const [namuUrl, setNamuUrl] = useState("");
