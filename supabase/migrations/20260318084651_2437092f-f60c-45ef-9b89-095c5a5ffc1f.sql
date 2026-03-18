@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_stars ADD COLUMN agency text;

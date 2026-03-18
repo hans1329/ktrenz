@@ -31,6 +31,7 @@ interface StarRow {
   influence_categories: string[] | null;
   musicbrainz_id: string | null;
   namuwiki_url: string | null;
+  agency: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -80,6 +81,7 @@ const AdminStars = () => {
     wiki_entry_id: "",
     group_star_id: "",
     namuwiki_url: "",
+    agency: "",
     is_active: true,
   });
   const [namuUrl, setNamuUrl] = useState("");
@@ -137,6 +139,7 @@ const AdminStars = () => {
         name_ko: parsed.name_ko || prev.name_ko,
         star_type: parsed.star_type || prev.star_type,
         namuwiki_url: url,
+        agency: parsed.agency || prev.agency,
       }));
 
       // Try to find group_star_id if member
@@ -169,6 +172,7 @@ const AdminStars = () => {
         wiki_entry_id: form.wiki_entry_id || null,
         group_star_id: form.group_star_id || null,
         namuwiki_url: form.namuwiki_url || null,
+        agency: form.agency || null,
         is_active: form.is_active,
       };
 
@@ -247,7 +251,7 @@ const AdminStars = () => {
   /* ───── helpers ───── */
   const openCreate = () => {
     setEditingStar(null);
-    setForm({ display_name: "", name_ko: "", star_type: "group", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", is_active: true });
+    setForm({ display_name: "", name_ko: "", star_type: "group", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true });
     setNamuUrl("");
     setNamuResult(null);
     setDialogOpen(true);
@@ -262,6 +266,7 @@ const AdminStars = () => {
       wiki_entry_id: s.wiki_entry_id ?? "",
       group_star_id: s.group_star_id ?? "",
       namuwiki_url: (s as any).namuwiki_url ?? "",
+      agency: (s as any).agency ?? "",
       is_active: s.is_active ?? true,
     });
     setNamuUrl((s as any).namuwiki_url ?? "");
@@ -356,6 +361,7 @@ const AdminStars = () => {
                   <th className="text-left px-3 py-2 font-medium">한글명</th>
                   <th className="text-left px-3 py-2 font-medium">타입</th>
                   <th className="text-left px-3 py-2 font-medium">소속 그룹</th>
+                  <th className="text-left px-3 py-2 font-medium">소속사</th>
                   <th className="text-left px-3 py-2 font-medium">나무위키</th>
                   <th className="text-left px-3 py-2 font-medium">상태</th>
                   <th className="text-right px-3 py-2 font-medium">관리</th>
@@ -373,6 +379,9 @@ const AdminStars = () => {
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">
                       {s.group_star_id ? groupMap[s.group_star_id] ?? "—" : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground text-xs">
+                      {(s as any).agency ?? "—"}
                     </td>
                     <td className="px-3 py-2">
                       {(s as any).namuwiki_url ? (
@@ -412,7 +421,7 @@ const AdminStars = () => {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
                       검색 결과 없음
                     </td>
                   </tr>
@@ -545,6 +554,17 @@ const AdminStars = () => {
                 onChange={(e) => setForm({ ...form, wiki_entry_id: e.target.value })}
                 className="h-9 text-xs font-mono"
                 placeholder="내부 위키 연결 (선택)"
+              />
+            </div>
+
+            {/* agency */}
+            <div>
+              <label className="text-xs font-medium mb-1 block">소속사</label>
+              <Input
+                value={form.agency}
+                onChange={(e) => setForm({ ...form, agency: e.target.value })}
+                className="h-9"
+                placeholder="예: SM엔터테인먼트"
               />
             </div>
           </div>
