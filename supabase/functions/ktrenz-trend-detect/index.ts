@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
         batchOffset,
         batchSize,
         processed: batch.length,
-        totalCandidates: uniqueIds.length,
+        totalCandidates: allStars.length,
         successCount,
         totalKeywords,
       }),
