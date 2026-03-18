@@ -143,7 +143,7 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
 const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
-  const [viewMode, setViewMode] = useState<"treemap" | "list">("treemap");
+  const [viewMode, setViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   
   const isMobile = useIsMobile();
   const { language } = useLanguage();
