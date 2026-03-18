@@ -3523,7 +3523,7 @@ export type Database = {
           social_handles: Json | null
           star_type: string
           updated_at: string | null
-          wiki_entry_id: string
+          wiki_entry_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -3537,7 +3537,7 @@ export type Database = {
           social_handles?: Json | null
           star_type: string
           updated_at?: string | null
-          wiki_entry_id: string
+          wiki_entry_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -3551,7 +3551,7 @@ export type Database = {
           social_handles?: Json | null
           star_type?: string
           updated_at?: string | null
-          wiki_entry_id?: string
+          wiki_entry_id?: string | null
         }
         Relationships: [
           {
