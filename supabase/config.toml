@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.ktrenz-trend-track]
 verify_jwt = false
+
+[functions.ktrenz-trend-cron]
+verify_jwt = false
