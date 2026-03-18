@@ -20,6 +20,7 @@ export interface TrendTile {
   category: string;
   artistName: string;
   artistNameKo: string | null;
+  artistImageUrl: string | null;
   wikiEntryId: string;
   influenceIndex: number;
   context: string | null;
