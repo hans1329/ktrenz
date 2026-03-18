@@ -16,6 +16,7 @@ interface ExtractedKeyword {
   category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
   confidence: number;
   context: string;
+  source_article_index?: number;
 }
 
 // Perplexity API로 뉴스 기사에서 상업 키워드 추출
