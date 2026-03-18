@@ -250,7 +250,13 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
-                          {tile.sourceTitle}
+                          {(() => {
+                            const ctx = language === "ko" ? (tile.contextKo || tile.sourceTitle)
+                              : language === "ja" ? (tile.contextJa || tile.sourceTitle)
+                              : language === "zh" ? (tile.contextZh || tile.sourceTitle)
+                              : tile.sourceTitle;
+                            return ctx || tile.sourceTitle;
+                          })()}
                         </p>
                         <div className="flex items-center gap-1 mt-1">
                           <ExternalLink className="w-2.5 h-2.5 text-white/60" />
