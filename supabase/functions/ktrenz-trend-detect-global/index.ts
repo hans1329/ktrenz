@@ -340,28 +340,18 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // 4) DB 중복 확인 (7일 이내 동일 키워드)
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: existing } = await sb
-          .from("ktrenz_trend_triggers")
-          .select("keyword")
-          .eq("wiki_entry_id", entryId)
-          .gte("detected_at", weekAgo);
+        // 4) 최근 7일 내 동일 아티스트 키워드는 재삽입하지 않되, 빈 필드는 백필
+        const uniqueUrls = [...new Set(allKeywords.map((k) => k.source_url).filter(Boolean))] as string[];
+        const ogImageMap = new Map<string, string | null>();
+        await Promise.allSettled(
+          uniqueUrls.map(async (url) => {
+            ogImageMap.set(url, await fetchOgImage(url));
+          })
+        );
 
-        const existingDbKeywords = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
-        const newKeywords = allKeywords.filter((k) => !existingDbKeywords.has(k.keyword.toLowerCase()));
-
-        if (newKeywords.length > 0) {
-          // OG image 수집
-          const uniqueUrls = [...new Set(newKeywords.map((k) => k.source_url).filter(Boolean))] as string[];
-          const ogImageMap = new Map<string, string | null>();
-          await Promise.allSettled(
-            uniqueUrls.map(async (url) => {
-              ogImageMap.set(url, await fetchOgImage(url));
-            })
-          );
-
-          const rows = newKeywords.map((k) => ({
+        const candidateRows = allKeywords.map((k) => ({
+          extractedKeyword: k,
+          row: {
             wiki_entry_id: entryId,
             star_id: sid || null,
             trigger_type: "news_mention",
@@ -382,14 +372,69 @@ Deno.serve(async (req) => {
             source_image_url: k.source_url ? ogImageMap.get(k.source_url) || null : null,
             status: "active",
             metadata: { source: "global_detect", perplexity_count: perplexityKeywords.length, firecrawl_count: crawlKeywords.length },
-          }));
+          },
+        }));
 
-          await sb.from("ktrenz_trend_triggers").insert(rows);
-          console.log(`[detect-global] ${name}: inserted ${newKeywords.length} new keywords (${newKeywords.map((k) => k.keyword).join(", ")})`);
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: existing } = await sb
+          .from("ktrenz_trend_triggers")
+          .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
+          .eq("wiki_entry_id", entryId)
+          .gte("detected_at", weekAgo);
+
+        const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
+        const rowsToInsert: any[] = [];
+        const backfillPromises: PromiseLike<unknown>[] = [];
+
+        for (const candidate of candidateRows) {
+          const current = existingByKeyword.get(candidate.row.keyword.toLowerCase());
+
+          if (!current) {
+            rowsToInsert.push(candidate.row);
+            continue;
+          }
+
+          const patch: Record<string, unknown> = {};
+          const backfillFields = [
+            "keyword_ko",
+            "keyword_ja",
+            "keyword_zh",
+            "context",
+            "context_ko",
+            "context_ja",
+            "context_zh",
+            "source_url",
+            "source_title",
+            "source_image_url",
+          ] as const;
+
+          for (const field of backfillFields) {
+            const currentValue = (current as Record<string, any>)[field];
+            const nextValue = (candidate.row as Record<string, any>)[field];
+            if ((currentValue == null || currentValue === "") && nextValue) {
+              patch[field] = nextValue;
+            }
+          }
+
+          if (Object.keys(patch).length > 0) {
+            backfillPromises.push(
+              sb.from("ktrenz_trend_triggers").update(patch).eq("id", current.id)
+            );
+          }
+        }
+
+        if (rowsToInsert.length > 0) {
+          await sb.from("ktrenz_trend_triggers").insert(rowsToInsert);
+          console.log(`[detect-global] ${name}: inserted ${rowsToInsert.length} new keywords (${rowsToInsert.map((k) => k.keyword).join(", ")})`);
+        }
+
+        if (backfillPromises.length > 0) {
+          await Promise.allSettled(backfillPromises);
+          console.log(`[detect-global] ${name}: backfilled ${backfillPromises.length} existing keywords`);
         }
 
         successCount++;
-        totalKeywords += newKeywords.length;
+        totalKeywords += rowsToInsert.length;
 
         // Rate limit 방지
         await new Promise((r) => setTimeout(r, 3000));
