@@ -204,7 +204,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
                 );
               })()}
-          </div>
             </div>
           </div>
 
