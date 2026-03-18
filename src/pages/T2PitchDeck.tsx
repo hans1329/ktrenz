@@ -20,7 +20,7 @@ const t = {
     heroTitle2: "K-Pop Moves",
     heroTitle3: "Before the Market",
     heroDesc: "Which brand collaboration is gaining traction? Which product placement just went viral?",
-    heroDescBold: "T2 finds the signal before it becomes noise.",
+    heroDescBold: "KTRENZ finds the signal before it becomes noise.",
     heroCta: "View Live Radar",
     statKeywords: "Keywords Tracked",
     statSources: "Sources / Day",
