@@ -231,12 +231,15 @@ Deno.serve(async (req) => {
     const targetId = body.wikiEntryId || null;
     const dryRun = body.dryRun === true;
     const forceRefresh = body.forceRefresh === true;
+    const offset = body.offset ?? 0;
+    const limit = body.limit ?? 20; // default batch size to stay within 60s
 
     // Tier 1 아티스트 조회
     let query = sb
       .from("v3_artist_tiers")
       .select("id, wiki_entry_id, display_name, name_ko, aliases, deezer_artist_id, lastfm_artist_name")
-      .eq("tier", 1);
+      .eq("tier", 1)
+      .order("wiki_entry_id");
 
     if (targetId) {
       query = query.eq("wiki_entry_id", targetId);
@@ -254,7 +257,11 @@ Deno.serve(async (req) => {
       ? artists
       : artists.filter((a) => !a.deezer_artist_id || !a.lastfm_artist_name);
 
-    console.log(`[MB] Processing ${needsFill.length}/${artists.length} artists (forceRefresh=${forceRefresh})`);
+    // Apply offset/limit for batch processing
+    const batch = needsFill.slice(offset, offset + limit);
+    const hasMore = offset + limit < needsFill.length;
+
+    console.log(`[MB] Processing batch ${offset}-${offset + batch.length} of ${needsFill.length} artists (forceRefresh=${forceRefresh})`);
 
     const results: {
       name: string;
