@@ -363,8 +363,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
             {/* Context body */}
             <div className="p-3 space-y-1.5">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Newspaper className="w-4 h-4 text-primary" />
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                <Newspaper className="w-4.5 h-4.5 text-primary" />
                 {t("whyTrend", language)}
               </h3>
               {(() => {
