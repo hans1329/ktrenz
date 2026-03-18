@@ -394,7 +394,7 @@ const T2TrendTreemap = () => {
                   ? Math.max(14, Math.min(32, sizeFactor * 4.5))
                   : Math.max(9, Math.min(16, sizeFactor * 2.2));
               const scoreSize = Math.max(10, Math.min(30, sizeFactor * 3.2));
-              const titleOpacity = Math.max(0.65, Math.min(1, sizeFactor / 4));
+              
 
               return (
                 <button
@@ -435,15 +435,15 @@ const T2TrendTreemap = () => {
                   <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
                     <span
                       className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                      style={{ fontSize: `${keywordSize}px`, opacity: titleOpacity, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                      style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
                     >
                       {getLocalizedKeyword(rect.item, language)}
                     </span>
 
                     {isMedium && (
                       <span
-                        className="font-bold text-white/70 truncate w-full text-center"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px` }}
+                        className="font-bold text-white truncate w-full text-center drop-shadow-md"
+                        style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
                       >
                         {getLocalizedArtistName(rect.item, language)}
                       </span>
@@ -452,7 +452,7 @@ const T2TrendTreemap = () => {
                     {rect.item.influenceIndex > 0 && (
                       <span
                         className="font-black text-white drop-shadow-lg"
-                        style={{ fontSize: `${scoreSize}px`, opacity: titleOpacity * 0.9, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                        style={{ fontSize: `${scoreSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
                       >
                         {rect.item.influenceIndex.toFixed(0)}
                       </span>
