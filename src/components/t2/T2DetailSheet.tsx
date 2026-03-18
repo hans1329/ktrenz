@@ -101,7 +101,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {tile.category}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              by <span className="font-medium text-foreground">{tile.artistName}</span>
+              {t("by", language)} <span className="font-medium text-foreground">{tile.artistName}</span>
             </span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
