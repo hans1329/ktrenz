@@ -142,6 +142,7 @@ const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const [viewMode, setViewMode] = useState<"treemap" | "list">("treemap");
+  const [visibleCount, setVisibleCount] = useState(50);
   const isMobile = useIsMobile();
   const { language } = useLanguage();
   const { user } = useAuth();
