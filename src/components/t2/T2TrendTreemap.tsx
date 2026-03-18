@@ -557,17 +557,6 @@ const T2TrendTreemap = () => {
         </>
       )}
 
-      {/* Load More */}
-      {hasMore && filteredItems.length > 0 && (
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={() => setVisibleCount(prev => prev + 50)}
-            className="px-6 py-2.5 rounded-full bg-muted hover:bg-muted/80 text-sm font-semibold text-foreground border border-border transition-colors"
-          >
-            {language === "ko" ? "더 보기" : language === "ja" ? "もっと見る" : language === "zh" ? "加载更多" : "More"} ({visibleCount} / {filteredItems.length})
-          </button>
-        </div>
-      )}
 
       {/* Detail Sheet */}
       <T2DetailSheet
