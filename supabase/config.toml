@@ -68,3 +68,9 @@ verify_jwt = false
 
 [functions.fill-musicbrainz-ids]
 verify_jwt = false
+
+[functions.ktrenz-trend-detect]
+verify_jwt = false
+
+[functions.ktrenz-trend-track]
+verify_jwt = false
