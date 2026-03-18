@@ -73,46 +73,43 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
               isSelected ? "border-primary ring-1 ring-primary/20" : "border-border"
             )}
           >
-            {/* Header — artist row */}
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-border bg-muted shrink-0">
-                {item.artistImageUrl ? (
-                  <img src={item.artistImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+            {/* Header — keyword + artist row */}
+            <div className="px-3.5 pt-3 pb-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-black text-foreground leading-tight truncate">
+                    {getLocalizedKeyword(item, language)}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-5 h-5 rounded-full overflow-hidden border border-border bg-muted shrink-0">
+                      {item.artistImageUrl ? (
+                        <img src={item.artistImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <TrendingUp className="w-2.5 h-2.5 text-muted-foreground/50" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-semibold text-muted-foreground truncate">
+                      {getLocalizedArtistName(item, language)}
+                    </span>
+                    {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {formatAge(item.detectedAt)}
+                    </span>
                   </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-bold text-foreground truncate">
-                    {getLocalizedArtistName(item, language)}
-                  </span>
-                  {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white shrink-0"
-                    style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
-                  >
-                    {catConfig?.label || item.category}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    {formatAge(item.detectedAt)}
+                <div className="shrink-0 flex items-center gap-1.5 pt-0.5">
+                  <span className={cn(
+                    "text-xs font-black px-2 py-0.5 rounded-full",
+                    rank <= 3
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    #{rank}
                   </span>
                 </div>
-              </div>
-              <div className="shrink-0 flex items-center gap-1.5">
-                <span className={cn(
-                  "text-xs font-black px-2 py-0.5 rounded-full",
-                  rank <= 3
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}>
-                  #{rank}
-                </span>
               </div>
             </div>
 
@@ -128,17 +125,16 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
-                {/* Gradient overlay at bottom */}
-                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
-                {/* Keyword overlay */}
-                <div className="absolute bottom-3 left-3.5 right-3.5 z-10">
-                  <h3 className="text-lg font-black text-white drop-shadow-lg leading-tight">
-                    {getLocalizedKeyword(item, language)}
-                  </h3>
-                </div>
-                {/* Influence badge */}
+                {/* Category badge — bottom left */}
+                <span
+                  className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-bold px-2 py-0.5 rounded-sm text-white backdrop-blur-sm"
+                  style={{ background: catConfig?.color ? `${catConfig.color.replace(')', ', 0.85)').replace('hsl(', 'hsla(')}` : "hsla(var(--muted-foreground), 0.85)" }}
+                >
+                  {catConfig?.label || item.category}
+                </span>
+                {/* Influence badge — top right */}
                 {item.influenceIndex > 0 && (
-                  <span className="absolute top-3 right-3 z-10 text-sm font-black text-white bg-primary/80 backdrop-blur-sm px-2.5 py-1 rounded-full drop-shadow-lg">
+                  <span className="absolute top-2.5 right-2.5 z-10 text-sm font-black text-white bg-primary/80 backdrop-blur-sm px-2.5 py-1 rounded-full drop-shadow-lg">
                     +{item.influenceIndex.toFixed(0)}%
                   </span>
                 )}
@@ -149,13 +145,16 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
             {!heroImage && (
               <button
                 onClick={() => onTileClick(item)}
-                className="w-full px-3.5 py-4 bg-muted/30 text-left group"
+                className="w-full px-3.5 py-4 bg-muted/30 text-left group flex items-center justify-between"
               >
-                <h3 className="text-lg font-black text-foreground leading-tight">
-                  {getLocalizedKeyword(item, language)}
-                </h3>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-sm text-white"
+                  style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
+                >
+                  {catConfig?.label || item.category}
+                </span>
                 {item.influenceIndex > 0 && (
-                  <span className="text-sm font-black text-primary mt-1 inline-block">
+                  <span className="text-sm font-black text-primary">
                     +{item.influenceIndex.toFixed(0)}%
                   </span>
                 )}
