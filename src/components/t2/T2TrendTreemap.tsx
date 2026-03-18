@@ -143,9 +143,10 @@ const T2TrendTreemap = () => {
     queryFn: async () => {
       if (!user?.id) return [];
       const { data } = await supabase
-        .from("ktrenz_watched_artists")
+        .from("ktrenz_agent_slots")
         .select("wiki_entry_id")
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null);
       return (data ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
     },
     enabled: !!user?.id,
