@@ -37,6 +37,17 @@ function getLocalizedContext(tile: TrendTile, lang: string): string | null {
   }
 }
 
+function getCategoryLabel(cat: string, lang: string): string {
+  const c = CATEGORY_CONFIG[cat];
+  if (!c) return cat;
+  switch (lang) {
+    case "ko": return c.labelKo;
+    case "ja": return c.labelJa;
+    case "zh": return c.labelZh;
+    default: return c.label;
+  }
+}
+
 function formatAge(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const hours = Math.floor(diff / 3600000);
