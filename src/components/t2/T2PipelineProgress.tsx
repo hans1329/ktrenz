@@ -152,7 +152,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
                   key={kw.id}
                   className="flex items-center gap-2 text-[11px] py-1 px-2 rounded-lg bg-background/60"
                 >
-                  <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+                  <Zap className="w-3 h-3 text-primary shrink-0" />
                   <span className="font-bold text-foreground truncate">{kw.keyword}</span>
                   <span className="text-muted-foreground truncate">· {kw.artist_name}</span>
                   <span className="text-muted-foreground/60 text-[9px] ml-auto shrink-0">
