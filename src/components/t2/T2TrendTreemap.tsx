@@ -271,8 +271,8 @@ const T2TrendTreemap = () => {
     });
   }, [dedupedTriggers, selectedCategory]);
 
-  const containerWidth = isMobile ? 360 : 900;
-  const containerHeight = isMobile ? 1600 : 1000;
+  const containerWidth = isMobile ? 360 : 1000;
+  const containerHeight = isMobile ? 2000 : 1200;
 
   const rects = useMemo(() => {
     if (!filteredItems.length) return [];
