@@ -31,6 +31,7 @@ interface StarRow {
   influence_categories: string[] | null;
   musicbrainz_id: string | null;
   namuwiki_url: string | null;
+  agency: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
