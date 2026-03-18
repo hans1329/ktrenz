@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { TrendingUp, Clock, ChevronRight, Star, Users, Tag } from "lucide-react";
+import { useMemo } from "react";
+import { TrendingUp, Clock, Star, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -13,8 +13,6 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)" },
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)" },
 };
-
-type GroupBy = "none" | "category" | "artist";
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
@@ -30,12 +28,21 @@ function getLocalizedArtistName(tile: TrendTile, lang: string): string {
   return tile.artistName;
 }
 
+function getLocalizedContext(tile: TrendTile, lang: string): string | null {
+  switch (lang) {
+    case "ko": return tile.contextKo || tile.context;
+    case "ja": return tile.contextJa || tile.context;
+    case "zh": return tile.contextZh || tile.context;
+    default: return tile.context;
+  }
+}
+
 function formatAge(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const hours = Math.floor(diff / 3600000);
   if (hours < 1) return "now";
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
 
 interface T2TrendListProps {
@@ -46,161 +53,139 @@ interface T2TrendListProps {
 }
 
 const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2TrendListProps) => {
-  const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const { language } = useLanguage();
 
-  const grouped = useMemo(() => {
-    if (groupBy === "none") return [{ key: "all", label: "All Trends", items }];
-
-    const map = new Map<string, TrendTile[]>();
-    for (const item of items) {
-      const key = groupBy === "category" ? item.category : item.artistName;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(item);
-    }
-
-    return Array.from(map.entries())
-      .sort((a, b) => {
-        const aMax = Math.max(...a[1].map(t => t.influenceIndex));
-        const bMax = Math.max(...b[1].map(t => t.influenceIndex));
-        return bMax - aMax;
-      })
-      .map(([key, groupItems]) => ({
-        key,
-        label: groupBy === "category"
-          ? (CATEGORY_CONFIG[key]?.label || key)
-          : key,
-        items: groupItems.sort((a, b) => b.influenceIndex - a.influenceIndex),
-      }));
-  }, [items, groupBy]);
-
   return (
-    <div>
-      {/* Group-by controls */}
-      <div className="flex items-center gap-1.5 mb-3">
-        <span className="text-[10px] text-muted-foreground font-medium mr-1">Group:</span>
-        {([
-          { value: "none" as GroupBy, label: "None", icon: null },
-          { value: "category" as GroupBy, label: "Category", icon: Tag },
-          { value: "artist" as GroupBy, label: "Artist", icon: Users },
-        ]).map(({ value, label, icon: Icon }) => (
-          <button
-            key={value}
-            onClick={() => setGroupBy(value)}
+    <div className="max-w-lg mx-auto space-y-4">
+      {items.map((item, idx) => {
+        const catConfig = CATEGORY_CONFIG[item.category];
+        const isMyArtist = watchedSet.has(item.wikiEntryId);
+        const isSelected = selectedTileId === item.id;
+        const rank = idx + 1;
+        const heroImage = item.sourceImageUrl || item.artistImageUrl;
+        const context = getLocalizedContext(item, language);
+
+        return (
+          <article
+            key={item.id}
             className={cn(
-              "flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border",
-              groupBy === value
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+              "rounded-2xl border overflow-hidden bg-card transition-all",
+              isSelected ? "border-primary ring-1 ring-primary/20" : "border-border"
             )}
           >
-            {Icon && <Icon className="w-3 h-3" />}
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Grouped lists */}
-      <div className="space-y-4">
-        {grouped.map((group) => (
-          <div key={group.key}>
-            {groupBy !== "none" && (
-              <div className="flex items-center gap-2 mb-2">
-                {groupBy === "category" && (
-                  <div
-                    className="w-3 h-3 rounded-sm shrink-0"
-                    style={{ background: CATEGORY_CONFIG[group.key]?.color || "hsl(var(--muted-foreground))" }}
-                  />
+            {/* Header — artist row */}
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-border bg-muted shrink-0">
+                {item.artistImageUrl ? (
+                  <img src={item.artistImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+                  </div>
                 )}
-                <h3 className="text-sm font-bold text-foreground">{group.label}</h3>
-                <span className="text-[10px] text-muted-foreground">{group.items.length}</span>
               </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold text-foreground truncate">
+                    {getLocalizedArtistName(item, language)}
+                  </span>
+                  {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white shrink-0"
+                    style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
+                  >
+                    {catConfig?.label || item.category}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <Clock className="w-2.5 h-2.5" />
+                    {formatAge(item.detectedAt)}
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0 flex items-center gap-1.5">
+                <span className={cn(
+                  "text-xs font-black px-2 py-0.5 rounded-full",
+                  rank <= 3
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  #{rank}
+                </span>
+              </div>
+            </div>
+
+            {/* Hero image */}
+            {heroImage && (
+              <button
+                onClick={() => onTileClick(item)}
+                className="relative w-full aspect-[4/3] bg-muted overflow-hidden group"
+              >
+                <img
+                  src={heroImage}
+                  alt={getLocalizedKeyword(item, language)}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+                {/* Gradient overlay at bottom */}
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+                {/* Keyword overlay */}
+                <div className="absolute bottom-3 left-3.5 right-3.5 z-10">
+                  <h3 className="text-lg font-black text-white drop-shadow-lg leading-tight">
+                    {getLocalizedKeyword(item, language)}
+                  </h3>
+                </div>
+                {/* Influence badge */}
+                {item.influenceIndex > 0 && (
+                  <span className="absolute top-3 right-3 z-10 text-sm font-black text-white bg-primary/80 backdrop-blur-sm px-2.5 py-1 rounded-full drop-shadow-lg">
+                    +{item.influenceIndex.toFixed(0)}%
+                  </span>
+                )}
+              </button>
             )}
 
-            <div className="space-y-1">
-              {group.items.map((item, idx) => {
-                const globalRank = items.indexOf(item) + 1;
-                const catConfig = CATEGORY_CONFIG[item.category];
-                const isMyArtist = watchedSet.has(item.wikiEntryId);
-                const isSelected = selectedTileId === item.id;
+            {/* No image fallback */}
+            {!heroImage && (
+              <button
+                onClick={() => onTileClick(item)}
+                className="w-full px-3.5 py-4 bg-muted/30 text-left group"
+              >
+                <h3 className="text-lg font-black text-foreground leading-tight">
+                  {getLocalizedKeyword(item, language)}
+                </h3>
+                {item.influenceIndex > 0 && (
+                  <span className="text-sm font-black text-primary mt-1 inline-block">
+                    +{item.influenceIndex.toFixed(0)}%
+                  </span>
+                )}
+              </button>
+            )}
 
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onTileClick(item)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left",
-                      isSelected
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                        : "border-border bg-card hover:bg-muted/50"
-                    )}
-                  >
-                    {/* Rank */}
-                    <span className={cn(
-                      "shrink-0 w-7 text-center font-black text-sm",
-                      globalRank <= 3 ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {globalRank}
-                    </span>
-
-                    {/* Image */}
-                    <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-border bg-muted">
-                      {(item.sourceImageUrl || item.artistImageUrl) ? (
-                        <img
-                          src={item.sourceImageUrl || item.artistImageUrl!}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <TrendingUp className="w-4 h-4 text-muted-foreground/50" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-foreground truncate">
-                          {getLocalizedKeyword(item, language)}
-                        </span>
-                        {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[11px] text-muted-foreground truncate">
-                          {getLocalizedArtistName(item, language)}
-                        </span>
-                        <span
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white shrink-0"
-                          style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
-                        >
-                          {catConfig?.label || item.category}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Influence + Age */}
-                    <div className="shrink-0 text-right">
-                      {item.influenceIndex > 0 && (
-                        <span className="text-sm font-black text-primary">
-                          +{item.influenceIndex.toFixed(0)}%
-                        </span>
-                      )}
-                      <div className="flex items-center justify-end gap-0.5 mt-0.5">
-                        <Clock className="w-2.5 h-2.5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">{formatAge(item.detectedAt)}</span>
-                      </div>
-                    </div>
-
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-                  </button>
-                );
-              })}
+            {/* Caption / context */}
+            <div className="px-3.5 py-2.5 space-y-1.5">
+              {context && (
+                <p className="text-sm text-foreground leading-snug line-clamp-3">
+                  <span className="font-bold">{getLocalizedArtistName(item, language)}</span>{" "}
+                  {context}
+                </p>
+              )}
+              {item.sourceTitle && item.sourceUrl && (
+                <a
+                  href={item.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{item.sourceTitle}</span>
+                </a>
+              )}
             </div>
-          </div>
-        ))}
-      </div>
+          </article>
+        );
+      })}
     </div>
   );
 };
