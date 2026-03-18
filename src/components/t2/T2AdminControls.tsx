@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Loader2, Search, TrendingUp, Zap, Database } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+const T2AdminControls = () => {
+  const { isAdmin, loading } = useAdminAuth();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const detectMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
+        body: { phase: "detect", batchSize: 5, batchOffset: 0 },
+      });
+      if (error) throw error;
+      return typeof data === "string" ? JSON.parse(data) : data;
+    },
+    onSuccess: (data) => {
+      toast.success(`키워드 감지 완료: ${data?.detect?.totalKeywords ?? 0}건`);
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`감지 실패: ${(err as Error).message}`),
+  });
+
+  const trackMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
+        body: { phase: "track" },
+      });
+      if (error) throw error;
+      return typeof data === "string" ? JSON.parse(data) : data;
+    },
+    onSuccess: (data) => {
+      toast.success(`추적 완료: ${data?.track?.tracked ?? 0}건`);
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`추적 실패: ${(err as Error).message}`),
+  });
+
+  const fullMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
+        body: { phase: "detect", batchSize: 5, batchOffset: 0 },
+      });
+      if (error) throw error;
+      return typeof data === "string" ? JSON.parse(data) : data;
+    },
+    onSuccess: () => {
+      toast.success("전체 파이프라인 시작 (detect → track 체이닝)");
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+      }, 30_000);
+    },
+    onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
+  });
+
+  if (loading || !isAdmin) return null;
+
+  const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullMutation.isPending;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => fullMutation.mutate()}
+        disabled={isAnyRunning}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {fullMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+        전체 수집
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => detectMutation.mutate()}
+        disabled={isAnyRunning}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {detectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+        감지
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => trackMutation.mutate()}
+        disabled={isAnyRunning}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {trackMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
+        추적
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => navigate("/admin/stars")}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        <Database className="w-3 h-3" />
+        스타 관리
+      </Button>
+    </div>
+  );
+};
+
+export default T2AdminControls;

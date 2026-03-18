@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
+import T2AdminControls from "./T2AdminControls";
 
 // ── Types ──
 export interface TrendTile {
@@ -199,14 +200,17 @@ const T2TrendTreemap = () => {
   return (
     <div className="px-4 pb-4">
       {/* Header */}
-      <div className="pt-4 pb-3">
-        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          Trend Map
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          K-Pop driven consumer trends · Influence Index
-        </p>
+      <div className="pt-4 pb-3 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Trend Map
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            K-Pop driven consumer trends · Influence Index
+          </p>
+        </div>
+        <T2AdminControls />
       </div>
 
       {/* Category filter */}
