@@ -1,0 +1,2 @@
+-- Clean up misattributed Lollapalooza keywords linked to TWICE (should be other artists or removed)
+DELETE FROM ktrenz_trend_triggers WHERE id IN ('00dde2ca-59b9-48c8-8e27-69b522390b08', 'fbc001e6-6f0f-4a6e-bb1f-947b2cda6c21');

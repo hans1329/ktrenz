@@ -56,21 +56,27 @@ async function extractCommercialKeywords(
     .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
     .join("\n");
 
-  const prompt = `Analyze these recent Korean news articles about K-pop artist "${artistName}" and extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances).
+  const prompt = `Analyze these recent Korean news articles and extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) that are DIRECTLY linked to K-pop artist "${artistName}".
 
 Articles:
 ${articleTexts}
+
+CRITICAL ATTRIBUTION RULE:
+- You MUST only extract entities where "${artistName}" is the PRIMARY artist connected to that entity IN THE ARTICLE TEXT.
+- If the article mentions "${artistName}" only peripherally (e.g. listed among many artists at a festival, mentioned in passing), do NOT extract entities from that article.
+- If the article's MAIN SUBJECT is a DIFFERENT artist (e.g. the headline says "Jennie headlines Lollapalooza" but TWICE is just mentioned as also attending), do NOT extract that entity for "${artistName}".
+- Ask yourself: "Is ${artistName} the REASON this entity is newsworthy?" If NO, skip it.
 
 STRICT Rules:
 - ONLY extract entities that are EXPLICITLY MENTIONED in the article text above
 - Do NOT use your own knowledge about the artist's past endorsements, brand deals, or history
 - Do NOT list brands/products that are NOT written in the articles
 - If an article is about chart performance, awards, or music releases, there may be NO commercial entities — return []
-- Only extract entities that represent a CURRENT or UPCOMING commercial connection (event attendance, new endorsement, product launch, collaboration)
+- Only extract entities that represent a CURRENT or UPCOMING commercial connection (event attendance, new endorsement, product launch, collaboration) where "${artistName}" is the MAIN actor
 - Do NOT extract the artist name itself or their agency/label
 - Do NOT extract generic music industry terms (album, concert, chart, Billboard, etc.)
 - Do NOT extract TV show names unless the artist is appearing as a guest/model (regular music show stages don't count)
-- Assign confidence 0.0-1.0 based on how clearly the entity is linked to the artist IN THE ARTICLE
+- Assign confidence 0.0-1.0 based on how clearly the entity is linked to "${artistName}" specifically (NOT just mentioned in the same article)
 - Categorize each as: brand, product, place, food, fashion, beauty, or media
 - Maximum 5 keywords per batch — pick the most commercially relevant ones
 - IMPORTANT: Always use the ENGLISH name of the entity as the keyword (e.g. "Netflix" not "넷플릭스", "Lollapalooza" not "롤라팔루자")
@@ -81,7 +87,7 @@ STRICT Rules:
 - For each keyword, also include "source_article_index": the 1-based article number from the list above that MOST directly mentions this entity. If multiple articles mention it, pick the most relevant one.
 - For each keyword, also provide translated context: "context_ko" (Korean), "context_ja" (Japanese), "context_zh" (Chinese simplified). The context should be a brief explanation of WHY this entity is trending, translated naturally.
 
-Return ONLY a JSON array. If no commercial entities found in the articles, return [].
+Return ONLY a JSON array. If no commercial entities found where "${artistName}" is the primary actor, return [].
 Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","context_ko":"공항에서 샤넬 의상 착용[1]","context_ja":"空港でシャネルの衣装を着用[1]","context_zh":"在机场穿着香奈儿服装[1]","source_article_index":1}]`;
 
   try {
@@ -288,13 +294,14 @@ async function detectForArtist(
     return { keywordsFound: 0, keywords: [] };
   }
 
-  // 중복 방지: 같은 아티스트+키워드가 최근 7일 이내 이미 감지되었는지 확인
+  // 중복 방지: 같은 키워드가 최근 7일 이내 ANY 아티스트에서 이미 감지되었는지 확인 (크로스 아티스트 중복 방지)
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const keywordValues = keywords.map(k => k.keyword.toLowerCase());
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
-    .select("keyword")
-    .eq("wiki_entry_id", wikiEntryId)
-    .gte("detected_at", weekAgo);
+    .select("keyword, wiki_entry_id")
+    .gte("detected_at", weekAgo)
+    .in("keyword", keywords.map(k => k.keyword));
 
   const existingKeywords = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
   const newKeywords = keywords.filter((k) => !existingKeywords.has(k.keyword.toLowerCase()));
