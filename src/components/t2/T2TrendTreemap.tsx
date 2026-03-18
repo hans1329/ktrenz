@@ -346,7 +346,7 @@ const T2TrendTreemap = () => {
                         className="font-bold text-white/70 truncate w-full text-center"
                         style={{ fontSize: `${Math.max(9, keywordSize * 0.6)}px` }}
                       >
-                        by {rect.item.artistName}
+                        by {getLocalizedArtistName(rect.item, language)}
                       </span>
                     )}
 
