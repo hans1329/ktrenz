@@ -110,7 +110,7 @@ const AdminStars = () => {
     try {
       const { data, error } = await supabase
         .from("wiki_entries")
-        .select("id, title, description, image_url, schema_type, metadata")
+        .select("id, title, image_url, schema_type, metadata")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -118,7 +118,7 @@ const AdminStars = () => {
         toast.error("위키 항목을 찾을 수 없습니다");
         return;
       }
-      const w = data as WikiEntry;
+      const w = { ...data, description: null } as WikiEntry;
       setWikiResult(w);
       // auto-fill
       setForm((prev) => ({
