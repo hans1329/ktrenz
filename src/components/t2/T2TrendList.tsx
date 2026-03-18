@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { TrendingUp, Clock, Star, ExternalLink } from "lucide-react";
+import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TrendTile } from "./T2TrendTreemap";
