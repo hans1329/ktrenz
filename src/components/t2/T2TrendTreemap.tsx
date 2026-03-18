@@ -212,6 +212,12 @@ const T2TrendTreemap = () => {
     refetchInterval: 60_000,
   });
 
+  // My artists' keywords
+  const myKeywords = useMemo(() => {
+    if (!triggers?.length || !watchedSet.size) return [];
+    return triggers.filter(t => watchedSet.has(t.wikiEntryId));
+  }, [triggers, watchedSet]);
+
   const filteredItems = useMemo(() => {
     if (!triggers?.length) return [];
     const items = selectedCategory === "all"
