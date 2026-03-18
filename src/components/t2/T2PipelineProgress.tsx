@@ -54,7 +54,6 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .limit(50);
       return (data ?? []) as unknown as RecentKeyword[];
     },
-    },
     enabled: !!run,
     refetchInterval: 5000,
   });
