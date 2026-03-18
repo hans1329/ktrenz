@@ -200,6 +200,55 @@ const T2ArtistPage = () => {
                       {ctxText && (
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ctxText}</p>
                       )}
+
+                      {/* Lifetime timeline bar */}
+                      {(() => {
+                        const LIFECYCLE_DAYS = 14;
+                        const detectedMs = new Date(kw.detected_at).getTime();
+                        const nowMs = Date.now();
+                        const elapsedHours = (nowMs - detectedMs) / 3600000;
+                        const totalHours = LIFECYCLE_DAYS * 24;
+                        const progressPct = Math.min((elapsedHours / totalHours) * 100, 100);
+                        const peakPct = kw.peak_delay_hours != null
+                          ? Math.min((kw.peak_delay_hours / totalHours) * 100, 100)
+                          : null;
+                        const isExpired = !!kw.expired_at;
+
+                        return (
+                          <div className="mt-2.5">
+                            <div className="flex items-center justify-between text-[9px] text-muted-foreground mb-1">
+                              <span>{language === "ko" ? "라이프사이클" : "Lifecycle"}</span>
+                              <span>
+                                {isExpired
+                                  ? (language === "ko" ? "만료" : "Expired")
+                                  : kw.lifetime_hours != null
+                                    ? `${Math.round(kw.lifetime_hours)}h`
+                                    : `${Math.round(elapsedHours)}h / ${totalHours}h`}
+                              </span>
+                            </div>
+                            <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={cn(
+                                  "absolute inset-y-0 left-0 rounded-full transition-all",
+                                  isExpired ? "bg-muted-foreground/40" : "bg-primary/60"
+                                )}
+                                style={{ width: `${isExpired ? 100 : progressPct}%` }}
+                              />
+                              {peakPct != null && (
+                                <div
+                                  className="absolute top-0 bottom-0 w-0.5 bg-primary rounded-full"
+                                  style={{ left: `${peakPct}%` }}
+                                  title={`Peak at ${Math.round(kw.peak_delay_hours)}h`}
+                                >
+                                  <div className="absolute -top-1.5 left-1/2 -translate-x-1/2">
+                                    <TrendingUp className="w-2.5 h-2.5 text-primary" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="shrink-0 flex flex-col items-end gap-1 pt-0.5">
                       {kw.influence_index > 0 && (
