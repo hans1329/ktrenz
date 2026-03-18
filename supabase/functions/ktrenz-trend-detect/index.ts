@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     // 배치 모드: Tier 1 아티스트 순회
     const { data: tier1 } = await sb
       .from("v3_artist_tiers")
-      .select("wiki_entry_id, name_en")
+      .select("wiki_entry_id, display_name")
       .eq("tier", 1)
       .order("wiki_entry_id", { ascending: true });
 
