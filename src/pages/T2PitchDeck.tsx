@@ -261,7 +261,7 @@ const t = {
     ctaTag: "시작하기",
     ctaTitle: ["", "트렌드 레이더", " 라이브 보기"],
     ctaDesc: "100+ K-Pop 아티스트에 대한 실시간 키워드 감지, 영향력 점수, 상업적 인사이트를 탐색하세요.",
-    ctaCta1: "T2 레이더 열기",
+    ctaCta1: "KTRENZ 레이더 열기",
     ctaCta2: "전체 플랫폼 덱 보기",
     ctaFooter: "에코시스템 — 실시간 K-Pop 인텔리전스 플랫폼",
   },
