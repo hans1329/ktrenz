@@ -15,7 +15,7 @@ type Lang = "en" | "ko";
 const t = {
   en: {
     // Hero
-    heroTag: "T2 · Trend Intelligence Engine",
+    heroTag: "KTRENZ · Trend Intelligence Engine",
     heroTitle1: "Detect What",
     heroTitle2: "K-Pop Moves",
     heroTitle3: "Before the Market",
