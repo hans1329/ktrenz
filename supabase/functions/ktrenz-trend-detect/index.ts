@@ -16,6 +16,9 @@ interface ExtractedKeyword {
   category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
   confidence: number;
   context: string;
+  context_ko?: string;
+  context_ja?: string;
+  context_zh?: string;
   source_article_index?: number;
 }
 
