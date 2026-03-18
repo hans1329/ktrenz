@@ -205,8 +205,8 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
           </article>
         );
       })}
+      {hasMore && <div ref={sentinelRef} className="h-10" />}
     </div>
   );
-};
 
 export default T2TrendList;
