@@ -505,7 +505,7 @@ export default function T2PitchDeck() {
       <Section id="safeguards">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Shield className="w-3.5 h-3.5" /> {l.safeguardTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.safeguardTitle[0]}<span className="text-primary">{l.safeguardTitle[1]}</span>
             </h2>
