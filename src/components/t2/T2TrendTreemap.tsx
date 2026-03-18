@@ -387,7 +387,7 @@ const T2TrendTreemap = () => {
       {/* Category filter */}
       <div className={cn(
         "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
-        isMobile && "sticky top-14 z-20 bg-background pt-3 pb-2 -mx-4 px-4"
+        isMobile && "sticky top-14 z-30 bg-background pt-3 pb-2 -mx-4 px-4"
       )}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
