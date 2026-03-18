@@ -511,14 +511,6 @@ const T2TrendTreemap = () => {
                           {getLocalizedArtistName(rect.item, language)}
                         </span>
                       )}
-                      {rect.item.influenceIndex > 0 && (
-                        <span
-                          className="font-black text-white drop-shadow-lg"
-                          style={{ fontSize: `${scoreSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
-                        >
-                          {rect.item.influenceIndex.toFixed(0)}
-                        </span>
-                      )}
                     </div>
                     {isMedium && (
                       <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
