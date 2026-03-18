@@ -49,7 +49,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   noContext: { en: "No context available yet.", ko: "아직 맥락 정보가 없습니다.", ja: "コンテキスト情報はまだありません。", zh: "尚无相关信息。" },
   whyRank: { en: "Why", ko: "왜", ja: "なぜ", zh: "为什么" },
   whyRankSuffix: { en: "?", ko: "위인가?", ja: "位？", zh: "位？" },
-  surged: { en: "Google Trends search volume surged", ko: "Google Trends 검색량이", ja: "Google Trendsの検索量が", zh: "Google Trends搜索量" },
+  surged: { en: "Search volume surged", ko: "검색량이", ja: "検索量が", zh: "搜索量" },
   surgedAfter: { en: "after", ko: "이후", ja: "のニュース後", zh: "新闻后" },
   newsMention: { en: "'s news mention.", ko: "의 뉴스 언급 이후 급등.", ja: "に急増。", zh: "急增。" },
   baselineWas: { en: "Baseline interest was", ko: "기본 관심도", ja: "ベースライン関心度", zh: "基础关注度" },
