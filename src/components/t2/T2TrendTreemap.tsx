@@ -195,7 +195,7 @@ const T2TrendTreemap = () => {
       }
 
       return triggers.map((t: any): TrendTile => {
-        const star = starMap.get(t.wiki_entry_id);
+        const star = t.star_id ? starMap.get(t.star_id) : null;
         return {
           id: t.id,
           keyword: t.keyword,
@@ -206,7 +206,7 @@ const T2TrendTreemap = () => {
           artistName: star?.display_name || t.artist_name || "Unknown",
           artistNameKo: star?.name_ko || null,
           artistImageUrl: star?.image_url || null,
-          wikiEntryId: t.wiki_entry_id,
+          wikiEntryId: star?.wiki_entry_id || t.wiki_entry_id,
           influenceIndex: Number(t.influence_index) || 0,
           context: t.context,
           contextKo: t.context_ko || null,
