@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
       starId: string | null;
     }[] = [];
 
-    for (const artist of needsFill) {
+    for (const artist of batch) {
       const name = artist.display_name || "";
       if (!name) continue;
 
