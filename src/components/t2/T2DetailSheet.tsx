@@ -62,6 +62,12 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   notPeakedYet: { en: "Not peaked yet", ko: "아직 피크 없음", ja: "未到達", zh: "尚未达到峰值" },
   active: { en: "Active", ko: "활성", ja: "アクティブ", zh: "活跃" },
   expired: { en: "Expired", ko: "만료", ja: "期限切れ", zh: "已过期" },
+  voteRelevance: { en: "Is this relevant?", ko: "이 트렌드가 관련 있나요?", ja: "関連性がありますか？", zh: "这个趋势相关吗？" },
+  boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
+  shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
+  copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
+  loginToVote: { en: "Sign in to vote", ko: "투표하려면 로그인하세요", ja: "投票するにはログイン", zh: "登录后投票" },
+  boosted: { en: "Boost shared! +5 K-Point", ko: "부스트 공유 완료! +5 K-Point", ja: "ブースト共有完了！+5 K-Point", zh: "推动分享完成！+5 K-Point" },
 };
 
 function t(key: string, lang: string): string {
