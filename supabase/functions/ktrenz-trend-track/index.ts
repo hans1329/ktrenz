@@ -1,6 +1,5 @@
 // T2 Trend Track: 감지된 상업 키워드의 Google Trends 검색량을 SerpAPI로 추적
-// ktrenz_trend_triggers에서 active 키워드를 읽어 검색량 변화를 ktrenz_trend_tracking에 기록
-// throttle 감지 시 즉시 체이닝 중단, 배치 간 충분한 딜레이 확보
+// 인과관계 증명: baseline(첫 추적) → peak 갱신 → influence_index 산출
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -16,7 +15,6 @@ interface TrendResult {
   timeline: { date: string; value: number }[];
 }
 
-// SerpAPI throttle 에러를 구별하기 위한 커스텀 에러
 class ThrottleError extends Error {
   constructor(message: string) {
     super(message);
@@ -48,7 +46,6 @@ async function fetchGoogleTrends(
     const response = await fetch(`https://serpapi.com/search.json?${params}`);
     if (!response.ok) {
       const err = await response.text();
-      // throttle 감지 → 즉시 상위로 전파
       if (err.includes("throttled") || err.includes("exceeded") || response.status === 429) {
         throw new ThrottleError(`SerpAPI throttled: ${err.slice(0, 100)}`);
       }
@@ -76,6 +73,48 @@ async function fetchGoogleTrends(
   return { keyword, interest_score: 0, region, timeline: [] };
 }
 
+// 인과관계 지표 업데이트: baseline 설정 + peak/influence 갱신
+async function updateCausalMetrics(
+  sb: any,
+  triggerId: string,
+  interestScore: number
+) {
+  const { data: trigger } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("baseline_score, peak_score")
+    .eq("id", triggerId)
+    .single();
+
+  if (!trigger) return;
+
+  const updates: any = {};
+
+  // 첫 추적 시 baseline 설정 (baseline이 0이면 아직 설정 안 된 것)
+  if (!trigger.baseline_score && interestScore > 0) {
+    updates.baseline_score = interestScore;
+  }
+
+  // peak 갱신
+  if (interestScore > (trigger.peak_score || 0)) {
+    updates.peak_score = interestScore;
+    updates.peak_at = new Date().toISOString();
+  }
+
+  // influence_index 재계산: (peak - baseline) / max(baseline, 1) * 100
+  const baseline = updates.baseline_score ?? trigger.baseline_score ?? 0;
+  const peak = updates.peak_score ?? trigger.peak_score ?? 0;
+  if (baseline > 0 && peak > baseline) {
+    updates.influence_index = Math.round(((peak - baseline) / baseline) * 10000) / 100;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await sb
+      .from("ktrenz_trend_triggers")
+      .update(updates)
+      .eq("id", triggerId);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -87,7 +126,7 @@ Deno.serve(async (req) => {
       triggerId,
       batchSize = 5,
       batchOffset = 0,
-      regions = ["worldwide"],  // 기본 worldwide만 (API 절약)
+      regions = ["worldwide"],
     } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -102,7 +141,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 단일 트리거 모드
     let triggers: any[];
     let totalTriggers = 0;
 
@@ -115,7 +153,6 @@ Deno.serve(async (req) => {
       triggers = data ? [data] : [];
       totalTriggers = triggers.length;
     } else {
-      // active 상태인 최근 트리거 (배치 처리)
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data } = await sb
         .from("ktrenz_trend_triggers")
@@ -181,6 +218,11 @@ Deno.serve(async (req) => {
               raw_response: { timeline: result.timeline },
             });
 
+            // 인과관계 지표 업데이트 (worldwide 기준)
+            if (region === "worldwide") {
+              await updateCausalMetrics(sb, trigger.id, result.interest_score);
+            }
+
             trackedCount++;
             results.push({
               keyword: trigger.keyword,
@@ -191,11 +233,10 @@ Deno.serve(async (req) => {
             });
           }
 
-          // SerpAPI rate limit 방지: 호출 간 3초 딜레이
           await new Promise((r) => setTimeout(r, 3000));
         } catch (e) {
           if (e instanceof ThrottleError) {
-            console.warn(`[trend-track] ⚠️ THROTTLED — stopping all requests. Tracked ${trackedCount} so far.`);
+            console.warn(`[trend-track] ⚠️ THROTTLED — stopping. Tracked ${trackedCount} so far.`);
             throttled = true;
             break;
           }
@@ -203,7 +244,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 14일 이상 추적된 트리거는 자동 만료
+      // 14일 이상 추적된 트리거 자동 만료
       if (!throttled) {
         const triggerAge = Date.now() - new Date(trigger.detected_at).getTime();
         if (triggerAge > 14 * 24 * 60 * 60 * 1000) {
@@ -216,15 +257,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[trend-track] Done: tracked ${trackedCount} keyword-region pairs${throttled ? " (stopped: throttled)" : ""}`);
+    console.log(`[trend-track] Done: tracked ${trackedCount} pairs${throttled ? " (throttled)" : ""}`);
 
-    // 체이닝: throttle 발생 시 절대 체이닝하지 않음
+    // 체이닝
     let chained = false;
     if (!triggerId && !throttled) {
       const nextOffset = batchOffset + batchSize;
       if (nextOffset < totalTriggers) {
-        // 다음 배치 전 15초 딜레이 후 체이닝
-        console.log(`[trend-track] Waiting 15s before chaining next batch: offset=${nextOffset}, remaining=${totalTriggers - nextOffset}`);
+        console.log(`[trend-track] Chaining next batch: offset=${nextOffset}`);
         await new Promise((r) => setTimeout(r, 15000));
 
         sb.functions.invoke("ktrenz-trend-track", {
