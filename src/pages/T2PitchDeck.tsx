@@ -114,26 +114,15 @@ const t = {
       { title: "Market Researchers", desc: "Quantify the real-time commercial impact of K-Pop on consumer behavior. Access structured data on artist–brand associations across categories." },
     ],
 
-    // Architecture
-    archTag: "Architecture",
-    archTitle: ["Built for ", "Scale"],
-    archPipeline: "Pipeline Architecture",
-    archPipelineItems: [
-      "Batch processing: 3–5 artists per invocation",
-      "Self-chaining via Edge Function orchestration",
-      "Rate-limit protection: 3s between API calls",
-      "Throttle detection with automatic chain break",
-      "7-day deduplication window across all artists",
-      "Backfill mode for missing translations & images",
-    ],
-    archQuality: "Data Quality Controls",
-    archQualityItems: [
-      "Text-match verification against source content",
-      "Cross-artist keyword deduplication",
-      "Confidence scoring (0.0–1.0) per keyword",
-      "Category classification (7 verticals)",
-      "Multi-language context (EN/KO/JA/ZH)",
-      "Source URL + OG image preservation",
+    // Product-Led Loop
+    pllTag: "Growth Flywheel",
+    pllTitle: ["Product-Led ", "Loop"],
+    pllDesc: "Every user interaction feeds back into better data — creating a self-reinforcing cycle that competitors cannot replicate.",
+    pllSteps: [
+      { emoji: "📦", title: "K-Product", desc: "Detect commercial keywords triggered by K-Pop artist activities across news, social, and video." },
+      { emoji: "🎯", title: "Artist Trigger", desc: "Artist actions (brand deals, PPL, viral moments) generate real-time trend signals in the radar." },
+      { emoji: "🗳️", title: "User Participation", desc: "Fans vote on trends, complete streaming missions, and engage with data — earning K-Points." },
+      { emoji: "📈", title: "Data Amplification", desc: "User engagement improves detection accuracy, enriches influence scoring, and expands coverage." },
     ],
 
     // CTA
