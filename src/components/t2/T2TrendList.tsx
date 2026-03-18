@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef, useCallback } from "react";
 import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -61,10 +61,25 @@ interface T2TrendListProps {
   watchedSet: Set<string>;
   onTileClick: (tile: TrendTile) => void;
   selectedTileId: string | null;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2TrendListProps) => {
+const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, onLoadMore }: T2TrendListProps) => {
   const { language } = useLanguage();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasMore || !onLoadMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) onLoadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, onLoadMore]);
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
@@ -190,6 +205,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
           </article>
         );
       })}
+      {hasMore && <div ref={sentinelRef} className="h-10" />}
     </div>
   );
 };

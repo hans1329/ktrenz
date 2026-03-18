@@ -142,7 +142,7 @@ const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const [viewMode, setViewMode] = useState<"treemap" | "list">("treemap");
-  const [visibleCount, setVisibleCount] = useState(50);
+  
   const isMobile = useIsMobile();
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -267,22 +267,28 @@ const T2TrendTreemap = () => {
   const containerWidth = isMobile ? 360 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
 
-  // Reset visibleCount when category changes
+
+  const visibleBoxItems = useMemo(() => {
+    return filteredItems.slice(0, 50);
+  }, [filteredItems]);
+
+  const [listVisibleCount, setListVisibleCount] = useState(20);
+
+  // Reset list visible count when category changes
   useEffect(() => {
-    setVisibleCount(50);
+    setListVisibleCount(20);
   }, [selectedCategory]);
 
-  const visibleItems = useMemo(() => {
-    return filteredItems.slice(0, visibleCount);
-  }, [filteredItems, visibleCount]);
+  const visibleListItems = useMemo(() => {
+    return filteredItems.slice(0, listVisibleCount);
+  }, [filteredItems, listVisibleCount]);
 
-  const hasMore = filteredItems.length > visibleCount;
+  const hasMoreList = filteredItems.length > listVisibleCount;
 
   const rects = useMemo(() => {
-    if (!visibleItems.length) return [];
-    // Box view should always lay out exactly the currently visible items
-    return squarify(visibleItems, 0, 0, containerWidth, containerHeight);
-  }, [visibleItems, containerWidth, containerHeight]);
+    if (!visibleBoxItems.length) return [];
+    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight);
+  }, [visibleBoxItems, containerWidth, containerHeight]);
 
   const handleTileClick = useCallback((item: TrendTile) => {
     setSelectedTile(prev => prev?.id === item.id ? null : item);
@@ -436,10 +442,12 @@ const T2TrendTreemap = () => {
         </div>
       ) : viewMode === "list" ? (
         <T2TrendList
-          items={visibleItems}
+          items={visibleListItems}
           watchedSet={watchedSet}
           onTileClick={handleTileClick}
           selectedTileId={selectedTile?.id ?? null}
+          hasMore={hasMoreList}
+          onLoadMore={() => setListVisibleCount(prev => prev + 20)}
         />
       ) : (
         <>
@@ -545,17 +553,6 @@ const T2TrendTreemap = () => {
         </>
       )}
 
-      {/* Load More */}
-      {hasMore && filteredItems.length > 0 && (
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={() => setVisibleCount(prev => prev + 50)}
-            className="px-6 py-2.5 rounded-full bg-muted hover:bg-muted/80 text-sm font-semibold text-foreground border border-border transition-colors"
-          >
-            {language === "ko" ? "더 보기" : language === "ja" ? "もっと見る" : language === "zh" ? "加载更多" : "More"} ({visibleCount} / {filteredItems.length})
-          </button>
-        </div>
-      )}
 
       {/* Detail Sheet */}
       <T2DetailSheet
