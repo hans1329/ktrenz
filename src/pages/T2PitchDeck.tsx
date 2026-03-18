@@ -668,7 +668,7 @@ export default function T2PitchDeck() {
       <Section id="pll">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><RefreshCw className="w-3.5 h-3.5" /> {l.pllTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.pllTitle[0]}<span className="text-primary">{l.pllTitle[1]}</span>
             </h2>
