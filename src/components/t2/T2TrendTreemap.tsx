@@ -436,20 +436,11 @@ const T2TrendTreemap = () => {
                     </span>
 
                     {isMedium && (
-                      <span className="flex items-center gap-1 truncate w-full justify-center">
-                        {rect.item.artistImageUrl && (
-                          <img
-                            src={rect.item.artistImageUrl}
-                            alt=""
-                            className="w-4 h-4 rounded-full object-cover border border-white/30 shrink-0"
-                          />
-                        )}
-                        <span
-                          className="font-bold text-white/70 truncate"
-                          style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px` }}
-                        >
-                          {getLocalizedArtistName(rect.item, language)}
-                        </span>
+                      <span
+                        className="font-bold text-white/70 truncate w-full text-center"
+                        style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px` }}
+                      >
+                        {getLocalizedArtistName(rect.item, language)}
                       </span>
                     )}
 
