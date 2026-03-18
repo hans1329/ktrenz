@@ -535,13 +535,15 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "fes_predictor", ...parsed };
   },
   buzz_enhancer: async (url, key) => {
-    console.log("[data-engine] Running Buzz Enhancer (AI filter + Perplexity boost)...");
-    // 배치 처리: 10명씩
+    console.log("[data-engine] Running Buzz Enhancer (namuwiki-linked only)...");
     const sb = createClient(url, key);
+    const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+    if (namuwikiIds.length === 0) return { status: "no_artists" };
     const { data: tiers } = await sb
       .from("v3_artist_tiers")
       .select("wiki_entry_id")
       .eq("tier", 1)
+      .in("wiki_entry_id", namuwikiIds)
       .order("wiki_entry_id", { ascending: true });
     const ids = (tiers || []).map((t: any) => t.wiki_entry_id);
     const BATCH_SIZE = 10;
