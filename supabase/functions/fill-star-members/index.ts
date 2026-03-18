@@ -271,10 +271,18 @@ Deno.serve(async (req) => {
       if (step === 2) {
         // schema_type='member' 교정 + group_id 링크
         let typeFixed = 0, groupLinked = 0;
+        // tier 1만 대상
+        const { data: tier1Ids } = await supabase
+          .from("v3_artist_tiers")
+          .select("wiki_entry_id")
+          .eq("tier", 1);
+        const t1Set = new Set((tier1Ids || []).map((r: any) => r.wiki_entry_id));
+
         const { data: memberEntries } = await supabase
           .from("wiki_entries")
           .select("id, metadata")
-          .eq("schema_type", "member");
+          .eq("schema_type", "member")
+          .in("id", [...t1Set]);
 
         for (const entry of memberEntries || []) {
           const meta = entry.metadata as any;
