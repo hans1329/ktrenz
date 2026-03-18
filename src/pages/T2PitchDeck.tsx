@@ -675,11 +675,11 @@ export default function T2PitchDeck() {
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{l.pllDesc}</p>
           </div>
 
-          {/* Flywheel visual */}
-          <div className="relative">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {l.pllSteps.map((step, i) => (
-                <div key={i} className="relative rounded-2xl border border-border/50 bg-card/40 p-6 group hover:border-primary/30 transition-colors">
+          {/* Flywheel visual — 1→2→3→4→loop */}
+          <div className="relative max-w-2xl mx-auto space-y-3">
+            {l.pllSteps.map((step, i) => (
+              <div key={i}>
+                <div className="rounded-2xl border border-border/50 bg-card/40 p-5 group hover:border-primary/30 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
                       {step.emoji}
@@ -688,21 +688,21 @@ export default function T2PitchDeck() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-bold text-primary/60">STEP {i + 1}</span>
                       </div>
-                      <h3 className="font-bold text-lg text-foreground mb-2">{step.title}</h3>
+                      <h3 className="font-bold text-lg text-foreground mb-1">{step.title}</h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
                     </div>
                   </div>
-                  {/* Arrow connector */}
-                  {i < l.pllSteps.length - 1 && (
-                    <div className="hidden sm:block absolute -bottom-4 left-1/2 -translate-x-1/2 text-primary/40 text-lg z-10">
-                      {i % 2 === 0 ? "→" : "↓"}
-                    </div>
-                  )}
                 </div>
-              ))}
-            </div>
-            {/* Loop indicator */}
-            <div className="flex justify-center mt-8">
+                {/* Arrow between cards */}
+                {i < l.pllSteps.length - 1 && (
+                  <div className="flex justify-center py-1">
+                    <ArrowRight className="w-5 h-5 text-primary/40 rotate-90" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {/* Loop-back arrow */}
+            <div className="flex justify-center pt-2">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
                 <RefreshCw className="w-4 h-4 text-primary animate-spin" style={{ animationDuration: "4s" }} />
                 <span className="text-xs font-bold text-primary">
