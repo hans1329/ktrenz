@@ -122,36 +122,85 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             </span>
           </div>
 
-          {/* Evidence: Why this trend? */}
-          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
-            <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <Newspaper className="w-3.5 h-3.5 text-primary" />
-              {t("whyTrend", language)}
-            </h3>
-            {tile.context ? (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {tile.context}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
-            )}
-            {tile.sourceTitle && (
-              <div className="flex items-start gap-2 pt-1 border-t border-border/50">
-                <ExternalLink className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
-                {tile.sourceUrl ? (
+          {/* Evidence: Why this trend? — Card with thumbnail */}
+          <div className="rounded-xl bg-muted/30 border border-border overflow-hidden">
+            {/* Source thumbnail + title card */}
+            {(tile.sourceTitle || tile.sourceImageUrl) && (
+              <div className="relative">
+                {tile.sourceImageUrl ? (
                   <a
-                    href={tile.sourceUrl}
+                    href={tile.sourceUrl || "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline line-clamp-2"
+                    className="block"
                   >
-                    {tile.sourceTitle}
+                    <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                      <img
+                        src={tile.sourceImageUrl}
+                        alt={tile.sourceTitle || ""}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
+                          {tile.sourceTitle}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <ExternalLink className="w-2.5 h-2.5 text-white/60" />
+                          <span className="text-[10px] text-white/60">
+                            {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </a>
-                ) : (
-                  <span className="text-xs text-muted-foreground line-clamp-2">{tile.sourceTitle}</span>
-                )}
+                ) : tile.sourceTitle ? (
+                  <div className="flex items-start gap-2.5 p-3 border-b border-border/50">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Newspaper className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {tile.sourceUrl ? (
+                        <a
+                          href={tile.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
+                        >
+                          {tile.sourceTitle}
+                        </a>
+                      ) : (
+                        <span className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
+                          {tile.sourceTitle}
+                        </span>
+                      )}
+                      {tile.sourceUrl && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          {new URL(tile.sourceUrl).hostname.replace("www.", "")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
+
+            {/* Context body */}
+            <div className="p-3 space-y-1.5">
+              <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Newspaper className="w-3.5 h-3.5 text-primary" />
+                {t("whyTrend", language)}
+              </h3>
+              {tile.context ? (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {tile.context}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
+              )}
+            </div>
           </div>
 
           {/* Ranking explanation: Why this rank? */}

@@ -3685,6 +3685,7 @@ export type Database = {
           peak_at: string | null
           peak_delay_hours: number | null
           peak_score: number | null
+          source_image_url: string | null
           source_title: string | null
           source_url: string | null
           star_id: string | null
@@ -3713,6 +3714,7 @@ export type Database = {
           peak_at?: string | null
           peak_delay_hours?: number | null
           peak_score?: number | null
+          source_image_url?: string | null
           source_title?: string | null
           source_url?: string | null
           star_id?: string | null
@@ -3741,6 +3743,7 @@ export type Database = {
           peak_at?: string | null
           peak_delay_hours?: number | null
           peak_score?: number | null
+          source_image_url?: string | null
           source_title?: string | null
           source_url?: string | null
           star_id?: string | null

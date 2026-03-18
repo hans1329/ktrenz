@@ -31,6 +31,7 @@ export interface TrendTile {
   peakScore: number | null;
   sourceUrl: string | null;
   sourceTitle: string | null;
+  sourceImageUrl: string | null;
   status: string;
 }
 
@@ -183,6 +184,7 @@ const T2TrendTreemap = () => {
           peakScore: t.peak_score != null ? Number(t.peak_score) : null,
           sourceUrl: t.source_url || null,
           sourceTitle: t.source_title || null,
+          sourceImageUrl: t.source_image_url || null,
           status: t.status,
         };
       });
