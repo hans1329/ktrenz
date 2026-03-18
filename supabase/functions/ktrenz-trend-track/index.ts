@@ -204,10 +204,22 @@ Deno.serve(async (req) => {
 
     console.log(`[trend-track] Done: tracked ${trackedCount} keyword-region pairs`);
 
+    // 처리 완료 후 다음 배치 체이닝 (fire-and-forget)
+    if (!triggerId) {
+      const nextOffset = batchOffset + batchSize;
+      if (nextOffset < totalTriggers) {
+        console.log(`[trend-track] Chaining next batch: offset=${nextOffset}, remaining=${totalTriggers - nextOffset}`);
+        sb.functions.invoke("ktrenz-trend-track", {
+          body: { batchSize, batchOffset: nextOffset, regions },
+        }).catch((e: any) => console.warn(`[trend-track] Chain error: ${e.message}`));
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         batchOffset,
+        totalTriggers,
         triggersProcessed: triggers.length,
         tracked: trackedCount,
         results,
