@@ -174,18 +174,23 @@ const T2TrendTreemap = () => {
 
       const triggers = (data ?? []) as any[];
 
-      // Fetch star names for wiki_entry_ids
-      const wikiIds = [...new Set(triggers.map((t: any) => t.wiki_entry_id).filter(Boolean))];
-      const starMap = new Map<string, { display_name: string; name_ko: string | null; image_url: string | null }>();
-      if (wikiIds.length > 0) {
-        const [{ data: stars }, { data: wikiEntries }] = await Promise.all([
-          supabase.from("ktrenz_stars" as any).select("wiki_entry_id, display_name, name_ko").in("wiki_entry_id", wikiIds),
-          supabase.from("wiki_entries").select("id, image_url").in("id", wikiIds),
-        ]);
+      // Fetch star info using star_id from ktrenz_stars
+      const starIds = [...new Set(triggers.map((t: any) => t.star_id).filter(Boolean))];
+      const starMap = new Map<string, { display_name: string; name_ko: string | null; image_url: string | null; wiki_entry_id: string | null }>();
+      if (starIds.length > 0) {
+        const { data: stars } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("id, wiki_entry_id, display_name, name_ko")
+          .in("id", starIds);
+        
+        const wikiIds = (stars ?? []).map((s: any) => s.wiki_entry_id).filter(Boolean);
         const imageMap = new Map<string, string>();
-        (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
+        if (wikiIds.length > 0) {
+          const { data: wikiEntries } = await supabase.from("wiki_entries").select("id, image_url").in("id", wikiIds);
+          (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
+        }
         (stars ?? []).forEach((s: any) => {
-          starMap.set(s.wiki_entry_id, { display_name: s.display_name, name_ko: s.name_ko, image_url: imageMap.get(s.wiki_entry_id) || null });
+          starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: imageMap.get(s.wiki_entry_id) || null, wiki_entry_id: s.wiki_entry_id });
         });
       }
 
