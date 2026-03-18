@@ -238,6 +238,130 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Sync action: v3_artist_tiers 데이터를 ktrenz_stars에 동기화
+    if (action === "sync_v3") {
+      const results: any = { socialUpdated: 0, typeFixed: 0, groupLinked: 0 };
+
+      // 1) v3_artist_tiers에서 소셜 핸들 가져와서 ktrenz_stars에 동기화
+      const { data: tiers } = await supabase
+        .from("v3_artist_tiers")
+        .select("wiki_entry_id, youtube_channel_id, instagram_handle, x_handle, tiktok_handle")
+        .eq("tier", 1);
+
+      for (const t of tiers || []) {
+        const handles: any = {};
+        if (t.youtube_channel_id) handles.youtube = t.youtube_channel_id;
+        if (t.instagram_handle) handles.instagram = t.instagram_handle;
+        if (t.x_handle) handles.x = t.x_handle;
+        if (t.tiktok_handle) handles.tiktok = t.tiktok_handle;
+
+        if (Object.keys(handles).length > 0) {
+          const { error } = await supabase
+            .from("ktrenz_stars")
+            .update({ social_handles: handles })
+            .eq("wiki_entry_id", t.wiki_entry_id);
+          if (!error) results.socialUpdated++;
+        }
+      }
+
+      // 2) wiki_entries에서 schema_type='member'인 항목을 ktrenz_stars에서 star_type 교정
+      const { data: memberEntries } = await supabase
+        .from("wiki_entries")
+        .select("id, metadata")
+        .eq("schema_type", "member");
+
+      for (const entry of memberEntries || []) {
+        const meta = entry.metadata as any;
+        const groupId = meta?.group_id;
+
+        // star_type을 member로 변경
+        const { error: typeErr } = await supabase
+          .from("ktrenz_stars")
+          .update({ star_type: "member" })
+          .eq("wiki_entry_id", entry.id)
+          .neq("star_type", "member");
+        if (!typeErr) results.typeFixed++;
+
+        // group_id가 있으면 ktrenz_stars에서 해당 그룹의 star id를 찾아 링크
+        if (groupId) {
+          const { data: groupStar } = await supabase
+            .from("ktrenz_stars")
+            .select("id")
+            .eq("wiki_entry_id", groupId)
+            .limit(1);
+
+          if (groupStar?.[0]) {
+            const { error: linkErr } = await supabase
+              .from("ktrenz_stars")
+              .update({ group_star_id: groupStar[0].id })
+              .eq("wiki_entry_id", entry.id);
+            if (!linkErr) results.groupLinked++;
+          }
+        }
+      }
+
+      // 3) "BTS Jungkook", "BTS V" 등 이름 패턴으로 멤버 판별 및 그룹 링크
+      const prefixPatterns = [
+        { prefix: "BTS ", groupName: "BTS" },
+        { prefix: "NCT ", groupName: "NCT" },
+      ];
+      for (const { prefix, groupName } of prefixPatterns) {
+        const { data: groupStar } = await supabase
+          .from("ktrenz_stars")
+          .select("id")
+          .eq("display_name", groupName)
+          .eq("star_type", "group")
+          .limit(1);
+
+        if (groupStar?.[0]) {
+          const { data: prefixed } = await supabase
+            .from("ktrenz_stars")
+            .select("id, display_name")
+            .like("display_name", `${prefix}%`)
+            .neq("display_name", groupName);
+
+          for (const s of prefixed || []) {
+            await supabase
+              .from("ktrenz_stars")
+              .update({ star_type: "member", group_star_id: groupStar[0].id })
+              .eq("id", s.id);
+            results.groupLinked++;
+          }
+        }
+      }
+
+      // 4) GD → BIGBANG 멤버, Nayeon → TWICE 멤버 등 수동 매핑
+      const manualMemberLinks: Record<string, string> = {
+        "GD": "BIGBANG",
+        "Nayeon": "TWICE",
+        "Hwa Sa": "MAMAMOO",
+        "Sunmi": "Wonder Girls",
+        "Bobby": "iKON",
+        "Loco": "Loco", // solo, skip
+      };
+      for (const [memberName, groupName] of Object.entries(manualMemberLinks)) {
+        if (memberName === groupName) continue;
+        const { data: groupStar } = await supabase
+          .from("ktrenz_stars")
+          .select("id")
+          .eq("display_name", groupName)
+          .eq("star_type", "group")
+          .limit(1);
+        if (groupStar?.[0]) {
+          await supabase
+            .from("ktrenz_stars")
+            .update({ star_type: "member", group_star_id: groupStar[0].id })
+            .eq("display_name", memberName)
+            .is("group_star_id", null);
+          results.groupLinked++;
+        }
+      }
+
+      return new Response(JSON.stringify(results), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ktrenz_stars에서 group 타입만 가져오기
     const { data: groups, error: groupErr } = await supabase
       .from("ktrenz_stars")
