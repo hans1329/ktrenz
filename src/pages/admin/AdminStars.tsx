@@ -287,9 +287,11 @@ const AdminStars = () => {
       if (typeFilter !== "all" && s.star_type !== typeFilter) return false;
       if (search) {
         const q = search.toLowerCase();
+        const groupName = s.group_star_id ? (groupMap[s.group_star_id] ?? "") : "";
         return (
           s.display_name.toLowerCase().includes(q) ||
-          (s.name_ko ?? "").toLowerCase().includes(q)
+          (s.name_ko ?? "").toLowerCase().includes(q) ||
+          groupName.toLowerCase().includes(q)
         );
       }
       return true;
