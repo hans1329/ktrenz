@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     }
 
     // Use more content for groups to capture member section
-    const truncated = markdown.slice(0, 8000);
+    const truncated = markdown.slice(0, 15000);
 
     const extractPrompt = `아래는 나무위키에서 스크래핑한 K-POP 아티스트 페이지의 마크다운 내용입니다.
 
