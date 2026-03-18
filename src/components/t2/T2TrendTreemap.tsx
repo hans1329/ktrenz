@@ -369,7 +369,12 @@ const T2TrendTreemap = () => {
       </div>
 
       {/* Detail Sheet */}
-      <T2DetailSheet tile={selectedTile} onClose={() => setSelectedTile(null)} />
+      <T2DetailSheet
+        tile={selectedTile}
+        rank={selectedTile ? filteredItems.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
+        totalCount={filteredItems.length}
+        onClose={() => setSelectedTile(null)}
+      />
     </div>
   );
 };
