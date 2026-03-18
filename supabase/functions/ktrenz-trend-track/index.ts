@@ -244,15 +244,26 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 14일 이상 추적된 트리거 자동 만료
+      // 14일 이상 추적된 트리거 자동 만료 + 라이프사이클 메트릭 계산
       if (!throttled) {
         const triggerAge = Date.now() - new Date(trigger.detected_at).getTime();
         if (triggerAge > 14 * 24 * 60 * 60 * 1000) {
+          const now = new Date();
+          const lifetimeHours = Math.round((now.getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10;
+          const peakDelayHours = trigger.peak_at
+            ? Math.round((new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10
+            : 0;
+
           await sb
             .from("ktrenz_trend_triggers")
-            .update({ status: "expired" })
+            .update({
+              status: "expired",
+              expired_at: now.toISOString(),
+              lifetime_hours: lifetimeHours,
+              peak_delay_hours: peakDelayHours,
+            })
             .eq("id", trigger.id);
-          console.log(`[trend-track] Expired trigger: ${trigger.keyword} (${trigger.artist_name})`);
+          console.log(`[trend-track] Expired trigger: ${trigger.keyword} (${trigger.artist_name}) — lifetime=${lifetimeHours}h, peak_delay=${peakDelayHours}h`);
         }
       }
     }
