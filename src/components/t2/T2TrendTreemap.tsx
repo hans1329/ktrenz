@@ -442,8 +442,8 @@ const T2TrendTreemap = () => {
 
                     {isMedium && (
                       <span
-                        className="font-bold text-white/70 truncate w-full text-center"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px` }}
+                        className="font-bold text-white truncate w-full text-center drop-shadow-md"
+                        style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
                       >
                         {getLocalizedArtistName(rect.item, language)}
                       </span>
