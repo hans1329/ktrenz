@@ -13,6 +13,7 @@ interface PipelineRun {
 interface RecentKeyword {
   id: string;
   keyword: string;
+  keyword_ko: string | null;
   artist_name: string;
   detected_at: string;
   keyword_category: string;
