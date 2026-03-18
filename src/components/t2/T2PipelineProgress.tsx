@@ -52,7 +52,8 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .gte("detected_at", run.startedAt.toISOString())
         .order("detected_at", { ascending: false })
         .limit(50);
-      return (data ?? []) as RecentKeyword[];
+      return (data ?? []) as unknown as RecentKeyword[];
+    },
     },
     enabled: !!run,
     refetchInterval: 5000,
