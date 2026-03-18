@@ -19,6 +19,27 @@ interface ExtractedKeyword {
   source_article_index?: number;
 }
 
+// Fetch OG image from a URL (best-effort, returns null on failure)
+async function fetchOgImage(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenzBot/1.0)" },
+      redirect: "follow",
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Parse og:image from HTML
+    const match = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+    return match?.[1] || null;
+  } catch {
+    return null;
+  }
+}
 // Perplexity API로 뉴스 기사에서 상업 키워드 추출
 async function extractCommercialKeywords(
   perplexityKey: string,
