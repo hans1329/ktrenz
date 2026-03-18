@@ -176,8 +176,6 @@ const t = {
       { title: "추적", desc: "검증된 키워드를 실시간 검색량 데이터로 모니터링합니다. 실제 시장 관심도와 소비자 반응을 시간에 따라 측정합니다." },
     ],
     pipelineFlowLabels: ["뉴스 & 소셜", "글로벌 웹", "YouTube", "검색량", "라이브 레이더"],
-    pipelineFlowNote: "완전 자동화된 오케스트레이션:",
-    pipelineFlowNote2: "— 속도 제한 보호 기능이 있는 배치 처리",
 
     safeguardTag: "AI 안전장치",
     safeguardTitle: ["환각 방지 ", "아키텍처"],
