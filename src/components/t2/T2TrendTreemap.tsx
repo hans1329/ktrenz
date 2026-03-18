@@ -405,7 +405,9 @@ const T2TrendTreemap = () => {
                   style={{
                     left: `${left}%`, top: `${top}%`,
                     width: `${width}%`, height: `${height}%`,
-                    background: tileColor,
+                    background: rect.item.artistImageUrl
+                      ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${rect.item.artistImageUrl}) center/cover no-repeat`
+                      : tileColor,
                   }}
                 >
                   {/* Top-right: influence badge */}
