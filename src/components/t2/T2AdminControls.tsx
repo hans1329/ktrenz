@@ -6,11 +6,22 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Search, TrendingUp, Zap, Database, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import T2PipelineProgress from "./T2PipelineProgress";
+
+interface PipelineRun {
+  startedAt: Date;
+  phase: "detect" | "detect_global" | "track";
+}
 
 const T2AdminControls = () => {
   const { isAdmin, loading } = useAdminAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [pipelineRun, setPipelineRun] = useState<PipelineRun | null>(null);
+
+  const startRun = (phase: PipelineRun["phase"]) => {
+    setPipelineRun({ startedAt: new Date(), phase });
+  };
 
   const detectMutation = useMutation({
     mutationFn: async () => {
@@ -20,14 +31,15 @@ const T2AdminControls = () => {
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
+    onMutate: () => startRun("detect"),
     onSuccess: (data) => {
       const found = data?.detect?.totalKeywords ?? 0;
       const total = data?.detect?.totalCandidates ?? 0;
       const hasNext = data?.nextBatch !== undefined;
       toast.success(
         hasNext
-          ? `감지 1차 배치 완료 (${found}건). ${total}명 중 체이닝 진행 중...`
-          : `감지 완료: ${found}건 (${total}명 처리)`
+          ? `감지 1차 배치 완료 (${found}건). ${total}명 체이닝 중...`
+          : `감지 완료: ${found}건`
       );
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
@@ -42,6 +54,7 @@ const T2AdminControls = () => {
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
+    onMutate: () => startRun("track"),
     onSuccess: (data) => {
       toast.success(`추적 완료: ${data?.track?.tracked ?? 0}건`);
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
@@ -57,6 +70,7 @@ const T2AdminControls = () => {
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
+    onMutate: () => startRun("detect"),
     onSuccess: () => {
       toast.success("전체 파이프라인 시작 (detect → detect_global → track 체이닝)");
       setTimeout(() => {
@@ -74,6 +88,7 @@ const T2AdminControls = () => {
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
+    onMutate: () => startRun("detect_global"),
     onSuccess: (data) => {
       toast.success(`글로벌 감지 완료: ${data?.detect_global?.totalKeywords ?? 0}건`);
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
@@ -86,56 +101,63 @@ const T2AdminControls = () => {
   const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullMutation.isPending || detectGlobalMutation.isPending;
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => fullMutation.mutate()}
-        disabled={isAnyRunning}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        {fullMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-        전체 수집
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => detectMutation.mutate()}
-        disabled={isAnyRunning}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        {detectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
-        감지
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => detectGlobalMutation.mutate()}
-        disabled={isAnyRunning}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        {detectGlobalMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
-        글로벌
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => trackMutation.mutate()}
-        disabled={isAnyRunning}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        {trackMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
-        추적
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => navigate("/admin/stars")}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        <Database className="w-3 h-3" />
-        스타 관리
-      </Button>
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => fullMutation.mutate()}
+          disabled={isAnyRunning}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          {fullMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+          전체 수집
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => detectMutation.mutate()}
+          disabled={isAnyRunning}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          {detectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+          감지
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => detectGlobalMutation.mutate()}
+          disabled={isAnyRunning}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          {detectGlobalMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
+          글로벌
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => trackMutation.mutate()}
+          disabled={isAnyRunning}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          {trackMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
+          추적
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => navigate("/admin/stars")}
+          className="gap-1 text-xs h-7 px-2"
+        >
+          <Database className="w-3 h-3" />
+          스타 관리
+        </Button>
+      </div>
+
+      <T2PipelineProgress
+        run={pipelineRun}
+        onClose={() => setPipelineRun(null)}
+      />
     </div>
   );
 };
