@@ -43,6 +43,7 @@ import AdminListingRequests from "./pages/admin/AdminListingRequests";
 import AdminStars from "./pages/admin/AdminStars";
 import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
 import T2TrendMap from "./pages/T2TrendMap";
+import T2KeywordDetail from "./pages/T2KeywordDetail";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
