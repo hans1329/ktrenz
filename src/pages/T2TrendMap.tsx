@@ -35,8 +35,8 @@ const T2TrendMap = () => {
   return (
     <>
       <SEO
-        title="T2 Trend Map – K-Pop Driven Consumer Trends"
-        titleKo="T2 트렌드 맵 – K-Pop 파생 소비 트렌드"
+        title="Kinterest – K-Pop Driven Consumer Trends"
+        titleKo="Kinterest – K-Pop 파생 소비 트렌드"
         description="Discover consumer trends triggered by K-Pop stars. Real-time influence mapping across fashion, food, beauty, and more."
         descriptionKo="K-Pop 스타가 만든 소비 트렌드를 실시간으로 발견하세요."
         path="/t2"
