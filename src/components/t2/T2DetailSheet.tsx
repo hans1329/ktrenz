@@ -16,6 +16,11 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
+function getLocalizedArtistName(tile: TrendTile, lang: string): string {
+  if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
+  return tile.artistName;
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   brand: "bg-blue-500/10 text-blue-400 border-blue-500/30",
   product: "bg-purple-500/10 text-purple-400 border-purple-500/30",
