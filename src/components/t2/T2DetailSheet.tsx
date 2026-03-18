@@ -1,12 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronRight } from "lucide-react";
+import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronRight, ThumbsUp, ThumbsDown, Share2, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
@@ -59,6 +62,12 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   notPeakedYet: { en: "Not peaked yet", ko: "아직 피크 없음", ja: "未到達", zh: "尚未达到峰值" },
   active: { en: "Active", ko: "활성", ja: "アクティブ", zh: "活跃" },
   expired: { en: "Expired", ko: "만료", ja: "期限切れ", zh: "已过期" },
+  voteRelevance: { en: "Is this relevant?", ko: "이 트렌드가 관련 있나요?", ja: "関連性がありますか？", zh: "这个趋势相关吗？" },
+  boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
+  shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
+  copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
+  loginToVote: { en: "Sign in to vote", ko: "투표하려면 로그인하세요", ja: "投票するにはログイン", zh: "登录后投票" },
+  boosted: { en: "Boost shared! +5 K-Point", ko: "부스트 공유 완료! +5 K-Point", ja: "ブースト共有完了！+5 K-Point", zh: "推动分享完成！+5 K-Point" },
 };
 
 function t(key: string, lang: string): string {
@@ -76,6 +85,9 @@ function formatAge(dateStr: string): string {
 const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | null; rank?: number; totalCount?: number; onClose: () => void }) => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: tracking } = useQuery({
     queryKey: ["t2-tracking-detail", tile?.id],
     queryFn: async () => {
@@ -90,6 +102,98 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     },
     enabled: !!tile,
   });
+
+  // Vote data
+  const { data: voteData } = useQuery({
+    queryKey: ["t2-keyword-votes", tile?.id],
+    queryFn: async () => {
+      if (!tile) return { ups: 0, downs: 0, myVote: null as string | null };
+      const { data: allVotes } = await supabase
+        .from("ktrenz_keyword_votes" as any)
+        .select("vote_type, user_id")
+        .eq("trigger_id", tile.id);
+      const votes = (allVotes ?? []) as any[];
+      const ups = votes.filter((v: any) => v.vote_type === "up").length;
+      const downs = votes.filter((v: any) => v.vote_type === "down").length;
+      const myVote = user ? votes.find((v: any) => v.user_id === user.id)?.vote_type ?? null : null;
+      return { ups, downs, myVote };
+    },
+    enabled: !!tile,
+  });
+
+  // Boost count
+  const { data: boostCount } = useQuery({
+    queryKey: ["t2-keyword-boosts", tile?.id],
+    queryFn: async () => {
+      if (!tile) return 0;
+      const { count } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("trigger_id", tile.id);
+      return count ?? 0;
+    },
+    enabled: !!tile,
+  });
+
+  const voteMutation = useMutation({
+    mutationFn: async (voteType: "up" | "down") => {
+      if (!user || !tile) return;
+      const currentVote = voteData?.myVote;
+      if (currentVote === voteType) {
+        // Remove vote
+        await supabase
+          .from("ktrenz_keyword_votes" as any)
+          .delete()
+          .eq("trigger_id", tile.id)
+          .eq("user_id", user.id);
+      } else if (currentVote) {
+        // Change vote
+        await supabase
+          .from("ktrenz_keyword_votes" as any)
+          .update({ vote_type: voteType, updated_at: new Date().toISOString() } as any)
+          .eq("trigger_id", tile.id)
+          .eq("user_id", user.id);
+      } else {
+        // New vote
+        await supabase
+          .from("ktrenz_keyword_votes" as any)
+          .insert({ trigger_id: tile.id, user_id: user.id, vote_type: voteType } as any);
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["t2-keyword-votes", tile?.id] }),
+  });
+
+  const handleVote = (voteType: "up" | "down") => {
+    if (!user) {
+      toast.info(t("loginToVote", language));
+      return;
+    }
+    voteMutation.mutate(voteType);
+  };
+
+  const handleBoost = async (platform: "x" | "copy") => {
+    if (!tile) return;
+    const keyword = getLocalizedKeyword(tile, language);
+    const artist = getLocalizedArtistName(tile, language);
+    const url = `${window.location.origin}/t2/${tile.id}`;
+    const text = `🔥 ${keyword} × ${artist} is trending on K-Trendz!\n\n#KTrendz #Kpop #${artist.replace(/\s/g, "")}`;
+
+    if (platform === "x") {
+      window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      toast.success(t("copied", language));
+    }
+
+    // Record boost
+    if (user) {
+      await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
+      queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
+      toast.success(t("boosted", language));
+    }
+  };
 
   if (!tile) return null;
 
@@ -389,6 +493,75 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               </div>
             </div>
           )}
+
+          {/* Vote & Boost */}
+          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
+            {/* Vote */}
+            <div>
+              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                <ThumbsUp className="w-3.5 h-3.5 text-primary" />
+                {t("voteRelevance", language)}
+              </h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={voteData?.myVote === "up" ? "default" : "outline"}
+                  className={cn("gap-1.5 text-xs", voteData?.myVote === "up" && "bg-green-600 hover:bg-green-700 border-green-600")}
+                  onClick={() => handleVote("up")}
+                  disabled={voteMutation.isPending}
+                >
+                  <ThumbsUp className="w-3.5 h-3.5" />
+                  {voteData?.ups ?? 0}
+                </Button>
+                <Button
+                  size="sm"
+                  variant={voteData?.myVote === "down" ? "default" : "outline"}
+                  className={cn("gap-1.5 text-xs", voteData?.myVote === "down" && "bg-red-600 hover:bg-red-700 border-red-600")}
+                  onClick={() => handleVote("down")}
+                  disabled={voteMutation.isPending}
+                >
+                  <ThumbsDown className="w-3.5 h-3.5" />
+                  {voteData?.downs ?? 0}
+                </Button>
+                <div className="flex-1" />
+                <span className="text-[10px] text-muted-foreground">
+                  {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} votes
+                </span>
+              </div>
+            </div>
+
+            {/* Boost */}
+            <div className="border-t border-border/50 pt-3">
+              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                <Rocket className="w-3.5 h-3.5 text-primary" />
+                {t("boostTrend", language)}
+                {(boostCount ?? 0) > 0 && (
+                  <Badge variant="outline" className="text-[10px] ml-1 border-primary/30 text-primary">
+                    🔥 {boostCount}
+                  </Badge>
+                )}
+              </h3>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs flex-1"
+                  onClick={() => handleBoost("x")}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  {t("shareX", language)}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs"
+                  onClick={() => handleBoost("copy")}
+                >
+                  📋
+                </Button>
+              </div>
+            </div>
+          </div>
 
           {/* Detail page button */}
           <Button

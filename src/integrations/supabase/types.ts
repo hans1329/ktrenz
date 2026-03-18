@@ -3208,6 +3208,57 @@ export type Database = {
           },
         ]
       }
+      ktrenz_keyword_boosts: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          trigger_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform?: string
+          trigger_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          trigger_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ktrenz_keyword_votes: {
+        Row: {
+          created_at: string
+          id: string
+          trigger_id: string
+          updated_at: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          trigger_id: string
+          updated_at?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          trigger_id?: string
+          updated_at?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: []
+      }
       ktrenz_milestone_events: {
         Row: {
           created_at: string
