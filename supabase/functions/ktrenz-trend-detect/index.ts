@@ -31,25 +31,30 @@ async function extractCommercialKeywords(
     .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
     .join("\n");
 
-  const prompt = `Analyze these recent Korean news articles about K-pop artist "${artistName}" and extract any commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) that are mentioned IN RELATION TO the artist.
+  const prompt = `Analyze these recent Korean news articles about K-pop artist "${artistName}" and extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances).
 
 Articles:
 ${articleTexts}
 
-Rules:
-- Only extract entities that are DIRECTLY associated with the artist (worn by, endorsed, visited, collaborated with, etc.)
+STRICT Rules:
+- ONLY extract entities that are EXPLICITLY MENTIONED in the article text above
+- Do NOT use your own knowledge about the artist's past endorsements, brand deals, or history
+- Do NOT list brands/products that are NOT written in the articles
+- If an article is about chart performance, awards, or music releases, there may be NO commercial entities — return []
+- Only extract entities that represent a CURRENT or UPCOMING commercial connection (event attendance, new endorsement, product launch, collaboration)
 - Do NOT extract the artist name itself or their agency/label
-- Do NOT extract generic music industry terms (album, concert, chart, etc.)
-- Assign confidence 0.0-1.0 based on how clearly the entity is linked to the artist
+- Do NOT extract generic music industry terms (album, concert, chart, Billboard, etc.)
+- Do NOT extract TV show names unless the artist is appearing as a guest/model (regular music show stages don't count)
+- Assign confidence 0.0-1.0 based on how clearly the entity is linked to the artist IN THE ARTICLE
 - Categorize each as: brand, product, place, food, fashion, beauty, or media
+- Maximum 5 keywords per batch — pick the most commercially relevant ones
 - IMPORTANT: Always use the ENGLISH name of the entity as the keyword (e.g. "Netflix" not "넷플릭스", "Lollapalooza" not "롤라팔루자")
 - If the entity is originally Korean, romanize it (e.g. "Mexicana Chicken" not "멕시카나치킨")
-
 - For each keyword, also provide translations: keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese simplified)
 - If the entity is already well-known in that language, use the commonly used name (e.g. keyword: "Chanel", keyword_ko: "샤넬", keyword_ja: "シャネル", keyword_zh: "香奈儿")
 
-Return ONLY a JSON array. If no commercial entities found, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport"}]`;
+Return ONLY a JSON array. If no commercial entities found in the articles, return [].
+Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]"}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -61,11 +66,12 @@ Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル",
       body: JSON.stringify({
         model: "sonar",
         messages: [
-          { role: "system", content: "You are a trend analysis expert that extracts commercial entities from K-pop news. Return ONLY valid JSON arrays." },
+          { role: "system", content: "You are a trend analysis expert. Extract commercial entities ONLY from the provided article texts. Never use external knowledge about the artist's endorsement history. If articles are about music charts or awards with no commercial entities, return []. Return ONLY valid JSON arrays." },
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
         max_tokens: 1000,
+        search_recency_filter: "week",
       }),
     });
 
