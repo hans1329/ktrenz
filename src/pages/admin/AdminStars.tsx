@@ -552,11 +552,22 @@ const AdminStars = () => {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={closeDialog}>취소</Button>
+            {namuResult?.members?.length > 0 && form.star_type === "group" && (
+              <Button
+                variant="secondary"
+                onClick={() => saveWithMembers.mutate({ isEdit: !!editingStar, includeMembers: true })}
+                disabled={!form.display_name || saveWithMembers.isPending}
+              >
+                {saveWithMembers.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+                <Users className="w-3.5 h-3.5 mr-1" />
+                멤버 포함 {editingStar ? "수정" : "등록"}
+              </Button>
+            )}
             <Button
-              onClick={() => saveMutation.mutate(!!editingStar)}
-              disabled={!form.display_name || saveMutation.isPending}
+              onClick={() => saveWithMembers.mutate({ isEdit: !!editingStar, includeMembers: false })}
+              disabled={!form.display_name || saveWithMembers.isPending}
             >
-              {saveMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+              {saveWithMembers.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
               {editingStar ? "수정" : "등록"}
             </Button>
           </DialogFooter>
