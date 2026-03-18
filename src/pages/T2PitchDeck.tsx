@@ -82,14 +82,14 @@ const t = {
     detectionSources: "Detection Sources",
     validationSources: "Validation & Tracking",
     detectionItems: [
-      { label: "Naver News API", desc: "50+ articles per artist, 24h window, Korean language focus" },
-      { label: "Perplexity AI (Sonar)", desc: "Global web search for international brand news and social posts" },
-      { label: "YouTube Data API", desc: "15 recent videos per member, 3-day window, title + description analysis" },
+      { label: "Domestic News", desc: "50+ articles per artist, 24h window, Korean language focus" },
+      { label: "Global Web & Social", desc: "International brand news, social media posts, and web mentions across markets" },
+      { label: "YouTube & Video", desc: "15 recent videos per member, 3-day window, title + description analysis" },
     ],
     validationItems: [
-      { label: "Google Trends (SerpAPI)", desc: "Real-time search volume for keyword × artist combinations" },
-      { label: "OpenAI GPT-4o-mini", desc: "Commercial entity extraction with strict hallucination controls" },
-      { label: "Supabase Edge Functions", desc: "Serverless pipeline orchestration with batch processing" },
+      { label: "Search Volume Tracking", desc: "Real-time search volume for keyword × artist combinations" },
+      { label: "AI Entity Extraction", desc: "Commercial entity extraction with strict hallucination controls" },
+      { label: "Serverless Pipeline", desc: "Automated orchestration with batch processing and rate-limit protection" },
     ],
 
     // Categories
