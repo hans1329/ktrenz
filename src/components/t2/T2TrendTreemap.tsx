@@ -267,10 +267,6 @@ const T2TrendTreemap = () => {
   const containerWidth = isMobile ? 360 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
 
-  // Reset visibleCount when category changes
-  useEffect(() => {
-    setVisibleCount(50);
-  }, [selectedCategory]);
 
   const visibleBoxItems = useMemo(() => {
     return filteredItems.slice(0, 50);
