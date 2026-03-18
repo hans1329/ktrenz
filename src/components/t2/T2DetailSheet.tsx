@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus } from "lucide-react";
+import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TrendTile } from "./T2TrendTreemap";
 
