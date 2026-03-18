@@ -61,7 +61,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, artist_name, detected_at, keyword_category")
+        .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
         .gte("detected_at", run.startedAt.toISOString())
         .order("detected_at", { ascending: false })
         .limit(50);
