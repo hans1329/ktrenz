@@ -140,6 +140,40 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
   return worst;
 }
 
+// ── My Artists compact banner ──
+function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; language: string }) {
+  const navigate = useNavigate();
+  // Pick top keyword (highest influence)
+  const top = myKeywords[0];
+  if (!top) return null;
+  const config = CATEGORY_CONFIG[top.category];
+  const artistCount = new Set(myKeywords.map(k => k.wikiEntryId)).size;
+
+  return (
+    <button
+      onClick={() => navigate("/t2/my")}
+      className="w-full mb-4 flex items-center gap-3 px-3 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-all group"
+    >
+      <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+      <div className="min-w-0 flex-1 text-left">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-foreground truncate">{getLocalizedKeyword(top, language)}</span>
+          <span
+            className="text-[9px] font-semibold px-1 py-0.5 rounded-sm text-white shrink-0"
+            style={{ background: config?.color }}
+          >
+            {config?.label}
+          </span>
+        </div>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {getLocalizedArtistName(top, language)} · {artistCount} artists · {myKeywords.length} keywords
+        </p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+    </button>
+  );
+}
+
 // ── Main Component ──
 const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
