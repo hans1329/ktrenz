@@ -43,6 +43,7 @@ import AdminListingRequests from "./pages/admin/AdminListingRequests";
 import AdminStars from "./pages/admin/AdminStars";
 import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
 import T2TrendMap from "./pages/T2TrendMap";
+import T2MyArtists from "./pages/T2MyArtists";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
 import T2PitchDeck from "./pages/T2PitchDeck";
 import T2ArtistPage from "./pages/T2ArtistPage";
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/deck" element={<Deck />} />
             <Route path="/signal" element={<SignalRadar />} />
             <Route path="/t2" element={<T2TrendMap />} />
+            <Route path="/t2/my" element={<T2MyArtists />} />
             <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
             <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
             <Route path="/pd" element={<T2PitchDeck />} />

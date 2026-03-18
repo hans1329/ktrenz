@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -137,6 +138,40 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
   const s2 = side * side; const t2 = totalArea * totalArea; let worst = 0;
   for (const a of areas) { const r1 = (s2 * a) / t2; const r2 = t2 / (s2 * a); worst = Math.max(worst, Math.max(r1, r2)); }
   return worst;
+}
+
+// ── My Artists compact banner ──
+function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; language: string }) {
+  const navigate = useNavigate();
+  // Pick top keyword (highest influence)
+  const top = myKeywords[0];
+  if (!top) return null;
+  const config = CATEGORY_CONFIG[top.category];
+  const artistCount = new Set(myKeywords.map(k => k.wikiEntryId)).size;
+
+  return (
+    <button
+      onClick={() => navigate("/t2/my")}
+      className="w-full mb-4 flex items-center gap-3 px-3 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-all group"
+    >
+      <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+      <div className="min-w-0 flex-1 text-left">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-foreground truncate">{getLocalizedKeyword(top, language)}</span>
+          <span
+            className="text-[9px] font-semibold px-1 py-0.5 rounded-sm text-white shrink-0"
+            style={{ background: config?.color }}
+          >
+            {config?.label}
+          </span>
+        </div>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {getLocalizedArtistName(top, language)} · {artistCount} artists · {myKeywords.length} keywords
+        </p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+    </button>
+  );
 }
 
 // ── Main Component ──
@@ -450,46 +485,8 @@ const T2TrendTreemap = () => {
         })}
       </div>
 
-      {/* My Artists' Keywords */}
-      {myKeywords.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-2">
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            My Artists' Keywords
-            <span className="text-[10px] text-muted-foreground font-normal ml-1">{myKeywords.length}</span>
-          </h3>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {myKeywords.map((kw) => {
-              const catConfig = CATEGORY_CONFIG[kw.category];
-              return (
-                <button
-                  key={kw.id}
-                  onClick={() => handleTileClick(kw)}
-                  className={cn(
-                    "shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all",
-                    selectedTile?.id === kw.id
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-muted/30 hover:bg-muted/50"
-                  )}
-                >
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
-                  />
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-foreground leading-tight">
-                      {getLocalizedKeyword(kw, language)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground leading-tight">
-                      {getLocalizedArtistName(kw, language)}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* My Artists' Keywords — compact banner */}
+      {myKeywords.length > 0 && <MyArtistsBanner myKeywords={myKeywords} language={language} />}
 
       {/* View Content */}
       {filteredItems.length === 0 ? (
