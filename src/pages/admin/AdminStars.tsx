@@ -455,7 +455,17 @@ const AdminStars = () => {
                     {namuResult.agency && ` · 소속사: ${namuResult.agency}`}
                   </p>
                   {namuResult.members && namuResult.members.length > 0 && (
-                    <p className="text-muted-foreground">멤버: {namuResult.members.join(", ")}</p>
+                    <div>
+                      <p className="text-muted-foreground font-medium">멤버 ({namuResult.members.length}명):</p>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {namuResult.members.map((m, i) => (
+                          <Badge key={i} variant="secondary" className="text-[9px]">
+                            {m.name_en} ({m.name_ko})
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   )}
                   {namuResult.social_handles && (
                     <div className="flex flex-wrap gap-1 mt-1">
