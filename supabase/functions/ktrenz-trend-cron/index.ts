@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { phase = "detect", batchOffset = 0, batchSize = 10 } = body;
+    const { phase = "detect", batchOffset = 0, batchSize = 3 } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
