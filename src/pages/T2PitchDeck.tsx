@@ -5,7 +5,7 @@ import {
   BarChart3, Eye, Radio, Layers, ArrowRight,
   ChevronDown, Newspaper, Youtube, Activity,
   AlertTriangle, Sparkles, Shield, Clock,
-  Database, LineChart, Radar, MessageSquare
+  Database, LineChart, Radar, MessageSquare, RefreshCw
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
