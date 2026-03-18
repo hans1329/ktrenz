@@ -21,6 +21,7 @@ interface T2ArtistListProps {
 }
 
 interface ArtistGroup {
+  groupKey: string;
   starId: string | null;
   wikiEntryId: string;
   artistName: string;
@@ -38,9 +39,10 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
   const artistGroups = useMemo(() => {
     const map = new Map<string, ArtistGroup>();
     for (const item of items) {
-      const key = item.wikiEntryId;
+      const key = item.starId ?? item.wikiEntryId;
       if (!map.has(key)) {
         map.set(key, {
+          groupKey: key,
           starId: item.starId,
           wikiEntryId: item.wikiEntryId,
           artistName: item.artistName,
@@ -74,7 +76,7 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
         const isWatched = watchedSet.has(group.wikiEntryId);
         return (
           <button
-            key={group.wikiEntryId}
+            key={group.groupKey}
             onClick={() => {
               if (group.starId) navigate(`/t2/artist/${group.starId}`);
             }}
