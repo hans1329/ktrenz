@@ -167,6 +167,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile && !!user,
   });
 
+  // Share boost check
+  const { data: hasShareBoosted } = useQuery({
+    queryKey: ["t2-share-boost", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id, platform")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .in("platform", ["x", "copy"])
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
   const voteMutation = useMutation({
     mutationFn: async (voteType: "up" | "down") => {
       if (!user || !tile) return;
