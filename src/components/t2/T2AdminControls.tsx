@@ -51,12 +51,27 @@ const T2AdminControls = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: () => {
-      toast.success("전체 파이프라인 시작 (detect → track 체이닝)");
+      toast.success("전체 파이프라인 시작 (detect → detect_global → track 체이닝)");
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
-      }, 30_000);
+      }, 60_000);
     },
     onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
+  });
+
+  const detectGlobalMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
+        body: { phase: "detect_global", batchSize: 5, batchOffset: 0 },
+      });
+      if (error) throw error;
+      return typeof data === "string" ? JSON.parse(data) : data;
+    },
+    onSuccess: (data) => {
+      toast.success(`글로벌 감지 완료: ${data?.detect_global?.totalKeywords ?? 0}건`);
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`글로벌 감지 실패: ${(err as Error).message}`),
   });
 
   if (loading || !isAdmin) return null;
