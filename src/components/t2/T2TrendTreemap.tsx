@@ -327,7 +327,7 @@ const T2TrendTreemap = () => {
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            Trend Map
+            Kinterest
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             K-Pop driven consumer trends · Influence Index
