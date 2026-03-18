@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.ktrenz-buzz-enhancer]
 verify_jwt = false
+
+[functions.fill-musicbrainz-ids]
+verify_jwt = false
