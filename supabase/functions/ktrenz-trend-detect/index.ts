@@ -434,12 +434,31 @@ async function detectForMember(
     .in("keyword", keywords.map((k) => k.keyword));
 
   const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
+
+  // 크로스 아티스트 중복 제거
+  const { data: crossExisting } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("keyword")
+    .neq("star_id", member.id)
+    .gte("detected_at", weekAgo)
+    .in("keyword", keywords.map((k) => k.keyword));
+
+  const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));
+
   const rowsToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
   const backfillPromises: PromiseLike<unknown>[] = [];
 
   for (const candidate of candidateRows) {
-    const current = existingByKeyword.get(candidate.row.keyword.toLowerCase());
+    const kwLower = candidate.row.keyword.toLowerCase();
+
+    // 크로스 아티스트 중복 필터
+    if (crossSet.has(kwLower)) {
+      console.warn(`[trend-detect] Cross-artist duplicate filtered: "${candidate.row.keyword}"`);
+      continue;
+    }
+
+    const current = existingByKeyword.get(kwLower);
 
     if (!current) {
       rowsToInsert.push(candidate.row);

@@ -140,14 +140,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Tier 1 아티스트 가져오기
-    const { data: tier1 } = await sb
-      .from("v3_artist_tiers")
-      .select("wiki_entry_id, display_name")
-      .eq("tier", 1)
-      .order("wiki_entry_id", { ascending: true });
+    // ktrenz_stars에서 active 아티스트 가져오기 (v3_artist_tiers 제거)
+    const { data: stars } = await sb
+      .from("ktrenz_stars")
+      .select("id, wiki_entry_id, display_name")
+      .eq("is_active", true)
+      .not("wiki_entry_id", "is", null)
+      .order("display_name", { ascending: true });
 
-    const uniqueIds = [...new Set((tier1 || []).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+    // wiki_entry_id 기준 중복 제거
+    const entryMap = new Map<string, { starId: string; displayName: string }>();
+    for (const s of (stars || [])) {
+      if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
+        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name });
+      }
+    }
+
+    const uniqueIds = [...entryMap.keys()];
     const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
@@ -157,22 +166,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 이름 매핑
-    const nameMap = new Map<string, string>();
-    for (const t of tier1 || []) {
-      if (t?.wiki_entry_id && t?.display_name) nameMap.set(t.wiki_entry_id, t.display_name);
-    }
-
-    // star_id 매핑
-    const { data: starData } = await sb
-      .from("ktrenz_stars")
-      .select("id, wiki_entry_id")
-      .in("wiki_entry_id", batch);
-    const starMap = new Map<string, string>();
-    for (const s of starData || []) {
-      if (s.wiki_entry_id) starMap.set(s.wiki_entry_id, s.id);
-    }
-
     console.log(`[detect-global] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Perplexity only, no Firecrawl)`);
 
     let successCount = 0;
@@ -180,8 +173,9 @@ Deno.serve(async (req) => {
 
     for (const entryId of batch) {
       try {
-        const name = nameMap.get(entryId) || "Unknown";
-        const sid = starMap.get(entryId) || null;
+        const entry = entryMap.get(entryId);
+        const name = entry?.displayName || "Unknown";
+        const sid = entry?.starId || null;
 
         // Perplexity 글로벌 트렌드 감지 (웹 검색 용도 — 의도된 사용)
         const allKeywords = await detectGlobalTrends(perplexityKey, name);
@@ -238,11 +232,30 @@ Deno.serve(async (req) => {
           .gte("detected_at", weekAgo);
 
         const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
+
+        // 크로스 아티스트 중복 제거
+        const { data: crossExisting } = await sb
+          .from("ktrenz_trend_triggers")
+          .select("keyword")
+          .neq("wiki_entry_id", entryId)
+          .gte("detected_at", weekAgo)
+          .in("keyword", allKeywords.map((k) => k.keyword));
+
+        const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));
+
         const rowsToInsert: any[] = [];
         const backfillPromises: PromiseLike<unknown>[] = [];
 
         for (const candidate of candidateRows) {
-          const current = existingByKeyword.get(candidate.row.keyword.toLowerCase());
+          const kwLower = candidate.row.keyword.toLowerCase();
+
+          // 크로스 아티스트 중복 필터
+          if (crossSet.has(kwLower)) {
+            console.warn(`[detect-global] Cross-artist duplicate filtered: "${candidate.row.keyword}"`);
+            continue;
+          }
+
+          const current = existingByKeyword.get(kwLower);
 
           if (!current) {
             rowsToInsert.push(candidate.row);
