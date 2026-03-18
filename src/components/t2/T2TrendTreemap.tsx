@@ -149,17 +149,39 @@ const T2TrendTreemap = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
 
-  // Fetch user's watched artists
+  // Fetch user's watched artists (including group members)
   const { data: watchedWikiIds } = useQuery({
     queryKey: ["t2-watched-artists", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data } = await supabase
+      // 1. Get user's agent slots
+      const { data: slots } = await supabase
         .from("ktrenz_agent_slots")
         .select("wiki_entry_id")
         .eq("user_id", user.id)
         .not("wiki_entry_id", "is", null);
-      return (data ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+      const directIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+      if (!directIds.length) return [];
+
+      // 2. Find star_ids for these wiki_entry_ids (to check if any are groups)
+      const { data: stars } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("id, wiki_entry_id")
+        .in("wiki_entry_id", directIds);
+      const starIds = (stars ?? []).map((s: any) => s.id) as string[];
+
+      // 3. Find members whose group_star_id matches any of these star_ids
+      if (starIds.length) {
+        const { data: members } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("wiki_entry_id")
+          .in("group_star_id", starIds)
+          .not("wiki_entry_id", "is", null);
+        const memberIds = (members ?? []).map((m: any) => m.wiki_entry_id).filter(Boolean) as string[];
+        return [...new Set([...directIds, ...memberIds])];
+      }
+
+      return directIds;
     },
     enabled: !!user?.id,
     staleTime: 60_000,
