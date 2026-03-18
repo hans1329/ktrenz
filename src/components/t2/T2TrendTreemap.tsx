@@ -273,10 +273,22 @@ const T2TrendTreemap = () => {
   const containerWidth = isMobile ? 360 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
 
+  // Reset visibleCount when category changes
+  const prevCategory = useMemo(() => selectedCategory, [selectedCategory]);
+  
+  const visibleItems = useMemo(() => {
+    return filteredItems.slice(0, visibleCount);
+  }, [filteredItems, visibleCount]);
+
+  const hasMore = filteredItems.length > visibleCount;
+
   const rects = useMemo(() => {
     if (!filteredItems.length) return [];
-    return squarify(filteredItems, 0, 0, containerWidth, containerHeight);
-  }, [filteredItems, containerWidth, containerHeight]);
+    // Compute layout for ALL items to maintain stable positions
+    const allRects = squarify(filteredItems, 0, 0, containerWidth, containerHeight);
+    // Only return the visible ones
+    return allRects.slice(0, visibleCount);
+  }, [filteredItems, containerWidth, containerHeight, visibleCount]);
 
   const handleTileClick = useCallback((item: TrendTile) => {
     setSelectedTile(prev => prev?.id === item.id ? null : item);
