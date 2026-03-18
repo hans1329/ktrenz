@@ -369,6 +369,7 @@ const T2TrendTreemap = () => {
               const isSelected = selectedTile?.id === rect.item.id;
               const config = CATEGORY_CONFIG[rect.item.category];
               const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
+              const isMyArtist = watchedSet.has(rect.item.wikiEntryId);
 
               const boxArea = width * height;
               const sizeFactor = Math.sqrt(boxArea) / 10;
