@@ -205,16 +205,18 @@ async function runHanteo(supabaseUrl: string, serviceKey: string, waitForComplet
 }
 
 async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompletion: boolean = false): Promise<any> {
-  // Buzz는 아티스트당 ~10초 소요 → edge function 타임아웃 초과 방지를 위해 fire-and-forget
-  console.log(`[data-engine] Running Buzz module (dynamic batching based on Tier 1 count)...`);
+  console.log(`[data-engine] Running Buzz module (dynamic batching based on namuwiki-linked Tier 1)...`);
 
-  // Tier 1 대상 스냅샷 시점 고정 (batch 간 대상 변동 방지)
   const sb = createClient(supabaseUrl, serviceKey);
+  const namuwikiIds = await getNamuwikiLinkedTier1Ids(sb);
+  if (namuwikiIds.length === 0) return { status: "no_artists", launched: 0 };
+
   const tierSnapshotAt = new Date().toISOString();
   const { data: tier1Entries } = await sb
     .from("v3_artist_tiers")
     .select("wiki_entry_id")
     .eq("tier", 1)
+    .in("wiki_entry_id", namuwikiIds)
     .lte("updated_at", tierSnapshotAt)
     .order("wiki_entry_id", { ascending: true });
 
@@ -222,7 +224,7 @@ async function runBuzz(supabaseUrl: string, serviceKey: string, _waitForCompleti
   const tier1Count = tier1Ids.length;
 
   if (tier1Count === 0) {
-    console.warn(`[data-engine] Buzz: No Tier 1 artists found`);
+    console.warn(`[data-engine] Buzz: No namuwiki-linked Tier 1 artists found`);
     return { status: "no_artists", launched: 0, tierSnapshotAt };
   }
 
