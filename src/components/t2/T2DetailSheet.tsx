@@ -62,8 +62,8 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
-  voteYes: { en: "Yes 🔥", ko: "그럼 🔥", ja: "はい 🔥", zh: "会的 🔥" },
-  voteNo: { en: "Nah 🤷", ko: "글쎄 🤷", ja: "いいえ 🤷", zh: "不会 🤷" },
+  voteYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
+  voteNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
   votesCount: { en: "votes", ko: "명 참여", ja: "票", zh: "票" },
   voteReward: { en: "+1 K-Point for voting!", ko: "투표하면 +1 K-Point!", ja: "投票で+1 K-Point!", zh: "投票得+1 K-Point!" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
@@ -363,8 +363,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
             {/* Context body */}
             <div className="p-3 space-y-1.5">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Newspaper className="w-4 h-4 text-primary" />
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                <Newspaper className="w-4.5 h-4.5 text-primary" />
                 {t("whyTrend", language)}
               </h3>
               {(() => {
@@ -396,8 +396,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* Ranking explanation: Why this rank? */}
           {rank != null && (
             <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-primary" />
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                <Info className="w-4.5 h-4.5 text-primary" />
                 {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -446,7 +446,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
             {/* Vote — casual poll style */}
             <div className="space-y-2.5">
-              <p className="text-base font-bold text-foreground text-center">
+              <p className="text-lg font-bold text-foreground text-center">
                 {t("voteRelevance", language)}
               </p>
               {!voteData?.myVote && (
@@ -485,8 +485,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
             {/* Boost */}
             <div className="border-t border-border/50 pt-3">
-              <h3 className="text-sm font-bold text-foreground mb-2.5 flex items-center gap-1.5">
-                <Rocket className="w-4 h-4 text-primary" />
+              <h3 className="text-base font-bold text-foreground mb-2.5 flex items-center gap-1.5">
+                <Rocket className="w-4.5 h-4.5 text-primary" />
                 {t("boostTrend", language)}
                 {(boostCount ?? 0) > 0 && (
                   <Badge variant="outline" className="text-[10px] ml-1 border-primary/30 text-primary">
