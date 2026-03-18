@@ -105,6 +105,18 @@ const t = {
       { emoji: "🔥", label: "Trending", desc: "All categories combined" },
     ],
 
+    // AI Agent
+    agentTitle: ["AI Fan ", "Agent"],
+    agentDesc: "A personalized AI companion for every fan — deeply biased toward your favorite artist, powered by real-time data.",
+    agentFeatures: [
+      { emoji: "🤖", title: "Dedicated Artist Manager", desc: "Each agent is exclusively devoted to your favorite artist — providing biased, passionate support with real-time rankings, metrics, and news." },
+      { emoji: "🛠️", title: "8 Real-Time Tools", desc: "Rankings lookup, artist comparison, streaming guides, schedule alerts, news feeds, and more — all powered by live database queries." },
+      { emoji: "🧠", title: "Intent & Emotion Analysis", desc: "Every conversation is analyzed for fan intent and sentiment, building a knowledge archive that improves responses over time." },
+      { emoji: "🌍", title: "Multi-Language Persona", desc: "The agent automatically adapts its personality and language to match your UI settings — Korean, English, Japanese, or Chinese." },
+      { emoji: "🎯", title: "Daily Fan Missions", desc: "Rotating daily activities — streaming missions, voting challenges, and engagement tasks — that earn K-Points and boost artist scores." },
+      { emoji: "📊", title: "Signal Intelligence", desc: "Integrates Signal A/B/C data to provide strategic insights, uncovering hidden demand gaps between attention signals and public scores." },
+    ],
+
     // Use Cases
     useCasesTag: "Use Cases",
     useCasesTitle: ["Who Needs ", "KTRENZ", "?"],
