@@ -6,10 +6,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List } from "lucide-react";
+import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List, Users } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 import T2AdminControls from "./T2AdminControls";
 import T2TrendList from "./T2TrendList";
+import T2ArtistList from "./T2ArtistList";
 
 // ── Types ──
 export interface TrendTile {
@@ -142,7 +143,7 @@ function worstAspect(areas: number[], totalArea: number, side: number): number {
 const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
-  const [viewMode, setViewMode] = useState<"treemap" | "list">("treemap");
+  const [viewMode, setViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   
   const isMobile = useIsMobile();
   const { language } = useLanguage();
@@ -358,25 +359,28 @@ const T2TrendTreemap = () => {
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle — slide switch */}
-          <button
-            onClick={() => setViewMode(viewMode === "treemap" ? "list" : "treemap")}
-            className="relative flex items-center w-[72px] h-9 rounded-full bg-muted border border-border p-1 transition-colors"
-            aria-label="Toggle view mode"
-          >
-            <span
-              className={cn(
-                "absolute w-8 h-7 rounded-full bg-primary shadow-md transition-transform duration-200",
-                viewMode === "list" ? "translate-x-[34px]" : "translate-x-0"
-              )}
-            />
-            <span className="relative z-10 flex items-center justify-center w-8 h-7">
-              <LayoutGrid className={cn("w-4 h-4 transition-colors", viewMode === "treemap" ? "text-primary-foreground" : "text-muted-foreground")} />
-            </span>
-            <span className="relative z-10 flex items-center justify-center w-8 h-7 ml-[2px]">
-              <List className={cn("w-4 h-4 transition-colors", viewMode === "list" ? "text-primary-foreground" : "text-muted-foreground")} />
-            </span>
-          </button>
+          {/* View toggle — 3-tab buttons */}
+          <div className="flex items-center gap-0.5 bg-muted rounded-lg border border-border p-0.5">
+            {([
+              { key: "treemap" as const, icon: LayoutGrid, label: "Box" },
+              { key: "list" as const, icon: List, label: "List" },
+              { key: "artist" as const, icon: Users, label: "Artist" },
+            ]).map(({ key, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setViewMode(key)}
+                className={cn(
+                  "flex items-center justify-center w-8 h-7 rounded-md transition-all",
+                  viewMode === key
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-label={key}
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            ))}
+          </div>
           <T2AdminControls />
         </div>
       </div>
@@ -470,6 +474,11 @@ const T2TrendTreemap = () => {
         <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center py-20">
           <p className="text-sm text-muted-foreground">No active trend keywords detected yet.</p>
         </div>
+      ) : viewMode === "artist" ? (
+        <T2ArtistList
+          items={filteredItems}
+          watchedSet={watchedSet}
+        />
       ) : viewMode === "list" ? (
         <T2TrendList
           items={visibleListItems}
