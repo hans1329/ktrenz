@@ -385,10 +385,6 @@ export default function T2PitchDeck() {
         <div className="relative max-w-4xl mx-auto text-center z-10">
           <img src={ktrenzLogo} alt="K-TRENZ" className="h-8 w-auto mx-auto mb-6 opacity-60" />
 
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-8">
-            <Radar className="w-4 h-4" />
-            {l.heroTag}
-          </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[1.08] tracking-tight mb-6">
             <span className="text-foreground">{l.heroTitle1}</span>
