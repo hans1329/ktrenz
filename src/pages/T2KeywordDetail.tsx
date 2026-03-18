@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Minus, Globe, Clock,
   ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronLeft,
-  BarChart3, Target, Activity, Calendar, Building2,
+  BarChart3, Target, Activity, Calendar, Building2, Sparkles,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from "recharts";
 
