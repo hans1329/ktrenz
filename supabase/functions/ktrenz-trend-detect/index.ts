@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
     // 레거시 호환: wikiEntryId + artistName으로 호출 시
     if (wikiEntryId && artistName) {
       const result = await detectForMember(
-        sb, perplexityKey, naverClientId, naverClientSecret,
+        sb, openaiKey, naverClientId, naverClientSecret,
         { id: null, display_name: artistName, name_ko: null, group_name: null, group_wiki_entry_id: wikiEntryId }
       );
       return new Response(
