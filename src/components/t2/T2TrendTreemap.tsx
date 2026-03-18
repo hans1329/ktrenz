@@ -90,6 +90,8 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     if (idx === 0) return logBase * 8;
     if (idx === 1) return logBase * 5;
     if (idx === 2) return logBase * 3.5;
+    if (idx < 10) return logBase * 2.2;
+    if (idx < 20) return logBase * 1.6;
     return logBase;
   };
 
