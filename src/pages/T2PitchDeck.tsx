@@ -718,7 +718,7 @@ export default function T2PitchDeck() {
       <Section id="revenue">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
-            <SectionTag><Layers className="w-3.5 h-3.5" /> {l.revenueTag}</SectionTag>
+            
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {l.revenueTitle[0]}<span className="text-primary">{l.revenueTitle[1]}</span>
             </h2>
