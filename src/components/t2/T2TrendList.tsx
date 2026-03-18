@@ -137,7 +137,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {heroImage && (
               <button
                 onClick={() => onTileClick(item)}
-                className="relative w-full aspect-[4/3] bg-muted overflow-hidden group"
+                className="relative w-full aspect-[4/3] lg:aspect-[16/9] bg-muted overflow-hidden group"
               >
                 <img
                   src={heroImage}
