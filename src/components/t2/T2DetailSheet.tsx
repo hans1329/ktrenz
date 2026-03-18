@@ -62,6 +62,10 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
+  voteYes: { en: "Yes 🔥", ko: "그럼 🔥", ja: "はい 🔥", zh: "会的 🔥" },
+  voteNo: { en: "Nah 🤷", ko: "글쎄 🤷", ja: "いいえ 🤷", zh: "不会 🤷" },
+  votesCount: { en: "votes", ko: "명 참여", ja: "票", zh: "票" },
+  voteReward: { en: "+1 K-Point for voting!", ko: "투표하면 +1 K-Point!", ja: "投票で+1 K-Point!", zh: "投票得+1 K-Point!" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
@@ -73,6 +77,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   alreadyShareBoosted: { en: "Already boosted", ko: "이미 밀어주기 완료", ja: "すでに応援済み", zh: "已推动" },
   shareBoostReward: { en: "Share & boost +5 K-Point", ko: "공유하고 밀어주기 +5 K-Point", ja: "共有して応援 +5 K-Point", zh: "分享推动 +5 K-Point" },
   alreadyShareBoostedDone: { en: "✓ Share boosted +5P", ko: "✓ 공유 밀어주기 완료 +5P", ja: "✓ 共有応援済み +5P", zh: "✓ 分享推动完成 +5P" },
+  viewFullAnalysis: { en: "View Full Analysis", ko: "상세 분석 보기", ja: "詳細分析を見る", zh: "查看完整分析" },
 };
 
 function t(key: string, lang: string): string {
@@ -439,38 +444,43 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Vote & Boost */}
           <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
-            {/* Vote */}
+            {/* Vote — casual poll style */}
             <div>
-              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-                <ThumbsUp className="w-3.5 h-3.5 text-primary" />
+              <p className="text-sm font-bold text-foreground text-center mb-1">
                 {t("voteRelevance", language)}
-              </h3>
+              </p>
+              {!voteData?.myVote && !user && (
+                <p className="text-[10px] text-center text-muted-foreground mb-2">{t("voteReward", language)}</p>
+              )}
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={voteData?.myVote === "up" ? "default" : "outline"}
-                  className={cn("gap-1.5 text-xs", voteData?.myVote === "up" && "bg-green-600 hover:bg-green-700 border-green-600")}
+                <button
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    voteData?.myVote === "up"
+                      ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 scale-[1.02]"
+                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
+                  )}
                   onClick={() => handleVote("up")}
                   disabled={voteMutation.isPending}
                 >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  {voteData?.ups ?? 0}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={voteData?.myVote === "down" ? "default" : "outline"}
-                  className={cn("gap-1.5 text-xs", voteData?.myVote === "down" && "bg-red-600 hover:bg-red-700 border-red-600")}
+                  {t("voteYes", language)} <span className="ml-1 text-xs opacity-70">{voteData?.ups ?? 0}</span>
+                </button>
+                <button
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    voteData?.myVote === "down"
+                      ? "bg-rose-500/20 text-rose-400 border-2 border-rose-500/50 scale-[1.02]"
+                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
+                  )}
                   onClick={() => handleVote("down")}
                   disabled={voteMutation.isPending}
                 >
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                  {voteData?.downs ?? 0}
-                </Button>
-                <div className="flex-1" />
-                <span className="text-[10px] text-muted-foreground">
-                  {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} votes
-                </span>
+                  {t("voteNo", language)} <span className="ml-1 text-xs opacity-70">{voteData?.downs ?? 0}</span>
+                </button>
               </div>
+              <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+                {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} {t("votesCount", language)}
+              </p>
             </div>
 
             {/* Boost */}
@@ -524,7 +534,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               navigate(`/t2/${tile.id}`);
             }}
           >
-            View Full Analysis
+            {t("viewFullAnalysis", language)}
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
