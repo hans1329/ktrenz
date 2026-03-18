@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
+import T2AdminControls from "./T2AdminControls";
 
 // ── Types ──
 export interface TrendTile {
