@@ -209,14 +209,14 @@ const t = {
     detectionSources: "감지 소스",
     validationSources: "검증 & 추적",
     detectionItems: [
-      { label: "네이버 뉴스 API", desc: "아티스트당 50개 이상 기사, 24시간 윈도우, 한국어 중심" },
-      { label: "Perplexity AI (Sonar)", desc: "국제 브랜드 뉴스 및 소셜 포스트 글로벌 웹 검색" },
-      { label: "YouTube Data API", desc: "멤버당 최근 15개 영상, 3일 윈도우, 제목 + 설명 분석" },
+      { label: "국내 뉴스", desc: "아티스트당 50개 이상 기사, 24시간 윈도우, 한국어 중심" },
+      { label: "글로벌 웹 & 소셜", desc: "국제 브랜드 뉴스, 소셜 미디어 포스트, 다양한 시장의 웹 언급" },
+      { label: "YouTube & 영상", desc: "멤버당 최근 15개 영상, 3일 윈도우, 제목 + 설명 분석" },
     ],
     validationItems: [
-      { label: "Google Trends (SerpAPI)", desc: "키워드 × 아티스트 조합의 실시간 검색량" },
-      { label: "OpenAI GPT-4o-mini", desc: "엄격한 환각 제어가 적용된 상업 엔티티 추출" },
-      { label: "Supabase Edge Functions", desc: "배치 처리가 가능한 서버리스 파이프라인 오케스트레이션" },
+      { label: "검색량 추적", desc: "키워드 × 아티스트 조합의 실시간 검색량" },
+      { label: "AI 엔티티 추출", desc: "엄격한 환각 제어가 적용된 상업 엔티티 추출" },
+      { label: "서버리스 파이프라인", desc: "배치 처리 및 속도 제한 보호 기능의 자동 오케스트레이션" },
     ],
 
     categoriesTag: "키워드 카테고리",
