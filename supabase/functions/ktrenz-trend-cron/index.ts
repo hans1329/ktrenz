@@ -84,8 +84,40 @@ Deno.serve(async (req) => {
         }).catch((e: any) => console.warn(`[trend-cron] Chain error: ${e.message}`));
         results.nextBatch = nextOffset;
       } else {
-        // 모든 detect_global 완료 → track phase 시작
-        console.log(`[trend-cron] All detect_global done. Starting track phase after 10s delay.`);
+        // 모든 detect_global 완료 → detect_youtube phase 시작
+        console.log(`[trend-cron] All detect_global done. Starting detect_youtube phase after 10s delay.`);
+        await new Promise((r) => setTimeout(r, 10000));
+        sb.functions.invoke("ktrenz-trend-cron", {
+          body: { phase: "detect_youtube", batchOffset: 0, batchSize },
+        }).catch((e: any) => console.warn(`[trend-cron] detect_youtube invoke error: ${e.message}`));
+        results.nextPhase = "detect_youtube";
+      }
+    } else if (phase === "detect_youtube") {
+      console.log(`[trend-cron] Phase: DETECT_YOUTUBE, offset=${batchOffset}, size=${batchSize}`);
+
+      const { data: ytData, error: ytError } = await sb.functions.invoke(
+        "ktrenz-trend-detect-youtube",
+        { body: { batchSize, batchOffset } }
+      );
+
+      if (ytError) throw new Error(`trend-detect-youtube failed: ${ytError.message}`);
+
+      const parsed = typeof ytData === "string" ? JSON.parse(ytData) : ytData;
+      results.detect_youtube = parsed;
+
+      const totalCandidates = parsed?.totalCandidates ?? 0;
+      const nextOffset = batchOffset + batchSize;
+
+      if (nextOffset < totalCandidates) {
+        console.log(`[trend-cron] Chaining next detect_youtube batch: offset=${nextOffset}`);
+        await new Promise((r) => setTimeout(r, 5000));
+        sb.functions.invoke("ktrenz-trend-cron", {
+          body: { phase: "detect_youtube", batchOffset: nextOffset, batchSize },
+        }).catch((e: any) => console.warn(`[trend-cron] Chain error: ${e.message}`));
+        results.nextBatch = nextOffset;
+      } else {
+        // 모든 detect_youtube 완료 → track phase 시작
+        console.log(`[trend-cron] All detect_youtube done. Starting track phase after 10s delay.`);
         await new Promise((r) => setTimeout(r, 10000));
         sb.functions.invoke("ktrenz-trend-track", {
           body: { batchSize: 5, batchOffset: 0, regions: ["worldwide"] },
