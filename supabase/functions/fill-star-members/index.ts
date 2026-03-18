@@ -173,7 +173,70 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { dryRun = false, offset = 0, limit = 5 } = body;
+    const { dryRun = false, offset = 0, limit = 5, action = "fill" } = body;
+
+    // Cleanup action: fix noisy data
+    if (action === "cleanup") {
+      // Remove noise entries
+      const { data: deleted } = await supabase
+        .from("ktrenz_stars")
+        .delete()
+        .in("display_name", ["plainlist|", "Members", "*Serim"])
+        .select("id");
+
+      // Fix "* " prefix
+      const { data: prefixed } = await supabase
+        .from("ktrenz_stars")
+        .select("id, display_name")
+        .like("display_name", "* %");
+
+      let fixedPrefix = 0;
+      for (const row of prefixed || []) {
+        const cleaned = row.display_name.replace(/^\* /, "");
+        await supabase.from("ktrenz_stars").update({ display_name: cleaned }).eq("id", row.id);
+        fixedPrefix++;
+      }
+
+      // Fix Korean names with parenthetical suffixes like "(가수)", "(1998년)"
+      const { data: koNames } = await supabase
+        .from("ktrenz_stars")
+        .select("id, name_ko")
+        .not("name_ko", "is", null)
+        .like("name_ko", "% (%");
+
+      let fixedKo = 0;
+      for (const row of koNames || []) {
+        const cleaned = row.name_ko.replace(/ \(.*\)$/, "");
+        await supabase.from("ktrenz_stars").update({ name_ko: cleaned }).eq("id", row.id);
+        fixedKo++;
+      }
+
+      // Fix wrong Korean names (Wikipedia ko link returns wrong page)
+      const koFixes: Record<string, string | null> = {
+        "Winter": "윈터",
+        "Karina": "카리나",
+        "MJ": "엠제이",
+        "SAN": null, // wrong mapping
+        "Yunho": "윤호",
+        "Ahyeon": "아현",
+        "Pharita": "파리타",
+        "Chiquita": null,
+      };
+      for (const [name, ko] of Object.entries(koFixes)) {
+        if (ko) {
+          await supabase.from("ktrenz_stars").update({ name_ko: ko }).eq("display_name", name).eq("star_type", "member");
+        } else {
+          await supabase.from("ktrenz_stars").update({ name_ko: null }).eq("display_name", name).eq("star_type", "member");
+        }
+      }
+
+      return new Response(JSON.stringify({
+        deleted: deleted?.length || 0,
+        fixedPrefix,
+        fixedKo,
+        fixedManual: Object.keys(koFixes).length,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // ktrenz_stars에서 group 타입만 가져오기
     const { data: groups, error: groupErr } = await supabase
