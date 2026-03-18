@@ -203,16 +203,23 @@ const T2ArtistPage = () => {
 
                       {/* Lifetime timeline bar */}
                       {(() => {
-                        const LIFECYCLE_DAYS = 14;
                         const detectedMs = new Date(kw.detected_at).getTime();
                         const nowMs = Date.now();
                         const elapsedHours = (nowMs - detectedMs) / 3600000;
-                        const totalHours = LIFECYCLE_DAYS * 24;
-                        const progressPct = Math.min((elapsedHours / totalHours) * 100, 100);
+                        const isExpired = !!kw.expired_at;
+                        // Use actual lifetime if expired, otherwise estimate from elapsed time
+                        const totalHours = isExpired && kw.lifetime_hours
+                          ? kw.lifetime_hours
+                          : Math.max(elapsedHours * 1.2, 48); // dynamic scale: 120% of elapsed or min 48h
+                        const progressPct = isExpired ? 100 : Math.min((elapsedHours / totalHours) * 100, 95);
                         const peakPct = kw.peak_delay_hours != null
                           ? Math.min((kw.peak_delay_hours / totalHours) * 100, 100)
                           : null;
-                        const isExpired = !!kw.expired_at;
+
+                        const displayHours = isExpired ? Math.round(kw.lifetime_hours ?? elapsedHours) : Math.round(elapsedHours);
+                        const displayLabel = displayHours >= 24
+                          ? `${Math.round(displayHours / 24)}d`
+                          : `${displayHours}h`;
 
                         return (
                           <div className="mt-2.5">
@@ -220,10 +227,8 @@ const T2ArtistPage = () => {
                               <span>{language === "ko" ? "라이프사이클" : "Lifecycle"}</span>
                               <span>
                                 {isExpired
-                                  ? (language === "ko" ? "만료" : "Expired")
-                                  : kw.lifetime_hours != null
-                                    ? `${Math.round(kw.lifetime_hours)}h`
-                                    : `${Math.round(elapsedHours)}h / ${totalHours}h`}
+                                  ? `${displayLabel} · ${language === "ko" ? "만료" : "Expired"}`
+                                  : `${displayLabel} ${language === "ko" ? "경과" : "elapsed"}`}
                               </span>
                             </div>
                             <div className="relative h-2 rounded-full bg-muted overflow-hidden">
@@ -232,7 +237,7 @@ const T2ArtistPage = () => {
                                   "absolute inset-y-0 left-0 rounded-full transition-all",
                                   isExpired ? "bg-muted-foreground/40" : "bg-primary/60"
                                 )}
-                                style={{ width: `${isExpired ? 100 : progressPct}%` }}
+                                style={{ width: `${progressPct}%` }}
                               />
                               {peakPct != null && (
                                 <div
