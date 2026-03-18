@@ -219,7 +219,13 @@ const T2MyArtists = () => {
           {artistGroups.map((group) => (
             <div key={group.wikiEntryId}>
               {/* Artist header */}
-              <div className="flex items-center gap-2.5 mb-2">
+              <button
+                onClick={() => {
+                  const starId = group.keywords[0]?.starId;
+                  if (starId) navigate(`/t2/artist/${starId}`);
+                }}
+                className="flex items-center gap-2.5 mb-2 group"
+              >
                 {group.artistImageUrl ? (
                   <img src={group.artistImageUrl} alt={displayArtist(group)} className="w-9 h-9 rounded-full object-cover border border-border" />
                 ) : (
@@ -227,9 +233,10 @@ const T2MyArtists = () => {
                     {displayArtist(group).charAt(0)}
                   </div>
                 )}
-                <span className="text-sm font-bold text-foreground">{displayArtist(group)}</span>
+                <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{displayArtist(group)}</span>
                 <span className="text-[10px] text-muted-foreground">{group.keywords.length} keywords</span>
-              </div>
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </button>
               {/* Keywords */}
               <div className="space-y-1.5 pl-2">
                 {group.keywords.map((kw) => {
