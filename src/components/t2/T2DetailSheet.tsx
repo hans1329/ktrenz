@@ -214,13 +214,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       toast.success(t("copied", language));
     }
 
-    // Record boost
+    // Record boost + award points (check duplicate per platform)
     if (user) {
-      await supabase
+      const { data: existing } = await supabase
         .from("ktrenz_keyword_boosts" as any)
-        .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
-      queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
-      toast.success(t("boosted", language));
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .eq("platform", platform)
+        .limit(1);
+      if ((existing ?? []).length === 0) {
+        await supabase
+          .from("ktrenz_keyword_boosts" as any)
+          .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
+        await supabase.rpc("increment_points" as any, { user_id: user.id, amount: 5 });
+        queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
+        queryClient.invalidateQueries({ queryKey: ["t2-share-boost", tile.id, user.id] });
+        toast.success(t("boosted", language));
+      } else {
+        toast.info(t("alreadyShareBoosted", language));
+      }
     }
   };
 
