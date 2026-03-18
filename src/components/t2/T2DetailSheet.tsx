@@ -389,6 +389,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               </div>
             </div>
           )}
+
+          {/* Detail page button */}
+          <Button
+            className="w-full gap-2"
+            onClick={() => {
+              onClose();
+              navigate(`/t2/${tile.id}`);
+            }}
+          >
+            View Full Analysis
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
