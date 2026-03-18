@@ -444,38 +444,43 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Vote & Boost */}
           <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
-            {/* Vote */}
+            {/* Vote — casual poll style */}
             <div>
-              <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-                <ThumbsUp className="w-3.5 h-3.5 text-primary" />
+              <p className="text-sm font-bold text-foreground text-center mb-1">
                 {t("voteRelevance", language)}
-              </h3>
+              </p>
+              {!voteData?.myVote && !user && (
+                <p className="text-[10px] text-center text-muted-foreground mb-2">{t("voteReward", language)}</p>
+              )}
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={voteData?.myVote === "up" ? "default" : "outline"}
-                  className={cn("gap-1.5 text-xs", voteData?.myVote === "up" && "bg-green-600 hover:bg-green-700 border-green-600")}
+                <button
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    voteData?.myVote === "up"
+                      ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 scale-[1.02]"
+                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
+                  )}
                   onClick={() => handleVote("up")}
                   disabled={voteMutation.isPending}
                 >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  {voteData?.ups ?? 0}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={voteData?.myVote === "down" ? "default" : "outline"}
-                  className={cn("gap-1.5 text-xs", voteData?.myVote === "down" && "bg-red-600 hover:bg-red-700 border-red-600")}
+                  {t("voteYes", language)} <span className="ml-1 text-xs opacity-70">{voteData?.ups ?? 0}</span>
+                </button>
+                <button
+                  className={cn(
+                    "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    voteData?.myVote === "down"
+                      ? "bg-rose-500/20 text-rose-400 border-2 border-rose-500/50 scale-[1.02]"
+                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
+                  )}
                   onClick={() => handleVote("down")}
                   disabled={voteMutation.isPending}
                 >
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                  {voteData?.downs ?? 0}
-                </Button>
-                <div className="flex-1" />
-                <span className="text-[10px] text-muted-foreground">
-                  {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} votes
-                </span>
+                  {t("voteNo", language)} <span className="ml-1 text-xs opacity-70">{voteData?.downs ?? 0}</span>
+                </button>
               </div>
+              <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+                {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} {t("votesCount", language)}
+              </p>
             </div>
 
             {/* Boost */}
