@@ -1,5 +1,5 @@
 // T2 Trend Cron: trend-detect → trend-track 순차 오케스트레이션
-// 6시간마다 실행되어 Tier 1 아티스트의 상업 키워드 감지 + 검색량 추적
+// detect 완료 후 track 시작, throttle 감지 시 체이닝 중단
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
     const results: any = { phase, batchOffset };
 
     if (phase === "detect") {
-      // Step 1: trend-detect 배치 호출
       console.log(`[trend-cron] Phase: DETECT, offset=${batchOffset}, size=${batchSize}`);
 
       const { data: detectData, error: detectError } = await sb.functions.invoke(
@@ -42,31 +41,30 @@ Deno.serve(async (req) => {
       const totalCandidates = parsed?.totalCandidates ?? 0;
       const nextOffset = batchOffset + batchSize;
 
-      // 아직 처리할 아티스트가 남았으면 다음 배치 self-invoke
       if (nextOffset < totalCandidates) {
+        // 아직 detect할 아티스트 남음 → 다음 detect 배치 체이닝
         console.log(`[trend-cron] Chaining next detect batch: offset=${nextOffset}`);
-        // Self-invoke (fire-and-forget)
+        await new Promise((r) => setTimeout(r, 5000)); // 5초 딜레이
         sb.functions.invoke("ktrenz-trend-cron", {
           body: { phase: "detect", batchOffset: nextOffset, batchSize },
-        }).catch((e: any) => console.warn(`[trend-cron] Chain invoke error: ${e.message}`));
-
+        }).catch((e: any) => console.warn(`[trend-cron] Chain error: ${e.message}`));
         results.nextBatch = nextOffset;
       } else {
-        // 모든 detect 완료 → track phase 시작 (배치로)
-        console.log(`[trend-cron] All detect batches done. Starting track phase.`);
+        // 모든 detect 완료 → track phase 시작
+        console.log(`[trend-cron] All detect done (${totalCandidates} artists). Starting track phase after 10s delay.`);
+        await new Promise((r) => setTimeout(r, 10000)); // 10초 딜레이
         sb.functions.invoke("ktrenz-trend-track", {
-          body: { batchSize: 5, batchOffset: 0 },
+          body: { batchSize: 5, batchOffset: 0, regions: ["worldwide"] },
         }).catch((e: any) => console.warn(`[trend-cron] Track invoke error: ${e.message}`));
-
         results.nextPhase = "track";
       }
     } else if (phase === "track") {
-      // Step 2: trend-track 호출 (배치 처리, self-chain 포함)
-      console.log(`[trend-cron] Phase: TRACK`);
+      // 직접 track 호출 (수동 트리거용)
+      console.log(`[trend-cron] Phase: TRACK (manual)`);
 
       const { data: trackData, error: trackError } = await sb.functions.invoke(
         "ktrenz-trend-track",
-        { body: { batchSize: 5, batchOffset: 0 } }
+        { body: { batchSize: 5, batchOffset: 0, regions: ["worldwide"] } }
       );
 
       if (trackError) throw new Error(`trend-track failed: ${trackError.message}`);
@@ -74,7 +72,11 @@ Deno.serve(async (req) => {
       const parsed = typeof trackData === "string" ? JSON.parse(trackData) : trackData;
       results.track = parsed;
 
-      console.log(`[trend-cron] Track complete: ${parsed?.tracked ?? 0} keyword-region pairs tracked`);
+      if (parsed?.throttled) {
+        console.warn(`[trend-cron] Track was throttled. No further chaining.`);
+      } else {
+        console.log(`[trend-cron] Track complete: ${parsed?.tracked ?? 0} keyword-region pairs`);
+      }
     }
 
     const elapsed = Date.now() - startTime;

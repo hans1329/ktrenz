@@ -1,6 +1,6 @@
 // T2 Trend Track: 감지된 상업 키워드의 Google Trends 검색량을 SerpAPI로 추적
 // ktrenz_trend_triggers에서 active 키워드를 읽어 검색량 변화를 ktrenz_trend_tracking에 기록
-// 배치 + self-invocation으로 60초 타임아웃 회피
+// throttle 감지 시 즉시 체이닝 중단, 배치 간 충분한 딜레이 확보
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -16,62 +16,64 @@ interface TrendResult {
   timeline: { date: string; value: number }[];
 }
 
+// SerpAPI throttle 에러를 구별하기 위한 커스텀 에러
+class ThrottleError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ThrottleError";
+  }
+}
+
 async function fetchGoogleTrends(
   serpApiKey: string,
   keyword: string,
   artistName: string,
   region: string = "worldwide"
 ): Promise<TrendResult | null> {
-  try {
-    const queries = [`${artistName} ${keyword}`, keyword];
-    
-    for (const query of queries) {
-      const params = new URLSearchParams({
-        engine: "google_trends",
-        q: query,
-        data_type: "TIMESERIES",
-        date: "now 7-d",
-        api_key: serpApiKey,
-      });
+  const queries = [`${artistName} ${keyword}`, keyword];
 
-      if (region !== "worldwide") {
-        params.set("geo", region);
-      }
+  for (const query of queries) {
+    const params = new URLSearchParams({
+      engine: "google_trends",
+      q: query,
+      data_type: "TIMESERIES",
+      date: "now 7-d",
+      api_key: serpApiKey,
+    });
 
-      const response = await fetch(`https://serpapi.com/search.json?${params}`);
-      if (!response.ok) {
-        const err = await response.text();
-        console.warn(`[trend-track] SerpAPI error for "${query}": ${err.slice(0, 200)}`);
-        continue;
-      }
-
-      const data = await response.json();
-      const timelineData = data.interest_over_time?.timeline_data || [];
-
-      if (!timelineData.length) continue;
-
-      const timeline = timelineData.map((t: any) => ({
-        date: t.date || "",
-        value: t.values?.[0]?.extracted_value ?? 0,
-      }));
-
-      const latestValue = timeline[timeline.length - 1]?.value ?? 0;
-      
-      if (latestValue > 0 || timeline.some((t: any) => t.value > 0)) {
-        return {
-          keyword,
-          interest_score: latestValue,
-          region,
-          timeline,
-        };
-      }
+    if (region !== "worldwide") {
+      params.set("geo", region);
     }
 
-    return { keyword, interest_score: 0, region, timeline: [] };
-  } catch (e) {
-    console.warn(`[trend-track] Fetch error for "${keyword}": ${e.message}`);
-    return null;
+    const response = await fetch(`https://serpapi.com/search.json?${params}`);
+    if (!response.ok) {
+      const err = await response.text();
+      // throttle 감지 → 즉시 상위로 전파
+      if (err.includes("throttled") || err.includes("exceeded") || response.status === 429) {
+        throw new ThrottleError(`SerpAPI throttled: ${err.slice(0, 100)}`);
+      }
+      console.warn(`[trend-track] SerpAPI error for "${query}": ${err.slice(0, 150)}`);
+      continue;
+    }
+
+    const data = await response.json();
+    const timelineData = data.interest_over_time?.timeline_data || [];
+
+    if (!timelineData.length) continue;
+
+    const timeline = timelineData.map((t: any) => ({
+      date: t.date || "",
+      value: t.values?.[0]?.extracted_value ?? 0,
+    }));
+
+    const latestValue = timeline[timeline.length - 1]?.value ?? 0;
+
+    if (latestValue > 0 || timeline.some((t: any) => t.value > 0)) {
+      return { keyword, interest_score: latestValue, region, timeline };
+    }
   }
+
+  return { keyword, interest_score: 0, region, timeline: [] };
 }
 
 Deno.serve(async (req) => {
@@ -85,7 +87,7 @@ Deno.serve(async (req) => {
       triggerId,
       batchSize = 5,
       batchOffset = 0,
-      regions = ["worldwide", "KR", "US", "JP"],
+      regions = ["worldwide"],  // 기본 worldwide만 (API 절약)
     } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -129,18 +131,23 @@ Deno.serve(async (req) => {
 
     if (!triggers.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No active triggers to track", tracked: 0 }),
+        JSON.stringify({ success: true, message: "No active triggers to track", tracked: 0, totalTriggers }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[trend-track] Tracking ${triggers.length} triggers (offset=${batchOffset}) across ${regions.length} regions`);
+    console.log(`[trend-track] Tracking ${triggers.length} triggers (offset=${batchOffset}, total=${totalTriggers}) across ${regions.length} regions`);
 
     let trackedCount = 0;
+    let throttled = false;
     const results: any[] = [];
 
     for (const trigger of triggers) {
+      if (throttled) break;
+
       for (const region of regions) {
+        if (throttled) break;
+
         try {
           const result = await fetchGoogleTrends(
             serpApiKey,
@@ -184,34 +191,46 @@ Deno.serve(async (req) => {
             });
           }
 
-          // SerpAPI rate limit 방지
-          await new Promise((r) => setTimeout(r, 1000));
+          // SerpAPI rate limit 방지: 호출 간 3초 딜레이
+          await new Promise((r) => setTimeout(r, 3000));
         } catch (e) {
+          if (e instanceof ThrottleError) {
+            console.warn(`[trend-track] ⚠️ THROTTLED — stopping all requests. Tracked ${trackedCount} so far.`);
+            throttled = true;
+            break;
+          }
           console.warn(`[trend-track] Error tracking ${trigger.keyword}/${region}: ${e.message}`);
         }
       }
 
       // 14일 이상 추적된 트리거는 자동 만료
-      const triggerAge = Date.now() - new Date(trigger.detected_at).getTime();
-      if (triggerAge > 14 * 24 * 60 * 60 * 1000) {
-        await sb
-          .from("ktrenz_trend_triggers")
-          .update({ status: "expired" })
-          .eq("id", trigger.id);
-        console.log(`[trend-track] Expired trigger: ${trigger.keyword} (${trigger.artist_name})`);
+      if (!throttled) {
+        const triggerAge = Date.now() - new Date(trigger.detected_at).getTime();
+        if (triggerAge > 14 * 24 * 60 * 60 * 1000) {
+          await sb
+            .from("ktrenz_trend_triggers")
+            .update({ status: "expired" })
+            .eq("id", trigger.id);
+          console.log(`[trend-track] Expired trigger: ${trigger.keyword} (${trigger.artist_name})`);
+        }
       }
     }
 
-    console.log(`[trend-track] Done: tracked ${trackedCount} keyword-region pairs`);
+    console.log(`[trend-track] Done: tracked ${trackedCount} keyword-region pairs${throttled ? " (stopped: throttled)" : ""}`);
 
-    // 처리 완료 후 다음 배치 체이닝 (fire-and-forget)
-    if (!triggerId) {
+    // 체이닝: throttle 발생 시 절대 체이닝하지 않음
+    let chained = false;
+    if (!triggerId && !throttled) {
       const nextOffset = batchOffset + batchSize;
       if (nextOffset < totalTriggers) {
-        console.log(`[trend-track] Chaining next batch: offset=${nextOffset}, remaining=${totalTriggers - nextOffset}`);
+        // 다음 배치 전 15초 딜레이 후 체이닝
+        console.log(`[trend-track] Waiting 15s before chaining next batch: offset=${nextOffset}, remaining=${totalTriggers - nextOffset}`);
+        await new Promise((r) => setTimeout(r, 15000));
+
         sb.functions.invoke("ktrenz-trend-track", {
           body: { batchSize, batchOffset: nextOffset, regions },
         }).catch((e: any) => console.warn(`[trend-track] Chain error: ${e.message}`));
+        chained = true;
       }
     }
 
@@ -222,6 +241,8 @@ Deno.serve(async (req) => {
         totalTriggers,
         triggersProcessed: triggers.length,
         tracked: trackedCount,
+        throttled,
+        chained,
         results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
