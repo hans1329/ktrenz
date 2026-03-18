@@ -485,7 +485,7 @@ const T2TrendTreemap = () => {
                     }}
                   >
                     {isMedium && rect.item.influenceIndex > 0 && (
-                      <span className="absolute top-1 right-1 z-20 text-[9px] font-bold text-white/80 drop-shadow-md">
+                      <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
                         +{rect.item.influenceIndex.toFixed(0)}%
                       </span>
                     )}
