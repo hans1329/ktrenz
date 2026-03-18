@@ -47,9 +47,9 @@ interface MemberRelation {
 
 // ─── MusicBrainz API helpers ───
 
-async function searchArtist(name: string): Promise<MBArtist | null> {
+async function searchArtist(name: string, requireKpop = true): Promise<MBArtist | null> {
   const query = encodeURIComponent(name);
-  const url = `${MB_BASE}/artist/?query=${query}&fmt=json&limit=5`;
+  const url = `${MB_BASE}/artist/?query=${query}&fmt=json&limit=10`;
 
   const resp = await fetch(url, {
     headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
@@ -67,15 +67,42 @@ async function searchArtist(name: string): Promise<MBArtist | null> {
 
   const normalizedSearch = name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
 
+  // K-pop friendly countries
+  const kpopCountries = new Set(["KR", "JP", ""]);
+
   for (const a of artists) {
     const normalizedResult = a.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
     const score = a.score ?? 0;
-    if (normalizedResult === normalizedSearch && score >= 80) return a;
-    if (score >= 95) return a;
+    const country = a.country || "";
+
+    // Skip non-Korean artists when names are generic/ambiguous
+    if (requireKpop && country && !kpopCountries.has(country) && normalizedResult !== normalizedSearch) {
+      continue;
+    }
+
+    // Exact name match with decent score
+    if (normalizedResult === normalizedSearch && score >= 80) {
+      // Prefer Korean artists for exact matches
+      if (country === "KR") return a;
+      // For non-KR exact matches, only accept if no KR match exists
+      const krMatch = artists.find(
+        (b) => b.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "") === normalizedSearch && b.country === "KR" && (b.score ?? 0) >= 70,
+      );
+      if (krMatch) return krMatch;
+      return a;
+    }
   }
 
-  if (artists[0]?.score && artists[0].score >= 90) return artists[0];
-  return null;
+  // Fallback: highest-scoring Korean artist with score >= 90
+  const koreanHigh = artists.find((a) => a.country === "KR" && (a.score ?? 0) >= 90);
+  if (koreanHigh) return koreanHigh;
+
+  // Only accept non-Korean if exact name match and high score
+  const exactHighScore = artists.find((a) => {
+    const norm = a.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+    return norm === normalizedSearch && (a.score ?? 0) >= 95;
+  });
+  return exactHighScore || null;
 }
 
 async function getArtistRelations(mbid: string): Promise<MBRelationUrl[]> {
@@ -204,12 +231,15 @@ Deno.serve(async (req) => {
     const targetId = body.wikiEntryId || null;
     const dryRun = body.dryRun === true;
     const forceRefresh = body.forceRefresh === true;
+    const offset = body.offset ?? 0;
+    const limit = body.limit ?? 20; // default batch size to stay within 60s
 
     // Tier 1 아티스트 조회
     let query = sb
       .from("v3_artist_tiers")
       .select("id, wiki_entry_id, display_name, name_ko, aliases, deezer_artist_id, lastfm_artist_name")
-      .eq("tier", 1);
+      .eq("tier", 1)
+      .order("wiki_entry_id");
 
     if (targetId) {
       query = query.eq("wiki_entry_id", targetId);
@@ -227,7 +257,11 @@ Deno.serve(async (req) => {
       ? artists
       : artists.filter((a) => !a.deezer_artist_id || !a.lastfm_artist_name);
 
-    console.log(`[MB] Processing ${needsFill.length}/${artists.length} artists (forceRefresh=${forceRefresh})`);
+    // Apply offset/limit for batch processing
+    const batch = needsFill.slice(offset, offset + limit);
+    const hasMore = offset + limit < needsFill.length;
+
+    console.log(`[MB] Processing batch ${offset}-${offset + batch.length} of ${needsFill.length} artists (forceRefresh=${forceRefresh})`);
 
     const results: {
       name: string;
@@ -240,7 +274,7 @@ Deno.serve(async (req) => {
       starId: string | null;
     }[] = [];
 
-    for (const artist of needsFill) {
+    for (const artist of batch) {
       const name = artist.display_name || "";
       if (!name) continue;
 
@@ -423,7 +457,11 @@ Deno.serve(async (req) => {
     }
 
     const summary = {
-      total: needsFill.length,
+      totalAll: needsFill.length,
+      batchSize: batch.length,
+      offset,
+      hasMore,
+      nextOffset: hasMore ? offset + limit : null,
       found: results.filter((r) => r.found).length,
       deezerFilled: results.filter((r) => r.updated.some((u) => u.startsWith("deezer="))).length,
       lastfmFilled: results.filter((r) => r.updated.some((u) => u.startsWith("lastfm="))).length,
@@ -435,7 +473,7 @@ Deno.serve(async (req) => {
     };
 
     console.log(
-      `[MB] Done: ${summary.found}/${summary.total} found, stars=${summary.starsCreated}, groups=${summary.groups}, members=${summary.membersLinked}`,
+      `[MB] Done batch: ${summary.found}/${summary.batchSize} found, stars=${summary.starsCreated}, hasMore=${hasMore}`,
     );
 
     return new Response(JSON.stringify({ success: true, dryRun, summary, results }), {
