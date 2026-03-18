@@ -446,10 +446,12 @@ const T2TrendTreemap = () => {
         </div>
       ) : viewMode === "list" ? (
         <T2TrendList
-          items={visibleItems}
+          items={visibleListItems}
           watchedSet={watchedSet}
           onTileClick={handleTileClick}
           selectedTileId={selectedTile?.id ?? null}
+          hasMore={hasMoreList}
+          onLoadMore={() => setListVisibleCount(prev => prev + 20)}
         />
       ) : (
         <>
