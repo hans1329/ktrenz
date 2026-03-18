@@ -193,7 +193,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <div>
               <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-muted-foreground" />
-                Tracking History
+                {t("trackingHistory", language)}
               </h3>
               <div className="space-y-1.5">
                 {tracking.map((t: any) => (
