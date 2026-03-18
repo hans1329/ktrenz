@@ -279,12 +279,10 @@ const T2TrendTreemap = () => {
   const hasMore = filteredItems.length > visibleCount;
 
   const rects = useMemo(() => {
-    if (!filteredItems.length) return [];
-    // Compute layout for ALL items to maintain stable positions
-    const allRects = squarify(filteredItems, 0, 0, containerWidth, containerHeight);
-    // Only return the visible ones
-    return allRects.slice(0, visibleCount);
-  }, [filteredItems, containerWidth, containerHeight, visibleCount]);
+    if (!visibleItems.length) return [];
+    // Box view should always lay out exactly the currently visible items
+    return squarify(visibleItems, 0, 0, containerWidth, containerHeight);
+  }, [visibleItems, containerWidth, containerHeight]);
 
   const handleTileClick = useCallback((item: TrendTile) => {
     setSelectedTile(prev => prev?.id === item.id ? null : item);
