@@ -9021,6 +9021,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      increment_points: {
+        Args: { amount: number; user_id: string }
+        Returns: undefined
+      }
       increment_post_view_count: {
         Args: { post_id_param: string }
         Returns: undefined

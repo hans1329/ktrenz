@@ -77,6 +77,9 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
   loginToVote: { en: "Sign in to vote", ko: "투표하려면 로그인하세요", ja: "投票するにはログイン", zh: "登录后投票" },
   boosted: { en: "Boost shared! +5 K-Point", ko: "부스트 공유 완료! +5 K-Point", ja: "ブースト共有完了！+5 K-Point", zh: "推动分享完成！+5 K-Point" },
+  readBoostReward: { en: "Read & boost +3 K-Point", ko: "읽고 밀어주기 +3 K-Point", ja: "読んで応援 +3 K-Point", zh: "阅读推动 +3 K-Point" },
+  readBoosted: { en: "Boosted! +3 K-Point", ko: "밀어주기 완료! +3 K-Point", ja: "応援完了！+3 K-Point", zh: "推动完成！+3 K-Point" },
+  alreadyBoosted: { en: "✓ Boosted +3P", ko: "✓ 밀어주기 완료 +3P", ja: "✓ 応援済み +3P", zh: "✓ 已推动 +3P" },
 };
 
 function t(key: string, lang: string): string {
@@ -144,6 +147,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile,
   });
 
+  // Read boost check (has user already read-boosted this keyword?)
+  const { data: hasReadBoosted } = useQuery({
+    queryKey: ["t2-read-boost", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .eq("platform", "read")
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
   const voteMutation = useMutation({
     mutationFn: async (voteType: "up" | "down") => {
       if (!user || !tile) return;
@@ -204,6 +224,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     }
   };
 
+  const handleReadBoost = async () => {
+    if (!tile || !user || hasReadBoosted) return;
+    await supabase
+      .from("ktrenz_keyword_boosts" as any)
+      .insert({ trigger_id: tile.id, user_id: user.id, platform: "read" } as any);
+    await supabase.rpc("increment_points" as any, { user_id: user.id, amount: 3 });
+    queryClient.invalidateQueries({ queryKey: ["t2-read-boost", tile.id, user.id] });
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile.id] });
+    toast.success(t("readBoosted", language));
+  };
+
   if (!tile) return null;
 
   return (
@@ -248,6 +279,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
+                    onClick={handleReadBoost}
                   >
                     <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
                       <img
@@ -282,6 +314,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
+                          onClick={handleReadBoost}
                         >
                           {getLocalizedSourceTitle(tile, language)}
                         </a>
@@ -320,6 +353,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 );
               })()}
             </div>
+
+            {/* Read boost reward indicator */}
+            {user && (
+              <div className="px-3 pb-2 flex justify-end">
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  hasReadBoosted ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Ranking explanation: Why this rank? */}
