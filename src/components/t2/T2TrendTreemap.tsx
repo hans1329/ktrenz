@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -142,6 +142,7 @@ const T2TrendTreemap = () => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const [viewMode, setViewMode] = useState<"treemap" | "list">("treemap");
+  const [visibleCount, setVisibleCount] = useState(50);
   const isMobile = useIsMobile();
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -272,10 +273,24 @@ const T2TrendTreemap = () => {
   const containerWidth = isMobile ? 360 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
 
+  // Reset visibleCount when category changes
+  useEffect(() => {
+    setVisibleCount(50);
+  }, [selectedCategory]);
+
+  const visibleItems = useMemo(() => {
+    return filteredItems.slice(0, visibleCount);
+  }, [filteredItems, visibleCount]);
+
+  const hasMore = filteredItems.length > visibleCount;
+
   const rects = useMemo(() => {
     if (!filteredItems.length) return [];
-    return squarify(filteredItems, 0, 0, containerWidth, containerHeight);
-  }, [filteredItems, containerWidth, containerHeight]);
+    // Compute layout for ALL items to maintain stable positions
+    const allRects = squarify(filteredItems, 0, 0, containerWidth, containerHeight);
+    // Only return the visible ones
+    return allRects.slice(0, visibleCount);
+  }, [filteredItems, containerWidth, containerHeight, visibleCount]);
 
   const handleTileClick = useCallback((item: TrendTile) => {
     setSelectedTile(prev => prev?.id === item.id ? null : item);
@@ -426,7 +441,7 @@ const T2TrendTreemap = () => {
         </div>
       ) : viewMode === "list" ? (
         <T2TrendList
-          items={filteredItems}
+          items={visibleItems}
           watchedSet={watchedSet}
           onTileClick={handleTileClick}
           selectedTileId={selectedTile?.id ?? null}
@@ -542,6 +557,18 @@ const T2TrendTreemap = () => {
             ))}
           </div>
         </>
+      )}
+
+      {/* Load More */}
+      {hasMore && filteredItems.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => setVisibleCount(prev => prev + 50)}
+            className="px-6 py-2.5 rounded-full bg-muted hover:bg-muted/80 text-sm font-semibold text-foreground border border-border transition-colors"
+          >
+            More ({visibleCount} / {filteredItems.length})
+          </button>
+        </div>
       )}
 
       {/* Detail Sheet */}
