@@ -170,14 +170,14 @@ const t = {
 
     pipelineTag: "감지 파이프라인",
     pipelineTitle: ["4단계 ", "AI 파이프라인"],
-    pipelineDesc: "국내 뉴스, 글로벌 웹, YouTube를 아우르는 자동 키워드 감지 — 이후 실시간 검색량 추적으로 검증합니다.",
+    pipelineDesc: "국내 뉴스, 소셜 미디어, YouTube, 글로벌 소스를 아우르는 자동 상업 키워드 감지 — 이후 실시간 검색량 추적으로 검증합니다.",
     pipelineSteps: [
-      { title: "감지 (네이버)", desc: "네이버 API로 아티스트당 50개 이상의 한국 뉴스 기사를 스캔. GPT-4o-mini가 텍스트 매칭 검증과 함께 브랜드/제품 엔티티를 추출합니다." },
-      { title: "감지 (글로벌)", desc: "Perplexity AI가 글로벌 뉴스와 소셜 미디어에서 국제 브랜드 콜라보 및 바이럴 제품 언급을 스캔합니다." },
-      { title: "감지 (YouTube)", desc: "YouTube Data API가 최근 영상을 검색. AI가 제목과 설명을 분석하여 제품 배치와 브랜드 피처를 감지합니다." },
-      { title: "추적 (Google Trends)", desc: "SerpAPI가 감지된 키워드를 실시간 Google Trends 검색량과 대조하여 검증합니다. 실제 시장 관심도를 측정합니다." },
+      { title: "수집", desc: "아티스트당 50개 이상의 국내 뉴스 기사와 소셜 미디어 포스트를 수집. AI가 텍스트 매칭 검증과 함께 브랜드/제품 엔티티를 추출합니다." },
+      { title: "감지", desc: "글로벌 뉴스, 소셜 미디어, 웹 소스에서 국제 브랜드 콜라보 및 바이럴 제품 언급을 다양한 시장에 걸쳐 감지합니다." },
+      { title: "분석", desc: "최근 YouTube 영상, 트렌딩 콘텐츠, 크로스 플랫폼 언급을 처리. AI가 메타데이터를 분석하여 제품 배치와 브랜드 피처를 감지합니다." },
+      { title: "추적", desc: "감지된 키워드를 실시간 검색량 데이터와 대조하여 검증합니다. 실제 시장 관심도와 소비자 반응을 시간에 따라 측정합니다." },
     ],
-    pipelineFlowLabels: ["네이버 뉴스", "글로벌 웹", "YouTube", "Google Trends", "라이브 레이더"],
+    pipelineFlowLabels: ["뉴스 & 소셜", "글로벌 웹", "YouTube", "검색량", "라이브 레이더"],
     pipelineFlowNote: "완전 자동화된 오케스트레이션:",
     pipelineFlowNote2: "— 속도 제한 보호 기능이 있는 배치 처리",
 
