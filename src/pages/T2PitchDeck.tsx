@@ -105,6 +105,18 @@ const t = {
       { emoji: "🔥", label: "Trending", desc: "All categories combined" },
     ],
 
+    // AI Agent
+    agentTitle: ["AI Fan ", "Agent"],
+    agentDesc: "A personalized AI companion for every fan — deeply biased toward your favorite artist, powered by real-time data.",
+    agentFeatures: [
+      { emoji: "🤖", title: "Dedicated Artist Manager", desc: "Each agent is exclusively devoted to your favorite artist — providing biased, passionate support with real-time rankings, metrics, and news." },
+      { emoji: "🛠️", title: "8 Real-Time Tools", desc: "Rankings lookup, artist comparison, streaming guides, schedule alerts, news feeds, and more — all powered by live database queries." },
+      { emoji: "🧠", title: "Intent & Emotion Analysis", desc: "Every conversation is analyzed for fan intent and sentiment, building a knowledge archive that improves responses over time." },
+      { emoji: "🌍", title: "Multi-Language Persona", desc: "The agent automatically adapts its personality and language to match your UI settings — Korean, English, Japanese, or Chinese." },
+      { emoji: "🎯", title: "Daily Fan Missions", desc: "Rotating daily activities — streaming missions, voting challenges, and engagement tasks — that earn K-Points and boost artist scores." },
+      { emoji: "📊", title: "Signal Intelligence", desc: "Integrates Signal A/B/C data to provide strategic insights, uncovering hidden demand gaps between attention signals and public scores." },
+    ],
+
     // Use Cases
     useCasesTag: "Use Cases",
     useCasesTitle: ["Who Needs ", "KTRENZ", "?"],
@@ -227,6 +239,17 @@ const t = {
       { emoji: "📍", label: "장소", desc: "여행지, 장소" },
       { emoji: "📺", label: "미디어", desc: "TV 프로그램, 영화, 인터뷰" },
       { emoji: "🔥", label: "트렌딩", desc: "전체 카테고리 통합" },
+    ],
+
+    agentTitle: ["AI 팬 ", "에이전트"],
+    agentDesc: "모든 팬을 위한 개인화된 AI 동반자 — 최애 아티스트에 극도로 편향된, 실시간 데이터 기반 매니저.",
+    agentFeatures: [
+      { emoji: "🤖", title: "전용 아티스트 매니저", desc: "각 에이전트는 최애 아티스트에게만 헌신합니다 — 실시간 랭킹, 메트릭, 뉴스와 함께 열정적인 지원을 제공합니다." },
+      { emoji: "🛠️", title: "8가지 실시간 도구", desc: "랭킹 조회, 아티스트 비교, 스트리밍 가이드, 일정 알림, 뉴스 피드 등 — 모두 라이브 데이터베이스 쿼리로 구동됩니다." },
+      { emoji: "🧠", title: "인텐트 & 감정 분석", desc: "모든 대화에서 팬 의도와 감정을 분석하여 지식 아카이브를 구축하고 응답 품질을 지속적으로 개선합니다." },
+      { emoji: "🌍", title: "다국어 페르소나", desc: "에이전트가 UI 설정에 맞춰 자동으로 성격과 언어를 전환합니다 — 한국어, 영어, 일본어, 중국어." },
+      { emoji: "🎯", title: "일일 팬 미션", desc: "스트리밍 미션, 투표 챌린지, 참여 과제를 순환 추천하여 K-Point를 획득하고 아티스트 점수를 향상시킵니다." },
+      { emoji: "📊", title: "시그널 인텔리전스", desc: "Signal A/B/C 데이터를 통합하여 전략적 인사이트를 제공하고, 어텐션 시그널과 공공 점수 간의 숨은 수요를 발굴합니다." },
     ],
 
     useCasesTag: "유스 케이스",
@@ -646,7 +669,29 @@ export default function T2PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 8. USE CASES ───── */}
+      {/* ───── AI FAN AGENT ───── */}
+      <Section id="agent">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              {l.agentTitle[0]}<span className="text-primary">{l.agentTitle[1]}</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{l.agentDesc}</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {l.agentFeatures.map((feat, i) => (
+              <div key={i} className="rounded-2xl border border-border/50 bg-card/40 p-5 hover:border-primary/30 transition-colors">
+                <span className="text-3xl mb-3 block">{feat.emoji}</span>
+                <h3 className="font-bold text-foreground mb-2">{feat.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feat.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── USE CASES ───── */}
       <Section id="usecases">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
