@@ -31,6 +31,7 @@ export interface TrendTile {
   peakScore: number | null;
   sourceUrl: string | null;
   sourceTitle: string | null;
+  sourceImageUrl: string | null;
   status: string;
 }
 
