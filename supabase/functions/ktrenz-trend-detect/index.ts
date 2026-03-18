@@ -334,7 +334,7 @@ interface MemberInfo {
 
 async function detectForMember(
   sb: any,
-  perplexityKey: string,
+  openaiKey: string,
   naverClientId: string,
   naverClientSecret: string,
   member: MemberInfo,
