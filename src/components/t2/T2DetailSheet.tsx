@@ -271,6 +271,24 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
           </SheetTitle>
+          {/* Artist name row */}
+          <button
+            onClick={() => {
+              if (tile.starId) {
+                onClose();
+                navigate(`/t2/artist/${tile.starId}`);
+              }
+            }}
+            className={cn(
+              "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors w-fit",
+              tile.starId
+                ? "bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                : "text-muted-foreground cursor-default"
+            )}
+          >
+            {getLocalizedArtistName(tile, language)}
+            {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
+          </button>
         </SheetHeader>
 
         <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -285,23 +303,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <Badge variant="outline" className={cn("text-[11px]", CATEGORY_COLORS[tile.category] || "")}>
               {tile.category}
             </Badge>
-            <button
-              onClick={() => {
-                if (tile.starId) {
-                  onClose();
-                  navigate(`/t2/artist/${tile.starId}`);
-                }
-              }}
-              className={cn(
-                "text-sm inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold transition-colors",
-                tile.starId
-                  ? "bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
-                  : "text-muted-foreground cursor-default"
-              )}
-            >
-              {getLocalizedArtistName(tile, language)}
-              {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
-            </button>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatAge(tile.detectedAt)}
