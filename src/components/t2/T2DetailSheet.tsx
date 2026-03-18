@@ -283,7 +283,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           rel="noopener noreferrer"
                           className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
                         >
-                          {tile.sourceTitle}
+                          {getLocalizedSourceTitle(tile, language)}
                         </a>
                       ) : (
                         <span className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
