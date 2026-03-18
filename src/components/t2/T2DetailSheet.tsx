@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronRight, ThumbsUp, ThumbsDown, Share2, Rocket } from "lucide-react";
+import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, ThumbsUp, ThumbsDown, Share2, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
