@@ -374,73 +374,120 @@ async function detectForMember(
     return { keywordsFound: 0, articlesFound: articles.length, keywords: [] };
   }
 
-  // 중복 방지: 같은 키워드가 최근 7일 이내 이미 감지되었는지
+  // 최근 7일 내 동일 멤버 키워드는 재삽입하지 않되, 빈 필드는 백필
+  const keywordSources = keywords.map((k) => {
+    let articleIdx = 0;
+    if (k.source_article_index && k.source_article_index > 0) {
+      articleIdx = k.source_article_index - 1;
+    } else {
+      const refMatch = k.context?.match(/\[(\d+)\]/);
+      if (refMatch) articleIdx = parseInt(refMatch[1], 10) - 1;
+    }
+
+    const sourceArticle = articles[articleIdx] || articles[0];
+    return { keywordData: k, sourceArticle, sourceUrl: sourceArticle?.url || null };
+  });
+
+  const uniqueUrls = [...new Set(keywordSources.map((item) => item.sourceUrl).filter(Boolean))] as string[];
+  const ogImageMap = new Map<string, string | null>();
+  await Promise.allSettled(
+    uniqueUrls.map(async (url) => {
+      ogImageMap.set(url, await fetchOgImage(url));
+    })
+  );
+
+  const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => ({
+    extractedKeyword: keywordData,
+    row: {
+      wiki_entry_id: member.group_wiki_entry_id || null,
+      star_id: member.id || null,
+      trigger_type: "news_mention",
+      trigger_source: "naver_news",
+      artist_name: member.display_name,
+      keyword: keywordData.keyword,
+      keyword_ko: keywordData.keyword_ko || null,
+      keyword_ja: keywordData.keyword_ja || null,
+      keyword_zh: keywordData.keyword_zh || null,
+      keyword_category: keywordData.category,
+      context: keywordData.context,
+      context_ko: keywordData.context_ko || null,
+      context_ja: keywordData.context_ja || null,
+      context_zh: keywordData.context_zh || null,
+      confidence: keywordData.confidence,
+      source_url: sourceUrl,
+      source_title: sourceArticle?.title || null,
+      source_image_url: sourceUrl ? ogImageMap.get(sourceUrl) || null : null,
+      status: "active",
+      metadata: {
+        article_count: articles.length,
+        search_name: searchName,
+        group_name: member.group_name,
+      },
+    },
+  }));
+
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
-    .select("keyword, star_id")
+    .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
+    .eq("star_id", member.id)
     .gte("detected_at", weekAgo)
     .in("keyword", keywords.map((k) => k.keyword));
 
-  const existingKeywords = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
-  const newKeywords = keywords.filter((k) => !existingKeywords.has(k.keyword.toLowerCase()));
+  const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
+  const rowsToInsert: any[] = [];
+  const insertedKeywords: ExtractedKeyword[] = [];
+  const backfillPromises: PromiseLike<unknown>[] = [];
 
-  if (newKeywords.length > 0) {
-    // OG image 추출
-    const sourceArticles = newKeywords.map((k) => {
-      let articleIdx = 0;
-      if (k.source_article_index && k.source_article_index > 0) {
-        articleIdx = k.source_article_index - 1;
-      } else {
-        const refMatch = k.context?.match(/\[(\d+)\]/);
-        if (refMatch) articleIdx = parseInt(refMatch[1], 10) - 1;
+  for (const candidate of candidateRows) {
+    const current = existingByKeyword.get(candidate.row.keyword.toLowerCase());
+
+    if (!current) {
+      rowsToInsert.push(candidate.row);
+      insertedKeywords.push(candidate.extractedKeyword);
+      continue;
+    }
+
+    const patch: Record<string, unknown> = {};
+    const backfillFields = [
+      "keyword_ko",
+      "keyword_ja",
+      "keyword_zh",
+      "context",
+      "context_ko",
+      "context_ja",
+      "context_zh",
+      "source_url",
+      "source_title",
+      "source_image_url",
+    ] as const;
+
+    for (const field of backfillFields) {
+      const currentValue = (current as Record<string, any>)[field];
+      const nextValue = (candidate.row as Record<string, any>)[field];
+      if ((currentValue == null || currentValue === "") && nextValue) {
+        patch[field] = nextValue;
       }
-      return articles[articleIdx] || articles[0];
-    });
+    }
 
-    const uniqueUrls = [...new Set(sourceArticles.map((a) => a?.url).filter(Boolean))] as string[];
-    const ogImageMap = new Map<string, string | null>();
-    await Promise.allSettled(
-      uniqueUrls.map(async (url) => {
-        ogImageMap.set(url, await fetchOgImage(url));
-      })
-    );
-
-    const rows = newKeywords.map((k, i) => {
-      const sourceArticle = sourceArticles[i];
-      const sourceUrl = sourceArticle?.url || null;
-
-      return {
-        wiki_entry_id: member.group_wiki_entry_id || null,
-        star_id: member.id || null,
-        trigger_type: "news_mention",
-        trigger_source: "naver_news",
-        artist_name: member.display_name,
-        keyword: k.keyword,
-        keyword_ko: k.keyword_ko || null,
-        keyword_ja: k.keyword_ja || null,
-        keyword_zh: k.keyword_zh || null,
-        keyword_category: k.category,
-        context: k.context,
-        context_ko: k.context_ko || null,
-        context_ja: k.context_ja || null,
-        context_zh: k.context_zh || null,
-        confidence: k.confidence,
-        source_url: sourceUrl,
-        source_title: sourceArticle?.title || null,
-        source_image_url: sourceUrl ? ogImageMap.get(sourceUrl) || null : null,
-        status: "active",
-        metadata: {
-          article_count: articles.length,
-          search_name: searchName,
-          group_name: member.group_name,
-        },
-      };
-    });
-
-    await sb.from("ktrenz_trend_triggers").insert(rows);
-    console.log(`[trend-detect] ${member.display_name}: inserted ${newKeywords.length} new keywords (${newKeywords.map((k) => k.keyword).join(", ")})`);
+    if (Object.keys(patch).length > 0) {
+      backfillPromises.push(
+        sb.from("ktrenz_trend_triggers").update(patch).eq("id", current.id)
+      );
+    }
   }
 
-  return { keywordsFound: newKeywords.length, articlesFound: articles.length, keywords: newKeywords };
+  if (rowsToInsert.length > 0) {
+    await sb.from("ktrenz_trend_triggers").insert(rowsToInsert);
+  }
+
+  if (backfillPromises.length > 0) {
+    await Promise.allSettled(backfillPromises);
+  }
+
+  console.log(
+    `[trend-detect] ${member.display_name}: inserted ${rowsToInsert.length} new keywords, backfilled ${backfillPromises.length} existing keywords`
+  );
+
+  return { keywordsFound: rowsToInsert.length, articlesFound: articles.length, keywords: insertedKeywords };
 }
