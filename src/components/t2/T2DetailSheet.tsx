@@ -193,10 +193,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 <Newspaper className="w-3.5 h-3.5 text-primary" />
                 {t("whyTrend", language)}
               </h3>
-              {tile.context ? (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {tile.context}
-                </p>
+              {(() => {
+                const ctx = language === "ko" ? (tile.contextKo || tile.context)
+                  : language === "ja" ? (tile.contextJa || tile.context)
+                  : language === "zh" ? (tile.contextZh || tile.context)
+                  : tile.context;
+                return ctx ? (
+                  <p className="text-sm text-muted-foreground leading-relaxed">{ctx}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
+                );
+              })()}
               ) : (
                 <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
               )}
