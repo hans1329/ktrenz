@@ -15,12 +15,12 @@ type Lang = "en" | "ko";
 const t = {
   en: {
     // Hero
-    heroTag: "T2 · Trend Intelligence Engine",
+    heroTag: "KTRENZ · Trend Intelligence Engine",
     heroTitle1: "Detect What",
     heroTitle2: "K-Pop Moves",
     heroTitle3: "Before the Market",
     heroDesc: "Which brand collaboration is gaining traction? Which product placement just went viral?",
-    heroDescBold: "T2 finds the signal before it becomes noise.",
+    heroDescBold: "KTRENZ finds the signal before it becomes noise.",
     heroCta: "View Live Radar",
     statKeywords: "Keywords Tracked",
     statSources: "Sources / Day",
@@ -107,7 +107,7 @@ const t = {
 
     // Use Cases
     useCasesTag: "Use Cases",
-    useCasesTitle: ["Who Needs ", "T2", "?"],
+    useCasesTitle: ["Who Needs ", "KTRENZ", "?"],
     useCaseCards: [
       { title: "Brand Managers", desc: "Monitor which K-Pop artists are organically driving interest in your products. Identify potential ambassadors based on real influence data, not social follower counts." },
       { title: "Entertainment Agencies", desc: "Understand your artists' commercial footprint. Track which endorsement deals generate genuine search interest and which ones go unnoticed." },
@@ -140,17 +140,17 @@ const t = {
     ctaTag: "Get Started",
     ctaTitle: ["See the ", "Trend Radar", " Live"],
     ctaDesc: "Explore real-time keyword detections, influence scores, and commercial insights across 100+ K-Pop artists.",
-    ctaCta1: "Open T2 Radar",
+    ctaCta1: "Open KTRENZ Radar",
     ctaCta2: "View Full Platform Deck",
     ctaFooter: "ecosystem — Real-time K-Pop intelligence platform",
   },
   ko: {
-    heroTag: "T2 · 트렌드 인텔리전스 엔진",
+    heroTag: "KTRENZ · 트렌드 인텔리전스 엔진",
     heroTitle1: "K-Pop이 만드는",
     heroTitle2: "상업적 움직임을",
     heroTitle3: "시장보다 먼저 감지",
     heroDesc: "어떤 브랜드 콜라보가 주목받고 있나? 어떤 제품 PPL이 바이럴 되었나?",
-    heroDescBold: "T2는 노이즈가 되기 전에 시그널을 찾습니다.",
+    heroDescBold: "KTRENZ는 노이즈가 되기 전에 시그널을 찾습니다.",
     heroCta: "라이브 레이더 보기",
     statKeywords: "추적 키워드",
     statSources: "소스 / 일",
@@ -230,7 +230,7 @@ const t = {
     ],
 
     useCasesTag: "유스 케이스",
-    useCasesTitle: ["누가 ", "T2", "를 필요로 하나?"],
+    useCasesTitle: ["누가 ", "KTRENZ", "를 필요로 하나?"],
     useCaseCards: [
       { title: "브랜드 매니저", desc: "어떤 K-Pop 아티스트가 제품에 대한 관심을 자연스럽게 유도하는지 모니터링합니다. 소셜 팔로워 수가 아닌 실제 영향력 데이터를 기반으로 잠재 앰배서더를 식별합니다." },
       { title: "엔터테인먼트 에이전시", desc: "아티스트의 상업적 영향력을 이해합니다. 어떤 엔도스먼트 딜이 진정한 검색 관심을 생성하고 어떤 것이 주목받지 못하는지 추적합니다." },
@@ -261,7 +261,7 @@ const t = {
     ctaTag: "시작하기",
     ctaTitle: ["", "트렌드 레이더", " 라이브 보기"],
     ctaDesc: "100+ K-Pop 아티스트에 대한 실시간 키워드 감지, 영향력 점수, 상업적 인사이트를 탐색하세요.",
-    ctaCta1: "T2 레이더 열기",
+    ctaCta1: "KTRENZ 레이더 열기",
     ctaCta2: "전체 플랫폼 덱 보기",
     ctaFooter: "에코시스템 — 실시간 K-Pop 인텔리전스 플랫폼",
   },
@@ -358,8 +358,8 @@ export default function T2PitchDeck() {
   return (
     <div className="bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="T2 Trend Intelligence — Real-Time K-Pop Commercial Keyword Radar"
-        description="T2 detects which brands, products, and items K-Pop artists are associated with — before the market catches on."
+        title="KTRENZ Trend Intelligence — Real-Time K-Pop Commercial Keyword Radar"
+        description="KTRENZ detects which brands, products, and items K-Pop artists are associated with — before the market catches on."
         path="/pd"
       />
 
