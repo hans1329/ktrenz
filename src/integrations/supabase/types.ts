@@ -9044,6 +9044,10 @@ export type Database = {
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
       ktrenz_get_agent_slot_limit: { Args: { _user_id: string }; Returns: Json }
       ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
+      ktrenz_increment_points: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: undefined
+      }
       ktrenz_purchase_agent_messages: {
         Args: { _bundle: number; _user_id: string }
         Returns: Json
