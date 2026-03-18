@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TrendTile } from "./T2TrendTreemap";
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
-  brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)" },
-  product: { label: "Product", color: "hsl(270, 60%, 55%)" },
-  place:   { label: "Place",   color: "hsl(145, 55%, 45%)" },
-  food:    { label: "Food",    color: "hsl(25, 80%, 55%)" },
-  fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)" },
-  beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)" },
-  media:   { label: "Media",   color: "hsl(190, 70%, 45%)" },
+const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
+  brand:   { label: "Brand",   labelKo: "브랜드",  labelJa: "ブランド",  labelZh: "品牌",   color: "hsl(210, 70%, 55%)" },
+  product: { label: "Product", labelKo: "제품",    labelJa: "製品",      labelZh: "产品",   color: "hsl(270, 60%, 55%)" },
+  place:   { label: "Place",   labelKo: "장소",    labelJa: "場所",      labelZh: "地点",   color: "hsl(145, 55%, 45%)" },
+  food:    { label: "Food",    labelKo: "음식",    labelJa: "フード",    labelZh: "美食",   color: "hsl(25, 80%, 55%)" },
+  fashion: { label: "Fashion", labelKo: "패션",    labelJa: "ファッション", labelZh: "时尚", color: "hsl(330, 65%, 55%)" },
+  beauty:  { label: "Beauty",  labelKo: "뷰티",    labelJa: "ビューティー", labelZh: "美妆", color: "hsl(350, 60%, 55%)" },
+  media:   { label: "Media",   labelKo: "미디어",  labelJa: "メディア",  labelZh: "媒体",   color: "hsl(190, 70%, 45%)" },
 };
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
@@ -34,6 +34,17 @@ function getLocalizedContext(tile: TrendTile, lang: string): string | null {
     case "ja": return tile.contextJa || tile.context;
     case "zh": return tile.contextZh || tile.context;
     default: return tile.context;
+  }
+}
+
+function getCategoryLabel(cat: string, lang: string): string {
+  const c = CATEGORY_CONFIG[cat];
+  if (!c) return cat;
+  switch (lang) {
+    case "ko": return c.labelKo;
+    case "ja": return c.labelJa;
+    case "zh": return c.labelZh;
+    default: return c.label;
   }
 }
 
@@ -124,7 +135,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
                   className="absolute bottom-2.5 left-2.5 z-10 text-[10px] font-bold px-2 py-0.5 rounded-sm text-white backdrop-blur-sm"
                   style={{ background: catConfig?.color ? `${catConfig.color.replace(')', ', 0.85)').replace('hsl(', 'hsla(')}` : "hsla(var(--muted-foreground), 0.85)" }}
                 >
-                  {catConfig?.label || item.category}
+                  {getCategoryLabel(item.category, language)}
                 </span>
                 {/* Influence badge — top right */}
                 {item.influenceIndex > 0 && (
@@ -145,7 +156,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId }: T2Trend
                   className="text-[10px] font-bold px-2 py-0.5 rounded-sm text-white"
                   style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
                 >
-                  {catConfig?.label || item.category}
+                  {getCategoryLabel(item.category, language)}
                 </span>
                 {item.influenceIndex > 0 && (
                   <span className="text-sm font-black text-primary">
