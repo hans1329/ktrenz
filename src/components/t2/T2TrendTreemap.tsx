@@ -135,6 +135,24 @@ const T2TrendTreemap = () => {
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const isMobile = useIsMobile();
   const { language } = useLanguage();
+  const { user } = useAuth();
+
+  // Fetch user's watched artists
+  const { data: watchedWikiIds } = useQuery({
+    queryKey: ["t2-watched-artists", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_watched_artists")
+        .select("wiki_entry_id")
+        .eq("user_id", user.id);
+      return (data ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
