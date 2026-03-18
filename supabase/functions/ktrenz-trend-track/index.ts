@@ -1,5 +1,6 @@
 // T2 Trend Track: 감지된 상업 키워드의 Google Trends 검색량을 SerpAPI로 추적
 // ktrenz_trend_triggers에서 active 키워드를 읽어 검색량 변화를 ktrenz_trend_tracking에 기록
+// 배치 + self-invocation으로 60초 타임아웃 회피
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -15,7 +16,6 @@ interface TrendResult {
   timeline: { date: string; value: number }[];
 }
 
-// SerpAPI Google Trends로 키워드 검색량 조회
 async function fetchGoogleTrends(
   serpApiKey: string,
   keyword: string,
@@ -23,8 +23,6 @@ async function fetchGoogleTrends(
   region: string = "worldwide"
 ): Promise<TrendResult | null> {
   try {
-    // 전략 1: 아티스트+키워드 조합, 전략 2: 키워드 단독
-    // 조합 검색에서 데이터가 없으면 키워드 단독으로 폴백
     const queries = [`${artistName} ${keyword}`, keyword];
     
     for (const query of queries) {
@@ -59,7 +57,6 @@ async function fetchGoogleTrends(
 
       const latestValue = timeline[timeline.length - 1]?.value ?? 0;
       
-      // 유의미한 데이터가 있으면 반환
       if (latestValue > 0 || timeline.some((t: any) => t.value > 0)) {
         return {
           keyword,
@@ -84,7 +81,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { triggerId, batchSize = 10, regions = ["worldwide", "KR", "US", "JP"] } = body;
+    const {
+      triggerId,
+      batchSize = 5,
+      batchOffset = 0,
+      regions = ["worldwide", "KR", "US", "JP"],
+    } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -98,8 +100,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 단일 트리거 또는 배치 모드
+    // 단일 트리거 모드
     let triggers: any[];
+    let totalTriggers = 0;
 
     if (triggerId) {
       const { data } = await sb
@@ -108,17 +111,20 @@ Deno.serve(async (req) => {
         .eq("id", triggerId)
         .single();
       triggers = data ? [data] : [];
+      totalTriggers = triggers.length;
     } else {
-      // active 상태인 최근 트리거 가져오기 (7일 이내)
+      // active 상태인 최근 트리거 (배치 처리)
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data } = await sb
         .from("ktrenz_trend_triggers")
         .select("*")
         .eq("status", "active")
         .gte("detected_at", weekAgo)
-        .order("detected_at", { ascending: false })
-        .limit(batchSize);
-      triggers = data || [];
+        .order("detected_at", { ascending: false });
+
+      const allTriggers = data || [];
+      totalTriggers = allTriggers.length;
+      triggers = allTriggers.slice(batchOffset, batchOffset + batchSize);
     }
 
     if (!triggers.length) {
@@ -128,7 +134,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[trend-track] Tracking ${triggers.length} triggers across ${regions.length} regions`);
+    console.log(`[trend-track] Tracking ${triggers.length} triggers (offset=${batchOffset}) across ${regions.length} regions`);
 
     let trackedCount = 0;
     const results: any[] = [];
@@ -144,7 +150,6 @@ Deno.serve(async (req) => {
           );
 
           if (result) {
-            // 이전 추적 데이터와 비교하여 delta 계산
             const { data: prevTracking } = await sb
               .from("ktrenz_trend_tracking")
               .select("interest_score")
@@ -199,9 +204,22 @@ Deno.serve(async (req) => {
 
     console.log(`[trend-track] Done: tracked ${trackedCount} keyword-region pairs`);
 
+    // 처리 완료 후 다음 배치 체이닝 (fire-and-forget)
+    if (!triggerId) {
+      const nextOffset = batchOffset + batchSize;
+      if (nextOffset < totalTriggers) {
+        console.log(`[trend-track] Chaining next batch: offset=${nextOffset}, remaining=${totalTriggers - nextOffset}`);
+        sb.functions.invoke("ktrenz-trend-track", {
+          body: { batchSize, batchOffset: nextOffset, regions },
+        }).catch((e: any) => console.warn(`[trend-track] Chain error: ${e.message}`));
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
+        batchOffset,
+        totalTriggers,
         triggersProcessed: triggers.length,
         tracked: trackedCount,
         results,
