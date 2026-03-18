@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
+const AI_URL = "https://api.openai.com/v1/chat/completions";
 
 async function translateContext(keyword: string, context: string): Promise<{ ko: string; ja: string; zh: string } | null> {
   try {
