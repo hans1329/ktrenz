@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, ArrowUpRight, ArrowDownRight, Globe, Clock, Minus, ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronRight, ThumbsUp, ThumbsDown, Share2, Rocket } from "lucide-react";
+import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, ThumbsUp, ThumbsDown, Share2, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -61,16 +60,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   influence: { en: "Influence", ko: "영향력", ja: "影響力", zh: "影响力" },
   baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
-  trackingHistory: { en: "Tracking History", ko: "추적 기록", ja: "トラッキング履歴", zh: "追踪记录" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
-  lifecycle: { en: "Keyword Lifecycle", ko: "키워드 수명", ja: "キーワードライフサイクル", zh: "关键词生命周期" },
-  elapsed: { en: "Elapsed", ko: "경과 시간", ja: "経過時間", zh: "已用时间" },
-  lifetime: { en: "Lifetime", ko: "총 수명", ja: "総寿命", zh: "总寿命" },
-  peakDelay: { en: "Time to Peak", ko: "피크까지", ja: "ピークまで", zh: "达到峰值" },
-  peakTime: { en: "Peaked", ko: "피크 시점", ja: "ピーク時", zh: "峰值时间" },
-  notPeakedYet: { en: "Not peaked yet", ko: "아직 피크 없음", ja: "未到達", zh: "尚未达到峰值" },
-  active: { en: "Active", ko: "활성", ja: "アクティブ", zh: "活跃" },
-  expired: { en: "Expired", ko: "만료", ja: "期限切れ", zh: "已过期" },
   voteRelevance: { en: "Is this relevant?", ko: "이 트렌드가 관련 있나요?", ja: "関連性がありますか？", zh: "这个趋势相关吗？" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
@@ -103,20 +93,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: tracking } = useQuery({
-    queryKey: ["t2-tracking-detail", tile?.id],
-    queryFn: async () => {
-      if (!tile) return [];
-      const { data } = await supabase
-        .from("ktrenz_trend_tracking" as any)
-        .select("*")
-        .eq("trigger_id", tile.id)
-        .order("tracked_at", { ascending: false })
-        .limit(20);
-      return (data ?? []) as any[];
-    },
-    enabled: !!tile,
-  });
+
+
 
   // Vote data
   const { data: voteData } = useQuery({
@@ -447,139 +425,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             </div>
           </div>
 
-          {/* Keyword Lifecycle */}
-          <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
-            <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <Timer className="w-3.5 h-3.5 text-primary" />
-              {t("lifecycle", language)}
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {/* Elapsed / Lifetime */}
-              <div className="rounded-lg bg-background/60 border border-border/50 p-2.5">
-                <div className="text-[10px] text-muted-foreground mb-0.5">
-                  {tile.expiredAt ? t("lifetime", language) : t("elapsed", language)}
-                </div>
-                <div className="text-sm font-bold text-foreground">
-                  {(() => {
-                    if (tile.lifetimeHours && tile.lifetimeHours > 0) {
-                      return tile.lifetimeHours >= 24
-                        ? `${(tile.lifetimeHours / 24).toFixed(1)}d`
-                        : `${tile.lifetimeHours.toFixed(1)}h`;
-                    }
-                    const elapsed = (Date.now() - new Date(tile.detectedAt).getTime()) / 3600000;
-                    return elapsed >= 24
-                      ? `${(elapsed / 24).toFixed(1)}d`
-                      : `${elapsed.toFixed(1)}h`;
-                  })()}
-                </div>
-              </div>
-              {/* Time to Peak */}
-              <div className="rounded-lg bg-background/60 border border-border/50 p-2.5">
-                <div className="text-[10px] text-muted-foreground mb-0.5">
-                  {t("peakDelay", language)}
-                </div>
-                <div className="text-sm font-bold text-foreground flex items-center gap-1">
-                  {tile.peakAt ? (
-                    <>
-                      <Zap className="w-3 h-3 text-amber-500" />
-                      {(() => {
-                        const delay = tile.peakDelayHours && tile.peakDelayHours > 0
-                          ? tile.peakDelayHours
-                          : (new Date(tile.peakAt).getTime() - new Date(tile.detectedAt).getTime()) / 3600000;
-                        return delay >= 24
-                          ? `${(delay / 24).toFixed(1)}d`
-                          : `${delay.toFixed(1)}h`;
-                      })()}
-                    </>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">{t("notPeakedYet", language)}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* Status + timeline bar */}
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={cn(
-                "text-[10px] font-bold",
-                tile.status === "active"
-                  ? "border-green-500/40 text-green-500 bg-green-500/10"
-                  : "border-muted-foreground/30 text-muted-foreground bg-muted/20"
-              )}>
-                {tile.status === "active" ? t("active", language) : t("expired", language)}
-              </Badge>
-              <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
-                {(() => {
-                  const maxDays = 14;
-                  const elapsed = tile.lifetimeHours && tile.lifetimeHours > 0
-                    ? tile.lifetimeHours
-                    : (Date.now() - new Date(tile.detectedAt).getTime()) / 3600000;
-                  const pct = Math.min(100, (elapsed / (maxDays * 24)) * 100);
-                  const peakPct = tile.peakAt
-                    ? Math.min(100, ((new Date(tile.peakAt).getTime() - new Date(tile.detectedAt).getTime()) / (maxDays * 24 * 3600000)) * 100)
-                    : null;
-                  return (
-                    <div className="relative h-full">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-primary/60"
-                        style={{ width: `${pct}%` }}
-                      />
-                      {peakPct != null && (
-                        <div
-                          className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-500 border border-background"
-                          style={{ left: `${peakPct}%` }}
-                          title="Peak"
-                        />
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-              <span className="text-[10px] text-muted-foreground shrink-0">14d</span>
-            </div>
-          </div>
 
-          {/* Tracking history */}
-          {tracking && tracking.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-muted-foreground" />
-                {t("trackingHistory", language)}
-              </h3>
-              <div className="space-y-1.5">
-                {tracking.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/20 border border-border/40">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground w-8">{t.region}</span>
-                      <span className="text-sm font-bold text-foreground">
-                        {t.interest_score}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-0.5">
-                        {(t.delta_pct ?? 0) > 0 ? (
-                          <ArrowUpRight className="w-3 h-3 text-green-500" />
-                        ) : (t.delta_pct ?? 0) < 0 ? (
-                          <ArrowDownRight className="w-3 h-3 text-red-500" />
-                        ) : (
-                          <Minus className="w-3 h-3 text-muted-foreground" />
-                        )}
-                        <span className={cn(
-                          "text-xs font-medium",
-                          (t.delta_pct ?? 0) > 0 ? "text-green-500" :
-                          (t.delta_pct ?? 0) < 0 ? "text-red-500" : "text-muted-foreground"
-                        )}>
-                          {(t.delta_pct ?? 0) > 0 ? "+" : ""}{(t.delta_pct ?? 0).toFixed(1)}%
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatAge(t.tracked_at)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Vote & Boost */}
           <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-3">
