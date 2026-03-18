@@ -125,6 +125,17 @@ const t = {
       { emoji: "📈", title: "Data Amplification", desc: "User engagement improves detection accuracy, enriches influence scoring, and expands coverage." },
     ],
 
+    // Revenue Model
+    revenueTag: "Revenue Model",
+    revenueTitle: ["How KTRENZ ", "Monetizes"],
+    revenueDesc: "A diversified revenue engine spanning B2B intelligence, B2C engagement, data licensing, and brand partnerships.",
+    revenueStreams: [
+      { emoji: "🏢", title: "B2B Intelligence", items: ["Agency dashboard subscriptions", "Custom trend reports & alerts", "API access for real-time data", "White-label analytics solutions"] },
+      { emoji: "👤", title: "B2C Fan Economy", items: ["K-Point in-app purchases", "K-Pass premium subscriptions", "Priority access to insights", "Exclusive trend badges & rewards"] },
+      { emoji: "📊", title: "Data Licensing", items: ["Trend data feeds for platforms", "Influence Index API for advertisers", "Artist-brand affinity datasets", "Market intelligence reports"] },
+      { emoji: "📢", title: "Ads & Sponsorship", items: ["Sponsored trend highlights", "Brand-featured keyword placements", "Agency-sponsored artist cards", "Cross-promotion partnerships"] },
+    ],
+
     // CTA
     ctaTag: "Get Started",
     ctaTitle: ["See the ", "Trend Radar", " Live"],
@@ -234,6 +245,16 @@ const t = {
       { emoji: "🎯", title: "아티스트 트리거", desc: "아티스트 활동(브랜드 딜, PPL, 바이럴 모먼트)이 레이더에 실시간 트렌드 시그널을 생성합니다." },
       { emoji: "🗳️", title: "유저 참여", desc: "팬들이 트렌드에 투표하고, 스트리밍 미션을 수행하며, 데이터와 상호작용합니다 — K-Point를 획득하면서." },
       { emoji: "📈", title: "데이터 확산", desc: "유저 참여가 감지 정확도를 개선하고, 영향력 스코어링을 풍부하게 하며, 커버리지를 확장합니다." },
+    ],
+
+    revenueTag: "매출 구조",
+    revenueTitle: ["KTRENZ ", "수익 모델"],
+    revenueDesc: "B2B 인텔리전스, B2C 팬 이코노미, 데이터 라이선싱, 브랜드 파트너십을 아우르는 다각화된 매출 엔진.",
+    revenueStreams: [
+      { emoji: "🏢", title: "B2B 인텔리전스", items: ["기획사 대시보드 구독", "맞춤 트렌드 리포트 & 알림", "실시간 데이터 API 접근권", "화이트라벨 분석 솔루션"] },
+      { emoji: "👤", title: "B2C 팬 이코노미", items: ["K-Point 인앱 구매", "K-Pass 프리미엄 구독", "인사이트 우선 접근권", "독점 트렌드 뱃지 & 리워드"] },
+      { emoji: "📊", title: "데이터 라이선싱", items: ["플랫폼용 트렌드 데이터 피드", "광고주용 영향력 지수 API", "아티스트-브랜드 친화도 데이터셋", "시장 인텔리전스 리포트"] },
+      { emoji: "📢", title: "광고 & 스폰서십", items: ["스폰서드 트렌드 하이라이트", "브랜드 피처드 키워드 배치", "기획사 스폰서 아티스트 카드", "크로스 프로모션 파트너십"] },
     ],
 
     ctaTag: "시작하기",
@@ -697,7 +718,47 @@ export default function T2PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 10. CTA ───── */}
+      {/* ───── 10. REVENUE MODEL ───── */}
+      <Section id="revenue">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-16">
+            <SectionTag><Layers className="w-3.5 h-3.5" /> {l.revenueTag}</SectionTag>
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              {l.revenueTitle[0]}<span className="text-primary">{l.revenueTitle[1]}</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{l.revenueDesc}</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6">
+            {l.revenueStreams.map((stream, i) => {
+              const borderColors = [
+                "border-blue-500/30 hover:border-blue-500/50",
+                "border-purple-500/30 hover:border-purple-500/50",
+                "border-emerald-500/30 hover:border-emerald-500/50",
+                "border-amber-500/30 hover:border-amber-500/50",
+              ];
+              return (
+                <div key={i} className={`rounded-2xl border bg-card/40 p-6 transition-colors ${borderColors[i]}`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-3xl">{stream.emoji}</span>
+                    <h3 className="font-bold text-lg text-foreground">{stream.title}</h3>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {stream.items.map((item, j) => (
+                      <li key={j} className="flex items-start gap-2 text-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                        <span className="text-muted-foreground">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── 11. CTA ───── */}
       <Section>
         <div className="relative max-w-3xl mx-auto text-center z-10">
           <div className="absolute inset-0 -z-10">
