@@ -23,6 +23,10 @@ export interface TrendTile {
   influenceIndex: number;
   context: string | null;
   detectedAt: string;
+  peakAt: string | null;
+  expiredAt: string | null;
+  lifetimeHours: number | null;
+  peakDelayHours: number | null;
   baselineScore: number | null;
   peakScore: number | null;
   sourceUrl: string | null;
