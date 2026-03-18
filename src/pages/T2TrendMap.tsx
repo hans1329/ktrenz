@@ -4,6 +4,7 @@ import SEO from "@/components/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
 import V3Header from "@/components/v3/V3Header";
 import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
+import V3TabBar from "@/components/v3/V3TabBar";
 import T2TrendTreemap from "@/components/t2/T2TrendTreemap";
 
 const T2TrendMap = () => {
@@ -25,9 +26,10 @@ const T2TrendMap = () => {
           path="/t2"
         />
         <V3Header />
-        <div className="pt-14 pb-6">
+        <div className="pt-14 pb-24">
           <T2TrendTreemap />
         </div>
+        <V3TabBar activeTab="rankings" onTabChange={() => {}} />
       </>
     );
   }
