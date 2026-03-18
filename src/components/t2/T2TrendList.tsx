@@ -182,7 +182,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             )}
 
             {/* Caption / context */}
-            <div className="px-3.5 py-2.5 space-y-1.5">
+            <div className="px-3.5 py-2.5 lg:px-5 lg:py-3.5 space-y-1.5 lg:space-y-2">
               {context && (
                 <p className="text-sm text-foreground leading-snug line-clamp-3">
                   <span className="font-bold">{getLocalizedArtistName(item, language)}</span>{" "}
