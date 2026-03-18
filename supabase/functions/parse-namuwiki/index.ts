@@ -59,11 +59,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 2: AI extraction
-    const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
-    if (!perplexityKey) {
+    // Step 2: AI extraction (텍스트 분석이므로 OpenAI 사용, 웹검색이 아님)
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) {
       return new Response(
-        JSON.stringify({ error: "PERPLEXITY_API_KEY가 설정되지 않았습니다" }),
+        JSON.stringify({ error: "OPENAI_API_KEY가 설정되지 않았습니다" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
