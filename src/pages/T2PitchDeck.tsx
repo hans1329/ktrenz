@@ -694,7 +694,6 @@ export default function T2PitchDeck() {
               </div>
             </div>
           </div>
-          </div>
         </div>
       </Section>
 
