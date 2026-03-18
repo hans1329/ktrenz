@@ -241,7 +241,7 @@ const T2TrendTreemap = () => {
     return triggers.filter(t => watchedSet.has(t.wikiEntryId));
   }, [triggers, watchedSet]);
 
-  // Deduplicate: max 3 keywords per artist, sorted by influence then baseline
+  // Deduplicate: 1 best keyword per artist (top by influence → baseline → recency)
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
     const sorted = [...triggers].sort((a, b) => {
@@ -249,12 +249,10 @@ const T2TrendTreemap = () => {
       if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
     });
-    const artistCount = new Map<string, number>();
+    const seen = new Set<string>();
     return sorted.filter(t => {
-      const key = t.artistName;
-      const count = artistCount.get(key) || 0;
-      if (count >= 3) return false;
-      artistCount.set(key, count + 1);
+      if (seen.has(t.artistName)) return false;
+      seen.add(t.artistName);
       return true;
     });
   }, [triggers]);
