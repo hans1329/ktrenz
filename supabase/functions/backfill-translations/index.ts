@@ -13,8 +13,7 @@ async function translateContext(keyword: string, context: string): Promise<{ ko:
     const res = await fetch(AI_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
