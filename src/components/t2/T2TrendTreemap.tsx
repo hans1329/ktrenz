@@ -550,15 +550,6 @@ const T2TrendTreemap = () => {
               })}
             </div>
           </div>
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-              <div key={key} className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: config.color }} />
-                <span className="text-[10px] text-muted-foreground">{config.label}</span>
-              </div>
-            ))}
-          </div>
         </>
       )}
 
