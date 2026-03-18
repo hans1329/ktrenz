@@ -56,7 +56,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peakedAt: { en: ", peaked at", ko: ", 최고", ja: ", ピーク", zh: ", 峰值" },
   highestAmong: { en: "This is the highest influence index among", ko: "이것은", ja: "これは", zh: "这是" },
   activeKeywords: { en: "active keywords.", ko: "개 활성 키워드 중 가장 높은 영향력 지수입니다.", ja: "件のアクティブキーワードの中で最高の影響力指数です。", zh: "个活跃关键词中最高的影响力指数。" },
-  trackingStarted: { en: "Tracking just started — waiting for Google Trends data to calculate influence.", ko: "추적이 시작되었습니다 — 영향력 산출을 위해 Google Trends 데이터를 기다리고 있습니다.", ja: "トラッキングが開始されました — 影響力算出のためGoogle Trendsデータを待っています。", zh: "追踪刚开始 — 等待Google Trends数据计算影响力。" },
+  trackingStarted: { en: "Tracking just started — waiting for trend data to calculate influence.", ko: "추적이 시작되었습니다 — 영향력 산출을 위해 트렌드 데이터를 기다리고 있습니다.", ja: "トラッキングが開始されました — 影響力算出のためトレンドデータを待っています。", zh: "追踪刚开始 — 等待趋势数据计算影响力。" },
   influence: { en: "Influence", ko: "영향력", ja: "影響力", zh: "影响力" },
   baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
