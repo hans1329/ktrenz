@@ -285,9 +285,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <Badge variant="outline" className={cn("text-[11px]", CATEGORY_COLORS[tile.category] || "")}>
               {tile.category}
             </Badge>
-            <span className="text-sm text-muted-foreground">
-              {t("by", language)} <span className="font-medium text-foreground">{getLocalizedArtistName(tile, language)}</span>
-            </span>
+            <button
+              onClick={() => {
+                if (tile.starId) {
+                  onClose();
+                  navigate(`/t2/artist/${tile.starId}`);
+                }
+              }}
+              className={cn(
+                "text-sm inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-semibold transition-colors",
+                tile.starId
+                  ? "bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                  : "text-muted-foreground cursor-default"
+              )}
+            >
+              {getLocalizedArtistName(tile, language)}
+              {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatAge(tile.detectedAt)}
