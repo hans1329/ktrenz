@@ -146,7 +146,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
               <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 text-primary" />
-                Why #{rank}?
+                {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {tile.influenceIndex > 0 ? (
