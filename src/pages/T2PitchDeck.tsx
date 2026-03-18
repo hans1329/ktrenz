@@ -669,7 +669,29 @@ export default function T2PitchDeck() {
         </div>
       </Section>
 
-      {/* ───── 8. USE CASES ───── */}
+      {/* ───── AI FAN AGENT ───── */}
+      <Section id="agent">
+        <div className="max-w-5xl mx-auto w-full">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-black mb-4">
+              {l.agentTitle[0]}<span className="text-primary">{l.agentTitle[1]}</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{l.agentDesc}</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {l.agentFeatures.map((feat, i) => (
+              <div key={i} className="rounded-2xl border border-border/50 bg-card/40 p-5 hover:border-primary/30 transition-colors">
+                <span className="text-3xl mb-3 block">{feat.emoji}</span>
+                <h3 className="font-bold text-foreground mb-2">{feat.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feat.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ───── USE CASES ───── */}
       <Section id="usecases">
         <div className="max-w-5xl mx-auto w-full">
           <div className="text-center mb-16">
