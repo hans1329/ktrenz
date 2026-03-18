@@ -3672,6 +3672,7 @@ export type Database = {
           context: string | null
           created_at: string
           detected_at: string
+          expired_at: string | null
           id: string
           influence_index: number | null
           keyword: string
@@ -3679,8 +3680,10 @@ export type Database = {
           keyword_ja: string | null
           keyword_ko: string | null
           keyword_zh: string | null
+          lifetime_hours: number | null
           metadata: Json | null
           peak_at: string | null
+          peak_delay_hours: number | null
           peak_score: number | null
           source_title: string | null
           source_url: string | null
@@ -3697,6 +3700,7 @@ export type Database = {
           context?: string | null
           created_at?: string
           detected_at?: string
+          expired_at?: string | null
           id?: string
           influence_index?: number | null
           keyword: string
@@ -3704,8 +3708,10 @@ export type Database = {
           keyword_ja?: string | null
           keyword_ko?: string | null
           keyword_zh?: string | null
+          lifetime_hours?: number | null
           metadata?: Json | null
           peak_at?: string | null
+          peak_delay_hours?: number | null
           peak_score?: number | null
           source_title?: string | null
           source_url?: string | null
@@ -3722,6 +3728,7 @@ export type Database = {
           context?: string | null
           created_at?: string
           detected_at?: string
+          expired_at?: string | null
           id?: string
           influence_index?: number | null
           keyword?: string
@@ -3729,8 +3736,10 @@ export type Database = {
           keyword_ja?: string | null
           keyword_ko?: string | null
           keyword_zh?: string | null
+          lifetime_hours?: number | null
           metadata?: Json | null
           peak_at?: string | null
+          peak_delay_hours?: number | null
           peak_score?: number | null
           source_title?: string | null
           source_url?: string | null
