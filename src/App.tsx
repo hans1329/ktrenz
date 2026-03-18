@@ -76,6 +76,7 @@ const App = () => (
             <Route path="/signal" element={<SignalRadar />} />
             <Route path="/t2" element={<T2TrendMap />} />
             <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
+            <Route path="/pd" element={<T2PitchDeck />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
