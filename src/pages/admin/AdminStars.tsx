@@ -172,6 +172,7 @@ const AdminStars = () => {
         wiki_entry_id: form.wiki_entry_id || null,
         group_star_id: form.group_star_id || null,
         namuwiki_url: form.namuwiki_url || null,
+        agency: form.agency || null,
         is_active: form.is_active,
       };
 
