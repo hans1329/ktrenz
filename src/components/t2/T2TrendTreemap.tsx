@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Clock } from "lucide-react";
+import { TrendingUp, Clock, Star, ChevronRight } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 import T2AdminControls from "./T2AdminControls";
 
@@ -134,6 +135,24 @@ const T2TrendTreemap = () => {
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const isMobile = useIsMobile();
   const { language } = useLanguage();
+  const { user } = useAuth();
+
+  // Fetch user's watched artists
+  const { data: watchedWikiIds } = useQuery({
+    queryKey: ["t2-watched-artists", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_watched_artists")
+        .select("wiki_entry_id")
+        .eq("user_id", user.id);
+      return (data ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
@@ -192,6 +211,12 @@ const T2TrendTreemap = () => {
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
+
+  // My artists' keywords
+  const myKeywords = useMemo(() => {
+    if (!triggers?.length || !watchedSet.size) return [];
+    return triggers.filter(t => watchedSet.has(t.wikiEntryId));
+  }, [triggers, watchedSet]);
 
   const filteredItems = useMemo(() => {
     if (!triggers?.length) return [];
@@ -279,6 +304,50 @@ const T2TrendTreemap = () => {
         })}
       </div>
 
+      {/* My Artists' Keywords */}
+      {myKeywords.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-2">
+            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            My Artists' Keywords
+            <span className="text-[10px] text-muted-foreground font-normal ml-1">{myKeywords.length}</span>
+          </h3>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {myKeywords.map((kw) => {
+              const catConfig = CATEGORY_CONFIG[kw.category];
+              return (
+                <button
+                  key={kw.id}
+                  onClick={() => handleTileClick(kw)}
+                  className={cn(
+                    "shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all",
+                    selectedTile?.id === kw.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-muted/30 hover:bg-muted/50"
+                  )}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
+                  />
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-foreground leading-tight">
+                      {getLocalizedKeyword(kw, language)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {getLocalizedArtistName(kw, language)}
+                      {kw.influenceIndex > 0 && (
+                        <span className="ml-1 font-bold text-primary">+{kw.influenceIndex.toFixed(0)}%</span>
+                      )}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Treemap */}
       {filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center py-20">
@@ -300,6 +369,7 @@ const T2TrendTreemap = () => {
               const isSelected = selectedTile?.id === rect.item.id;
               const config = CATEGORY_CONFIG[rect.item.category];
               const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
+              const isMyArtist = watchedSet.has(rect.item.wikiEntryId);
 
               const boxArea = width * height;
               const sizeFactor = Math.sqrt(boxArea) / 10;
@@ -334,9 +404,10 @@ const T2TrendTreemap = () => {
                     </span>
                   )}
 
-                  {/* Top-left: age */}
+                  {/* Top-left: age + star */}
                   {isMedium && (
                     <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/60">
+                      {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
                       <Clock className="w-2.5 h-2.5" />
                       {formatAge(rect.item.detectedAt)}
                     </span>
