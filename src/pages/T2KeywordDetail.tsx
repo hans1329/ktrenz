@@ -187,6 +187,7 @@ const T2KeywordDetail = () => {
   const influenceIndex = Number(trigger.influence_index) || 0;
   const confidence = Number(trigger.confidence) || 0;
   const elapsedHours = (Date.now() - new Date(trigger.detected_at).getTime()) / 3600000;
+  const evidenceImageUrl = trigger.source_image_url || artistInfo?.imageUrl || null;
 
   return (
     <div className="min-h-screen">
