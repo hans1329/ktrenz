@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Search, TrendingUp, Zap, Database } from "lucide-react";
+import { Loader2, Search, TrendingUp, Zap, Database, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const T2AdminControls = () => {
