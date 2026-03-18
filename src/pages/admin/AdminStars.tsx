@@ -380,6 +380,9 @@ const AdminStars = () => {
                     <td className="px-3 py-2 text-muted-foreground text-xs">
                       {s.group_star_id ? groupMap[s.group_star_id] ?? "—" : "—"}
                     </td>
+                    <td className="px-3 py-2 text-muted-foreground text-xs">
+                      {(s as any).agency ?? "—"}
+                    </td>
                     <td className="px-3 py-2">
                       {(s as any).namuwiki_url ? (
                         <a
