@@ -24,6 +24,7 @@ const navItems = [
   { label: '에이전시 샘플', path: '/admin/agency-sample', icon: Building2 },
   { label: '등록 요청', path: '/admin/listing-requests', icon: UserPlus },
   { label: '스타 관리', path: '/admin/stars', icon: Star },
+  { label: 'T2 트렌드 인텔', path: '/admin/trend-intel', icon: TrendingUp },
   { label: 'Wiki 항목', path: '/admin/entries', icon: FileText },
 ];
 
