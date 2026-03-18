@@ -331,7 +331,8 @@ const T2ArtistPage = () => {
       <>
         <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
         <V3Header />
-        <div className="pt-14">{content}</div>
+        <div className="pt-14 pb-24">{content}</div>
+        <V3TabBar activeTab="rankings" onTabChange={() => {}} />
       </>
     );
   }
