@@ -242,19 +242,13 @@ const T2TrendTreemap = () => {
     return triggers.filter(t => watchedSet.has(t.wikiEntryId));
   }, [triggers, watchedSet]);
 
-  // Deduplicate: 1 best keyword per artist (top by influence → baseline → recency)
+  // All triggers sorted by influence (no dedup — show all keywords)
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    const sorted = [...triggers].sort((a, b) => {
+    return [...triggers].sort((a, b) => {
       if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
       if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
-    });
-    const seen = new Set<string>();
-    return sorted.filter(t => {
-      if (seen.has(t.artistName)) return false;
-      seen.add(t.artistName);
-      return true;
     });
   }, [triggers]);
 
