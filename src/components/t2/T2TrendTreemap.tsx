@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -213,6 +213,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
   const selectedCategory = externalCategory ?? internalCategory;
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
@@ -417,9 +418,24 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight);
   }, [visibleBoxItems, containerWidth, containerHeight]);
 
+  useEffect(() => {
+    const modalId = searchParams.get("modal");
+    if (!modalId || !filteredItems.length) {
+      setSelectedTile(null);
+      return;
+    }
+    setSelectedTile(filteredItems.find((item) => item.id === modalId) ?? null);
+  }, [filteredItems, searchParams]);
+
   const handleTileClick = useCallback((item: TrendTile) => {
-    setSelectedTile(prev => prev?.id === item.id ? null : item);
-  }, []);
+    const nextParams = new URLSearchParams(searchParams);
+    if (selectedTile?.id === item.id) {
+      nextParams.delete("modal");
+    } else {
+      nextParams.set("modal", item.id);
+    }
+    setSearchParams(nextParams);
+  }, [searchParams, selectedTile?.id, setSearchParams]);
 
   const categoryStats = useMemo(() => {
     if (!dedupedTriggers?.length) return {};
@@ -635,7 +651,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         tile={selectedTile}
         rank={selectedTile ? filteredItems.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
         totalCount={filteredItems.length}
-        onClose={() => setSelectedTile(null)}
+        onClose={() => {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.delete("modal");
+          setSearchParams(nextParams);
+        }}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -60,6 +60,7 @@ const T2MyArtists = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
 
   useEffect(() => {
@@ -183,9 +184,24 @@ const T2MyArtists = () => {
     });
   }, [myKeywords]);
 
+  useEffect(() => {
+    const modalId = searchParams.get("modal");
+    if (!modalId || !myKeywords.length) {
+      setSelectedTile(null);
+      return;
+    }
+    setSelectedTile(myKeywords.find((item) => item.id === modalId) ?? null);
+  }, [myKeywords, searchParams]);
+
   const handleTileClick = useCallback((item: TrendTile) => {
-    setSelectedTile(prev => prev?.id === item.id ? null : item);
-  }, []);
+    const nextParams = new URLSearchParams(searchParams);
+    if (selectedTile?.id === item.id) {
+      nextParams.delete("modal");
+    } else {
+      nextParams.set("modal", item.id);
+    }
+    setSearchParams(nextParams);
+  }, [searchParams, selectedTile?.id, setSearchParams]);
 
   const displayArtist = (g: ArtistGroup) =>
     language === "ko" && g.artistNameKo ? g.artistNameKo : g.artistName;
@@ -285,7 +301,11 @@ const T2MyArtists = () => {
         tile={selectedTile}
         rank={selectedTile ? myKeywords.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
         totalCount={myKeywords.length}
-        onClose={() => setSelectedTile(null)}
+        onClose={() => {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.delete("modal");
+          setSearchParams(nextParams);
+        }}
       />
     </div>
   );
