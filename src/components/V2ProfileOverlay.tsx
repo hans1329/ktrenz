@@ -27,6 +27,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [showPointsDrawer, setShowPointsDrawer] = useState(false);
+  const [showLangDrawer, setShowLangDrawer] = useState(false);
   
 
   const { data: kpassInfo, refetch: refetchKpass } = useQuery({
