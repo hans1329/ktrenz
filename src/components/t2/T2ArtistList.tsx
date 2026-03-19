@@ -84,9 +84,9 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
           >
             {/* Artist image — large */}
             <div className="relative w-full aspect-square bg-muted overflow-hidden">
-              {group.artistImageUrl ? (
+              {(group.artistImageUrl || group.keywords[0]?.sourceImageUrl) ? (
                 <img
-                  src={group.artistImageUrl}
+                  src={group.artistImageUrl || group.keywords[0]?.sourceImageUrl || ""}
                   alt={displayName(group)}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
