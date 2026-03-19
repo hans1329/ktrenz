@@ -514,6 +514,8 @@ Deno.serve(async (req) => {
         batchOffset,
         totalTriggers,
         triggersProcessed: triggers.length,
+        uniqueTracked: dedupTriggers.length,
+        duplicatesSkipped: skippedDups,
         tracked: trackedCount,
         throttled,
         chained,
