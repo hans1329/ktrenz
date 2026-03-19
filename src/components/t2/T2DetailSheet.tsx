@@ -162,13 +162,13 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
       setBetAmount("");
-      toast.success(`Bet placed! ${data.shares.toFixed(1)} ${t("shares", language)}`);
+      toast.success(t("betSuccess", language));
     },
     onError: (err: Error) => {
       if (err.message.includes("Insufficient")) {
         toast.error(t("insufficientPoints", language));
       } else {
-        toast.error(err.message);
+        toast.error(t("somethingWentWrong", language));
       }
     },
   });
