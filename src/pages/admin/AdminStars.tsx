@@ -280,7 +280,7 @@ const AdminStars = () => {
   /* ───── helpers ───── */
   const openCreate = () => {
     setEditingStar(null);
-    setForm({ display_name: "", name_ko: "", star_type: "group", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true });
+    setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true });
     setNamuUrl("");
     setNamuResult(null);
     setDialogOpen(true);
