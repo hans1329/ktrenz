@@ -546,30 +546,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               ) : (
                 <>
-                  {/* Bet input */}
+                  {/* Bet input — amount only, side selected via odds cards above */}
                   <div className="flex items-center gap-2">
-                    <button
-                      className={cn(
-                        "px-4 py-2.5 rounded-l-xl text-sm font-bold transition-all border-2",
-                        betSide === "yes"
-                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
-                          : "bg-muted/50 text-muted-foreground border-border hover:bg-emerald-500/10"
-                      )}
-                      onClick={() => setBetSide("yes")}
-                    >
-                      {t("betYes", language)}
-                    </button>
-                    <button
-                      className={cn(
-                        "px-4 py-2.5 rounded-r-xl text-sm font-bold transition-all border-2",
-                        betSide === "no"
-                          ? "bg-rose-500/20 text-rose-400 border-rose-500/50"
-                          : "bg-muted/50 text-muted-foreground border-border hover:bg-rose-500/10"
-                      )}
-                      onClick={() => setBetSide("no")}
-                    >
-                      {t("betNo", language)}
-                    </button>
                     <Input
                       type="number"
                       min={10}
