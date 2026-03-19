@@ -316,34 +316,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             {(tile.sourceTitle || tile.sourceImageUrl) && (
               <div className="relative">
                 {tile.sourceImageUrl ? (
-                  <a
-                    href={tile.sourceUrl || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                    onClick={handleReadBoost}
-                  >
-                    <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
-                      <img
-                        src={tile.sourceImageUrl}
-                        alt={tile.sourceTitle || ""}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
-                          {getLocalizedSourceTitle(tile, language)}
-                        </p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <ExternalLink className="w-2.5 h-2.5 text-white/60" />
-                          <span className="text-[10px] text-white/60">
-                            {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
-                          </span>
-                        </div>
+                  <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                    <img
+                      src={tile.sourceImageUrl}
+                      alt={tile.sourceTitle || ""}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
+                        {getLocalizedSourceTitle(tile, language)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <ExternalLink className="w-2.5 h-2.5 text-white/60" />
+                        <span className="text-[10px] text-white/60">
+                          {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
+                        </span>
                       </div>
                     </div>
-                  </a>
+                  </div>
                 ) : tile.sourceTitle ? (
                   <div className="flex items-start gap-2.5 p-3 border-b border-border/50">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
