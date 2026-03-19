@@ -576,6 +576,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         rankingData: d.metadata?.rankingData ?? null,
         guideData: d.metadata?.guideData ?? null,
         reportCards: d.metadata?.reportCards ?? null,
+        trendData: d.metadata?.trendData ?? null,
       }));
     },
     enabled: !!user?.id && !slotsLoading,
