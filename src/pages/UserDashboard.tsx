@@ -462,7 +462,7 @@ const UserDashboard = () => {
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-yellow-400">{betStats.pending}</p>
-                <p className="text-[9px] text-muted-foreground">Pending</p>
+                <p className="text-[9px] text-muted-foreground">{t("dash.pending")}</p>
               </Card>
             </div>
 
