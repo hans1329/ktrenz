@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const COLLECTION_PAUSED = true;
+  const COLLECTION_PAUSED = false;
 
   try {
     const body = await req.json().catch(() => ({}));
