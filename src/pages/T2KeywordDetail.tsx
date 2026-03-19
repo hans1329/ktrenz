@@ -274,18 +274,20 @@ const T2KeywordDetail = () => {
         description={`${trigger.keyword} trend driven by ${trigger.artist_name}. Influence Index: +${influenceIndex.toFixed(1)}%`}
         path={`/t2/${triggerId}`}
       />
-      {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
+      {/* Sub-page header with back button */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center gap-3 px-4 bg-background/80 backdrop-blur-lg border-b border-border">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-foreground" />
+        </button>
+        <span className="text-sm font-bold text-foreground truncate">
+          {keyword} × {artistName}
+        </span>
+      </header>
 
       <div className={cn("pt-16 px-4 pb-8", !isMobile && "max-w-4xl mx-auto")}>
-        {/* Back */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/t2")}
-          className="gap-1 text-xs mb-4 -ml-2"
-        >
-          <ChevronLeft className="w-4 h-4" /> {t2l("trendMap", language)}
-        </Button>
 
         {/* Hero Header */}
         <div className="relative rounded-2xl overflow-hidden border border-border mb-6">
