@@ -503,29 +503,9 @@ const T2KeywordDetail = () => {
                 {t2l("whyThisTrend", language)}
               </h2>
               {context ? (
-                <p className="text-sm text-muted-foreground leading-relaxed">{context}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{context}</p>
               ) : (
                 <p className="text-xs text-muted-foreground italic">{t2l("noContext", language)}</p>
-              )}
-              {trigger.source_title && (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/30 border border-border/50">
-                  <Newspaper className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    {trigger.source_url ? (
-                      <a href={trigger.source_url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-foreground hover:text-primary transition-colors line-clamp-2">
-                        {trigger.source_title}
-                        <ExternalLink className="w-2.5 h-2.5 inline ml-1 text-muted-foreground" />
-                      </a>
-                    ) : (
-                      <span className="text-xs font-medium text-foreground line-clamp-2">{trigger.source_title}</span>
-                    )}
-                    {trigger.source_url && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {new URL(trigger.source_url).hostname.replace("www.", "")}
-                      </p>
-                    )}
-                  </div>
-                </div>
               )}
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <Target className="w-3 h-3" />
