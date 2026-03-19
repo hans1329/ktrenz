@@ -134,7 +134,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 decoding="async"
               />
             </Link>
-            {centerSlot && <div className="flex-1 flex justify-center">{centerSlot}</div>}
+            {centerSlot && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{centerSlot}</div>}
             <div className="flex items-center gap-1 shrink-0">
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
