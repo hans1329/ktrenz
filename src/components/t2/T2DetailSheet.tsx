@@ -520,6 +520,36 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               </div>
 
+              {/* Probability bar graph */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1 h-7 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-l-full bg-emerald-500 flex items-center justify-end pr-2 transition-all duration-500"
+                    style={{ width: `${Math.max(priceYes * 100, 8)}%` }}
+                  >
+                    {priceYes >= 0.15 && (
+                      <span className="text-[11px] font-bold text-white whitespace-nowrap">
+                        🔥 {(priceYes * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="h-full rounded-r-full bg-rose-500 flex items-center justify-start pl-2 transition-all duration-500"
+                    style={{ width: `${Math.max(priceNo * 100, 8)}%` }}
+                  >
+                    {priceNo >= 0.15 && (
+                      <span className="text-[11px] font-bold text-white whitespace-nowrap">
+                        {(priceNo * 100).toFixed(1)}% 🤷
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+                  <span>{t("betYes", language)}</span>
+                  <span>{t("betNo", language)}</span>
+                </div>
+              </div>
+
               {totalVolume > 0 && (
                 <p className="text-[10px] text-muted-foreground text-center">
                   {t("totalPool", language)}: {totalVolume.toLocaleString()}P
