@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
+import ktrenzIcon from "@/assets/k-trenz-icon.png";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SearchResult {
@@ -19,6 +21,7 @@ interface SearchResult {
 const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const isMobile = useIsMobile();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -124,9 +127,9 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
           <>
             <Link to="/" className="flex items-center shrink-0">
               <img
-                src={ktrenzLogo}
+                src={isMobile ? ktrenzIcon : ktrenzLogo}
                 alt="K-TRENZ"
-                className="h-5 sm:h-7 w-auto"
+                className={isMobile ? "h-8 w-8 rounded-full" : "h-7 w-auto"}
                 fetchPriority="high"
                 decoding="async"
               />
