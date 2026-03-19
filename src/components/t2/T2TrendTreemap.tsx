@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List, Users } from "lucide-react";

@@ -215,7 +215,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); track("t2_external_link_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, url: item.sourceUrl || "" }); }}
                 >
                   <ExternalLink className="w-3 h-3 shrink-0" />
                   <span className="truncate">{item.sourceTitle}</span>
