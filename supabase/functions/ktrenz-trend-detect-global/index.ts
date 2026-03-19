@@ -28,9 +28,11 @@ interface ExtractedKeyword {
 // Perplexity는 웹 검색 엔진이므로 글로벌 감지에 적합 (국내 detect의 환각 문제와 다른 용도)
 async function detectGlobalTrends(
   perplexityKey: string,
-  artistName: string
+  artistName: string,
+  groupName: string | null = null
 ): Promise<ExtractedKeyword[]> {
-  const prompt = `Search for VERY RECENT global news and social media posts (last 24 hours) about K-pop artist "${artistName}" and identify any commercial entities they are currently associated with.
+  const artistLabel = groupName ? `"${artistName}" (member of K-pop group ${groupName})` : `K-pop artist "${artistName}"`;
+  const prompt = `Search for VERY RECENT global news and social media posts (last 24 hours) about ${artistLabel} and identify any commercial entities they are currently associated with.
 
 Look for:
 - Brand collaborations, endorsements, ambassador roles
