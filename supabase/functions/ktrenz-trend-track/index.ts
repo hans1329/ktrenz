@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
     let throttled = false;
     const results: any[] = [];
 
-    for (const trigger of triggers) {
+    for (const trigger of dedupTriggers) {
       if (throttled) break;
 
       for (const region of regions) {
