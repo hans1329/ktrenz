@@ -363,7 +363,7 @@ const UserDashboard = () => {
         <section className="mt-4 mb-6">
           <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4 text-primary" />
-            My Active Trends
+            {t("dash.activeTrends")}
           </h2>
 
           {isLoading ? (
