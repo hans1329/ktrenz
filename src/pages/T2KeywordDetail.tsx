@@ -318,7 +318,7 @@ const T2KeywordDetail = () => {
                       ? "border-green-500/40 text-green-400 bg-green-500/10"
                       : "border-muted-foreground/30 text-muted-foreground"
                   )}>
-                    {trigger.status === "active" ? "Active" : "Expired"}
+                    {trigger.status === "active" ? t2l("active", language) : t2l("expired", language)}
                   </Badge>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-1">
