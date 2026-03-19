@@ -496,12 +496,12 @@ const T2KeywordDetail = () => {
             <div className="p-4 space-y-3">
               <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Newspaper className="w-4 h-4 text-primary" />
-                Why this trend?
+                {t2l("whyThisTrend", language)}
               </h2>
               {context ? (
                 <p className="text-sm text-muted-foreground leading-relaxed">{context}</p>
               ) : (
-                <p className="text-xs text-muted-foreground italic">No context available yet.</p>
+                <p className="text-xs text-muted-foreground italic">{t2l("noContext", language)}</p>
               )}
               {trigger.source_title && (
                 <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/30 border border-border/50">
