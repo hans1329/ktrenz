@@ -308,24 +308,11 @@ const T2ArtistPage = () => {
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <>
-        <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
-        <V3Header />
-        <div className="pt-14 pb-24">{content}</div>
-        <V3TabBar activeTab="rankings" onTabChange={() => {}} />
-      </>
-    );
-  }
-
   return (
     <>
       <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
-      <div className="min-h-screen flex flex-col">
-        <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />
-        <main className="flex-1 pt-4">{content}</main>
-      </div>
+      {subHeader}
+      <div className="pt-14 pb-10">{content}</div>
     </>
   );
 };
