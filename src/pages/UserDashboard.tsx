@@ -566,7 +566,7 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Heart className="w-4 h-4 text-primary fill-primary/30" />
-              My Top Artist
+              {t("dash.topArtist")}
             </h2>
             <Card className="overflow-hidden border-border bg-card">
               <div className="p-4 flex items-center gap-3 border-b border-border/50 bg-gradient-to-r from-primary/8 to-transparent">
