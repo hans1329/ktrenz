@@ -51,9 +51,9 @@ type ChatMessage = {
   trendData?: TrendKeywordEntry[] | null;
 };
 
-type AgentMode = "chat" | "trend" | "streaming" | "alert";
-type QuickActionKind = "fanActivity" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings" | "hotKeywords" | "myArtistTrend";
-type QuickActionHint = "trend_analysis" | "streaming_guide" | "fan_activity" | "hot_keywords" | "my_artist_trend";
+type AgentMode = "chat" | "trend" | "alert";
+type QuickActionKind = "trendAnalysis" | "newsBriefing" | "alertSettings" | "hotKeywords" | "myArtistTrend";
+type QuickActionHint = "trend_analysis" | "hot_keywords" | "my_artist_trend";
 
 interface QuickAction {
   id: QuickActionKind;
