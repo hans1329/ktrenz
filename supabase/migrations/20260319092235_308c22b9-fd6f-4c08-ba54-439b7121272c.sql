@@ -1,0 +1,1 @@
+TRUNCATE TABLE ktrenz_trend_triggers CASCADE;
