@@ -32,6 +32,7 @@ interface StarRow {
   musicbrainz_id: string | null;
   namuwiki_url: string | null;
   agency: string | null;
+  star_category: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
