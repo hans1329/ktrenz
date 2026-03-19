@@ -384,10 +384,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 {t("whyTrend", language)}
               </h3>
               {(() => {
-                const ctx = language === "ko" ? (tile.contextKo || tile.context)
+                const rawCtx = language === "ko" ? (tile.contextKo || tile.context)
                   : language === "ja" ? (tile.contextJa || tile.context)
                   : language === "zh" ? (tile.contextZh || tile.context)
                   : tile.context;
+                const ctx = rawCtx ? rawCtx.replace(/\[\d+\]/g, "").trim() : null;
                 return ctx ? (
                   <p className="text-sm text-muted-foreground leading-relaxed">{ctx}</p>
                 ) : (
