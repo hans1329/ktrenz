@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_stars ADD COLUMN IF NOT EXISTS star_category text NOT NULL DEFAULT 'kpop';
