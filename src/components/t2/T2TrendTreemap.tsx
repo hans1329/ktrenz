@@ -640,11 +640,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         <BoxParticles
                           count={rectIndex === 0 ? 24 : 10}
                           color="hsla(45, 100%, 80%, 0.9)"
-                          speed={rectIndex === 0 ? 0.7 : 0.2}
+                          speed={rectIndex === 0 ? 0.7 : 0.4}
                           density={rectIndex === 0 ? 0.7 : 0.4}
                           shape="star"
                         />
                       </>
+                    )}
+                    {(rectIndex === 3 || rectIndex === 4) && (
+                      <BoxParticles
+                        count={8}
+                        color="hsla(0, 0%, 100%, 0.6)"
+                        speed={0.15}
+                        density={0.3}
+                        shape="circle"
+                      />
                     )}
                   </button>
                 );
