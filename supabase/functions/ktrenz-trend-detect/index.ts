@@ -101,6 +101,22 @@ async function fetchOgImage(url: string): Promise<string | null> {
     return null;
   }
 }
+// ── 카테고리 컨텍스트 라벨 ──
+function getCategoryContext(category: string): string {
+  const labels: Record<string, string> = {
+    kpop: "K-pop artist",
+    actor: "Korean actor/actress",
+    singer: "Korean singer",
+    baseball: "Korean baseball player",
+    athlete: "Korean athlete",
+    chef: "Korean celebrity chef",
+    politician: "Korean politician",
+    influencer: "Korean influencer",
+    comedian: "Korean comedian/MC",
+    other: "Korean public figure",
+  };
+  return labels[category] || labels.other;
+}
 
 // ─── OpenAI 기반 키워드 추출 (기사 텍스트만 분석, 외부 검색 없음) ───
 async function extractCommercialKeywords(
