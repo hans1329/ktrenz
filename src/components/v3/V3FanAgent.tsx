@@ -961,8 +961,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               return prev.map((m, i) =>
                 i === lastIdx ? {
                   ...m,
-                  guideData: meta.guideData ?? m.guideData,
-                  rankingData: meta.rankingData ?? m.rankingData,
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
                   reportCards: meta.reportCards ?? m.reportCards,
