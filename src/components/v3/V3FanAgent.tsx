@@ -70,7 +70,6 @@ interface QuickAction {
 
 const getQuickActions = (t: (key: string) => string): QuickAction[] => [
   { id: "fanActivity", icon: Heart, label: t("agent.fanActivity"), prompt: t("agent.prompt.fanActivity"), mode: "chat", color: "text-pink-400" },
-  { id: "liveRankings", icon: TrendingUp, label: t("agent.liveRankings"), prompt: t("agent.prompt.liveRankings"), mode: "trend", color: "text-blue-400" },
   { id: "hotKeywords", icon: Flame, label: t("agent.hotKeywords"), prompt: t("agent.prompt.hotKeywords"), mode: "trend", color: "text-orange-400" },
   { id: "myArtistTrend", icon: Star, label: t("agent.myArtistTrend"), prompt: t("agent.prompt.myArtistTrend"), mode: "trend", color: "text-yellow-400" },
   { id: "trendAnalysis", icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
