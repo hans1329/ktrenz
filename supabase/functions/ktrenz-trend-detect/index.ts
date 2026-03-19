@@ -255,14 +255,14 @@ Deno.serve(async (req) => {
 
     // group_star_id로 그룹 정보 일괄 조회
     const groupIds = [...new Set(allMembers.map((m: any) => m.group_star_id).filter(Boolean))];
-    let groupMap: Record<string, { display_name: string; wiki_entry_id: string | null }> = {};
+    let groupMap: Record<string, { display_name: string; name_ko: string | null; wiki_entry_id: string | null }> = {};
     if (groupIds.length > 0) {
       const { data: groups } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name, wiki_entry_id")
+        .select("id, display_name, name_ko, wiki_entry_id")
         .in("id", groupIds);
       for (const g of (groups || [])) {
-        groupMap[g.id] = { display_name: g.display_name, wiki_entry_id: g.wiki_entry_id };
+        groupMap[g.id] = { display_name: g.display_name, name_ko: g.name_ko, wiki_entry_id: g.wiki_entry_id };
       }
     }
 
