@@ -269,7 +269,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
       // Filter out triggers whose star_id is not in active stars
       const filteredTriggers = triggers.filter((t: any) => !t.star_id || activeStarIds.has(t.star_id));
 
-      return triggers.map((t: any): TrendTile => {
+      return filteredTriggers.map((t: any): TrendTile => {
         const star = t.star_id ? starMap.get(t.star_id) : null;
         return {
           id: t.id,
