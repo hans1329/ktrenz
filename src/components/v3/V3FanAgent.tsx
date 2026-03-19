@@ -1500,20 +1500,23 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </button>
           )}
           <div className={cn("flex flex-col max-w-[85%] min-w-0 overflow-hidden", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
-            <div
-              className={cn(
-                "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
-                msg.role === "user"
-                  ? "bg-gradient-to-br from-primary/25 to-purple-500/20 text-foreground rounded-br-md"
-                  : "bg-card/60 border border-border/30 text-muted-foreground rounded-bl-md"
-              )}
-            >
-              {msg.role === "assistant" ? (
-                <SectionCards content={msg.content} isLastStreaming={isStreaming && i === messages.length - 1} />
-              ) : (
-                msg.content
-              )}
-            </div>
+            {/* Hide text bubble when trendData cards already cover the content */}
+            {!(msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && !isStreaming) && (
+              <div
+                className={cn(
+                  "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
+                  msg.role === "user"
+                    ? "bg-gradient-to-br from-primary/25 to-purple-500/20 text-foreground rounded-br-md"
+                    : "bg-card/60 border border-border/30 text-muted-foreground rounded-bl-md"
+                )}
+              >
+                {msg.role === "assistant" ? (
+                  <SectionCards content={msg.content} isLastStreaming={isStreaming && i === messages.length - 1} />
+                ) : (
+                  msg.content
+                )}
+              </div>
+            )}
 
             {msg.role === "assistant" && msg.briefingData && (
               <V3BriefingCard data={msg.briefingData} />
