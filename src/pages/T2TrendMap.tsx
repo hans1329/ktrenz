@@ -23,6 +23,10 @@ const T2TrendMap = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("treemap");
   const isMobile = useIsMobile();
   const touchRef = useRef<{ startX: number; startY: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const currentIndex = VIEW_ORDER.indexOf(viewMode);
 
   const handleSwipe = useCallback((deltaX: number) => {
     const idx = VIEW_ORDER.indexOf(viewMode);
@@ -36,15 +40,31 @@ const T2TrendMap = () => {
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const t = e.touches[0];
     touchRef.current = { startX: t.clientX, startY: t.clientY };
+    setIsDragging(true);
   }, []);
 
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchRef.current) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchRef.current.startX;
+    const dy = t.clientY - touchRef.current.startY;
+    // Only apply horizontal drag if it's dominant
+    if (Math.abs(dx) > Math.abs(dy) * 1.2) {
+      // Resist at edges
+      const idx = VIEW_ORDER.indexOf(viewMode);
+      const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
+      setDragOffset(atEdge ? dx * 0.2 : dx);
+    }
+  }, [viewMode]);
+
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    setIsDragging(false);
+    setDragOffset(0);
     if (!touchRef.current) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - touchRef.current.startX;
     const dy = t.clientY - touchRef.current.startY;
     touchRef.current = null;
-    // Only trigger if horizontal swipe is dominant
     if (Math.abs(dx) > Math.abs(dy) * 1.5) {
       handleSwipe(dx);
     }
@@ -54,6 +74,8 @@ const T2TrendMap = () => {
     document.documentElement.classList.add("v3-theme");
     return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
+
+  const translateX = -currentIndex * 100 + (isDragging ? (dragOffset / window.innerWidth) * 100 : 0);
 
   return (
     <>
@@ -86,11 +108,24 @@ const T2TrendMap = () => {
         }
       />
       <div
-        className="pt-14 pb-24"
-        {...(isMobile ? { onTouchStart, onTouchEnd } : {})}
+        className="pt-14 pb-24 overflow-hidden"
+        {...(isMobile ? { onTouchStart, onTouchMove, onTouchEnd } : {})}
       >
-        <div className="max-w-[90%] mx-auto">
-          <T2TrendTreemap viewMode={viewMode} onViewModeChange={setViewMode} />
+        <div
+          className="flex"
+          style={{
+            transform: `translateX(${translateX}%)`,
+            transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            willChange: 'transform',
+          }}
+        >
+          {VIEW_ORDER.map((mode) => (
+            <div key={mode} className="w-full flex-shrink-0">
+              <div className="max-w-[90%] mx-auto">
+                <T2TrendTreemap viewMode={mode} onViewModeChange={setViewMode} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
