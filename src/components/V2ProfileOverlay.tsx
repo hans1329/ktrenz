@@ -236,6 +236,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
       </DrawerContent>
     </Drawer>
     <KPointsPurchaseDrawer open={showPointsDrawer} onOpenChange={setShowPointsDrawer} />
+    <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
 
 
 
