@@ -300,7 +300,7 @@ const TOOLS = [
 ];
 
 // ── Intent Extraction (fire-and-forget after response) ──────────
-const INTENT_CATEGORIES = ["news", "schedule", "streaming", "music_performance", "sns", "comparison", "fan_activity", "general"] as const;
+const INTENT_CATEGORIES = ["news", "schedule", "streaming", "music_performance", "sns", "comparison", "fan_activity", "trend", "general"] as const;
 
 async function extractAndStoreIntent(
   adminClient: any,
