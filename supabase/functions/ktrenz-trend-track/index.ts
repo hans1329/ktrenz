@@ -290,7 +290,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[trend-track] Tracking ${triggers.length} triggers (offset=${batchOffset}, total=${totalTriggers}) across ${regions.length} regions, YouTube=${!!ytApiKey}`);
+    // ─── 중복 제거: artist_name + keyword 조합 기준으로 첫 번째만 SerpAPI 호출 ───
+    const seen = new Map<string, string>(); // compositeKey → triggerId
+    const dedupTriggers: any[] = [];
+    const dupMap = new Map<string, string[]>(); // primaryId → [dupId, dupId, ...]
+
+    for (const t of triggers) {
+      const key = `${t.artist_name}|${t.keyword}`;
+      if (!seen.has(key)) {
+        seen.set(key, t.id);
+        dedupTriggers.push(t);
+        dupMap.set(t.id, []);
+      } else {
+        const primaryId = seen.get(key)!;
+        dupMap.get(primaryId)!.push(t.id);
+      }
+    }
+
+    const skippedDups = triggers.length - dedupTriggers.length;
+    console.log(`[trend-track] Tracking ${dedupTriggers.length} unique triggers (${skippedDups} duplicates skipped, offset=${batchOffset}, total=${totalTriggers}) across ${regions.length} regions, YouTube=${!!ytApiKey}`);
 
     let trackedCount = 0;
     let throttled = false;
