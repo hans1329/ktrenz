@@ -1512,13 +1512,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <V3ReportCards cards={msg.reportCards} />
             )}
 
-            {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (
-              <V3RankingCards rankings={msg.rankingData} />
-            )}
-
-            {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
-              <V3StreamingGuideCards guides={msg.guideData} />
-            )}
 
             {msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && (
               <V3TrendKeywordCards
