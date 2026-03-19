@@ -454,7 +454,7 @@ const UserDashboard = () => {
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-green-400">{betStats.won}</p>
-                <p className="text-[9px] text-muted-foreground">Won</p>
+                <p className="text-[9px] text-muted-foreground">{t("dash.won")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-red-400">{betStats.lost}</p>
