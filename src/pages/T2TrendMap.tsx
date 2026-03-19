@@ -158,7 +158,9 @@ const T2TrendMap = () => {
 
       <div
         className="h-[calc(100dvh-7rem)] overflow-hidden"
-        {...(isMobile ? { onTouchStart, onTouchMove, onTouchEnd } : {})}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         <div
           className="flex h-full items-start"
@@ -166,11 +168,10 @@ const T2TrendMap = () => {
             transform: `translateX(${translateX}%)`,
             transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
             willChange: "transform",
-            touchAction: "pan-y pinch-zoom",
           }}
         >
           {VIEW_ORDER.map((mode) => (
-            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24">
+            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24 scrollbar-hide">
               <div className="md:max-w-[90%] mx-auto">
                 <T2TrendTreemap
                   viewMode={mode}
