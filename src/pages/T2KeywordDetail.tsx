@@ -534,7 +534,7 @@ const T2KeywordDetail = () => {
           <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Timer className="w-4 h-4 text-primary" />
-              Keyword Lifecycle
+              {t2l("keywordLifecycle", language)}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-muted/30 border border-border p-3">
