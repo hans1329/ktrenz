@@ -1082,7 +1082,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
     const hintMap: Partial<Record<QuickActionKind, QuickActionHint>> = {
       fanActivity: "fan_activity",
-      liveRankings: "live_rankings",
       trendAnalysis: "trend_analysis",
       streamingGuide: "streaming_guide",
       hotKeywords: "hot_keywords",
