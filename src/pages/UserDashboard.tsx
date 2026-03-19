@@ -443,7 +443,7 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Target className="w-4 h-4 text-primary" />
-              My Predictions
+              {t("dash.predictions")}
             </h2>
 
             {/* Prediction stats */}
