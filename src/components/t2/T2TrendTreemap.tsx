@@ -81,6 +81,38 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+function normalizeTrendKey(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function compareTrendPriority(a: TrendTile, b: TrendTile): number {
+  if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
+  if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
+  return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
+}
+
+function buildTrendIdentity(tile: TrendTile): string {
+  const artistKey = tile.starId || tile.wikiEntryId || normalizeTrendKey(tile.artistName);
+  const keywordKey = normalizeTrendKey(tile.keywordKo || tile.keyword);
+  const categoryKey = normalizeTrendKey(tile.category);
+  return `${artistKey}::${categoryKey}::${keywordKey}`;
+}
+
+function dedupeTrendTiles(items: TrendTile[]): TrendTile[] {
+  const uniqueMap = new Map<string, TrendTile>();
+
+  for (const item of items) {
+    const identity = buildTrendIdentity(item);
+    const existing = uniqueMap.get(identity);
+
+    if (!existing || compareTrendPriority(item, existing) < 0) {
+      uniqueMap.set(identity, item);
+    }
+  }
+
+  return Array.from(uniqueMap.values()).sort(compareTrendPriority);
+}
+
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TrendTile; }
 
@@ -306,37 +338,26 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
     refetchInterval: 60_000,
   });
 
-  // My artists' keywords
-  const myKeywords = useMemo(() => {
-    if (!triggers?.length || !watchedSet.size) return [];
-    return triggers.filter(t => watchedSet.has(t.wikiEntryId));
-  }, [triggers, watchedSet]);
-
-  // All triggers sorted by influence (no dedup — show all keywords)
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    return [...triggers].sort((a, b) => {
-      if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
-      if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
-      return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
-    });
+    return dedupeTrendTiles(triggers);
   }, [triggers]);
+
+  // My artists' keywords
+  const myKeywords = useMemo(() => {
+    if (!dedupedTriggers.length || !watchedSet.size) return [];
+    return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
+  }, [dedupedTriggers, watchedSet]);
 
   const filteredItems = useMemo(() => {
     if (!dedupedTriggers.length) return [];
-    let items: TrendTile[];
     if (selectedCategory === "my") {
-      items = dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
-    } else if (selectedCategory === "all") {
-      items = dedupedTriggers;
-    } else {
-      items = dedupedTriggers.filter(t => t.category === selectedCategory);
+      return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
     }
-    return items.sort((a, b) => {
-      if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
-      if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
-      return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
-    });
+    if (selectedCategory === "all") {
+      return dedupedTriggers;
+    }
+    return dedupedTriggers.filter(t => t.category === selectedCategory);
   }, [dedupedTriggers, selectedCategory, watchedSet]);
 
   const containerWidth = isMobile ? 360 : 1000;
