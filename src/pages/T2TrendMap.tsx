@@ -91,7 +91,7 @@ const T2TrendMap = () => {
             {VIEW_TABS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
-                onClick={() => setViewMode(key)}
+                onClick={() => { setViewMode(key); window.scrollTo({ top: 0 }); }}
                 className={cn(
                   "flex items-center justify-center w-10 h-7 md:w-12 md:h-8 rounded-full transition-all",
                   viewMode === key
