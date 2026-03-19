@@ -389,12 +389,29 @@ const AdminTrendIntel = () => {
                         </div>
                       )}
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] bg-green-500/10 text-green-600 border-green-500/30 shrink-0"
-                    >
-                      활성
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); expireMutation.mutate(trigger.id); }}
+                        className="text-[10px] text-orange-500 hover:text-orange-600 font-medium flex items-center gap-0.5"
+                        title="만료 처리"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        만료
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`"${trigger.keyword}" 키워드를 영구 삭제하시겠습니까?`)) {
+                            deleteMutation.mutate(trigger.id);
+                          }
+                        }}
+                        className="text-[10px] text-destructive/60 hover:text-destructive font-medium flex items-center gap-0.5"
+                        title="영구 삭제"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 </Card>
               );
