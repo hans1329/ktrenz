@@ -43,14 +43,13 @@ const T2TrendMap = () => {
         descriptionKo="K-Pop 스타가 만든 소비 트렌드를 실시간으로 발견하세요."
         path="/t2"
       />
-      <div className="min-h-screen flex flex-col">
-        <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />
-        <main className="flex-1">
-          <div className="max-w-[90%] mx-auto">
-            <T2TrendTreemap />
-          </div>
-        </main>
+      <V3Header />
+      <div className="pt-14 pb-24">
+        <div className="max-w-[90%] mx-auto">
+          <T2TrendTreemap />
+        </div>
       </div>
+      <V3TabBar activeTab="rankings" onTabChange={() => {}} />
     </>
   );
 };
