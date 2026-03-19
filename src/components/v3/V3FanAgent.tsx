@@ -1528,9 +1528,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <div className="grid grid-cols-1 gap-2 mt-2 w-full">
                 {msg.quickActions.map((qa) => {
                   const promptMap: Record<string, string> = {
-                    fan_activity: t("agent.prompt.fanActivity"),
-                    rankings: t("agent.prompt.liveRankings"),
-                    streaming: t("agent.prompt.streamingGuide"),
                     news: t("agent.prompt.newsBriefing"),
                   };
                   return (
