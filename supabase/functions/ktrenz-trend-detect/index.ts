@@ -290,6 +290,7 @@ Deno.serve(async (req) => {
             display_name: member.display_name,
             name_ko: member.name_ko,
             group_name: group?.display_name || null,
+            group_name_ko: group?.name_ko || null,
             group_wiki_entry_id: group?.wiki_entry_id || null,
           }
         );
