@@ -568,11 +568,11 @@ const T2KeywordDetail = () => {
                 </div>
               </div>
               <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <div className="text-[10px] text-muted-foreground mb-1">Detected</div>
+                <div className="text-[10px] text-muted-foreground mb-1">{t2l("detected", language)}</div>
                 <div className="text-xs font-medium text-foreground">{formatDateTime(trigger.detected_at)}</div>
               </div>
               <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <div className="text-[10px] text-muted-foreground mb-1">Peak Time</div>
+                <div className="text-[10px] text-muted-foreground mb-1">{t2l("peakTime", language)}</div>
                 <div className="text-xs font-medium text-foreground">
                   {trigger.peak_at ? formatDateTime(trigger.peak_at) : "—"}
                 </div>
