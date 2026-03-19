@@ -495,7 +495,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
       </div>
 
       {/* View Content */}
-      <div key={currentViewMode} className="animate-fade-in">
+      <div>
       {filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center py-20">
           <p className="text-sm text-muted-foreground">No active trend keywords detected yet.</p>
