@@ -489,45 +489,112 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
 
-          {/* Vote & Boost */}
+          {/* FPMM Prediction Market */}
           <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
-            {/* Vote — casual poll style */}
-            <div className="space-y-2.5">
-              <p className="text-lg font-bold text-foreground text-center">
+            <div className="space-y-3">
+              <p className="text-lg font-bold text-foreground text-center flex items-center justify-center gap-2">
+                <Coins className="w-5 h-5 text-primary" />
                 {t("voteRelevance", language)}
               </p>
-              {!voteData?.myVote && (
-                <p className="text-[11px] text-center text-muted-foreground">{t("voteReward", language)}</p>
-              )}
-              <div className="flex items-center gap-3">
-                <button
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                    voteData?.myVote === "up"
-                      ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 scale-[1.02]"
-                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
-                  )}
-                  onClick={() => handleVote("up")}
-                  disabled={voteMutation.isPending}
-                >
-                  {t("voteYes", language)} <span className="ml-1 text-xs opacity-60">{voteData?.ups ?? 0}</span>
-                </button>
-                <button
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                    voteData?.myVote === "down"
-                      ? "bg-rose-500/20 text-rose-400 border-2 border-rose-500/50 scale-[1.02]"
-                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
-                  )}
-                  onClick={() => handleVote("down")}
-                  disabled={voteMutation.isPending}
-                >
-                  {t("voteNo", language)} <span className="ml-1 text-xs opacity-60">{voteData?.downs ?? 0}</span>
-                </button>
+
+              {/* Odds display */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-center">
+                  <div className="text-[10px] text-muted-foreground mb-0.5">Yes 🔥</div>
+                  <div className="text-lg font-bold text-emerald-400">{(priceYes * 100).toFixed(0)}%</div>
+                </div>
+                <div className="flex-1 rounded-lg bg-rose-500/10 border border-rose-500/30 p-2.5 text-center">
+                  <div className="text-[10px] text-muted-foreground mb-0.5">No 🤷</div>
+                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(0)}%</div>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground text-center">
-                {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} {t("votesCount", language)}
-              </p>
+
+              {totalVolume > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center">
+                  {t("totalPool", language)}: {totalVolume.toLocaleString()}P
+                </p>
+              )}
+
+              {/* Settled state */}
+              {isSettled ? (
+                <div className="rounded-lg bg-muted/50 border border-border p-3 text-center space-y-1">
+                  <p className="text-sm font-bold text-foreground">{t("marketSettled", language)}</p>
+                  <Badge variant={marketOutcome === "yes" ? "default" : "secondary"} className="text-xs">
+                    {marketOutcome === "yes" ? "Yes 🔥" : "No 🤷"}
+                  </Badge>
+                  {myBets && myBets.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {myBets.map((bet: any) => (
+                        <div key={bet.id} className="text-[11px] text-muted-foreground">
+                          {bet.side === "yes" ? "🔥" : "🤷"} {bet.amount}P → {bet.payout != null
+                            ? (bet.payout > 0
+                              ? <span className="text-emerald-400 font-bold">+{bet.payout}P {t("won", language)}</span>
+                              : <span className="text-rose-400">{t("lost", language)}</span>)
+                            : "..."}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Bet input */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      className={cn(
+                        "px-4 py-2.5 rounded-l-xl text-sm font-bold transition-all border-2",
+                        betSide === "yes"
+                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
+                          : "bg-muted/50 text-muted-foreground border-border hover:bg-emerald-500/10"
+                      )}
+                      onClick={() => setBetSide("yes")}
+                    >
+                      {t("betYes", language)}
+                    </button>
+                    <button
+                      className={cn(
+                        "px-4 py-2.5 rounded-r-xl text-sm font-bold transition-all border-2",
+                        betSide === "no"
+                          ? "bg-rose-500/20 text-rose-400 border-rose-500/50"
+                          : "bg-muted/50 text-muted-foreground border-border hover:bg-rose-500/10"
+                      )}
+                      onClick={() => setBetSide("no")}
+                    >
+                      {t("betNo", language)}
+                    </button>
+                    <Input
+                      type="number"
+                      min={10}
+                      max={1000}
+                      placeholder="10~1000P"
+                      value={betAmount}
+                      onChange={(e) => setBetAmount(e.target.value)}
+                      className="flex-1 h-10 text-sm"
+                    />
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={handlePlaceBet}
+                    disabled={betMutation.isPending || !betAmount}
+                  >
+                    <Coins className="w-4 h-4" />
+                    {t("placeBet", language)}
+                  </Button>
+
+                  {/* My bets */}
+                  {myBets && myBets.length > 0 && (
+                    <div className="border-t border-border/50 pt-2 space-y-1">
+                      <p className="text-[10px] text-muted-foreground font-medium">{t("yourBets", language)}</p>
+                      {myBets.map((bet: any) => (
+                        <div key={bet.id} className="flex justify-between text-[11px] text-muted-foreground">
+                          <span>{bet.side === "yes" ? "🔥 Yes" : "🤷 No"} · {bet.amount}P</span>
+                          <span>{Number(bet.shares).toFixed(1)} {t("shares", language)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Boost */}
