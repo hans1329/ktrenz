@@ -218,6 +218,7 @@ async function detectForMember(
   const rowsToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
   const backfillPromises: PromiseLike<unknown>[] = [];
+  const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
   for (const kw of keywords) {
     const kwLower = kw.keyword.toLowerCase();
@@ -234,6 +235,10 @@ async function detectForMember(
     const current = existingByKeyword.get(kwLower);
 
     if (!current) {
+      if (batchInsertedKeys.has(kwLower)) {
+        continue; // 같은 배치에서 이미 삽입 예정
+      }
+      batchInsertedKeys.add(kwLower);
       rowsToInsert.push({
         wiki_entry_id: member.group_wiki_entry_id || null,
         star_id: member.id || null,
