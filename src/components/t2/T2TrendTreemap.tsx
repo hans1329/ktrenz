@@ -453,12 +453,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
                   : (config?.color ? `${config.color.replace(')', ', 0.25)').replace('hsl(', 'hsla(')}` : "hsl(var(--border))"),
               }}
             >
-              {cat === "all" ? "All" : config?.label}
+              {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
               <span
                 className={cn("text-[10px]", !isActive && "text-muted-foreground/60")}
                 style={isActive ? { color: "rgba(255,255,255,0.7)" } : undefined}
               >
-                {count}
+                {allCount}
               </span>
             </button>
           );
