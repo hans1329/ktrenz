@@ -145,6 +145,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       return (data ?? []) as any[];
     },
     enabled: !!marketData?.id && !!user,
+    placeholderData: (prev) => prev,
   });
 
   // Bet mutation
