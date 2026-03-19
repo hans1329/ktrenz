@@ -352,6 +352,7 @@ interface MemberInfo {
   group_name: string | null;
   group_name_ko: string | null;
   group_wiki_entry_id: string | null;
+  star_category: string;
 }
 
 async function detectForMember(
