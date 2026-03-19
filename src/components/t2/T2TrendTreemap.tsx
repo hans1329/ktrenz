@@ -417,7 +417,7 @@ const T2TrendTreemap = () => {
         </div>
         <div className="flex items-center gap-2">
           {/* View toggle — 3-tab buttons */}
-          <div className="flex items-center gap-0.5 bg-muted rounded-lg border border-border p-0.5">
+          <div className="flex items-center gap-0.5 bg-muted rounded-full border border-border p-0.5">
             {([
               { key: "treemap" as const, icon: LayoutGrid, label: "Box" },
               { key: "list" as const, icon: List, label: "List" },
@@ -427,7 +427,7 @@ const T2TrendTreemap = () => {
                 key={key}
                 onClick={() => setViewMode(key)}
                 className={cn(
-                  "flex items-center justify-center w-8 h-7 rounded-md transition-all",
+                  "flex items-center justify-center w-8 h-7 rounded-full transition-all",
                   viewMode === key
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
