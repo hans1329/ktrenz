@@ -638,10 +638,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             : undefined,
                         }} />
                         <BoxParticles
-                          count={rectIndex === 0 ? 18 : 10}
+                          count={rectIndex === 0 ? 24 : 10}
                           color="hsla(45, 100%, 80%, 0.9)"
-                          speed={rectIndex === 0 ? 0.3 : 0.2}
-                          density={rectIndex === 0 ? 0.6 : 0.4}
+                          speed={rectIndex === 0 ? 0.7 : 0.2}
+                          density={rectIndex === 0 ? 0.7 : 0.4}
                           shape="star"
                         />
                       </>
