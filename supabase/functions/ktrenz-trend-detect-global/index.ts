@@ -340,8 +340,18 @@ Deno.serve(async (req) => {
         }
 
         if (rowsToInsert.length > 0) {
-          await sb.from("ktrenz_trend_triggers").insert(rowsToInsert);
+          const { data: inserted } = await sb.from("ktrenz_trend_triggers").insert(rowsToInsert).select("id");
           console.log(`[detect-global] ${name}: inserted ${rowsToInsert.length} new keywords (${rowsToInsert.map((k: any) => k.keyword).join(", ")})`);
+          // 비동기 이미지 캐시 호출
+          if (inserted?.length) {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            fetch(`${supabaseUrl}/functions/v1/ktrenz-cache-image`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ triggerIds: inserted.map((r: any) => r.id) }),
+            }).catch((e) => console.warn(`[detect-global] cache-image fire-and-forget error: ${e.message}`));
+          }
         }
 
         if (backfillPromises.length > 0) {
