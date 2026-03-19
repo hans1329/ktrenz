@@ -9,7 +9,15 @@ export type TrackEventType =
   | "artist_detail_section"
   | "external_link_click"
   | "agent_chat"
-  | "agent_mode_switch";
+  | "agent_mode_switch"
+  | "t2_treemap_click"
+  | "t2_list_click"
+  | "t2_artist_click"
+  | "t2_artist_view"
+  | "t2_keyword_detail_view"
+  | "t2_external_link_click"
+  | "t2_detail_open"
+  | "t2_share";
 
 interface EventData {
   artist_slug?: string;

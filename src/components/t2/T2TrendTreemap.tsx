@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List, Users } from "lucide-react";
@@ -428,15 +429,17 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     setSelectedTile(filteredItems.find((item) => item.id === modalId) ?? null);
   }, [filteredItems, searchParams]);
 
+  const track = useTrackEvent();
   const handleTileClick = useCallback((item: TrendTile) => {
     const nextParams = new URLSearchParams(searchParams);
     if (selectedTile?.id === item.id) {
       nextParams.delete("modal");
     } else {
       nextParams.set("modal", item.id);
+      track("t2_treemap_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, category: item.category, section: item.keyword });
     }
     setSearchParams(nextParams);
-  }, [searchParams, selectedTile?.id, setSearchParams]);
+  }, [searchParams, selectedTile?.id, setSearchParams, track]);
 
   const categoryStats = useMemo(() => {
     if (!dedupedTriggers?.length) return {};

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
@@ -77,6 +78,7 @@ interface T2TrendListProps {
 const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, onLoadMore }: T2TrendListProps) => {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const track = useTrackEvent();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,7 +123,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   </div>
                   <div className="flex items-center gap-2 mt-2 mb-1">
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (item.starId) navigate(`/t2/artist/${item.starId}`); }}
+                      onClick={(e) => { e.stopPropagation(); if (item.starId) { track("t2_artist_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId }); navigate(`/t2/artist/${item.starId}`); } }}
                       className={cn(
                         "text-xs font-semibold truncate rounded-full px-2 py-0.5 transition-colors",
                         item.starId
@@ -154,7 +156,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {/* Hero image */}
             {heroImage && (
               <button
-                onClick={() => onTileClick(item)}
+                onClick={() => { track("t2_list_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, section: item.keyword }); onTileClick(item); }}
                 className="relative w-full aspect-[4/3] lg:aspect-[3/4] bg-muted overflow-hidden group"
               >
                 <img
@@ -182,7 +184,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {/* No image fallback */}
             {!heroImage && (
               <button
-                onClick={() => onTileClick(item)}
+                onClick={() => { track("t2_list_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, section: item.keyword }); onTileClick(item); }}
                 className="w-full px-3.5 py-4 bg-muted/30 text-left group flex items-center justify-between"
               >
                 <span
@@ -213,7 +215,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); track("t2_external_link_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, url: item.sourceUrl || "" }); }}
                 >
                   <ExternalLink className="w-3 h-3 shrink-0" />
                   <span className="truncate">{item.sourceTitle}</span>

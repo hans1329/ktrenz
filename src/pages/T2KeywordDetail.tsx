@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -115,11 +116,13 @@ const T2KeywordDetail = () => {
   const { language } = useLanguage();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const track = useTrackEvent();
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
+    if (triggerId) track("t2_keyword_detail_view", { section: triggerId });
     return () => { document.documentElement.classList.remove("v3-theme"); };
-  }, []);
+  }, [triggerId]);
 
   // Fetch trigger data
   const { data: trigger, isLoading: triggerLoading } = useQuery({

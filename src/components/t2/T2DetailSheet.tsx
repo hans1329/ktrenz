@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,7 +111,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const navigate = useNavigate();
   const { user, kPoints } = useAuth();
   const queryClient = useQueryClient();
-
+  const track = useTrackEvent();
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betAmount, setBetAmount] = useState("");
@@ -250,6 +251,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     const text = `🔥 ${keyword} × ${artist} is trending on K-Trendz!\n\n#KTrendz #Kpop #${artist.replace(/\s/g, "")}`;
 
     if (platform === "x") {
+      track("t2_share", { artist_name: artist, section: keyword, url });
       window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
     } else {
       await navigator.clipboard.writeText(`${text}\n${url}`);
@@ -377,7 +379,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
-                          onClick={handleReadBoost}
+                          onClick={() => { track("t2_external_link_click", { artist_name: tile.artistName, artist_slug: tile.wikiEntryId, url: tile.sourceUrl || "" }); handleReadBoost(); }}
                         >
                           {getLocalizedSourceTitle(tile, language)}
                         </a>

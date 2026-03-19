@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Star, TrendingUp, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -35,6 +36,7 @@ interface ArtistGroup {
 const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const track = useTrackEvent();
 
   const artistGroups = useMemo(() => {
     const map = new Map<string, ArtistGroup>();
@@ -78,7 +80,10 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
           <button
             key={group.groupKey}
             onClick={() => {
-              if (group.starId) navigate(`/t2/artist/${group.starId}`);
+              if (group.starId) {
+                track("t2_artist_click", { artist_name: group.artistName, artist_slug: group.wikiEntryId });
+                navigate(`/t2/artist/${group.starId}`);
+              }
             }}
             className="text-left rounded-2xl border border-border hover:border-primary/30 bg-card overflow-hidden transition-all group"
           >

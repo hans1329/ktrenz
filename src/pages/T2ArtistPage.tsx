@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 
 import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,12 +40,13 @@ const T2ArtistPage = () => {
   const { starId } = useParams<{ starId: string }>();
   const navigate = useNavigate();
   const { language } = useLanguage();
-  
+  const track = useTrackEvent();
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
+    if (starId) track("t2_artist_view", { artist_slug: starId });
     return () => { document.documentElement.classList.remove("v3-theme"); };
-  }, []);
+  }, [starId]);
 
   // Fetch star info
   const { data: star, isLoading: starLoading } = useQuery({
