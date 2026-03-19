@@ -3298,6 +3298,7 @@ Deno.serve(async (req) => {
                 if (collectedMeta.rankingData) metaToSave.rankingData = collectedMeta.rankingData;
                 if (collectedMeta.guideData) metaToSave.guideData = collectedMeta.guideData;
                 if (collectedMeta.reportCards) metaToSave.reportCards = collectedMeta.reportCards;
+                if (collectedMeta.trendData) metaToSave.trendData = collectedMeta.trendData;
                 
                 await adminClient.from("ktrenz_fan_agent_messages").insert({
                   user_id: userId,
