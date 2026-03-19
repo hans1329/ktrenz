@@ -58,7 +58,7 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
-type TrendCategory = "all" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
+type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 70%, 45%, 0.85)" },
