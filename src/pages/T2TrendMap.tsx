@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
-import T2TrendTreemap from "@/components/t2/T2TrendTreemap";
+import T2TrendTreemap, { type TrendCategory, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type ViewMode = "treemap" | "list" | "artist";
@@ -21,6 +21,7 @@ const SWIPE_THRESHOLD = 40;
 
 const T2TrendMap = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("treemap");
+  const [category, setCategory] = useState<TrendCategory>("all");
   const isMobile = useIsMobile();
   const touchRef = useRef<{ startX: number; startY: number } | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
@@ -48,9 +49,7 @@ const T2TrendMap = () => {
     const t = e.touches[0];
     const dx = t.clientX - touchRef.current.startX;
     const dy = t.clientY - touchRef.current.startY;
-    // Only apply horizontal drag if it's dominant
     if (Math.abs(dx) > Math.abs(dy) * 1.2) {
-      // Resist at edges
       const idx = VIEW_ORDER.indexOf(viewMode);
       const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
       setDragOffset(atEdge ? dx * 0.2 : dx);
@@ -122,7 +121,13 @@ const T2TrendMap = () => {
           {VIEW_ORDER.map((mode) => (
             <div key={mode} className="w-full flex-shrink-0">
               <div className="max-w-[90%] mx-auto">
-                <T2TrendTreemap viewMode={mode} onViewModeChange={setViewMode} />
+                <T2TrendTreemap
+                  viewMode={mode}
+                  onViewModeChange={setViewMode}
+                  selectedCategory={category}
+                  onCategoryChange={setCategory}
+                  hideCategory={mode !== viewMode}
+                />
               </div>
             </div>
           ))}
