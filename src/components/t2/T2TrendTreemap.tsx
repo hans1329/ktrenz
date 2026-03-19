@@ -624,6 +624,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
           </div>
         </>
       )}
+      </div>
 
 
       {/* Detail Sheet */}
