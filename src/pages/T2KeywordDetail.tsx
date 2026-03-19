@@ -217,7 +217,26 @@ const T2KeywordDetail = () => {
     enabled: !!triggerId,
   });
 
-  // Chart data
+  // Fetch user's bets for this market
+  const { data: myPosition } = useQuery({
+    queryKey: ["t2-my-position", marketData?.id, user?.id],
+    queryFn: async () => {
+      if (!marketData?.id || !user?.id) return null;
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("side, amount, shares")
+        .eq("market_id", marketData.id)
+        .eq("user_id", user.id);
+      if (!bets || bets.length === 0) return null;
+      const yesAmount = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.amount), 0);
+      const noAmount = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.amount), 0);
+      const yesShares = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.shares), 0);
+      const noShares = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.shares), 0);
+      return { yesAmount, noAmount, yesShares, noShares, totalSpent: yesAmount + noAmount };
+    },
+    enabled: !!marketData?.id && !!user?.id,
+  });
+
   const chartData = useMemo(() => {
     if (!trackingHistory?.length) return [];
     return trackingHistory.map((t: any) => ({
