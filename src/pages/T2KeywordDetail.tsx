@@ -618,7 +618,7 @@ const T2KeywordDetail = () => {
             </h2>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-muted/30 border border-border p-4">
-              <div className="text-[10px] text-muted-foreground mb-1">Commercial Potential</div>
+              <div className="text-[10px] text-muted-foreground mb-1">{t2l("commercialPotential", language)}</div>
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "text-lg font-black",
