@@ -680,60 +680,70 @@ const T2KeywordDetail = () => {
           </div>
         </div>
 
-        {/* AI Trend Analysis */}
+        {/* AI Trend Insight */}
         {(baselineScore != null || influenceIndex > 0) && (
           <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 sm:p-6 mt-6 space-y-3">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
-              {language === "ko" ? "AI 트렌드 분석" : language === "ja" ? "AIトレンド分析" : language === "zh" ? "AI趋势分析" : "AI Trend Analysis"}
+              {language === "ko" ? "AI 인사이트" : language === "ja" ? "AIインサイト" : language === "zh" ? "AI洞察" : "AI Insight"}
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {(() => {
                 const peakDelay = trigger.peak_at
                   ? (new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000
                   : null;
-                const cat = CATEGORY_LABELS[category]?.toLowerCase() || category;
+                const cat = CATEGORY_LABELS[category] || category;
+                const isViral = influenceIndex >= 50;
+                const isGrowing = influenceIndex >= 20;
+                const isFastReact = peakDelay != null && peakDelay < 6;
+                const isSustained = !isViral && !isGrowing && !isFastReact;
 
                 if (language === "ko") {
-                  const parts: string[] = [];
-                  parts.push(`${artistName} × ${keyword}는 ${trigger.trigger_source === "global_news" ? "글로벌 미디어" : "국내 뉴스"}를 통해 기준 점수 ${baselineScore ?? "N/A"}에서 감지되었습니다.`);
-                  if (peakScore != null && peakDelay != null) {
-                    parts.push(`${peakDelay.toFixed(1)}시간 추적 후 최고 점수 ${peakScore}에 도달했습니다.`);
+                  if (isViral) {
+                    return `${artistName}의 "${keyword}" 관련 관심이 폭발적으로 증가하고 있습니다. 팬덤과 일반 대중 모두에서 강한 반응이 감지되었으며, ${cat} 분야의 브랜드라면 지금이 콜라보를 제안할 최적의 타이밍입니다. 이 수준의 관심은 보통 1~2주 내에 소비 행동으로 이어집니다.`;
+                  } else if (isGrowing) {
+                    return `${artistName}과 "${keyword}"의 연관 관심도가 꾸준히 상승 중입니다. 아직 대중적 폭발 단계는 아니지만, ${cat} 분야에서 선제적 마케팅을 준비하기에 좋은 시점입니다. 경쟁사보다 먼저 움직일 수 있는 골든 타임에 있습니다.`;
+                  } else if (isFastReact) {
+                    return `"${keyword}" 키워드가 감지 직후 빠르게 확산되고 있습니다. SNS 기반의 바이럴 초기 단계로 보이며, ${cat} 관련 콘텐츠를 빠르게 제작하면 자연스러운 노출 효과를 기대할 수 있습니다.`;
+                  } else {
+                    return `${artistName}과 "${keyword}"는 급등보다는 안정적인 관심을 유지하고 있습니다. 이 패턴은 이미 검증된 ${cat} 연관성을 의미하며, 단기 캠페인보다는 장기 파트너십에 적합한 시그널입니다.`;
                   }
-                  if (influenceIndex > 0) {
-                    parts.push(`영향력 지수: +${influenceIndex.toFixed(2)}%`);
-                    if (influenceIndex >= 50) {
-                      parts.push(`— 강력한 소비자 관심 급등으로, ${cat} 카테고리에서 즉각적인 브랜드 활성화에 적합한 시그널입니다.`);
-                    } else if (influenceIndex >= 20) {
-                      parts.push(`— 의미 있는 관심 성장세를 보여주며, ${cat} 분야 파트너십 모니터링 가치가 있습니다.`);
-                    } else if (peakDelay != null && peakDelay < 6) {
-                      parts.push(`— 빠른 반응 속도로 바이럴 확산 가능성이 있는 초기 시그널입니다.`);
-                    } else {
-                      parts.push(`— 바이럴 급등이 아닌 안정적이고 지속적인 관심을 나타냅니다. 이 패턴은 확립된 ${cat} 카테고리 콜라보의 전형적인 모습입니다.`);
-                    }
-                  }
-                  return parts.join(" ");
                 }
 
-                // EN (default)
-                const parts: string[] = [];
-                parts.push(`${artistName} × ${keyword} was detected via ${trigger.trigger_source === "global_news" ? "global media" : "domestic news"} at baseline score ${baselineScore ?? "N/A"}.`);
-                if (peakScore != null && peakDelay != null) {
-                  parts.push(`After ${peakDelay.toFixed(1)} hours of tracking, peak score reached ${peakScore}.`);
-                }
-                if (influenceIndex > 0) {
-                  parts.push(`Influence Index: +${influenceIndex.toFixed(2)}%`);
-                  if (influenceIndex >= 50) {
-                    parts.push(`— a strong consumer interest surge, ideal for immediate brand activation in the ${cat} category.`);
-                  } else if (influenceIndex >= 20) {
-                    parts.push(`— meaningful interest growth, worth monitoring for ${cat} partnerships.`);
-                  } else if (peakDelay != null && peakDelay < 6) {
-                    parts.push(`— a fast-reacting early signal with viral potential.`);
+                if (language === "ja") {
+                  if (isViral) {
+                    return `${artistName}の「${keyword}」への関心が爆発的に高まっています。ファンダムと一般層の両方から強い反応が検出されており、${cat}分野のブランドにとって今がコラボ提案の最適なタイミングです。`;
+                  } else if (isGrowing) {
+                    return `${artistName}と「${keyword}」の関連性が着実に上昇中です。${cat}分野で先手を打つマーケティング準備に最適な時期です。`;
+                  } else if (isFastReact) {
+                    return `「${keyword}」キーワードが検出直後に急速に拡散しています。SNSバイラルの初期段階と見られ、${cat}関連コンテンツの迅速な制作で自然な露出効果が期待できます。`;
                   } else {
-                    parts.push(`— indicating steady, sustained interest rather than a viral spike. This pattern is typical of established ${cat} collaborations.`);
+                    return `${artistName}と「${keyword}」は安定した関心を維持しています。短期キャンペーンよりも長期パートナーシップに適したシグナルです。`;
                   }
                 }
-                return parts.join(" ");
+
+                if (language === "zh") {
+                  if (isViral) {
+                    return `${artistName}的"${keyword}"相关关注度正在爆发式增长。粉丝和大众都表现出强烈反应，对于${cat}领域的品牌来说，现在是提出合作的最佳时机。`;
+                  } else if (isGrowing) {
+                    return `${artistName}与"${keyword}"的关联关注度稳步上升。${cat}领域的先发制人营销准备正当其时。`;
+                  } else if (isFastReact) {
+                    return `"${keyword}"关键词在检测后迅速传播，处于社交媒体病毒式传播的早期阶段，快速制作${cat}相关内容可获得自然曝光效果。`;
+                  } else {
+                    return `${artistName}与"${keyword}"保持稳定关注，更适合长期合作而非短期营销活动。`;
+                  }
+                }
+
+                // EN
+                if (isViral) {
+                  return `Interest in ${artistName} × "${keyword}" is surging. Strong reactions detected from both fandom and general audiences — if you're a ${cat} brand, now is the ideal time to propose a collaboration. This level of buzz typically converts to consumer action within 1–2 weeks.`;
+                } else if (isGrowing) {
+                  return `The connection between ${artistName} and "${keyword}" is steadily growing. While not yet mainstream, this is the golden window to prepare proactive marketing in ${cat} — move before your competitors do.`;
+                } else if (isFastReact) {
+                  return `"${keyword}" is spreading rapidly after detection — an early-stage social viral signal. Fast ${cat} content creation can ride the organic wave for maximum exposure.`;
+                } else {
+                  return `${artistName} × "${keyword}" shows stable, sustained interest rather than a spike. This pattern signals a proven ${cat} association, better suited for long-term partnerships than short-term campaigns.`;
+                }
               })()}
             </p>
           </div>
