@@ -427,7 +427,7 @@ const T2TrendTreemap = () => {
                 key={key}
                 onClick={() => setViewMode(key)}
                 className={cn(
-                  "flex items-center justify-center w-8 h-7 rounded-full transition-all",
+                  "flex items-center justify-center w-10 h-8 rounded-full transition-all",
                   viewMode === key
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
