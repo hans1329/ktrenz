@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, forwardRef, useMemo } 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Music2, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock, Newspaper, CalendarDays, Flame, Star } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock, Newspaper, CalendarDays, Flame, Star } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,9 +14,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
-import V3StreamingGuideCards from "@/components/v3/V3StreamingGuideCards";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
-import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCards";
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
 import V3ReportCards, { type ReportCard } from "@/components/v3/V3ReportCards";
@@ -46,8 +44,6 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   timestamp?: string;
-  guideData?: any[] | null;
-  rankingData?: RankingEntry[] | null;
   briefingData?: BriefingData | null;
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
@@ -55,9 +51,9 @@ type ChatMessage = {
   trendData?: TrendKeywordEntry[] | null;
 };
 
-type AgentMode = "chat" | "trend" | "streaming" | "alert";
-type QuickActionKind = "fanActivity" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings" | "hotKeywords" | "myArtistTrend";
-type QuickActionHint = "trend_analysis" | "streaming_guide" | "fan_activity" | "hot_keywords" | "my_artist_trend";
+type AgentMode = "chat" | "trend" | "alert";
+type QuickActionKind = "trendAnalysis" | "newsBriefing" | "alertSettings" | "hotKeywords" | "myArtistTrend";
+type QuickActionHint = "trend_analysis" | "hot_keywords" | "my_artist_trend";
 
 interface QuickAction {
   id: QuickActionKind;
@@ -69,11 +65,9 @@ interface QuickAction {
 }
 
 const getQuickActions = (t: (key: string) => string): QuickAction[] => [
-  { id: "fanActivity", icon: Heart, label: t("agent.fanActivity"), prompt: t("agent.prompt.fanActivity"), mode: "chat", color: "text-pink-400" },
   { id: "hotKeywords", icon: Flame, label: t("agent.hotKeywords"), prompt: t("agent.prompt.hotKeywords"), mode: "trend", color: "text-orange-400" },
   { id: "myArtistTrend", icon: Star, label: t("agent.myArtistTrend"), prompt: t("agent.prompt.myArtistTrend"), mode: "trend", color: "text-yellow-400" },
   { id: "trendAnalysis", icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
-  { id: "streamingGuide", icon: Music2, label: t("agent.streamingGuide"), prompt: t("agent.prompt.streamingGuide"), mode: "streaming", color: "text-green-400" },
   { id: "newsBriefing", icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
   { id: "alertSettings", icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
 ];
@@ -574,8 +568,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         role: d.role as "user" | "assistant",
         content: d.content,
         timestamp: d.created_at,
-        rankingData: d.metadata?.rankingData ?? null,
-        guideData: d.metadata?.guideData ?? null,
         reportCards: d.metadata?.reportCards ?? null,
         trendData: d.metadata?.trendData ?? null,
       }));
@@ -969,8 +961,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               return prev.map((m, i) =>
                 i === lastIdx ? {
                   ...m,
-                  guideData: meta.guideData ?? m.guideData,
-                  rankingData: meta.rankingData ?? m.rankingData,
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
                   reportCards: meta.reportCards ?? m.reportCards,
@@ -1081,9 +1071,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     }
 
     const hintMap: Partial<Record<QuickActionKind, QuickActionHint>> = {
-      fanActivity: "fan_activity",
       trendAnalysis: "trend_analysis",
-      streamingGuide: "streaming_guide",
       hotKeywords: "hot_keywords",
       myArtistTrend: "my_artist_trend",
     };
@@ -1524,13 +1512,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <V3ReportCards cards={msg.reportCards} />
             )}
 
-            {msg.role === "assistant" && msg.rankingData && msg.rankingData.length > 0 && (
-              <V3RankingCards rankings={msg.rankingData} />
-            )}
-
-            {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
-              <V3StreamingGuideCards guides={msg.guideData} />
-            )}
 
             {msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && (
               <V3TrendKeywordCards
@@ -1547,9 +1528,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <div className="grid grid-cols-1 gap-2 mt-2 w-full">
                 {msg.quickActions.map((qa) => {
                   const promptMap: Record<string, string> = {
-                    fan_activity: t("agent.prompt.fanActivity"),
-                    rankings: t("agent.prompt.liveRankings"),
-                    streaming: t("agent.prompt.streamingGuide"),
                     news: t("agent.prompt.newsBriefing"),
                   };
                   return (
