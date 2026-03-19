@@ -126,9 +126,9 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
           <>
             <Link to="/" className="flex items-center shrink-0">
               <img
-                src={ktrenzLogo}
+                src={isMobile ? ktrenzIcon : ktrenzLogo}
                 alt="K-TRENZ"
-                className="h-5 sm:h-7 w-auto"
+                className={isMobile ? "h-8 w-8 rounded-full" : "h-7 w-auto"}
                 fetchPriority="high"
                 decoding="async"
               />
