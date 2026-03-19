@@ -433,7 +433,7 @@ const T2KeywordDetail = () => {
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 mb-6">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
               <BarChart3 className="w-4 h-4 text-primary" />
-              Google Trends Interest Score
+              Kinterest Score
             </h2>
             <div className="h-56 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
