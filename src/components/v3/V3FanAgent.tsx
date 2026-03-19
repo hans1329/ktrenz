@@ -52,6 +52,7 @@ type ChatMessage = {
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
   reportCards?: ReportCard[] | null;
+  trendData?: TrendKeywordEntry[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
