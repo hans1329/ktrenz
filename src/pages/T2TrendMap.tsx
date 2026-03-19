@@ -33,7 +33,7 @@ const T2TrendMap = () => {
       />
       <V3Header
         centerSlot={
-          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1 md:p-1.5">
+          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1 md:p-1">
             {VIEW_TABS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
