@@ -311,6 +311,7 @@ Deno.serve(async (req) => {
             group_name: group?.display_name || null,
             group_name_ko: group?.name_ko || null,
             group_wiki_entry_id: group?.wiki_entry_id || null,
+            star_category: member.star_category || "kpop",
           }
         );
         successCount++;
