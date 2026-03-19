@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
           .from("ktrenz_trend_triggers")
           .select("keyword")
           .neq("wiki_entry_id", entryId)
-          .gte("detected_at", weekAgo)
+          .gte("detected_at", threeDaysAgo)
           .in("keyword", allKeywords.map((k) => k.keyword));
 
         const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));

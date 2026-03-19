@@ -210,7 +210,7 @@ async function detectForMember(
     .from("ktrenz_trend_triggers")
     .select("keyword")
     .neq("star_id", member.id)
-    .gte("detected_at", weekAgo)
+    .gte("detected_at", threeDaysAgo)
     .in("keyword", keywords.map((k) => k.keyword));
 
   const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));
