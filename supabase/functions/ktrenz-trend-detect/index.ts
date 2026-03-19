@@ -129,7 +129,7 @@ async function extractCommercialKeywords(
   if (!articles.length) return [];
 
   const articleTexts = articles
-    .slice(0, 10)
+    .slice(0, 25)
     .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
     .join("\n");
 
