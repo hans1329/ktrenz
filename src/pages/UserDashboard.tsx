@@ -379,9 +379,9 @@ const UserDashboard = () => {
             </Card>
           ) : !myTrends?.length ? (
             <Card className="p-6 text-center border-border bg-card">
-              <p className="text-sm text-muted-foreground mb-2">No active trends for your artists yet</p>
+              <p className="text-sm text-muted-foreground mb-2">{t("dash.noTrends")}</p>
               <button onClick={() => navigate("/agent")} className="text-xs text-primary font-bold">
-                Follow artists →
+                {t("dash.followArtists")}
               </button>
             </Card>
           ) : (
