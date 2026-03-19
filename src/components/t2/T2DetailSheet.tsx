@@ -613,6 +613,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                        onChange={(e) => setBetAmount(e.target.value)}
                        className="flex-1 h-10 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
+                    {user && (
+                      <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
+                        {Number(kPoints).toLocaleString()}P
+                      </span>
+                    )}
                   </div>
                   <Button
                     className="w-full gap-2"
