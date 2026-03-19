@@ -365,7 +365,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return dedupedTriggers.filter(t => t.category === selectedCategory);
   }, [dedupedTriggers, selectedCategory, watchedSet]);
 
-  const containerWidth = isMobile ? 360 : 1000;
+  const containerWidth = isMobile ? 390 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
 
 
@@ -462,7 +462,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }
 
   return (
-    <div className="px-4 pb-4">
+    <div className="px-0 md:px-4 pb-4">
       {/* Header */}
       <div className="pt-4 pb-3 flex items-end justify-end gap-3">
         <div className="flex items-center gap-2">
