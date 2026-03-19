@@ -1,15 +1,12 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+
 import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
-import V3Header from "@/components/v3/V3Header";
-import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
-import V3TabBar from "@/components/v3/V3TabBar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; color: string }> = {
@@ -42,7 +39,7 @@ const T2ArtistPage = () => {
   const { starId } = useParams<{ starId: string }>();
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const isMobile = useIsMobile();
+  
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
@@ -112,17 +109,22 @@ const T2ArtistPage = () => {
 
   const displayName = language === "ko" && star?.name_ko ? star.name_ko : star?.display_name ?? "";
 
-  const content = (
-    <div className="max-w-2xl mx-auto px-4 pb-10">
-      {/* Back button */}
-      <button
-        onClick={() => navigate("/t2")}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-3"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Kinterest
-      </button>
+  const subHeader = (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
+      <div className="flex items-center h-14 px-4 max-w-screen-lg mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="ml-3 text-base font-bold text-foreground truncate">{displayName}</span>
+      </div>
+    </header>
+  );
 
+  const content = (
+    <div className="max-w-2xl mx-auto px-4 pb-10 pt-4">
       {/* Artist profile header */}
       {starLoading ? (
         <div className="flex items-center gap-4 mb-6">
@@ -326,24 +328,11 @@ const T2ArtistPage = () => {
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <>
-        <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
-        <V3Header />
-        <div className="pt-14 pb-24">{content}</div>
-        <V3TabBar activeTab="rankings" onTabChange={() => {}} />
-      </>
-    );
-  }
-
   return (
     <>
       <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
-      <div className="min-h-screen flex flex-col">
-        <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />
-        <main className="flex-1 pt-4">{content}</main>
-      </div>
+      {subHeader}
+      <div className="pt-14 pb-10">{content}</div>
     </>
   );
 };
