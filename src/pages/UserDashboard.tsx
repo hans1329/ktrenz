@@ -257,6 +257,84 @@ const UserDashboard = () => {
     staleTime: 30_000,
   });
 
+  // ── My Trend Predictions (Bets) ──
+  const { data: myBets } = useQuery({
+    queryKey: ["dashboard-my-bets", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("id, market_id, side, amount, shares, payout, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (!bets?.length) return [];
+
+      // Get market info
+      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
+      const { data: markets } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("id, trigger_id, status, outcome, pool_yes, pool_no, total_volume, expires_at")
+        .in("id", marketIds);
+      const marketMap = new Map<string, any>();
+      (markets ?? []).forEach((m: any) => marketMap.set(m.id, m));
+
+      // Get trigger info for keywords
+      const triggerIds = [...new Set((markets ?? []).map((m: any) => m.trigger_id).filter(Boolean))];
+      let triggerMap = new Map<string, any>();
+      if (triggerIds.length) {
+        const { data: triggers } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("id, keyword, keyword_ko, keyword_category, star_id")
+          .in("id", triggerIds);
+        (triggers ?? []).forEach((t: any) => triggerMap.set(t.id, t));
+
+        // Get star names
+        const starIds = [...new Set((triggers ?? []).map((t: any) => t.star_id).filter(Boolean))];
+        if (starIds.length) {
+          const { data: stars } = await supabase
+            .from("ktrenz_stars" as any)
+            .select("id, display_name, name_ko")
+            .in("id", starIds);
+          const starMap = new Map<string, any>();
+          (stars ?? []).forEach((s: any) => starMap.set(s.id, s));
+          (triggers ?? []).forEach((t: any) => {
+            const star = starMap.get(t.star_id);
+            if (star) {
+              t.artistName = star.display_name;
+              t.artistNameKo = star.name_ko;
+            }
+          });
+        }
+      }
+
+      return (bets as any[]).map((b: any) => {
+        const market = marketMap.get(b.market_id);
+        const trigger = market ? triggerMap.get(market.trigger_id) : null;
+        return {
+          ...b,
+          market,
+          trigger,
+        };
+      });
+    },
+    staleTime: 30_000,
+  });
+
+  const betStats = useMemo(() => {
+    if (!myBets?.length) return { total: 0, won: 0, lost: 0, pending: 0, totalAmount: 0, totalPayout: 0 };
+    let won = 0, lost = 0, pending = 0, totalAmount = 0, totalPayout = 0;
+    for (const b of myBets) {
+      totalAmount += Number(b.amount) || 0;
+      totalPayout += Number(b.payout) || 0;
+      if (!b.market || b.market.status === "open") { pending++; continue; }
+      if (b.market.outcome === b.side) won++;
+      else if (b.market.outcome) lost++;
+      else pending++;
+    }
+    return { total: myBets.length, won, lost, pending, totalAmount, totalPayout };
+  }, [myBets]);
+
   const getLocalizedKeyword = (t: any) => {
     if (language === "ko" && t.keywordKo) return t.keywordKo;
     return t.keyword;
@@ -271,7 +349,16 @@ const UserDashboard = () => {
   return (
     <div className="min-h-[100dvh] bg-background">
       <SEO title="My Activity – KTrenZ" description="Your trend activity and contribution" path="/dashboard" />
-      <V3Header />
+      
+      {/* Sub-header: back + title */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center h-14 px-4 max-w-screen-lg mx-auto">
+          <button onClick={() => navigate(-1)} className="p-1 -ml-1 mr-2">
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <h1 className="text-base font-bold text-foreground">My Activity</h1>
+        </div>
+      </header>
 
       <main className="pt-14 pb-24 px-4 max-w-2xl mx-auto">
 
