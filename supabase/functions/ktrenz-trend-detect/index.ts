@@ -342,10 +342,11 @@ async function detectForMember(
   member: MemberInfo,
 ): Promise<{ keywordsFound: number; articlesFound: number; keywords: ExtractedKeyword[] }> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
-  // 그룹 멤버인 경우 "그룹명 멤버명" 형태로 검색하여 동명이인 방지
+  // 그룹 멤버인 경우 "그룹명 멤버명" 형태로 검색하여 동명이인 방지 (예: "스트레이 키즈 필릭스")
   const searchName = member.name_ko || member.display_name;
-  const searchQuery = member.group_name
-    ? `"${searchName}" "${member.group_name}"`
+  const groupLabel = member.group_name_ko || member.group_name;
+  const searchQuery = groupLabel
+    ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
   // 네이버 뉴스 실시간 검색
