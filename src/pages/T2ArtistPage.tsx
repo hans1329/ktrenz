@@ -125,6 +125,26 @@ const T2ArtistPage = () => {
 
   const content = (
     <div className="max-w-2xl mx-auto px-4 pb-10 pt-4">
+      {/* Artist profile header */}
+      {starLoading ? (
+        <div className="flex items-center gap-4 mb-6">
+          <Skeleton className="w-16 h-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="w-32 h-6" />
+            <Skeleton className="w-20 h-4" />
+          </div>
+        </div>
+      ) : star ? (
+        <div className="flex items-center gap-4 mb-6">
+          {star.imageUrl ? (
+            <img
+              src={star.imageUrl}
+              alt={displayName}
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
+            />
+          ) : (
+            <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground">
+              {displayName.charAt(0)}
             </div>
           )}
           <div>
