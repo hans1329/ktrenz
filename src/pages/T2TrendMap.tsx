@@ -1,14 +1,10 @@
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 import SEO from "@/components/SEO";
-import { useIsMobile } from "@/hooks/use-mobile";
 import V3Header from "@/components/v3/V3Header";
-import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import V3TabBar from "@/components/v3/V3TabBar";
 import T2TrendTreemap from "@/components/t2/T2TrendTreemap";
 
 const T2TrendMap = () => {
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
