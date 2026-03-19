@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { TrendingUp, Bot, Power, Activity, Settings, User } from "lucide-react";
+import { TrendingUp, Bot, Power, Activity, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -112,7 +112,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
     { id: "activity" as const, labelKey: "nav.activity", icon: Activity },
     { id: "agent" as const, labelKey: "nav.agent", icon: null, isCenter: true },
     { id: "profile" as const, labelKey: "nav.profile", icon: User },
-    { id: "settings" as const, labelKey: "nav.settings", icon: Settings },
+    { id: "notifications" as const, labelKey: "nav.notifications", icon: Bell },
   ];
 
   return (
@@ -147,7 +147,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             const Icon = tab.icon!;
 
             return (
-              <button key={tab.id} onClick={() => (tab.id === "profile" ? handleProfileClick() : tab.id === "activity" ? navigate("/dashboard") : tab.id === "settings" ? navigate("/settings") : onTabChange(tab.id as V3Tab))}
+              <button key={tab.id} onClick={() => (tab.id === "profile" ? handleProfileClick() : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : onTabChange(tab.id as V3Tab))}
                 className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
