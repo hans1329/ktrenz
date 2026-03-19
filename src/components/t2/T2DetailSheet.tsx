@@ -557,16 +557,16 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 return (
                   <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                     <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       {yesStake > 0 && (
-                        <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
+                        <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center min-w-[120px]">
                           <div className="text-[10px] text-muted-foreground">🔥 {language === "ko" ? "오를 것" : "Rise"}</div>
                           <div className="text-sm font-bold text-emerald-400">{yesStake}P</div>
                           <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}P</span></div>
                         </div>
                       )}
                       {noStake > 0 && (
-                        <div className="rounded-md bg-rose-500/10 border border-rose-500/20 p-2">
+                        <div className="rounded-md bg-rose-500/10 border border-rose-500/20 p-2 text-center min-w-[120px]">
                           <div className="text-[10px] text-muted-foreground">🤷 {language === "ko" ? "내릴 것" : "Fall"}</div>
                           <div className="text-sm font-bold text-rose-400">{noStake}P</div>
                           <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-rose-400 font-semibold">+{Math.round(noShares - noStake)}P</span></div>
