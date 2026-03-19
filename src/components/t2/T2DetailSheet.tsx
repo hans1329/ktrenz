@@ -379,7 +379,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
-                          onClick={handleReadBoost}
+                          onClick={() => { track("t2_external_link_click", { artist_name: tile.artistName, artist_slug: tile.wikiEntryId, url: tile.sourceUrl || "" }); handleReadBoost(); }}
                         >
                           {getLocalizedSourceTitle(tile, language)}
                         </a>
