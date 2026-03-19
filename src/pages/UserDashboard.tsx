@@ -6,7 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
-import V3Header from "@/components/v3/V3Header";
+
 import V3TabBar from "@/components/v3/V3TabBar";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
