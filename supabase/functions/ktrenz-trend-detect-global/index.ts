@@ -215,9 +215,10 @@ Deno.serve(async (req) => {
         const name = entry?.displayName || "Unknown";
         const sid = entry?.starId || null;
         const gName = entry?.groupName || null;
+        const category = entry?.starCategory || "kpop";
 
-        // Perplexity 글로벌 트렌드 감지 (그룹 컨텍스트 포함)
-        const allKeywords = await detectGlobalTrends(perplexityKey, name, gName);
+        // Perplexity 글로벌 트렌드 감지 (그룹 컨텍스트 + 카테고리 포함)
+        const allKeywords = await detectGlobalTrends(perplexityKey, name, gName, category);
         console.log(`[detect-global] ${gName ? `${gName}/${name}` : name}: Perplexity found ${allKeywords.length} keywords`);
 
         if (!allKeywords.length) {
