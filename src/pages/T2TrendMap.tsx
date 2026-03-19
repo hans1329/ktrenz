@@ -22,10 +22,8 @@ const T2TrendMap = () => {
         path="/t2"
       />
       <V3Header />
-      <div className="pt-14 pb-24">
-        <div className="max-w-[90%] mx-auto">
-          <T2TrendTreemap />
-        </div>
+      <div className="pt-14 pb-24 max-w-3xl mx-auto px-4">
+        <T2TrendTreemap />
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
     </>
