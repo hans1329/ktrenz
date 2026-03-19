@@ -67,6 +67,48 @@ const CATEGORY_LABELS: Record<string, string> = {
   fashion: "Fashion", beauty: "Beauty", media: "Media",
 };
 
+// Strip citation refs like [1], [2], [3] etc from text
+function stripCitations(text: string | null): string | null {
+  if (!text) return text;
+  return text.replace(/\s*\[\d+\]/g, "").trim();
+}
+
+// i18n translations for this page
+const T2_LABELS: Record<string, Record<string, string>> = {
+  kinterestScore: { en: "Kinterest Score", ko: "Kinterest 스코어", ja: "Kinterestスコア", zh: "Kinterest 评分" },
+  whyThisTrend: { en: "Why this trend?", ko: "왜 이 트렌드인가?", ja: "なぜこのトレンド？", zh: "为什么是这个趋势？" },
+  noContext: { en: "No context available yet.", ko: "아직 배경 정보가 없습니다.", ja: "まだ背景情報がありません。", zh: "暂无背景信息。" },
+  confidence: { en: "Confidence", ko: "신뢰도", ja: "信頼度", zh: "置信度" },
+  keywordLifecycle: { en: "Keyword Lifecycle", ko: "키워드 라이프사이클", ja: "キーワードライフサイクル", zh: "关键词生命周期" },
+  lifetime: { en: "Lifetime", ko: "지속 시간", ja: "持続時間", zh: "持续时间" },
+  elapsed: { en: "Elapsed", ko: "경과", ja: "経過", zh: "经过" },
+  timeToPeak: { en: "Time to Peak", ko: "피크까지", ja: "ピークまで", zh: "峰值时间" },
+  detected: { en: "Detected", ko: "감지", ja: "検出", zh: "检测" },
+  peakTime: { en: "Peak Time", ko: "피크 시간", ja: "ピーク時間", zh: "峰值时间" },
+  notPeakedYet: { en: "Not peaked yet", ko: "아직 미도달", ja: "未到達", zh: "尚未达到峰值" },
+  agencyInsight: { en: "Agency Insight", ko: "에이전시 인사이트", ja: "エージェンシー分析", zh: "代理商洞察" },
+  commercialPotential: { en: "Commercial Potential", ko: "상업적 잠재력", ja: "商業的潜在力", zh: "商业潜力" },
+  reactionSpeed: { en: "Reaction Speed", ko: "반응 속도", ja: "反応速度", zh: "反应速度" },
+  detectionSource: { en: "Detection Source", ko: "감지 소스", ja: "検出ソース", zh: "检测来源" },
+  trackingHistory: { en: "Tracking History", ko: "추적 기록", ja: "追跡履歴", zh: "追踪记录" },
+  records: { en: "records", ko: "건", ja: "件", zh: "条" },
+  otherKeywords: { en: "Other Keywords by", ko: "의 다른 키워드", ja: "の他のキーワード", zh: "的其他关键词" },
+  high: { en: "High", ko: "높음", ja: "高い", zh: "高" },
+  medium: { en: "Medium", ko: "보통", ja: "中程度", zh: "中" },
+  low: { en: "Low", ko: "낮음", ja: "低い", zh: "低" },
+  tracking: { en: "Tracking", ko: "추적 중", ja: "追跡中", zh: "追踪中" },
+  pending: { en: "Pending", ko: "대기 중", ja: "保留中", zh: "待定" },
+  trendMap: { en: "Trend Map", ko: "트렌드 맵", ja: "トレンドマップ", zh: "趋势地图" },
+  active: { en: "Active", ko: "활성", ja: "アクティブ", zh: "活跃" },
+  expired: { en: "Expired", ko: "만료", ja: "期限切れ", zh: "已过期" },
+  influence: { en: "Influence", ko: "영향력", ja: "影響力", zh: "影响力" },
+  baseline: { en: "Baseline", ko: "기준", ja: "基準", zh: "基线" },
+  peak: { en: "Peak", ko: "피크", ja: "ピーク", zh: "峰值" },
+};
+function t2l(key: string, lang: string): string {
+  return T2_LABELS[key]?.[lang] || T2_LABELS[key]?.["en"] || key;
+}
+
 // ── Main Page ──
 const T2KeywordDetail = () => {
   const { triggerId } = useParams<{ triggerId: string }>();
