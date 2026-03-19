@@ -70,7 +70,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor:
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
 };
 
-const ALL_CATEGORIES: TrendCategory[] = ["all", "brand", "product", "place", "food", "fashion", "beauty", "media"];
+const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
