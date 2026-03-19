@@ -209,8 +209,10 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void }) => {
-  const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
+const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean }) => {
+  const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
+  const selectedCategory = externalCategory ?? internalCategory;
+  const setSelectedCategory = onCategoryChange ?? setInternalCategory;
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
