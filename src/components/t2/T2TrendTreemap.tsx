@@ -58,9 +58,9 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
-type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
+export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
+export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 70%, 45%, 0.85)" },
   product: { label: "Product", color: "hsl(270, 60%, 55%)", tileColor: "hsla(270, 55%, 42%, 0.85)" },
   place:   { label: "Place",   color: "hsl(145, 55%, 45%)", tileColor: "hsla(145, 50%, 38%, 0.85)" },
@@ -70,7 +70,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor:
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
 };
 
-const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
@@ -209,8 +209,10 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void }) => {
-  const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
+const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean }) => {
+  const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
+  const selectedCategory = externalCategory ?? internalCategory;
+  const setSelectedCategory = onCategoryChange ?? setInternalCategory;
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
@@ -452,7 +454,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
         </div>
       </div>
 
-      {/* Category filter */}
+      {!hideCategory && (
       <div className={cn(
         "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
         "sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4"
@@ -493,6 +495,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
           );
         })}
       </div>
+      )}
 
       {/* View Content */}
       <div>
