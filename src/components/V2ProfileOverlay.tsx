@@ -213,6 +213,13 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
+              onClick={() => setShowLangDrawer(true)}
+            >
+              <Globe className="w-4 h-4" /> <span className="text-sm">{t("common.language") || "Language"}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
               onClick={() => { onOpenChange(false); navigate("/settings", { state: { fromProfile: true } }); }}
             >
               <Settings className="w-4 h-4" /> <span className="text-sm">{t("common.settings")}</span>
