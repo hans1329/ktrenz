@@ -175,10 +175,12 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = () => {
+const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void }) => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
-  const [viewMode, setViewMode] = useState<"treemap" | "list" | "artist">("treemap");
+  const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
+  const currentViewMode = viewMode ?? internalViewMode;
+  const setViewMode = onViewModeChange ?? setInternalViewMode;
   
   const isMobile = useIsMobile();
   const { language } = useLanguage();
