@@ -68,7 +68,7 @@ const getQuickActions = (t: (key: string) => string): QuickAction[] => [
   { id: "hotKeywords", icon: Flame, label: t("agent.hotKeywords"), prompt: t("agent.prompt.hotKeywords"), mode: "trend", color: "text-orange-400" },
   { id: "myArtistTrend", icon: Star, label: t("agent.myArtistTrend"), prompt: t("agent.prompt.myArtistTrend"), mode: "trend", color: "text-yellow-400" },
   { id: "trendAnalysis", icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
-  { id: "newsBriefing", icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
+  { id: "newsBriefing", icon: Hash, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
   { id: "alertSettings", icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
 ];
 
