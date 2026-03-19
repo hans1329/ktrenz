@@ -539,7 +539,7 @@ const T2KeywordDetail = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-muted/30 border border-border p-3">
                 <div className="text-[10px] text-muted-foreground mb-1">
-                  {trigger.expired_at ? "Lifetime" : "Elapsed"}
+                  {trigger.expired_at ? t2l("lifetime", language) : t2l("elapsed", language)}
                 </div>
                 <div className="text-lg font-bold text-foreground">
                   {(() => {
