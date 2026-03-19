@@ -13,6 +13,7 @@ import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Minus, Globe, Clock,
   ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronLeft,
   BarChart3, Target, Activity, Calendar, Building2, Sparkles, Users,
+  Flag,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from "recharts";
 
@@ -484,21 +485,17 @@ const T2KeywordDetail = () => {
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Evidence: Why this trend? */}
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            {/* Source thumbnail */}
+            {/* Source thumbnail with context preview */}
             {evidenceImageUrl && (
-              trigger.source_url ? (
-                <a href={trigger.source_url} target="_blank" rel="noopener noreferrer" className="block">
-                  <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
-                    <img src={evidenceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  </div>
-                </a>
-              ) : (
-                <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
-                  <img src={evidenceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                </div>
-              )
+              <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                <img src={evidenceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                {context && (
+                  <p className="absolute bottom-0 left-0 right-0 px-4 pb-3 text-[11px] text-white/90 leading-relaxed line-clamp-2">
+                    {context}
+                  </p>
+                )}
+              </div>
             )}
             <div className="p-4 space-y-3">
               <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -761,7 +758,11 @@ const T2KeywordDetail = () => {
               {[...trackingHistory].reverse().map((t: any) => (
                 <div key={t.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/20 border border-border/40">
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase w-8">{t.region === "world" ? "WW" : (t.region?.toUpperCase().slice(0, 2) || "WW")}</span>
+                    {t.region === "world" || !t.region ? (
+                      <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+                    ) : (
+                      <Flag className="w-3.5 h-3.5 text-muted-foreground" />
+                    )}
                     <span className="text-sm font-bold text-foreground">{t.interest_score}</span>
                   </div>
                   <div className="flex items-center gap-3">
