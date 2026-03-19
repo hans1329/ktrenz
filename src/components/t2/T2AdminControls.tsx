@@ -179,7 +179,7 @@ const T2AdminControls = () => {
           className="gap-1 text-xs h-7 px-2"
         >
           {detectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
-          감지
+          감지-국내
         </Button>
         <Button
           size="sm"
@@ -189,7 +189,7 @@ const T2AdminControls = () => {
           className="gap-1 text-xs h-7 px-2"
         >
           {detectGlobalMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
-          글로벌
+          감지-해외
         </Button>
         <Button
           size="sm"
