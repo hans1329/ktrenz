@@ -397,13 +397,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
   }, []);
 
   const categoryStats = useMemo(() => {
-    if (!triggers?.length) return {};
+    if (!dedupedTriggers?.length) return {};
     const stats: Record<string, number> = {};
-    for (const t of triggers) {
+    for (const t of dedupedTriggers) {
       stats[t.category] = (stats[t.category] || 0) + 1;
     }
     return stats;
-  }, [triggers]);
+  }, [dedupedTriggers]);
 
   if (isLoading) {
     return (
