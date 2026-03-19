@@ -39,7 +39,7 @@ const T2ArtistPage = () => {
   const { starId } = useParams<{ starId: string }>();
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const isMobile = useIsMobile();
+  
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
