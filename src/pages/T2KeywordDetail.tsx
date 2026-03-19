@@ -656,7 +656,7 @@ const T2KeywordDetail = () => {
               </p>
             </div>
             <div className="rounded-xl bg-muted/30 border border-border p-4">
-              <div className="text-[10px] text-muted-foreground mb-1">Detection Source</div>
+              <div className="text-[10px] text-muted-foreground mb-1">{t2l("detectionSource", language)}</div>
               <div className="text-lg font-black text-foreground flex items-center gap-1.5">
                 {trigger.trigger_source === "global_news" ? (
                   <><Globe className="w-4 h-4 text-blue-400" /> Global</>
