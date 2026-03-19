@@ -410,13 +410,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
   return (
     <div className="px-4 pb-4">
       {/* Header */}
-      <div className="pt-4 pb-3 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Kinterest
-          </h2>
-        </div>
+      <div className="pt-4 pb-3 flex items-end justify-end gap-3">
         <div className="flex items-center gap-2">
           <T2AdminControls />
         </div>
