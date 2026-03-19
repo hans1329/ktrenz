@@ -90,7 +90,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   return (
     <>
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
-      <div className="flex items-center justify-between h-14 px-4 max-w-screen-lg mx-auto">
+      <div className="relative flex items-center justify-between h-14 px-4 max-w-screen-lg mx-auto">
         {isSearchOpen ? (
           <div ref={searchContainerRef} className="flex-1 flex items-center gap-2 relative">
             <div className="flex-1 relative">
@@ -134,7 +134,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 decoding="async"
               />
             </Link>
-            {centerSlot && <div className="flex-1 flex justify-center">{centerSlot}</div>}
+            {centerSlot && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{centerSlot}</div>}
             <div className="flex items-center gap-1 shrink-0">
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
