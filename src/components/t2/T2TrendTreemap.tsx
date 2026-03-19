@@ -58,7 +58,7 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
-type TrendCategory = "all" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
+type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 70%, 45%, 0.85)" },
@@ -70,7 +70,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor:
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
 };
 
-const ALL_CATEGORIES: TrendCategory[] = ["all", "brand", "product", "place", "food", "fashion", "beauty", "media"];
+const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
@@ -316,15 +316,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
 
   const filteredItems = useMemo(() => {
     if (!dedupedTriggers.length) return [];
-    const items = selectedCategory === "all"
-      ? dedupedTriggers
-      : dedupedTriggers.filter(t => t.category === selectedCategory);
+    let items: TrendTile[];
+    if (selectedCategory === "my") {
+      items = dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
+    } else if (selectedCategory === "all") {
+      items = dedupedTriggers;
+    } else {
+      items = dedupedTriggers.filter(t => t.category === selectedCategory);
+    }
     return items.sort((a, b) => {
       if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
       if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
     });
-  }, [dedupedTriggers, selectedCategory]);
+  }, [dedupedTriggers, selectedCategory, watchedSet]);
 
   const containerWidth = isMobile ? 360 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
@@ -423,13 +428,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
       )}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
-          const config = cat === "all" ? null : CATEGORY_CONFIG[cat];
+          const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
           const allCount = cat === "all"
             ? (currentViewMode === "treemap" ? visibleBoxItems.length : triggers?.length || 0)
+            : cat === "my"
+            ? myKeywords.length
             : (currentViewMode === "treemap"
               ? visibleBoxItems.filter(t => t.category === cat).length
               : categoryStats[cat] || 0);
-          const count = allCount;
           return (
             <button
               key={cat}
@@ -439,28 +445,25 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
               )}
               style={{
                 backgroundColor: isActive
-                  ? (config?.color ?? "hsl(var(--primary))")
-                  : (config?.color ? `${config.color.replace(')', ', 0.12)').replace('hsl(', 'hsla(')}` : "hsl(var(--muted) / 0.5)"),
-                color: isActive ? "#fff" : (config?.color ?? "hsl(var(--muted-foreground))"),
+                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
+                  : (cat === "my" ? "hsla(45, 90%, 50%, 0.12)" : config?.color ? `${config.color.replace(')', ', 0.12)').replace('hsl(', 'hsla(')}` : "hsl(var(--muted) / 0.5)"),
+                color: isActive ? "#fff" : (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--muted-foreground))"),
                 borderColor: isActive
-                  ? (config?.color ?? "hsl(var(--primary))")
-                  : (config?.color ? `${config.color.replace(')', ', 0.25)').replace('hsl(', 'hsla(')}` : "hsl(var(--border))"),
+                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
+                  : (cat === "my" ? "hsla(45, 90%, 50%, 0.25)" : config?.color ? `${config.color.replace(')', ', 0.25)').replace('hsl(', 'hsla(')}` : "hsl(var(--border))"),
               }}
             >
-              {cat === "all" ? "All" : config?.label}
+              {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
               <span
                 className={cn("text-[10px]", !isActive && "text-muted-foreground/60")}
                 style={isActive ? { color: "rgba(255,255,255,0.7)" } : undefined}
               >
-                {count}
+                {allCount}
               </span>
             </button>
           );
         })}
       </div>
-
-      {/* My Artists' Keywords — compact banner */}
-      {myKeywords.length > 0 && <MyArtistsBanner myKeywords={myKeywords} language={language} />}
 
       {/* View Content */}
       {filteredItems.length === 0 ? (
