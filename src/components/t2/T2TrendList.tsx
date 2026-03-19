@@ -123,7 +123,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   </div>
                   <div className="flex items-center gap-2 mt-2 mb-1">
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (item.starId) navigate(`/t2/artist/${item.starId}`); }}
+                      onClick={(e) => { e.stopPropagation(); if (item.starId) { track("t2_artist_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId }); navigate(`/t2/artist/${item.starId}`); } }}
                       className={cn(
                         "text-xs font-semibold truncate rounded-full px-2 py-0.5 transition-colors",
                         item.starId
