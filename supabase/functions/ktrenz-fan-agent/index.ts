@@ -3464,6 +3464,34 @@ Deno.serve(async (req) => {
                 } catch {}
               }
 
+              // Collect trend keyword data for inline cards
+              if (fnName === "get_trend_keywords" || fnName === "get_trending_now") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.keywords && parsed.keywords.length > 0) {
+                    if (!collectedMeta.trendData) collectedMeta.trendData = [];
+                    for (const kw of parsed.keywords) {
+                      collectedMeta.trendData.push({
+                        keyword: kw.keyword,
+                        keyword_ko: kw.keyword_ko ?? null,
+                        category: kw.category,
+                        artist: kw.artist ?? parsed.artist ?? null,
+                        context: kw.context ?? null,
+                        influence_index: kw.influence_index ?? null,
+                        confidence: kw.confidence ?? null,
+                        source: kw.source ?? null,
+                        source_title: kw.source_title ?? null,
+                        source_url: kw.source_url ?? null,
+                        detected_at: kw.detected_at ?? null,
+                        search_volume: kw.search_volume ?? null,
+                        interest_score: kw.interest_score ?? null,
+                        delta_pct: kw.delta_pct ?? null,
+                      });
+                    }
+                  }
+                } catch {}
+              }
+
               // Collect quick actions after bias registration
               if (fnName === "manage_watched_artist") {
                 try {
