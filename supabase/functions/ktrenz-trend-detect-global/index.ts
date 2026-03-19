@@ -24,14 +24,35 @@ interface ExtractedKeyword {
   source_title?: string;
 }
 
+// ── 카테고리 라벨 변환 ──
+function getCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    kpop: "K-pop",
+    actor: "Korean actor/actress",
+    singer: "Korean singer",
+    baseball: "Korean baseball player",
+    athlete: "Korean athlete",
+    chef: "Korean celebrity chef",
+    politician: "Korean politician",
+    influencer: "Korean influencer",
+    comedian: "Korean comedian/MC",
+    other: "Korean public figure",
+  };
+  return labels[category] || labels.other;
+}
+
 // ── Perplexity: 글로벌 뉴스/SNS에서 상업 트렌드 직접 감지 ──
 // Perplexity는 웹 검색 엔진이므로 글로벌 감지에 적합 (국내 detect의 환각 문제와 다른 용도)
 async function detectGlobalTrends(
   perplexityKey: string,
   artistName: string,
-  groupName: string | null = null
+  groupName: string | null = null,
+  starCategory: string = "kpop"
 ): Promise<ExtractedKeyword[]> {
-  const artistLabel = groupName ? `"${artistName}" (member of K-pop group ${groupName})` : `K-pop artist "${artistName}"`;
+  const categoryLabel = getCategoryLabel(starCategory);
+  const artistLabel = groupName
+    ? `"${artistName}" (member of ${categoryLabel} group ${groupName})`
+    : `${categoryLabel} celebrity "${artistName}"`;
   const prompt = `Search for VERY RECENT global news and social media posts (last 24 hours) about ${artistLabel} and identify any commercial entities they are currently associated with.
 
 Look for:
@@ -146,7 +167,7 @@ Deno.serve(async (req) => {
     // ktrenz_stars에서 active 아티스트 가져오기 (그룹 컨텍스트 포함)
     const { data: stars } = await sb
       .from("ktrenz_stars")
-      .select("id, wiki_entry_id, display_name, star_type, group_star_id")
+      .select("id, wiki_entry_id, display_name, star_type, group_star_id, star_category")
       .eq("is_active", true)
       .not("wiki_entry_id", "is", null)
       .order("display_name", { ascending: true });
@@ -165,11 +186,11 @@ Deno.serve(async (req) => {
     }
 
     // wiki_entry_id 기준 중복 제거
-    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null }>();
+    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null; starCategory: string }>();
     for (const s of (stars || [])) {
       if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
         const gName = s.group_star_id ? groupNameMap.get(s.group_star_id) || null : null;
-        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName });
+        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName, starCategory: s.star_category || "kpop" });
       }
     }
 
@@ -194,9 +215,10 @@ Deno.serve(async (req) => {
         const name = entry?.displayName || "Unknown";
         const sid = entry?.starId || null;
         const gName = entry?.groupName || null;
+        const category = entry?.starCategory || "kpop";
 
-        // Perplexity 글로벌 트렌드 감지 (그룹 컨텍스트 포함)
-        const allKeywords = await detectGlobalTrends(perplexityKey, name, gName);
+        // Perplexity 글로벌 트렌드 감지 (그룹 컨텍스트 + 카테고리 포함)
+        const allKeywords = await detectGlobalTrends(perplexityKey, name, gName, category);
         console.log(`[detect-global] ${gName ? `${gName}/${name}` : name}: Perplexity found ${allKeywords.length} keywords`);
 
         if (!allKeywords.length) {

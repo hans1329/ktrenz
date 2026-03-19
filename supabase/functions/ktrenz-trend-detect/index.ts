@@ -101,13 +101,30 @@ async function fetchOgImage(url: string): Promise<string | null> {
     return null;
   }
 }
+// ── 카테고리 컨텍스트 라벨 ──
+function getCategoryContext(category: string): string {
+  const labels: Record<string, string> = {
+    kpop: "K-pop artist",
+    actor: "Korean actor/actress",
+    singer: "Korean singer",
+    baseball: "Korean baseball player",
+    athlete: "Korean athlete",
+    chef: "Korean celebrity chef",
+    politician: "Korean politician",
+    influencer: "Korean influencer",
+    comedian: "Korean comedian/MC",
+    other: "Korean public figure",
+  };
+  return labels[category] || labels.other;
+}
 
 // ─── OpenAI 기반 키워드 추출 (기사 텍스트만 분석, 외부 검색 없음) ───
 async function extractCommercialKeywords(
   openaiKey: string,
   memberName: string,
   groupName: string | null,
-  articles: { title: string; description?: string; url?: string }[]
+  articles: { title: string; description?: string; url?: string }[],
+  starCategory: string = "kpop"
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
@@ -116,9 +133,11 @@ async function extractCommercialKeywords(
     .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
     .join("\n");
 
+  const categoryContext = getCategoryContext(starCategory);
+
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} as an INDIVIDUAL.
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}) as an INDIVIDUAL.
 
 Articles:
 ${articleTexts}
@@ -223,7 +242,7 @@ Deno.serve(async (req) => {
     if (starId && memberName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null }
+        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null, star_category: body.starCategory || "kpop" }
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -235,7 +254,7 @@ Deno.serve(async (req) => {
     if (wikiEntryId && artistName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId }
+        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId, star_category: "kpop" }
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -246,7 +265,7 @@ Deno.serve(async (req) => {
     // 배치 모드: ktrenz_stars의 member 타입 순회
     const { data: members } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, group_star_id")
+      .select("id, display_name, name_ko, group_star_id, star_category")
       .eq("is_active", true)
       .eq("star_type", "member")
       .order("display_name", { ascending: true });
@@ -292,6 +311,7 @@ Deno.serve(async (req) => {
             group_name: group?.display_name || null,
             group_name_ko: group?.name_ko || null,
             group_wiki_entry_id: group?.wiki_entry_id || null,
+            star_category: member.star_category || "kpop",
           }
         );
         successCount++;
@@ -333,6 +353,7 @@ interface MemberInfo {
   group_name: string | null;
   group_name_ko: string | null;
   group_wiki_entry_id: string | null;
+  star_category: string;
 }
 
 async function detectForMember(
@@ -374,7 +395,7 @@ async function detectForMember(
 
   // AI로 상업 키워드 추출
   const keywords = await extractCommercialKeywords(
-    openaiKey, member.display_name, member.group_name, articles
+    openaiKey, member.display_name, member.group_name, articles, member.star_category
   );
 
   if (!keywords.length) {

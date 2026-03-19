@@ -3574,6 +3574,7 @@ export type Database = {
           name_ko: string | null
           namuwiki_url: string | null
           social_handles: Json | null
+          star_category: string
           star_type: string
           updated_at: string | null
           wiki_entry_id: string | null
@@ -3590,6 +3591,7 @@ export type Database = {
           name_ko?: string | null
           namuwiki_url?: string | null
           social_handles?: Json | null
+          star_category?: string
           star_type: string
           updated_at?: string | null
           wiki_entry_id?: string | null
@@ -3606,6 +3608,7 @@ export type Database = {
           name_ko?: string | null
           namuwiki_url?: string | null
           social_handles?: Json | null
+          star_category?: string
           star_type?: string
           updated_at?: string | null
           wiki_entry_id?: string | null

@@ -32,6 +32,7 @@ interface StarRow {
   musicbrainz_id: string | null;
   namuwiki_url: string | null;
   agency: string | null;
+  star_category: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -59,6 +60,32 @@ const STAR_TYPE_OPTIONS = [
   { value: "solo", label: "솔로", icon: Star },
 ];
 
+const STAR_CATEGORY_OPTIONS = [
+  { value: "kpop", label: "K-Pop" },
+  { value: "actor", label: "배우" },
+  { value: "singer", label: "가수 (비아이돌)" },
+  { value: "baseball", label: "야구선수" },
+  { value: "athlete", label: "운동선수" },
+  { value: "chef", label: "요리사" },
+  { value: "politician", label: "정치인" },
+  { value: "influencer", label: "인플루언서" },
+  { value: "comedian", label: "개그맨/MC" },
+  { value: "other", label: "기타" },
+];
+
+const categoryColor: Record<string, string> = {
+  kpop: "bg-pink-500/10 text-pink-500",
+  actor: "bg-purple-500/10 text-purple-500",
+  singer: "bg-indigo-500/10 text-indigo-500",
+  baseball: "bg-green-500/10 text-green-500",
+  athlete: "bg-emerald-500/10 text-emerald-500",
+  chef: "bg-orange-500/10 text-orange-500",
+  politician: "bg-red-500/10 text-red-500",
+  influencer: "bg-cyan-500/10 text-cyan-500",
+  comedian: "bg-yellow-500/10 text-yellow-500",
+  other: "bg-muted text-muted-foreground",
+};
+
 const typeColor: Record<string, string> = {
   group: "bg-primary/10 text-primary",
   member: "bg-blue-500/10 text-blue-500",
@@ -78,6 +105,7 @@ const AdminStars = () => {
     display_name: "",
     name_ko: "",
     star_type: "group" as string,
+    star_category: "kpop" as string,
     wiki_entry_id: "",
     group_star_id: "",
     namuwiki_url: "",
@@ -169,6 +197,7 @@ const AdminStars = () => {
         display_name: form.display_name,
         name_ko: form.name_ko || null,
         star_type: form.star_type,
+        star_category: form.star_category,
         wiki_entry_id: form.wiki_entry_id || null,
         group_star_id: form.group_star_id || null,
         namuwiki_url: form.namuwiki_url || null,
@@ -199,6 +228,7 @@ const AdminStars = () => {
           display_name: m.name_en,
           name_ko: m.name_ko || null,
           star_type: "member",
+          star_category: form.star_category,
           group_star_id: groupId,
           namuwiki_url: m.namuwiki_url || null,
           is_active: true,
@@ -253,7 +283,7 @@ const AdminStars = () => {
   /* ───── helpers ───── */
   const openCreate = () => {
     setEditingStar(null);
-    setForm({ display_name: "", name_ko: "", star_type: "group", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true });
+    setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true });
     setNamuUrl("");
     setNamuResult(null);
     setDialogOpen(true);
@@ -269,6 +299,7 @@ const AdminStars = () => {
       group_star_id: s.group_star_id ?? "",
       namuwiki_url: (s as any).namuwiki_url ?? "",
       agency: (s as any).agency ?? "",
+      star_category: (s as any).star_category ?? "kpop",
       is_active: s.is_active ?? true,
     });
     setNamuUrl((s as any).namuwiki_url ?? "");
@@ -363,6 +394,7 @@ const AdminStars = () => {
                 <tr className="border-b border-border bg-muted/50">
                   <th className="text-left px-3 py-2 font-medium">이름</th>
                   <th className="text-left px-3 py-2 font-medium">한글명</th>
+                  <th className="text-left px-3 py-2 font-medium">분류</th>
                   <th className="text-left px-3 py-2 font-medium">타입</th>
                   <th className="text-left px-3 py-2 font-medium">소속 그룹</th>
                   <th className="text-left px-3 py-2 font-medium">소속사</th>
@@ -376,6 +408,11 @@ const AdminStars = () => {
                   <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2 font-medium">{s.display_name}</td>
                     <td className="px-3 py-2 text-muted-foreground">{s.name_ko ?? "—"}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant="secondary" className={cn("text-[10px]", categoryColor[(s as any).star_category || "kpop"])}>
+                        {STAR_CATEGORY_OPTIONS.find(c => c.value === ((s as any).star_category || "kpop"))?.label || (s as any).star_category}
+                      </Badge>
+                    </td>
                     <td className="px-3 py-2">
                       <Badge variant="secondary" className={cn("text-[10px]", typeColor[s.star_type])}>
                         {s.star_type}
@@ -425,7 +462,7 @@ const AdminStars = () => {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={9} className="text-center py-8 text-muted-foreground">
                       검색 결과 없음
                     </td>
                   </tr>
@@ -523,6 +560,21 @@ const AdminStars = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {STAR_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* star category */}
+            <div>
+              <label className="text-xs font-medium mb-1 block">분류</label>
+              <Select value={form.star_category} onValueChange={(v) => setForm({ ...form, star_category: v })}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAR_CATEGORY_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                   ))}
                 </SelectContent>
