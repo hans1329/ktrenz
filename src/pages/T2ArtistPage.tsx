@@ -57,7 +57,7 @@ const T2ArtistPage = () => {
         .single();
       if (!data) return null;
 
-      // fetch image
+      // fetch image from wiki_entries
       let imageUrl: string | null = null;
       if ((data as any).wiki_entry_id) {
         const { data: entry } = await supabase
@@ -67,6 +67,20 @@ const T2ArtistPage = () => {
           .single();
         imageUrl = (entry as any)?.image_url ?? null;
       }
+
+      // fallback: use first keyword's source_image_url
+      if (!imageUrl) {
+        const { data: kwData } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("source_image_url")
+          .eq("star_id", starId!)
+          .not("source_image_url", "is", null)
+          .limit(1);
+        if (kwData && kwData.length > 0) {
+          imageUrl = (kwData[0] as any).source_image_url;
+        }
+      }
+
       return { ...(data as any), imageUrl };
     },
     enabled: !!starId,
