@@ -140,6 +140,41 @@ const T2KeywordDetail = () => {
     enabled: !!trigger?.wiki_entry_id,
   });
 
+  // Fetch prediction market data
+  const { data: marketData } = useQuery({
+    queryKey: ["t2-market-detail", triggerId],
+    queryFn: async () => {
+      const { data: market } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("*")
+        .eq("trigger_id", triggerId)
+        .maybeSingle();
+      if (!market) return null;
+      const m = market as any;
+      // Count unique bettors
+      const { count: totalBettors } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("user_id", { count: "exact", head: true })
+        .eq("market_id", m.id);
+      // Count total bets
+      const { count: totalBets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("market_id", m.id);
+      const poolYes = Number(m.pool_yes);
+      const poolNo = Number(m.pool_no);
+      const total = poolYes + poolNo;
+      return {
+        ...m,
+        priceYes: total > 0 ? poolNo / total : 0.5,
+        priceNo: total > 0 ? poolYes / total : 0.5,
+        totalBettors: totalBettors ?? 0,
+        totalBets: totalBets ?? 0,
+      };
+    },
+    enabled: !!triggerId,
+  });
+
   // Chart data
   const chartData = useMemo(() => {
     if (!trackingHistory?.length) return [];
