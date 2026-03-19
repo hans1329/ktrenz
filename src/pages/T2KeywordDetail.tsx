@@ -563,7 +563,7 @@ const T2KeywordDetail = () => {
                       })()}
                     </>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Not peaked yet</span>
+                    <span className="text-xs text-muted-foreground">{t2l("notPeakedYet", language)}</span>
                   )}
                 </div>
               </div>
