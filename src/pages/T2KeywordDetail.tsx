@@ -260,7 +260,7 @@ const T2KeywordDetail = () => {
 
   const artistName = language === "ko" && artistInfo?.nameKo ? artistInfo.nameKo : (artistInfo?.displayName || trigger.artist_name);
   const keyword = getLocalizedKeyword(trigger, language);
-  const context = getLocalizedContext(trigger, language);
+  const context = stripCitations(getLocalizedContext(trigger, language));
   const category = trigger.keyword_category || "brand";
   const influenceIndex = Number(trigger.influence_index) || 0;
   const confidence = Number(trigger.confidence) || 0;
