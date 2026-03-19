@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
     // ktrenz_stars에서 active 아티스트 가져오기 (그룹 컨텍스트 포함)
     const { data: stars } = await sb
       .from("ktrenz_stars")
-      .select("id, wiki_entry_id, display_name, star_type, group_star_id")
+      .select("id, wiki_entry_id, display_name, star_type, group_star_id, star_category")
       .eq("is_active", true)
       .not("wiki_entry_id", "is", null)
       .order("display_name", { ascending: true });
@@ -186,11 +186,11 @@ Deno.serve(async (req) => {
     }
 
     // wiki_entry_id 기준 중복 제거
-    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null }>();
+    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null; starCategory: string }>();
     for (const s of (stars || [])) {
       if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
         const gName = s.group_star_id ? groupNameMap.get(s.group_star_id) || null : null;
-        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName });
+        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName, starCategory: s.star_category || "kpop" });
       }
     }
 
