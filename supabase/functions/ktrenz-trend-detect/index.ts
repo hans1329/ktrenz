@@ -107,7 +107,8 @@ async function extractCommercialKeywords(
   openaiKey: string,
   memberName: string,
   groupName: string | null,
-  articles: { title: string; description?: string; url?: string }[]
+  articles: { title: string; description?: string; url?: string }[],
+  starCategory: string = "kpop"
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
@@ -116,9 +117,11 @@ async function extractCommercialKeywords(
     .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
     .join("\n");
 
+  const categoryContext = getCategoryContext(starCategory);
+
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} as an INDIVIDUAL.
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}) as an INDIVIDUAL.
 
 Articles:
 ${articleTexts}
