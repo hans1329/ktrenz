@@ -568,8 +568,6 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         role: d.role as "user" | "assistant",
         content: d.content,
         timestamp: d.created_at,
-        rankingData: d.metadata?.rankingData ?? null,
-        guideData: d.metadata?.guideData ?? null,
         reportCards: d.metadata?.reportCards ?? null,
         trendData: d.metadata?.trendData ?? null,
       }));
