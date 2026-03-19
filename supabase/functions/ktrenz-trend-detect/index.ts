@@ -196,18 +196,41 @@ Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル",
     const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
     console.log(`[trend-detect] AI extracted ${parsed.length} keywords for ${memberName}: ${parsed.map(k => k.keyword).join(", ")}`);
 
-    // 후검증: 추출된 키워드가 실제 기사 텍스트에 존재하는지 확인
+    // 후검증: 완화된 매칭 — 정확 매칭 또는 핵심 단어(2글자+) 중 하나라도 기사에 존재하면 통과
     const allText = articles.map(a => `${a.title} ${a.description || ""}`).join(" ").toLowerCase();
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
-      // 키워드 또는 한글명이 기사 텍스트에 존재해야 함
+      
+      // confidence 0.7 이상이면 후검증 스킵 (AI가 확신하는 경우)
+      if (k.confidence >= 0.8) {
+        console.log(`[trend-detect] High confidence (${k.confidence}), skipping text check: "${k.keyword}"`);
+        return true;
+      }
+      
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
-      const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
-      if (!existsInText) {
-        console.warn(`[trend-detect] Filtered out: "${k.keyword}" / "${k.keyword_ko}" (not in article text)`);
+      
+      // 1) 정확 매칭
+      if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo))) return true;
+      
+      // 2) 단어 분리 매칭: keyword_ko를 공백으로 분리 후 2글자 이상 단어 중 하나라도 매칭
+      if (kwKo) {
+        const tokens = kwKo.split(/[\s·,]+/).filter(t => t.length >= 2);
+        if (tokens.length > 0 && tokens.some(t => allText.includes(t))) {
+          console.log(`[trend-detect] Partial match for "${k.keyword_ko}" via token in text`);
+          return true;
+        }
       }
-      return existsInText;
+      
+      // 3) 영문 키워드 단어 분리 매칭
+      const enTokens = kwLower.split(/[\s'']+/).filter(t => t.length >= 3);
+      if (enTokens.length > 1 && enTokens.some(t => allText.includes(t))) {
+        console.log(`[trend-detect] Partial EN match for "${k.keyword}" via token in text`);
+        return true;
+      }
+      
+      console.warn(`[trend-detect] Filtered out: "${k.keyword}" / "${k.keyword_ko}" (not in article text, conf=${k.confidence})`);
+      return false;
     });
   } catch (e) {
     console.warn(`[trend-detect] Extraction error: ${(e as Error).message}`);
