@@ -296,6 +296,7 @@ const AdminStars = () => {
       group_star_id: s.group_star_id ?? "",
       namuwiki_url: (s as any).namuwiki_url ?? "",
       agency: (s as any).agency ?? "",
+      star_category: (s as any).star_category ?? "kpop",
       is_active: s.is_active ?? true,
     });
     setNamuUrl((s as any).namuwiki_url ?? "");
