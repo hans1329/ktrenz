@@ -3320,7 +3320,7 @@ Deno.serve(async (req) => {
               }
 
               // Send structured meta data for inline card rendering
-              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps || collectedMeta.reportCards;
+              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps || collectedMeta.reportCards || collectedMeta.trendData;
               if (hasMeta) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: collectedMeta })}\n\n`));
               }
