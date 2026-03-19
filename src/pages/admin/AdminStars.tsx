@@ -228,6 +228,7 @@ const AdminStars = () => {
           display_name: m.name_en,
           name_ko: m.name_ko || null,
           star_type: "member",
+          star_category: form.star_category,
           group_star_id: groupId,
           namuwiki_url: m.namuwiki_url || null,
           is_active: true,
