@@ -10,11 +10,12 @@ import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Minus, Globe, Clock,
   ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronLeft,
-  BarChart3, Target, Activity, Calendar, Building2, Sparkles,
+  BarChart3, Target, Activity, Calendar, Building2, Sparkles, Users,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from "recharts";
 
@@ -137,6 +138,41 @@ const T2KeywordDetail = () => {
       return (data ?? []) as any[];
     },
     enabled: !!trigger?.wiki_entry_id,
+  });
+
+  // Fetch prediction market data
+  const { data: marketData } = useQuery({
+    queryKey: ["t2-market-detail", triggerId],
+    queryFn: async () => {
+      const { data: market } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("*")
+        .eq("trigger_id", triggerId)
+        .maybeSingle();
+      if (!market) return null;
+      const m = market as any;
+      // Count unique bettors
+      const { count: totalBettors } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("user_id", { count: "exact", head: true })
+        .eq("market_id", m.id);
+      // Count total bets
+      const { count: totalBets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("market_id", m.id);
+      const poolYes = Number(m.pool_yes);
+      const poolNo = Number(m.pool_no);
+      const total = poolYes + poolNo;
+      return {
+        ...m,
+        priceYes: total > 0 ? poolNo / total : 0.5,
+        priceNo: total > 0 ? poolYes / total : 0.5,
+        totalBettors: totalBettors ?? 0,
+        totalBets: totalBets ?? 0,
+      };
+    },
+    enabled: !!triggerId,
   });
 
   // Chart data
@@ -285,7 +321,72 @@ const T2KeywordDetail = () => {
           </div>
         </div>
 
-        {/* Interest Score Chart */}
+        {/* Prediction Market Summary */}
+        {marketData && (
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 mb-6">
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
+              <Users className="w-4 h-4 text-primary" />
+              {language === "ko" ? "사용자 예측" : language === "ja" ? "ユーザー予測" : language === "zh" ? "用户预测" : "Community Predictions"}
+            </h2>
+
+            {/* Yes/No probability bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="font-bold text-green-400">
+                  📈 {language === "ko" ? "오를 것" : "Will Rise"} {(marketData.priceYes * 100).toFixed(1)}%
+                </span>
+                <span className="font-bold text-red-400">
+                  📉 {language === "ko" ? "내릴 것" : "Will Fall"} {(marketData.priceNo * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="relative h-3 rounded-full overflow-hidden bg-red-500/20">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                  style={{ width: `${marketData.priceYes * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5 text-center">
+                <div className="text-[10px] text-muted-foreground mb-0.5">
+                  {language === "ko" ? "참여자" : "Participants"}
+                </div>
+                <div className="text-lg font-black text-foreground">
+                  {marketData.totalBettors}
+                </div>
+              </div>
+              <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5 text-center">
+                <div className="text-[10px] text-muted-foreground mb-0.5">
+                  {language === "ko" ? "총 예측" : "Total Bets"}
+                </div>
+                <div className="text-lg font-black text-foreground">
+                  {marketData.totalBets}
+                </div>
+              </div>
+              <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5 text-center">
+                <div className="text-[10px] text-muted-foreground mb-0.5">
+                  {language === "ko" ? "총 거래량" : "Volume"}
+                </div>
+                <div className="text-lg font-black text-foreground">
+                  {Number(marketData.total_volume).toLocaleString()}
+                  <span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Market status */}
+            {marketData.expires_at && (
+              <div className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Timer className="w-3 h-3" />
+                {language === "ko" ? "마감" : "Closes"}: {new Date(marketData.expires_at).toLocaleDateString(language === "ko" ? "ko-KR" : "en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </div>
+            )}
+          </div>
+        )}
+
+
         {chartData.length > 0 && (
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 mb-6">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
