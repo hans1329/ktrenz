@@ -14,7 +14,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   TrendingUp, ExternalLink, Eye, Bot, MousePointerClick,
-  Crown, Heart, Flame, Trophy, Clock, ChevronRight, Zap, BarChart3
+  Crown, Heart, Flame, Trophy, Clock, ChevronRight, Zap, BarChart3,
+  ChevronLeft, Target, CheckCircle2, XCircle, Timer
 } from "lucide-react";
 import BoxParticles from "@/components/v3/BoxParticles";
 import { CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
