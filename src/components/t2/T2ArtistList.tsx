@@ -80,7 +80,10 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
           <button
             key={group.groupKey}
             onClick={() => {
-              if (group.starId) navigate(`/t2/artist/${group.starId}`);
+              if (group.starId) {
+                track("t2_artist_click", { artist_name: group.artistName, artist_slug: group.wikiEntryId });
+                navigate(`/t2/artist/${group.starId}`);
+              }
             }}
             className="text-left rounded-2xl border border-border hover:border-primary/30 bg-card overflow-hidden transition-all group"
           >

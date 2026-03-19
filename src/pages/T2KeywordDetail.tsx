@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";

@@ -44,8 +44,9 @@ const T2ArtistPage = () => {
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
+    if (starId) track("t2_artist_view", { artist_slug: starId });
     return () => { document.documentElement.classList.remove("v3-theme"); };
-  }, []);
+  }, [starId]);
 
   // Fetch star info
   const { data: star, isLoading: starLoading } = useQuery({
