@@ -191,6 +191,54 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const totalVolume = Number(marketData?.total_volume ?? 0);
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
+
+  // Boost count
+  const { data: boostCount } = useQuery({
+    queryKey: ["t2-keyword-boosts", tile?.id],
+    queryFn: async () => {
+      if (!tile) return 0;
+      const { count } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("trigger_id", tile.id);
+      return count ?? 0;
+    },
+    enabled: !!tile,
+  });
+
+  // Read boost check
+  const { data: hasReadBoosted } = useQuery({
+    queryKey: ["t2-read-boost", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .eq("platform", "read")
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
+  // Share boost check
+  const { data: hasShareBoosted } = useQuery({
+    queryKey: ["t2-share-boost", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_boosts" as any)
+        .select("id, platform")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .in("platform", ["x", "copy"])
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
   const handleBoost = async (platform: "x" | "copy") => {
     if (!tile) return;
     const keyword = getLocalizedKeyword(tile, language);
