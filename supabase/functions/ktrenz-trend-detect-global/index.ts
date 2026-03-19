@@ -29,9 +29,13 @@ interface ExtractedKeyword {
 async function detectGlobalTrends(
   perplexityKey: string,
   artistName: string,
-  groupName: string | null = null
+  groupName: string | null = null,
+  starCategory: string = "kpop"
 ): Promise<ExtractedKeyword[]> {
-  const artistLabel = groupName ? `"${artistName}" (member of K-pop group ${groupName})` : `K-pop artist "${artistName}"`;
+  const categoryLabel = getCategoryLabel(starCategory);
+  const artistLabel = groupName
+    ? `"${artistName}" (member of ${categoryLabel} group ${groupName})`
+    : `${categoryLabel} celebrity "${artistName}"`;
   const prompt = `Search for VERY RECENT global news and social media posts (last 24 hours) about ${artistLabel} and identify any commercial entities they are currently associated with.
 
 Look for:
