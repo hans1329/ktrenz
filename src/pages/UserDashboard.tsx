@@ -192,8 +192,16 @@ const UserDashboard = () => {
   // Event type weights for scoring
   const EVENT_WEIGHTS: Record<string, number> = {
     external_link_click: 3,
+    t2_external_link_click: 3,
     agent_chat: 2,
     artist_detail_view: 1,
+    t2_artist_view: 1,
+    t2_keyword_detail_view: 1,
+    t2_treemap_click: 1,
+    t2_list_click: 1,
+    t2_artist_click: 1,
+    t2_detail_open: 0.5,
+    t2_share: 2,
     artist_detail_section: 0.5,
     treemap_click: 1,
     list_click: 0.5,
