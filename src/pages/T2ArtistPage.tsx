@@ -109,37 +109,22 @@ const T2ArtistPage = () => {
 
   const displayName = language === "ko" && star?.name_ko ? star.name_ko : star?.display_name ?? "";
 
-  const content = (
-    <div className="max-w-2xl mx-auto px-4 pb-10">
-      {/* Back button */}
-      <button
-        onClick={() => navigate("/t2")}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-3"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Kinterest
-      </button>
+  const subHeader = (
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
+      <div className="flex items-center h-14 px-4 max-w-screen-lg mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="ml-3 text-base font-bold text-foreground truncate">{displayName}</span>
+      </div>
+    </header>
+  );
 
-      {/* Artist profile header */}
-      {starLoading ? (
-        <div className="flex items-center gap-4 mb-6">
-          <Skeleton className="w-16 h-16 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="w-32 h-6" />
-            <Skeleton className="w-20 h-4" />
-          </div>
-        </div>
-      ) : star ? (
-        <div className="flex items-center gap-4 mb-6">
-          {star.imageUrl ? (
-            <img
-              src={star.imageUrl}
-              alt={displayName}
-              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
-            />
-          ) : (
-            <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground">
-              {displayName.charAt(0)}
+  const content = (
+    <div className="max-w-2xl mx-auto px-4 pb-10 pt-4">
             </div>
           )}
           <div>
