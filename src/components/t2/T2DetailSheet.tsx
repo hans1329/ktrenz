@@ -111,7 +111,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const navigate = useNavigate();
   const { user, kPoints } = useAuth();
   const queryClient = useQueryClient();
-
+  const track = useTrackEvent();
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betAmount, setBetAmount] = useState("");
