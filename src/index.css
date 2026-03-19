@@ -5,6 +5,13 @@
 html, body {
   overscroll-behavior: none;
   background-color: hsl(220, 20%, 6%);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /* PWA safe area support */
