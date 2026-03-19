@@ -5,10 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, ChevronRight, Settings, Coins } from "lucide-react";
+import { LogOut, ChevronRight, Settings, Coins, Globe } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
+import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import {
   Drawer,
   DrawerContent,
