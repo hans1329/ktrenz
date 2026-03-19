@@ -513,6 +513,7 @@ async function detectForMember(
   const rowsToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
   const backfillPromises: PromiseLike<unknown>[] = [];
+  const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
   for (const candidate of candidateRows) {
     const kwLower = candidate.row.keyword.toLowerCase();
