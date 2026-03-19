@@ -170,7 +170,7 @@ const T2TrendMap = () => {
         >
           {VIEW_ORDER.map((mode) => (
             <div key={mode} className="w-full flex-shrink-0">
-              <div className="max-w-[90%] mx-auto">
+              <div className="md:max-w-[90%] mx-auto">
                 <T2TrendTreemap
                   viewMode={mode}
                   onViewModeChange={setViewMode}
