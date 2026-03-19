@@ -43,7 +43,7 @@ function formatAge(dateStr: string): string {
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
