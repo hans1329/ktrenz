@@ -102,7 +102,7 @@ RULES:
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 6. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
 7. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-8. Categories: brand, product, place, food, fashion, beauty, media.
+8. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
 9. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
 10. Provide translations: keyword_ko, keyword_ja, keyword_zh.
 11. Include "source_video_index" (1-based) pointing to the video where the entity appears.

@@ -149,7 +149,7 @@ RULES:
 4. Chart names (Billboard, Hanteo, etc.), concert/tour names, and festival names (Coachella, MAMA, etc.) CAN be extracted as context keywords IF they involve a specific commercial entity (e.g., "Coachella x Adidas collaboration" → extract "Adidas"). Do NOT extract them as standalone keywords.
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-7. Categories: brand, product, place, food, fashion, beauty, media.
+7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
 8. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
 9. Provide translations: keyword_ko, keyword_ja, keyword_zh.
 10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
