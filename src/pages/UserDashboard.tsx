@@ -469,7 +469,7 @@ const UserDashboard = () => {
             {/* Net result */}
             {(betStats.won > 0 || betStats.lost > 0) && (
               <Card className="p-3 mb-3 bg-card border-border flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">Win Rate</span>
+                <span className="text-xs text-muted-foreground font-medium">{t("dash.winRate")}</span>
                 <span className="text-sm font-black text-foreground">
                   {betStats.total > 0 ? Math.round((betStats.won / (betStats.won + betStats.lost)) * 100) : 0}%
                 </span>
