@@ -24,6 +24,23 @@ interface ExtractedKeyword {
   source_title?: string;
 }
 
+// ── 카테고리 라벨 변환 ──
+function getCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    kpop: "K-pop",
+    actor: "Korean actor/actress",
+    singer: "Korean singer",
+    baseball: "Korean baseball player",
+    athlete: "Korean athlete",
+    chef: "Korean celebrity chef",
+    politician: "Korean politician",
+    influencer: "Korean influencer",
+    comedian: "Korean comedian/MC",
+    other: "Korean public figure",
+  };
+  return labels[category] || labels.other;
+}
+
 // ── Perplexity: 글로벌 뉴스/SNS에서 상업 트렌드 직접 감지 ──
 // Perplexity는 웹 검색 엔진이므로 글로벌 감지에 적합 (국내 detect의 환각 문제와 다른 용도)
 async function detectGlobalTrends(
