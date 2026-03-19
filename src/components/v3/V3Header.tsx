@@ -17,7 +17,7 @@ interface SearchResult {
   schema_type: string;
 }
 
-const V3Header = () => {
+const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [showLangDrawer, setShowLangDrawer] = useState(false);
@@ -124,7 +124,7 @@ const V3Header = () => {
           </div>
         ) : (
           <>
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center shrink-0">
               <img
                 src={ktrenzLogo}
                 alt="K-TRENZ"
@@ -133,7 +133,8 @@ const V3Header = () => {
                 decoding="async"
               />
             </Link>
-            <div className="flex items-center gap-1">
+            {centerSlot && <div className="flex-1 flex justify-center">{centerSlot}</div>}
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 className="p-1 active:opacity-60 transition-opacity"
                 onClick={() => setShowLangDrawer(true)}

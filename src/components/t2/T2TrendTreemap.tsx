@@ -175,10 +175,12 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = () => {
+const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void }) => {
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
-  const [viewMode, setViewMode] = useState<"treemap" | "list" | "artist">("treemap");
+  const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
+  const currentViewMode = viewMode ?? internalViewMode;
+  const setViewMode = onViewModeChange ?? setInternalViewMode;
   
   const isMobile = useIsMobile();
   const { language } = useLanguage();
@@ -416,28 +418,6 @@ const T2TrendTreemap = () => {
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle — 3-tab buttons */}
-          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1">
-            {([
-              { key: "treemap" as const, icon: LayoutGrid, label: "Box" },
-              { key: "list" as const, icon: List, label: "List" },
-              { key: "artist" as const, icon: Users, label: "Artist" },
-            ]).map(({ key, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setViewMode(key)}
-                className={cn(
-                  "flex items-center justify-center w-12 h-8 rounded-full transition-all",
-                  viewMode === key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label={key}
-              >
-                <Icon className="w-4 h-4" />
-              </button>
-            ))}
-          </div>
           <T2AdminControls />
         </div>
       </div>
@@ -451,8 +431,8 @@ const T2TrendTreemap = () => {
           const isActive = selectedCategory === cat;
           const config = cat === "all" ? null : CATEGORY_CONFIG[cat];
           const allCount = cat === "all"
-            ? (viewMode === "treemap" ? visibleBoxItems.length : triggers?.length || 0)
-            : (viewMode === "treemap"
+            ? (currentViewMode === "treemap" ? visibleBoxItems.length : triggers?.length || 0)
+            : (currentViewMode === "treemap"
               ? visibleBoxItems.filter(t => t.category === cat).length
               : categoryStats[cat] || 0);
           const count = allCount;
@@ -493,12 +473,12 @@ const T2TrendTreemap = () => {
         <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center py-20">
           <p className="text-sm text-muted-foreground">No active trend keywords detected yet.</p>
         </div>
-      ) : viewMode === "artist" ? (
+      ) : currentViewMode === "artist" ? (
         <T2ArtistList
           items={filteredItems}
           watchedSet={watchedSet}
         />
-      ) : viewMode === "list" ? (
+      ) : currentViewMode === "list" ? (
         <T2TrendList
           items={visibleListItems}
           watchedSet={watchedSet}
