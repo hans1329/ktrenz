@@ -185,10 +185,16 @@ Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル",
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
 
+    console.log(`[trend-detect] AI raw response for ${memberName}: ${content.slice(0, 500)}`);
+
     const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return [];
+    if (!jsonMatch) {
+      console.warn(`[trend-detect] No JSON array found in AI response for ${memberName}`);
+      return [];
+    }
 
     const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
+    console.log(`[trend-detect] AI extracted ${parsed.length} keywords for ${memberName}: ${parsed.map(k => k.keyword).join(", ")}`);
 
     // 후검증: 추출된 키워드가 실제 기사 텍스트에 존재하는지 확인
     const allText = articles.map(a => `${a.title} ${a.description || ""}`).join(" ").toLowerCase();
@@ -199,7 +205,7 @@ Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル",
       const kwKo = k.keyword_ko?.toLowerCase() || "";
       const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
       if (!existsInText) {
-        console.warn(`[trend-detect] Filtered out hallucinated keyword: "${k.keyword}" (not found in article text)`);
+        console.warn(`[trend-detect] Filtered out: "${k.keyword}" / "${k.keyword_ko}" (not in article text)`);
       }
       return existsInText;
     });
