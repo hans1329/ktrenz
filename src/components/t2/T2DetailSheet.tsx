@@ -508,7 +508,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     : "bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40"
                 )} onClick={() => setBetSide("yes")}>
                   <div className="text-[10px] text-muted-foreground mb-0.5">{t("betYes", language)}</div>
-                  <div className="text-lg font-bold text-emerald-400">{(priceYes * 100).toFixed(0)}%</div>
+                  <div className="text-lg font-bold text-emerald-400">{(priceYes * 100).toFixed(1)}%</div>
                 </div>
                 <div className={cn("flex-1 rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
                   betSide === "no"
@@ -516,7 +516,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     : "bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40"
                 )} onClick={() => setBetSide("no")}>
                   <div className="text-[10px] text-muted-foreground mb-0.5">{t("betNo", language)}</div>
-                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(0)}%</div>
+                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(1)}%</div>
                 </div>
               </div>
 
