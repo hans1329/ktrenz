@@ -112,7 +112,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
     { id: "activity" as const, labelKey: "nav.activity", icon: Activity },
     { id: "agent" as const, labelKey: "nav.agent", icon: null, isCenter: true },
     { id: "profile" as const, labelKey: "nav.profile", icon: User },
-    { id: "settings" as const, labelKey: "nav.settings", icon: Settings },
+    { id: "notifications" as const, labelKey: "nav.notifications", icon: Bell },
   ];
 
   return (
