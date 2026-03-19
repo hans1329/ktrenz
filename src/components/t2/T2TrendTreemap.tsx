@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List, Users } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
-import BoxParticles from "./BoxParticles";
+import BoxParticles from "@/components/v3/BoxParticles";
 import T2AdminControls from "./T2AdminControls";
 import T2TrendList from "./T2TrendList";
 import T2ArtistList from "./T2ArtistList";
