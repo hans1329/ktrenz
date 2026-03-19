@@ -3298,6 +3298,7 @@ Deno.serve(async (req) => {
                 if (collectedMeta.rankingData) metaToSave.rankingData = collectedMeta.rankingData;
                 if (collectedMeta.guideData) metaToSave.guideData = collectedMeta.guideData;
                 if (collectedMeta.reportCards) metaToSave.reportCards = collectedMeta.reportCards;
+                if (collectedMeta.trendData) metaToSave.trendData = collectedMeta.trendData;
                 
                 await adminClient.from("ktrenz_fan_agent_messages").insert({
                   user_id: userId,
@@ -3319,7 +3320,7 @@ Deno.serve(async (req) => {
               }
 
               // Send structured meta data for inline card rendering
-              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps || collectedMeta.reportCards;
+              const hasMeta = collectedMeta.guideData || collectedMeta.rankingData || collectedMeta.quickActions || collectedMeta.followUps || collectedMeta.reportCards || collectedMeta.trendData;
               if (hasMeta) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: collectedMeta })}\n\n`));
               }
@@ -3460,6 +3461,34 @@ Deno.serve(async (req) => {
                       youtube_score: item.youtube_score ?? 0,
                       buzz_score: item.buzz_score ?? 0,
                     }));
+                  }
+                } catch {}
+              }
+
+              // Collect trend keyword data for inline cards
+              if (fnName === "get_trend_keywords" || fnName === "get_trending_now") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.keywords && parsed.keywords.length > 0) {
+                    if (!collectedMeta.trendData) collectedMeta.trendData = [];
+                    for (const kw of parsed.keywords) {
+                      collectedMeta.trendData.push({
+                        keyword: kw.keyword,
+                        keyword_ko: kw.keyword_ko ?? null,
+                        category: kw.category,
+                        artist: kw.artist ?? parsed.artist ?? null,
+                        context: kw.context ?? null,
+                        influence_index: kw.influence_index ?? null,
+                        confidence: kw.confidence ?? null,
+                        source: kw.source ?? null,
+                        source_title: kw.source_title ?? null,
+                        source_url: kw.source_url ?? null,
+                        detected_at: kw.detected_at ?? null,
+                        search_volume: kw.search_volume ?? null,
+                        interest_score: kw.interest_score ?? null,
+                        delta_pct: kw.delta_pct ?? null,
+                      });
+                    }
                   }
                 } catch {}
               }

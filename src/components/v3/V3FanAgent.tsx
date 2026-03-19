@@ -20,6 +20,7 @@ import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCard
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
 import V3ReportCards, { type ReportCard } from "@/components/v3/V3ReportCards";
+import V3TrendKeywordCards, { type TrendKeywordEntry } from "@/components/v3/V3TrendKeywordCards";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
@@ -51,6 +52,7 @@ type ChatMessage = {
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
   reportCards?: ReportCard[] | null;
+  trendData?: TrendKeywordEntry[] | null;
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
@@ -574,6 +576,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         rankingData: d.metadata?.rankingData ?? null,
         guideData: d.metadata?.guideData ?? null,
         reportCards: d.metadata?.reportCards ?? null,
+        trendData: d.metadata?.trendData ?? null,
       }));
     },
     enabled: !!user?.id && !slotsLoading,
@@ -970,6 +973,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
                   reportCards: meta.reportCards ?? m.reportCards,
+                  trendData: meta.trendData ?? m.trendData,
                 } : m
               );
             }
@@ -1521,6 +1525,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
 
             {msg.role === "assistant" && msg.guideData && msg.guideData.length > 0 && (
               <V3StreamingGuideCards guides={msg.guideData} />
+            )}
+
+            {msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && (
+              <V3TrendKeywordCards
+                keywords={msg.trendData}
+                onKeywordClick={(kw) => {
+                  const displayName = kw.keyword_ko || kw.keyword;
+                  const artistPart = kw.artist ? ` (${kw.artist})` : "";
+                  handleSend(`"${displayName}"${artistPart} 키워드에 대해 더 자세히 분석해줘. 왜 이 트렌드가 감지됐고 팬으로서 어떻게 활용할 수 있을까?`);
+                }}
+              />
             )}
 
             {msg.role === "assistant" && msg.quickActions && msg.quickActions.length > 0 && (
