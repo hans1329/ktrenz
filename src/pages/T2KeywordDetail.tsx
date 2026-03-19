@@ -525,7 +525,7 @@ const T2KeywordDetail = () => {
               )}
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 <Target className="w-3 h-3" />
-                <span>Confidence: <span className="font-bold text-foreground">{(confidence * 100).toFixed(0)}%</span></span>
+                <span>{t2l("confidence", language)}: <span className="font-bold text-foreground">{(confidence * 100).toFixed(0)}%</span></span>
               </div>
             </div>
           </div>
