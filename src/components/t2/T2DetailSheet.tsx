@@ -71,7 +71,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
   loginToVote: { en: "Sign in to vote", ko: "투표하려면 로그인하세요", ja: "投票するにはログイン", zh: "登录后投票" },
   boosted: { en: "Boost shared! +5 K-Point", ko: "부스트 공유 완료! +5 K-Point", ja: "ブースト共有完了！+5 K-Point", zh: "推动分享完成！+5 K-Point" },
-  readBoostReward: { en: "Read & boost +3 K-Point", ko: "읽고 밀어주기 +3 K-Point", ja: "読んで応援 +3 K-Point", zh: "阅读推动 +3 K-Point" },
+  readBoostReward: { en: "View original article +3 K-Point", ko: "원문보기 +3 K-Point", ja: "元記事を見る +3 K-Point", zh: "查看原文 +3 K-Point" },
   readBoosted: { en: "Boosted! +3 K-Point", ko: "밀어주기 완료! +3 K-Point", ja: "応援完了！+3 K-Point", zh: "推动完成！+3 K-Point" },
   alreadyBoosted: { en: "✓ Boosted +3P", ko: "✓ 밀어주기 완료 +3P", ja: "✓ 応援済み +3P", zh: "✓ 已推动 +3P" },
   alreadyShareBoosted: { en: "Already boosted", ko: "이미 밀어주기 완료", ja: "すでに応援済み", zh: "已推动" },
@@ -316,34 +316,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             {(tile.sourceTitle || tile.sourceImageUrl) && (
               <div className="relative">
                 {tile.sourceImageUrl ? (
-                  <a
-                    href={tile.sourceUrl || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                    onClick={handleReadBoost}
-                  >
-                    <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
-                      <img
-                        src={tile.sourceImageUrl}
-                        alt={tile.sourceTitle || ""}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
-                          {getLocalizedSourceTitle(tile, language)}
-                        </p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <ExternalLink className="w-2.5 h-2.5 text-white/60" />
-                          <span className="text-[10px] text-white/60">
-                            {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
-                          </span>
-                        </div>
+                  <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                    <img
+                      src={tile.sourceImageUrl}
+                      alt={tile.sourceTitle || ""}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
+                        {getLocalizedSourceTitle(tile, language)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <ExternalLink className="w-2.5 h-2.5 text-white/60" />
+                        <span className="text-[10px] text-white/60">
+                          {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
+                        </span>
                       </div>
                     </div>
-                  </a>
+                  </div>
                 ) : tile.sourceTitle ? (
                   <div className="flex items-start gap-2.5 p-3 border-b border-border/50">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -400,12 +392,24 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             {/* Read boost reward indicator */}
             {user && (
               <div className="px-3 pb-2 flex justify-end">
-                <span className={cn(
-                  "text-[10px] font-medium",
-                  hasReadBoosted ? "text-emerald-400" : "text-emerald-500/70"
-                )}>
-                  {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
-                </span>
+                {tile.sourceUrl && !hasReadBoosted ? (
+                  <a
+                    href={tile.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-medium text-emerald-500/70 hover:text-emerald-400 transition-colors"
+                    onClick={handleReadBoost}
+                  >
+                    {t("readBoostReward", language)}
+                  </a>
+                ) : (
+                  <span className={cn(
+                    "text-[10px] font-medium",
+                    hasReadBoosted ? "text-emerald-400" : "text-emerald-500/70"
+                  )}>
+                    {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
+                  </span>
+                )}
               </div>
             )}
           </div>
