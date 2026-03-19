@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
     if (wikiEntryId && artistName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId }
+        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId, star_category: "kpop" }
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
