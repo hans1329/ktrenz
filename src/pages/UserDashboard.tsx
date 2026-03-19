@@ -591,7 +591,7 @@ const UserDashboard = () => {
                   <div className="h-6 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-lg font-black text-foreground">{stats.topArtists[0].count}</p>
-                    <p className="text-[9px] text-muted-foreground">Total Events</p>
+                    <p className="text-[9px] text-muted-foreground">{t("dash.totalEvents")}</p>
                   </div>
                 </div>
 
