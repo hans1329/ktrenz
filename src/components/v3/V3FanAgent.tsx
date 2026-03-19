@@ -1527,6 +1527,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <V3StreamingGuideCards guides={msg.guideData} />
             )}
 
+            {msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && (
+              <V3TrendKeywordCards
+                keywords={msg.trendData}
+                onKeywordClick={(kw) => {
+                  const displayName = kw.keyword_ko || kw.keyword;
+                  const artistPart = kw.artist ? ` (${kw.artist})` : "";
+                  handleSend(`"${displayName}"${artistPart} 키워드에 대해 더 자세히 분석해줘. 왜 이 트렌드가 감지됐고 팬으로서 어떻게 활용할 수 있을까?`);
+                }}
+              />
+            )}
+
             {msg.role === "assistant" && msg.quickActions && msg.quickActions.length > 0 && (
               <div className="grid grid-cols-1 gap-2 mt-2 w-full">
                 {msg.quickActions.map((qa) => {
