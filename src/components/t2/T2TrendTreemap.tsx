@@ -478,7 +478,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
           items={filteredItems}
           watchedSet={watchedSet}
         />
-      ) : viewMode === "list" ? (
+      ) : currentViewMode === "list" ? (
         <T2TrendList
           items={visibleListItems}
           watchedSet={watchedSet}
