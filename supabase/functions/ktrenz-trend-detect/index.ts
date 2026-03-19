@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
     if (starId && memberName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null }
+        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null, star_category: body.starCategory || "kpop" }
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
