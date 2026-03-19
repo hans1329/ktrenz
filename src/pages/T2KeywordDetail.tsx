@@ -342,19 +342,19 @@ const T2KeywordDetail = () => {
             {/* Key metrics row */}
             <div className="grid grid-cols-3 gap-3 mt-5">
               <div className="rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3 text-center">
-                <div className="text-[10px] text-white/50 mb-0.5">Influence</div>
+                <div className="text-[10px] text-white/50 mb-0.5">{t2l("influence", language)}</div>
                 <div className="text-xl font-black text-white">
                   {influenceIndex > 0 ? `+${influenceIndex.toFixed(1)}%` : "—"}
                 </div>
               </div>
               <div className="rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3 text-center">
-                <div className="text-[10px] text-white/50 mb-0.5">Baseline</div>
+                <div className="text-[10px] text-white/50 mb-0.5">{t2l("baseline", language)}</div>
                 <div className="text-xl font-black text-white">
                   {baselineScore ?? "—"}
                 </div>
               </div>
               <div className="rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3 text-center">
-                <div className="text-[10px] text-white/50 mb-0.5">Peak</div>
+                <div className="text-[10px] text-white/50 mb-0.5">{t2l("peak", language)}</div>
                 <div className="text-xl font-black text-white">
                   {peakScore ?? "—"}
                 </div>
