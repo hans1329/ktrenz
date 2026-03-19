@@ -166,6 +166,7 @@ const T2TrendMap = () => {
             transform: `translateX(${translateX}%)`,
             transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
             willChange: "transform",
+            touchAction: "pan-y pinch-zoom",
           }}
         >
           {VIEW_ORDER.map((mode) => (
