@@ -2,65 +2,24 @@ import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
-
+import V3Header from "@/components/v3/V3Header";
+import V3TabBar from "@/components/v3/V3TabBar";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-  BarChart3, Users, MousePointerClick, Bot, ExternalLink, Eye,
-  TrendingUp, Calendar, ArrowLeft, Crown, ChevronLeft, Home,
-  Heart, MessageSquare, ThumbsUp, FileText, Coins, Trophy, Flame
+  TrendingUp, ExternalLink, Eye, Bot, MousePointerClick,
+  Crown, Heart, Flame, Trophy, Clock, ChevronRight, Zap, BarChart3
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import BoxParticles from "@/components/v3/BoxParticles";
+import { CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 
-// ── 통계 카드 ──
-const StatCard = ({ icon: Icon, label, value, sub, color }: {
-  icon: any; label: string; value: string | number; sub?: string; color: string;
-}) => (
-  <Card className="p-4 bg-card border-border">
-    <div className="flex items-center gap-3">
-      <div className={cn("p-2 rounded-lg", color)}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-black text-foreground">{value}</p>
-        {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-      </div>
-    </div>
-  </Card>
-);
-
-// ── 인기 아티스트 행 ──
-const ArtistRow = ({ rank, name, count }: { rank: number; name: string; count: number }) => (
-  <div className="flex items-center gap-3 py-2">
-    <span className={cn("w-6 text-center font-black text-sm",
-      rank === 1 ? "text-yellow-400" : rank === 2 ? "text-slate-300" : rank === 3 ? "text-amber-600" : "text-muted-foreground"
-    )}>
-      {rank <= 3 ? <Crown className="w-4 h-4 inline" /> : rank}
-    </span>
-    <span className="flex-1 text-sm font-semibold text-foreground truncate">{name}</span>
-    <span className="text-xs text-muted-foreground font-medium">{count}회</span>
-  </div>
-);
-
-// ── 활동 타임라인 행 ──
-const EVENT_LABELS: Record<string, string> = {
-  treemap_click: "에너지맵 클릭",
-  list_click: "리스트 클릭",
-  modal_category_click: "카테고리 클릭",
-  artist_detail_view: "상세 페이지 조회",
-  artist_detail_section: "상세 섹션 조회",
-  external_link_click: "외부 링크 클릭",
-  agent_chat: "에이전트 대화",
-  agent_mode_switch: "에이전트 모드 전환",
-};
-
+// ── Platform colors ──
 const PLATFORM_COLORS: Record<string, string> = {
   YouTube: "bg-red-500/15 text-red-400",
   X: "bg-foreground/10 text-foreground",
@@ -73,623 +32,440 @@ const PLATFORM_COLORS: Record<string, string> = {
   other: "bg-muted text-muted-foreground",
 };
 
-const TimelineRow = ({ event }: { event: any }) => {
-  const data = event.event_data || {};
-  const label = EVENT_LABELS[event.event_type] || event.event_type;
-  const platform = data.platform as string | undefined;
-  const detail = data.artist_name || data.section || data.mode || "";
-  const time = new Date(event.created_at);
-  const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`;
-
-  return (
-    <div className="flex items-center gap-3 py-1.5 border-b border-border/30 last:border-0">
-      <span className="text-[10px] text-muted-foreground w-14 shrink-0">{timeStr}</span>
-      <span className="text-xs font-semibold text-foreground">{label}</span>
-      {platform && (
-        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", PLATFORM_COLORS[platform] || PLATFORM_COLORS.other)}>
-          {platform}
-        </span>
-      )}
-      {detail && <span className="text-[10px] text-muted-foreground truncate flex-1">{String(detail).substring(0, 30)}</span>}
-    </div>
-  );
-};
+function formatAge(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 1) return "now";
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { isAdmin } = useAdminAuth();
+  const { language } = useLanguage();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedArtistTag, setSelectedArtistTag] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
     return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
-  const viewUserId = isAdmin && selectedUserId ? selectedUserId : user?.id;
-
-  // ── 유저 이벤트 조회 ──
-  const { data: events, isLoading } = useQuery({
-    queryKey: ["user-events", viewUserId],
-    enabled: !!viewUserId,
+  // ── Fetch user's watched artists ──
+  const { data: watchedSlots } = useQuery({
+    queryKey: ["dashboard-watched-slots", user?.id],
     queryFn: async () => {
-      const query = supabase
-        .from("ktrenz_user_events" as any)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(500);
+      if (!user?.id) return [];
+      const { data: slots } = await supabase
+        .from("ktrenz_agent_slots")
+        .select("wiki_entry_id")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null);
+      return (slots ?? []).map((s: any) => s.wiki_entry_id).filter(Boolean) as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
 
-      if (!isAdmin || selectedUserId) {
-        query.eq("user_id", viewUserId!);
+  // Get star info for watched artists
+  const { data: watchedStars } = useQuery({
+    queryKey: ["dashboard-watched-stars", watchedSlots],
+    queryFn: async () => {
+      if (!watchedSlots?.length) return [];
+      const { data: stars } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("id, wiki_entry_id, display_name, name_ko, group_star_id")
+        .in("wiki_entry_id", watchedSlots)
+        .eq("is_active", true);
+      
+      // Also get members of followed groups
+      const starIds = (stars ?? []).map((s: any) => s.id);
+      let memberWikiIds: string[] = [];
+      if (starIds.length) {
+        const { data: members } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("wiki_entry_id")
+          .in("group_star_id", starIds)
+          .not("wiki_entry_id", "is", null);
+        memberWikiIds = (members ?? []).map((m: any) => m.wiki_entry_id).filter(Boolean);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      // Fetch images
+      const allWikiIds = [...new Set([...watchedSlots, ...memberWikiIds])];
+      const { data: wikiEntries } = await supabase
+        .from("wiki_entries")
+        .select("id, image_url")
+        .in("id", allWikiIds);
+      const imageMap = new Map<string, string>();
+      (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
+
+      return (stars ?? []).map((s: any) => ({
+        ...s,
+        image_url: imageMap.get(s.wiki_entry_id) || null,
+        memberWikiIds,
+      }));
+    },
+    enabled: !!watchedSlots?.length,
+    staleTime: 60_000,
+  });
+
+  const allWatchedWikiIds = useMemo(() => {
+    if (!watchedSlots?.length) return new Set<string>();
+    const memberIds = watchedStars?.[0]?.memberWikiIds || [];
+    return new Set([...watchedSlots, ...memberIds]);
+  }, [watchedSlots, watchedStars]);
+
+  // ── My active trend keywords ──
+  const { data: myTrends, isLoading: trendsLoading } = useQuery({
+    queryKey: ["dashboard-my-trends", Array.from(allWatchedWikiIds)],
+    queryFn: async () => {
+      if (!allWatchedWikiIds.size) return [];
+      
+      // Get star_ids for watched wiki_entry_ids
+      const { data: stars } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("id, wiki_entry_id, display_name, name_ko")
+        .in("wiki_entry_id", Array.from(allWatchedWikiIds))
+        .eq("is_active", true);
+      
+      const starIds = (stars ?? []).map((s: any) => s.id);
+      if (!starIds.length) return [];
+
+      const starMap = new Map<string, any>();
+      (stars ?? []).forEach((s: any) => starMap.set(s.id, s));
+
+      const { data: triggers } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("*")
+        .eq("status", "active")
+        .in("star_id", starIds)
+        .order("influence_index", { ascending: false })
+        .limit(30);
+
+      // Get images
+      const wikiIds = [...new Set((stars ?? []).map((s: any) => s.wiki_entry_id).filter(Boolean))];
+      const { data: wikiEntries } = await supabase
+        .from("wiki_entries").select("id, image_url").in("id", wikiIds);
+      const imgMap = new Map<string, string>();
+      (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imgMap.set(w.id, w.image_url); });
+
+      return (triggers ?? []).map((t: any) => {
+        const star = starMap.get(t.star_id);
+        return {
+          id: t.id,
+          keyword: t.keyword,
+          keywordKo: t.keyword_ko,
+          category: t.keyword_category || "brand",
+          artistName: star?.display_name || t.artist_name || "Unknown",
+          artistNameKo: star?.name_ko || null,
+          artistImageUrl: star ? imgMap.get(star.wiki_entry_id) : null,
+          influenceIndex: Number(t.influence_index) || 0,
+          detectedAt: t.detected_at,
+          starId: t.star_id,
+          wikiEntryId: star?.wiki_entry_id,
+          sourceImageUrl: t.source_image_url,
+        };
+      });
+    },
+    enabled: allWatchedWikiIds.size > 0,
+    staleTime: 30_000,
+  });
+
+  // ── User events for stats ──
+  const { data: events } = useQuery({
+    queryKey: ["dashboard-events", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_user_events" as any)
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(300);
       return (data || []) as any[];
     },
     staleTime: 30_000,
   });
 
-  // ── 관리자: DAU 통계 ──
-  const { data: dauData } = useQuery({
-    queryKey: ["admin-dau"],
-    enabled: isAdmin && !selectedUserId,
-    queryFn: async () => {
-      const days = 14;
-      const since = new Date();
-      since.setDate(since.getDate() - days);
+  // ── Stats ──
+  const stats = useMemo(() => {
+    if (!events?.length) return { totalEvents: 0, externalClicks: 0, detailViews: 0, agentChats: 0, topArtists: [] as { name: string; count: number; imageUrl?: string }[] };
+    
+    const artistCounts = new Map<string, number>();
+    let externalClicks = 0, detailViews = 0, agentChats = 0;
 
-      const { data } = await supabase
-        .from("ktrenz_user_events" as any)
-        .select("user_id, created_at")
-        .gte("created_at", since.toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1000);
-
-      if (!data) return { dailyActive: [], totalUsers: 0 };
-
-      const byDay = new Map<string, Set<string>>();
-      for (const e of data as any[]) {
-        const day = new Date(e.created_at).toISOString().slice(0, 10);
-        if (!byDay.has(day)) byDay.set(day, new Set());
-        byDay.get(day)!.add(e.user_id);
-      }
-
-      const dailyActive = Array.from(byDay.entries())
-        .map(([date, users]) => ({ date, count: users.size }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-
-      const totalUsers = new Set((data as any[]).map(e => e.user_id)).size;
-      return { dailyActive, totalUsers };
-    },
-    staleTime: 60_000,
-  });
-
-  // ── 관리자: 유저 목록 ──
-  const { data: allUsers } = useQuery({
-    queryKey: ["admin-event-users"],
-    enabled: isAdmin,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("ktrenz_user_events" as any)
-        .select("user_id")
-        .limit(1000);
-      if (!data) return [];
-      const counts = new Map<string, number>();
-      for (const e of data as any[]) {
-        counts.set(e.user_id, (counts.get(e.user_id) || 0) + 1);
-      }
-      return Array.from(counts.entries())
-        .map(([id, count]) => ({ id, count }))
-        .sort((a, b) => b.count - a.count);
-    },
-    staleTime: 60_000,
-  });
-
-  // ── 최애 아티스트 + 기여도 ──
-  const favoriteArtistName = useMemo(() => {
-    if (selectedArtistTag) return selectedArtistTag;
-    if (!events?.length) return null;
-    const counts = new Map<string, number>();
     for (const e of events) {
       const name = (e.event_data as any)?.artist_name;
-      if (name) counts.set(name, (counts.get(name) || 0) + 1);
-    }
-    if (counts.size === 0) return null;
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
-  }, [events, selectedArtistTag]);
-
-  const { data: favoriteArtist } = useQuery({
-    queryKey: ["favorite-artist-detail", favoriteArtistName, viewUserId],
-    enabled: !!favoriteArtistName && !!viewUserId,
-    queryFn: async () => {
-      const { data: entry } = await supabase
-        .from("wiki_entries")
-        .select("id, title, slug, image_url, metadata")
-        .ilike("title", favoriteArtistName!)
-        .limit(1)
-        .maybeSingle();
-      if (!entry) return null;
-
-      // 나의 기여도 (외부 링크 클릭 기반)
-      const weightByPlatform: Record<string, number> = {
-        youtube: 1.5,
-        twitter: 1.5,
-        news: 2.0,
-        tiktok: 1.4,
-        naver: 1.3,
-        spotify: 1.2,
-        melon: 1.2,
-        reddit: 1.2,
-        other: 1.0,
-      };
-
-      const normalizePlatform = (platform?: string, url?: string) => {
-        const p = (platform || "").toLowerCase();
-        if (p.includes("youtube")) return "youtube";
-        if (p === "x" || p.includes("twitter")) return "twitter";
-        if (p.includes("reddit")) return "reddit";
-        if (p.includes("tiktok")) return "tiktok";
-        if (p.includes("instagram")) return "other";
-        if (p.includes("spotify")) return "spotify";
-        if (p.includes("melon")) return "melon";
-        if (p.includes("naver")) return "naver";
-        if (p.includes("news")) return "news";
-
-        const u = (url || "").toLowerCase();
-        if (u.includes("youtube.com") || u.includes("youtu.be")) return "youtube";
-        if (u.includes("x.com") || u.includes("twitter.com")) return "twitter";
-        if (u.includes("reddit.com")) return "reddit";
-        if (u.includes("tiktok.com")) return "tiktok";
-        if (u.includes("spotify.com")) return "spotify";
-        if (u.includes("melon.com")) return "melon";
-        if (u.includes("naver.com")) return "naver";
-        return "other";
-      };
-
-      const { data: myContribs } = await supabase
-        .from("ktrenz_fan_contributions" as any)
-        .select("platform, click_count, weighted_score")
-        .eq("wiki_entry_id", entry.id)
-        .eq("user_id", viewUserId!);
-
-      let resolvedContribs = (myContribs || []).map((c: any) => ({
-        platform: c.platform,
-        clicks: Number(c.click_count) || 0,
-        score: Number(c.weighted_score) || 0,
-      }));
-
-      // 폴백: fan_contributions가 비어있으면 이벤트 로그로 기여도 계산
-      if (resolvedContribs.length === 0) {
-        const fallbackEvents = (events || []).filter((e: any) => {
-          const data = (e.event_data as any) || {};
-          return e.event_type === "external_link_click" && (data.artist_slug === entry.slug || data.artist_name === entry.title);
-        });
-
-        const byPlatform = new Map<string, { platform: string; clicks: number; score: number }>();
-        for (const e of fallbackEvents) {
-          const data = (e.event_data as any) || {};
-          const key = normalizePlatform(data.platform, data.url);
-          const prev = byPlatform.get(key) || { platform: key, clicks: 0, score: 0 };
-          prev.clicks += 1;
-          prev.score += weightByPlatform[key] || 1.0;
-          byPlatform.set(key, prev);
-        }
-
-        resolvedContribs = Array.from(byPlatform.values());
-      }
-
-      const totalScore = resolvedContribs.reduce((s, c) => s + c.score, 0);
-      const totalClicks = resolvedContribs.reduce((s, c) => s + c.clicks, 0);
-
-      // 전체 팬 순위 (같은 아티스트)
-      const { data: allFanScores } = await supabase
-        .from("ktrenz_fan_contributions" as any)
-        .select("user_id, weighted_score")
-        .eq("wiki_entry_id", entry.id);
-
-      const fanTotals = new Map<string, number>();
-      for (const row of (allFanScores || []) as any[]) {
-        fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + Number(row.weighted_score));
-      }
-
-      let rankSource: "contributions" | "events" = "contributions";
-
-      // 폴백: 기여도 테이블이 비어있으면 외부링크 이벤트 기반으로 순위 계산
-      if (fanTotals.size === 0) {
-        rankSource = "events";
-        const { data: allExternalEvents } = await supabase
-          .from("ktrenz_user_events" as any)
-          .select("user_id, event_data")
-          .eq("event_type", "external_link_click")
-          .limit(3000);
-
-        for (const row of (allExternalEvents || []) as any[]) {
-          const data = (row.event_data as any) || {};
-          const isSameArtist = data.artist_slug === entry.slug || data.artist_name === entry.title;
-          if (!isSameArtist || !row.user_id) continue;
-
-          const platformKey = normalizePlatform(data.platform, data.url);
-          const weight = weightByPlatform[platformKey] || 1.0;
-          fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + weight);
-        }
-      }
-
-      const sortedFans = Array.from(fanTotals.entries()).sort((a, b) => b[1] - a[1]);
-      const myRank = sortedFans.findIndex(([uid]) => uid === viewUserId) + 1;
-      const totalFans = sortedFans.length;
-      const percentile = totalFans > 0 ? Math.max(1, Math.round((myRank / totalFans) * 100)) : 0;
-
-      // 플랫폼별 breakdown
-      const platformBreakdown = resolvedContribs.sort((a: any, b: any) => b.score - a.score);
-
-      // Get event breakdown for this artist
-      const artistEvents = (events || []).filter((e: any) => (e.event_data as any)?.artist_name === favoriteArtistName);
-      const detailViews = artistEvents.filter((e: any) => e.event_type === "artist_detail_view").length;
-      const externalClicks = artistEvents.filter((e: any) => e.event_type === "external_link_click").length;
-      const agentChats = artistEvents.filter((e: any) => e.event_type === "agent_chat").length;
-      const treemapClicks = artistEvents.filter((e: any) => e.event_type === "treemap_click").length;
-
-      return {
-        entry,
-        contribution: { totalScore, totalClicks, myRank, totalFans, percentile, platformBreakdown, rankSource },
-        activity: { detailViews, externalClicks, agentChats, treemapClicks, total: artistEvents.length },
-      };
-    },
-    staleTime: 5_000,
-    refetchOnMount: "always",
-  });
-
-  const stats = useMemo(() => {
-    const filtered = selectedArtistTag
-      ? (events || []).filter((e: any) => (e.event_data as any)?.artist_name === selectedArtistTag)
-      : (events || []);
-
-    if (!filtered.length) return {
-      totalEvents: 0, treemapClicks: 0, listClicks: 0,
-      detailViews: 0, agentChats: 0, externalClicks: 0,
-      topArtists: [] as { name: string; count: number }[],
-      externalArtists: [] as { name: string; count: number }[],
-      platformBreakdown: [] as { name: string; count: number }[],
-    };
-
-    const artistCounts = new Map<string, number>();
-    const externalCounts = new Map<string, number>();
-    const platformCounts = new Map<string, number>();
-    let treemapClicks = 0, listClicks = 0, detailViews = 0, agentChats = 0, externalClicks = 0;
-
-    for (const e of filtered) {
-      const name = (e.event_data as any)?.artist_name;
       if (name) artistCounts.set(name, (artistCounts.get(name) || 0) + 1);
-
-      switch (e.event_type) {
-        case "treemap_click": treemapClicks++; break;
-        case "list_click": listClicks++; break;
-        case "artist_detail_view":
-        case "artist_detail_section": detailViews++; break;
-        case "agent_chat": agentChats++; break;
-        case "external_link_click":
-          externalClicks++;
-          if (name) externalCounts.set(name, (externalCounts.get(name) || 0) + 1);
-          const plat = (e.event_data as any)?.platform || "other";
-          platformCounts.set(plat, (platformCounts.get(plat) || 0) + 1);
-          break;
-      }
+      if (e.event_type === "external_link_click") externalClicks++;
+      if (e.event_type === "artist_detail_view" || e.event_type === "artist_detail_section") detailViews++;
+      if (e.event_type === "agent_chat") agentChats++;
     }
 
-    // topArtists는 항상 전체 events 기준 (태그 클라우드 용)
-    const allArtistCounts = new Map<string, number>();
-    for (const e of (events || [])) {
-      const name = (e.event_data as any)?.artist_name;
-      if (name) allArtistCounts.set(name, (allArtistCounts.get(name) || 0) + 1);
-    }
-    const topArtists = Array.from(allArtistCounts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-
-    const externalArtists = Array.from(externalCounts.entries())
+    const topArtists = Array.from(artistCounts.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const platformBreakdown = Array.from(platformCounts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+    return { totalEvents: events.length, externalClicks, detailViews, agentChats, topArtists };
+  }, [events]);
 
-    return { totalEvents: filtered.length, treemapClicks, listClicks, detailViews, agentChats, externalClicks, topArtists, externalArtists, platformBreakdown };
-  }, [events, selectedArtistTag]);
+  // ── Contribution for top artist ──
+  const topArtistName = stats.topArtists[0]?.name || null;
+  const { data: topArtistContrib } = useQuery({
+    queryKey: ["dashboard-top-contrib", topArtistName, user?.id],
+    enabled: !!topArtistName && !!user?.id,
+    queryFn: async () => {
+      const { data: entry } = await supabase
+        .from("wiki_entries")
+        .select("id, title, slug, image_url")
+        .ilike("title", topArtistName!)
+        .limit(1)
+        .maybeSingle();
+      if (!entry) return null;
 
-  const recentEvents = selectedArtistTag
-    ? (events || []).filter((e: any) => (e.event_data as any)?.artist_name === selectedArtistTag).slice(0, 30)
-    : (events || []).slice(0, 30);
+      const { data: contribs } = await supabase
+        .from("ktrenz_fan_contributions" as any)
+        .select("platform, click_count, weighted_score")
+        .eq("wiki_entry_id", entry.id)
+        .eq("user_id", user!.id);
+
+      const totalScore = (contribs || []).reduce((s: number, c: any) => s + (Number(c.weighted_score) || 0), 0);
+      const totalClicks = (contribs || []).reduce((s: number, c: any) => s + (Number(c.click_count) || 0), 0);
+
+      // Rank
+      const { data: allFanScores } = await supabase
+        .from("ktrenz_fan_contributions" as any)
+        .select("user_id, weighted_score")
+        .eq("wiki_entry_id", entry.id);
+      const fanTotals = new Map<string, number>();
+      for (const row of (allFanScores || []) as any[]) {
+        fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + Number(row.weighted_score));
+      }
+      const sorted = Array.from(fanTotals.entries()).sort((a, b) => b[1] - a[1]);
+      const myRank = sorted.findIndex(([uid]) => uid === user!.id) + 1;
+
+      const platformBreakdown = (contribs || []).map((c: any) => ({
+        platform: c.platform,
+        clicks: Number(c.click_count) || 0,
+        score: Number(c.weighted_score) || 0,
+      })).sort((a: any, b: any) => b.score - a.score);
+
+      return { entry, totalScore, totalClicks, myRank, totalFans: sorted.length, platformBreakdown };
+    },
+    staleTime: 30_000,
+  });
+
+  const getLocalizedKeyword = (t: any) => {
+    if (language === "ko" && t.keywordKo) return t.keywordKo;
+    return t.keyword;
+  };
+  const getLocalizedArtistName = (t: any) => {
+    if (language === "ko" && t.artistNameKo) return t.artistNameKo;
+    return t.artistName;
+  };
+
+  const isLoading = trendsLoading;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background">
-      <SEO title="나의 활동 – KTrenZ" description="Your activity and analytics" path="/dashboard" />
-      {/* Compact header */}
-      <header className="sticky top-0 z-50 flex items-center h-14 px-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
-        <div className="flex items-center gap-1 w-24 shrink-0">
-          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" onClick={() => navigate(-1)}><ChevronLeft className="w-5 h-5" /></Button>
-          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full" asChild><Link to="/"><Home className="w-4 h-4" /></Link></Button>
-        </div>
-        <h1 className="flex-1 text-center font-bold text-base text-foreground truncate">나의 활동</h1>
-        <div className="w-24 shrink-0 flex justify-end">
-          {isAdmin && !selectedUserId && (
-            <span className="text-[10px] text-muted-foreground">Admin</span>
-          )}
-        </div>
-      </header>
-      <main className="flex-1 overflow-auto px-4 pb-8 pt-6 max-w-4xl mx-auto w-full">
+    <div className="min-h-[100dvh] bg-background">
+      <SEO title="My Activity – KTrenZ" description="Your trend activity and contribution" path="/dashboard" />
+      <V3Header />
 
-        {/* 관리자: 유저 선택 */}
-        {isAdmin && (
-          <div className="mb-4">
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button
-                onClick={() => setSelectedUserId(null)}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-colors",
-                  !selectedUserId ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
-                )}
-              >
-                전체 통계
+      <main className="pt-14 pb-24 px-4 max-w-2xl mx-auto">
+
+        {/* ── My Active Trends ── */}
+        <section className="mt-4 mb-6">
+          <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" />
+            My Active Trends
+          </h2>
+
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
+          ) : !user ? (
+            <Card className="p-6 text-center border-border bg-card">
+              <p className="text-sm text-muted-foreground mb-3">Sign in to track your artists' trends</p>
+              <button onClick={() => navigate("/login")} className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                Sign In
               </button>
-              {allUsers?.slice(0, 10).map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => setSelectedUserId(u.id)}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-colors",
-                    selectedUserId === u.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
-                  )}
-                >
-                  {u.id.slice(0, 8)}… ({u.count})
+            </Card>
+          ) : !myTrends?.length ? (
+            <Card className="p-6 text-center border-border bg-card">
+              <p className="text-sm text-muted-foreground mb-2">No active trends for your artists yet</p>
+              <button onClick={() => navigate("/agent")} className="text-xs text-primary font-bold">
+                Follow artists →
+              </button>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {myTrends.slice(0, 8).map((trend, idx) => {
+                const config = CATEGORY_CONFIG[trend.category];
+                const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
+                return (
+                  <button
+                    key={trend.id}
+                    onClick={() => navigate(`/t2/${trend.id}`)}
+                    className="w-full relative overflow-hidden rounded-xl border border-border flex items-center gap-3 p-3 text-left transition-all hover:brightness-110 group"
+                    style={{
+                      backgroundImage: trend.sourceImageUrl || trend.artistImageUrl
+                        ? `linear-gradient(to right, ${tileColor}, ${tileColor.replace('0.85', '0.7')}), url("${(trend.sourceImageUrl || trend.artistImageUrl || '').replace(/"/g, '\\"')}")`
+                        : undefined,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundColor: !(trend.sourceImageUrl || trend.artistImageUrl) ? tileColor : undefined,
+                    }}
+                  >
+                    {idx < 2 && (
+                      <BoxParticles count={idx === 0 ? 12 : 6} color="hsla(45, 100%, 80%, 0.7)" speed={0.3} density={0.3} shape="star" />
+                    )}
+                    <div className="relative z-10 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-base font-black text-white truncate drop-shadow-md">
+                          {getLocalizedKeyword(trend)}
+                        </span>
+                        <span className="text-xs font-bold text-white/80 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
+                          +{trend.influenceIndex.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-white/70">
+                        <span className="font-medium">{getLocalizedArtistName(trend)}</span>
+                        <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-bold text-white/90" style={{ background: config?.color ? `${config.color.replace(')', ', 0.5)').replace('hsl(', 'hsla(')}` : undefined }}>
+                          {config?.label || trend.category}
+                        </span>
+                        <span className="flex items-center gap-0.5 ml-auto">
+                          <Clock className="w-2.5 h-2.5" /> {formatAge(trend.detectedAt)}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-white/50 shrink-0 relative z-10 group-hover:text-white transition-colors" />
+                  </button>
+                );
+              })}
+              {myTrends.length > 8 && (
+                <button onClick={() => navigate("/?cat=my")} className="w-full text-center text-xs font-bold text-primary py-2">
+                  View all {myTrends.length} trends →
                 </button>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* ── My Stats Summary ── */}
+        {user && stats.totalEvents > 0 && (
+          <section className="mb-6">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              My Stats
+            </h2>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { icon: MousePointerClick, value: stats.totalEvents, label: "Total" },
+                { icon: Eye, value: stats.detailViews, label: "Views" },
+                { icon: ExternalLink, value: stats.externalClicks, label: "Links" },
+                { icon: Bot, value: stats.agentChats, label: "Agent" },
+              ].map((item, i) => (
+                <Card key={i} className="p-3 bg-card border-border text-center">
+                  <item.icon className="w-4 h-4 mx-auto text-primary mb-1" />
+                  <p className="text-lg font-black text-foreground">{item.value}</p>
+                  <p className="text-[9px] text-muted-foreground">{item.label}</p>
+                </Card>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
-          </div>
-        ) : (
-          <>
-            {/* 관심 아티스트 태그 클라우드 */}
-            {stats.topArtists.length > 0 && (
-              <div className="mb-6 mt-2">
-                <h3 className="text-sm font-bold text-foreground mb-3">나의 관심 아티스트</h3>
-              <div className="flex flex-wrap gap-2">
-                  {selectedArtistTag && (
-                    <button
-                      onClick={() => setSelectedArtistTag(null)}
-                      className="px-3 py-1.5 rounded-full border border-border bg-muted/50 text-muted-foreground text-xs font-bold hover:bg-muted transition-colors"
-                    >
-                      ✕ All
-                    </button>
-                  )}
-                  {stats.topArtists.map((artist, idx) => {
-                    const maxCount = stats.topArtists[0]?.count || 1;
-                    const ratio = artist.count / maxCount;
-                    const fontSize = Math.round(11 + ratio * 6);
-                    const opacity = selectedArtistTag && selectedArtistTag !== artist.name ? 0.4 : (0.6 + ratio * 0.4);
-                    const isSelected = selectedArtistTag === artist.name;
-                    const isTop3 = idx < 3;
-                    return (
-                      <button
-                        key={artist.name}
-                        onClick={() => setSelectedArtistTag(isSelected ? null : artist.name)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full border transition-all hover:scale-105",
-                          isSelected
-                            ? "bg-primary text-primary-foreground border-primary font-bold ring-2 ring-primary/30"
-                            : isTop3
-                              ? "bg-primary/10 border-primary/30 text-primary font-bold"
-                              : "bg-muted/50 border-border text-foreground/80 font-medium"
-                        )}
-                        style={{ fontSize: `${fontSize}px`, opacity }}
-                      >
-                        {artist.name}
-                        <span className="ml-1.5 text-[10px] opacity-60">{artist.count}</span>
-                      </button>
-                    );
-                  })}
+        {/* ── Top Artist Contribution ── */}
+        {topArtistContrib && (
+          <section className="mb-6">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <Heart className="w-4 h-4 text-primary fill-primary/30" />
+              My Top Artist
+            </h2>
+            <Card className="overflow-hidden border-border bg-card">
+              <div className="p-4 flex items-center gap-3 border-b border-border/50 bg-gradient-to-r from-primary/8 to-transparent">
+                <Avatar className="w-11 h-11 border-2 border-primary/20">
+                  <AvatarImage src={topArtistContrib.entry.image_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold">{topArtistContrib.entry.title?.[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-foreground truncate">{topArtistContrib.entry.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0]?.count} interactions</p>
                 </div>
+                {topArtistContrib.myRank > 0 && (
+                  <div className="text-center shrink-0">
+                    <div className="flex items-center gap-0.5">
+                      <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+                      <span className="text-lg font-black text-foreground">#{topArtistContrib.myRank}</span>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground">of {topArtistContrib.totalFans}</p>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* 최애 아티스트 기여도 카드 */}
-            {favoriteArtist && (
-              <Card className="mb-6 overflow-hidden border-border bg-card">
-                <div className="p-4 border-b border-border/50 bg-gradient-to-r from-primary/8 to-transparent">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12 border-2 border-primary/20">
-                      <AvatarImage src={favoriteArtist.entry.image_url || (favoriteArtist.entry.metadata as any)?.profile_image} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold">{favoriteArtist.entry.title?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">My Favorite</p>
-                      <Link to={`/artist/${favoriteArtist.entry.slug}`} className="text-base font-black text-foreground truncate block hover:text-primary transition-colors">
-                        {favoriteArtist.entry.title}
-                      </Link>
-                    </div>
-                    <Heart className="w-5 h-5 text-primary fill-primary/30" />
+              <div className="p-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-center">
+                    <p className="text-2xl font-black bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                      {Math.round(topArtistContrib.totalScore)}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground">Score</p>
+                  </div>
+                  <div className="h-6 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-black text-foreground">{topArtistContrib.totalClicks}</p>
+                    <p className="text-[9px] text-muted-foreground">Clicks</p>
                   </div>
                 </div>
-                <div className="p-4 grid grid-cols-5 gap-2">
-                  {[
-                    { icon: Eye, value: favoriteArtist.activity.detailViews, label: "프로필 조회" },
-                    { icon: MousePointerClick, value: favoriteArtist.activity.treemapClicks, label: "에너지맵" },
-                    { icon: BarChart3, value: (events || []).filter((e: any) => e.event_type === "list_click" && (e.event_data as any)?.artist_name === favoriteArtistName).length, label: "리스트" },
-                    { icon: ExternalLink, value: favoriteArtist.activity.externalClicks, label: "외부 링크" },
-                    { icon: Bot, value: favoriteArtist.activity.agentChats, label: "에이전트" },
-                  ].map((item, i) => (
-                    <div key={i} className="text-center">
-                      <div className="w-7 h-7 mx-auto rounded-lg bg-primary/10 flex items-center justify-center mb-1">
-                        <item.icon className="w-3.5 h-3.5 text-primary" />
-                      </div>
-                      <p className="text-sm font-black text-foreground">{item.value}</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-                {/* 팬 기여도 (외부 링크 클릭 기반) */}
-                <div className="px-4 pb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
-                    <Flame className="w-3 h-3 text-primary" /> 나의 기여도
-                  </p>
 
-                  {/* 점수 + 순위 */}
-                  <div className="flex items-center gap-3 mb-3 px-5 py-5 rounded-xl bg-gradient-to-r from-primary/10 to-transparent">
-                    <div className="text-center min-w-[80px]">
-                      <p className="font-black leading-none bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
-                        <span className="text-4xl md:text-5xl">{favoriteArtist.contribution.totalScore > 0 ? Math.round(favoriteArtist.contribution.totalScore) : 0}</span>
-                        <span className="text-xl md:text-2xl">%</span>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">기여도</p>
-                    </div>
-                    <div className="h-8 w-px bg-border" />
-                    <div className="text-center">
-                      <p className="text-lg font-black text-foreground">{favoriteArtist.contribution.totalClicks}</p>
-                      <p className="text-[9px] text-muted-foreground">링크 클릭</p>
-                    </div>
-                    <div className="h-8 w-px bg-border" />
-                    <div className="text-center flex-1">
-                      {favoriteArtist.contribution.totalFans > 0 ? (
-                        <>
-                          <div className="flex items-center justify-center gap-1">
-                            <Trophy className="w-4 h-4 text-yellow-400" />
-                            <p className="text-2xl font-black text-foreground">
-                              {favoriteArtist.contribution.myRank}등
-                            </p>
-                          </div>
-                          <p className="text-[9px] text-muted-foreground">
-                            {favoriteArtist.contribution.totalFans}명 중{favoriteArtist.contribution.rankSource === "events" ? " · 이벤트 기준" : ""}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-sm font-bold text-muted-foreground">—</p>
-                          <p className="text-[9px] text-muted-foreground">순위 없음</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 플랫폼별 기여 */}
-                  {favoriteArtist.contribution.platformBreakdown.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {favoriteArtist.contribution.platformBreakdown.map((p: any) => {
-                        const platformDisplayNames: Record<string, string> = {
-                          youtube: "YouTube", twitter: "X", reddit: "Reddit", tiktok: "TikTok",
-                          instagram: "Instagram", spotify: "Spotify", melon: "Melon", naver: "Naver",
-                        };
-                        const name = platformDisplayNames[p.platform] || p.platform;
-                        return (
-                          <span key={p.platform} className={cn("text-[10px] font-bold px-2 py-1 rounded-full", PLATFORM_COLORS[name] || PLATFORM_COLORS.other)}>
-                            {name} <span className="opacity-60">{p.clicks}</span>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div className="px-4 pb-4">
-                  <p className="text-center text-[10px] text-muted-foreground">
-                    총 {favoriteArtist.activity.total}회 상호작용
-                  </p>
-                </div>
-              </Card>
-            )}
-
-            {isAdmin && !selectedUserId && dauData && (
-              <Card className="p-4 mb-4 bg-card border-border">
-                <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> 일별 활성 유저 (최근 14일)
-                </h3>
-                <div className="flex items-end gap-1 h-20">
-                  {dauData.dailyActive.map((d) => {
-                    const maxCount = Math.max(...dauData.dailyActive.map(x => x.count), 1);
-                    const pct = (d.count / maxCount) * 100;
-                    return (
-                      <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5">
-                        <span className="text-[8px] text-muted-foreground">{d.count}</span>
-                        <div className="w-full rounded-t bg-primary/70 transition-all" style={{ height: `${Math.max(pct, 4)}%` }} />
-                        <span className="text-[7px] text-muted-foreground">{d.date.slice(5)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">총 {dauData.totalUsers}명 활성 유저</p>
-              </Card>
-            )}
-
-            {/* 핵심 지표 카드 */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-              <StatCard icon={BarChart3} label="총 이벤트" value={stats.totalEvents} color="bg-primary/10 text-primary" />
-              <StatCard icon={MousePointerClick} label="에너지맵 클릭" value={stats.treemapClicks} color="bg-red-500/10 text-red-400" />
-              <StatCard icon={TrendingUp} label="리스트 클릭" value={stats.listClicks} color="bg-blue-500/10 text-blue-400" />
-              <StatCard icon={Eye} label="상세 페이지" value={stats.detailViews} color="bg-purple-500/10 text-purple-400" />
-              <StatCard icon={Bot} label="에이전트 대화" value={stats.agentChats} color="bg-green-500/10 text-green-400" />
-              <StatCard icon={ExternalLink} label="외부 링크" value={stats.externalClicks} color="bg-amber-500/10 text-amber-400" />
-            </div>
-
-            {/* 인기 아티스트 + 외부 링크 아티스트 */}
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <Card className="p-4 bg-card border-border">
-                <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-yellow-400" /> 인기 아티스트 Top 10
-                </h3>
-                {stats.topArtists.length > 0 ? (
-                  stats.topArtists.map((a, i) => (
-                    <ArtistRow key={a.name} rank={i + 1} name={a.name} count={a.count} />
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">데이터 없음</p>
-                )}
-              </Card>
-
-              <Card className="p-4 bg-card border-border">
-                <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4 text-amber-400" /> 외부 링크 클릭
-                </h3>
-                {/* Platform breakdown */}
-                {stats.platformBreakdown.length > 0 ? (
-                  <>
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {stats.platformBreakdown.map(p => (
-                        <span key={p.name} className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full", PLATFORM_COLORS[p.name] || PLATFORM_COLORS.other)}>
-                          {p.name} <span className="opacity-60">{p.count}</span>
+                {topArtistContrib.platformBreakdown.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {topArtistContrib.platformBreakdown.slice(0, 5).map((p: any) => {
+                      const displayNames: Record<string, string> = {
+                        youtube: "YouTube", twitter: "X", reddit: "Reddit", tiktok: "TikTok",
+                        spotify: "Spotify", melon: "Melon", naver: "Naver",
+                      };
+                      const name = displayNames[p.platform] || p.platform;
+                      return (
+                        <span key={p.platform} className={cn("text-[10px] font-bold px-2 py-1 rounded-full", PLATFORM_COLORS[name] || PLATFORM_COLORS.other)}>
+                          {name} <span className="opacity-60">{p.clicks}</span>
                         </span>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mb-2">아티스트별</p>
-                    {stats.externalArtists.map((a, i) => (
-                      <ArtistRow key={a.name} rank={i + 1} name={a.name} count={a.count} />
-                    ))}
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">데이터 없음</p>
+                      );
+                    })}
+                  </div>
                 )}
-              </Card>
-            </div>
-
-            {/* 활동 타임라인 */}
-            <Card className="p-4 bg-card border-border">
-              <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary" /> 최근 활동 타임라인
-              </h3>
-              {recentEvents.length > 0 ? (
-                recentEvents.map((e: any) => <TimelineRow key={e.id} event={e} />)
-              ) : (
-                <p className="text-xs text-muted-foreground py-8 text-center">아직 기록된 활동이 없습니다</p>
-              )}
+              </div>
             </Card>
-          </>
+          </section>
+        )}
+
+        {/* ── Top Explored Artists ── */}
+        {stats.topArtists.length > 1 && (
+          <section className="mb-6">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <Crown className="w-4 h-4 text-yellow-400" />
+              Most Explored
+            </h2>
+            <Card className="p-4 bg-card border-border">
+              {stats.topArtists.map((a, i) => (
+                <div key={a.name} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+                  <span className={cn("w-5 text-center font-black text-xs",
+                    i === 0 ? "text-yellow-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-amber-600" : "text-muted-foreground"
+                  )}>
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-semibold text-foreground truncate">{a.name}</span>
+                  <span className="text-xs text-muted-foreground">{a.count}</span>
+                </div>
+              ))}
+            </Card>
+          </section>
         )}
       </main>
+
+      <V3TabBar activeTab="activity" onTabChange={() => {}} />
     </div>
   );
 };
