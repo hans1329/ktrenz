@@ -108,7 +108,7 @@ function formatAge(dateStr: string): string {
 const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | null; rank?: number; totalCount?: number; onClose: () => void }) => {
   const { language } = useLanguage();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, kPoints } = useAuth();
   const queryClient = useQueryClient();
 
 
