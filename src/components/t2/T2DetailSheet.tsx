@@ -145,6 +145,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       return (data ?? []) as any[];
     },
     enabled: !!marketData?.id && !!user,
+    placeholderData: (prev) => prev,
   });
 
   // Bet mutation
@@ -158,8 +159,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       return data;
     },
     onSuccess: (data) => {
+      // Invalidate my-bets first, then market — order matters to avoid myBets losing its enabled condition
+      queryClient.invalidateQueries({ queryKey: ["t2-my-bets", marketData?.id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
-      queryClient.invalidateQueries({ queryKey: ["t2-my-bets"] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
       setBetAmount("");
