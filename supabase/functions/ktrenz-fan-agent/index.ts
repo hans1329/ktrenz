@@ -2489,6 +2489,8 @@ Deno.serve(async (req) => {
       manage_watched_artist: { en: "Updating your artist…", ko: "아티스트를 설정하고 있어요…", ja: "アーティストを設定中…", zh: "正在设置艺人…" },
       get_streaming_guide: { en: "Building streaming guide…", ko: "스트리밍 가이드를 만들고 있어요…", ja: "ストリーミングガイドを作成中…", zh: "正在创建流媒体指南…" },
       get_artist_news: { en: "Fetching latest news…", ko: "최신 뉴스를 가져오고 있어요…", ja: "最新ニュースを取得中…", zh: "正在获取最新新闻…" },
+      get_trend_keywords: { en: "Scanning trend keywords…", ko: "트렌드 키워드를 분석하고 있어요…", ja: "トレンドキーワードを分析中…", zh: "正在分析趋势关键词…" },
+      get_trending_now: { en: "Checking what's trending…", ko: "지금 뜨는 트렌드를 확인하고 있어요…", ja: "今のトレンドを確認中…", zh: "正在查看当前趋势…" },
     };
     const thinkingLabels: Record<string, string> = { en: "Analyzing your question…", ko: "질문을 분석하고 있어요…", ja: "質問を分析中…", zh: "正在分析您的问题…" };
     const writingLabels: Record<string, string> = { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" };
