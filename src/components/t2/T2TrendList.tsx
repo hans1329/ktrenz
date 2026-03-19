@@ -29,13 +29,21 @@ function getLocalizedArtistName(tile: TrendTile, lang: string): string {
   return tile.artistName;
 }
 
+function stripArticleRefs(text: string | null): string | null {
+  if (!text) return null;
+  return text.replace(/\[\d+\]/g, "").trim();
+}
+
 function getLocalizedContext(tile: TrendTile, lang: string): string | null {
-  switch (lang) {
-    case "ko": return tile.contextKo || tile.context;
-    case "ja": return tile.contextJa || tile.context;
-    case "zh": return tile.contextZh || tile.context;
-    default: return tile.context;
-  }
+  const raw = (() => {
+    switch (lang) {
+      case "ko": return tile.contextKo || tile.context;
+      case "ja": return tile.contextJa || tile.context;
+      case "zh": return tile.contextZh || tile.context;
+      default: return tile.context;
+    }
+  })();
+  return stripArticleRefs(raw);
 }
 
 function getCategoryLabel(cat: string, lang: string): string {

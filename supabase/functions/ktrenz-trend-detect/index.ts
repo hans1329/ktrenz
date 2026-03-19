@@ -153,10 +153,10 @@ RULES:
 8. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
 9. Provide translations: keyword_ko, keyword_ja, keyword_zh.
 10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
-11. Provide translated context: context, context_ko, context_ja, context_zh.
+11. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
 
 If NO commercial entities are found, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","context_ko":"공항에서 샤넬 의상 착용[1]","context_ja":"空港でシャネルの衣装を着用[1]","context_zh":"在机场穿着香奈儿服装[1]","source_article_index":1}]`;
+Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
