@@ -114,6 +114,7 @@ const T2KeywordDetail = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
