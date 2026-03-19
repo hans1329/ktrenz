@@ -576,7 +576,7 @@ const UserDashboard = () => {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-foreground truncate">{topArtistEntry.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0].count} interactions</p>
+                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0].count} {t("dash.interactions")}</p>
                 </div>
               </div>
 
