@@ -629,6 +629,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Detail page button */}
           <Button
+            variant="secondary"
             className="w-full gap-2"
             onClick={() => {
               onClose();
