@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Loader2, Play, TrendingUp, Search, Clock, Globe,
-  ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap
+  ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap,
+  XCircle, Trash2, Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +37,7 @@ const formatAge = (dateStr: string): string => {
 const AdminTrendIntel = () => {
   const queryClient = useQueryClient();
   const [selectedRegion, setSelectedRegion] = useState<string>("worldwide");
-
+  const [artistFilter, setArtistFilter] = useState<string>("");
   // Fetch active triggers
   const { data: triggers, isLoading: triggersLoading } = useQuery({
     queryKey: ["admin-trend-triggers"],
@@ -122,6 +124,55 @@ const AdminTrendIntel = () => {
     onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
   });
 
+  // Expire single trigger
+  const expireMutation = useMutation({
+    mutationFn: async (triggerId: string) => {
+      const { error } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .update({ status: "expired", expired_at: new Date().toISOString() } as any)
+        .eq("id", triggerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("키워드 만료 처리 완료");
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`만료 처리 실패: ${(err as Error).message}`),
+  });
+
+  // Expire by artist name (bulk)
+  const expireByArtistMutation = useMutation({
+    mutationFn: async (artistName: string) => {
+      const { error } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .update({ status: "expired", expired_at: new Date().toISOString() } as any)
+        .eq("artist_name", artistName)
+        .eq("status", "active");
+      if (error) throw error;
+    },
+    onSuccess: (_, artistName) => {
+      toast.success(`"${artistName}"의 모든 활성 키워드 만료 처리 완료`);
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`일괄 만료 실패: ${(err as Error).message}`),
+  });
+
+  // Delete trigger permanently
+  const deleteMutation = useMutation({
+    mutationFn: async (triggerId: string) => {
+      const { error } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .delete()
+        .eq("id", triggerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("키워드 삭제 완료");
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`삭제 실패: ${(err as Error).message}`),
+  });
+
   // Group tracking by trigger
   const trackingByTrigger = new Map<string, any[]>();
   for (const t of trackingData ?? []) {
@@ -130,8 +181,15 @@ const AdminTrendIntel = () => {
     trackingByTrigger.get(key)!.push(t);
   }
 
-  const activeTriggers = (triggers ?? []).filter((t: any) => t.status === "active");
+  const activeTriggers = (triggers ?? []).filter((t: any) => {
+    if (t.status !== "active") return false;
+    if (artistFilter && !t.artist_name?.toLowerCase().includes(artistFilter.toLowerCase())) return false;
+    return true;
+  });
   const expiredTriggers = (triggers ?? []).filter((t: any) => t.status === "expired");
+
+  // Unique artist names in active triggers (for bulk expire)
+  const activeArtistNames = [...new Set(activeTriggers.map((t: any) => t.artist_name as string))].sort();
 
   const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullPipelineMutation.isPending;
 
@@ -224,16 +282,49 @@ const AdminTrendIntel = () => {
 
       {/* Active Triggers */}
       <div>
-        <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          활성 트렌드 키워드 ({activeTriggers.length})
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            활성 트렌드 키워드 ({activeTriggers.length})
+          </h2>
+        </div>
+
+        {/* Filter + Bulk Actions */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
+            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="아티스트명 필터..."
+              value={artistFilter}
+              onChange={(e) => setArtistFilter(e.target.value)}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+          {artistFilter && activeArtistNames.length > 0 && (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="gap-1 text-xs h-8"
+              onClick={() => {
+                if (confirm(`"${artistFilter}" 필터와 일치하는 ${activeTriggers.length}건의 키워드를 모두 만료 처리하시겠습니까?`)) {
+                  // Expire all matching artists
+                  const matchingNames = activeArtistNames.filter(n => n.toLowerCase().includes(artistFilter.toLowerCase()));
+                  matchingNames.forEach(name => expireByArtistMutation.mutate(name));
+                }
+              }}
+              disabled={expireByArtistMutation.isPending}
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              필터 결과 전체 만료 ({activeTriggers.length}건)
+            </Button>
+          )}
+        </div>
 
         {triggersLoading ? (
           <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
         ) : activeTriggers.length === 0 ? (
           <Card className="p-8 text-center text-sm text-muted-foreground">
-            감지된 활성 키워드 없음. 파이프라인을 실행하세요.
+            {artistFilter ? "필터와 일치하는 키워드 없음" : "감지된 활성 키워드 없음. 파이프라인을 실행하세요."}
           </Card>
         ) : (
           <div className="space-y-2">
@@ -298,12 +389,29 @@ const AdminTrendIntel = () => {
                         </div>
                       )}
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] bg-green-500/10 text-green-600 border-green-500/30 shrink-0"
-                    >
-                      활성
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); expireMutation.mutate(trigger.id); }}
+                        className="text-[10px] text-orange-500 hover:text-orange-600 font-medium flex items-center gap-0.5"
+                        title="만료 처리"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        만료
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`"${trigger.keyword}" 키워드를 영구 삭제하시겠습니까?`)) {
+                            deleteMutation.mutate(trigger.id);
+                          }
+                        }}
+                        className="text-[10px] text-destructive/60 hover:text-destructive font-medium flex items-center gap-0.5"
+                        title="영구 삭제"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 </Card>
               );
