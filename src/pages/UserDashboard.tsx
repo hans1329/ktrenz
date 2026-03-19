@@ -625,7 +625,7 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Crown className="w-4 h-4 text-yellow-400" />
-              Most Explored
+              {t("dash.mostExplored")}
             </h2>
             <Card className="p-4 bg-card border-border">
               {stats.topArtists.map((a, i) => (
