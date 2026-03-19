@@ -20,10 +20,19 @@ const T2AdminControls = () => {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [pipelineRun, setPipelineRun] = useState<PipelineRun | null>(null);
+  // Support multiple concurrent runs keyed by phase
+  const [activeRuns, setActiveRuns] = useState<Record<string, PipelineRun>>({});
 
   const startRun = (phase: PipelineRun["phase"]) => {
-    setPipelineRun({ startedAt: new Date(), phase });
+    setActiveRuns((prev) => ({ ...prev, [phase]: { startedAt: new Date(), phase } }));
+  };
+
+  const closeRun = (phase: string) => {
+    setActiveRuns((prev) => {
+      const next = { ...prev };
+      delete next[phase];
+      return next;
+    });
   };
 
   const detectMutation = useMutation({
@@ -101,7 +110,12 @@ const T2AdminControls = () => {
 
   if (loading || !isAdmin) return null;
 
-  const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullMutation.isPending || detectGlobalMutation.isPending;
+  // detect and detect_global can run in parallel; track and full block all
+  const isTrackOrFullRunning = trackMutation.isPending || fullMutation.isPending;
+  const isDetectRunning = detectMutation.isPending;
+  const isGlobalRunning = detectGlobalMutation.isPending;
+
+  const activeRunList = Object.values(activeRuns);
 
   // Mobile: collapse into dropdown menu
   if (isMobile) {
@@ -109,21 +123,21 @@ const T2AdminControls = () => {
       <div className="space-y-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={isAnyRunning}>
-              {isAnyRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MoreHorizontal className="w-3.5 h-3.5" />}
+            <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={isTrackOrFullRunning}>
+              {isTrackOrFullRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MoreHorizontal className="w-3.5 h-3.5" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[140px]">
-            <DropdownMenuItem onClick={() => fullMutation.mutate()} disabled={isAnyRunning}>
+            <DropdownMenuItem onClick={() => fullMutation.mutate()} disabled={isTrackOrFullRunning || isDetectRunning || isGlobalRunning}>
               <Zap className="w-3.5 h-3.5 mr-2" /> 전체 수집
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => detectMutation.mutate()} disabled={isAnyRunning}>
-              <Search className="w-3.5 h-3.5 mr-2" /> 감지
+            <DropdownMenuItem onClick={() => detectMutation.mutate()} disabled={isTrackOrFullRunning || isDetectRunning}>
+              <Search className="w-3.5 h-3.5 mr-2" /> 감지{isDetectRunning ? " ⏳" : ""}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => detectGlobalMutation.mutate()} disabled={isAnyRunning}>
-              <Globe className="w-3.5 h-3.5 mr-2" /> 글로벌
+            <DropdownMenuItem onClick={() => detectGlobalMutation.mutate()} disabled={isTrackOrFullRunning || isGlobalRunning}>
+              <Globe className="w-3.5 h-3.5 mr-2" /> 글로벌{isGlobalRunning ? " ⏳" : ""}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => trackMutation.mutate()} disabled={isAnyRunning}>
+            <DropdownMenuItem onClick={() => trackMutation.mutate()} disabled={isTrackOrFullRunning || isDetectRunning || isGlobalRunning}>
               <TrendingUp className="w-3.5 h-3.5 mr-2" /> 추적
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/admin/stars")}>
@@ -132,10 +146,13 @@ const T2AdminControls = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <T2PipelineProgress
-          run={pipelineRun}
-          onClose={() => setPipelineRun(null)}
-        />
+        {activeRunList.map((run) => (
+          <T2PipelineProgress
+            key={run.phase}
+            run={run}
+            onClose={() => closeRun(run.phase)}
+          />
+        ))}
       </div>
     );
   }
@@ -148,7 +165,7 @@ const T2AdminControls = () => {
           size="sm"
           variant="outline"
           onClick={() => fullMutation.mutate()}
-          disabled={isAnyRunning}
+          disabled={isTrackOrFullRunning || isDetectRunning || isGlobalRunning}
           className="gap-1 text-xs h-7 px-2"
         >
           {fullMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
@@ -158,7 +175,7 @@ const T2AdminControls = () => {
           size="sm"
           variant="outline"
           onClick={() => detectMutation.mutate()}
-          disabled={isAnyRunning}
+          disabled={isTrackOrFullRunning || isDetectRunning}
           className="gap-1 text-xs h-7 px-2"
         >
           {detectMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
@@ -168,7 +185,7 @@ const T2AdminControls = () => {
           size="sm"
           variant="outline"
           onClick={() => detectGlobalMutation.mutate()}
-          disabled={isAnyRunning}
+          disabled={isTrackOrFullRunning || isGlobalRunning}
           className="gap-1 text-xs h-7 px-2"
         >
           {detectGlobalMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
@@ -178,7 +195,7 @@ const T2AdminControls = () => {
           size="sm"
           variant="outline"
           onClick={() => trackMutation.mutate()}
-          disabled={isAnyRunning}
+          disabled={isTrackOrFullRunning || isDetectRunning || isGlobalRunning}
           className="gap-1 text-xs h-7 px-2"
         >
           {trackMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
@@ -195,10 +212,13 @@ const T2AdminControls = () => {
         </Button>
       </div>
 
-      <T2PipelineProgress
-        run={pipelineRun}
-        onClose={() => setPipelineRun(null)}
-      />
+      {activeRunList.map((run) => (
+        <T2PipelineProgress
+          key={run.phase}
+          run={run}
+          onClose={() => closeRun(run.phase)}
+        />
+      ))}
     </div>
   );
 };
