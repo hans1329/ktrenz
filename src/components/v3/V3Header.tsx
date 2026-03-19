@@ -139,9 +139,6 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
               </button>
-              <button className="p-1 active:opacity-60 transition-opacity" onClick={() => navigate("/notifications")}>
-                <Bell className="w-5 h-5 text-foreground/80" />
-              </button>
             </div>
           </>
         )}
