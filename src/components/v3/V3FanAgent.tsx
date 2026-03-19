@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, forwardRef, useMemo } 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock, Newspaper, CalendarDays, Flame, Star } from "lucide-react";
+import { Bot, Send, ArrowLeft, Sparkles, TrendingUp, Bell, Loader2, BellRing, Camera, Trash2, Heart, MessageCircle, Plus, Crown, Coins, X, ArrowLeftRight, Lock, Hash, CalendarDays, Flame, Star } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -68,7 +68,7 @@ const getQuickActions = (t: (key: string) => string): QuickAction[] => [
   { id: "hotKeywords", icon: Flame, label: t("agent.hotKeywords"), prompt: t("agent.prompt.hotKeywords"), mode: "trend", color: "text-orange-400" },
   { id: "myArtistTrend", icon: Star, label: t("agent.myArtistTrend"), prompt: t("agent.prompt.myArtistTrend"), mode: "trend", color: "text-yellow-400" },
   { id: "trendAnalysis", icon: Sparkles, label: t("agent.trendAnalysis"), prompt: t("agent.prompt.trendAnalysis"), mode: "trend", color: "text-purple-400" },
-  { id: "newsBriefing", icon: Newspaper, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
+  { id: "newsBriefing", icon: Hash, label: t("agent.newsBriefing"), prompt: t("agent.prompt.newsBriefing"), mode: "chat", color: "text-cyan-400" },
   { id: "alertSettings", icon: Bell, label: t("agent.alertSettings"), prompt: t("agent.prompt.alertSettings"), mode: "alert", color: "text-amber-400" },
 ];
 
