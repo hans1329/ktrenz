@@ -3668,6 +3668,100 @@ export type Database = {
           },
         ]
       }
+      ktrenz_trend_bets: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          market_id: string
+          payout: number | null
+          shares: number
+          side: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          market_id: string
+          payout?: number | null
+          shares: number
+          side: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          market_id?: string
+          payout?: number | null
+          shares?: number
+          side?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_bets_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_trend_markets: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          outcome: string | null
+          pool_no: number
+          pool_yes: number
+          settled_at: string | null
+          settlement_threshold: number
+          status: string
+          total_volume: number
+          trigger_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          outcome?: string | null
+          pool_no?: number
+          pool_yes?: number
+          settled_at?: string | null
+          settlement_threshold?: number
+          status?: string
+          total_volume?: number
+          trigger_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          outcome?: string | null
+          pool_no?: number
+          pool_yes?: number
+          settled_at?: string | null
+          settlement_threshold?: number
+          status?: string
+          total_volume?: number
+          trigger_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_markets_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: true
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_trend_tracking: {
         Row: {
           created_at: string
