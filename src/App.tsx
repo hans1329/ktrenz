@@ -105,6 +105,7 @@ const App = () => (
               <Route path="listing-requests" element={<AdminListingRequests />} />
               <Route path="stars" element={<AdminStars />} />
               <Route path="trend-intel" element={<AdminTrendIntel />} />
+              <Route path="user-analytics" element={<AdminUserAnalytics />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />
