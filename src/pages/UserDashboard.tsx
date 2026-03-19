@@ -189,33 +189,59 @@ const UserDashboard = () => {
   });
 
   // ── Stats ──
+  // Event type weights for scoring
+  const EVENT_WEIGHTS: Record<string, number> = {
+    external_link_click: 3,
+    agent_chat: 2,
+    artist_detail_view: 1,
+    artist_detail_section: 0.5,
+    treemap_click: 1,
+    list_click: 0.5,
+  };
+
   const stats = useMemo(() => {
-    if (!events?.length) return { totalEvents: 0, externalClicks: 0, detailViews: 0, agentChats: 0, topArtists: [] as { name: string; count: number; imageUrl?: string }[] };
+    if (!events?.length) return {
+      totalEvents: 0, externalClicks: 0, detailViews: 0, agentChats: 0,
+      topArtists: [] as { name: string; count: number; score: number; breakdown: { type: string; count: number }[] }[],
+    };
     
-    const artistCounts = new Map<string, number>();
+    // Per-artist: count + weighted score + type breakdown
+    const artistData = new Map<string, { count: number; score: number; types: Map<string, number> }>();
     let externalClicks = 0, detailViews = 0, agentChats = 0;
 
     for (const e of events) {
       const name = (e.event_data as any)?.artist_name;
-      if (name) artistCounts.set(name, (artistCounts.get(name) || 0) + 1);
+      const weight = EVENT_WEIGHTS[e.event_type] ?? 0.5;
+      if (name) {
+        const d = artistData.get(name) || { count: 0, score: 0, types: new Map() };
+        d.count++;
+        d.score += weight;
+        d.types.set(e.event_type, (d.types.get(e.event_type) || 0) + 1);
+        artistData.set(name, d);
+      }
       if (e.event_type === "external_link_click") externalClicks++;
       if (e.event_type === "artist_detail_view" || e.event_type === "artist_detail_section") detailViews++;
       if (e.event_type === "agent_chat") agentChats++;
     }
 
-    const topArtists = Array.from(artistCounts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
+    const topArtists = Array.from(artistData.entries())
+      .map(([name, d]) => ({
+        name, count: d.count, score: d.score,
+        breakdown: Array.from(d.types.entries())
+          .map(([type, count]) => ({ type, count }))
+          .sort((a, b) => b.count - a.count),
+      }))
+      .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
     return { totalEvents: events.length, externalClicks, detailViews, agentChats, topArtists };
   }, [events]);
 
-  // ── Contribution for top artist ──
+  // ── Resolve top artist's wiki entry for image ──
   const topArtistName = stats.topArtists[0]?.name || null;
-  const { data: topArtistContrib } = useQuery({
-    queryKey: ["dashboard-top-contrib", topArtistName, user?.id],
-    enabled: !!topArtistName && !!user?.id,
+  const { data: topArtistEntry } = useQuery({
+    queryKey: ["dashboard-top-entry", topArtistName],
+    enabled: !!topArtistName,
     queryFn: async () => {
       const { data: entry } = await supabase
         .from("wiki_entries")
@@ -223,38 +249,9 @@ const UserDashboard = () => {
         .ilike("title", topArtistName!)
         .limit(1)
         .maybeSingle();
-      if (!entry) return null;
-
-      const { data: contribs } = await supabase
-        .from("ktrenz_fan_contributions" as any)
-        .select("platform, click_count, weighted_score")
-        .eq("wiki_entry_id", entry.id)
-        .eq("user_id", user!.id);
-
-      const totalScore = (contribs || []).reduce((s: number, c: any) => s + (Number(c.weighted_score) || 0), 0);
-      const totalClicks = (contribs || []).reduce((s: number, c: any) => s + (Number(c.click_count) || 0), 0);
-
-      // Rank
-      const { data: allFanScores } = await supabase
-        .from("ktrenz_fan_contributions" as any)
-        .select("user_id, weighted_score")
-        .eq("wiki_entry_id", entry.id);
-      const fanTotals = new Map<string, number>();
-      for (const row of (allFanScores || []) as any[]) {
-        fanTotals.set(row.user_id, (fanTotals.get(row.user_id) || 0) + Number(row.weighted_score));
-      }
-      const sorted = Array.from(fanTotals.entries()).sort((a, b) => b[1] - a[1]);
-      const myRank = sorted.findIndex(([uid]) => uid === user!.id) + 1;
-
-      const platformBreakdown = (contribs || []).map((c: any) => ({
-        platform: c.platform,
-        clicks: Number(c.click_count) || 0,
-        score: Number(c.weighted_score) || 0,
-      })).sort((a: any, b: any) => b.score - a.score);
-
-      return { entry, totalScore, totalClicks, myRank, totalFans: sorted.length, platformBreakdown };
+      return entry;
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   // ── My Trend Predictions (Bets) ──
