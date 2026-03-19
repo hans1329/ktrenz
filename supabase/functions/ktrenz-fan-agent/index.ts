@@ -265,10 +265,42 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_trend_keywords",
+      description: "Get currently detected trend keywords for a specific artist. Returns brand/product keywords extracted from news and YouTube that are associated with the artist, including influence index, keyword category, source context, and tracking data. Call this when the user asks about 트렌드 키워드, 협업 브랜드, 광고, endorsement, trending topics, what brands or products are associated with an artist.",
+      parameters: {
+        type: "object",
+        properties: {
+          artist_name: { type: "string", description: "Artist name to get trend keywords for" },
+          limit: { type: "number", description: "Number of keywords to return (default 10, max 20)" },
+        },
+        required: ["artist_name"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_trending_now",
+      description: "Get the hottest trend keywords across all artists right now. Returns top keywords sorted by influence index with artist info, keyword categories, and search volume data. Call this when the user asks about 지금 뜨는 트렌드, 핫 키워드, trending now, what's hot, or overall trend landscape.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Number of trending keywords to return (default 10, max 30)" },
+          category: { type: "string", description: "Optional filter by keyword category (e.g., 'brand', 'product', 'media', 'event')" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Intent Extraction (fire-and-forget after response) ──────────
-const INTENT_CATEGORIES = ["news", "schedule", "streaming", "music_performance", "sns", "comparison", "fan_activity", "general"] as const;
+const INTENT_CATEGORIES = ["news", "schedule", "streaming", "music_performance", "sns", "comparison", "fan_activity", "trend", "general"] as const;
 
 async function extractAndStoreIntent(
   adminClient: any,
@@ -1764,6 +1796,226 @@ JSON 구조:
       });
     }
 
+    case "get_trend_keywords": {
+      const artistName = args.artist_name;
+      const limit = Math.min(args.limit || 10, 20);
+
+      // Resolve wiki_entry_id
+      let wikiId: string | null = null;
+      let resolvedName = artistName;
+
+      const { data: wikiMatch } = await adminClient
+        .from("wiki_entries")
+        .select("id, title")
+        .ilike("title", artistName)
+        .limit(1);
+
+      if (wikiMatch && wikiMatch.length > 0) {
+        wikiId = wikiMatch[0].id;
+        resolvedName = wikiMatch[0].title;
+      } else {
+        const { data: koMatch } = await adminClient
+          .from("v3_artist_tiers")
+          .select("wiki_entry_id, display_name")
+          .ilike("name_ko", artistName)
+          .limit(1);
+        if (koMatch && koMatch.length > 0) {
+          wikiId = koMatch[0].wiki_entry_id;
+          resolvedName = koMatch[0].display_name;
+        } else {
+          const { data: partialMatch } = await adminClient
+            .from("wiki_entries")
+            .select("id, title")
+            .ilike("title", `%${artistName}%`)
+            .limit(1);
+          if (partialMatch && partialMatch.length > 0) {
+            wikiId = partialMatch[0].id;
+            resolvedName = partialMatch[0].title;
+          }
+        }
+      }
+
+      if (!wikiId) {
+        return JSON.stringify({ error: "artist_not_found", message: `"${artistName}" 아티스트를 찾을 수 없어요.` });
+      }
+
+      // Query active trend triggers for this artist
+      const { data: triggers } = await adminClient
+        .from("ktrenz_trend_triggers")
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score, status")
+        .eq("wiki_entry_id", wikiId)
+        .eq("status", "active")
+        .order("influence_index", { ascending: false, nullsFirst: false })
+        .limit(limit);
+
+      if (!triggers || triggers.length === 0) {
+        // Also try by star_id (some triggers use star_id)
+        const { data: starTriggers } = await adminClient
+          .from("ktrenz_trend_triggers")
+          .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score, status, artist_name")
+          .eq("status", "active")
+          .ilike("artist_name", `%${resolvedName}%`)
+          .order("influence_index", { ascending: false, nullsFirst: false })
+          .limit(limit);
+
+        if (!starTriggers || starTriggers.length === 0) {
+          return JSON.stringify({
+            artist: resolvedName,
+            keywords: [],
+            message: `${resolvedName}에게 현재 감지된 트렌드 키워드가 없어요.`,
+          });
+        }
+
+        // Get tracking data for these triggers
+        const triggerIds = starTriggers.map((t: any) => t.id);
+        const { data: trackingData } = await adminClient
+          .from("ktrenz_trend_tracking")
+          .select("trigger_id, interest_score, search_volume, delta_pct, tracked_at")
+          .in("trigger_id", triggerIds)
+          .order("tracked_at", { ascending: false });
+
+        const trackingMap = new Map<string, any>();
+        for (const t of trackingData ?? []) {
+          if (!trackingMap.has(t.trigger_id)) trackingMap.set(t.trigger_id, t);
+        }
+
+        const keywords = starTriggers.map((t: any) => {
+          const tracking = trackingMap.get(t.id);
+          return {
+            keyword: t.keyword,
+            keyword_ko: t.keyword_ko,
+            category: t.keyword_category,
+            context: t.context_ko || t.context,
+            influence_index: t.influence_index,
+            confidence: t.confidence,
+            source: t.trigger_source,
+            source_title: t.source_title,
+            source_url: t.source_url,
+            detected_at: t.detected_at,
+            search_volume: tracking?.search_volume ?? null,
+            interest_score: tracking?.interest_score ?? null,
+            delta_pct: tracking?.delta_pct ?? null,
+          };
+        });
+
+        return JSON.stringify({
+          artist: resolvedName,
+          keywords,
+          total: keywords.length,
+          message: `${resolvedName}의 활성 트렌드 키워드 ${keywords.length}건을 찾았습니다.`,
+        });
+      }
+
+      // Get tracking data for these triggers
+      const triggerIds = triggers.map((t: any) => t.id);
+      const { data: trackingData } = await adminClient
+        .from("ktrenz_trend_tracking")
+        .select("trigger_id, interest_score, search_volume, delta_pct, tracked_at")
+        .in("trigger_id", triggerIds)
+        .order("tracked_at", { ascending: false });
+
+      const trackingMap = new Map<string, any>();
+      for (const t of trackingData ?? []) {
+        if (!trackingMap.has(t.trigger_id)) trackingMap.set(t.trigger_id, t);
+      }
+
+      const keywords = triggers.map((t: any) => {
+        const tracking = trackingMap.get(t.id);
+        return {
+          keyword: t.keyword,
+          keyword_ko: t.keyword_ko,
+          category: t.keyword_category,
+          context: t.context_ko || t.context,
+          influence_index: t.influence_index,
+          confidence: t.confidence,
+          source: t.trigger_source,
+          source_title: t.source_title,
+          source_url: t.source_url,
+          detected_at: t.detected_at,
+          search_volume: tracking?.search_volume ?? null,
+          interest_score: tracking?.interest_score ?? null,
+          delta_pct: tracking?.delta_pct ?? null,
+        };
+      });
+
+      return JSON.stringify({
+        artist: resolvedName,
+        keywords,
+        total: keywords.length,
+        message: `${resolvedName}의 활성 트렌드 키워드 ${keywords.length}건을 찾았습니다.`,
+      });
+    }
+
+    case "get_trending_now": {
+      const limit = Math.min(args.limit || 10, 30);
+      const category = args.category || null;
+
+      let query = adminClient
+        .from("ktrenz_trend_triggers")
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
+        .eq("status", "active")
+        .order("influence_index", { ascending: false, nullsFirst: false })
+        .limit(limit);
+
+      if (category) {
+        query = query.eq("keyword_category", category);
+      }
+
+      const { data: triggers } = await query;
+
+      if (!triggers || triggers.length === 0) {
+        return JSON.stringify({
+          keywords: [],
+          message: "현재 활성화된 트렌드 키워드가 없어요.",
+        });
+      }
+
+      // Get tracking data
+      const triggerIds = triggers.map((t: any) => t.id);
+      const { data: trackingData } = await adminClient
+        .from("ktrenz_trend_tracking")
+        .select("trigger_id, interest_score, search_volume, delta_pct, tracked_at")
+        .in("trigger_id", triggerIds)
+        .order("tracked_at", { ascending: false });
+
+      const trackingMap = new Map<string, any>();
+      for (const t of trackingData ?? []) {
+        if (!trackingMap.has(t.trigger_id)) trackingMap.set(t.trigger_id, t);
+      }
+
+      const keywords = triggers.map((t: any) => {
+        const tracking = trackingMap.get(t.id);
+        return {
+          keyword: t.keyword,
+          keyword_ko: t.keyword_ko,
+          category: t.keyword_category,
+          artist: t.artist_name,
+          context: t.context_ko || t.context,
+          influence_index: t.influence_index,
+          confidence: t.confidence,
+          source: t.trigger_source,
+          source_title: t.source_title,
+          detected_at: t.detected_at,
+          search_volume: tracking?.search_volume ?? null,
+          interest_score: tracking?.interest_score ?? null,
+          delta_pct: tracking?.delta_pct ?? null,
+        };
+      });
+
+      // Group by category for summary
+      const categoryCounts: Record<string, number> = {};
+      for (const k of keywords) {
+        categoryCounts[k.category] = (categoryCounts[k.category] || 0) + 1;
+      }
+
+      return JSON.stringify({
+        keywords,
+        total: keywords.length,
+        category_breakdown: categoryCounts,
+        message: `현재 활성 트렌드 키워드 ${keywords.length}건을 찾았습니다.`,
+      });
+    }
+
     default:
       return JSON.stringify({ error: "unknown_tool" });
   }
@@ -2457,6 +2709,8 @@ Deno.serve(async (req) => {
       manage_watched_artist: { en: "Updating your artist…", ko: "아티스트를 설정하고 있어요…", ja: "アーティストを設定中…", zh: "正在设置艺人…" },
       get_streaming_guide: { en: "Building streaming guide…", ko: "스트리밍 가이드를 만들고 있어요…", ja: "ストリーミングガイドを作成中…", zh: "正在创建流媒体指南…" },
       get_artist_news: { en: "Fetching latest news…", ko: "최신 뉴스를 가져오고 있어요…", ja: "最新ニュースを取得中…", zh: "正在获取最新新闻…" },
+      get_trend_keywords: { en: "Scanning trend keywords…", ko: "트렌드 키워드를 분석하고 있어요…", ja: "トレンドキーワードを分析中…", zh: "正在分析趋势关键词…" },
+      get_trending_now: { en: "Checking what's trending…", ko: "지금 뜨는 트렌드를 확인하고 있어요…", ja: "今のトレンドを確認中…", zh: "正在查看当前趋势…" },
     };
     const thinkingLabels: Record<string, string> = { en: "Analyzing your question…", ko: "질문을 분석하고 있어요…", ja: "質問を分析中…", zh: "正在分析您的问题…" };
     const writingLabels: Record<string, string> = { en: "Writing response…", ko: "답변을 작성하고 있어요…", ja: "回答を作成中…", zh: "正在撰写回答…" };
@@ -3028,8 +3282,10 @@ Deno.serve(async (req) => {
                   get_streaming_guide: ["다음 단계 보기", "총공 타임테이블", "플레이리스트 추천"],
                   get_fan_activity: ["다음 미션 보기", "스밍 가이드 보기", "최신 뉴스 확인"],
                   compare_artists: ["스밍 전략 비교", "개별 상세 분석", "뉴스 확인하기"],
-                  search_web: ["관련 뉴스 더 보기", "순위 확인하기", "스밍 가이드 보기"],
-                };
+                   search_web: ["관련 뉴스 더 보기", "순위 확인하기", "스밍 가이드 보기"],
+                   get_trend_keywords: ["트렌드 키워드 상세 보기", "아티스트 분석 보기", "핫 트렌드 확인"],
+                   get_trending_now: ["아티스트별 키워드 보기", "순위 확인하기", "뉴스 확인하기"],
+                 };
                 const lastTool = [...usedTools].reverse().find((t: string) => fallbackMap[t]);
                 collectedMeta.followUps = lastTool
                   ? fallbackMap[lastTool]
