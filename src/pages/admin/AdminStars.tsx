@@ -105,6 +105,7 @@ const AdminStars = () => {
     display_name: "",
     name_ko: "",
     star_type: "group" as string,
+    star_category: "kpop" as string,
     wiki_entry_id: "",
     group_star_id: "",
     namuwiki_url: "",
