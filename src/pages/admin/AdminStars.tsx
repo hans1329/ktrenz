@@ -60,6 +60,32 @@ const STAR_TYPE_OPTIONS = [
   { value: "solo", label: "솔로", icon: Star },
 ];
 
+const STAR_CATEGORY_OPTIONS = [
+  { value: "kpop", label: "K-Pop" },
+  { value: "actor", label: "배우" },
+  { value: "singer", label: "가수 (비아이돌)" },
+  { value: "baseball", label: "야구선수" },
+  { value: "athlete", label: "운동선수" },
+  { value: "chef", label: "요리사" },
+  { value: "politician", label: "정치인" },
+  { value: "influencer", label: "인플루언서" },
+  { value: "comedian", label: "개그맨/MC" },
+  { value: "other", label: "기타" },
+];
+
+const categoryColor: Record<string, string> = {
+  kpop: "bg-pink-500/10 text-pink-500",
+  actor: "bg-purple-500/10 text-purple-500",
+  singer: "bg-indigo-500/10 text-indigo-500",
+  baseball: "bg-green-500/10 text-green-500",
+  athlete: "bg-emerald-500/10 text-emerald-500",
+  chef: "bg-orange-500/10 text-orange-500",
+  politician: "bg-red-500/10 text-red-500",
+  influencer: "bg-cyan-500/10 text-cyan-500",
+  comedian: "bg-yellow-500/10 text-yellow-500",
+  other: "bg-muted text-muted-foreground",
+};
+
 const typeColor: Record<string, string> = {
   group: "bg-primary/10 text-primary",
   member: "bg-blue-500/10 text-blue-500",
