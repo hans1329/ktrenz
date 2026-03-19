@@ -550,7 +550,7 @@ const T2KeywordDetail = () => {
                 </div>
               </div>
               <div className="rounded-xl bg-muted/30 border border-border p-3">
-                <div className="text-[10px] text-muted-foreground mb-1">Time to Peak</div>
+                <div className="text-[10px] text-muted-foreground mb-1">{t2l("timeToPeak", language)}</div>
                 <div className="text-lg font-bold text-foreground flex items-center gap-1">
                   {trigger.peak_at ? (
                     <>
