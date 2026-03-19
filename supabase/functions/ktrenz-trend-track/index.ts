@@ -290,13 +290,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[trend-track] Tracking ${triggers.length} triggers (offset=${batchOffset}, total=${totalTriggers}) across ${regions.length} regions, YouTube=${!!ytApiKey}`);
+    // ─── 중복 제거: artist_name + keyword 조합 기준으로 첫 번째만 SerpAPI 호출 ───
+    const seen = new Map<string, string>(); // compositeKey → triggerId
+    const dedupTriggers: any[] = [];
+    const dupMap = new Map<string, string[]>(); // primaryId → [dupId, dupId, ...]
+
+    for (const t of triggers) {
+      const key = `${t.artist_name}|${t.keyword}`;
+      if (!seen.has(key)) {
+        seen.set(key, t.id);
+        dedupTriggers.push(t);
+        dupMap.set(t.id, []);
+      } else {
+        const primaryId = seen.get(key)!;
+        dupMap.get(primaryId)!.push(t.id);
+      }
+    }
+
+    const skippedDups = triggers.length - dedupTriggers.length;
+    console.log(`[trend-track] Tracking ${dedupTriggers.length} unique triggers (${skippedDups} duplicates skipped, offset=${batchOffset}, total=${totalTriggers}) across ${regions.length} regions, YouTube=${!!ytApiKey}`);
 
     let trackedCount = 0;
     let throttled = false;
     const results: any[] = [];
 
-    for (const trigger of triggers) {
+    for (const trigger of dedupTriggers) {
       if (throttled) break;
 
       for (const region of regions) {
@@ -356,6 +374,26 @@ Deno.serve(async (req) => {
               delta_pct: Math.round(deltaPct * 100) / 100,
               raw_response: rawResponse,
             });
+
+            // 중복 트리거에도 동일 tracking 데이터 복사
+            const dupIds = dupMap.get(trigger.id) || [];
+            for (const dupId of dupIds) {
+              const dupTrigger = triggers.find((t: any) => t.id === dupId);
+              if (dupTrigger) {
+                await sb.from("ktrenz_trend_tracking").insert({
+                  trigger_id: dupId,
+                  wiki_entry_id: dupTrigger.wiki_entry_id,
+                  keyword: dupTrigger.keyword,
+                  interest_score: result.interest_score,
+                  region,
+                  delta_pct: Math.round(deltaPct * 100) / 100,
+                  raw_response: rawResponse,
+                });
+                if (region === "worldwide") {
+                  await updateCausalMetrics(sb, dupId, result.interest_score);
+                }
+              }
+            }
 
             // 인과관계 지표 업데이트 (worldwide 기준)
             if (region === "worldwide") {
@@ -476,6 +514,8 @@ Deno.serve(async (req) => {
         batchOffset,
         totalTriggers,
         triggersProcessed: triggers.length,
+        uniqueTracked: dedupTriggers.length,
+        duplicatesSkipped: skippedDups,
         tracked: trackedCount,
         throttled,
         chained,
