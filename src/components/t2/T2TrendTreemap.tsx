@@ -536,7 +536,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       ) : (
         <>
           <div
-            className="relative w-full rounded-2xl overflow-hidden border border-border"
+            className="relative w-full rounded-none md:rounded-2xl overflow-hidden border-x-0 border-y border-border md:border"
             style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}
           >
             <div className="absolute inset-0">
