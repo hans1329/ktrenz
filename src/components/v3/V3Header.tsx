@@ -7,7 +7,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { useLanguage } from "@/contexts/LanguageContext";
-import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 
 interface SearchResult {
   id: string;
