@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
