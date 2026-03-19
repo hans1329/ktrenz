@@ -635,7 +635,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             variant="secondary"
             className="w-full gap-2"
             onClick={() => {
-              onClose();
               navigate(`/t2/${tile.id}`);
             }}
           >
