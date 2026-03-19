@@ -17,7 +17,7 @@ const VIEW_TABS: { key: ViewMode; icon: typeof LayoutGrid }[] = [
   { key: "artist", icon: Users },
 ];
 
-const SWIPE_THRESHOLD = 50;
+const SWIPE_THRESHOLD = 40;
 
 const T2TrendMap = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("treemap");
