@@ -313,28 +313,34 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const COLLECTION_PAUSED = true;
+
   try {
     const body = await req.json().catch(() => ({}));
     const { starId, memberName, groupName, batchSize = 3, batchOffset = 0 } = body;
+
+    if (COLLECTION_PAUSED) {
+      console.warn(`[detect-youtube] Collection paused. Ignoring request offset=${batchOffset}, size=${batchSize}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          paused: true,
+          starId: starId ?? null,
+          memberName: memberName ?? null,
+          groupName: groupName ?? null,
+          batchOffset,
+          batchSize,
+          message: "T2 YouTube trend detection is temporarily paused",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
     const sb = createClient(supabaseUrl, supabaseKey);
-
-    if (!openaiKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: "OPENAI_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!ytApiKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: "YOUTUBE_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // 단일 멤버 모드 (수동 테스트)
     if (starId && memberName) {

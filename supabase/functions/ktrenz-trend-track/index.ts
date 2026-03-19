@@ -225,6 +225,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const COLLECTION_PAUSED = true;
+
   try {
     const body = await req.json().catch(() => ({}));
     const {
@@ -234,18 +236,27 @@ Deno.serve(async (req) => {
       regions = ["worldwide"],
     } = body;
 
+    if (COLLECTION_PAUSED) {
+      console.warn(`[trend-track] Collection paused. Ignoring request offset=${batchOffset}, size=${batchSize}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          paused: true,
+          triggerId: triggerId ?? null,
+          batchOffset,
+          batchSize,
+          regions,
+          message: "T2 trend tracking is temporarily paused",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const serpApiKey = Deno.env.get("SERPAPI_API_KEY");
     const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
     const sb = createClient(supabaseUrl, supabaseKey);
-
-    if (!serpApiKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: "SERPAPI_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     let triggers: any[];
     let totalTriggers = 0;

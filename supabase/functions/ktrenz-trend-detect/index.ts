@@ -243,9 +243,29 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const COLLECTION_PAUSED = true;
+
   try {
     const body = await req.json().catch(() => ({}));
     const { starId, memberName, groupName, wikiEntryId, artistName, batchSize = 5, batchOffset = 0 } = body;
+
+    if (COLLECTION_PAUSED) {
+      console.warn(`[trend-detect] Collection paused. Ignoring request offset=${batchOffset}, size=${batchSize}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          paused: true,
+          starId: starId ?? null,
+          memberName: memberName ?? artistName ?? null,
+          groupName: groupName ?? null,
+          wikiEntryId: wikiEntryId ?? null,
+          batchOffset,
+          batchSize,
+          message: "T2 trend detection is temporarily paused",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -253,19 +273,6 @@ Deno.serve(async (req) => {
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID");
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
     const sb = createClient(supabaseUrl, supabaseKey);
-
-    if (!openaiKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: "OPENAI_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!naverClientId || !naverClientSecret) {
-      return new Response(
-        JSON.stringify({ success: false, error: "NAVER_CLIENT_ID/SECRET not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // 단일 멤버 모드 (수동 테스트용)
     if (starId && memberName) {
