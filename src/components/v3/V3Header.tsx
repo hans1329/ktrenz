@@ -145,7 +145,6 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
         )}
       </div>
     </header>
-    <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
 };
