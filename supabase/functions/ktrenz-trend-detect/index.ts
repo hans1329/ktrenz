@@ -330,6 +330,7 @@ interface MemberInfo {
   display_name: string;
   name_ko: string | null;
   group_name: string | null;
+  group_name_ko: string | null;
   group_wiki_entry_id: string | null;
 }
 
