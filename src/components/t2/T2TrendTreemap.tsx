@@ -316,15 +316,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
 
   const filteredItems = useMemo(() => {
     if (!dedupedTriggers.length) return [];
-    const items = selectedCategory === "all"
-      ? dedupedTriggers
-      : dedupedTriggers.filter(t => t.category === selectedCategory);
+    let items: TrendTile[];
+    if (selectedCategory === "my") {
+      items = dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
+    } else if (selectedCategory === "all") {
+      items = dedupedTriggers;
+    } else {
+      items = dedupedTriggers.filter(t => t.category === selectedCategory);
+    }
     return items.sort((a, b) => {
       if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
       if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
     });
-  }, [dedupedTriggers, selectedCategory]);
+  }, [dedupedTriggers, selectedCategory, watchedSet]);
 
   const containerWidth = isMobile ? 360 : 1000;
   const containerHeight = isMobile ? 2000 : 1200;
