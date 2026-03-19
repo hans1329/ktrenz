@@ -586,7 +586,7 @@ const UserDashboard = () => {
                     <p className="text-2xl font-black bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
                       {Math.round(stats.topArtists[0].score)}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">Engagement Score</p>
+                    <p className="text-[9px] text-muted-foreground">{t("dash.engagementScore")}</p>
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div className="text-center">
