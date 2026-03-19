@@ -375,6 +375,26 @@ Deno.serve(async (req) => {
               raw_response: rawResponse,
             });
 
+            // 중복 트리거에도 동일 tracking 데이터 복사
+            const dupIds = dupMap.get(trigger.id) || [];
+            for (const dupId of dupIds) {
+              const dupTrigger = triggers.find((t: any) => t.id === dupId);
+              if (dupTrigger) {
+                await sb.from("ktrenz_trend_tracking").insert({
+                  trigger_id: dupId,
+                  wiki_entry_id: dupTrigger.wiki_entry_id,
+                  keyword: dupTrigger.keyword,
+                  interest_score: result.interest_score,
+                  region,
+                  delta_pct: Math.round(deltaPct * 100) / 100,
+                  raw_response: rawResponse,
+                });
+                if (region === "worldwide") {
+                  await updateCausalMetrics(sb, dupId, result.interest_score);
+                }
+              }
+            }
+
             // 인과관계 지표 업데이트 (worldwide 기준)
             if (region === "worldwide") {
               await updateCausalMetrics(sb, trigger.id, result.interest_score);
