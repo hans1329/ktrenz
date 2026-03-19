@@ -341,10 +341,14 @@ async function detectForMember(
   member: MemberInfo,
 ): Promise<{ keywordsFound: number; articlesFound: number; keywords: ExtractedKeyword[] }> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
+  // 그룹 멤버인 경우 "그룹명 멤버명" 형태로 검색하여 동명이인 방지
   const searchName = member.name_ko || member.display_name;
+  const searchQuery = member.group_name
+    ? `"${searchName}" "${member.group_name}"`
+    : `"${searchName}"`;
 
   // 네이버 뉴스 실시간 검색
-  const newsItems = await searchNaverNews(naverClientId, naverClientSecret, `"${searchName}"`, 50);
+  const newsItems = await searchNaverNews(naverClientId, naverClientSecret, searchQuery, 50);
 
   // 24시간 이내 + 일본어 기사 필터링
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
