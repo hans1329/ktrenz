@@ -7,7 +7,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
