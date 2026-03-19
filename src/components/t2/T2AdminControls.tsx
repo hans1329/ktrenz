@@ -132,10 +132,10 @@ const T2AdminControls = () => {
               <Zap className="w-3.5 h-3.5 mr-2" /> 전체 수집
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => detectMutation.mutate()} disabled={isTrackOrFullRunning || isDetectRunning}>
-              <Search className="w-3.5 h-3.5 mr-2" /> 감지{isDetectRunning ? " ⏳" : ""}
+              <Search className="w-3.5 h-3.5 mr-2" /> 감지-국내{isDetectRunning ? " ⏳" : ""}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => detectGlobalMutation.mutate()} disabled={isTrackOrFullRunning || isGlobalRunning}>
-              <Globe className="w-3.5 h-3.5 mr-2" /> 글로벌{isGlobalRunning ? " ⏳" : ""}
+              <Globe className="w-3.5 h-3.5 mr-2" /> 감지-해외{isGlobalRunning ? " ⏳" : ""}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => trackMutation.mutate()} disabled={isTrackOrFullRunning || isDetectRunning || isGlobalRunning}>
               <TrendingUp className="w-3.5 h-3.5 mr-2" /> 추적
