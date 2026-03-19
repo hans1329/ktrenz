@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
-import ktrenzIcon from "@/assets/k-trenz-icon.png";
+import ktrenzMobileLogo from "@/assets/logo-ko-mobile.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -127,9 +127,9 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
           <>
             <Link to="/" className="flex items-center shrink-0">
               <img
-                src={isMobile ? ktrenzIcon : ktrenzLogo}
+                src={isMobile ? ktrenzMobileLogo : ktrenzLogo}
                 alt="K-TRENZ"
-                className={isMobile ? "h-8 w-8 rounded-full" : "h-6 w-auto"}
+                className={isMobile ? "h-7 w-auto" : "h-6 w-auto"}
                 fetchPriority="high"
                 decoding="async"
               />
