@@ -557,7 +557,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
                       backgroundImage: (() => {
                         const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
                         const bgImg = safeSourceImg || rect.item.artistImageUrl;
-                        const quotedBgImg = bgImg ? `"${bgImg.replaceAll('"', '\\"')}"` : null;
+                        const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
                         return quotedBgImg
                           ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${quotedBgImg})`
                           : undefined;
