@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     if (starId && memberName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_wiki_entry_id: wikiEntryId || null }
+        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null }
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
     if (wikiEntryId && artistName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: null, display_name: artistName, name_ko: null, group_name: null, group_wiki_entry_id: wikiEntryId }
+        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId }
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -255,14 +255,14 @@ Deno.serve(async (req) => {
 
     // group_star_id로 그룹 정보 일괄 조회
     const groupIds = [...new Set(allMembers.map((m: any) => m.group_star_id).filter(Boolean))];
-    let groupMap: Record<string, { display_name: string; wiki_entry_id: string | null }> = {};
+    let groupMap: Record<string, { display_name: string; name_ko: string | null; wiki_entry_id: string | null }> = {};
     if (groupIds.length > 0) {
       const { data: groups } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name, wiki_entry_id")
+        .select("id, display_name, name_ko, wiki_entry_id")
         .in("id", groupIds);
       for (const g of (groups || [])) {
-        groupMap[g.id] = { display_name: g.display_name, wiki_entry_id: g.wiki_entry_id };
+        groupMap[g.id] = { display_name: g.display_name, name_ko: g.name_ko, wiki_entry_id: g.wiki_entry_id };
       }
     }
 
@@ -290,6 +290,7 @@ Deno.serve(async (req) => {
             display_name: member.display_name,
             name_ko: member.name_ko,
             group_name: group?.display_name || null,
+            group_name_ko: group?.name_ko || null,
             group_wiki_entry_id: group?.wiki_entry_id || null,
           }
         );
@@ -330,6 +331,7 @@ interface MemberInfo {
   display_name: string;
   name_ko: string | null;
   group_name: string | null;
+  group_name_ko: string | null;
   group_wiki_entry_id: string | null;
 }
 
@@ -341,10 +343,15 @@ async function detectForMember(
   member: MemberInfo,
 ): Promise<{ keywordsFound: number; articlesFound: number; keywords: ExtractedKeyword[] }> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
+  // 그룹 멤버인 경우 "그룹명 멤버명" 형태로 검색하여 동명이인 방지 (예: "스트레이 키즈 필릭스")
   const searchName = member.name_ko || member.display_name;
+  const groupLabel = member.group_name_ko || member.group_name;
+  const searchQuery = groupLabel
+    ? `"${searchName}" "${groupLabel}"`
+    : `"${searchName}"`;
 
   // 네이버 뉴스 실시간 검색
-  const newsItems = await searchNaverNews(naverClientId, naverClientSecret, `"${searchName}"`, 50);
+  const newsItems = await searchNaverNews(naverClientId, naverClientSecret, searchQuery, 50);
 
   // 24시간 이내 + 일본어 기사 필터링
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;

@@ -28,9 +28,11 @@ interface ExtractedKeyword {
 // Perplexity는 웹 검색 엔진이므로 글로벌 감지에 적합 (국내 detect의 환각 문제와 다른 용도)
 async function detectGlobalTrends(
   perplexityKey: string,
-  artistName: string
+  artistName: string,
+  groupName: string | null = null
 ): Promise<ExtractedKeyword[]> {
-  const prompt = `Search for VERY RECENT global news and social media posts (last 24 hours) about K-pop artist "${artistName}" and identify any commercial entities they are currently associated with.
+  const artistLabel = groupName ? `"${artistName}" (member of K-pop group ${groupName})` : `K-pop artist "${artistName}"`;
+  const prompt = `Search for VERY RECENT global news and social media posts (last 24 hours) about ${artistLabel} and identify any commercial entities they are currently associated with.
 
 Look for:
 - Brand collaborations, endorsements, ambassador roles
@@ -141,19 +143,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ktrenz_stars에서 active 아티스트 가져오기 (v3_artist_tiers 제거)
+    // ktrenz_stars에서 active 아티스트 가져오기 (그룹 컨텍스트 포함)
     const { data: stars } = await sb
       .from("ktrenz_stars")
-      .select("id, wiki_entry_id, display_name")
+      .select("id, wiki_entry_id, display_name, star_type, group_star_id")
       .eq("is_active", true)
       .not("wiki_entry_id", "is", null)
       .order("display_name", { ascending: true });
 
+    // 그룹 정보 일괄 조회 (멤버의 group_star_id → 그룹 display_name)
+    const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
+    const groupNameMap = new Map<string, string>();
+    if (groupStarIds.length > 0) {
+      const { data: groups } = await sb
+        .from("ktrenz_stars")
+        .select("id, display_name")
+        .in("id", groupStarIds);
+      for (const g of (groups || [])) {
+        groupNameMap.set(g.id, g.display_name);
+      }
+    }
+
     // wiki_entry_id 기준 중복 제거
-    const entryMap = new Map<string, { starId: string; displayName: string }>();
+    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null }>();
     for (const s of (stars || [])) {
       if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
-        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name });
+        const gName = s.group_star_id ? groupNameMap.get(s.group_star_id) || null : null;
+        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName });
       }
     }
 
@@ -167,7 +183,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[detect-global] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Perplexity only, no Firecrawl)`);
+    console.log(`[detect-global] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Perplexity only)`);
 
     let successCount = 0;
     let totalKeywords = 0;
@@ -177,10 +193,11 @@ Deno.serve(async (req) => {
         const entry = entryMap.get(entryId);
         const name = entry?.displayName || "Unknown";
         const sid = entry?.starId || null;
+        const gName = entry?.groupName || null;
 
-        // Perplexity 글로벌 트렌드 감지 (웹 검색 용도 — 의도된 사용)
-        const allKeywords = await detectGlobalTrends(perplexityKey, name);
-        console.log(`[detect-global] ${name}: Perplexity found ${allKeywords.length} keywords`);
+        // Perplexity 글로벌 트렌드 감지 (그룹 컨텍스트 포함)
+        const allKeywords = await detectGlobalTrends(perplexityKey, name, gName);
+        console.log(`[detect-global] ${gName ? `${gName}/${name}` : name}: Perplexity found ${allKeywords.length} keywords`);
 
         if (!allKeywords.length) {
           successCount++;
