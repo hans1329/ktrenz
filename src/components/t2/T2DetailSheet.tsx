@@ -679,7 +679,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             variant="secondary"
             className="w-full gap-2"
             onClick={() => {
-              navigate(`/t2/${tile.id}`);
+              navigate(`/t2/${tile.id}${window.location.search}`);
             }}
           >
             {t("viewFullAnalysis", language)}
