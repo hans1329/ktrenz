@@ -56,8 +56,8 @@ type ChatMessage = {
 };
 
 type AgentMode = "chat" | "trend" | "streaming" | "alert";
-type QuickActionKind = "fanActivity" | "liveRankings" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings" | "hotKeywords" | "myArtistTrend";
-type QuickActionHint = "live_rankings" | "trend_analysis" | "streaming_guide" | "fan_activity" | "hot_keywords" | "my_artist_trend";
+type QuickActionKind = "fanActivity" | "trendAnalysis" | "streamingGuide" | "newsBriefing" | "alertSettings" | "hotKeywords" | "myArtistTrend";
+type QuickActionHint = "trend_analysis" | "streaming_guide" | "fan_activity" | "hot_keywords" | "my_artist_trend";
 
 interface QuickAction {
   id: QuickActionKind;
