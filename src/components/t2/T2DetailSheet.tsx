@@ -516,7 +516,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     : "bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40"
                 )} onClick={() => setBetSide("no")}>
                   <div className="text-[10px] text-muted-foreground mb-0.5">{t("betNo", language)}</div>
-                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(0)}%</div>
+                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(1)}%</div>
                 </div>
               </div>
 
