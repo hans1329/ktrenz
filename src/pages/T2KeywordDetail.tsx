@@ -762,7 +762,11 @@ const T2KeywordDetail = () => {
               {[...trackingHistory].reverse().map((t: any) => (
                 <div key={t.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/20 border border-border/40">
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase w-8">{t.region === "world" ? "WW" : (t.region?.toUpperCase().slice(0, 2) || "WW")}</span>
+                    {t.region === "world" || !t.region ? (
+                      <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+                    ) : (
+                      <Flag className="w-3.5 h-3.5 text-muted-foreground" />
+                    )}
                     <span className="text-sm font-bold text-foreground">{t.interest_score}</span>
                   </div>
                   <div className="flex items-center gap-3">
