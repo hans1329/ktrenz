@@ -441,7 +441,106 @@ const UserDashboard = () => {
           )}
         </section>
 
-        {/* ── My Stats Summary ── */}
+        {/* ── My Predictions ── */}
+        {user && myBets && myBets.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <Target className="w-4 h-4 text-primary" />
+              My Predictions
+            </h2>
+
+            {/* Prediction stats */}
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              <Card className="p-2.5 bg-card border-border text-center">
+                <p className="text-lg font-black text-foreground">{betStats.total}</p>
+                <p className="text-[9px] text-muted-foreground">Total</p>
+              </Card>
+              <Card className="p-2.5 bg-card border-border text-center">
+                <p className="text-lg font-black text-green-400">{betStats.won}</p>
+                <p className="text-[9px] text-muted-foreground">Won</p>
+              </Card>
+              <Card className="p-2.5 bg-card border-border text-center">
+                <p className="text-lg font-black text-red-400">{betStats.lost}</p>
+                <p className="text-[9px] text-muted-foreground">Lost</p>
+              </Card>
+              <Card className="p-2.5 bg-card border-border text-center">
+                <p className="text-lg font-black text-yellow-400">{betStats.pending}</p>
+                <p className="text-[9px] text-muted-foreground">Pending</p>
+              </Card>
+            </div>
+
+            {/* Net result */}
+            {(betStats.won > 0 || betStats.lost > 0) && (
+              <Card className="p-3 mb-3 bg-card border-border flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Win Rate</span>
+                <span className="text-sm font-black text-foreground">
+                  {betStats.total > 0 ? Math.round((betStats.won / (betStats.won + betStats.lost)) * 100) : 0}%
+                </span>
+              </Card>
+            )}
+
+            {/* Recent bets */}
+            <div className="space-y-2">
+              {myBets.slice(0, 6).map((bet: any) => {
+                const trigger = bet.trigger;
+                const market = bet.market;
+                const isSettled = market?.status === "settled";
+                const isWon = isSettled && market?.outcome === bet.side;
+                const isLost = isSettled && market?.outcome && market?.outcome !== bet.side;
+                const keyword = trigger
+                  ? (language === "ko" && trigger.keyword_ko ? trigger.keyword_ko : trigger.keyword)
+                  : "Unknown";
+                const config = trigger ? CATEGORY_CONFIG[trigger.keyword_category] : null;
+                const artistName = trigger
+                  ? (language === "ko" && trigger.artistNameKo ? trigger.artistNameKo : (trigger.artistName || ""))
+                  : "";
+
+                return (
+                  <button
+                    key={bet.id}
+                    onClick={() => trigger && navigate(`/t2/${market?.trigger_id}`)}
+                    className={cn(
+                      "w-full rounded-xl border p-3 flex items-center gap-3 text-left transition-all",
+                      isWon ? "border-green-500/30 bg-green-500/5" :
+                      isLost ? "border-red-500/30 bg-red-500/5" :
+                      "border-border bg-card hover:bg-muted/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                      isWon ? "bg-green-500/15" : isLost ? "bg-red-500/15" : "bg-yellow-500/15"
+                    )}>
+                      {isWon ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
+                       isLost ? <XCircle className="w-4 h-4 text-red-400" /> :
+                       <Timer className="w-4 h-4 text-yellow-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-sm font-bold text-foreground truncate">{keyword}</span>
+                        {config && (
+                          <span className="text-[8px] font-bold px-1 py-0.5 rounded text-white shrink-0" style={{ background: config.color }}>
+                            {config.label}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        {artistName && <span>{artistName}</span>}
+                        <span className={cn("font-bold", bet.side === "yes" ? "text-green-400" : "text-red-400")}>
+                          {bet.side === "yes" ? "▲ YES" : "▼ NO"}
+                        </span>
+                        <span>{Number(bet.amount).toFixed(0)} pts</span>
+                      </div>
+                    </div>
+                    {isWon && bet.payout > 0 && (
+                      <span className="text-xs font-black text-green-400 shrink-0">+{Number(bet.payout).toFixed(0)}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {user && stats.totalEvents > 0 && (
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
