@@ -636,7 +636,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                           ? 'radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.1) 0%, transparent 60%)'
                           : undefined,
                       }} />
-                    )}
+                      <BoxParticles
+                        count={rectIndex === 0 ? 18 : 10}
+                        color="hsla(45, 100%, 80%, 0.9)"
+                        speed={rectIndex === 0 ? 0.3 : 0.2}
+                        density={rectIndex === 0 ? 0.6 : 0.4}
+                        shape="star"
+                      />
                   </button>
                 );
               })}
