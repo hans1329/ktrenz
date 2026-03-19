@@ -546,11 +546,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               </div>
 
-              {totalVolume > 0 && (
-                <p className="text-[10px] text-muted-foreground text-center">
-                  {t("totalPool", language)}: {totalVolume.toLocaleString()}P
-                </p>
-              )}
 
               {/* My Position */}
               {myBets && myBets.length > 0 && (() => {
