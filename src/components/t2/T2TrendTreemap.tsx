@@ -445,12 +445,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
               )}
               style={{
                 backgroundColor: isActive
-                  ? (config?.color ?? "hsl(var(--primary))")
-                  : (config?.color ? `${config.color.replace(')', ', 0.12)').replace('hsl(', 'hsla(')}` : "hsl(var(--muted) / 0.5)"),
-                color: isActive ? "#fff" : (config?.color ?? "hsl(var(--muted-foreground))"),
+                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
+                  : (cat === "my" ? "hsla(45, 90%, 50%, 0.12)" : config?.color ? `${config.color.replace(')', ', 0.12)').replace('hsl(', 'hsla(')}` : "hsl(var(--muted) / 0.5)"),
+                color: isActive ? "#fff" : (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--muted-foreground))"),
                 borderColor: isActive
-                  ? (config?.color ?? "hsl(var(--primary))")
-                  : (config?.color ? `${config.color.replace(')', ', 0.25)').replace('hsl(', 'hsla(')}` : "hsl(var(--border))"),
+                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
+                  : (cat === "my" ? "hsla(45, 90%, 50%, 0.25)" : config?.color ? `${config.color.replace(')', ', 0.25)').replace('hsl(', 'hsla(')}` : "hsl(var(--border))"),
               }}
             >
               {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
