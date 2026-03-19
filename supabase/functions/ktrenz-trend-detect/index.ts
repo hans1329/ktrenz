@@ -137,23 +137,23 @@ async function extractCommercialKeywords(
 
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}) as an INDIVIDUAL.
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
 
 Articles:
 ${articleTexts}
 
 RULES:
 1. ONLY extract entities whose name literally appears in the article text above.
-2. "${memberName}" must be the PRIMARY INDIVIDUAL subject of the article for that entity. If the article is about the group or another member, skip it.
-3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, Billboard), TV show names unless the artist is a guest/model.
-4. Do NOT extract: chart names (Billboard, Circle Chart, Hanteo, Gaon, Oricon, iTunes), concert/tour/fan meeting names of the artist themselves, music festival names (Lollapalooza, Coachella, MAMA, etc.), generic words like "brand", "chart", "music", "award".
+2. "${memberName}" should be mentioned in the article. Articles about the group "${groupName || "N/A"}" are acceptable IF "${memberName}" is specifically mentioned or if the entity is clearly linked to the group's activity.
+3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, comeback).
+4. Chart names (Billboard, Hanteo, etc.), concert/tour names, and festival names (Coachella, MAMA, etc.) CAN be extracted as context keywords IF they involve a specific commercial entity (e.g., "Coachella x Adidas collaboration" → extract "Adidas"). Do NOT extract them as standalone keywords.
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
-5. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}" individually.
-6. Categories: brand, product, place, food, fashion, beauty, media.
-7. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
-8. Provide translations: keyword_ko, keyword_ja, keyword_zh.
-9. Include "source_article_index" (1-based) pointing to the article where the entity appears.
-10. Provide translated context: context, context_ko, context_ja, context_zh.
+6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
+7. Categories: brand, product, place, food, fashion, beauty, media.
+8. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
+9. Provide translations: keyword_ko, keyword_ja, keyword_zh.
+10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
+11. Provide translated context: context, context_ko, context_ja, context_zh.
 
 If NO commercial entities are found, return [].
 Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport[1]","context_ko":"공항에서 샤넬 의상 착용[1]","context_ja":"空港でシャネルの衣装を着用[1]","context_zh":"在机场穿着香奈儿服装[1]","source_article_index":1}]`;
