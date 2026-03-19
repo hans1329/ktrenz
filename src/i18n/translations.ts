@@ -13,6 +13,7 @@ const translations: Record<string, Record<Language, string>> = {
   "common.signIn": { en: "Sign In", ko: "로그인", ja: "ログイン", zh: "登录" },
   "common.signOut": { en: "Sign Out", ko: "로그아웃", ja: "ログアウト", zh: "退出" },
   "common.settings": { en: "Settings", ko: "설정", ja: "設定", zh: "设置" },
+  "common.language": { en: "Language", ko: "언어", ja: "言語", zh: "语言" },
   "common.comingSoon": { en: "Coming Soon", ko: "출시 예정", ja: "近日公開", zh: "即将推出" },
   "common.active": { en: "Active", ko: "활성", ja: "有効", zh: "已激活" },
   "common.free": { en: "Free", ko: "무료", ja: "無料", zh: "免费" },

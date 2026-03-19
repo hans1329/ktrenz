@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Search, X, Loader2, Star, Globe } from "lucide-react";
+import { Bell, Search, X, Loader2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { useLanguage } from "@/contexts/LanguageContext";
-import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 
 interface SearchResult {
   id: string;
@@ -20,7 +19,6 @@ interface SearchResult {
 const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [showLangDrawer, setShowLangDrawer] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -135,12 +133,6 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
             </Link>
             {centerSlot && <div className="flex-1 flex justify-center">{centerSlot}</div>}
             <div className="flex items-center gap-1 shrink-0">
-              <button
-                className="p-1 active:opacity-60 transition-opacity"
-                onClick={() => setShowLangDrawer(true)}
-              >
-                <Globe className="w-5 h-5 text-foreground/80" />
-              </button>
               <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                 <Search className="w-5 h-5 text-foreground/80" />
               </button>
@@ -152,7 +144,6 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
         )}
       </div>
     </header>
-    <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
     </>
   );
 };

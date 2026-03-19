@@ -5,10 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, ChevronRight, Settings, Coins } from "lucide-react";
+import { LogOut, ChevronRight, Settings, Coins, Globe } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
+import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import {
   Drawer,
   DrawerContent,
@@ -26,6 +27,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const [showPointsDrawer, setShowPointsDrawer] = useState(false);
+  const [showLangDrawer, setShowLangDrawer] = useState(false);
   
 
   const { data: kpassInfo, refetch: refetchKpass } = useQuery({
@@ -211,6 +213,13 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
+              onClick={() => setShowLangDrawer(true)}
+            >
+              <Globe className="w-4 h-4" /> <span className="text-sm">{t("common.language") || "Language"}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-11 rounded-xl text-muted-foreground hover:bg-transparent hover:text-muted-foreground"
               onClick={() => { onOpenChange(false); navigate("/settings", { state: { fromProfile: true } }); }}
             >
               <Settings className="w-4 h-4" /> <span className="text-sm">{t("common.settings")}</span>
@@ -227,6 +236,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
       </DrawerContent>
     </Drawer>
     <KPointsPurchaseDrawer open={showPointsDrawer} onOpenChange={setShowPointsDrawer} />
+    <LanguagePickerDrawer open={showLangDrawer} onOpenChange={setShowLangDrawer} />
 
 
 
