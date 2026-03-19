@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, ThumbsUp, ThumbsDown, Share2, Rocket } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -62,14 +64,22 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
-  voteYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
-  voteNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
-  votesCount: { en: "votes", ko: "명 참여", ja: "票", zh: "票" },
-  voteReward: { en: "+1 K-Point for voting!", ko: "투표하면 +1 K-Point!", ja: "投票で+1 K-Point!", zh: "投票得+1 K-Point!" },
+  betYes: { en: "Yes 🔥", ko: "Yes 🔥", ja: "Yes 🔥", zh: "Yes 🔥" },
+  betNo: { en: "No 🤷", ko: "No 🤷", ja: "No 🤷", zh: "No 🤷" },
+  betPlaceholder: { en: "Bet amount (min 10P)", ko: "배팅 금액 (최소 10P)", ja: "ベット額 (最小10P)", zh: "下注金额 (最低10P)" },
+  placeBet: { en: "Place Bet", ko: "배팅하기", ja: "ベットする", zh: "下注" },
+  yourBets: { en: "Your bets", ko: "내 배팅", ja: "あなたのベット", zh: "我的下注" },
+  totalPool: { en: "Total pool", ko: "총 풀", ja: "合計プール", zh: "总奖池" },
+  odds: { en: "Odds", ko: "확률", ja: "確率", zh: "概率" },
+  shares: { en: "shares", ko: "지분", ja: "シェア", zh: "份额" },
+  marketSettled: { en: "Market settled", ko: "정산 완료", ja: "マーケット精算済み", zh: "市场已结算" },
+  won: { en: "Won!", ko: "적중!", ja: "的中!", zh: "赢了!" },
+  lost: { en: "Lost", ko: "낙첨", ja: "ハズレ", zh: "未中" },
+  insufficientPoints: { en: "Not enough K-Points", ko: "K-Point가 부족합니다", ja: "K-Pointが不足しています", zh: "K-Point不足" },
+  loginToBet: { en: "Sign in to bet", ko: "배팅하려면 로그인하세요", ja: "ベットするにはログイン", zh: "登录后下注" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
-  loginToVote: { en: "Sign in to vote", ko: "투표하려면 로그인하세요", ja: "投票するにはログイン", zh: "登录后投票" },
   boosted: { en: "Boost shared! +5 K-Point", ko: "부스트 공유 완료! +5 K-Point", ja: "ブースト共有完了！+5 K-Point", zh: "推动分享完成！+5 K-Point" },
   readBoostReward: { en: "View original article +3 K-Point", ko: "원문보기 +3 K-Point", ja: "元記事を見る +3 K-Point", zh: "查看原文 +3 K-Point" },
   readBoosted: { en: "Boosted! +3 K-Point", ko: "밀어주기 완료! +3 K-Point", ja: "応援完了！+3 K-Point", zh: "推动完成！+3 K-Point" },
@@ -99,25 +109,88 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
 
 
+  const [betSide, setBetSide] = useState<"yes" | "no">("yes");
+  const [betAmount, setBetAmount] = useState("");
 
-
-  // Vote data
-  const { data: voteData } = useQuery({
-    queryKey: ["t2-keyword-votes", tile?.id],
+  // Market data
+  const { data: marketData } = useQuery({
+    queryKey: ["t2-market", tile?.id],
     queryFn: async () => {
-      if (!tile) return { ups: 0, downs: 0, myVote: null as string | null };
-      const { data: allVotes } = await supabase
-        .from("ktrenz_keyword_votes" as any)
-        .select("vote_type, user_id")
-        .eq("trigger_id", tile.id);
-      const votes = (allVotes ?? []) as any[];
-      const ups = votes.filter((v: any) => v.vote_type === "up").length;
-      const downs = votes.filter((v: any) => v.vote_type === "down").length;
-      const myVote = user ? votes.find((v: any) => v.user_id === user.id)?.vote_type ?? null : null;
-      return { ups, downs, myVote };
+      if (!tile) return null;
+      const { data } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("*")
+        .eq("trigger_id", tile.id)
+        .single();
+      return data as any;
     },
     enabled: !!tile,
   });
+
+  // User's bets for this market
+  const { data: myBets } = useQuery({
+    queryKey: ["t2-my-bets", marketData?.id, user?.id],
+    queryFn: async () => {
+      if (!marketData?.id || !user) return [];
+      const { data } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("*")
+        .eq("market_id", marketData.id)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+    enabled: !!marketData?.id && !!user,
+  });
+
+  // Bet mutation
+  const betMutation = useMutation({
+    mutationFn: async ({ side, amount }: { side: "yes" | "no"; amount: number }) => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-bet", {
+        body: { triggerId: tile!.id, side, amount },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
+      queryClient.invalidateQueries({ queryKey: ["t2-my-bets"] });
+      queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
+      queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      setBetAmount("");
+      toast.success(`Bet placed! ${data.shares.toFixed(1)} ${t("shares", language)}`);
+    },
+    onError: (err: Error) => {
+      if (err.message.includes("Insufficient")) {
+        toast.error(t("insufficientPoints", language));
+      } else {
+        toast.error(err.message);
+      }
+    },
+  });
+
+  const handlePlaceBet = () => {
+    if (!user) {
+      toast.info(t("loginToBet", language));
+      return;
+    }
+    const amount = Number(betAmount);
+    if (isNaN(amount) || amount < 10) {
+      toast.error(t("betPlaceholder", language));
+      return;
+    }
+    betMutation.mutate({ side: betSide, amount });
+  };
+
+  // Calculate prices from pool
+  const poolYes = Number(marketData?.pool_yes ?? 100);
+  const poolNo = Number(marketData?.pool_no ?? 100);
+  const priceYes = poolNo / (poolYes + poolNo);
+  const priceNo = poolYes / (poolYes + poolNo);
+  const totalVolume = Number(marketData?.total_volume ?? 0);
+  const isSettled = marketData?.status === "settled";
+  const marketOutcome = marketData?.outcome;
 
   // Boost count
   const { data: boostCount } = useQuery({
@@ -133,7 +206,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile,
   });
 
-  // Read boost check (has user already read-boosted this keyword?)
+  // Read boost check
   const { data: hasReadBoosted } = useQuery({
     queryKey: ["t2-read-boost", tile?.id, user?.id],
     queryFn: async () => {
@@ -166,53 +239,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     },
     enabled: !!tile && !!user,
   });
-
-  const voteMutation = useMutation({
-    mutationFn: async (voteType: "up" | "down") => {
-      if (!user || !tile) return { isNew: false };
-      const currentVote = voteData?.myVote;
-      if (currentVote === voteType) {
-        // Remove vote
-        await supabase
-          .from("ktrenz_keyword_votes" as any)
-          .delete()
-          .eq("trigger_id", tile.id)
-          .eq("user_id", user.id);
-        return { isNew: false };
-      } else if (currentVote) {
-        // Change vote
-        await supabase
-          .from("ktrenz_keyword_votes" as any)
-          .update({ vote_type: voteType, updated_at: new Date().toISOString() } as any)
-          .eq("trigger_id", tile.id)
-          .eq("user_id", user.id);
-        return { isNew: false };
-      } else {
-        // New vote — award 1 point
-        await supabase
-          .from("ktrenz_keyword_votes" as any)
-          .insert({ trigger_id: tile.id, user_id: user.id, vote_type: voteType } as any);
-        await supabase.rpc("ktrenz_increment_points" as any, { p_user_id: user.id, p_amount: 1 });
-        return { isNew: true };
-      }
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["t2-keyword-votes", tile?.id] });
-      if (result?.isNew) {
-        queryClient.invalidateQueries({ queryKey: ["user-points"] });
-        toast.success("+1 K-Point");
-      }
-    },
-  });
-
-  const handleVote = (voteType: "up" | "down") => {
-    if (!user) {
-      toast.info(t("loginToVote", language));
-      return;
-    }
-    voteMutation.mutate(voteType);
-  };
-
   const handleBoost = async (platform: "x" | "copy") => {
     if (!tile) return;
     const keyword = getLocalizedKeyword(tile, language);
@@ -463,45 +489,112 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
 
-          {/* Vote & Boost */}
+          {/* FPMM Prediction Market */}
           <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
-            {/* Vote — casual poll style */}
-            <div className="space-y-2.5">
-              <p className="text-lg font-bold text-foreground text-center">
+            <div className="space-y-3">
+              <p className="text-lg font-bold text-foreground text-center flex items-center justify-center gap-2">
+                <Coins className="w-5 h-5 text-primary" />
                 {t("voteRelevance", language)}
               </p>
-              {!voteData?.myVote && (
-                <p className="text-[11px] text-center text-muted-foreground">{t("voteReward", language)}</p>
-              )}
-              <div className="flex items-center gap-3">
-                <button
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                    voteData?.myVote === "up"
-                      ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 scale-[1.02]"
-                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
-                  )}
-                  onClick={() => handleVote("up")}
-                  disabled={voteMutation.isPending}
-                >
-                  {t("voteYes", language)} <span className="ml-1 text-xs opacity-60">{voteData?.ups ?? 0}</span>
-                </button>
-                <button
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-bold transition-all",
-                    voteData?.myVote === "down"
-                      ? "bg-rose-500/20 text-rose-400 border-2 border-rose-500/50 scale-[1.02]"
-                      : "bg-muted/50 text-muted-foreground border border-border hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
-                  )}
-                  onClick={() => handleVote("down")}
-                  disabled={voteMutation.isPending}
-                >
-                  {t("voteNo", language)} <span className="ml-1 text-xs opacity-60">{voteData?.downs ?? 0}</span>
-                </button>
+
+              {/* Odds display */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-center">
+                  <div className="text-[10px] text-muted-foreground mb-0.5">Yes 🔥</div>
+                  <div className="text-lg font-bold text-emerald-400">{(priceYes * 100).toFixed(0)}%</div>
+                </div>
+                <div className="flex-1 rounded-lg bg-rose-500/10 border border-rose-500/30 p-2.5 text-center">
+                  <div className="text-[10px] text-muted-foreground mb-0.5">No 🤷</div>
+                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(0)}%</div>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground text-center">
-                {(voteData?.ups ?? 0) + (voteData?.downs ?? 0)} {t("votesCount", language)}
-              </p>
+
+              {totalVolume > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center">
+                  {t("totalPool", language)}: {totalVolume.toLocaleString()}P
+                </p>
+              )}
+
+              {/* Settled state */}
+              {isSettled ? (
+                <div className="rounded-lg bg-muted/50 border border-border p-3 text-center space-y-1">
+                  <p className="text-sm font-bold text-foreground">{t("marketSettled", language)}</p>
+                  <Badge variant={marketOutcome === "yes" ? "default" : "secondary"} className="text-xs">
+                    {marketOutcome === "yes" ? "Yes 🔥" : "No 🤷"}
+                  </Badge>
+                  {myBets && myBets.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {myBets.map((bet: any) => (
+                        <div key={bet.id} className="text-[11px] text-muted-foreground">
+                          {bet.side === "yes" ? "🔥" : "🤷"} {bet.amount}P → {bet.payout != null
+                            ? (bet.payout > 0
+                              ? <span className="text-emerald-400 font-bold">+{bet.payout}P {t("won", language)}</span>
+                              : <span className="text-rose-400">{t("lost", language)}</span>)
+                            : "..."}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Bet input */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      className={cn(
+                        "px-4 py-2.5 rounded-l-xl text-sm font-bold transition-all border-2",
+                        betSide === "yes"
+                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
+                          : "bg-muted/50 text-muted-foreground border-border hover:bg-emerald-500/10"
+                      )}
+                      onClick={() => setBetSide("yes")}
+                    >
+                      {t("betYes", language)}
+                    </button>
+                    <button
+                      className={cn(
+                        "px-4 py-2.5 rounded-r-xl text-sm font-bold transition-all border-2",
+                        betSide === "no"
+                          ? "bg-rose-500/20 text-rose-400 border-rose-500/50"
+                          : "bg-muted/50 text-muted-foreground border-border hover:bg-rose-500/10"
+                      )}
+                      onClick={() => setBetSide("no")}
+                    >
+                      {t("betNo", language)}
+                    </button>
+                    <Input
+                      type="number"
+                      min={10}
+                      max={1000}
+                      placeholder="10~1000P"
+                      value={betAmount}
+                      onChange={(e) => setBetAmount(e.target.value)}
+                      className="flex-1 h-10 text-sm"
+                    />
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={handlePlaceBet}
+                    disabled={betMutation.isPending || !betAmount}
+                  >
+                    <Coins className="w-4 h-4" />
+                    {t("placeBet", language)}
+                  </Button>
+
+                  {/* My bets */}
+                  {myBets && myBets.length > 0 && (
+                    <div className="border-t border-border/50 pt-2 space-y-1">
+                      <p className="text-[10px] text-muted-foreground font-medium">{t("yourBets", language)}</p>
+                      {myBets.map((bet: any) => (
+                        <div key={bet.id} className="flex justify-between text-[11px] text-muted-foreground">
+                          <span>{bet.side === "yes" ? "🔥 Yes" : "🤷 No"} · {bet.amount}P</span>
+                          <span>{Number(bet.shares).toFixed(1)} {t("shares", language)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Boost */}
