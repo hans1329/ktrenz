@@ -44,8 +44,6 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   timestamp?: string;
-  guideData?: any[] | null;
-  rankingData?: RankingEntry[] | null;
   briefingData?: BriefingData | null;
   quickActions?: QuickActionCard[] | null;
   followUps?: string[] | null;
