@@ -20,6 +20,7 @@ import V3RankingCards, { type RankingEntry } from "@/components/v3/V3RankingCard
 import V3InlineLinkCard from "@/components/v3/V3InlineLinkCard";
 import V3BriefingCard, { type BriefingData } from "@/components/v3/V3BriefingCard";
 import V3ReportCards, { type ReportCard } from "@/components/v3/V3ReportCards";
+import V3TrendKeywordCards, { type TrendKeywordEntry } from "@/components/v3/V3TrendKeywordCards";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
