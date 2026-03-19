@@ -241,27 +241,35 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
 
       const triggers = (data ?? []) as any[];
 
-      // Fetch star info using star_id from ktrenz_stars
+      // Fetch star info using star_id from ktrenz_stars (only active stars)
       const starIds = [...new Set(triggers.map((t: any) => t.star_id).filter(Boolean))];
       const starMap = new Map<string, { display_name: string; name_ko: string | null; image_url: string | null; wiki_entry_id: string | null }>();
+      const activeStarIds = new Set<string>();
       if (starIds.length > 0) {
         const { data: stars } = await supabase
           .from("ktrenz_stars" as any)
-          .select("id, wiki_entry_id, display_name, name_ko")
+          .select("id, wiki_entry_id, display_name, name_ko, is_active")
           .in("id", starIds);
         
-        const wikiIds = (stars ?? []).map((s: any) => s.wiki_entry_id).filter(Boolean);
+        // Only include active stars
+        const activeStars = (stars ?? []).filter((s: any) => s.is_active !== false);
+        activeStars.forEach((s: any) => activeStarIds.add(s.id));
+
+        const wikiIds = activeStars.map((s: any) => s.wiki_entry_id).filter(Boolean);
         const imageMap = new Map<string, string>();
         if (wikiIds.length > 0) {
           const { data: wikiEntries } = await supabase.from("wiki_entries").select("id, image_url").in("id", wikiIds);
           (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
         }
-        (stars ?? []).forEach((s: any) => {
+        activeStars.forEach((s: any) => {
           starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: imageMap.get(s.wiki_entry_id) || null, wiki_entry_id: s.wiki_entry_id });
         });
       }
 
-      return triggers.map((t: any): TrendTile => {
+      // Filter out triggers whose star_id is not in active stars
+      const filteredTriggers = triggers.filter((t: any) => !t.star_id || activeStarIds.has(t.star_id));
+
+      return filteredTriggers.map((t: any): TrendTile => {
         const star = t.star_id ? starMap.get(t.star_id) : null;
         return {
           id: t.id,
