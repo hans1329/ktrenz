@@ -779,7 +779,7 @@ const T2KeywordDetail = () => {
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 mt-6">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
               <TrendingUp className="w-4 h-4 text-primary" />
-              Other Keywords by {artistName}
+              {language === "ko" ? `${artistName}${t2l("otherKeywords", language)}` : `${t2l("otherKeywords", language)} ${artistName}`}
             </h2>
             <div className="flex flex-wrap gap-2">
               {relatedKeywords.map((rk: any) => (
