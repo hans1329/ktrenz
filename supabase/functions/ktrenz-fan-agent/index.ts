@@ -265,6 +265,38 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_trend_keywords",
+      description: "Get currently detected trend keywords for a specific artist. Returns brand/product keywords extracted from news and YouTube that are associated with the artist, including influence index, keyword category, source context, and tracking data. Call this when the user asks about 트렌드 키워드, 협업 브랜드, 광고, endorsement, trending topics, what brands or products are associated with an artist.",
+      parameters: {
+        type: "object",
+        properties: {
+          artist_name: { type: "string", description: "Artist name to get trend keywords for" },
+          limit: { type: "number", description: "Number of keywords to return (default 10, max 20)" },
+        },
+        required: ["artist_name"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_trending_now",
+      description: "Get the hottest trend keywords across all artists right now. Returns top keywords sorted by influence index with artist info, keyword categories, and search volume data. Call this when the user asks about 지금 뜨는 트렌드, 핫 키워드, trending now, what's hot, or overall trend landscape.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Number of trending keywords to return (default 10, max 30)" },
+          category: { type: "string", description: "Optional filter by keyword category (e.g., 'brand', 'product', 'media', 'event')" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ── Intent Extraction (fire-and-forget after response) ──────────
