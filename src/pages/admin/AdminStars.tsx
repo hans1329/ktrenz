@@ -566,6 +566,21 @@ const AdminStars = () => {
               </Select>
             </div>
 
+            {/* star category */}
+            <div>
+              <label className="text-xs font-medium mb-1 block">분류</label>
+              <Select value={form.star_category} onValueChange={(v) => setForm({ ...form, star_category: v })}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STAR_CATEGORY_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* group (for members) */}
             {form.star_type === "member" && (
               <div>
