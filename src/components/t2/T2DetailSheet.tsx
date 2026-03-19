@@ -66,27 +66,30 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
   betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
   betNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
-  betPlaceholder: { en: "Bet amount (min 10P)", ko: "배팅 금액 (최소 10P)", ja: "ベット額 (最小10P)", zh: "下注金额 (最低10P)" },
+  betPlaceholder: { en: "Enter points (min 10P)", ko: "포인트 입력 (최소 10P)", ja: "ポイント入力 (最小10P)", zh: "输入积分 (最低10P)" },
   placeBet: { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
-  yourBets: { en: "Your bets", ko: "내 배팅", ja: "あなたのベット", zh: "我的下注" },
-  totalPool: { en: "Total pool", ko: "총 풀", ja: "合計プール", zh: "总奖池" },
+  yourBets: { en: "Your bets", ko: "내 예측", ja: "あなたの予測", zh: "我的预测" },
+  totalPool: { en: "Total pool", ko: "총 포인트", ja: "合計ポイント", zh: "总积分" },
   odds: { en: "Odds", ko: "확률", ja: "確率", zh: "概率" },
   shares: { en: "shares", ko: "지분", ja: "シェア", zh: "份额" },
-  marketSettled: { en: "Market settled", ko: "정산 완료", ja: "マーケット精算済み", zh: "市场已结算" },
-  won: { en: "Won!", ko: "적중!", ja: "的中!", zh: "赢了!" },
-  lost: { en: "Lost", ko: "낙첨", ja: "ハズレ", zh: "未中" },
-  insufficientPoints: { en: "Not enough K-Points", ko: "K-Point가 부족합니다", ja: "K-Pointが不足しています", zh: "K-Point不足" },
-  loginToBet: { en: "Sign in to bet", ko: "배팅하려면 로그인하세요", ja: "ベットするにはログイン", zh: "登录后下注" },
+  marketSettled: { en: "Results are in!", ko: "결과가 나왔어요!", ja: "結果が出ました！", zh: "结果出来了！" },
+  won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
+  lost: { en: "Better luck next time", ko: "다음엔 맞출 거예요", ja: "次こそ！", zh: "下次加油" },
+  insufficientPoints: { en: "You need more K-Points 😢", ko: "K-Point가 부족해요 😢", ja: "K-Pointが足りません 😢", zh: "K-Point不够了 😢" },
+  loginToBet: { en: "Sign in to predict", ko: "로그인하고 예측해보세요", ja: "ログインして予測しよう", zh: "登录后预测" },
+  betSuccess: { en: "Prediction locked in! ✨", ko: "예측 완료! ✨", ja: "予測完了！✨", zh: "预测成功！✨" },
+  betMinError: { en: "Please enter at least 10P", ko: "최소 10P 이상 입력해주세요", ja: "10P以上を入力してください", zh: "请输入至少10P" },
+  somethingWentWrong: { en: "Something went wrong, try again", ko: "문제가 발생했어요, 다시 시도해주세요", ja: "エラーが発生しました、再度お試しください", zh: "出了点问题，请重试" },
   boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
-  copied: { en: "Link copied!", ko: "링크 복사됨!", ja: "リンクコピー済み！", zh: "链接已复制！" },
-  boosted: { en: "Boost shared! +5 K-Point", ko: "부스트 공유 완료! +5 K-Point", ja: "ブースト共有完了！+5 K-Point", zh: "推动分享完成！+5 K-Point" },
-  readBoostReward: { en: "View original article +3 K-Point", ko: "원문보기 +3 K-Point", ja: "元記事を見る +3 K-Point", zh: "查看原文 +3 K-Point" },
-  readBoosted: { en: "Boosted! +3 K-Point", ko: "밀어주기 완료! +3 K-Point", ja: "応援完了！+3 K-Point", zh: "推动完成！+3 K-Point" },
-  alreadyBoosted: { en: "✓ Boosted +3P", ko: "✓ 밀어주기 완료 +3P", ja: "✓ 応援済み +3P", zh: "✓ 已推动 +3P" },
-  alreadyShareBoosted: { en: "Already boosted", ko: "이미 밀어주기 완료", ja: "すでに応援済み", zh: "已推动" },
-  shareBoostReward: { en: "Share & boost +5 K-Point", ko: "공유하고 밀어주기 +5 K-Point", ja: "共有して応援 +5 K-Point", zh: "分享推动 +5 K-Point" },
-  alreadyShareBoostedDone: { en: "✓ Share boosted +5P", ko: "✓ 공유 밀어주기 완료 +5P", ja: "✓ 共有応援済み +5P", zh: "✓ 分享推动完成 +5P" },
+  copied: { en: "Link copied! 📋", ko: "링크 복사했어요! 📋", ja: "リンクコピー済み！📋", zh: "链接已复制！📋" },
+  boosted: { en: "Shared! +5 K-Point earned 🚀", ko: "공유 완료! +5 K-Point 획득 🚀", ja: "共有完了！+5 K-Point獲得 🚀", zh: "分享完成！获得+5 K-Point 🚀" },
+  readBoostReward: { en: "Read article +3 K-Point", ko: "원문 읽기 +3 K-Point", ja: "元記事を読む +3 K-Point", zh: "阅读原文 +3 K-Point" },
+  readBoosted: { en: "Article read! +3 K-Point earned ✅", ko: "읽기 완료! +3 K-Point 획득 ✅", ja: "読了！+3 K-Point獲得 ✅", zh: "已阅读！获得+3 K-Point ✅" },
+  alreadyBoosted: { en: "✓ Already earned +3P", ko: "✓ 이미 +3P 획득 완료", ja: "✓ 獲得済み +3P", zh: "✓ 已获得 +3P" },
+  alreadyShareBoosted: { en: "You already shared this one", ko: "이미 공유했어요", ja: "すでに共有済みです", zh: "已经分享过了" },
+  shareBoostReward: { en: "Share & earn +5 K-Point", ko: "공유하고 +5 K-Point 받기", ja: "共有して +5 K-Point獲得", zh: "分享获得+5 K-Point" },
+  alreadyShareBoostedDone: { en: "✓ Already earned +5P", ko: "✓ 이미 +5P 획득 완료", ja: "✓ 獲得済み +5P", zh: "✓ 已获得 +5P" },
   viewFullAnalysis: { en: "View Full Analysis", ko: "상세 분석 보기", ja: "詳細分析を見る", zh: "查看完整分析" },
 };
 
@@ -159,13 +162,13 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
       setBetAmount("");
-      toast.success(`Bet placed! ${data.shares.toFixed(1)} ${t("shares", language)}`);
+      toast.success(t("betSuccess", language));
     },
     onError: (err: Error) => {
       if (err.message.includes("Insufficient")) {
         toast.error(t("insufficientPoints", language));
       } else {
-        toast.error(err.message);
+        toast.error(t("somethingWentWrong", language));
       }
     },
   });
@@ -177,7 +180,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     }
     const amount = Number(betAmount);
     if (isNaN(amount) || amount < 10) {
-      toast.error(t("betPlaceholder", language));
+      toast.error(t("betMinError", language));
       return;
     }
     betMutation.mutate({ side: betSide, amount });
