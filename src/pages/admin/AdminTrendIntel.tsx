@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Loader2, Play, TrendingUp, Search, Clock, Globe,
-  ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap
+  ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap,
+  XCircle, Trash2, Filter
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
