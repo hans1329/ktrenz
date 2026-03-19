@@ -64,10 +64,10 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
-  betYes: { en: "Yes 🔥", ko: "Yes 🔥", ja: "Yes 🔥", zh: "Yes 🔥" },
-  betNo: { en: "No 🤷", ko: "No 🤷", ja: "No 🤷", zh: "No 🤷" },
+  betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
+  betNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
   betPlaceholder: { en: "Bet amount (min 10P)", ko: "배팅 금액 (최소 10P)", ja: "ベット額 (最小10P)", zh: "下注金额 (最低10P)" },
-  placeBet: { en: "Place Bet", ko: "배팅하기", ja: "ベットする", zh: "下注" },
+  placeBet: { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
   yourBets: { en: "Your bets", ko: "내 배팅", ja: "あなたのベット", zh: "我的下注" },
   totalPool: { en: "Total pool", ko: "총 풀", ja: "合計プール", zh: "总奖池" },
   odds: { en: "Odds", ko: "확률", ja: "確率", zh: "概率" },
@@ -499,12 +499,20 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
               {/* Odds display */}
               <div className="flex items-center gap-2">
-                <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2.5 text-center">
-                  <div className="text-[10px] text-muted-foreground mb-0.5">Yes 🔥</div>
+                <div className={cn("flex-1 rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
+                  betSide === "yes"
+                    ? "bg-emerald-500/20 border-emerald-500/50"
+                    : "bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40"
+                )} onClick={() => setBetSide("yes")}>
+                  <div className="text-[10px] text-muted-foreground mb-0.5">{t("betYes", language)}</div>
                   <div className="text-lg font-bold text-emerald-400">{(priceYes * 100).toFixed(0)}%</div>
                 </div>
-                <div className="flex-1 rounded-lg bg-rose-500/10 border border-rose-500/30 p-2.5 text-center">
-                  <div className="text-[10px] text-muted-foreground mb-0.5">No 🤷</div>
+                <div className={cn("flex-1 rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
+                  betSide === "no"
+                    ? "bg-rose-500/20 border-rose-500/50"
+                    : "bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40"
+                )} onClick={() => setBetSide("no")}>
+                  <div className="text-[10px] text-muted-foreground mb-0.5">{t("betNo", language)}</div>
                   <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(0)}%</div>
                 </div>
               </div>
@@ -538,30 +546,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               ) : (
                 <>
-                  {/* Bet input */}
+                  {/* Bet input — amount only, side selected via odds cards above */}
                   <div className="flex items-center gap-2">
-                    <button
-                      className={cn(
-                        "px-4 py-2.5 rounded-l-xl text-sm font-bold transition-all border-2",
-                        betSide === "yes"
-                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
-                          : "bg-muted/50 text-muted-foreground border-border hover:bg-emerald-500/10"
-                      )}
-                      onClick={() => setBetSide("yes")}
-                    >
-                      {t("betYes", language)}
-                    </button>
-                    <button
-                      className={cn(
-                        "px-4 py-2.5 rounded-r-xl text-sm font-bold transition-all border-2",
-                        betSide === "no"
-                          ? "bg-rose-500/20 text-rose-400 border-rose-500/50"
-                          : "bg-muted/50 text-muted-foreground border-border hover:bg-rose-500/10"
-                      )}
-                      onClick={() => setBetSide("no")}
-                    >
-                      {t("betNo", language)}
-                    </button>
                     <Input
                       type="number"
                       min={10}
