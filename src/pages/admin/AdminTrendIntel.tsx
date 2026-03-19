@@ -282,16 +282,49 @@ const AdminTrendIntel = () => {
 
       {/* Active Triggers */}
       <div>
-        <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          활성 트렌드 키워드 ({activeTriggers.length})
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            활성 트렌드 키워드 ({activeTriggers.length})
+          </h2>
+        </div>
+
+        {/* Filter + Bulk Actions */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
+            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="아티스트명 필터..."
+              value={artistFilter}
+              onChange={(e) => setArtistFilter(e.target.value)}
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+          {artistFilter && activeArtistNames.length > 0 && (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="gap-1 text-xs h-8"
+              onClick={() => {
+                if (confirm(`"${artistFilter}" 필터와 일치하는 ${activeTriggers.length}건의 키워드를 모두 만료 처리하시겠습니까?`)) {
+                  // Expire all matching artists
+                  const matchingNames = activeArtistNames.filter(n => n.toLowerCase().includes(artistFilter.toLowerCase()));
+                  matchingNames.forEach(name => expireByArtistMutation.mutate(name));
+                }
+              }}
+              disabled={expireByArtistMutation.isPending}
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              필터 결과 전체 만료 ({activeTriggers.length}건)
+            </Button>
+          )}
+        </div>
 
         {triggersLoading ? (
           <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
         ) : activeTriggers.length === 0 ? (
           <Card className="p-8 text-center text-sm text-muted-foreground">
-            감지된 활성 키워드 없음. 파이프라인을 실행하세요.
+            {artistFilter ? "필터와 일치하는 키워드 없음" : "감지된 활성 키워드 없음. 파이프라인을 실행하세요."}
           </Card>
         ) : (
           <div className="space-y-2">
