@@ -106,16 +106,66 @@ const T2TrendMap = () => {
           </div>
         }
       />
+
+      <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2">
+        <div className="max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex items-center gap-2 min-w-max px-4">
+            {ALL_CATEGORIES.map((cat) => {
+              const isActive = category === cat;
+              const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
+
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setCategory(cat);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border"
+                  style={{
+                    backgroundColor: isActive
+                      ? cat === "my"
+                        ? "hsl(45, 90%, 50%)"
+                        : config?.color ?? "hsl(var(--primary))"
+                      : cat === "my"
+                        ? "hsla(45, 90%, 50%, 0.12)"
+                        : config?.color
+                          ? `${config.color.replace(")", ", 0.12)").replace("hsl(", "hsla(")}`
+                          : "hsl(var(--muted) / 0.5)",
+                    color: isActive
+                      ? "#fff"
+                      : cat === "my"
+                        ? "hsl(45, 90%, 50%)"
+                        : config?.color ?? "hsl(var(--muted-foreground))",
+                    borderColor: isActive
+                      ? cat === "my"
+                        ? "hsl(45, 90%, 50%)"
+                        : config?.color ?? "hsl(var(--primary))"
+                      : cat === "my"
+                        ? "hsla(45, 90%, 50%, 0.25)"
+                        : config?.color
+                          ? `${config.color.replace(")", ", 0.25)").replace("hsl(", "hsla(")}`
+                          : "hsl(var(--border))",
+                  }}
+                >
+                  {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <div
-        className="pt-14 pb-24 overflow-hidden"
+        className="pb-24 overflow-hidden"
         {...(isMobile ? { onTouchStart, onTouchMove, onTouchEnd } : {})}
       >
         <div
           className="flex"
           style={{
             transform: `translateX(${translateX}%)`,
-            transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-            willChange: 'transform',
+            transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+            willChange: "transform",
           }}
         >
           {VIEW_ORDER.map((mode) => (
@@ -126,7 +176,7 @@ const T2TrendMap = () => {
                   onViewModeChange={setViewMode}
                   selectedCategory={category}
                   onCategoryChange={setCategory}
-                  hideCategory={mode !== viewMode}
+                  hideCategory
                 />
               </div>
             </div>
