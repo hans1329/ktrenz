@@ -418,28 +418,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle — 3-tab buttons */}
-          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1">
-            {([
-              { key: "treemap" as const, icon: LayoutGrid, label: "Box" },
-              { key: "list" as const, icon: List, label: "List" },
-              { key: "artist" as const, icon: Users, label: "Artist" },
-            ]).map(({ key, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setViewMode(key)}
-                className={cn(
-                  "flex items-center justify-center w-12 h-8 rounded-full transition-all",
-                  viewMode === key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label={key}
-              >
-                <Icon className="w-4 h-4" />
-              </button>
-            ))}
-          </div>
           <T2AdminControls />
         </div>
       </div>
