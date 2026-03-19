@@ -107,7 +107,7 @@ const T2TrendMap = () => {
         }
       />
 
-      <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2">
+      <div className="sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 mt-14">
         <div className="max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max px-4">
             {ALL_CATEGORIES.map((cat) => {
