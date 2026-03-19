@@ -626,7 +626,7 @@ const T2KeywordDetail = () => {
                   influenceIndex >= 20 ? "text-amber-500" :
                   influenceIndex > 0 ? "text-orange-500" : "text-muted-foreground"
                 )}>
-                  {influenceIndex >= 50 ? "High" : influenceIndex >= 20 ? "Medium" : influenceIndex > 0 ? "Low" : "Tracking"}
+                  {influenceIndex >= 50 ? t2l("high", language) : influenceIndex >= 20 ? t2l("medium", language) : influenceIndex > 0 ? t2l("low", language) : t2l("tracking", language)}
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">
