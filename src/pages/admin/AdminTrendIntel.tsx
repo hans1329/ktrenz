@@ -124,6 +124,55 @@ const AdminTrendIntel = () => {
     onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
   });
 
+  // Expire single trigger
+  const expireMutation = useMutation({
+    mutationFn: async (triggerId: string) => {
+      const { error } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .update({ status: "expired", expired_at: new Date().toISOString() } as any)
+        .eq("id", triggerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("키워드 만료 처리 완료");
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`만료 처리 실패: ${(err as Error).message}`),
+  });
+
+  // Expire by artist name (bulk)
+  const expireByArtistMutation = useMutation({
+    mutationFn: async (artistName: string) => {
+      const { error } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .update({ status: "expired", expired_at: new Date().toISOString() } as any)
+        .eq("artist_name", artistName)
+        .eq("status", "active");
+      if (error) throw error;
+    },
+    onSuccess: (_, artistName) => {
+      toast.success(`"${artistName}"의 모든 활성 키워드 만료 처리 완료`);
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`일괄 만료 실패: ${(err as Error).message}`),
+  });
+
+  // Delete trigger permanently
+  const deleteMutation = useMutation({
+    mutationFn: async (triggerId: string) => {
+      const { error } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .delete()
+        .eq("id", triggerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("키워드 삭제 완료");
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`삭제 실패: ${(err as Error).message}`),
+  });
+
   // Group tracking by trigger
   const trackingByTrigger = new Map<string, any[]>();
   for (const t of trackingData ?? []) {
@@ -132,8 +181,15 @@ const AdminTrendIntel = () => {
     trackingByTrigger.get(key)!.push(t);
   }
 
-  const activeTriggers = (triggers ?? []).filter((t: any) => t.status === "active");
+  const activeTriggers = (triggers ?? []).filter((t: any) => {
+    if (t.status !== "active") return false;
+    if (artistFilter && !t.artist_name?.toLowerCase().includes(artistFilter.toLowerCase())) return false;
+    return true;
+  });
   const expiredTriggers = (triggers ?? []).filter((t: any) => t.status === "expired");
+
+  // Unique artist names in active triggers (for bulk expire)
+  const activeArtistNames = [...new Set(activeTriggers.map((t: any) => t.artist_name as string))].sort();
 
   const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullPipelineMutation.isPending;
 
