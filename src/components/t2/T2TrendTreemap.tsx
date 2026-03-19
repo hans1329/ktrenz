@@ -428,15 +428,17 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     setSelectedTile(filteredItems.find((item) => item.id === modalId) ?? null);
   }, [filteredItems, searchParams]);
 
+  const track = useTrackEvent();
   const handleTileClick = useCallback((item: TrendTile) => {
     const nextParams = new URLSearchParams(searchParams);
     if (selectedTile?.id === item.id) {
       nextParams.delete("modal");
     } else {
       nextParams.set("modal", item.id);
+      track("t2_treemap_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, category: item.category, section: item.keyword });
     }
     setSearchParams(nextParams);
-  }, [searchParams, selectedTile?.id, setSearchParams]);
+  }, [searchParams, selectedTile?.id, setSearchParams, track]);
 
   const categoryStats = useMemo(() => {
     if (!dedupedTriggers?.length) return {};
