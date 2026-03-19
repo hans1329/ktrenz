@@ -546,10 +546,10 @@ const UserDashboard = () => {
             </h2>
             <div className="grid grid-cols-4 gap-2">
               {[
-                { icon: MousePointerClick, value: stats.totalEvents, label: "Total" },
-                { icon: Eye, value: stats.detailViews, label: "Views" },
-                { icon: ExternalLink, value: stats.externalClicks, label: "Links" },
-                { icon: Bot, value: stats.agentChats, label: "Agent" },
+                { icon: MousePointerClick, value: stats.totalEvents, label: t("dash.total") },
+                { icon: Eye, value: stats.detailViews, label: t("dash.views") },
+                { icon: ExternalLink, value: stats.externalClicks, label: t("dash.links") },
+                { icon: Bot, value: stats.agentChats, label: t("dash.agent") },
               ].map((item, i) => (
                 <Card key={i} className="p-3 bg-card border-border text-center">
                   <item.icon className="w-4 h-4 mx-auto text-primary mb-1" />
