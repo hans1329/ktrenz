@@ -1,0 +1,1 @@
+SELECT cron.unschedule('ktrenz-6h-collection');
