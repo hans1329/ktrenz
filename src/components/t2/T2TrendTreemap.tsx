@@ -418,9 +418,24 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight);
   }, [visibleBoxItems, containerWidth, containerHeight]);
 
+  useEffect(() => {
+    const modalId = searchParams.get("modal");
+    if (!modalId || !filteredItems.length) {
+      setSelectedTile(null);
+      return;
+    }
+    setSelectedTile(filteredItems.find((item) => item.id === modalId) ?? null);
+  }, [filteredItems, searchParams]);
+
   const handleTileClick = useCallback((item: TrendTile) => {
-    setSelectedTile(prev => prev?.id === item.id ? null : item);
-  }, []);
+    const nextParams = new URLSearchParams(searchParams);
+    if (selectedTile?.id === item.id) {
+      nextParams.delete("modal");
+    } else {
+      nextParams.set("modal", item.id);
+    }
+    setSearchParams(nextParams);
+  }, [searchParams, selectedTile?.id, setSearchParams]);
 
   const categoryStats = useMemo(() => {
     if (!dedupedTriggers?.length) return {};
