@@ -600,12 +600,12 @@ const UserDashboard = () => {
                   <div className="flex flex-wrap gap-1.5">
                     {stats.topArtists[0].breakdown.map((b) => {
                       const labels: Record<string, string> = {
-                        external_link_click: "Links",
-                        artist_detail_view: "Views",
-                        artist_detail_section: "Sections",
-                        agent_chat: "Agent",
-                        treemap_click: "Treemap",
-                        list_click: "List",
+                        external_link_click: t("dash.evLinks"),
+                        artist_detail_view: t("dash.evViews"),
+                        artist_detail_section: t("dash.evSections"),
+                        agent_chat: t("dash.evAgent"),
+                        treemap_click: t("dash.evTreemap"),
+                        list_click: t("dash.evList"),
                       };
                       return (
                         <span key={b.type} className="text-[10px] font-bold px-2 py-1 rounded-full bg-muted text-muted-foreground">
