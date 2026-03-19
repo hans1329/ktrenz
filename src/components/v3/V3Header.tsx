@@ -17,7 +17,7 @@ interface SearchResult {
   schema_type: string;
 }
 
-const V3Header = () => {
+const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [showLangDrawer, setShowLangDrawer] = useState(false);
