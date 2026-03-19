@@ -10,11 +10,12 @@ import V3DesktopHeader from "@/components/v3/V3DesktopHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Minus, Globe, Clock,
   ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronLeft,
-  BarChart3, Target, Activity, Calendar, Building2, Sparkles,
+  BarChart3, Target, Activity, Calendar, Building2, Sparkles, Users,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from "recharts";
 
