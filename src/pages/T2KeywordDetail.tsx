@@ -284,7 +284,7 @@ const T2KeywordDetail = () => {
           onClick={() => navigate("/t2")}
           className="gap-1 text-xs mb-4 -ml-2"
         >
-          <ChevronLeft className="w-4 h-4" /> Trend Map
+          <ChevronLeft className="w-4 h-4" /> {t2l("trendMap", language)}
         </Button>
 
         {/* Hero Header */}
