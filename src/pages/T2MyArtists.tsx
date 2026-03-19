@@ -301,7 +301,11 @@ const T2MyArtists = () => {
         tile={selectedTile}
         rank={selectedTile ? myKeywords.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
         totalCount={myKeywords.length}
-        onClose={() => setSelectedTile(null)}
+        onClose={() => {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.delete("modal");
+          setSearchParams(nextParams);
+        }}
       />
     </div>
   );

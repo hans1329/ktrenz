@@ -651,7 +651,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         tile={selectedTile}
         rank={selectedTile ? filteredItems.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
         totalCount={filteredItems.length}
-        onClose={() => setSelectedTile(null)}
+        onClose={() => {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.delete("modal");
+          setSearchParams(nextParams);
+        }}
       />
     </div>
   );
