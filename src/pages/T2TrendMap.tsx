@@ -33,20 +33,20 @@ const T2TrendMap = () => {
       />
       <V3Header
         centerSlot={
-          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1">
+          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1 md:p-1.5">
             {VIEW_TABS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setViewMode(key)}
                 className={cn(
-                  "flex items-center justify-center w-10 h-7 rounded-full transition-all",
+                  "flex items-center justify-center w-10 h-7 md:w-14 md:h-9 rounded-full transition-all",
                   viewMode === key
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-label={key}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             ))}
           </div>
