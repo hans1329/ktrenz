@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
           .from("ktrenz_trend_triggers")
           .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
           .eq("wiki_entry_id", entryId)
-          .gte("detected_at", weekAgo);
+          .gte("detected_at", threeDaysAgo);
 
         const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
 
