@@ -197,6 +197,7 @@ const AdminStars = () => {
         display_name: form.display_name,
         name_ko: form.name_ko || null,
         star_type: form.star_type,
+        star_category: form.star_category,
         wiki_entry_id: form.wiki_entry_id || null,
         group_star_id: form.group_star_id || null,
         namuwiki_url: form.namuwiki_url || null,
