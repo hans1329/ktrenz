@@ -465,9 +465,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
         })}
       </div>
 
-      {/* My Artists' Keywords — compact banner */}
-      {myKeywords.length > 0 && <MyArtistsBanner myKeywords={myKeywords} language={language} />}
-
       {/* View Content */}
       {filteredItems.length === 0 ? (
         <div className="rounded-2xl border border-border bg-muted/20 flex items-center justify-center py-20">
