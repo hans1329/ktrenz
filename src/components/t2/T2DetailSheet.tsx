@@ -180,7 +180,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     }
     const amount = Number(betAmount);
     if (isNaN(amount) || amount < 10) {
-      toast.error(t("betPlaceholder", language));
+      toast.error(t("betMinError", language));
       return;
     }
     betMutation.mutate({ side: betSide, amount });
