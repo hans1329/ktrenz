@@ -157,7 +157,7 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className={cn("pb-24 overflow-hidden", viewMode === "treemap" && "max-h-[calc(100dvh-8rem)] overflow-y-hidden")}
+        className={cn("pb-24 overflow-hidden", viewMode === "treemap" && "max-h-[calc(100dvh-6rem)]")}
         {...(isMobile ? { onTouchStart, onTouchMove, onTouchEnd } : {})}
       >
         <div
