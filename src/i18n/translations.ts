@@ -488,6 +488,35 @@ const translations: Record<string, Record<Language, string>> = {
 
   "causalInsight.salesToBuzz.up": { en: "{artist}'s album sales records are generating media attention!", ko: "{artist}의 앨범 판매 기록이 미디어 관심을 끌고 있어요!", ja: "{artist}のアルバム売上記録がメディアの注目を集めています！", zh: "{artist}的专辑销售记录正在引发媒体关注！" },
   "causalInsight.salesToBuzz.down": { en: "{artist}'s sales momentum is easing → media coverage may decline.", ko: "{artist}의 판매 모멘텀이 줄어들고 있어요 → 미디어 보도가 줄 수 있어요.", ja: "{artist}の売上勢いが緩和 → メディア報道が減少する可能性。", zh: "{artist}的销售势头放缓 → 媒体报道可能减少。" },
+
+  // ── Dashboard / My Activity ──
+  "dash.title": { en: "My Activity", ko: "나의 활동", ja: "マイ活動", zh: "我的活动" },
+  "dash.activeTrends": { en: "My Active Trends", ko: "나의 활성 트렌드", ja: "マイアクティブトレンド", zh: "我的活跃趋势" },
+  "dash.signInPrompt": { en: "Sign in to track your artists' trends", ko: "아티스트 트렌드를 추적하려면 로그인하세요", ja: "アーティストのトレンドを追跡するにはログインしてください", zh: "登录以追踪您的艺人趋势" },
+  "dash.signIn": { en: "Sign In", ko: "로그인", ja: "ログイン", zh: "登录" },
+  "dash.noTrends": { en: "No active trends for your artists yet", ko: "아직 아티스트의 활성 트렌드가 없습니다", ja: "アーティストのアクティブなトレンドはまだありません", zh: "您的艺人尚无活跃趋势" },
+  "dash.followArtists": { en: "Follow artists →", ko: "아티스트 팔로우 →", ja: "アーティストをフォロー →", zh: "关注艺人 →" },
+  "dash.predictions": { en: "My Predictions", ko: "나의 예측", ja: "マイ予測", zh: "我的预测" },
+  "dash.total": { en: "Total", ko: "전체", ja: "合計", zh: "总计" },
+  "dash.won": { en: "Won", ko: "적중", ja: "的中", zh: "命中" },
+  "dash.lost": { en: "Lost", ko: "미적중", ja: "未的中", zh: "未命中" },
+  "dash.pending": { en: "Pending", ko: "대기중", ja: "保留中", zh: "待定" },
+  "dash.winRate": { en: "Win Rate", ko: "적중률", ja: "的中率", zh: "命中率" },
+  "dash.myStats": { en: "My Stats", ko: "나의 통계", ja: "マイ統計", zh: "我的统计" },
+  "dash.views": { en: "Views", ko: "조회", ja: "閲覧", zh: "浏览" },
+  "dash.links": { en: "Links", ko: "링크", ja: "リンク", zh: "链接" },
+  "dash.agent": { en: "Agent", ko: "에이전트", ja: "エージェント", zh: "代理" },
+  "dash.topArtist": { en: "My Top Artist", ko: "나의 탑 아티스트", ja: "マイトップアーティスト", zh: "我的TOP艺人" },
+  "dash.interactions": { en: "interactions", ko: "회 활동", ja: "回の活動", zh: "次互动" },
+  "dash.engagementScore": { en: "Engagement Score", ko: "참여 점수", ja: "エンゲージメントスコア", zh: "参与分数" },
+  "dash.totalEvents": { en: "Total Events", ko: "총 이벤트", ja: "合計イベント", zh: "总事件" },
+  "dash.evLinks": { en: "Links", ko: "링크", ja: "リンク", zh: "链接" },
+  "dash.evViews": { en: "Views", ko: "조회", ja: "閲覧", zh: "浏览" },
+  "dash.evSections": { en: "Sections", ko: "섹션", ja: "セクション", zh: "区块" },
+  "dash.evAgent": { en: "Agent", ko: "에이전트", ja: "エージェント", zh: "代理" },
+  "dash.evTreemap": { en: "Treemap", ko: "트리맵", ja: "ツリーマップ", zh: "树图" },
+  "dash.evList": { en: "List", ko: "리스트", ja: "リスト", zh: "列表" },
+  "dash.mostExplored": { en: "Most Explored", ko: "가장 많이 탐색", ja: "最も探索した", zh: "探索最多" },
 };
 
 export default translations;

@@ -43,7 +43,7 @@ function formatAge(dateStr: string): string {
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -353,7 +353,7 @@ const UserDashboard = () => {
           <button onClick={() => navigate(-1)} className="p-1 -ml-1 mr-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-base font-bold text-foreground">My Activity</h1>
+          <h1 className="text-base font-bold text-foreground">{t("dash.title")}</h1>
         </div>
       </header>
 
@@ -363,7 +363,7 @@ const UserDashboard = () => {
         <section className="mt-4 mb-6">
           <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4 text-primary" />
-            My Active Trends
+            {t("dash.activeTrends")}
           </h2>
 
           {isLoading ? (
@@ -372,16 +372,16 @@ const UserDashboard = () => {
             </div>
           ) : !user ? (
             <Card className="p-6 text-center border-border bg-card">
-              <p className="text-sm text-muted-foreground mb-3">Sign in to track your artists' trends</p>
+              <p className="text-sm text-muted-foreground mb-3">{t("dash.signInPrompt")}</p>
               <button onClick={() => navigate("/login")} className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                Sign In
+                {t("dash.signIn")}
               </button>
             </Card>
           ) : !myTrends?.length ? (
             <Card className="p-6 text-center border-border bg-card">
-              <p className="text-sm text-muted-foreground mb-2">No active trends for your artists yet</p>
+              <p className="text-sm text-muted-foreground mb-2">{t("dash.noTrends")}</p>
               <button onClick={() => navigate("/agent")} className="text-xs text-primary font-bold">
-                Follow artists →
+                {t("dash.followArtists")}
               </button>
             </Card>
           ) : (
@@ -443,33 +443,33 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Target className="w-4 h-4 text-primary" />
-              My Predictions
+              {t("dash.predictions")}
             </h2>
 
             {/* Prediction stats */}
             <div className="grid grid-cols-4 gap-2 mb-3">
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-foreground">{betStats.total}</p>
-                <p className="text-[9px] text-muted-foreground">Total</p>
+                <p className="text-[9px] text-muted-foreground">{t("dash.total")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-green-400">{betStats.won}</p>
-                <p className="text-[9px] text-muted-foreground">Won</p>
+                <p className="text-[9px] text-muted-foreground">{t("dash.won")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-red-400">{betStats.lost}</p>
-                <p className="text-[9px] text-muted-foreground">Lost</p>
+                <p className="text-[9px] text-muted-foreground">{t("dash.lost")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
                 <p className="text-lg font-black text-yellow-400">{betStats.pending}</p>
-                <p className="text-[9px] text-muted-foreground">Pending</p>
+                <p className="text-[9px] text-muted-foreground">{t("dash.pending")}</p>
               </Card>
             </div>
 
             {/* Net result */}
             {(betStats.won > 0 || betStats.lost > 0) && (
               <Card className="p-3 mb-3 bg-card border-border flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">Win Rate</span>
+                <span className="text-xs text-muted-foreground font-medium">{t("dash.winRate")}</span>
                 <span className="text-sm font-black text-foreground">
                   {betStats.total > 0 ? Math.round((betStats.won / (betStats.won + betStats.lost)) * 100) : 0}%
                 </span>
@@ -542,14 +542,14 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
-              My Stats
+              {t("dash.myStats")}
             </h2>
             <div className="grid grid-cols-4 gap-2">
               {[
-                { icon: MousePointerClick, value: stats.totalEvents, label: "Total" },
-                { icon: Eye, value: stats.detailViews, label: "Views" },
-                { icon: ExternalLink, value: stats.externalClicks, label: "Links" },
-                { icon: Bot, value: stats.agentChats, label: "Agent" },
+                { icon: MousePointerClick, value: stats.totalEvents, label: t("dash.total") },
+                { icon: Eye, value: stats.detailViews, label: t("dash.views") },
+                { icon: ExternalLink, value: stats.externalClicks, label: t("dash.links") },
+                { icon: Bot, value: stats.agentChats, label: t("dash.agent") },
               ].map((item, i) => (
                 <Card key={i} className="p-3 bg-card border-border text-center">
                   <item.icon className="w-4 h-4 mx-auto text-primary mb-1" />
@@ -566,7 +566,7 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Heart className="w-4 h-4 text-primary fill-primary/30" />
-              My Top Artist
+              {t("dash.topArtist")}
             </h2>
             <Card className="overflow-hidden border-border bg-card">
               <div className="p-4 flex items-center gap-3 border-b border-border/50 bg-gradient-to-r from-primary/8 to-transparent">
@@ -576,7 +576,7 @@ const UserDashboard = () => {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-foreground truncate">{topArtistEntry.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0].count} interactions</p>
+                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0].count} {t("dash.interactions")}</p>
                 </div>
               </div>
 
@@ -586,12 +586,12 @@ const UserDashboard = () => {
                     <p className="text-2xl font-black bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
                       {Math.round(stats.topArtists[0].score)}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">Engagement Score</p>
+                    <p className="text-[9px] text-muted-foreground">{t("dash.engagementScore")}</p>
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-lg font-black text-foreground">{stats.topArtists[0].count}</p>
-                    <p className="text-[9px] text-muted-foreground">Total Events</p>
+                    <p className="text-[9px] text-muted-foreground">{t("dash.totalEvents")}</p>
                   </div>
                 </div>
 
@@ -600,12 +600,12 @@ const UserDashboard = () => {
                   <div className="flex flex-wrap gap-1.5">
                     {stats.topArtists[0].breakdown.map((b) => {
                       const labels: Record<string, string> = {
-                        external_link_click: "Links",
-                        artist_detail_view: "Views",
-                        artist_detail_section: "Sections",
-                        agent_chat: "Agent",
-                        treemap_click: "Treemap",
-                        list_click: "List",
+                        external_link_click: t("dash.evLinks"),
+                        artist_detail_view: t("dash.evViews"),
+                        artist_detail_section: t("dash.evSections"),
+                        agent_chat: t("dash.evAgent"),
+                        treemap_click: t("dash.evTreemap"),
+                        list_click: t("dash.evList"),
                       };
                       return (
                         <span key={b.type} className="text-[10px] font-bold px-2 py-1 rounded-full bg-muted text-muted-foreground">
@@ -625,7 +625,7 @@ const UserDashboard = () => {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Crown className="w-4 h-4 text-yellow-400" />
-              Most Explored
+              {t("dash.mostExplored")}
             </h2>
             <Card className="p-4 bg-card border-border">
               {stats.topArtists.map((a, i) => (
