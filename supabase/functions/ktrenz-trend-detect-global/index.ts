@@ -60,7 +60,7 @@ Look for:
 - Products they were seen wearing, using, or promoting
 - Restaurants, cafes, or places they visited
 - Fashion items or beauty products featured in their recent appearances
-- Media appearances (TV shows, interviews, variety shows)
+- Media appearances (TV shows, interviews, variety shows), songs, albums, music releases
 - Collaborations at events, festivals, or concerts (focus on the commercial entity, not the event itself)
 
 STRICT Rules:
@@ -69,7 +69,7 @@ STRICT Rules:
 - Do NOT include the artist name itself, their agency/label, or generic music terms (album, comeback)
 - Chart names, concert names, and festival names are acceptable as CONTEXT but should NOT be extracted as standalone keywords. Extract the commercial entity instead (e.g., "wore Adidas at Coachella" → extract "Adidas", not "Coachella")
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked
-- Categorize as: brand, product, place, food, fashion, beauty, or media
+- Categorize as: brand, product, place, food, fashion, beauty, or media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
 - Maximum 5 keywords
 - Use ENGLISH names for keywords
 - Provide translations: keyword_ko, keyword_ja, keyword_zh
