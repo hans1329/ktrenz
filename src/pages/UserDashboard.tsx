@@ -372,9 +372,9 @@ const UserDashboard = () => {
             </div>
           ) : !user ? (
             <Card className="p-6 text-center border-border bg-card">
-              <p className="text-sm text-muted-foreground mb-3">Sign in to track your artists' trends</p>
+              <p className="text-sm text-muted-foreground mb-3">{t("dash.signInPrompt")}</p>
               <button onClick={() => navigate("/login")} className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                Sign In
+                {t("dash.signIn")}
               </button>
             </Card>
           ) : !myTrends?.length ? (
