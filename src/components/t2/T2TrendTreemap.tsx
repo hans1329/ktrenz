@@ -428,13 +428,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange }: { viewMode?: "treemap" |
       )}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
-          const config = cat === "all" ? null : CATEGORY_CONFIG[cat];
+          const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
           const allCount = cat === "all"
             ? (currentViewMode === "treemap" ? visibleBoxItems.length : triggers?.length || 0)
+            : cat === "my"
+            ? myKeywords.length
             : (currentViewMode === "treemap"
               ? visibleBoxItems.filter(t => t.category === cat).length
               : categoryStats[cat] || 0);
-          const count = allCount;
           return (
             <button
               key={cat}
