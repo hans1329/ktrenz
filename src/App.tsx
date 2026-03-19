@@ -42,6 +42,7 @@ import AdminSignalEvents from "./pages/admin/AdminSignalEvents";
 import AdminListingRequests from "./pages/admin/AdminListingRequests";
 import AdminStars from "./pages/admin/AdminStars";
 import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
+import AdminUserAnalytics from "./pages/admin/AdminUserAnalytics";
 import T2TrendMap from "./pages/T2TrendMap";
 import T2MyArtists from "./pages/T2MyArtists";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
