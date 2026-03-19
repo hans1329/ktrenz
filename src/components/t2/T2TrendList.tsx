@@ -184,7 +184,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {/* No image fallback */}
             {!heroImage && (
               <button
-                onClick={() => onTileClick(item)}
+                onClick={() => { track("t2_list_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, section: item.keyword }); onTileClick(item); }}
                 className="w-full px-3.5 py-4 bg-muted/30 text-left group flex items-center justify-between"
               >
                 <span
