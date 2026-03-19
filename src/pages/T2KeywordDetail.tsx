@@ -234,7 +234,11 @@ const T2KeywordDetail = () => {
   if (triggerLoading) {
     return (
       <div className="min-h-screen">
-        {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
+        <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center gap-3 px-4 bg-background/80 backdrop-blur-lg border-b border-border">
+          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+        </header>
         <div className={cn("pt-16 px-4 pb-8", !isMobile && "max-w-4xl mx-auto")}>
           <Skeleton className="h-8 w-48 mb-4" />
           <Skeleton className="h-64 w-full rounded-xl mb-4" />
@@ -247,12 +251,16 @@ const T2KeywordDetail = () => {
   if (!trigger) {
     return (
       <div className="min-h-screen">
-        {isMobile ? <V3Header /> : <V3DesktopHeader activeTab="rankings" onTabChange={() => {}} />}
+        <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center gap-3 px-4 bg-background/80 backdrop-blur-lg border-b border-border">
+          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+        </header>
         <div className={cn("pt-16 px-4 pb-8 text-center", !isMobile && "max-w-4xl mx-auto")}>
           <p className="text-muted-foreground mt-20">Keyword not found.</p>
-          <Button variant="outline" onClick={() => navigate("/t2")} className="mt-4">
-            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Trend Map
-          </Button>
+          <button onClick={() => navigate("/t2")} className="mt-4 text-sm text-primary underline">
+            ← {t2l("trendMap", language)}
+          </button>
         </div>
       </div>
     );
