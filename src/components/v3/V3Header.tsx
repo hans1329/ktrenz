@@ -19,7 +19,6 @@ interface SearchResult {
 const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [showLangDrawer, setShowLangDrawer] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
