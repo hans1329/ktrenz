@@ -61,12 +61,13 @@ Look for:
 - Restaurants, cafes, or places they visited
 - Fashion items or beauty products featured in their recent appearances
 - Media appearances (TV shows, interviews, variety shows)
+- Collaborations at events, festivals, or concerts (focus on the commercial entity, not the event itself)
 
 STRICT Rules:
 - Only include entities from VERY RECENT news (last 24 hours)
-- Each entity must have a clear, direct connection to the artist
-- Do NOT include the artist name itself, their agency/label, or generic music terms
-- Do NOT include: chart names (Billboard, Circle Chart, Hanteo, Gaon, Oricon, iTunes), the artist's own concert/tour/fan meeting names, music festival names (Lollapalooza, Coachella, MAMA, etc.), generic words like "brand", "chart", "music", "award"
+- Each entity must have a clear, direct connection to the artist (individual OR as part of their group activity)
+- Do NOT include the artist name itself, their agency/label, or generic music terms (album, comeback)
+- Chart names, concert names, and festival names are acceptable as CONTEXT but should NOT be extracted as standalone keywords. Extract the commercial entity instead (e.g., "wore Adidas at Coachella" → extract "Adidas", not "Coachella")
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked
 - Categorize as: brand, product, place, food, fashion, beauty, or media
 - Maximum 5 keywords
@@ -264,12 +265,12 @@ Deno.serve(async (req) => {
         }));
 
         // 7일 내 중복 체크 + 백필
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
         const { data: existing } = await sb
           .from("ktrenz_trend_triggers")
           .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
           .eq("wiki_entry_id", entryId)
-          .gte("detected_at", weekAgo);
+          .gte("detected_at", threeDaysAgo);
 
         const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
 
@@ -278,7 +279,7 @@ Deno.serve(async (req) => {
           .from("ktrenz_trend_triggers")
           .select("keyword")
           .neq("wiki_entry_id", entryId)
-          .gte("detected_at", weekAgo)
+          .gte("detected_at", threeDaysAgo)
           .in("keyword", allKeywords.map((k) => k.keyword));
 
         const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));

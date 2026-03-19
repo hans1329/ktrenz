@@ -89,23 +89,24 @@ async function extractKeywordsFromVideos(
 
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the YouTube video texts provided below. You have NO external knowledge. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are recent YouTube video titles and descriptions related to "${memberName}"${groupName ? ` (member of ${groupName})` : ""}. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND DIRECTLY connected to "${memberName}" as an INDIVIDUAL.
+  const userPrompt = `Below are recent YouTube video titles and descriptions related to "${memberName}"${groupName ? ` (member of ${groupName})` : ""}. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}" or their group "${groupName || "N/A"}".
 
 Videos:
 ${videoTexts}
 
 RULES:
 1. ONLY extract entities whose name literally appears in the video text above.
-2. "${memberName}" must be the PRIMARY INDIVIDUAL subject for that entity. If the video is about the group or another member, skip it.
-3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, concert, chart, comeback, MV, music video, official), channel names, chart names (Billboard, Circle Chart, Hanteo, Gaon, Oricon, iTunes), the artist's own concert/tour/fan meeting names, music festival names (Lollapalooza, Coachella, MAMA, etc.), generic words like "brand", "chart", "music", "award".
-4. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
-5. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
-6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}" individually.
-7. Categories: brand, product, place, food, fashion, beauty, media.
-8. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
-9. Provide translations: keyword_ko, keyword_ja, keyword_zh.
-10. Include "source_video_index" (1-based) pointing to the video where the entity appears.
-11. Provide translated context: context, context_ko, context_ja, context_zh.
+2. "${memberName}" should be mentioned or the video should be about "${memberName}" or their group. Group videos are acceptable IF they contain commercial entities.
+3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, comeback, MV, music video, official), channel names.
+4. Chart names, concert names, and festival names CAN provide context but should NOT be extracted as standalone keywords. Extract the commercial entity instead.
+5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
+6. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
+7. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
+8. Categories: brand, product, place, food, fashion, beauty, media.
+9. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
+10. Provide translations: keyword_ko, keyword_ja, keyword_zh.
+11. Include "source_video_index" (1-based) pointing to the video where the entity appears.
+12. Provide translated context: context, context_ko, context_ja, context_zh.
 
 If NO commercial entities are found, return [].
 Example: [{"keyword":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog[2]","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용[2]","context_ja":"Vlogでジェントルモンスターのサングラスを着用[2]","context_zh":"在Vlog中佩戴Gentle Monster太阳镜[2]","source_video_index":2}]`;
@@ -194,12 +195,12 @@ async function detectForMember(
   }
 
   // 7일 내 동일 멤버 기존 키워드 중복 체크 + 백필
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
     .eq("star_id", member.id)
-    .gte("detected_at", weekAgo)
+    .gte("detected_at", threeDaysAgo)
     .in("keyword", keywords.map((k) => k.keyword));
 
   const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
@@ -209,7 +210,7 @@ async function detectForMember(
     .from("ktrenz_trend_triggers")
     .select("keyword")
     .neq("star_id", member.id)
-    .gte("detected_at", weekAgo)
+    .gte("detected_at", threeDaysAgo)
     .in("keyword", keywords.map((k) => k.keyword));
 
   const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));
