@@ -36,6 +36,7 @@ interface ArtistGroup {
 const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const track = useTrackEvent();
 
   const artistGroups = useMemo(() => {
     const map = new Map<string, ArtistGroup>();
