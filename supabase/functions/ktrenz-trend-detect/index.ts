@@ -459,7 +459,7 @@ async function detectForMember(
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
     .eq("star_id", member.id)
-    .gte("detected_at", weekAgo)
+    .gte("detected_at", threeDaysAgo)
     .in("keyword", keywords.map((k) => k.keyword));
 
   const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
