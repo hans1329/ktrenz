@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -113,6 +114,7 @@ const T2KeywordDetail = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
@@ -215,7 +217,26 @@ const T2KeywordDetail = () => {
     enabled: !!triggerId,
   });
 
-  // Chart data
+  // Fetch user's bets for this market
+  const { data: myPosition } = useQuery({
+    queryKey: ["t2-my-position", marketData?.id, user?.id],
+    queryFn: async () => {
+      if (!marketData?.id || !user?.id) return null;
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("side, amount, shares")
+        .eq("market_id", marketData.id)
+        .eq("user_id", user.id);
+      if (!bets || bets.length === 0) return null;
+      const yesAmount = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.amount), 0);
+      const noAmount = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.amount), 0);
+      const yesShares = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.shares), 0);
+      const noShares = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.shares), 0);
+      return { yesAmount, noAmount, yesShares, noShares, totalSpent: yesAmount + noAmount };
+    },
+    enabled: !!marketData?.id && !!user?.id,
+  });
+
   const chartData = useMemo(() => {
     if (!trackingHistory?.length) return [];
     return trackingHistory.map((t: any) => ({
@@ -409,14 +430,6 @@ const T2KeywordDetail = () => {
               </div>
               <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5 text-center">
                 <div className="text-[10px] text-muted-foreground mb-0.5">
-                  {language === "ko" ? "총 예측" : "Total Bets"}
-                </div>
-                <div className="text-lg font-black text-foreground">
-                  {marketData.totalBets}
-                </div>
-              </div>
-              <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5 text-center">
-                <div className="text-[10px] text-muted-foreground mb-0.5">
                   {language === "ko" ? "총 거래량" : "Volume"}
                 </div>
                 <div className="text-lg font-black text-foreground">
@@ -424,7 +437,55 @@ const T2KeywordDetail = () => {
                   <span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
                 </div>
               </div>
+              <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5 text-center">
+                <div className="text-[10px] text-muted-foreground mb-0.5">
+                  {language === "ko" ? "총 예측" : "Total Bets"}
+                </div>
+                <div className="text-lg font-black text-foreground">
+                  {marketData.totalBets}
+                </div>
+              </div>
             </div>
+
+            {/* My Position */}
+            {myPosition && (
+              <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                <div className="text-[11px] font-bold text-foreground">
+                  {language === "ko" ? "내 포지션" : "My Position"}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {myPosition.yesAmount > 0 && (
+                    <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-2">
+                      <div className="text-[10px] text-green-400 mb-0.5">
+                        {language === "ko" ? "오를 것 지분" : "Rise Stake"}
+                      </div>
+                      <div className="text-sm font-bold text-foreground">
+                        {myPosition.yesAmount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                      </div>
+                      <div className="text-[10px] text-green-400 mt-0.5">
+                        {language === "ko" ? "성공시" : "If win"} +{Math.round(myPosition.yesShares - myPosition.yesAmount).toLocaleString()}<span className="text-[9px] text-muted-foreground ml-0.5">P</span>
+                      </div>
+                    </div>
+                  )}
+                  {myPosition.noAmount > 0 && (
+                    <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2">
+                      <div className="text-[10px] text-red-400 mb-0.5">
+                        {language === "ko" ? "내릴 것 지분" : "Fall Stake"}
+                      </div>
+                      <div className="text-sm font-bold text-foreground">
+                        {myPosition.noAmount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                      </div>
+                      <div className="text-[10px] text-red-400 mt-0.5">
+                        {language === "ko" ? "성공시" : "If win"} +{Math.round(myPosition.noShares - myPosition.noAmount).toLocaleString()}<span className="text-[9px] text-muted-foreground ml-0.5">P</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {language === "ko" ? "총 투자" : "Total invested"}: {myPosition.totalSpent.toLocaleString()}P
+                </div>
+              </div>
+            )}
 
             {/* Market status */}
             {marketData.expires_at && (
