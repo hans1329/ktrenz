@@ -109,120 +109,88 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
 
 
+  const [betSide, setBetSide] = useState<"yes" | "no">("yes");
+  const [betAmount, setBetAmount] = useState("");
 
-
-  // Vote data
-  const { data: voteData } = useQuery({
-    queryKey: ["t2-keyword-votes", tile?.id],
+  // Market data
+  const { data: marketData } = useQuery({
+    queryKey: ["t2-market", tile?.id],
     queryFn: async () => {
-      if (!tile) return { ups: 0, downs: 0, myVote: null as string | null };
-      const { data: allVotes } = await supabase
-        .from("ktrenz_keyword_votes" as any)
-        .select("vote_type, user_id")
-        .eq("trigger_id", tile.id);
-      const votes = (allVotes ?? []) as any[];
-      const ups = votes.filter((v: any) => v.vote_type === "up").length;
-      const downs = votes.filter((v: any) => v.vote_type === "down").length;
-      const myVote = user ? votes.find((v: any) => v.user_id === user.id)?.vote_type ?? null : null;
-      return { ups, downs, myVote };
+      if (!tile) return null;
+      const { data } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("*")
+        .eq("trigger_id", tile.id)
+        .single();
+      return data as any;
     },
     enabled: !!tile,
   });
 
-  // Boost count
-  const { data: boostCount } = useQuery({
-    queryKey: ["t2-keyword-boosts", tile?.id],
+  // User's bets for this market
+  const { data: myBets } = useQuery({
+    queryKey: ["t2-my-bets", marketData?.id, user?.id],
     queryFn: async () => {
-      if (!tile) return 0;
-      const { count } = await supabase
-        .from("ktrenz_keyword_boosts" as any)
-        .select("id", { count: "exact", head: true })
-        .eq("trigger_id", tile.id);
-      return count ?? 0;
-    },
-    enabled: !!tile,
-  });
-
-  // Read boost check (has user already read-boosted this keyword?)
-  const { data: hasReadBoosted } = useQuery({
-    queryKey: ["t2-read-boost", tile?.id, user?.id],
-    queryFn: async () => {
-      if (!tile || !user) return false;
+      if (!marketData?.id || !user) return [];
       const { data } = await supabase
-        .from("ktrenz_keyword_boosts" as any)
-        .select("id")
-        .eq("trigger_id", tile.id)
+        .from("ktrenz_trend_bets" as any)
+        .select("*")
+        .eq("market_id", marketData.id)
         .eq("user_id", user.id)
-        .eq("platform", "read")
-        .limit(1);
-      return (data ?? []).length > 0;
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
     },
-    enabled: !!tile && !!user,
+    enabled: !!marketData?.id && !!user,
   });
 
-  // Share boost check
-  const { data: hasShareBoosted } = useQuery({
-    queryKey: ["t2-share-boost", tile?.id, user?.id],
-    queryFn: async () => {
-      if (!tile || !user) return false;
-      const { data } = await supabase
-        .from("ktrenz_keyword_boosts" as any)
-        .select("id, platform")
-        .eq("trigger_id", tile.id)
-        .eq("user_id", user.id)
-        .in("platform", ["x", "copy"])
-        .limit(1);
-      return (data ?? []).length > 0;
+  // Bet mutation
+  const betMutation = useMutation({
+    mutationFn: async ({ side, amount }: { side: "yes" | "no"; amount: number }) => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-bet", {
+        body: { triggerId: tile!.id, side, amount },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
-    enabled: !!tile && !!user,
-  });
-
-  const voteMutation = useMutation({
-    mutationFn: async (voteType: "up" | "down") => {
-      if (!user || !tile) return { isNew: false };
-      const currentVote = voteData?.myVote;
-      if (currentVote === voteType) {
-        // Remove vote
-        await supabase
-          .from("ktrenz_keyword_votes" as any)
-          .delete()
-          .eq("trigger_id", tile.id)
-          .eq("user_id", user.id);
-        return { isNew: false };
-      } else if (currentVote) {
-        // Change vote
-        await supabase
-          .from("ktrenz_keyword_votes" as any)
-          .update({ vote_type: voteType, updated_at: new Date().toISOString() } as any)
-          .eq("trigger_id", tile.id)
-          .eq("user_id", user.id);
-        return { isNew: false };
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
+      queryClient.invalidateQueries({ queryKey: ["t2-my-bets"] });
+      queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
+      queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      setBetAmount("");
+      toast.success(`Bet placed! ${data.shares.toFixed(1)} ${t("shares", language)}`);
+    },
+    onError: (err: Error) => {
+      if (err.message.includes("Insufficient")) {
+        toast.error(t("insufficientPoints", language));
       } else {
-        // New vote — award 1 point
-        await supabase
-          .from("ktrenz_keyword_votes" as any)
-          .insert({ trigger_id: tile.id, user_id: user.id, vote_type: voteType } as any);
-        await supabase.rpc("ktrenz_increment_points" as any, { p_user_id: user.id, p_amount: 1 });
-        return { isNew: true };
-      }
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["t2-keyword-votes", tile?.id] });
-      if (result?.isNew) {
-        queryClient.invalidateQueries({ queryKey: ["user-points"] });
-        toast.success("+1 K-Point");
+        toast.error(err.message);
       }
     },
   });
 
-  const handleVote = (voteType: "up" | "down") => {
+  const handlePlaceBet = () => {
     if (!user) {
-      toast.info(t("loginToVote", language));
+      toast.info(t("loginToBet", language));
       return;
     }
-    voteMutation.mutate(voteType);
+    const amount = Number(betAmount);
+    if (isNaN(amount) || amount < 10) {
+      toast.error(t("betPlaceholder", language));
+      return;
+    }
+    betMutation.mutate({ side: betSide, amount });
   };
 
+  // Calculate prices from pool
+  const poolYes = Number(marketData?.pool_yes ?? 100);
+  const poolNo = Number(marketData?.pool_no ?? 100);
+  const priceYes = poolNo / (poolYes + poolNo);
+  const priceNo = poolYes / (poolYes + poolNo);
+  const totalVolume = Number(marketData?.total_volume ?? 0);
+  const isSettled = marketData?.status === "settled";
+  const marketOutcome = marketData?.outcome;
   const handleBoost = async (platform: "x" | "copy") => {
     if (!tile) return;
     const keyword = getLocalizedKeyword(tile, language);
