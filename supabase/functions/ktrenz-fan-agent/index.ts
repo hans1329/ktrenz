@@ -3282,8 +3282,10 @@ Deno.serve(async (req) => {
                   get_streaming_guide: ["다음 단계 보기", "총공 타임테이블", "플레이리스트 추천"],
                   get_fan_activity: ["다음 미션 보기", "스밍 가이드 보기", "최신 뉴스 확인"],
                   compare_artists: ["스밍 전략 비교", "개별 상세 분석", "뉴스 확인하기"],
-                  search_web: ["관련 뉴스 더 보기", "순위 확인하기", "스밍 가이드 보기"],
-                };
+                   search_web: ["관련 뉴스 더 보기", "순위 확인하기", "스밍 가이드 보기"],
+                   get_trend_keywords: ["트렌드 키워드 상세 보기", "아티스트 분석 보기", "핫 트렌드 확인"],
+                   get_trending_now: ["아티스트별 키워드 보기", "순위 확인하기", "뉴스 확인하기"],
+                 };
                 const lastTool = [...usedTools].reverse().find((t: string) => fallbackMap[t]);
                 collectedMeta.followUps = lastTool
                   ? fallbackMap[lastTool]
