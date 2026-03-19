@@ -561,8 +561,8 @@ const UserDashboard = () => {
           </section>
         )}
 
-        {/* ── Top Artist Contribution ── */}
-        {topArtistContrib && (
+        {/* ── Top Artist (event-based) ── */}
+        {topArtistEntry && stats.topArtists[0] && (
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <Heart className="w-4 h-4 text-primary fill-primary/30" />
@@ -571,50 +571,45 @@ const UserDashboard = () => {
             <Card className="overflow-hidden border-border bg-card">
               <div className="p-4 flex items-center gap-3 border-b border-border/50 bg-gradient-to-r from-primary/8 to-transparent">
                 <Avatar className="w-11 h-11 border-2 border-primary/20">
-                  <AvatarImage src={topArtistContrib.entry.image_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">{topArtistContrib.entry.title?.[0]}</AvatarFallback>
+                  <AvatarImage src={topArtistEntry.image_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold">{topArtistEntry.title?.[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-foreground truncate">{topArtistContrib.entry.title}</p>
-                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0]?.count} interactions</p>
+                  <p className="text-sm font-black text-foreground truncate">{topArtistEntry.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{stats.topArtists[0].count} interactions</p>
                 </div>
-                {topArtistContrib.myRank > 0 && (
-                  <div className="text-center shrink-0">
-                    <div className="flex items-center gap-0.5">
-                      <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-                      <span className="text-lg font-black text-foreground">#{topArtistContrib.myRank}</span>
-                    </div>
-                    <p className="text-[9px] text-muted-foreground">of {topArtistContrib.totalFans}</p>
-                  </div>
-                )}
               </div>
 
               <div className="p-4">
                 <div className="flex items-center gap-4 mb-3">
                   <div className="text-center">
                     <p className="text-2xl font-black bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {Math.round(topArtistContrib.totalScore)}
+                      {Math.round(stats.topArtists[0].score)}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">Score</p>
+                    <p className="text-[9px] text-muted-foreground">Engagement Score</p>
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-black text-foreground">{topArtistContrib.totalClicks}</p>
-                    <p className="text-[9px] text-muted-foreground">Clicks</p>
+                    <p className="text-lg font-black text-foreground">{stats.topArtists[0].count}</p>
+                    <p className="text-[9px] text-muted-foreground">Total Events</p>
                   </div>
                 </div>
 
-                {topArtistContrib.platformBreakdown.length > 0 && (
+                {/* Event type breakdown */}
+                {stats.topArtists[0].breakdown.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {topArtistContrib.platformBreakdown.slice(0, 5).map((p: any) => {
-                      const displayNames: Record<string, string> = {
-                        youtube: "YouTube", twitter: "X", reddit: "Reddit", tiktok: "TikTok",
-                        spotify: "Spotify", melon: "Melon", naver: "Naver",
+                    {stats.topArtists[0].breakdown.map((b) => {
+                      const labels: Record<string, string> = {
+                        external_link_click: "Links",
+                        artist_detail_view: "Views",
+                        artist_detail_section: "Sections",
+                        agent_chat: "Agent",
+                        treemap_click: "Treemap",
+                        list_click: "List",
                       };
-                      const name = displayNames[p.platform] || p.platform;
                       return (
-                        <span key={p.platform} className={cn("text-[10px] font-bold px-2 py-1 rounded-full", PLATFORM_COLORS[name] || PLATFORM_COLORS.other)}>
-                          {name} <span className="opacity-60">{p.clicks}</span>
+                        <span key={b.type} className="text-[10px] font-bold px-2 py-1 rounded-full bg-muted text-muted-foreground">
+                          {labels[b.type] || b.type} <span className="opacity-60">{b.count}</span>
                         </span>
                       );
                     })}
