@@ -628,21 +628,24 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       </span>
                     )}
                     {isTopThree && (
-                      <div className="absolute inset-0 z-[1] pointer-events-none" style={{
-                        boxShadow: rectIndex === 0
-                          ? 'inset 0 0 25px 8px hsla(0, 0%, 100%, 0.5), inset 0 0 50px 16px hsla(0, 0%, 100%, 0.25)'
-                          : 'inset 0 0 15px 4px hsla(0, 0%, 100%, 0.3)',
-                        background: rectIndex === 0
-                          ? 'radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.1) 0%, transparent 60%)'
-                          : undefined,
-                      }} />
-                      <BoxParticles
-                        count={rectIndex === 0 ? 18 : 10}
-                        color="hsla(45, 100%, 80%, 0.9)"
-                        speed={rectIndex === 0 ? 0.3 : 0.2}
-                        density={rectIndex === 0 ? 0.6 : 0.4}
-                        shape="star"
-                      />
+                      <>
+                        <div className="absolute inset-0 z-[1] pointer-events-none" style={{
+                          boxShadow: rectIndex === 0
+                            ? 'inset 0 0 25px 8px hsla(0, 0%, 100%, 0.5), inset 0 0 50px 16px hsla(0, 0%, 100%, 0.25)'
+                            : 'inset 0 0 15px 4px hsla(0, 0%, 100%, 0.3)',
+                          background: rectIndex === 0
+                            ? 'radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.1) 0%, transparent 60%)'
+                            : undefined,
+                        }} />
+                        <BoxParticles
+                          count={rectIndex === 0 ? 18 : 10}
+                          color="hsla(45, 100%, 80%, 0.9)"
+                          speed={rectIndex === 0 ? 0.3 : 0.2}
+                          density={rectIndex === 0 ? 0.6 : 0.4}
+                          shape="star"
+                        />
+                      </>
+                    )}
                   </button>
                 );
               })}
