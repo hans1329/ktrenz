@@ -227,8 +227,8 @@ const UserDashboard = () => {
         d.types.set(e.event_type, (d.types.get(e.event_type) || 0) + 1);
         artistData.set(name, d);
       }
-      if (e.event_type === "external_link_click") externalClicks++;
-      if (e.event_type === "artist_detail_view" || e.event_type === "artist_detail_section") detailViews++;
+      if (e.event_type === "external_link_click" || e.event_type === "t2_external_link_click") externalClicks++;
+      if (e.event_type === "artist_detail_view" || e.event_type === "artist_detail_section" || e.event_type === "t2_artist_view" || e.event_type === "t2_keyword_detail_view") detailViews++;
       if (e.event_type === "agent_chat") agentChats++;
     }
 
