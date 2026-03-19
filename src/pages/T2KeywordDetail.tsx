@@ -382,10 +382,10 @@ const T2KeywordDetail = () => {
             <div className="mb-4">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="font-bold text-green-400">
-                  📈 {language === "ko" ? "오를 것" : "Will Rise"} {(marketData.priceYes * 100).toFixed(1)}%
+                  {language === "ko" ? "오를 것" : "Will Rise"} {(marketData.priceYes * 100).toFixed(1)}%
                 </span>
                 <span className="font-bold text-red-400">
-                  📉 {language === "ko" ? "내릴 것" : "Will Fall"} {(marketData.priceNo * 100).toFixed(1)}%
+                  {language === "ko" ? "내릴 것" : "Will Fall"} {(marketData.priceNo * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="relative h-3 rounded-full overflow-hidden bg-red-500/20">
