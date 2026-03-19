@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTrackEvent } from "@/hooks/useTrackEvent";
 
 import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
