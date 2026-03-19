@@ -166,7 +166,7 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
           </span>
         </div>
         <p className="text-[10px] text-muted-foreground truncate">
-          {getLocalizedArtistName(top, language)} · {artistCount} artists · {myKeywords.length} keywords
+          My Picks · {getLocalizedArtistName(top, language)} · {artistCount} artists · {myKeywords.length} keywords
         </p>
       </div>
       <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
