@@ -973,6 +973,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   quickActions: meta.quickActions ?? m.quickActions,
                   followUps: meta.followUps ?? m.followUps,
                   reportCards: meta.reportCards ?? m.reportCards,
+                  trendData: meta.trendData ?? m.trendData,
                 } : m
               );
             }
