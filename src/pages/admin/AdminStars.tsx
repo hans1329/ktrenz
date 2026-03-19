@@ -394,6 +394,7 @@ const AdminStars = () => {
                 <tr className="border-b border-border bg-muted/50">
                   <th className="text-left px-3 py-2 font-medium">이름</th>
                   <th className="text-left px-3 py-2 font-medium">한글명</th>
+                  <th className="text-left px-3 py-2 font-medium">분류</th>
                   <th className="text-left px-3 py-2 font-medium">타입</th>
                   <th className="text-left px-3 py-2 font-medium">소속 그룹</th>
                   <th className="text-left px-3 py-2 font-medium">소속사</th>
@@ -407,6 +408,11 @@ const AdminStars = () => {
                   <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-2 font-medium">{s.display_name}</td>
                     <td className="px-3 py-2 text-muted-foreground">{s.name_ko ?? "—"}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant="secondary" className={cn("text-[10px]", categoryColor[(s as any).star_category || "kpop"])}>
+                        {STAR_CATEGORY_OPTIONS.find(c => c.value === ((s as any).star_category || "kpop"))?.label || (s as any).star_category}
+                      </Badge>
+                    </td>
                     <td className="px-3 py-2">
                       <Badge variant="secondary" className={cn("text-[10px]", typeColor[s.star_type])}>
                         {s.star_type}
