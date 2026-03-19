@@ -39,7 +39,7 @@ const T2TrendMap = () => {
                 key={key}
                 onClick={() => setViewMode(key)}
                 className={cn(
-                  "flex items-center justify-center w-10 h-7 md:w-14 md:h-9 rounded-full transition-all",
+                  "flex items-center justify-center w-10 h-7 md:w-12 md:h-8 rounded-full transition-all",
                   viewMode === key
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
