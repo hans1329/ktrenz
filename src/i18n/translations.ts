@@ -110,7 +110,11 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Agent Quick Action Prompts ──
   "agent.prompt.liveRankings": { en: "Show me the live rankings Top 10", ko: "실시간 랭킹 Top 10 보여줘", ja: "リアルタイムランキングTop10を見せて", zh: "展示实时排名前10" },
-  "agent.prompt.trendAnalysis": { en: "Give me a detailed trend analysis for {artist} with strongest/weakest categories and 24h momentum", ko: "{artist} 기준으로 카테고리별 강점/약점과 24시간 모멘텀을 상세 분석해줘", ja: "{artist}基準で、カテゴリ別の強み/弱みと24時間モメンタムを詳しく分析して", zh: "请基于{artist}，详细分析各类别强弱和24小时动量" },
+  "agent.prompt.trendAnalysis": { en: "Analyze the trend keywords for {artist} — show influence index, search volume changes, and categories", ko: "{artist}의 트렌드 키워드를 분석해줘 — 영향력 지수, 검색량 변화, 카테고리 포함", ja: "{artist}のトレンドキーワードを分析して — 影響力指数、検索ボリューム変化、カテゴリ含む", zh: "分析{artist}的趋势关键词 — 包含影响力指数、搜索量变化和类别" },
+  "agent.hotKeywords": { en: "Hot Keywords", ko: "지금 뜨는 키워드", ja: "ホットキーワード", zh: "热门关键词" },
+  "agent.myArtistTrend": { en: "My Artist Trend", ko: "내 아티스트 트렌드", ja: "マイアーティストトレンド", zh: "我的艺人趋势" },
+  "agent.prompt.hotKeywords": { en: "Show me the hottest trending keywords right now across all artists", ko: "지금 전체 아티스트 중 가장 뜨고 있는 트렌드 키워드를 보여줘", ja: "今すべてのアーティストの中で最もホットなトレンドキーワードを見せて", zh: "展示当前所有艺人中最热门的趋势关键词" },
+  "agent.prompt.myArtistTrend": { en: "Show me the active trend keywords for {artist} — what's buzzing right now?", ko: "{artist}의 활성 트렌드 키워드를 보여줘 — 지금 뭐가 뜨고 있어?", ja: "{artist}のアクティブなトレンドキーワードを見せて — 今何が話題？", zh: "展示{artist}的活跃趋势关键词 — 现在什么在热门？" },
   "agent.prompt.streamingGuide": { en: "I want a streaming guide for {artist}.", ko: "{artist} 스밍 가이드를 보고 싶어.", ja: "{artist}のストリーミングガイドが見たい。", zh: "我想看{artist}的流媒体指南。" },
   "agent.prompt.alertSettings": { en: "I want to set up ranking change alerts for {artist}. Guide me on how to set it up.", ko: "{artist}의 랭킹 변동 알림을 설정하고 싶어. 방법을 안내해줘.", ja: "{artist}のランキング変動アラートを設定したい。方法を教えて。", zh: "我想为{artist}设置排名变动提醒。请指导我如何设置。" },
   "agent.prompt.alertSetup": { en: "I want to set my bias artist. Guide me.", ko: "최애 아티스트 설정하고 싶어. 방법 알려줘.", ja: "推しアーティストを設定したい。教えて。", zh: "我想设置最爱的艺人。告诉我怎么做。" },
