@@ -640,7 +640,7 @@ const T2KeywordDetail = () => {
               </p>
             </div>
             <div className="rounded-xl bg-muted/30 border border-border p-4">
-              <div className="text-[10px] text-muted-foreground mb-1">Reaction Speed</div>
+              <div className="text-[10px] text-muted-foreground mb-1">{t2l("reactionSpeed", language)}</div>
               <div className="text-lg font-black text-foreground">
                 {trigger.peak_at
                   ? (() => {
