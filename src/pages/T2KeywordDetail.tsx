@@ -737,8 +737,8 @@ const T2KeywordDetail = () => {
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 mt-6">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
               <Activity className="w-4 h-4 text-primary" />
-              Tracking History
-              <span className="text-[10px] font-normal text-muted-foreground ml-1">{trackingHistory.length} records</span>
+              {t2l("trackingHistory", language)}
+              <span className="text-[10px] font-normal text-muted-foreground ml-1">{trackingHistory.length} {t2l("records", language)}</span>
             </h2>
             <div className="space-y-1.5 max-h-80 overflow-y-auto">
               {[...trackingHistory].reverse().map((t: any) => (
