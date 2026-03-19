@@ -353,7 +353,7 @@ const UserDashboard = () => {
           <button onClick={() => navigate(-1)} className="p-1 -ml-1 mr-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-base font-bold text-foreground">My Activity</h1>
+          <h1 className="text-base font-bold text-foreground">{t("dash.title")}</h1>
         </div>
       </header>
 
