@@ -60,6 +60,7 @@ const T2MyArtists = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
 
   useEffect(() => {
