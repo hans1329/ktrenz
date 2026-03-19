@@ -1086,6 +1086,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       liveRankings: "live_rankings",
       trendAnalysis: "trend_analysis",
       streamingGuide: "streaming_guide",
+      hotKeywords: "hot_keywords",
+      myArtistTrend: "my_artist_trend",
     };
     const artistName = activeSlot?.artist_name || "my bias artist";
     const prompt = action.prompt.replace(/\{artist\}/g, artistName);
