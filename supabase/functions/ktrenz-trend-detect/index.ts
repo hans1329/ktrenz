@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
     // 배치 모드: ktrenz_stars의 member 타입 순회
     const { data: members } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, group_star_id")
+      .select("id, display_name, name_ko, group_star_id, star_category")
       .eq("is_active", true)
       .eq("star_type", "member")
       .order("display_name", { ascending: true });
