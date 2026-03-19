@@ -566,7 +566,17 @@ async function detectForMember(
   }
 
   if (rowsToInsert.length > 0) {
-    await sb.from("ktrenz_trend_triggers").insert(rowsToInsert);
+    const { data: inserted } = await sb.from("ktrenz_trend_triggers").insert(rowsToInsert).select("id");
+    // 비동기 이미지 캐시 호출
+    if (inserted?.length) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-cache-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ triggerIds: inserted.map((r: any) => r.id) }),
+      }).catch((e) => console.warn(`[trend-detect] cache-image fire-and-forget error: ${e.message}`));
+    }
   }
 
   if (backfillPromises.length > 0) {
