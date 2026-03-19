@@ -149,21 +149,30 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const COLLECTION_PAUSED = true;
+
   try {
     const body = await req.json().catch(() => ({}));
     const { batchSize = 5, batchOffset = 0 } = body;
+
+    if (COLLECTION_PAUSED) {
+      console.warn(`[detect-global] Collection paused. Ignoring request offset=${batchOffset}, size=${batchSize}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          paused: true,
+          batchOffset,
+          batchSize,
+          message: "T2 global trend detection is temporarily paused",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
     const sb = createClient(supabaseUrl, supabaseKey);
-
-    if (!perplexityKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: "PERPLEXITY_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // ktrenz_stars에서 active 아티스트 가져오기 (그룹 컨텍스트 포함)
     const { data: stars } = await sb
