@@ -544,10 +544,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     )}
                   </div>
                 </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground px-1">
-                  <span>{t("betYes", language)}</span>
-                  <span>{t("betNo", language)}</span>
-                </div>
               </div>
 
               {totalVolume > 0 && (
@@ -555,6 +551,37 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   {t("totalPool", language)}: {totalVolume.toLocaleString()}P
                 </p>
               )}
+
+              {/* My Position */}
+              {myBets && myBets.length > 0 && (() => {
+                const yesStake = myBets.filter((b: any) => b.side === "yes").reduce((s: number, b: any) => s + Number(b.amount), 0);
+                const noStake = myBets.filter((b: any) => b.side === "no").reduce((s: number, b: any) => s + Number(b.amount), 0);
+                const yesShares = myBets.filter((b: any) => b.side === "yes").reduce((s: number, b: any) => s + Number(b.shares), 0);
+                const noShares = myBets.filter((b: any) => b.side === "no").reduce((s: number, b: any) => s + Number(b.shares), 0);
+                const totalInvested = yesStake + noStake;
+                return (
+                  <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
+                    <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {yesStake > 0 && (
+                        <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
+                          <div className="text-[10px] text-muted-foreground">🔥 {language === "ko" ? "오를 것" : "Rise"}</div>
+                          <div className="text-sm font-bold text-emerald-400">{yesStake}P</div>
+                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}P</span></div>
+                        </div>
+                      )}
+                      {noStake > 0 && (
+                        <div className="rounded-md bg-rose-500/10 border border-rose-500/20 p-2">
+                          <div className="text-[10px] text-muted-foreground">🤷 {language === "ko" ? "내릴 것" : "Fall"}</div>
+                          <div className="text-sm font-bold text-rose-400">{noStake}P</div>
+                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-rose-400 font-semibold">+{Math.round(noShares - noStake)}P</span></div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground text-center">{language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested}P</span></div>
+                  </div>
+                );
+              })()}
 
               {/* Settled state */}
               {isSettled ? (
@@ -579,7 +606,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               ) : (
                 <>
-                  {/* Bet input — amount only, side selected via odds cards above */}
+                  {/* Bet input */}
                   <div className="flex items-center gap-2">
                      <Input
                        type="number"
@@ -600,19 +627,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <Coins className="w-4 h-4" />
                     {t("placeBet", language)}
                   </Button>
-
-                  {/* My bets */}
-                  {myBets && myBets.length > 0 && (
-                    <div className="border-t border-border/50 pt-2 space-y-1">
-                      <p className="text-[10px] text-muted-foreground font-medium">{t("yourBets", language)}</p>
-                      {myBets.map((bet: any) => (
-                        <div key={bet.id} className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>{bet.side === "yes" ? "🔥 Yes" : "🤷 No"} · {bet.amount}P</span>
-                          <span>{Number(bet.shares).toFixed(1)} {t("shares", language)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </>
               )}
             </div>
