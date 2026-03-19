@@ -454,7 +454,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         </div>
       </div>
 
-      {/* Category filter */}
+      {!hideCategory && (
       <div className={cn(
         "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
         "sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4"
@@ -495,6 +495,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           );
         })}
       </div>
+      )}
 
       {/* View Content */}
       <div>
