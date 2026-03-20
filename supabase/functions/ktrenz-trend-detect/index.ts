@@ -385,29 +385,35 @@ Deno.serve(async (req) => {
     let successCount = 0;
     let totalKeywords = 0;
 
-    for (const member of batch) {
+    for (const star of batch) {
       try {
-        const group = member.group_star_id ? groupMap[member.group_star_id] : null;
+        const isGroup = star.star_type === "group";
+        const isSolo = star.star_type === "solo";
+        const group = star.group_star_id ? groupMap[star.group_star_id] : null;
+
+        // 그룹: group_name은 자기 자신, wiki_entry_id도 자기 자신
+        // 솔로: group 없음
+        // 멤버: 소속 그룹 참조
+        const memberInfo: MemberInfo = {
+          id: star.id,
+          display_name: star.display_name,
+          name_ko: star.name_ko,
+          group_name: isGroup ? null : (isSolo ? null : (group?.display_name || null)),
+          group_name_ko: isGroup ? null : (isSolo ? null : (group?.name_ko || null)),
+          group_wiki_entry_id: isGroup ? null : (isSolo ? null : (group?.wiki_entry_id || null)),
+          star_category: star.star_category || "kpop",
+        };
+
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret,
-          {
-            id: member.id,
-            display_name: member.display_name,
-            name_ko: member.name_ko,
-            group_name: group?.display_name || null,
-            group_name_ko: group?.name_ko || null,
-            group_wiki_entry_id: group?.wiki_entry_id || null,
-            star_category: member.star_category || "kpop",
-          }
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo
         );
         successCount++;
         totalKeywords += result.keywordsFound;
-        console.log(`[trend-detect] ✓ ${member.display_name}: ${result.keywordsFound} keywords (${result.articlesFound} articles)`);
+        console.log(`[trend-detect] ✓ ${star.display_name} (${star.star_type}): ${result.keywordsFound} keywords (${result.articlesFound} articles)`);
 
-        // Rate limit 방지: Naver API + OpenAI 간 간격
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
-        console.error(`[trend-detect] ✗ ${member.display_name}: ${(e as Error).message}`);
+        console.error(`[trend-detect] ✗ ${star.display_name}: ${(e as Error).message}`);
       }
     }
 
@@ -417,7 +423,7 @@ Deno.serve(async (req) => {
         batchOffset,
         batchSize,
         processed: batch.length,
-        totalCandidates: allMembers.length,
+        totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
       }),
