@@ -442,7 +442,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       )}
                     </div>
                   </div>
-                ) : null}
+                ) : null;
+                })()}
               </div>
             )}
 
