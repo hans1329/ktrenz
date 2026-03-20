@@ -364,9 +364,10 @@ function extractShopKeywords(
     const brandName = brand;
     if (!brandName || brandName.length < 2) continue;
     const brandLower = brandName.toLowerCase();
+    // 무의미 브랜드명 필터
+    if (["unknown", "기타", "없음", "no brand", "etc", "n/a"].includes(brandLower)) continue;
     // 아티스트/그룹 이름 변형 모두 필터
     if (allNameVariants.some(n => brandLower === n || brandLower.includes(n) || n.includes(brandLower))) continue;
-    if (PLATFORM_BLACKLIST.has(brandLower)) continue;
     if (PLATFORM_BLACKLIST.has(brandLower)) continue;
 
     const existing = brandCounts.get(brandLower);
