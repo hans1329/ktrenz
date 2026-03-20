@@ -536,14 +536,16 @@ async function detectForMember(
 
   for (const candidate of candidateRows) {
     const kwLower = candidate.row.keyword.toLowerCase();
+    const kwEnLower = candidate.row.keyword_en?.toLowerCase() || "";
+    const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
 
-    // 크로스 아티스트 중복 필터
-    if (crossSet.has(kwLower)) {
+    // 크로스 아티스트 중복 필터 (keyword, keyword_en, keyword_ko 모두 체크)
+    if (crossSet.has(kwLower) || (kwEnLower && crossSet.has(kwEnLower)) || (kwKoLower && crossSet.has(kwKoLower))) {
       console.warn(`[trend-detect] Cross-artist duplicate filtered: "${candidate.row.keyword}"`);
       continue;
     }
 
-    const current = existingByKeyword.get(kwLower);
+    const current = existingByKeyword.get(kwLower) || (kwEnLower ? existingByKeyword.get(kwEnLower) : null) || (kwKoLower ? existingByKeyword.get(kwKoLower) : null);
 
     if (!current) {
       if (batchInsertedKeys.has(kwLower)) {
