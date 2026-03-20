@@ -64,13 +64,13 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     staleTime: 300_000,
   });
 
-  // Poll for keywords: detect phases show newly detected, track phase shows active keywords being tracked
+  // Poll for keywords: detect phases show newly detected (filtered by source), track phase shows active keywords
+  const triggerSourceFilter = run?.phase === "detect" ? "naver_news" : run?.phase === "detect_global" ? "global_news" : null;
   const { data: recentKeywords } = useQuery({
-    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase],
+    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase, triggerSourceFilter],
     queryFn: async () => {
       if (!run) return [];
       if (isTrackPhase) {
-        // Track phase: show active keywords currently being tracked
         const { data } = await supabase
           .from("ktrenz_trend_triggers" as any)
           .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
@@ -79,12 +79,16 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           .limit(50);
         return (data ?? []) as unknown as RecentKeyword[];
       }
-      const { data } = await supabase
+      let query = supabase
         .from("ktrenz_trend_triggers" as any)
         .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
         .gte("detected_at", run.startedAt.toISOString())
         .order("detected_at", { ascending: false })
         .limit(50);
+      if (triggerSourceFilter) {
+        query = query.eq("trigger_source", triggerSourceFilter);
+      }
+      const { data } = await query;
       return (data ?? []) as unknown as RecentKeyword[];
     },
     enabled: !!run,
