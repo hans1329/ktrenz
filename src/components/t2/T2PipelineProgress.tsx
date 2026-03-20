@@ -181,7 +181,9 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           {/* Recent keywords feed */}
           {recentKeywords && recentKeywords.length > 0 && (
             <div className="space-y-1 max-h-40 overflow-y-auto">
-              <p className="text-[10px] font-bold text-muted-foreground">최근 감지된 키워드</p>
+              <p className="text-[10px] font-bold text-muted-foreground">
+                {isTrackPhase ? "추적 중인 키워드" : "최근 감지된 키워드"}
+              </p>
               {recentKeywords.slice(0, 10).map((kw) => (
                 <div
                   key={kw.id}
