@@ -339,6 +339,10 @@ function extractShopKeywords(
 
   const memberLower = memberName.toLowerCase();
   const groupLower = (groupName || "").toLowerCase();
+  // name_ko 추출 (괄호 안 한글명도 체크)
+  const koMatch = memberName.match(/\(([가-힣]+)\)/);
+  const nameKoLower = koMatch ? koMatch[1].toLowerCase() : "";
+  const allNameVariants = [memberLower, groupLower, nameKoLower].filter(Boolean);
 
   // 쇼핑 상품명에서 브랜드명 추출: "아이유 x 뉴발란스 530" → "뉴발란스 530"
   const brandCounts = new Map<string, { count: number; category: string; title: string; mallName: string }>();
