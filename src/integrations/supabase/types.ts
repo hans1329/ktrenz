@@ -9031,6 +9031,15 @@ export type Database = {
           schema_type: Database["public"]["Enums"]["wiki_schema_type"]
         }[]
       }
+      get_top_backers: {
+        Args: { result_limit?: number }
+        Returns: {
+          avatar_url: string
+          total_funded: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_trending_artists_24h: {
         Args: { result_limit?: number }
         Returns: {
