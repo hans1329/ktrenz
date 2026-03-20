@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       const msg = (fetchErr as Error).message || "unknown";
       console.warn(`[trend-cron] Fetch failed for phase=${phase} offset=${batchOffset}: ${msg}`);
       // 타임아웃/네트워크 오류에도 체이닝 계속
-      result = { success: true, totalCandidates: 999, successCount: 0, totalKeywords: 0 };
+      result = { success: true, totalCandidates: 0, successCount: 0, totalKeywords: 0, fallback: true };
     }
 
     console.log(`[trend-cron] phase=${phase} offset=${batchOffset} result:`, JSON.stringify(result).slice(0, 300));
