@@ -56,16 +56,37 @@ Deno.serve(async (req) => {
 
     console.log(`[trend-cron] Dispatching phase=${phase}, offset=${batchOffset}, size=${batchSize}`);
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ batchSize, batchOffset }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000); // 55초 타임아웃
 
-    const result = await response.json();
+    let result: any;
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ batchSize, batchOffset }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      const text = await response.text();
+      try {
+        result = JSON.parse(text);
+      } catch {
+        console.warn(`[trend-cron] Non-JSON response for phase=${phase} offset=${batchOffset}: ${text.slice(0, 200)}`);
+        // 파싱 실패해도 체이닝은 계속 — 빈 성공으로 간주
+        result = { success: true, totalCandidates: 999, successCount: 0, totalKeywords: 0 };
+      }
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      const msg = (fetchErr as Error).message || "unknown";
+      console.warn(`[trend-cron] Fetch failed for phase=${phase} offset=${batchOffset}: ${msg}`);
+      // 타임아웃/네트워크 오류에도 체이닝 계속
+      result = { success: true, totalCandidates: 999, successCount: 0, totalKeywords: 0 };
+    }
 
     console.log(`[trend-cron] phase=${phase} offset=${batchOffset} result:`, JSON.stringify(result).slice(0, 300));
 
