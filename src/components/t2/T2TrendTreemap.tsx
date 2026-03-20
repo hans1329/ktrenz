@@ -42,6 +42,7 @@ export interface TrendTile {
   sourceUrl: string | null;
   sourceTitle: string | null;
   sourceImageUrl: string | null;
+  sourceSnippet: string | null;
   starId: string | null;
   status: string;
 }
@@ -336,6 +337,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           sourceUrl: t.source_url || null,
           sourceTitle: t.source_title || null,
           sourceImageUrl: t.source_image_url || null,
+          sourceSnippet: t.source_snippet || null,
           starId: t.star_id || null,
           status: t.status,
         };

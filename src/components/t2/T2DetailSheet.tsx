@@ -408,6 +408,12 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 <Newspaper className="w-4.5 h-4.5 text-primary" />
                 {t("whyTrend", language)}
               </h3>
+              {/* Article snippet */}
+              {tile.sourceSnippet && (
+                <p className="text-sm text-foreground/80 leading-relaxed border-l-2 border-primary/30 pl-2.5 line-clamp-6">
+                  {tile.sourceSnippet}
+                </p>
+              )}
               {(() => {
                 const rawCtx = language === "ko" ? (tile.contextKo || tile.context)
                   : language === "ja" ? (tile.contextJa || tile.context)
@@ -416,9 +422,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 const ctx = rawCtx ? rawCtx.replace(/\[\d+\]/g, "").trim() : null;
                 return ctx ? (
                   <p className="text-sm text-muted-foreground leading-relaxed">{ctx}</p>
-                ) : (
+                ) : !tile.sourceSnippet ? (
                   <p className="text-xs text-muted-foreground italic">{t("noContext", language)}</p>
-                );
+                ) : null;
               })()}
             </div>
 

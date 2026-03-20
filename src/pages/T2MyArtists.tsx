@@ -150,7 +150,7 @@ const T2MyArtists = () => {
           baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
           peakScore: t.peak_score != null ? Number(t.peak_score) : null,
           sourceUrl: t.source_url || null, sourceTitle: t.source_title || null, sourceImageUrl: t.source_image_url || null,
-          starId: t.star_id || null, status: t.status,
+          sourceSnippet: t.source_snippet || null, starId: t.star_id || null, status: t.status,
         };
       });
     },
