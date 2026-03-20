@@ -55,10 +55,10 @@ const NOISE_BLACKLIST = new Set([
   "billboard", "hanteo", "gaon", "circle chart", "oricon",
   "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "kcon",
   "reddit", "allkpop", "soompi", "koreaboo",
-  // 일반 노이즈
-  "kpop", "k-pop", "korean", "korea", "seoul", "comeback", "album",
-  "music video", "mv", "teaser", "concert", "tour", "fan", "fandom",
-  "idol", "debut", "ep", "single", "tracklist", "photocard",
+  // 일반 노이즈 (음악 이벤트 키워드는 제거 — music 카테고리로 감지)
+  "kpop", "k-pop", "korean", "korea", "seoul",
+  "music video", "mv", "teaser", "fan", "fandom",
+  "idol", "ep", "single", "tracklist", "photocard",
   "merch", "merchandise", "lightstick", "official", "channel",
   // 엔터사
   "hybe", "sm entertainment", "yg entertainment", "jyp entertainment",
