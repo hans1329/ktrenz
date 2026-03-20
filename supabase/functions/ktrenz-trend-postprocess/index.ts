@@ -128,7 +128,7 @@ async function domesticPriorityDedup(sb: any): Promise<{ expired: number; detail
   const { data: active } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_en, keyword_ko, star_id, trigger_source, artist_name")
-    .eq("status", "active")
+    .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo);
 
   if (!active?.length) return { expired: 0, details: [] };
