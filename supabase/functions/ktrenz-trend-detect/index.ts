@@ -896,9 +896,17 @@ async function detectForMember(
     await Promise.allSettled(backfillPromises);
   }
 
+  const filteredCount = candidateRows.length - rowsToInsert.length - backfillPromises.length;
+
   console.log(
-    `[trend-detect] ${member.display_name}: inserted ${rowsToInsert.length} new keywords, backfilled ${backfillPromises.length} existing keywords`
+    `[trend-detect] ${member.display_name}: inserted ${rowsToInsert.length} new, backfilled ${backfillPromises.length}, filtered ${filteredCount}`
   );
 
-  return { keywordsFound: rowsToInsert.length, articlesFound: articles.length, keywords: insertedKeywords };
+  return {
+    keywordsFound: rowsToInsert.length,
+    articlesFound: articles.length,
+    keywords: insertedKeywords,
+    sourceStats: srcStats,
+    insertStats: { inserted: rowsToInsert.length, backfilled: backfillPromises.length, filtered: Math.max(0, filteredCount) },
+  };
 }
