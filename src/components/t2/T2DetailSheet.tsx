@@ -76,7 +76,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   marketSettled: { en: "Results are in!", ko: "결과가 나왔어요!", ja: "結果が出ました！", zh: "结果出来了！" },
   won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
   lost: { en: "Better luck next time", ko: "다음엔 맞출 거예요", ja: "次こそ！", zh: "下次加油" },
-  insufficientPoints: { en: "You need more K-Points 😢", ko: "K-Point가 부족해요 😢", ja: "K-Pointが足りません 😢", zh: "K-Point不够了 😢" },
+  insufficientPoints: { en: "You need more K-Token 😢", ko: "K-Token이 부족해요 😢", ja: "K-Tokenが足りません 😢", zh: "K-Token不够了 😢" },
   loginToBet: { en: "Sign in to predict", ko: "로그인하고 예측해보세요", ja: "ログインして予測しよう", zh: "登录后预测" },
   betSuccess: { en: "Prediction locked in! ✨", ko: "예측 완료! ✨", ja: "予測完了！✨", zh: "预测成功！✨" },
   betMinError: { en: "Please enter at least 10P", ko: "최소 10P 이상 입력해주세요", ja: "10P以上を入力してください", zh: "请输入至少10P" },
