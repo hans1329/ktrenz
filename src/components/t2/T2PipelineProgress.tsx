@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, Zap, X, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 interface PipelineRun {
@@ -39,8 +38,10 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     return () => clearInterval(interval);
   }, [run]);
 
-  // Poll for total count: members for detect phases, active triggers for track
   const isTrackPhase = run?.phase === "track";
+  const triggerSourceFilter = run?.phase === "detect" ? "naver_news" : run?.phase === "detect_global" ? "global_news" : null;
+
+  // Poll for total count
   const { data: totalCount } = useQuery({
     queryKey: ["pipeline-total-count", run?.phase],
     queryFn: async () => {
@@ -64,8 +65,39 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     staleTime: 300_000,
   });
 
-  // Poll for keywords: detect phases show newly detected (filtered by source), track phase shows active keywords
-  const triggerSourceFilter = run?.phase === "detect" ? "naver_news" : run?.phase === "detect_global" ? "global_news" : null;
+  // Poll for ACTUAL processed count — count distinct star_ids in triggers since run start
+  const { data: processedCount } = useQuery({
+    queryKey: ["pipeline-processed-count", run?.startedAt.toISOString(), run?.phase, triggerSourceFilter],
+    queryFn: async () => {
+      if (!run) return 0;
+      if (isTrackPhase) {
+        // For track phase: count triggers updated since run start
+        const { data } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("id")
+          .eq("status", "active")
+          .gte("last_tracked_at", run.startedAt.toISOString());
+        return data?.length ?? 0;
+      }
+      // For detect phases: count distinct star_ids that produced triggers since run start
+      let query = supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("star_id")
+        .gte("detected_at", run.startedAt.toISOString());
+      if (triggerSourceFilter) {
+        query = query.eq("trigger_source", triggerSourceFilter);
+      }
+      const { data } = await query;
+      if (!data) return 0;
+      // Count distinct star_ids
+      const uniqueStars = new Set((data as any[]).map((d: any) => d.star_id).filter(Boolean));
+      return uniqueStars.size;
+    },
+    enabled: !!run,
+    refetchInterval: 5000,
+  });
+
+  // Poll for keywords
   const { data: recentKeywords } = useQuery({
     queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase, triggerSourceFilter],
     queryFn: async () => {
@@ -95,37 +127,72 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     refetchInterval: 5000,
   });
 
-  // Estimate progress: ~5 members per batch, ~25s per batch, 5s chain delay
-  const total = totalCount ?? (isTrackPhase ? 0 : 405);
+  const total = totalCount ?? 0;
+  const processed = processedCount ?? 0;
   const batchSize = 5;
-  const batchTime = 30; // seconds per batch including delay
+
+  // Real progress based on actual processed count vs total
+  // For detect phases: processed = unique stars that returned keywords
+  // We estimate based on batch timing: ~30s per batch of 5
+  // But we also track actual keyword output as a secondary signal
+  const batchesDone = Math.ceil(processed / batchSize);
   const totalBatches = Math.ceil(total / batchSize);
-  const estimatedTotal = totalBatches * batchTime;
-  const progress = Math.min((elapsed / estimatedTotal) * 100, 99);
-  const estimatedRemaining = Math.max(estimatedTotal - elapsed, 0);
+
+  // Use a hybrid: estimate based on elapsed time but cap to actual processed data
+  const batchTime = 30;
+  const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
+  // Show the higher of time-based or data-based progress (data lags slightly)
+  const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
+  const progress = totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
+
+  const estimatedRemaining = totalBatches > 0
+    ? Math.max((totalBatches - effectiveBatches) * batchTime, 0)
+    : 0;
   const remainMin = Math.floor(estimatedRemaining / 60);
   const remainSec = estimatedRemaining % 60;
 
-  // Auto-close and refresh when estimated complete
+  // Check if pipeline is stalled (no new data in 90s+ while not done)
+  const [lastProcessedCount, setLastProcessedCount] = useState(0);
+  const [stallTimer, setStallTimer] = useState(0);
+
+  useEffect(() => {
+    if (processed > lastProcessedCount) {
+      setLastProcessedCount(processed);
+      setStallTimer(0);
+    } else if (run && elapsed > 60) {
+      setStallTimer((prev) => prev + 1);
+    }
+  }, [processed, elapsed, lastProcessedCount, run]);
+
+  const isStalled = stallTimer > 18; // ~90 seconds with 5s poll interval
+  const estimatedTotal = totalBatches * batchTime;
+  const isDone = (processed > 0 && effectiveBatches >= totalBatches) || elapsed > estimatedTotal + 60;
+
+  // Auto-refresh when done
   useEffect(() => {
     if (!run) return;
-    if (elapsed > estimatedTotal) {
+    if (isDone) {
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     }
-  }, [elapsed, estimatedTotal, run, queryClient]);
+  }, [isDone, run, queryClient]);
 
   if (!run) return null;
 
   const keywordCount = recentKeywords?.length ?? 0;
   const elapsedMin = Math.floor(elapsed / 60);
   const elapsedSec = elapsed % 60;
-  const isDone = elapsed > estimatedTotal;
 
   const phaseLabel = {
     detect: "국내 감지",
     detect_global: "글로벌 감지",
     track: "트렌드 추적",
   }[run.phase];
+
+  const statusText = isDone
+    ? "완료"
+    : isStalled
+      ? "⚠️ 응답 대기 중..."
+      : `잔여 ~${remainMin > 0 ? `${remainMin}분 ` : ""}${remainSec}초`;
 
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
@@ -137,6 +204,8 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         <div className="flex items-center gap-2 min-w-0">
           {isDone ? (
             <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+          ) : isStalled ? (
+            <Loader2 className="w-4 h-4 text-yellow-500 animate-spin shrink-0" />
           ) : (
             <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
           )}
@@ -172,12 +241,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           {/* Progress bar */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{total}{isTrackPhase ? "개 키워드" : "명 멤버"} · {batchSize}{isTrackPhase ? "개" : "명"}/배치</span>
               <span>
-                {isDone
-                  ? "완료"
-                  : `잔여 ~${remainMin > 0 ? `${remainMin}분 ` : ""}${remainSec}초`}
+                {isTrackPhase
+                  ? `${processed}/${total}개 추적됨`
+                  : `배치 ${effectiveBatches}/${totalBatches} (${total}명 멤버 · ${batchSize}명/배치)`}
               </span>
+              <span>{statusText}</span>
             </div>
             <Progress value={isDone ? 100 : progress} className="h-1.5" />
           </div>
