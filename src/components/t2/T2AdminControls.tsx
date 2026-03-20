@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -15,13 +15,38 @@ interface PipelineRun {
   phase: "detect" | "detect_global" | "track";
 }
 
+const STORAGE_KEY = "t2-pipeline-active-runs";
+
+const loadPersistedRuns = (): Record<string, PipelineRun> => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, { startedAt: string; phase: string }>;
+    const runs: Record<string, PipelineRun> = {};
+    for (const [key, val] of Object.entries(parsed)) {
+      const started = new Date(val.startedAt);
+      // Ignore runs older than 30 minutes (likely stale)
+      if (Date.now() - started.getTime() > 30 * 60 * 1000) continue;
+      runs[key] = { startedAt: started, phase: val.phase as PipelineRun["phase"] };
+    }
+    return runs;
+  } catch { return {}; }
+};
+
+const persistRuns = (runs: Record<string, PipelineRun>) => {
+  if (Object.keys(runs).length === 0) {
+    localStorage.removeItem(STORAGE_KEY);
+  } else {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(runs));
+  }
+};
+
 const T2AdminControls = () => {
   const { isAdmin, loading } = useAdminAuth();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // Support multiple concurrent runs keyed by phase
-  const [activeRuns, setActiveRuns] = useState<Record<string, PipelineRun>>({});
+  const [activeRuns, setActiveRuns] = useState<Record<string, PipelineRun>>(loadPersistedRuns);
 
   const startRun = (phase: PipelineRun["phase"]) => {
     setActiveRuns((prev) => ({ ...prev, [phase]: { startedAt: new Date(), phase } }));
