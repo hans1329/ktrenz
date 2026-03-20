@@ -13,7 +13,16 @@ const BUCKET = "trend-images";
 // 이미지 다운로드가 불가능한 도메인 블랙리스트 (봇 차단, 핫링크 차단 등)
 const IMAGE_DOMAIN_BLACKLIST = [
   "ddaily.co.kr",
+  "fbcdn.net",
+  "cdninstagram.com",
+  "scontent.",
 ];
+
+// URL 정규화: HTML 엔티티 디코딩
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/&amp;/g, "&");
+}
 
 async function downloadImage(url: string): Promise<{ data: Uint8Array; contentType: string } | null> {
   try {
@@ -75,11 +84,11 @@ async function fetchOgImage(pageUrl: string): Promise<string | null> {
     // og:image
     const ogMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i)
       || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
-    if (ogMatch?.[1]) return ogMatch[1];
+    if (ogMatch?.[1]) return sanitizeImageUrl(ogMatch[1]);
     // twitter:image
     const twMatch = html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i)
       || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
-    if (twMatch?.[1]) return twMatch[1];
+    if (twMatch?.[1]) return sanitizeImageUrl(twMatch[1]);
     return null;
   } catch {
     return null;
@@ -145,7 +154,7 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const trigger of targets) {
-      let url = trigger.source_image_url;
+      let url = sanitizeImageUrl(trigger.source_image_url);
       
       // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
       if (!url && trigger.source_url) {

@@ -40,7 +40,16 @@ const PLATFORM_BLACKLIST = new Set([
 // 이미지 수집 불가 도메인 (봇 차단, 핫링크 차단)
 const SOURCE_IMAGE_BLACKLIST = [
   "ddaily.co.kr",
+  "fbcdn.net",
+  "cdninstagram.com",
+  "scontent.",
 ];
+
+// URL 정규화: HTML 엔티티 디코딩
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/&amp;/g, "&");
+}
 
 interface NaverNewsItem {
   title: string;
@@ -792,7 +801,7 @@ async function detectForMember(
       confidence: keywordData.confidence,
       source_url: sourceUrl,
       source_title: sourceArticle?.title || null,
-      source_image_url: sourceUrl ? ogImageMap.get(sourceUrl) || null : null,
+      source_image_url: sanitizeImageUrl(sourceUrl ? ogImageMap.get(sourceUrl) || null : null),
       source_snippet: sourceArticle?.description?.slice(0, 500) || null,
       commercial_intent: keywordData.commercial_intent || null,
       brand_intent: keywordData.brand_intent || null,

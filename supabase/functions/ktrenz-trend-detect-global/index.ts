@@ -11,7 +11,16 @@ const corsHeaders = {
 // 이미지 수집 불가 도메인
 const SOURCE_IMAGE_BLACKLIST = [
   "ddaily.co.kr",
+  "fbcdn.net",
+  "cdninstagram.com",
+  "scontent.",
 ];
+
+// URL 정규화: HTML 엔티티 디코딩
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/&amp;/g, "&");
+}
 
 interface ExtractedKeyword {
   keyword: string;
@@ -228,7 +237,7 @@ async function fetchOgImage(url: string): Promise<string | null> {
     const match =
       html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
       html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    return match?.[1] || null;
+    return sanitizeImageUrl(match?.[1] || null);
   } catch {
     return null;
   }
@@ -360,7 +369,7 @@ Deno.serve(async (req) => {
             confidence: k.confidence,
             source_url: k.source_url || null,
             source_title: k.source_title || null,
-            source_image_url: k.source_url ? ogImageMap.get(k.source_url) || null : null,
+            source_image_url: sanitizeImageUrl(k.source_url ? ogImageMap.get(k.source_url) || null : null),
             commercial_intent: k.commercial_intent || null,
             brand_intent: k.brand_intent || null,
             fan_sentiment: k.fan_sentiment || null,
