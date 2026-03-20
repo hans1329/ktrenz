@@ -39,10 +39,20 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     return () => clearInterval(interval);
   }, [run]);
 
-  // Poll for total active members count (once)
-  const { data: totalMembers } = useQuery({
-    queryKey: ["pipeline-total-members"],
+  // Poll for total count: members for detect phases, active triggers for track
+  const isTrackPhase = run?.phase === "track";
+  const { data: totalCount } = useQuery({
+    queryKey: ["pipeline-total-count", run?.phase],
     queryFn: async () => {
+      if (isTrackPhase) {
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { count } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active")
+          .gte("detected_at", weekAgo);
+        return count ?? 0;
+      }
       const { count } = await supabase
         .from("ktrenz_stars" as any)
         .select("id", { count: "exact", head: true })
@@ -72,7 +82,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   });
 
   // Estimate progress: ~5 members per batch, ~25s per batch, 5s chain delay
-  const total = totalMembers ?? 405;
+  const total = totalCount ?? (isTrackPhase ? 0 : 405);
   const batchSize = 5;
   const batchTime = 30; // seconds per batch including delay
   const totalBatches = Math.ceil(total / batchSize);
@@ -148,7 +158,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           {/* Progress bar */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{total}명 멤버 · {batchSize}명/배치</span>
+              <span>{total}{isTrackPhase ? "개 키워드" : "명 멤버"} · {batchSize}{isTrackPhase ? "개" : "명"}/배치</span>
               <span>
                 {isDone
                   ? "완료"
