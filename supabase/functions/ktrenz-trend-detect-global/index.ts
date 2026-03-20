@@ -65,9 +65,10 @@ async function detectViaFirecrawl(
   if (!apiKey || !openaiKey) return [];
 
   try {
+    // 더 넓은 검색 쿼리 — 상업적 키워드뿐 아니라 브랜드/패션/뷰티 연관 전반
     const searchQuery = groupName
-      ? `${artistName} ${groupName} brand endorsement OR sponsorship OR collaboration OR wearing`
-      : `${artistName} kpop brand endorsement OR sponsorship OR collaboration OR wearing`;
+      ? `"${artistName}" "${groupName}" brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`
+      : `"${artistName}" kpop brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`;
 
     const fcResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
@@ -77,9 +78,9 @@ async function detectViaFirecrawl(
       },
       body: JSON.stringify({
         query: searchQuery,
-        limit: 5,
+        limit: 8,
         lang: "en",
-        tbs: "qdr:w",
+        tbs: "qdr:m", // 최근 1개월로 확대 (주간→월간)
         scrapeOptions: { formats: ["markdown"] },
       }),
     });
@@ -92,7 +93,11 @@ async function detectViaFirecrawl(
 
     const fcData = await fcResponse.json();
     const results = fcData.data || [];
-    if (!results.length) return [];
+    console.log(`[detect-global] Firecrawl "${artistName}": ${results.length} results, success=${fcData.success}`);
+    if (!results.length) {
+      console.warn(`[detect-global] Firecrawl returned 0 results for "${artistName}". Raw keys: ${Object.keys(fcData).join(",")}`);
+      return [];
+    }
 
     const searchContent = results
       .map((r: any) => {
@@ -114,26 +119,26 @@ async function detectViaFirecrawl(
         messages: [
           {
             role: "system",
-            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, food/beverage brands) mentioned in fan community discussions about a K-pop artist.
+            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, food/beverage brands) mentioned in articles/discussions about a K-pop artist.
 
-STRICT RULES:
-- ONLY extract named commercial brands/products/places that the artist is associated with
-- Do NOT include: artist names, group names, song/album titles, agency/label names
-- Do NOT include: platform names (YouTube, Netflix, Spotify, TikTok, etc.)
+RULES:
+- Extract named commercial brands, products, places, restaurants, fashion brands, beauty brands the artist is linked to
+- Include: brand ambassador deals, airport fashion items, products seen in content, endorsed products, CF deals
+- Do NOT include: artist names, group names, song/album titles, agency names
+- Do NOT include: platform names (YouTube, Netflix, Spotify, TikTok, Instagram, etc.)
 - Do NOT include: generic terms (fashion, beauty, music, dance, etc.)
 - Do NOT include: chart names, show names, award names
-- COMPOUND NAMES: Keep multi-word brand names together (e.g. "Maison Valentino" not "Valentino")
-- 1 keyword = 1 entity. Split "Chanel shoes Prada jacket" into separate keywords
-- Maximum 5 keywords, minimum confidence 0.65
-- Provide keyword (English), keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese)
-- Provide context (English) and context_ko, context_ja, context_zh
-- category must be one of: brand, product, place, food, fashion, beauty
-- commercial_intent: ad, sponsorship, collaboration, organic, rumor
-- brand_intent: awareness, conversion, association, loyalty
-- fan_sentiment: positive, negative, neutral, mixed
+- COMPOUND NAMES: Keep multi-word brand names together (e.g. "Louis Vuitton" not "Vuitton")
+- Maximum 5 keywords, minimum confidence 0.5
+- Provide keyword (English), keyword_ko (Korean translation), keyword_ja (Japanese), keyword_zh (Chinese)
+- Provide context (English sentence about the association) and context_ko, context_ja, context_zh
+- category: brand | product | place | food | fashion | beauty
+- commercial_intent: ad | sponsorship | collaboration | organic | rumor
+- brand_intent: awareness | conversion | association | loyalty
+- fan_sentiment: positive | negative | neutral | mixed
 - trend_potential: 0-100
 
-Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities found, return { "keywords": [] }.`,
+Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "keywords": [] }.`,
           },
           {
             role: "user",
@@ -146,10 +151,14 @@ Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities foun
       }),
     });
 
-    if (!aiResponse.ok) return [];
+    if (!aiResponse.ok) {
+      console.warn(`[detect-global] OpenAI error for ${artistName}: ${aiResponse.status}`);
+      return [];
+    }
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
+    console.log(`[detect-global] AI raw for ${artistName}: ${aiContent.slice(0, 300)}`);
 
     let parsed: ExtractedKeyword[];
     try {
@@ -164,6 +173,7 @@ Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities foun
     }
 
     if (!Array.isArray(parsed)) parsed = [];
+    console.log(`[detect-global] AI parsed ${artistName}: ${parsed.length} keywords before filter`);
 
     parsed = parsed.map((k: any) => ({
       ...k,
@@ -175,14 +185,13 @@ Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities foun
     const firstResult = results[0];
     return parsed
       .filter((k) => {
-        if (!k.keyword) return false;
-        if ((k.confidence || 0) < 0.65) return false;
+        if (!k.keyword) { console.log(`[detect-global] FILTER: empty keyword`); return false; }
+        if (typeof k.confidence === "number" && k.confidence < 0.5) { console.log(`[detect-global] FILTER: low confidence ${k.keyword}=${k.confidence}`); return false; }
         const kwLower = k.keyword.toLowerCase();
-        if (NOISE_BLACKLIST.has(kwLower)) return false;
-        if (k.keyword.length <= 2) return false;
-        // 아티스트명/그룹명 자체를 키워드로 추출한 경우 제외
-        if (kwLower === artistName.toLowerCase()) return false;
-        if (groupName && kwLower === groupName.toLowerCase()) return false;
+        if (NOISE_BLACKLIST.has(kwLower)) { console.log(`[detect-global] FILTER: blacklist "${k.keyword}"`); return false; }
+        if (k.keyword.length <= 2) { console.log(`[detect-global] FILTER: too short "${k.keyword}"`); return false; }
+        if (kwLower === artistName.toLowerCase()) { console.log(`[detect-global] FILTER: artist name "${k.keyword}"`); return false; }
+        if (groupName && kwLower === groupName.toLowerCase()) { console.log(`[detect-global] FILTER: group name "${k.keyword}"`); return false; }
         return true;
       })
       .map((k) => ({
