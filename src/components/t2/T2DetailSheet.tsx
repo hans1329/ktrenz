@@ -151,9 +151,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   // Bet mutation
   const betMutation = useMutation({
-    mutationFn: async ({ side, amount }: { side: "yes" | "no"; amount: number }) => {
+    mutationFn: async ({ outcome, amount }: { outcome: string; amount: number }) => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-bet", {
-        body: { triggerId: tile!.id, side, amount },
+        body: { triggerId: tile!.id, outcome, amount },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
@@ -165,8 +165,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       if (data && marketData) {
         queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
           ...(old || marketData),
-          pool_yes: data.poolYes,
-          pool_no: data.poolNo,
+          pool_decline: data.pools?.decline,
+          pool_mild: data.pools?.mild,
+          pool_strong: data.pools?.strong,
+          pool_explosive: data.pools?.explosive,
           total_volume: data.totalVolume,
         }));
       }
