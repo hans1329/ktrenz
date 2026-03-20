@@ -54,13 +54,13 @@ Deno.serve(async (req) => {
     }
     const betAmount = Number(amount);
     if (isNaN(betAmount) || betAmount < 10) {
-      return new Response(JSON.stringify({ error: "Minimum bet is 10 K-Points" }), {
+      return new Response(JSON.stringify({ error: "Minimum bet is 10 K-Token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (betAmount > 1000) {
-      return new Response(JSON.stringify({ error: "Maximum bet is 1000 K-Points" }), {
+      return new Response(JSON.stringify({ error: "Maximum bet is 1000 K-Token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const currentPoints = pointsData?.points ?? 0;
     if (currentPoints < betAmount) {
-      return new Response(JSON.stringify({ error: "Insufficient K-Points" }), {
+      return new Response(JSON.stringify({ error: "Insufficient K-Token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
