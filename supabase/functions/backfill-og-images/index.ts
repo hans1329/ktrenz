@@ -6,6 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// 이미지 수집 불가 도메인
+const SOURCE_IMAGE_BLACKLIST = [
+  "ddaily.co.kr",
+];
+
 async function fetchOgImage(url: string): Promise<string | null> {
   try {
     const controller = new AbortController();
