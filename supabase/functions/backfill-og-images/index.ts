@@ -12,7 +12,9 @@ async function fetchOgImage(url: string): Promise<string | null> {
     const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenzBot/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      },
       redirect: "follow",
     });
     clearTimeout(timeout);
@@ -21,16 +23,34 @@ async function fetchOgImage(url: string): Promise<string | null> {
     if (!reader) return null;
     let html = "";
     const decoder = new TextDecoder();
-    while (html.length < 30000) {
+    while (html.length < 50000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
     }
     reader.cancel();
-    const match =
+
+    const ogMatch =
       html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
       html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    return match?.[1] || null;
+    if (ogMatch?.[1]) return ogMatch[1];
+
+    const twitterMatch =
+      html.match(/<meta[^>]*(?:name|property)=["']twitter:image["'][^>]*content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["']twitter:image["']/i);
+    if (twitterMatch?.[1]) return twitterMatch[1];
+
+    const imgMatches = html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi);
+    for (const match of imgMatches) {
+      const src = match[1];
+      if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
+      if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner/i.test(src)) continue;
+      if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("//")) {
+        return src.startsWith("//") ? `https:${src}` : src;
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }
