@@ -59,21 +59,46 @@ const T2AdminControls = () => {
     queryKey: ["pipeline-auto-detect"],
     queryFn: async () => {
       const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      
+      // Check trigger sources
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("trigger_source, detected_at")
         .gte("detected_at", thirtyMinAgo)
         .order("detected_at", { ascending: true })
         .limit(200);
-      if (!data || data.length === 0) return null;
 
       const phases: Record<string, string> = {};
-      for (const row of data as any[]) {
-        const src = row.trigger_source;
-        if (src === "naver_news" && !phases.detect) phases.detect = row.detected_at;
-        if (src === "global_news" && !phases.detect_global) phases.detect_global = row.detected_at;
+      if (data && data.length > 0) {
+        for (const row of data as any[]) {
+          const src = row.trigger_source;
+          if (src === "naver_news" && !phases.detect) phases.detect = row.detected_at;
+          if (src === "global_news" && !phases.detect_global) phases.detect_global = row.detected_at;
+        }
       }
-      return phases;
+
+      // Check postprocess status from collection_log
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: ppLogs } = await supabase
+        .from("ktrenz_collection_log" as any)
+        .select("status, collected_at")
+        .eq("platform", "trend_postprocess")
+        .gte("collected_at", tenMinAgo)
+        .order("collected_at", { ascending: false })
+        .limit(2);
+
+      if (ppLogs && ppLogs.length > 0) {
+        const latest = ppLogs[0] as any;
+        // Show postprocess if running, or recently completed (within 5 min)
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        if (latest.status === "running" || (latest.status === "success" && latest.collected_at > fiveMinAgo)) {
+          // Find the "running" entry's timestamp as start time
+          const runningEntry = (ppLogs as any[]).find((l: any) => l.status === "running");
+          phases.postprocess = runningEntry?.collected_at || latest.collected_at;
+        }
+      }
+
+      return Object.keys(phases).length > 0 ? phases : null;
     },
     enabled: !hasAutoDetected && isAdmin === true,
     staleTime: Infinity,
