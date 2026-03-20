@@ -65,9 +65,10 @@ async function detectViaFirecrawl(
   if (!apiKey || !openaiKey) return [];
 
   try {
+    // 더 넓은 검색 쿼리 — 상업적 키워드뿐 아니라 브랜드/패션/뷰티 연관 전반
     const searchQuery = groupName
-      ? `${artistName} ${groupName} brand endorsement OR sponsorship OR collaboration OR wearing`
-      : `${artistName} kpop brand endorsement OR sponsorship OR collaboration OR wearing`;
+      ? `"${artistName}" "${groupName}" brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`
+      : `"${artistName}" kpop brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`;
 
     const fcResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
@@ -77,9 +78,9 @@ async function detectViaFirecrawl(
       },
       body: JSON.stringify({
         query: searchQuery,
-        limit: 5,
+        limit: 8,
         lang: "en",
-        tbs: "qdr:w",
+        tbs: "qdr:m", // 최근 1개월로 확대 (주간→월간)
         scrapeOptions: { formats: ["markdown"] },
       }),
     });
