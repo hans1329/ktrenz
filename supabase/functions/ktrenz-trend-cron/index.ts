@@ -1,6 +1,6 @@
 // T2 Trend Cron: detect → detect_global → detect_youtube → track 순차 오케스트레이션
 // 긴급 중지 상태에서는 모든 수집/체이닝을 즉시 차단한다.
-const COLLECTION_PAUSED = true;
+const COLLECTION_PAUSED = false;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
