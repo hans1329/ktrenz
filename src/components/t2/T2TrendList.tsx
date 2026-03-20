@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef, useCallback } from "react";
+import { useMemo, useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,22 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   const navigate = useNavigate();
   const track = useTrackEvent();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const prevItemIdsRef = useRef<string[]>([]);
+  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
+
+  // Detect new/changed items and trigger flip animation
+  useEffect(() => {
+    const currentIds = items.map(i => i.id);
+    const prevIds = prevItemIdsRef.current;
+    const newIds = currentIds.filter(id => !prevIds.includes(id));
+    
+    if (newIds.length > 0 && prevIds.length > 0) {
+      setAnimatingIds(new Set(newIds));
+      const timer = setTimeout(() => setAnimatingIds(new Set()), 600);
+      return () => clearTimeout(timer);
+    }
+    prevItemIdsRef.current = currentIds;
+  }, [items]);
 
   useEffect(() => {
     if (!hasMore || !onLoadMore) return;
@@ -102,14 +118,17 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         const rank = idx + 1;
         const heroImage = item.sourceImageUrl || item.artistImageUrl;
         const context = getLocalizedContext(item, language);
+        const isNew = animatingIds.has(item.id);
 
         return (
           <article
             key={item.id}
             className={cn(
               "rounded-none md:rounded-2xl border-x-0 border-y md:border overflow-hidden bg-card transition-all",
-              isSelected ? "border-primary ring-1 ring-primary/20" : "border-border"
+              isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
+              isNew && "animate-flip-in"
             )}
+            style={isNew ? { animationDelay: `${idx * 60}ms` } : undefined}
           >
             {/* Header — keyword + artist row */}
             <div className="px-3.5 pt-4 pb-3 lg:px-5 lg:pt-5 lg:pb-4">
