@@ -222,7 +222,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       toast.error(t("betMinError", language));
       return;
     }
-    betMutation.mutate({ side: betSide, amount });
+    betMutation.mutate({ outcome: betOutcome, amount });
   };
 
   // Calculate prices from pool
