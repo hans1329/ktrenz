@@ -185,14 +185,13 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
     const firstResult = results[0];
     return parsed
       .filter((k) => {
-        if (!k.keyword) return false;
-        if ((k.confidence || 0) < 0.5) return false;
+        if (!k.keyword) { console.log(`[detect-global] FILTER: empty keyword`); return false; }
+        if ((k.confidence || 0) < 0.5) { console.log(`[detect-global] FILTER: low confidence ${k.keyword}=${k.confidence}`); return false; }
         const kwLower = k.keyword.toLowerCase();
-        if (NOISE_BLACKLIST.has(kwLower)) return false;
-        if (k.keyword.length <= 2) return false;
-        // 아티스트명/그룹명 자체를 키워드로 추출한 경우 제외
-        if (kwLower === artistName.toLowerCase()) return false;
-        if (groupName && kwLower === groupName.toLowerCase()) return false;
+        if (NOISE_BLACKLIST.has(kwLower)) { console.log(`[detect-global] FILTER: blacklist "${k.keyword}"`); return false; }
+        if (k.keyword.length <= 2) { console.log(`[detect-global] FILTER: too short "${k.keyword}"`); return false; }
+        if (kwLower === artistName.toLowerCase()) { console.log(`[detect-global] FILTER: artist name "${k.keyword}"`); return false; }
+        if (groupName && kwLower === groupName.toLowerCase()) { console.log(`[detect-global] FILTER: group name "${k.keyword}"`); return false; }
         return true;
       })
       .map((k) => ({
