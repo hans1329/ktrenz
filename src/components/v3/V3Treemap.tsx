@@ -565,9 +565,11 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
              const isTopThree = rectIndex < 3;
              const isLastItem = rectIndex === rects.length - 1;
              const isMostFalling = isLastItem && catChange < -2;
+             const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+             const titleMultiplier = isTopThree ? (isDesktop ? 5.0 : 4.2) : (isDesktop ? 3.8 : 3.2);
              const titleSize = isTopThree 
-               ? Math.max(12, Math.min(32, sizeFactor * 4.2))
-               : Math.max(9, Math.min(26, sizeFactor * 3.2));
+               ? Math.max(12, Math.min(38, sizeFactor * titleMultiplier))
+               : Math.max(9, Math.min(30, sizeFactor * titleMultiplier));
              const scoreSize = Math.max(10, Math.min(34, sizeFactor * 3.8));
             const badgeFontSize = Math.max(9, Math.min(16, sizeFactor * 2.0));
             const badgePx = Math.max(6, Math.min(16, sizeFactor * 1.8));
