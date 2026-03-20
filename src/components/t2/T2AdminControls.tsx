@@ -25,7 +25,7 @@ const loadPersistedRuns = (): Record<string, PipelineRun> => {
     const runs: Record<string, PipelineRun> = {};
     for (const [key, val] of Object.entries(parsed)) {
       const started = new Date(val.startedAt);
-      if (Date.now() - started.getTime() > 60 * 60 * 1000) continue;
+      if (Date.now() - started.getTime() > 2 * 60 * 60 * 1000) continue;
       runs[key] = { startedAt: started, phase: val.phase as PipelineRun["phase"] };
     }
     return runs;

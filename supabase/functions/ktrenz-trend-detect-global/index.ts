@@ -129,8 +129,7 @@ Example: [{"keyword":"Dior","keyword_en":"Dior","keyword_ko":"디올","keyword_j
           "-donga.com", "-hankyung.com", "-mk.co.kr", "-edaily.co.kr",
           "-yna.co.kr", "-yonhapnews.co.kr", "-hani.co.kr", "-kmib.co.kr",
           "-khan.co.kr", "-seoul.co.kr", "-sedaily.com", "-mt.co.kr",
-          "-news1.kr", "-newsis.com", "-tvdaily.co.kr", "-tenasia.co.kr",
-          "-esquirekorea.co.kr", "-theqoo.net", "-instiz.net", "-dcinside.com",
+          "-news1.kr", "-newsis.com", "-theqoo.net", "-dcinside.com",
         ],
       }),
     });
