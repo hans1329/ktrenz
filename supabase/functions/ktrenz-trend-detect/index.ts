@@ -356,18 +356,9 @@ function extractShopKeywords(
     else if (/화장품|뷰티|스킨케어/.test(category1 + category2)) kwCategory = "beauty";
     else if (/식품|음료/.test(category1 + category2)) kwCategory = "food";
 
-    // 브랜드명이 있으면 사용, 없으면 상품명에서 추출
+    // 브랜드 필드가 명확한 경우만 사용 (상품명 파싱은 노이즈가 심함)
     let brandName = brand;
-    if (!brandName) {
-      // 상품명에서 아티스트명/그룹명 제거 후 첫 번째 의미있는 단어 추출
-      const cleaned = title
-        .replace(new RegExp(memberLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "")
-        .replace(groupLower ? new RegExp(groupLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi") : /(?!)/g, "")
-        .replace(/[x×]\s*/gi, "")
-        .trim();
-      // 첫 2-3단어를 브랜드명 후보로
-      const words = cleaned.split(/\s+/).filter(w => w.length >= 2).slice(0, 3);
-      brandName = words.join(" ");
+    if (!brandName || brandName.length < 2) continue;
     }
 
     if (!brandName || brandName.length < 2) continue;
