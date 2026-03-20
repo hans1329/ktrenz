@@ -533,6 +533,24 @@ Deno.serve(async (req) => {
 
     let successCount = 0;
     let totalKeywords = 0;
+    let totalNews = 0;
+    let totalBlogs = 0;
+    let totalShop = 0;
+    let totalInserted = 0;
+    let totalBackfilled = 0;
+    let totalFiltered = 0;
+    const artistResults: Array<{
+      name: string;
+      type: string;
+      news: number;
+      blog: number;
+      shop: number;
+      aiExtracted: number;
+      shopExtracted: number;
+      inserted: number;
+      backfilled: number;
+      filtered: number;
+    }> = [];
 
     for (const star of batch) {
       try {
@@ -540,9 +558,6 @@ Deno.serve(async (req) => {
         const isSolo = star.star_type === "solo";
         const group = star.group_star_id ? groupMap[star.group_star_id] : null;
 
-        // 그룹: group_name은 자기 자신, wiki_entry_id도 자기 자신
-        // 솔로: group 없음
-        // 멤버: 소속 그룹 참조
         const memberInfo: MemberInfo = {
           id: star.id,
           display_name: star.display_name,
@@ -558,15 +573,40 @@ Deno.serve(async (req) => {
         );
         successCount++;
         totalKeywords += result.keywordsFound;
-        console.log(`[trend-detect] ✓ ${star.display_name} (${star.star_type}): ${result.keywordsFound} keywords (${result.articlesFound} articles)`);
+        totalNews += result.sourceStats.news;
+        totalBlogs += result.sourceStats.blog;
+        totalShop += result.sourceStats.shop;
+        totalInserted += result.insertStats.inserted;
+        totalBackfilled += result.insertStats.backfilled;
+        totalFiltered += result.insertStats.filtered;
+
+        artistResults.push({
+          name: star.display_name,
+          type: star.star_type,
+          news: result.sourceStats.news,
+          blog: result.sourceStats.blog,
+          shop: result.sourceStats.shop,
+          aiExtracted: result.sourceStats.aiExtracted,
+          shopExtracted: result.sourceStats.shopExtracted,
+          inserted: result.insertStats.inserted,
+          backfilled: result.insertStats.backfilled,
+          filtered: result.insertStats.filtered,
+        });
+
+        console.log(`[trend-detect] ✓ ${star.display_name} (${star.star_type}): news=${result.sourceStats.news} blog=${result.sourceStats.blog} shop=${result.sourceStats.shop} → ins=${result.insertStats.inserted} bf=${result.insertStats.backfilled} flt=${result.insertStats.filtered}`);
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
         console.error(`[trend-detect] ✗ ${star.display_name}: ${(e as Error).message}`);
+        artistResults.push({
+          name: star.display_name,
+          type: star.star_type,
+          news: 0, blog: 0, shop: 0,
+          aiExtracted: 0, shopExtracted: 0,
+          inserted: 0, backfilled: 0, filtered: 0,
+        });
       }
     }
-
-    // postprocess는 cron에서 전체 배치 완료 후 한 번만 호출
 
     return new Response(
       JSON.stringify({
@@ -577,6 +617,9 @@ Deno.serve(async (req) => {
         totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
+        sourceStats: { news: totalNews, blog: totalBlogs, shop: totalShop },
+        insertStats: { inserted: totalInserted, backfilled: totalBackfilled, filtered: totalFiltered },
+        artistResults,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -605,7 +648,13 @@ async function detectForMember(
   naverClientId: string,
   naverClientSecret: string,
   member: MemberInfo,
-): Promise<{ keywordsFound: number; articlesFound: number; keywords: ExtractedKeyword[] }> {
+): Promise<{
+  keywordsFound: number;
+  articlesFound: number;
+  keywords: ExtractedKeyword[];
+  sourceStats: { news: number; blog: number; shop: number; aiExtracted: number; shopExtracted: number };
+  insertStats: { inserted: number; backfilled: number; filtered: number };
+}> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
   // 그룹 멤버인 경우 "그룹명 멤버명" 형태로 검색하여 동명이인 방지 (예: "스트레이 키즈 필릭스")
   const searchName = member.name_ko || member.display_name;
@@ -651,8 +700,10 @@ async function detectForMember(
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
   console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length} blog=${filteredBlogs.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
+  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, aiExtracted: 0, shopExtracted: shopKeywords.length };
+
   if (!articles.length && !shopKeywords.length) {
-    return { keywordsFound: 0, articlesFound: 0, keywords: [] };
+    return { keywordsFound: 0, articlesFound: 0, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
   // AI로 상업 키워드 추출 (News + Blog 통합)
@@ -662,11 +713,13 @@ async function detectForMember(
       )
     : [];
 
+  srcStats.aiExtracted = aiKeywords.length;
+
   // Shop 키워드 + AI 키워드 병합 (중복 제거)
   const mergedKeywords = mergeKeywords(aiKeywords, shopKeywords);
 
   if (!mergedKeywords.length) {
-    return { keywordsFound: 0, articlesFound: articles.length, keywords: [] };
+    return { keywordsFound: 0, articlesFound: articles.length, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
   // 아래부터 기존 로직 (keywords → mergedKeywords로 교체)
@@ -843,9 +896,17 @@ async function detectForMember(
     await Promise.allSettled(backfillPromises);
   }
 
+  const filteredCount = candidateRows.length - rowsToInsert.length - backfillPromises.length;
+
   console.log(
-    `[trend-detect] ${member.display_name}: inserted ${rowsToInsert.length} new keywords, backfilled ${backfillPromises.length} existing keywords`
+    `[trend-detect] ${member.display_name}: inserted ${rowsToInsert.length} new, backfilled ${backfillPromises.length}, filtered ${filteredCount}`
   );
 
-  return { keywordsFound: rowsToInsert.length, articlesFound: articles.length, keywords: insertedKeywords };
+  return {
+    keywordsFound: rowsToInsert.length,
+    articlesFound: articles.length,
+    keywords: insertedKeywords,
+    sourceStats: srcStats,
+    insertStats: { inserted: rowsToInsert.length, backfilled: backfillPromises.length, filtered: Math.max(0, filteredCount) },
+  };
 }
