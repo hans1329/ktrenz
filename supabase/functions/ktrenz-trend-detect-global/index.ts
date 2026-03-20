@@ -257,6 +257,7 @@ Deno.serve(async (req) => {
             trigger_source: "global_news",
             artist_name: name,
             keyword: k.keyword,
+            keyword_en: k.keyword_en || k.keyword,
             keyword_ko: k.keyword_ko || null,
             keyword_ja: k.keyword_ja || null,
             keyword_zh: k.keyword_zh || null,
