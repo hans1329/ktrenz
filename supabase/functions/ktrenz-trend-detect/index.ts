@@ -713,11 +713,13 @@ async function detectForMember(
       )
     : [];
 
+  srcStats.aiExtracted = aiKeywords.length;
+
   // Shop 키워드 + AI 키워드 병합 (중복 제거)
   const mergedKeywords = mergeKeywords(aiKeywords, shopKeywords);
 
   if (!mergedKeywords.length) {
-    return { keywordsFound: 0, articlesFound: articles.length, keywords: [] };
+    return { keywordsFound: 0, articlesFound: articles.length, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
   // 아래부터 기존 로직 (keywords → mergedKeywords로 교체)
