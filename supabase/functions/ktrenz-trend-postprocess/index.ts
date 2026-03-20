@@ -269,6 +269,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         memberPriority: dedupResult,
+        domesticPriority: srcDedupResult,
         compoundMerge: mergeResult,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
