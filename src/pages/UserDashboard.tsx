@@ -139,6 +139,7 @@ const UserDashboard = () => {
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("status", "active")
+        .neq("trigger_source", "naver_shop")
         .in("star_id", starIds)
         .order("influence_index", { ascending: false })
         .limit(30);

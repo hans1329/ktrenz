@@ -178,6 +178,7 @@ const T2KeywordDetail = () => {
         .select("id, keyword, keyword_ko, keyword_category, influence_index, status, detected_at")
         .eq("wiki_entry_id", trigger.wiki_entry_id)
         .neq("id", triggerId)
+        .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
         .limit(10);
       return (data ?? []) as any[];
