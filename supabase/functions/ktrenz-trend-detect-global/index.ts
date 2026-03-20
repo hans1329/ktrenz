@@ -150,7 +150,10 @@ Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities foun
       }),
     });
 
-    if (!aiResponse.ok) return [];
+    if (!aiResponse.ok) {
+      console.warn(`[detect-global] OpenAI error for ${artistName}: ${aiResponse.status}`);
+      return [];
+    }
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
