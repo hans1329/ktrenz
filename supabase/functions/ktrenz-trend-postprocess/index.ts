@@ -17,12 +17,12 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
   const { data: allRecent } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, star_id, source_url, status")
-    .in("status", ["active", "expired", "merged"])
+    .in("status", ["active", "pending", "expired", "merged"])
     .gte("detected_at", threeDaysAgo);
 
   if (!allRecent?.length) return { expired: 0, details: [] };
 
-  const active = allRecent.filter((e: any) => e.status === "active");
+  const active = allRecent.filter((e: any) => e.status === "active" || e.status === "pending");
   if (!active.length) return { expired: 0, details: [] };
 
   // 관련 스타 정보 가져오기 (allRecent 전체 대상)
