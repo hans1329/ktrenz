@@ -82,7 +82,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   });
 
   // Estimate progress: ~5 members per batch, ~25s per batch, 5s chain delay
-  const total = totalMembers ?? 405;
+  const total = totalCount ?? (isTrackPhase ? 0 : 405);
   const batchSize = 5;
   const batchTime = 30; // seconds per batch including delay
   const totalBatches = Math.ceil(total / batchSize);
