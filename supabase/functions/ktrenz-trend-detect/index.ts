@@ -37,6 +37,11 @@ const PLATFORM_BLACKLIST = new Set([
   "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "tv chosun",
 ]);
 
+// 이미지 수집 불가 도메인 (봇 차단, 핫링크 차단)
+const SOURCE_IMAGE_BLACKLIST = [
+  "ddaily.co.kr",
+];
+
 interface NaverNewsItem {
   title: string;
   originallink: string;
