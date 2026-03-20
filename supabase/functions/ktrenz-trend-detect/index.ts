@@ -533,6 +533,24 @@ Deno.serve(async (req) => {
 
     let successCount = 0;
     let totalKeywords = 0;
+    let totalNews = 0;
+    let totalBlogs = 0;
+    let totalShop = 0;
+    let totalInserted = 0;
+    let totalBackfilled = 0;
+    let totalFiltered = 0;
+    const artistResults: Array<{
+      name: string;
+      type: string;
+      news: number;
+      blog: number;
+      shop: number;
+      aiExtracted: number;
+      shopExtracted: number;
+      inserted: number;
+      backfilled: number;
+      filtered: number;
+    }> = [];
 
     for (const star of batch) {
       try {
@@ -540,9 +558,6 @@ Deno.serve(async (req) => {
         const isSolo = star.star_type === "solo";
         const group = star.group_star_id ? groupMap[star.group_star_id] : null;
 
-        // 그룹: group_name은 자기 자신, wiki_entry_id도 자기 자신
-        // 솔로: group 없음
-        // 멤버: 소속 그룹 참조
         const memberInfo: MemberInfo = {
           id: star.id,
           display_name: star.display_name,
@@ -558,15 +573,40 @@ Deno.serve(async (req) => {
         );
         successCount++;
         totalKeywords += result.keywordsFound;
-        console.log(`[trend-detect] ✓ ${star.display_name} (${star.star_type}): ${result.keywordsFound} keywords (${result.articlesFound} articles)`);
+        totalNews += result.sourceStats.news;
+        totalBlogs += result.sourceStats.blog;
+        totalShop += result.sourceStats.shop;
+        totalInserted += result.insertStats.inserted;
+        totalBackfilled += result.insertStats.backfilled;
+        totalFiltered += result.insertStats.filtered;
+
+        artistResults.push({
+          name: star.display_name,
+          type: star.star_type,
+          news: result.sourceStats.news,
+          blog: result.sourceStats.blog,
+          shop: result.sourceStats.shop,
+          aiExtracted: result.sourceStats.aiExtracted,
+          shopExtracted: result.sourceStats.shopExtracted,
+          inserted: result.insertStats.inserted,
+          backfilled: result.insertStats.backfilled,
+          filtered: result.insertStats.filtered,
+        });
+
+        console.log(`[trend-detect] ✓ ${star.display_name} (${star.star_type}): news=${result.sourceStats.news} blog=${result.sourceStats.blog} shop=${result.sourceStats.shop} → ins=${result.insertStats.inserted} bf=${result.insertStats.backfilled} flt=${result.insertStats.filtered}`);
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
         console.error(`[trend-detect] ✗ ${star.display_name}: ${(e as Error).message}`);
+        artistResults.push({
+          name: star.display_name,
+          type: star.star_type,
+          news: 0, blog: 0, shop: 0,
+          aiExtracted: 0, shopExtracted: 0,
+          inserted: 0, backfilled: 0, filtered: 0,
+        });
       }
     }
-
-    // postprocess는 cron에서 전체 배치 완료 후 한 번만 호출
 
     return new Response(
       JSON.stringify({
@@ -577,6 +617,9 @@ Deno.serve(async (req) => {
         totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
+        sourceStats: { news: totalNews, blog: totalBlogs, shop: totalShop },
+        insertStats: { inserted: totalInserted, backfilled: totalBackfilled, filtered: totalFiltered },
+        artistResults,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
