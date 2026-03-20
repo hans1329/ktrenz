@@ -471,6 +471,7 @@ async function detectForMember(
       trigger_source: "naver_news",
       artist_name: member.display_name,
       keyword: keywordData.keyword,
+      keyword_en: keywordData.keyword_en || null,
       keyword_ko: keywordData.keyword_ko || null,
       keyword_ja: keywordData.keyword_ja || null,
       keyword_zh: keywordData.keyword_zh || null,

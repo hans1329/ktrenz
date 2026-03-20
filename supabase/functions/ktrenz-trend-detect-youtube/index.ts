@@ -247,6 +247,7 @@ async function detectForMember(
         trigger_source: "youtube_search",
         artist_name: member.display_name,
         keyword: kw.keyword,
+        keyword_en: kw.keyword_en || null,
         keyword_ko: kw.keyword_ko || null,
         keyword_ja: kw.keyword_ja || null,
         keyword_zh: kw.keyword_zh || null,
