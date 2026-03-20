@@ -185,97 +185,9 @@ async function domesticPriorityDedup(sb: any): Promise<{ expired: number; detail
   return { expired: expireIds.length, details };
 }
 
-// ── 3. 복합 키워드 병합 ──
-// 같은 아티스트 + 같은 출처 + 같은 카테고리의 키워드가 출처 제목에서 인접하면 병합
-async function mergeCompoundKeywords(sb: any): Promise<{ merged: number; details: string[] }> {
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data: active } = await sb
-    .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, keyword_en, keyword_ja, keyword_zh, source_url, source_title, star_id, keyword_category, confidence, context, context_ko, context_ja, context_zh, artist_name")
-    .in("status", ["active", "pending"])
-    .gte("detected_at", threeDaysAgo)
-    .not("source_url", "is", null);
-
-  if (!active?.length) return { merged: 0, details: [] };
-
-  // star_id + source_url + category 로 그룹화
-  const groups = new Map<string, any[]>();
-  for (const entry of active) {
-    if (!entry.source_url || !entry.star_id) continue;
-    const key = `${entry.star_id}||${entry.source_url}||${entry.keyword_category}`;
-    const list = groups.get(key) || [];
-    list.push(entry);
-    groups.set(key, list);
-  }
-
-  let mergeCount = 0;
-  const details: string[] = [];
-
-  for (const [_key, entries] of groups) {
-    if (entries.length <= 1) continue;
-
-    const title = (entries[0].source_title || "").toLowerCase();
-    if (!title) continue;
-
-    // 제목에서 키워드 위치 찾기
-    const withPos = entries.map((e: any) => ({
-      ...e,
-      kwLower: e.keyword.toLowerCase(),
-      pos: title.indexOf(e.keyword.toLowerCase()),
-    })).filter((e: any) => e.pos >= 0).sort((a: any, b: any) => a.pos - b.pos);
-
-    if (withPos.length < 2) continue;
-
-    // 인접한 키워드 찾기 (5자 이내 간격)
-    const compound: any[] = [withPos[0]];
-    for (let i = 1; i < withPos.length; i++) {
-      const prevEnd = withPos[i - 1].pos + withPos[i - 1].kwLower.length;
-      const gap = withPos[i].pos - prevEnd;
-      if (gap >= 0 && gap <= 5) {
-        compound.push(withPos[i]);
-      }
-    }
-
-    if (compound.length < 2) continue;
-
-    // 병합: 제목에서의 순서대로 키워드 합치기
-    compound.sort((a: any, b: any) => b.confidence - a.confidence);
-    const primary = compound[0];
-    const others = compound.slice(1);
-
-    // 제목 순서대로 키워드 합치기
-    const orderedCompound = [...compound].sort((a: any, b: any) => a.pos - b.pos);
-    const mergedKeyword = orderedCompound.map((e: any) => e.keyword).join(" ");
-    const mergedKo = orderedCompound.map((e: any) => e.keyword_ko).filter(Boolean).join(" ") || null;
-    const mergedEn = orderedCompound.map((e: any) => e.keyword_en).filter(Boolean).join(" ") || null;
-    const mergedJa = orderedCompound.map((e: any) => e.keyword_ja).filter(Boolean).join(" ") || null;
-    const mergedZh = orderedCompound.map((e: any) => e.keyword_zh).filter(Boolean).join(" ") || null;
-
-    // Primary 업데이트
-    await sb.from("ktrenz_trend_triggers").update({
-      keyword: mergedKeyword,
-      keyword_ko: mergedKo,
-      keyword_en: mergedEn,
-      keyword_ja: mergedJa,
-      keyword_zh: mergedZh,
-    }).eq("id", primary.id);
-
-    // 나머지 만료
-    const otherIds = others.map((e: any) => e.id);
-    if (otherIds.length > 0) {
-      await sb.from("ktrenz_trend_triggers")
-        .update({ status: "merged", expired_at: new Date().toISOString() })
-        .in("id", otherIds);
-    }
-
-    mergeCount += others.length;
-    details.push(`"${mergedKeyword}" (${compound.length}개 → 1, ${primary.artist_name})`);
-    console.log(`[postprocess] Merged: "${mergedKeyword}" for ${primary.artist_name}`);
-  }
-
-  return { merged: mergeCount, details };
-}
+// ── 3. (제거됨) 복합 키워드 병합 ──
+// 이 로직은 "샤넬 투톤 슈즈"+"프라다 자켓"을 합쳐버리는 역효과가 있어 제거.
+// 복합 키워드 분리는 AI 분류(4단계)에서 처리함.
 
 // ── 4. AI 분류 (툴콜링) ──
 // pending 키워드 중 그룹/멤버 귀속이 모호한 것들을 AI로 판단
@@ -295,7 +207,12 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     .eq("status", "pending")
     .gte("detected_at", threeDaysAgo);
 
-  if (!pending?.length) return { reclassified: 0, details: [] };
+  if (!pending?.length) {
+    console.log(`[postprocess] No pending entries for AI classification`);
+    return { reclassified: 0, details: [] };
+  }
+
+  console.log(`[postprocess] AI classification: ${pending.length} pending entries to analyze`);
 
   // 스타 정보
   const starIds = [...new Set(pending.map((p: any) => p.star_id).filter(Boolean))];
@@ -307,14 +224,23 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
   const starMap = new Map<string, any>();
   for (const s of (stars || [])) starMap.set(s.id, s);
 
-  // 그룹 ID → 멤버 목록 매핑
-  const groupMembers = new Map<string, string[]>();
-  for (const s of (stars || [])) {
-    if (s.star_type === "member" && s.group_star_id) {
-      const list = groupMembers.get(s.group_star_id) || [];
-      list.push(s.display_name);
-      groupMembers.set(s.group_star_id, list);
+  // 그룹 star_id 목록을 모아서 멤버를 별도 조회
+  const groupStarIds = (stars || []).filter((s: any) => s.star_type === "group").map((s: any) => s.id);
+  const groupMembers = new Map<string, any[]>();
+
+  if (groupStarIds.length > 0) {
+    const { data: members } = await sb
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, star_type, group_star_id")
+      .eq("star_type", "member")
+      .in("group_star_id", groupStarIds);
+
+    for (const m of (members || [])) {
+      const list = groupMembers.get(m.group_star_id) || [];
+      list.push(m);
+      groupMembers.set(m.group_star_id, list);
     }
+    console.log(`[postprocess] Found members for ${groupMembers.size} groups: ${[...groupMembers.entries()].map(([gid, ms]) => `${starMap.get(gid)?.display_name}(${ms.length})`).join(", ")}`);
   }
 
   // 같은 아티스트의 pending 키워드들을 묶어서 AI에 보냄 (배치 효율)
@@ -335,8 +261,12 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     // 그룹 엔트리만 AI 분류 대상 (멤버/솔로는 이미 정확)
     if (star.star_type !== "group") continue;
 
-    const members = groupMembers.get(starId) || [];
-    if (!members.length) continue; // 멤버가 없으면 그룹 귀속 유지
+    const memberList = groupMembers.get(starId) || [];
+    const memberNames = memberList.map((m: any) => m.display_name);
+    if (!memberNames.length) {
+      console.log(`[postprocess] No members found for group ${star.display_name}, skipping`);
+      continue;
+    }
 
     const keywordList = entries.map((e: any) => ({
       id: e.id,
@@ -348,7 +278,7 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     }));
 
     const prompt = `Analyze the following trend keywords detected for K-pop group "${star.display_name}" (${star.name_ko}).
-The group has these members: ${members.join(", ")}.
+The group has these members: ${memberNames.join(", ")}.
 
 For each keyword, determine:
 1. "attribution": Is this keyword about the GROUP's collective activity or a specific MEMBER's individual activity?
@@ -401,11 +331,9 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
 
         // 멤버 귀속 처리
         if (r.attribution === "member" && r.attributed_member) {
-          // 해당 멤버의 star_id 찾기
-          const memberStar = (stars || []).find((s: any) =>
-            s.star_type === "member" &&
-            s.group_star_id === starId &&
-            (s.display_name === r.attributed_member || s.name_ko === r.attributed_member)
+          // 해당 멤버의 star_id 찾기 (memberList에서 검색)
+          const memberStar = memberList.find((m: any) =>
+            m.display_name === r.attributed_member || m.name_ko === r.attributed_member
           );
           if (memberStar) {
             await sb.from("ktrenz_trend_triggers").update({
@@ -478,33 +406,28 @@ Deno.serve(async (req) => {
 
     console.log("[postprocess] Starting post-processing...");
 
-    // 1단계: 멤버 우선 중복제거 (rule-based)
-    const dedupResult = await memberPriorityDedup(sb);
-    console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
-
-    // 2단계: 국내 우선 소스 중복제거
-    const srcDedupResult = await domesticPriorityDedup(sb);
-    console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
-
-    // 3단계: 복합 키워드 병합 (rule-based)
-    const mergeResult = await mergeCompoundKeywords(sb);
-    console.log(`[postprocess] Compound merge: merged ${mergeResult.merged} entries`);
-
-    // 4단계: AI 분류 (그룹→멤버 귀속 + 복합 키워드 분리)
+    // 1단계: AI 분류 (그룹→멤버 귀속 + 복합 키워드 분리) — pending 대상이므로 먼저 실행
     const aiResult = await aiClassification(sb);
     console.log(`[postprocess] AI classification: reclassified ${aiResult.reclassified} entries`);
 
-    // 5단계: pending → active 전환
+    // 2단계: 멤버 우선 중복제거 (rule-based) — AI 귀속 후 실행해야 정확
+    const dedupResult = await memberPriorityDedup(sb);
+    console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
+
+    // 3단계: 국내 우선 소스 중복제거
+    const srcDedupResult = await domesticPriorityDedup(sb);
+    console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
+
+    // 4단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
 
     return new Response(
       JSON.stringify({
         success: true,
+        aiClassification: aiResult,
         memberPriority: dedupResult,
         domesticPriority: srcDedupResult,
-        compoundMerge: mergeResult,
-        aiClassification: aiResult,
         activated,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
