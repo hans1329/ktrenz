@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, Zap, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, CheckCircle2, Zap, X, ChevronDown, ChevronUp, Newspaper, BookOpen, ShoppingBag } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface PipelineRun {
@@ -17,6 +17,7 @@ interface RecentKeyword {
   detected_at: string;
   keyword_category: string;
   status?: string;
+  trigger_source?: string;
 }
 
 interface Props {
@@ -39,7 +40,10 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   }, [run]);
 
   const isTrackPhase = run?.phase === "track";
-  const triggerSourceFilter = run?.phase === "detect" ? "naver_news" : run?.phase === "detect_global" ? "global_news" : null;
+  // 국내: naver_multi, naver_shop, naver_news(레거시)
+  // 글로벌: global_news, firecrawl_social, youtube_comments
+  const isDetect = run?.phase === "detect";
+  const isGlobal = run?.phase === "detect_global";
 
   const { data: totalCount } = useQuery({
     queryKey: ["pipeline-total-count", run?.phase],
@@ -58,7 +62,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .from("ktrenz_stars" as any)
         .select("id", { count: "exact", head: true })
         .eq("is_active", true)
-        .eq("star_type", "member");
+        .in("star_type", ["group", "solo", "member"]);
       return count ?? 0;
     },
     enabled: !!run,
@@ -66,7 +70,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   });
 
   const { data: phaseState } = useQuery({
-    queryKey: ["pipeline-phase-state", run?.startedAt.toISOString(), run?.phase, triggerSourceFilter],
+    queryKey: ["pipeline-phase-state", run?.startedAt.toISOString(), run?.phase],
     queryFn: async () => {
       if (!run) return null;
 
@@ -83,21 +87,34 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           active: data?.length ?? 0,
           expired: 0,
           merged: 0,
+          bySource: {} as Record<string, number>,
         };
       }
 
+      // 국내/글로벌 감지 — trigger_source 기반 소스별 집계
+      const domesticSources = ["naver_multi", "naver_shop", "naver_news"];
+      const globalSources = ["global_news", "firecrawl_social", "youtube_comments"];
+      const filterSources = isDetect ? domesticSources : isGlobal ? globalSources : null;
+
       let query = supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("status, star_id")
+        .select("status, star_id, trigger_source")
         .gte("detected_at", run.startedAt.toISOString());
 
-      if (triggerSourceFilter) {
-        query = query.eq("trigger_source", triggerSourceFilter);
+      if (filterSources) {
+        query = query.in("trigger_source", filterSources);
       }
 
       const { data } = await query;
-      const rows = ((data ?? []) as unknown) as Array<{ status: string; star_id: string | null }>;
+      const rows = ((data ?? []) as unknown) as Array<{ status: string; star_id: string | null; trigger_source: string }>;
       const uniqueProcessedStars = new Set(rows.map((row) => row.star_id).filter(Boolean));
+
+      // 소스별 카운트
+      const bySource: Record<string, number> = {};
+      for (const row of rows) {
+        const src = row.trigger_source || "unknown";
+        bySource[src] = (bySource[src] || 0) + 1;
+      }
 
       return {
         processed: uniqueProcessedStars.size,
@@ -105,6 +122,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         active: rows.filter((row) => row.status === "active").length,
         expired: rows.filter((row) => row.status === "expired").length,
         merged: rows.filter((row) => row.status === "merged").length,
+        bySource,
       };
     },
     enabled: !!run,
@@ -112,29 +130,33 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   });
 
   const { data: recentKeywords } = useQuery({
-    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase, triggerSourceFilter],
+    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase, run?.phase],
     queryFn: async () => {
       if (!run) return [];
 
       if (isTrackPhase) {
         const { data } = await supabase
           .from("ktrenz_trend_triggers" as any)
-          .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category, status")
+          .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category, status, trigger_source")
           .eq("status", "active")
           .order("detected_at", { ascending: false })
           .limit(500);
         return (data ?? []) as unknown as RecentKeyword[];
       }
 
+      const domesticSources = ["naver_multi", "naver_shop", "naver_news"];
+      const globalSources = ["global_news", "firecrawl_social", "youtube_comments"];
+      const filterSources = isDetect ? domesticSources : isGlobal ? globalSources : null;
+
       let query = supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category, status")
+        .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category, status, trigger_source")
         .gte("detected_at", run.startedAt.toISOString())
         .order("detected_at", { ascending: false })
         .limit(500);
 
-      if (triggerSourceFilter) {
-        query = query.eq("trigger_source", triggerSourceFilter);
+      if (filterSources) {
+        query = query.in("trigger_source", filterSources);
       }
 
       const { data } = await query;
@@ -150,6 +172,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const active = phaseState?.active ?? 0;
   const expired = phaseState?.expired ?? 0;
   const merged = phaseState?.merged ?? 0;
+  const bySource = phaseState?.bySource ?? {};
   const batchSize = 5;
   const batchesDone = Math.ceil(processed / batchSize);
   const totalBatches = Math.ceil(total / batchSize);
@@ -209,6 +232,24 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           ? `후처리 대기 ${pending}건`
           : "정제 반영 중";
 
+  // 소스별 라벨 매핑
+  const sourceLabel: Record<string, { icon: typeof Newspaper; label: string; color: string }> = {
+    naver_multi: { icon: Newspaper, label: "뉴스+블로그", color: "text-blue-400" },
+    naver_shop: { icon: ShoppingBag, label: "쇼핑", color: "text-emerald-400" },
+    naver_news: { icon: Newspaper, label: "뉴스(레거시)", color: "text-blue-300" },
+    global_news: { icon: Newspaper, label: "글로벌 뉴스", color: "text-purple-400" },
+    firecrawl_social: { icon: BookOpen, label: "소셜(Reddit/TikTok)", color: "text-pink-400" },
+    youtube_comments: { icon: BookOpen, label: "YouTube 댓글", color: "text-red-400" },
+  };
+
+  const triggerSourceLabel = (src?: string) => {
+    if (!src) return "unknown";
+    const info = sourceLabel[src];
+    return info?.label || src;
+  };
+
+  const totalTriggers = Object.values(bySource).reduce((a, b) => a + b, 0);
+
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
       <div
@@ -231,9 +272,9 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {keywordCount > 0 && (
+          {totalTriggers > 0 && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-primary bg-primary/10">
-              {keywordCount} keywords
+              {totalTriggers} saved
             </span>
           )}
           {expanded ? (
@@ -252,47 +293,79 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
 
       {expanded && (
         <div className="px-3 pb-3 space-y-2">
+          {/* Progress bar */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span>
                 {isTrackPhase
                   ? `${processed}/${total}개 추적됨`
-                  : `대상 ${total}명 · 처리 ${processed}명 · active ${active} · pending ${pending}`}
+                  : `대상 ${total}명 · 처리 ${processed}명`}
               </span>
               <span>{statusText}</span>
             </div>
             <Progress value={isDone ? 100 : progress} className="h-1.5" />
           </div>
 
+          {/* Source breakdown */}
+          {!isTrackPhase && Object.keys(bySource).length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-muted-foreground">소스별 저장 현황</p>
+              <div className="grid grid-cols-2 gap-1">
+                {Object.entries(bySource)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([src, count]) => {
+                    const info = sourceLabel[src];
+                    const Icon = info?.icon || Newspaper;
+                    return (
+                      <div key={src} className="flex items-center gap-1.5 py-1 px-2 rounded bg-background/60">
+                        <Icon className={`w-3 h-3 shrink-0 ${info?.color || "text-muted-foreground"}`} />
+                        <span className="text-[10px] text-foreground truncate">{info?.label || src}</span>
+                        <span className="text-[10px] font-bold text-foreground ml-auto">{count}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Status breakdown */}
           {!isTrackPhase && (active > 0 || expired > 0 || merged > 0 || pending > 0) && (
             <div className="grid grid-cols-4 gap-1.5">
               {[
-                { label: "Active", value: active },
-                { label: "Pending", value: pending },
-                { label: "Expired", value: expired },
-                { label: "Merged", value: merged },
+                { label: "Active", value: active, color: "text-emerald-400" },
+                { label: "Pending", value: pending, color: "text-amber-400" },
+                { label: "Expired", value: expired, color: "text-muted-foreground" },
+                { label: "Merged", value: merged, color: "text-blue-400" },
               ].map((item) => (
                 <div key={item.label} className="text-center py-1 px-1 rounded bg-background/60">
                   <div className="text-[10px] text-muted-foreground">{item.label}</div>
-                  <div className="text-xs font-bold text-foreground">{item.value}</div>
+                  <div className={`text-xs font-bold ${item.color}`}>{item.value}</div>
                 </div>
               ))}
             </div>
           )}
 
+          {/* Recent keywords with source tag */}
           {recentKeywords && recentKeywords.length > 0 && (
             <div className="space-y-1 max-h-40 overflow-y-auto">
               <p className="text-[10px] font-bold text-muted-foreground">
-                {isTrackPhase ? "추적 중인 키워드" : "현재 배치 결과"}
+                {isTrackPhase ? "추적 중인 키워드" : `저장된 키워드 (${keywordCount}건)`}
               </p>
-              {recentKeywords.slice(0, 10).map((kw) => (
+              {recentKeywords.slice(0, 15).map((kw) => (
                 <div
                   key={kw.id}
-                  className="flex items-center gap-2 text-[11px] py-1 px-2 rounded-lg bg-background/60"
+                  className="flex items-center gap-1.5 text-[11px] py-1 px-2 rounded-lg bg-background/60"
                 >
                   <Zap className="w-3 h-3 shrink-0 text-primary" />
                   <span className="font-bold text-foreground truncate">{kw.keyword_ko || kw.keyword}</span>
                   <span className="text-muted-foreground truncate">· {kw.artist_name}</span>
+                  {!isTrackPhase && kw.trigger_source && (
+                    <span className={`text-[9px] shrink-0 px-1 py-0 rounded ${
+                      sourceLabel[kw.trigger_source]?.color || "text-muted-foreground"
+                    } bg-muted/50`}>
+                      {triggerSourceLabel(kw.trigger_source)}
+                    </span>
+                  )}
                   {!isTrackPhase && kw.status && (
                     <span className="text-muted-foreground/70 text-[9px] shrink-0 uppercase">{kw.status}</span>
                   )}
