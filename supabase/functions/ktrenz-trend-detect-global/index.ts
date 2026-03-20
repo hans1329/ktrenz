@@ -85,7 +85,12 @@ async function detectViaFirecrawl(
       }
     }
 
-    if (!allResults.length) return [];
+    if (!allResults.length) {
+      console.log(`[detect-global] Firecrawl: no results for "${searchName}"`);
+      return [];
+    }
+
+    console.log(`[detect-global] Firecrawl: ${allResults.length} results for "${searchName}"`);
 
     const texts = allResults.slice(0, 10).map((r: any) =>
       `[${r.title || ""}] ${(r.description || r.markdown || "").slice(0, 400)}`
