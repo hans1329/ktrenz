@@ -565,19 +565,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       {yesStake > 0 && (
                         <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center min-w-[120px]">
                           <div className="text-[10px] text-muted-foreground">🔥 {language === "ko" ? "오를 것" : "Rise"}</div>
-                          <div className="text-sm font-bold text-emerald-400">{yesStake}P</div>
-                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}P</span></div>
+                          <div className="text-sm font-bold text-emerald-400">{yesStake}T</div>
+                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}T</span></div>
                         </div>
                       )}
                       {noStake > 0 && (
                         <div className="rounded-md bg-rose-500/10 border border-rose-500/20 p-2 text-center min-w-[120px]">
                           <div className="text-[10px] text-muted-foreground">🤷 {language === "ko" ? "내릴 것" : "Fall"}</div>
-                          <div className="text-sm font-bold text-rose-400">{noStake}P</div>
-                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-rose-400 font-semibold">+{Math.round(noShares - noStake)}P</span></div>
+                          <div className="text-sm font-bold text-rose-400">{noStake}T</div>
+                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-rose-400 font-semibold">+{Math.round(noShares - noStake)}T</span></div>
                         </div>
                       )}
                     </div>
-                    <div className="text-[10px] text-muted-foreground text-center">{language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested}P</span></div>
+                    <div className="text-[10px] text-muted-foreground text-center">{language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested}T</span></div>
                   </div>
                 );
               })()}
@@ -593,9 +593,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <div className="mt-2 space-y-1">
                       {myBets.map((bet: any) => (
                         <div key={bet.id} className="text-[11px] text-muted-foreground">
-                          {bet.side === "yes" ? "🔥" : "🤷"} {bet.amount}P → {bet.payout != null
+                          {bet.side === "yes" ? "🔥" : "🤷"} {bet.amount}T → {bet.payout != null
                             ? (bet.payout > 0
-                              ? <span className="text-emerald-400 font-bold">+{bet.payout}P {t("won", language)}</span>
+                              ? <span className="text-emerald-400 font-bold">+{bet.payout}T {t("won", language)}</span>
                               : <span className="text-rose-400">{t("lost", language)}</span>)
                             : "..."}
                         </div>
@@ -612,7 +612,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                        inputMode="numeric"
                        min={10}
                        max={1000}
-                       placeholder="10~1000P"
+                       placeholder="10~1000T"
                        value={betAmount}
                        onChange={(e) => setBetAmount(e.target.value)}
                        className="flex-1 h-10 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
