@@ -179,7 +179,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             id: crypto.randomUUID(),
             market_id: marketData?.id,
             user_id: user.id,
-            side: betSide,
+            outcome: betOutcome,
             amount,
             shares: data.shares,
             payout: null,
