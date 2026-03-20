@@ -9,14 +9,14 @@ const corsHeaders = {
 };
 
 // ── 1. 멤버 우선 중복제거 ──
-// 같은 키워드가 그룹과 멤버 양쪽에 존재하면 멤버 것만 유지
+// 같은 키워드 또는 같은 source_url이 그룹과 멤버 양쪽에 존재하면 멤버 것만 유지
 async function memberPriorityDedup(sb: any): Promise<{ expired: number; details: string[] }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   // 활성 트리거 가져오기
   const { data: active } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, star_id")
+    .select("id, keyword, star_id, source_url")
     .eq("status", "active")
     .gte("detected_at", threeDaysAgo);
 
@@ -36,7 +36,10 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
     starMap.set(s.id, { star_type: s.star_type, group_star_id: s.group_star_id, display_name: s.display_name });
   }
 
-  // 키워드별로 그룹화
+  const expireIds = new Set<string>();
+  const details: string[] = [];
+
+  // 1a. 같은 키워드 기반 멤버 우선
   const byKeyword = new Map<string, any[]>();
   for (const entry of active) {
     const kw = entry.keyword.toLowerCase();
@@ -45,13 +48,9 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
     byKeyword.set(kw, list);
   }
 
-  const expireIds: string[] = [];
-  const details: string[] = [];
-
   for (const [kw, entries] of byKeyword) {
     if (entries.length <= 1) continue;
 
-    // 그룹 엔트리와 멤버 엔트리 분류
     const groupEntries: any[] = [];
     const memberEntries: any[] = [];
 
@@ -62,25 +61,59 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
       if (info.star_type === "member") memberEntries.push({ ...e, starInfo: info });
     }
 
-    // 멤버가 존재하면 해당 그룹 엔트리 만료
     for (const ge of groupEntries) {
       for (const me of memberEntries) {
         if (me.starInfo.group_star_id === ge.star_id) {
-          expireIds.push(ge.id);
-          details.push(`"${kw}": ${ge.starInfo.display_name}(그룹) → ${me.starInfo.display_name}(멤버) 우선`);
+          expireIds.add(ge.id);
+          details.push(`[keyword] "${kw}": ${ge.starInfo.display_name}(그룹) → ${me.starInfo.display_name}(멤버) 우선`);
           break;
         }
       }
     }
   }
 
-  if (expireIds.length > 0) {
-    await sb.from("ktrenz_trend_triggers")
-      .update({ status: "expired", expired_at: new Date().toISOString() })
-      .in("id", expireIds);
+  // 1b. 같은 source_url 기반 멤버 우선
+  // 같은 기사(URL)에서 그룹과 그 멤버 모두 키워드가 잡혔으면 그룹 것을 만료
+  const byUrl = new Map<string, any[]>();
+  for (const entry of active) {
+    if (!entry.source_url) continue;
+    const list = byUrl.get(entry.source_url) || [];
+    list.push(entry);
+    byUrl.set(entry.source_url, list);
   }
 
-  return { expired: expireIds.length, details };
+  for (const [url, entries] of byUrl) {
+    if (entries.length <= 1) continue;
+
+    const groupEntries: any[] = [];
+    const memberEntries: any[] = [];
+
+    for (const e of entries) {
+      const info = starMap.get(e.star_id);
+      if (!info) continue;
+      if (info.star_type === "group") groupEntries.push({ ...e, starInfo: info });
+      if (info.star_type === "member") memberEntries.push({ ...e, starInfo: info });
+    }
+
+    for (const ge of groupEntries) {
+      for (const me of memberEntries) {
+        if (me.starInfo.group_star_id === ge.star_id && !expireIds.has(ge.id)) {
+          expireIds.add(ge.id);
+          details.push(`[source_url] "${ge.keyword}": ${ge.starInfo.display_name}(그룹) → ${me.starInfo.display_name}(멤버) 우선 (같은 기사)`);
+          break;
+        }
+      }
+    }
+  }
+
+  const expireArr = [...expireIds];
+  if (expireArr.length > 0) {
+    await sb.from("ktrenz_trend_triggers")
+      .update({ status: "expired", expired_at: new Date().toISOString() })
+      .in("id", expireArr);
+  }
+
+  return { expired: expireArr.length, details };
 }
 
 // ── 2. 국내 우선 소스 중복제거 ──
