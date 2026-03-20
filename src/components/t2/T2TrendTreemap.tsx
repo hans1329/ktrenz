@@ -83,6 +83,13 @@ function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: string | n
   return null;
 }
 
+// URLs from these domains are hotlink-protected and will always fail to load
+function isBlockedImageDomain(url: string | null): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.');
+}
+
 export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
@@ -613,8 +620,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       left: `${left}%`, top: `${top}%`,
                       width: `${width}%`, height: `${height}%`,
                       backgroundImage: (() => {
-                        const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
-                        const platformLogo = !safeSourceImg ? detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl) : null;
+                        const rawSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
+                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                        const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
                         const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
                         return quotedBgImg
@@ -624,8 +632,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       backgroundColor: (() => {
-                        const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
-                        const platformLogo = !safeSourceImg ? detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl) : null;
+                        const rawSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
+                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                        const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
                         const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         return bgImg ? undefined : tileColor;
                       })(),
