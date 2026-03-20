@@ -126,6 +126,8 @@ async function detectViaFirecrawl(
       .join("\n---\n")
       .slice(0, 4000);
 
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 20000);
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -167,7 +169,9 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
         max_tokens: 800,
         response_format: { type: "json_object" },
       }),
+      signal: aiController.signal,
     });
+    clearTimeout(aiTimeout);
 
     if (!aiResponse.ok) {
       console.warn(`[detect-global] OpenAI error for ${artistName}: ${aiResponse.status}`);
