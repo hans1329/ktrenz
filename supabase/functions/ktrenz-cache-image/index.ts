@@ -55,6 +55,32 @@ function getExtension(contentType: string): string {
   return map[contentType] || "jpg";
 }
 
+// OG 이미지 URL 추출 (source_image_url이 null인 경우 source_url에서 가져오기)
+async function fetchOgImage(pageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Accept": "text/html",
+      },
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    // og:image
+    const ogMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i)
+      || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+    if (ogMatch?.[1]) return ogMatch[1];
+    // twitter:image
+    const twMatch = html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i)
+      || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
+    if (twMatch?.[1]) return twMatch[1];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
