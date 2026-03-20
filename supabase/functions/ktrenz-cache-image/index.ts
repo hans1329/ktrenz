@@ -99,33 +99,30 @@ Deno.serve(async (req) => {
     let targets: any[] = [];
 
     if (triggerId) {
-      // 단일 트리거
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url")
+        .select("id, source_image_url, source_url")
         .eq("id", triggerId)
         .single();
       if (data) targets = [data];
     } else if (triggerIds?.length) {
-      // 복수 트리거
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url")
+        .select("id, source_image_url, source_url")
         .in("id", triggerIds);
       if (data) targets = data;
     } else if (backfill) {
-      // 백필: 외부 URL을 가진 active 트리거 중 아직 Supabase Storage에 없는 것
+      // 백필: active 트리거 중 아직 Supabase Storage에 없는 것 (null 포함)
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url")
+        .select("id, source_image_url, source_url")
         .eq("status", "active")
-        .not("source_image_url", "is", null)
         .order("detected_at", { ascending: false })
         .limit(limit);
 
       if (data) {
         targets = data.filter(
-          (t: any) => t.source_image_url && !t.source_image_url.includes(supabaseUrl)
+          (t: any) => !t.source_image_url || !t.source_image_url.includes(supabaseUrl)
         );
       }
     }
