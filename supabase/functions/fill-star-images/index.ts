@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { limit = 10, starId, offset = 0 } = body;
+    const { limit = 5, starId } = body;
 
     const serpApiKey = Deno.env.get("SERPAPI_API_KEY");
     if (!serpApiKey) {
@@ -159,7 +159,6 @@ Deno.serve(async (req) => {
     let targets: any[] = [];
 
     if (starId) {
-      // Single star
       const { data } = await sb
         .from("ktrenz_stars")
         .select("id, display_name, name_ko, star_type, group_star_id, image_url")
@@ -167,40 +166,17 @@ Deno.serve(async (req) => {
         .single();
       if (data && !data.image_url) targets = [data];
     } else {
-      // Batch: stars without image_url, prioritize those with active trends
+      // Directly fetch stars with no image_url AND no wiki_entry_id (these are the real targets)
       const { data } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name, name_ko, star_type, group_star_id, image_url, wiki_entry_id")
+        .select("id, display_name, name_ko, star_type, group_star_id, image_url")
         .eq("is_active", true)
         .is("image_url", null)
+        .is("wiki_entry_id", null)
         .order("display_name")
-        .range(offset, offset + limit - 1);
+        .limit(limit);
 
-      if (data) {
-        // Also exclude ones that already have wiki image
-        const withWiki = data.filter((s: any) => s.wiki_entry_id);
-        const withoutWiki = data.filter((s: any) => !s.wiki_entry_id);
-
-        if (withWiki.length > 0) {
-          const wikiIds = withWiki.map((s: any) => s.wiki_entry_id);
-          const { data: wikiData } = await sb
-            .from("wiki_entries")
-            .select("id, image_url")
-            .in("id", wikiIds);
-
-          const wikiImageMap = new Map(
-            (wikiData || []).map((w: any) => [w.id, w.image_url])
-          );
-
-          // Only target those whose wiki also has no image
-          const wikiNoImage = withWiki.filter(
-            (s: any) => !wikiImageMap.get(s.wiki_entry_id)
-          );
-          targets = [...wikiNoImage, ...withoutWiki];
-        } else {
-          targets = withoutWiki;
-        }
-      }
+      if (data) targets = data;
     }
 
     if (!targets.length) {
