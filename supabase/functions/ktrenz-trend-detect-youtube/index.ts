@@ -104,13 +104,13 @@ RULES:
 6. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
 7. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
 8. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
-9. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
-10. Provide translations: keyword_ko, keyword_ja, keyword_zh.
+9. IMPORTANT: Use the ORIGINAL name as it appears in the video text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name. For Korean-origin names (이연복, 컴포즈커피, etc.), keep the Korean as "keyword". YouTube titles may mix Korean and English — preserve whichever form the entity appears in.
+10. Always provide "keyword_en" (English translation/name), "keyword_ko", "keyword_ja", "keyword_zh".
 11. Include "source_video_index" (1-based) pointing to the video where the entity appears.
 12. Provide translated context: context, context_ko, context_ja, context_zh.
 
 If NO commercial entities are found, return [].
-Example: [{"keyword":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog[2]","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용[2]","context_ja":"Vlogでジェントルモンスターのサングラスを着用[2]","context_zh":"在Vlog中佩戴Gentle Monster太阳镜[2]","source_video_index":2}]`;
+Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용","context_ja":"Vlogでジェントルモンスターのサングラスを着用","context_zh":"在Vlog中佩戴Gentle Monster太阳镜","source_video_index":2}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
