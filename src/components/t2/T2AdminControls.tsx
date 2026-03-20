@@ -48,6 +48,11 @@ const T2AdminControls = () => {
   const navigate = useNavigate();
   const [activeRuns, setActiveRuns] = useState<Record<string, PipelineRun>>(loadPersistedRuns);
 
+  // Persist runs to localStorage
+  useEffect(() => {
+    persistRuns(activeRuns);
+  }, [activeRuns]);
+
   const startRun = (phase: PipelineRun["phase"]) => {
     setActiveRuns((prev) => ({ ...prev, [phase]: { startedAt: new Date(), phase } }));
   };
