@@ -634,8 +634,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     onClick={handlePlaceBet}
                     disabled={betMutation.isPending || !betAmount}
                   >
-                    <Coins className="w-4 h-4" />
-                    {t("placeBet", language)}
+                    {betMutation.isPending ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        {language === "ko" ? "처리 중..." : "Processing..."}
+                      </>
+                    ) : (
+                      <>
+                        <Coins className="w-4 h-4" />
+                        {t("placeBet", language)}
+                      </>
+                    )}
                   </Button>
                 </>
               )}
