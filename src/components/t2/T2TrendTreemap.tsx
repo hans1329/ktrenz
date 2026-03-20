@@ -42,6 +42,7 @@ export interface TrendTile {
   sourceUrl: string | null;
   sourceTitle: string | null;
   sourceImageUrl: string | null;
+  sourceSnippet: string | null;
   starId: string | null;
   status: string;
 }
