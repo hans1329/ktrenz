@@ -146,15 +146,20 @@ ${articleTexts}
 RULES:
 1. ONLY extract entities whose name literally appears in the article text above.
 2. "${memberName}" should be mentioned in the article. Articles about the group "${groupName || "N/A"}" are acceptable IF "${memberName}" is specifically mentioned or if the entity is clearly linked to the group's activity.
-3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, comeback).
-4. Chart names (Billboard, Hanteo, etc.), concert/tour names, and festival names (Coachella, MAMA, etc.) CAN be extracted as context keywords IF they involve a specific commercial entity (e.g., "Coachella x Adidas collaboration" → extract "Adidas"). Do NOT extract them as standalone keywords.
+3. STRICTLY FORBIDDEN keywords — NEVER extract any of these:
+   - The artist's own name ("${memberName}"), group name ("${groupName || "N/A"}"), other member names, sub-unit names
+   - ANY combination containing the artist/group name (e.g., "${memberName} + descriptor" like "아이브 가을" for artist "가을" is FORBIDDEN)
+   - Agency/label names (SM, JYP, HYBE, YG, etc.), generic music terms (album, comeback, 컴백)
+   - Brand reputation rankings/indexes (브랜드평판, brand reputation) — these are NOT commercial entities
+4. Chart names (Billboard, Hanteo, etc.), concert/tour names, and festival names (Coachella, MAMA, etc.) are FORBIDDEN as standalone keywords. ONLY extract them if tied to a specific commercial brand (e.g., "Coachella x Adidas" → extract "Adidas", NOT "Coachella").
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
+7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes TV shows, dramas, movies, variety shows, interviews, and entertainment content. Songs/albums by the artist themselves are NOT valid keywords. Songs/albums by OTHER artists CAN be extracted if there's a collaboration. "product" is for physical consumer goods.
 8. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
 9. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
 10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
 11. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
+12. SKIP articles that are just ranking/reputation lists mentioning many artists. Only extract from articles with SPECIFIC, unique content about "${memberName}" and a commercial entity.
 
 If NO commercial entities are found, return [].
 Example for Korean entity: [{"keyword":"이연복","keyword_en":"Lee Yeon-bok","keyword_ko":"이연복","keyword_ja":"イ・ヨンボク","keyword_zh":"李连福","category":"food","confidence":0.9,"context":"이연복 셰프와 함께 요리 방송 출연","context_ko":"이연복 셰프와 함께 요리 방송 출연","context_ja":"イ・ヨンボクシェフと料理番組に出演","context_zh":"与李连福厨师一起参加烹饪节目","source_article_index":1}]
@@ -203,15 +208,33 @@ Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       
-      // confidence 0.7 이상이면 후검증 스킵 (AI가 확신하는 경우)
+      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
+      const kwLower = k.keyword.toLowerCase();
+      const kwKo = k.keyword_ko?.toLowerCase() || "";
+      const kwEn = k.keyword_en?.toLowerCase() || "";
+      const memberLower = memberName.toLowerCase();
+      const groupLower = (groupName || "").toLowerCase();
+      
+      // 키워드가 아티스트/그룹 이름을 포함하거나 일치하면 제거
+      const nameBlacklist = [memberLower, groupLower].filter(Boolean);
+      for (const blocked of nameBlacklist) {
+        if (!blocked) continue;
+        if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
+          console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
+          return false;
+        }
+        // "아이브 가을" contains "가을" (memberName)
+        if (kwLower.includes(blocked) || kwKo.includes(blocked) || blocked.includes(kwLower)) {
+          console.warn(`[trend-detect] Blocked keyword containing artist/group name: "${k.keyword}" (matches "${blocked}")`);
+          return false;
+        }
+      }
+      
+      // confidence 0.8 이상이면 후검증 스킵 (AI가 확신하는 경우)
       if (k.confidence >= 0.8) {
         console.log(`[trend-detect] High confidence (${k.confidence}), skipping text check: "${k.keyword}"`);
         return true;
       }
-      
-      const kwLower = k.keyword.toLowerCase();
-      const kwKo = k.keyword_ko?.toLowerCase() || "";
-      const kwEn = k.keyword_en?.toLowerCase() || "";
       
       // 1) 정확 매칭 (keyword, keyword_ko, keyword_en 중 하나라도)
       if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo)) || (kwEn && allText.includes(kwEn))) return true;
