@@ -45,18 +45,19 @@ interface NaverNewsItem {
   pubDate: string;
 }
 
-// ─── Naver News 실시간 검색 ───
-async function searchNaverNews(
+// ─── Naver 통합 검색 (News / Blog / Shop) ───
+async function searchNaver(
   clientId: string,
   clientSecret: string,
+  endpoint: "news" | "blog" | "shop",
   query: string,
   display: number = 50,
-): Promise<NaverNewsItem[]> {
+): Promise<any[]> {
   try {
-    const url = new URL("https://openapi.naver.com/v1/search/news.json");
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
     url.searchParams.set("display", String(Math.min(display, 100)));
-    url.searchParams.set("sort", "date");
+    url.searchParams.set("sort", endpoint === "shop" ? "date" : "date");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -66,16 +67,26 @@ async function searchNaverNews(
     });
 
     if (!response.ok) {
-      console.warn(`[trend-detect] Naver API failed: ${response.status}`);
+      console.warn(`[trend-detect] Naver ${endpoint} API failed: ${response.status}`);
       return [];
     }
 
     const data = await response.json();
     return data.items || [];
   } catch (e) {
-    console.warn(`[trend-detect] Naver search error: ${(e as Error).message}`);
+    console.warn(`[trend-detect] Naver ${endpoint} search error: ${(e as Error).message}`);
     return [];
   }
+}
+
+// 하위 호환용 래퍼
+async function searchNaverNews(
+  clientId: string,
+  clientSecret: string,
+  query: string,
+  display: number = 50,
+): Promise<NaverNewsItem[]> {
+  return searchNaver(clientId, clientSecret, "news", query, display) as Promise<NaverNewsItem[]>;
 }
 
 function stripHtml(html: string): string {
