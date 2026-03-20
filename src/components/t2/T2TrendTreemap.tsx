@@ -83,6 +83,13 @@ function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: string | n
   return null;
 }
 
+// URLs from these domains are hotlink-protected and will always fail to load
+function isBlockedImageDomain(url: string | null): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.');
+}
+
 export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
