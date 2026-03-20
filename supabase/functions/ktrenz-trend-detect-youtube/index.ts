@@ -172,6 +172,14 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
+      const kwEn = k.keyword_en?.toLowerCase() || "";
+      
+      // Platform blacklist filter
+      if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
+        console.warn(`[detect-youtube] Blocked platform keyword: "${k.keyword}"`);
+        return false;
+      }
+      
       const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
       if (!existsInText) {
         console.warn(`[detect-youtube] Filtered hallucinated keyword: "${k.keyword}"`);
