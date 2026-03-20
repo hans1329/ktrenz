@@ -90,6 +90,11 @@ function isBlockedImageDomain(url: string | null): boolean {
   return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.');
 }
 
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/&amp;/g, '&');
+}
+
 export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
