@@ -578,7 +578,7 @@ const UserDashboard = () => {
           </section>
         )}
 
-        {user && stats.totalEvents > 0 && (
+        {user && (stats.uniqueArtists > 0 || stats.detailViews > 0) && (
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
@@ -586,7 +586,7 @@ const UserDashboard = () => {
             </h2>
             <div className="grid grid-cols-4 gap-2">
               {[
-                { icon: MousePointerClick, value: stats.totalEvents, label: t("dash.total") },
+                { icon: TrendingUp, value: stats.uniqueArtists, label: t("dash.artists") },
                 { icon: Eye, value: stats.detailViews, label: t("dash.views") },
                 { icon: ExternalLink, value: stats.externalClicks, label: t("dash.links") },
                 { icon: Bot, value: stats.agentChats, label: t("dash.agent") },
