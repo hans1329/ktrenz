@@ -276,42 +276,55 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ktrenz_stars에서 active 아티스트 가져오기
+    // ktrenz_stars에서 active 아티스트 가져오기 (wiki_entry_id 필터 제거 — 모든 스타 대상)
     const { data: stars } = await sb
       .from("ktrenz_stars")
       .select("id, wiki_entry_id, display_name, star_type, group_star_id, star_category")
       .eq("is_active", true)
-      .not("wiki_entry_id", "is", null)
+      .in("star_type", ["group", "solo", "member"])
       .order("display_name", { ascending: true });
 
-    // 그룹 정보 일괄 조회
+    // 그룹 정보 일괄 조회 (display_name + wiki_entry_id)
     const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
-    const groupNameMap = new Map<string, string>();
+    const groupInfoMap = new Map<string, { displayName: string; wikiEntryId: string | null }>();
     if (groupStarIds.length > 0) {
       const { data: groups } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name")
+        .select("id, display_name, wiki_entry_id")
         .in("id", groupStarIds);
       for (const g of (groups || [])) {
-        groupNameMap.set(g.id, g.display_name);
+        groupInfoMap.set(g.id, { displayName: g.display_name, wikiEntryId: g.wiki_entry_id });
       }
     }
 
-    // wiki_entry_id 기준 중복 제거
-    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null; starCategory: string }>();
+    // star_id 기준으로 배치 구성 (wiki_entry_id 없어도 포함)
+    interface StarCandidate {
+      starId: string;
+      displayName: string;
+      groupName: string | null;
+      wikiEntryId: string | null;
+      starCategory: string;
+    }
+    const allCandidates: StarCandidate[] = [];
     for (const s of (stars || [])) {
-      if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
-        const gName = s.group_star_id ? groupNameMap.get(s.group_star_id) || null : null;
-        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName, starCategory: s.star_category || "kpop" });
-      }
+      const groupInfo = s.group_star_id ? groupInfoMap.get(s.group_star_id) : null;
+      const gName = groupInfo?.displayName || null;
+      // wiki_entry_id: 자기 것 우선, 없으면 그룹 것 사용
+      const resolvedWikiEntryId = s.wiki_entry_id || groupInfo?.wikiEntryId || null;
+      allCandidates.push({
+        starId: s.id,
+        displayName: s.display_name,
+        groupName: gName,
+        wikiEntryId: resolvedWikiEntryId,
+        starCategory: s.star_category || "kpop",
+      });
     }
 
-    const uniqueIds = [...entryMap.keys()];
-    const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
+    const batch = allCandidates.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: uniqueIds.length }),
+        JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: allCandidates.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
