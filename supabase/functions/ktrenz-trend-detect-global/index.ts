@@ -295,6 +295,9 @@ Return ONLY a JSON array. If no commercial entities found, return [].`,
       parsed = JSON.parse(jsonMatch[0]);
     }
 
+    // keyword 필드가 없으면 keyword_en으로 대체
+    parsed = parsed.map((k: any) => ({ ...k, keyword: k.keyword || k.keyword_en || "" }));
+
     // 텍스트 매칭 검증: 영상 본문에 실제 존재하는지
     const videoTextsLower = videoTexts.toLowerCase();
     return parsed
