@@ -1,6 +1,5 @@
-// T2 Trend Detect Global v4: Firecrawl + YouTube API 직접 호출
-// 소스 1: Firecrawl — Reddit/TikTok 팬 커뮤니티 검색 (주력)
-// 소스 2: YouTube Data API — 최근 영상 제목/설명에서 상업 키워드 추출
+// T2 Trend Detect Global v5: Firecrawl 단독 — Reddit/TikTok 팬 커뮤니티 상업 키워드 감지
+// YouTube API 제거 (쿼터 낭비 방지), SerpAPI 크레딧은 트래킹 전용으로 보존
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -15,7 +14,7 @@ interface ExtractedKeyword {
   keyword_ko?: string;
   keyword_ja?: string;
   keyword_zh?: string;
-  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
+  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music";
   confidence: number;
   context: string;
   context_ko?: string;
@@ -30,21 +29,33 @@ interface ExtractedKeyword {
   detection_source?: string;
 }
 
-// 플랫폼/미디어/아티스트명 등 제외할 키워드
+// 플랫폼/미디어/아티스트명 등 제외할 키워드 (강화)
 const NOISE_BLACKLIST = new Set([
+  // 플랫폼
   "youtube", "spotify", "tiktok", "instagram", "twitter", "x", "facebook",
   "apple music", "melon", "genie", "bugs", "flo", "vibe", "soundcloud",
   "weverse", "vlive", "bubble", "universe", "phoning", "lysn",
-  "naver", "google", "daum", "kakao", "billboard", "hanteo", "gaon",
-  "circle chart", "oricon", "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn",
+  "naver", "google", "daum", "kakao", "netflix", "hulu", "disney+", "amazon",
+  "pinterest", "snapchat", "threads", "whatsapp", "telegram", "discord",
+  // 차트/미디어
+  "billboard", "hanteo", "gaon", "circle chart", "oricon",
+  "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "kcon",
   "reddit", "allkpop", "soompi", "koreaboo",
-  // 일반적인 노이즈
+  // 일반 노이즈
   "kpop", "k-pop", "korean", "korea", "seoul", "comeback", "album",
   "music video", "mv", "teaser", "concert", "tour", "fan", "fandom",
   "idol", "debut", "ep", "single", "tracklist", "photocard",
+  "merch", "merchandise", "lightstick", "official", "channel",
+  // 엔터사
+  "hybe", "sm entertainment", "yg entertainment", "jyp entertainment",
+  "starship entertainment", "pledis", "cube entertainment", "fnc entertainment",
+  "bighit", "big hit", "kakao entertainment", "cj enm",
+  // 기타 일반어
+  "fashion", "beauty", "music", "dance", "video", "photo", "live",
+  "news", "article", "interview", "performance", "stage", "award",
 ]);
 
-// ── 소스 1: Firecrawl — Reddit/TikTok 검색 (주력) ──
+// ── Firecrawl — Reddit/TikTok 검색 (주력) ──
 async function detectViaFirecrawl(
   apiKey: string,
   artistName: string,
@@ -53,198 +64,45 @@ async function detectViaFirecrawl(
 ): Promise<ExtractedKeyword[]> {
   if (!apiKey || !openaiKey) return [];
 
-  const searchName = groupName ? `${groupName} ${artistName}` : artistName;
-
   try {
-    const queries = [
-      `"${searchName}" brand OR collaboration OR endorsement OR ambassador site:reddit.com`,
-      `"${searchName}" wearing OR fashion OR beauty OR product site:reddit.com OR site:tiktok.com`,
-    ];
+    const searchQuery = groupName
+      ? `${artistName} ${groupName} brand endorsement OR sponsorship OR collaboration OR wearing`
+      : `${artistName} kpop brand endorsement OR sponsorship OR collaboration OR wearing`;
 
-    const allResults: any[] = [];
-    for (const query of queries) {
-      try {
-        const response = await fetch("https://api.firecrawl.dev/v1/search", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ query, limit: 5, tbs: "qdr:w" }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.data?.length) allResults.push(...data.data);
-        } else {
-          const errText = await response.text();
-          console.warn(`[detect-global] Firecrawl search error: ${errText.slice(0, 150)}`);
-        }
-      } catch (e) {
-        console.warn(`[detect-global] Firecrawl fetch error: ${(e as Error).message}`);
-      }
-    }
-
-    if (!allResults.length) {
-      console.log(`[detect-global] Firecrawl: no results for "${searchName}"`);
-      return [];
-    }
-
-    console.log(`[detect-global] Firecrawl: ${allResults.length} results for "${searchName}"`);
-
-    const texts = allResults.slice(0, 10).map((r: any) =>
-      `[${r.title || ""}] ${(r.description || r.markdown || "").slice(0, 400)}`
-    ).join("\n---\n");
-
-    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const fcResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, collaboration partners) from fan community search results about a K-pop artist.
-
-STRICT RULES:
-- Only COMMERCIAL entities with a direct connection to the artist
-- Do NOT include: artist names, group names, member names, agency names (SM, YG, JYP, HYBE, etc.)
-- Do NOT include: song/album titles, generic K-pop terms, platform names
-- Do NOT include: generic terms like "K-beauty", "Korean makeup", "Glass Skin" unless it's a specific product name
-- COMPOUND NAMES: Keep multi-word brand names together ("Polo Ralph Lauren" not split)
-- ONE ENTITY PER KEYWORD
-- Maximum 5 keywords, minimum confidence 0.6
-- Use ENGLISH keyword names
-- Provide keyword_en, keyword_ko, keyword_ja, keyword_zh translations
-- Provide context and context_ko, context_ja, context_zh translations
-
-Return ONLY a JSON array. If no genuine commercial entities found, return [].`,
-          },
-          {
-            role: "user",
-            content: `Artist: ${searchName}\n\nFan community search results:\n${texts}`,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 1200,
-        response_format: { type: "json_object" },
+        query: searchQuery,
+        limit: 5,
+        lang: "en",
+        tbs: "qdr:w",
+        scrapeOptions: { formats: ["markdown"] },
       }),
     });
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      console.warn(`[detect-global] Firecrawl AI error: ${errText.slice(0, 200)}`);
+    if (!fcResponse.ok) {
+      const errText = await fcResponse.text();
+      console.warn(`[detect-global] Firecrawl error: ${errText.slice(0, 100)}`);
       return [];
     }
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content || "";
-    console.log(`[detect-global] Firecrawl AI response for "${searchName}": ${aiContent.slice(0, 300)}`);
+    const fcData = await fcResponse.json();
+    const results = fcData.data || [];
+    if (!results.length) return [];
 
-    let parsed: ExtractedKeyword[];
-    try {
-      const obj = JSON.parse(aiContent);
-      // AI가 다양한 키로 반환할 수 있으므로 모두 체크
-      parsed = Array.isArray(obj)
-        ? obj
-        : (obj.keywords || obj.entities || obj.results || obj.data || obj.commercial_entities || obj.items || []);
-    } catch {
-      const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) return [];
-      parsed = JSON.parse(jsonMatch[0]);
-    }
-
-    if (!Array.isArray(parsed)) parsed = [];
-
-    // keyword/category 필드 누락 대비 fallback
-    parsed = parsed.map((k: any) => ({
-      ...k,
-      keyword: k.keyword || k.keyword_en || k.name || "",
-      category: k.category || "brand",
-    }));
-
-    return parsed
-      .filter((k) => {
-        if (!k.keyword) return false;
-        if ((k.confidence || 0) < 0.6) return false;
-        const kwLower = k.keyword.toLowerCase();
-        if (NOISE_BLACKLIST.has(kwLower)) return false;
-        if (k.keyword.length <= 2) return false;
-        return true;
+    const searchContent = results
+      .map((r: any) => {
+        const md = (r.markdown || "").slice(0, 800);
+        const title = r.title || "";
+        return `[${title}]\n${md}`;
       })
-      .map((k) => ({
-        ...k,
-        confidence: k.confidence || 0.7,
-        detection_source: "firecrawl",
-      }));
-  } catch (e) {
-    console.warn(`[detect-global] Firecrawl error for ${artistName}: ${(e as Error).message}`);
-    return [];
-  }
-}
+      .join("\n---\n")
+      .slice(0, 4000);
 
-// ── 소스 2: YouTube Data API — 최근 영상에서 상업 키워드 직접 추출 ──
-async function detectViaYouTube(
-  youtubeKey: string,
-  channelId: string | null,
-  artistName: string,
-  openaiKey: string
-): Promise<ExtractedKeyword[]> {
-  if (!youtubeKey || !channelId || !openaiKey) return [];
-
-  try {
-    // @handle 형식이면 채널 검색으로 ID 변환
-    let resolvedChannelId = channelId;
-    if (channelId.startsWith("@")) {
-      const handleRes = await fetch(
-        `https://www.googleapis.com/youtube/v3/channels?forHandle=${channelId}&part=id&key=${youtubeKey}`
-      );
-      if (!handleRes.ok) {
-        console.warn(`[detect-global] YT handle resolve failed for ${channelId}`);
-        return [];
-      }
-      const handleData = await handleRes.json();
-      resolvedChannelId = handleData.items?.[0]?.id;
-      if (!resolvedChannelId) return [];
-    }
-
-    // 최근 영상 5개 가져오기 (search API 대신 activities 또는 playlistItems 사용 → 쿼터 절약)
-    // uploads playlist = "UU" + channelId 뒤 2글자 제거
-    const uploadsPlaylistId = "UU" + resolvedChannelId.slice(2);
-    const listRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${uploadsPlaylistId}&part=snippet&maxResults=5&key=${youtubeKey}`
-    );
-
-    if (!listRes.ok) {
-      const errText = await listRes.text();
-      console.warn(`[detect-global] YT playlistItems error: ${errText.slice(0, 150)}`);
-      return [];
-    }
-
-    const listData = await listRes.json();
-    const items = listData.items || [];
-    if (!items.length) return [];
-
-    // 3일 이내 영상만 필터
-    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-    const recentItems = items.filter((item: any) => {
-      const pubDate = new Date(item.snippet?.publishedAt || 0).getTime();
-      return pubDate > threeDaysAgo;
-    });
-
-    if (!recentItems.length) return [];
-
-    const videoTexts = recentItems.map((item: any) => {
-      const s = item.snippet || {};
-      const title = s.title || "";
-      const desc = (s.description || "").slice(0, 500);
-      return `[${title}] ${desc}`;
-    }).join("\n---\n");
-
-    // OpenAI로 상업 키워드 추출
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -256,27 +114,34 @@ async function detectViaYouTube(
         messages: [
           {
             role: "system",
-            content: `Extract commercial entities (brands, products, places, fashion items, beauty products) from YouTube video titles and descriptions of a K-pop artist.
+            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, food/beverage brands) mentioned in fan community discussions about a K-pop artist.
 
 STRICT RULES:
-- Only COMMERCIAL entities that appear in the video text
-- Do NOT include: artist names, song/album titles, agency names
-- Do NOT include: generic music terms, platform names
-- Do NOT extract keywords that are NOT literally present in the provided text
-- COMPOUND NAMES: Keep multi-word brand names together
-- Maximum 3 keywords per video set, minimum confidence 0.7
-- Provide keyword_en, keyword_ko, keyword_ja, keyword_zh
-- Provide context and translated contexts
+- ONLY extract named commercial brands/products/places that the artist is associated with
+- Do NOT include: artist names, group names, song/album titles, agency/label names
+- Do NOT include: platform names (YouTube, Netflix, Spotify, TikTok, etc.)
+- Do NOT include: generic terms (fashion, beauty, music, dance, etc.)
+- Do NOT include: chart names, show names, award names
+- COMPOUND NAMES: Keep multi-word brand names together (e.g. "Maison Valentino" not "Valentino")
+- 1 keyword = 1 entity. Split "Chanel shoes Prada jacket" into separate keywords
+- Maximum 5 keywords, minimum confidence 0.65
+- Provide keyword (English), keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese)
+- Provide context (English) and context_ko, context_ja, context_zh
+- category must be one of: brand, product, place, food, fashion, beauty
+- commercial_intent: ad, sponsorship, collaboration, organic, rumor
+- brand_intent: awareness, conversion, association, loyalty
+- fan_sentiment: positive, negative, neutral, mixed
+- trend_potential: 0-100
 
-Return ONLY a JSON array. If no commercial entities found, return [].`,
+Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities found, return { "keywords": [] }.`,
           },
           {
             role: "user",
-            content: `Artist: ${artistName}\n\nRecent YouTube videos:\n${videoTexts}`,
+            content: `Artist: ${artistName}${groupName ? ` (member of ${groupName})` : ""}\n\nFan community content:\n${searchContent}`,
           },
         ],
         temperature: 0.1,
-        max_tokens: 600,
+        max_tokens: 800,
         response_format: { type: "json_object" },
       }),
     });
@@ -289,39 +154,46 @@ Return ONLY a JSON array. If no commercial entities found, return [].`,
     let parsed: ExtractedKeyword[];
     try {
       const obj = JSON.parse(aiContent);
-      parsed = Array.isArray(obj) ? obj : (obj.keywords || obj.entities || obj.results || obj.data || obj.commercial_entities || obj.items || []);
+      parsed = Array.isArray(obj)
+        ? obj
+        : (obj.keywords || obj.entities || obj.results || obj.data || obj.commercial_entities || obj.items || []);
     } catch {
       const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
       if (!jsonMatch) return [];
       parsed = JSON.parse(jsonMatch[0]);
     }
 
-    // keyword/category fallback
-    parsed = parsed.map((k: any) => ({ ...k, keyword: k.keyword || k.keyword_en || "", category: k.category || "brand" }));
+    if (!Array.isArray(parsed)) parsed = [];
 
-    // 텍스트 매칭 검증: 영상 본문에 실제 존재하는지
-    const videoTextsLower = videoTexts.toLowerCase();
+    parsed = parsed.map((k: any) => ({
+      ...k,
+      keyword: k.keyword || k.keyword_en || k.name || "",
+      category: k.category || "brand",
+    }));
+
+    // 소스 URL/타이틀 추가
+    const firstResult = results[0];
     return parsed
       .filter((k) => {
         if (!k.keyword) return false;
-        if ((k.confidence || 0) < 0.7) return false;
+        if ((k.confidence || 0) < 0.65) return false;
         const kwLower = k.keyword.toLowerCase();
         if (NOISE_BLACKLIST.has(kwLower)) return false;
         if (k.keyword.length <= 2) return false;
-        // 환각 방지: 실제 영상 텍스트에 존재하는지 검증
-        if (!videoTextsLower.includes(kwLower)) {
-          console.warn(`[detect-global] YT hallucination filtered: "${k.keyword}" not in video text`);
-          return false;
-        }
+        // 아티스트명/그룹명 자체를 키워드로 추출한 경우 제외
+        if (kwLower === artistName.toLowerCase()) return false;
+        if (groupName && kwLower === groupName.toLowerCase()) return false;
         return true;
       })
       .map((k) => ({
         ...k,
         confidence: k.confidence || 0.7,
-        detection_source: "youtube_api",
+        detection_source: "firecrawl",
+        source_url: k.source_url || firstResult?.url || null,
+        source_title: k.source_title || firstResult?.title || null,
       }));
   } catch (e) {
-    console.warn(`[detect-global] YouTube API error for ${artistName}: ${(e as Error).message}`);
+    console.warn(`[detect-global] Firecrawl error for ${artistName}: ${(e as Error).message}`);
     return [];
   }
 }
@@ -348,25 +220,6 @@ async function fetchOgImage(url: string): Promise<string | null> {
   }
 }
 
-// ── 키워드 병합 및 중복 제거 ──
-function mergeKeywords(sources: ExtractedKeyword[][]): ExtractedKeyword[] {
-  const merged = new Map<string, ExtractedKeyword>();
-
-  for (const keywords of sources) {
-    for (const kw of keywords) {
-      const key = kw.keyword.toLowerCase();
-      const existing = merged.get(key);
-      if (!existing || kw.confidence > existing.confidence) {
-        merged.set(key, kw);
-      }
-    }
-  }
-
-  return [...merged.values()]
-    .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, 8);
-}
-
 // ── 메인 핸들러 ──
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -390,7 +243,6 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
     const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
-    const youtubeKey = Deno.env.get("YOUTUBE_API_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 
     // ktrenz_stars에서 active 아티스트 가져오기
@@ -423,24 +275,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // YouTube 채널 ID 일괄 조회 (v3_artist_tiers에서)
-    const allEntryIds = [...entryMap.keys()];
-    const ytChannelMap = new Map<string, string>();
-    if (allEntryIds.length > 0) {
-      // 배치로 조회 (50개씩)
-      for (let i = 0; i < allEntryIds.length; i += 50) {
-        const chunk = allEntryIds.slice(i, i + 50);
-        const { data: tiers } = await sb
-          .from("v3_artist_tiers")
-          .select("wiki_entry_id, youtube_channel_id")
-          .in("wiki_entry_id", chunk)
-          .not("youtube_channel_id", "is", null);
-        for (const t of (tiers || [])) {
-          if (t.youtube_channel_id) ytChannelMap.set(t.wiki_entry_id, t.youtube_channel_id);
-        }
-      }
-    }
-
     const uniqueIds = [...entryMap.keys()];
     const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
 
@@ -451,7 +285,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[detect-global] v4 batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Firecrawl+YouTube)`);
+    console.log(`[detect-global] v5 batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Firecrawl only)`);
 
     let successCount = 0;
     let totalKeywords = 0;
@@ -462,32 +296,35 @@ Deno.serve(async (req) => {
         const name = entry?.displayName || "Unknown";
         const sid = entry?.starId || null;
         const gName = entry?.groupName || null;
-        const ytChannelId = ytChannelMap.get(entryId) || null;
 
-        // 2개 소스 병렬 실행
-        const [firecrawlKws, ytKws] = await Promise.all([
-          detectViaFirecrawl(firecrawlKey, name, gName, openaiKey),
-          detectViaYouTube(youtubeKey, ytChannelId, name, openaiKey),
-        ]);
+        // Firecrawl 단독 실행
+        const keywords = await detectViaFirecrawl(firecrawlKey, name, gName, openaiKey);
 
-        const allKeywords = mergeKeywords([firecrawlKws, ytKws]);
-        const sourceCounts = `fc=${firecrawlKws.length},yt=${ytKws.length}`;
-        console.log(`[detect-global] ${gName ? `${gName}/` : ""}${name}: ${sourceCounts} → merged=${allKeywords.length}`);
+        // 중복 키워드 제거 (같은 아티스트 내)
+        const seen = new Set<string>();
+        const deduped = keywords.filter((k) => {
+          const key = k.keyword.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).slice(0, 5);
 
-        if (!allKeywords.length) {
+        console.log(`[detect-global] ${gName ? `${gName}/` : ""}${name}: fc=${deduped.length}`);
+
+        if (!deduped.length) {
           successCount++;
           await new Promise((r) => setTimeout(r, 1500));
           continue;
         }
 
         // OG Image 수집
-        const uniqueUrls = [...new Set(allKeywords.map((k) => k.source_url).filter(Boolean))] as string[];
+        const uniqueUrls = [...new Set(deduped.map((k) => k.source_url).filter(Boolean))] as string[];
         const ogImageMap = new Map<string, string | null>();
         await Promise.allSettled(
           uniqueUrls.map(async (url) => ogImageMap.set(url, await fetchOgImage(url)))
         );
 
-        const candidateRows = allKeywords.map((k) => ({
+        const candidateRows = deduped.map((k) => ({
           row: {
             wiki_entry_id: entryId,
             star_id: sid || null,
@@ -513,7 +350,7 @@ Deno.serve(async (req) => {
             fan_sentiment: k.fan_sentiment || null,
             trend_potential: k.trend_potential ?? null,
             status: "pending",
-            metadata: { source: "global_detect_v4", detection_source: k.detection_source, sources: sourceCounts },
+            metadata: { source: "global_detect_v5", detection_source: k.detection_source },
           },
         }));
 
@@ -533,7 +370,7 @@ Deno.serve(async (req) => {
         }
 
         // 크로스 아티스트 중복 제거
-        const allKwTexts = allKeywords.flatMap((k) => [k.keyword, k.keyword_en || k.keyword].filter(Boolean));
+        const allKwTexts = deduped.flatMap((k) => [k.keyword, k.keyword_en || k.keyword].filter(Boolean));
         const { data: crossExisting } = await sb
           .from("ktrenz_trend_triggers")
           .select("keyword, keyword_en")
