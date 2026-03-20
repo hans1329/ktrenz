@@ -159,15 +159,16 @@ Return ONLY a JSON array. If no genuine commercial entities found, return [].`,
 
     if (!Array.isArray(parsed)) parsed = [];
 
-    // keyword 필드가 없으면 keyword_en으로 대체
-    parsed = parsed.map((k) => ({
+    // keyword/category 필드 누락 대비 fallback
+    parsed = parsed.map((k: any) => ({
       ...k,
-      keyword: k.keyword || k.keyword_en || "",
+      keyword: k.keyword || k.keyword_en || k.name || "",
+      category: k.category || "brand",
     }));
 
     return parsed
       .filter((k) => {
-        if (!k.keyword || !k.category) return false;
+        if (!k.keyword) return false;
         if ((k.confidence || 0) < 0.6) return false;
         const kwLower = k.keyword.toLowerCase();
         if (NOISE_BLACKLIST.has(kwLower)) return false;
