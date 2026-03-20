@@ -207,13 +207,19 @@ const T2KeywordDetail = () => {
         .from("ktrenz_trend_bets" as any)
         .select("id", { count: "exact", head: true })
         .eq("market_id", m.id);
-      const poolYes = Number(m.pool_yes);
-      const poolNo = Number(m.pool_no);
-      const total = poolYes + poolNo;
+      const pD = Number(m.pool_decline);
+      const pM = Number(m.pool_mild);
+      const pS = Number(m.pool_strong);
+      const pE = Number(m.pool_explosive);
+      const invSum = (1/pD) + (1/pM) + (1/pS) + (1/pE);
       return {
         ...m,
-        priceYes: total > 0 ? poolNo / total : 0.5,
-        priceNo: total > 0 ? poolYes / total : 0.5,
+        prices: {
+          decline: (1/pD)/invSum,
+          mild: (1/pM)/invSum,
+          strong: (1/pS)/invSum,
+          explosive: (1/pE)/invSum,
+        },
         totalBettors: totalBettors ?? 0,
         totalBets: totalBets ?? 0,
       };
