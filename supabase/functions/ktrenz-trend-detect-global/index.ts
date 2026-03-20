@@ -296,14 +296,14 @@ Return ONLY a JSON array. If no commercial entities found, return [].`,
       parsed = JSON.parse(jsonMatch[0]);
     }
 
-    // keyword 필드가 없으면 keyword_en으로 대체
-    parsed = parsed.map((k: any) => ({ ...k, keyword: k.keyword || k.keyword_en || "" }));
+    // keyword/category fallback
+    parsed = parsed.map((k: any) => ({ ...k, keyword: k.keyword || k.keyword_en || "", category: k.category || "brand" }));
 
     // 텍스트 매칭 검증: 영상 본문에 실제 존재하는지
     const videoTextsLower = videoTexts.toLowerCase();
     return parsed
       .filter((k) => {
-        if (!k.keyword || !k.category) return false;
+        if (!k.keyword) return false;
         if ((k.confidence || 0) < 0.7) return false;
         const kwLower = k.keyword.toLowerCase();
         if (NOISE_BLACKLIST.has(kwLower)) return false;
