@@ -403,8 +403,27 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
+    const body = await req.json().catch(() => ({}));
+    const triggeredBy = body.triggeredBy || "manual";
 
     console.log("[postprocess] Starting post-processing...");
+
+    // 시작 로그 기록 (UI에서 감지 가능)
+    await sb.from("ktrenz_collection_log").insert({
+      platform: "trend_postprocess",
+      status: "running",
+      records_collected: 0,
+      error_message: `triggered_by=${triggeredBy}`,
+    });
+
+    // pending 건수 확인
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const { count: pendingBefore } = await sb
+      .from("ktrenz_trend_triggers")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .gte("detected_at", threeDaysAgo);
+    console.log(`[postprocess] Pending entries before: ${pendingBefore}`);
 
     // 1단계: AI 분류 (그룹→멤버 귀속 + 복합 키워드 분리) — pending 대상이므로 먼저 실행
     const aiResult = await aiClassification(sb);
@@ -422,6 +441,14 @@ Deno.serve(async (req) => {
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
 
+    // 완료 로그 기록
+    await sb.from("ktrenz_collection_log").insert({
+      platform: "trend_postprocess",
+      status: "success",
+      records_collected: activated,
+      error_message: `ai_reclassified=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, domestic_dedup=${srcDedupResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -429,6 +456,7 @@ Deno.serve(async (req) => {
         memberPriority: dedupResult,
         domesticPriority: srcDedupResult,
         activated,
+        pendingBefore: pendingBefore ?? 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
