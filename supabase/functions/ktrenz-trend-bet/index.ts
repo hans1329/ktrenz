@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       });
     }
     if (betAmount > 1000) {
-      return new Response(JSON.stringify({ error: "Maximum bet is 1000 K-Points" }), {
+      return new Response(JSON.stringify({ error: "Maximum bet is 1000 K-Token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
