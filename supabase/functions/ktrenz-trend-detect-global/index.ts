@@ -80,6 +80,8 @@ STRICT Rules:
 - Only include entities from VERY RECENT news (last 24 hours)
 - Each entity must have a clear, direct connection to the artist (individual OR as part of their group activity)
 - Do NOT include the artist name itself, their agency/label, or generic music terms (album, comeback)
+- Do NOT include platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Apple Music, Melon, Weverse, etc.) — we track what trends ON platforms, not the platforms themselves
+- Do NOT include broadcast networks as standalone keywords (KBS, MBC, SBS, JTBC, tvN, Mnet) — UNLESS the specific SHOW NAME is the keyword
 - Chart names, concert names, and festival names are acceptable as CONTEXT but should NOT be extracted as standalone keywords. Extract the commercial entity instead (e.g., "wore Adidas at Coachella" → extract "Adidas", not "Coachella")
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked
 - Categorize as: brand, product, place, food, fashion, beauty, or media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
@@ -90,8 +92,16 @@ STRICT Rules:
 - Provide translated context: context_ko, context_ja, context_zh
 - Include source_url and source_title if available from your search
 
+INTENT ANALYSIS (required for each keyword):
+- "commercial_intent": "ad" | "sponsorship" | "collaboration" | "organic" | "rumor"
+- "brand_intent": "awareness" | "conversion" | "association" | "loyalty"
+- "fan_sentiment": "positive" | "negative" | "neutral" | "mixed"
+- "trend_potential": 0.0-1.0 score predicting viral trend likelihood. Higher for novel/surprising associations, lower for routine mentions.
+
+TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Skip routine/low-value mentions.
+
 Return ONLY a JSON array. If no commercial entities found, return [].
-Example: [{"keyword":"Dior","keyword_en":"Dior","keyword_ko":"디올","keyword_ja":"ディオール","keyword_zh":"迪奥","category":"fashion","confidence":0.95,"context":"appointed as global ambassador for Dior Beauty","context_ko":"디올 뷰티 글로벌 앰배서더로 발탁","context_ja":"ディオール ビューティーのグローバルアンバサダーに任命","context_zh":"被任命为迪奥美妆全球大使","source_url":"https://example.com/article","source_title":"Artist Named Dior Ambassador"}]`;
+Example: [{"keyword":"Dior","keyword_en":"Dior","keyword_ko":"디올","keyword_ja":"ディオール","keyword_zh":"迪奥","category":"fashion","confidence":0.95,"context":"appointed as global ambassador for Dior Beauty","context_ko":"디올 뷰티 글로벌 앰배서더로 발탁","context_ja":"ディオール ビューティーのグローバルアンバサダーに任命","context_zh":"被任命为迪奥美妆全球大使","source_url":"https://example.com/article","source_title":"Artist Named Dior Ambassador","commercial_intent":"sponsorship","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.9}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
