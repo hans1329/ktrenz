@@ -374,18 +374,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 배치 모드: ktrenz_stars member 순회
-    const { data: members } = await sb
+    // 배치 모드: ktrenz_stars group/solo/member 순회
+    const { data: allStars } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, group_star_id")
+      .select("id, display_name, name_ko, group_star_id, star_type")
       .eq("is_active", true)
-      .eq("star_type", "member")
+      .in("star_type", ["group", "solo", "member"])
       .order("display_name", { ascending: true });
 
-    const allMembers = members || [];
+    const allCandidates = allStars || [];
 
     // 그룹 정보 일괄 조회
-    const groupIds = [...new Set(allMembers.map((m: any) => m.group_star_id).filter(Boolean))];
+    const groupIds = [...new Set(allCandidates.map((m: any) => m.group_star_id).filter(Boolean))];
     let groupMap: Record<string, { display_name: string; wiki_entry_id: string | null }> = {};
     if (groupIds.length > 0) {
       const { data: groups } = await sb
@@ -397,38 +397,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    const batch = allMembers.slice(batchOffset, batchOffset + batchSize);
+    const batch = allCandidates.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No members in batch", batchOffset, totalCandidates: allMembers.length }),
+        JSON.stringify({ success: true, message: "No stars in batch", batchOffset, totalCandidates: allCandidates.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[detect-youtube] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} members (total: ${allMembers.length})`);
+    console.log(`[detect-youtube] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} stars (total: ${allCandidates.length})`);
 
     let successCount = 0;
     let totalKeywords = 0;
 
-    for (const member of batch) {
+    for (const star of batch) {
       try {
-        const group = member.group_star_id ? groupMap[member.group_star_id] : null;
+        const isGroupOrSolo = star.star_type === "group" || star.star_type === "solo";
+        const group = star.group_star_id ? groupMap[star.group_star_id] : null;
         const result = await detectForMember(sb, openaiKey, ytApiKey, {
-          id: member.id,
-          display_name: member.display_name,
-          name_ko: member.name_ko,
-          group_name: group?.display_name || null,
-          group_wiki_entry_id: group?.wiki_entry_id || null,
+          id: star.id,
+          display_name: star.display_name,
+          name_ko: star.name_ko,
+          group_name: isGroupOrSolo ? null : (group?.display_name || null),
+          group_wiki_entry_id: isGroupOrSolo ? null : (group?.wiki_entry_id || null),
         });
         successCount++;
         totalKeywords += result.keywordsFound;
-        console.log(`[detect-youtube] ✓ ${member.display_name}: ${result.keywordsFound} keywords (${result.videosFound} videos)`);
+        console.log(`[detect-youtube] ✓ ${star.display_name} (${star.star_type}): ${result.keywordsFound} keywords (${result.videosFound} videos)`);
 
-        // YouTube API 쿼터 보호: 멤버 간 2초 간격
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
-        console.error(`[detect-youtube] ✗ ${member.display_name}: ${(e as Error).message}`);
+        console.error(`[detect-youtube] ✗ ${star.display_name}: ${(e as Error).message}`);
       }
     }
 
@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
         batchOffset,
         batchSize,
         processed: batch.length,
-        totalCandidates: allMembers.length,
+        totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
       }),
