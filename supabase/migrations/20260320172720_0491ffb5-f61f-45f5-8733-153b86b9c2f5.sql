@@ -1,0 +1,1 @@
+DELETE FROM ktrenz_trend_triggers WHERE id IN ('5b2604c1-0f4c-4c64-85d9-efd3c590f558', 'a046ee37-6fb0-4fb9-b30b-760504458466');
