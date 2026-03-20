@@ -70,7 +70,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   betPlaceholder: { en: "Enter K-Token (min 10T)", ko: "K-Token 입력 (최소 10T)", ja: "K-Token入力 (最小10T)", zh: "输入K-Token (最低10T)" },
   placeBet: { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
   yourBets: { en: "Your bets", ko: "내 예측", ja: "あなたの予測", zh: "我的预测" },
-  totalPool: { en: "Total pool", ko: "총 포인트", ja: "合計ポイント", zh: "总积分" },
+  totalPool: { en: "Total pool", ko: "총 K-Token", ja: "合計K-Token", zh: "总K-Token" },
   odds: { en: "Odds", ko: "확률", ja: "確率", zh: "概率" },
   shares: { en: "shares", ko: "지분", ja: "シェア", zh: "份额" },
   marketSettled: { en: "Results are in!", ko: "결과가 나왔어요!", ja: "結果が出ました！", zh: "结果出来了！" },
