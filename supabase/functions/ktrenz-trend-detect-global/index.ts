@@ -237,7 +237,7 @@ async function fetchOgImage(url: string): Promise<string | null> {
     const match =
       html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
       html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    return match?.[1] || null;
+    return sanitizeImageUrl(match?.[1] || null);
   } catch {
     return null;
   }

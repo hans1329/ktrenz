@@ -84,11 +84,11 @@ async function fetchOgImage(pageUrl: string): Promise<string | null> {
     // og:image
     const ogMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i)
       || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
-    if (ogMatch?.[1]) return ogMatch[1];
+    if (ogMatch?.[1]) return sanitizeImageUrl(ogMatch[1]);
     // twitter:image
     const twMatch = html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i)
       || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
-    if (twMatch?.[1]) return twMatch[1];
+    if (twMatch?.[1]) return sanitizeImageUrl(twMatch[1]);
     return null;
   } catch {
     return null;
