@@ -102,38 +102,45 @@ async function extractKeywordsFromVideos(
 
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the YouTube video texts provided below. You have NO external knowledge. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are recent YouTube video titles and descriptions related to "${memberName}"${groupName ? ` (member of ${groupName})` : ""}. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}" or their group "${groupName || "N/A"}".
+  const userPrompt = `Below are recent YouTube video titles and descriptions related to "${memberName}"${groupName ? ` (member of ${groupName})` : ""}. Extract commercial entities AND music events (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}" or their group "${groupName || "N/A"}".
 
 Videos:
 ${videoTexts}
 
 RULES:
 1. ONLY extract entities whose name literally appears in the video text above.
-2. "${memberName}" should be mentioned or the video should be about "${memberName}" or their group. Group videos are acceptable IF they contain commercial entities.
-3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, comeback, MV, music video, official), channel names.
-4. Do NOT extract platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Apple Music, Melon, Weverse, etc.) — we track what trends ON platforms, not the platforms themselves.
+2. "${memberName}" should be mentioned or the video should be about "${memberName}" or their group. Group videos are acceptable IF they contain commercial entities or music events.
+3. Do NOT extract: the artist's own name, group name, agency/label name, channel names.
+4. Do NOT extract platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Apple Music, Melon, Weverse, etc.)
 5. Do NOT extract broadcast networks as standalone keywords (KBS, MBC, SBS, JTBC, tvN, Mnet) — UNLESS the specific SHOW NAME is the keyword.
-6. Chart names, concert names, and festival names CAN provide context but should NOT be extracted as standalone keywords. Extract the commercial entity instead.
-7. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
-8. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
-9. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-10. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
-10a. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy"; "젠틀몬스터 쿠셔닝" NOT "젠틀몬스터" and "쿠셔닝". Keep compound brand/product/place names together.
-10b. ONE ENTITY PER KEYWORD (CRITICAL): Each keyword must contain exactly ONE brand/product/entity. If a video mentions multiple items (e.g., "wearing Chanel shoes and a Prada jacket"), extract them as SEPARATE keywords: "샤넬 투톤슈즈" and "프라다 자켓" — NEVER combine them into one keyword like "샤넬투톤슈즈 프라다자켓". Each keyword = one trackable commercial entity.
-11. IMPORTANT: Use the ORIGINAL name as it appears in the video text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name. For Korean-origin names (이연복, 컴포즈커피, etc.), keep the Korean as "keyword". YouTube titles may mix Korean and English — preserve whichever form the entity appears in.
-12. Always provide "keyword_en" (English translation/name), "keyword_ko", "keyword_ja", "keyword_zh".
-13. Include "source_video_index" (1-based) pointing to the video where the entity appears.
-14. Provide translated context: context, context_ko, context_ja, context_zh.
+6. Chart names CAN provide context but should NOT be extracted as standalone keywords.
+7. MUSIC EVENTS (category "music"): Extract SPECIFIC named music releases, tours, concerts:
+   - Album/single titles with proper names → category "music"
+   - Named tours/concerts → category "music"
+   - Do NOT extract generic terms like "comeback", "album", "concert" alone — must be the SPECIFIC name.
+8. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
+9. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations, AND music release announcements — focus on these.
+10. Maximum 7 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
+11. Categories: brand, product, place, food, fashion, beauty, media, music. Category guide:
+   - "music": album titles, single titles, named tours/concerts, music releases
+   - "media": TV shows, dramas, movies, variety shows, interviews, entertainment content. Songs/albums by OTHER artists CAN be extracted if there's a collaboration.
+   - "product": physical consumer goods (electronics, cosmetics, accessories, etc.)
+11a. COMPOUND NAMES (CRITICAL): Keep multi-word names together as one keyword.
+11b. ONE ENTITY PER KEYWORD (CRITICAL): Each keyword = one trackable entity.
+12. IMPORTANT: Use the ORIGINAL name as it appears in the video text as "keyword".
+13. Always provide "keyword_en", "keyword_ko", "keyword_ja", "keyword_zh".
+14. Include "source_video_index" (1-based).
+15. Provide translated context: context, context_ko, context_ja, context_zh.
 
 INTENT ANALYSIS (required for each keyword):
-15. "commercial_intent": "ad" (paid advertisement) | "sponsorship" (official brand deal) | "collaboration" (creative partnership) | "organic" (natural/unpaid mention) | "rumor" (unconfirmed).
-16. "brand_intent": "awareness" (brand exposure) | "conversion" (driving purchases) | "association" (image linking) | "loyalty" (deepening fan-brand bond).
-17. "fan_sentiment": "positive" | "negative" | "neutral" | "mixed".
-18. "trend_potential": 0.0-1.0 score predicting viral trend likelihood. Higher for novel/surprising content, lower for routine mentions.
+16. "commercial_intent": "ad" | "sponsorship" | "collaboration" | "organic" | "rumor". For music events, use "organic".
+17. "brand_intent": "awareness" | "conversion" | "association" | "loyalty". For music events, use "awareness".
+18. "fan_sentiment": "positive" | "negative" | "neutral" | "mixed".
+19. "trend_potential": 0.0-1.0. Comebacks/new albums should be HIGH (0.8+).
 
-TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Skip routine/low-value mentions.
+TREND VALUE FILTER: Only extract keywords worth tracking. Music releases and comebacks are ALWAYS worth tracking.
 
-If NO commercial entities are found, return [].
+If NO entities found, return [].
 Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용","context_ja":"Vlogでジェントルモンスターのサングラスを着用","context_zh":"在Vlog中佩戴Gentle Monster太阳镜","source_video_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.6}]`;
 
   try {
