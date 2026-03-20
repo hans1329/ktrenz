@@ -138,7 +138,16 @@ Example: [{"keyword":"Dior","keyword_en":"Dior","keyword_ko":"디올","keyword_j
     if (!jsonMatch) return [];
 
     const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
-    return parsed.filter((k) => k.keyword && k.category && typeof k.confidence === "number");
+    return parsed.filter((k) => {
+      if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
+      // Platform blacklist filter
+      const kwLower = k.keyword.toLowerCase();
+      if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(k.keyword_en?.toLowerCase() || "")) {
+        console.warn(`[detect-global] Blocked platform keyword: "${k.keyword}"`);
+        return false;
+      }
+      return true;
+    });
   } catch (e) {
     console.warn(`[detect-global] Perplexity extraction error: ${(e as Error).message}`);
     return [];
