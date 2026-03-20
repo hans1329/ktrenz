@@ -1,4 +1,4 @@
-// T2 Trend Post-Processing: 멤버 우선 중복제거 + 복합 키워드 병합
+// T2 Trend Post-Processing: 멤버 우선 중복제거 + 국내 우선 소스 중복제거 + 복합 키워드 병합
 // 수집 후 호출하여 데이터 품질을 개선하는 후처리 함수
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -83,7 +83,72 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
   return { expired: expireIds.length, details };
 }
 
-// ── 2. 복합 키워드 병합 ──
+// ── 2. 국내 우선 소스 중복제거 ──
+// 같은 아티스트 + 같은/유사 키워드가 국내(naver_news)와 해외(global_news)에서 모두 감지되면 국내만 유지
+async function domesticPriorityDedup(sb: any): Promise<{ expired: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_en, keyword_ko, star_id, trigger_source, artist_name")
+    .eq("status", "active")
+    .gte("detected_at", threeDaysAgo);
+
+  if (!active?.length) return { expired: 0, details: [] };
+
+  // star_id 별로 그룹화
+  const byStar = new Map<string, any[]>();
+  for (const e of active) {
+    if (!e.star_id) continue;
+    const list = byStar.get(e.star_id) || [];
+    list.push(e);
+    byStar.set(e.star_id, list);
+  }
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+
+  for (const [_starId, entries] of byStar) {
+    const domestic = entries.filter((e: any) => e.trigger_source === "naver_news");
+    const global = entries.filter((e: any) => e.trigger_source === "global_news" || e.trigger_source === "youtube_trend");
+
+    if (!domestic.length || !global.length) continue;
+
+    for (const ge of global) {
+      const geKw = (ge.keyword || "").toLowerCase();
+      const geEn = (ge.keyword_en || "").toLowerCase();
+      const geKo = (ge.keyword_ko || "").toLowerCase();
+
+      for (const de of domestic) {
+        const deKw = (de.keyword || "").toLowerCase();
+        const deEn = (de.keyword_en || "").toLowerCase();
+        const deKo = (de.keyword_ko || "").toLowerCase();
+
+        // 매칭: keyword, keyword_en, keyword_ko 중 하나라도 일치
+        const match =
+          (geKw && (geKw === deKw || geKw === deEn || geKw === deKo)) ||
+          (geEn && (geEn === deKw || geEn === deEn || geEn === deKo)) ||
+          (geKo && (geKo === deKw || geKo === deEn || geKo === deKo));
+
+        if (match) {
+          expireIds.push(ge.id);
+          details.push(`"${ge.keyword}" (${ge.trigger_source}) → "${de.keyword}" (국내) 우선, ${ge.artist_name}`);
+          break;
+        }
+      }
+    }
+  }
+
+  if (expireIds.length > 0) {
+    await sb.from("ktrenz_trend_triggers")
+      .update({ status: "expired", expired_at: new Date().toISOString() })
+      .in("id", expireIds);
+  }
+
+  return { expired: expireIds.length, details };
+}
+
+// ── 3. 복합 키워드 병합 ──
 // 같은 아티스트 + 같은 출처 + 같은 카테고리의 키워드가 출처 제목에서 인접하면 병합
 async function mergeCompoundKeywords(sb: any): Promise<{ merged: number; details: string[] }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
@@ -192,7 +257,11 @@ Deno.serve(async (req) => {
     const dedupResult = await memberPriorityDedup(sb);
     console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
 
-    // 2단계: 복합 키워드 병합
+    // 2단계: 국내 우선 소스 중복제거
+    const srcDedupResult = await domesticPriorityDedup(sb);
+    console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
+
+    // 3단계: 복합 키워드 병합
     const mergeResult = await mergeCompoundKeywords(sb);
     console.log(`[postprocess] Compound merge: merged ${mergeResult.merged} entries`);
 
@@ -200,6 +269,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         memberPriority: dedupResult,
+        domesticPriority: srcDedupResult,
         compoundMerge: mergeResult,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
