@@ -86,6 +86,7 @@ STRICT Rules:
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked
 - Categorize as: brand, product, place, food, fashion, beauty, or media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
 - CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "APT.", "Flower", "Butter", "Ice Cream") but the context discusses charts, streaming, music awards, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "media", NEVER as "place", "product", or "food" based on the literal meaning of the word. Always prioritize context over dictionary meaning.
+- COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "Prugio Summit" NOT "Prugio" and "Summit" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy"; "Nike Air Max" NOT "Nike" and "Air Max". Keep compound brand/product/place names together.
 - Maximum 5 keywords
 - Use ENGLISH names for keywords (global sources are in English)
 - Provide "keyword_en" (same as keyword for global sources), "keyword_ko", "keyword_ja", "keyword_zh"
@@ -405,6 +406,15 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error(`[detect-global] ✗ ${entryId}: ${(e as Error).message}`);
       }
+    }
+
+    // 후처리: 멤버 우선 중복제거 + 복합 키워드 병합 (fire-and-forget)
+    if (totalKeywords > 0) {
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).catch((e) => console.warn(`[detect-global] postprocess fire-and-forget error: ${e.message}`));
     }
 
     return new Response(

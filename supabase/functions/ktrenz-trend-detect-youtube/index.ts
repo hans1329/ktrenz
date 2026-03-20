@@ -118,6 +118,7 @@ RULES:
 8. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
 9. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
 10. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
+10a. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy"; "젠틀몬스터 쿠셔닝" NOT "젠틀몬스터" and "쿠셔닝". Keep compound brand/product/place names together.
 11. IMPORTANT: Use the ORIGINAL name as it appears in the video text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name. For Korean-origin names (이연복, 컴포즈커피, etc.), keep the Korean as "keyword". YouTube titles may mix Korean and English — preserve whichever form the entity appears in.
 12. Always provide "keyword_en" (English translation/name), "keyword_ko", "keyword_ja", "keyword_zh".
 13. Include "source_video_index" (1-based) pointing to the video where the entity appears.
@@ -464,6 +465,17 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error(`[detect-youtube] ✗ ${star.display_name}: ${(e as Error).message}`);
       }
+    }
+
+    // 후처리: 멤버 우선 중복제거 + 복합 키워드 병합 (fire-and-forget)
+    if (totalKeywords > 0) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).catch((e) => console.warn(`[detect-youtube] postprocess fire-and-forget error: ${e.message}`));
     }
 
     return new Response(

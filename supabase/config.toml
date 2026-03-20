@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.ktrenz-trend-settle]
 verify_jwt = false
+
+[functions.ktrenz-trend-postprocess]
+verify_jwt = false
