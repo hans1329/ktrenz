@@ -193,7 +193,7 @@ async function mergeCompoundKeywords(sb: any): Promise<{ merged: number; details
   const { data: active } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_en, keyword_ja, keyword_zh, source_url, source_title, star_id, keyword_category, confidence, context, context_ko, context_ja, context_zh, artist_name")
-    .eq("status", "active")
+    .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo)
     .not("source_url", "is", null);
 
