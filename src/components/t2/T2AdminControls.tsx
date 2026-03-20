@@ -12,7 +12,7 @@ import T2PipelineProgress from "./T2PipelineProgress";
 
 interface PipelineRun {
   startedAt: Date;
-  phase: "detect" | "detect_global" | "track";
+  phase: "detect" | "detect_global" | "track" | "postprocess";
 }
 
 const STORAGE_KEY = "t2-pipeline-active-runs";
