@@ -421,12 +421,19 @@ Deno.serve(async (req) => {
 
         // 크로스 아티스트 중복 제거
         const allKwTexts = deduped.flatMap((k) => [k.keyword, k.keyword_en || k.keyword].filter(Boolean));
-        const { data: crossExisting } = await sb
+        let crossQuery = sb
           .from("ktrenz_trend_triggers")
           .select("keyword, keyword_en")
-          .neq("wiki_entry_id", entryId)
           .gte("detected_at", threeDaysAgo)
           .in("keyword", allKwTexts);
+        if (starId) {
+          crossQuery = crossQuery.neq("star_id", starId);
+        } else if (wikiEntryId) {
+          crossQuery = crossQuery.neq("wiki_entry_id", wikiEntryId);
+        } else {
+          crossQuery = crossQuery.neq("artist_name", name);
+        }
+        const { data: crossExisting } = await crossQuery;
 
         const crossSet = new Set<string>();
         for (const e of (crossExisting || [])) {
