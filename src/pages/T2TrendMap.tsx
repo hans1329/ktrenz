@@ -26,6 +26,15 @@ const T2TrendMap = () => {
   const touchRef = useRef<{ startX: number; startY: number } | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
+  const [totalCount, setTotalCount] = useState(0);
+  const [myCount, setMyCount] = useState(0);
+
+  const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
+    setCategoryStats(stats);
+    setTotalCount(total);
+    setMyCount(my);
+  }, []);
 
   const currentIndex = VIEW_ORDER.indexOf(viewMode);
 
@@ -149,6 +158,17 @@ const T2TrendMap = () => {
                   }}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
+                  {(() => {
+                    const count = cat === "all" ? totalCount : cat === "my" ? myCount : categoryStats[cat] || 0;
+                    return count > 0 ? (
+                      <span
+                        className={cn("text-[10px]", !isActive && "text-muted-foreground/60")}
+                        style={isActive ? { color: "rgba(255,255,255,0.7)" } : undefined}
+                      >
+                        {count}
+                      </span>
+                    ) : null;
+                  })()}
                 </button>
               );
             })}
@@ -179,6 +199,7 @@ const T2TrendMap = () => {
                   selectedCategory={category}
                   onCategoryChange={setCategory}
                   hideCategory
+                  onCategoryStatsChange={handleCategoryStatsChange}
                 />
               </div>
             </div>

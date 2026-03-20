@@ -55,6 +55,32 @@ function getExtension(contentType: string): string {
   return map[contentType] || "jpg";
 }
 
+// OG 이미지 URL 추출 (source_image_url이 null인 경우 source_url에서 가져오기)
+async function fetchOgImage(pageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Accept": "text/html",
+      },
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    // og:image
+    const ogMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i)
+      || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+    if (ogMatch?.[1]) return ogMatch[1];
+    // twitter:image
+    const twMatch = html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i)
+      || html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
+    if (twMatch?.[1]) return twMatch[1];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -73,33 +99,30 @@ Deno.serve(async (req) => {
     let targets: any[] = [];
 
     if (triggerId) {
-      // 단일 트리거
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url")
+        .select("id, source_image_url, source_url")
         .eq("id", triggerId)
         .single();
       if (data) targets = [data];
     } else if (triggerIds?.length) {
-      // 복수 트리거
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url")
+        .select("id, source_image_url, source_url")
         .in("id", triggerIds);
       if (data) targets = data;
     } else if (backfill) {
-      // 백필: 외부 URL을 가진 active 트리거 중 아직 Supabase Storage에 없는 것
+      // 백필: active 트리거 중 아직 Supabase Storage에 없는 것 (null 포함)
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url")
+        .select("id, source_image_url, source_url")
         .eq("status", "active")
-        .not("source_image_url", "is", null)
         .order("detected_at", { ascending: false })
         .limit(limit);
 
       if (data) {
         targets = data.filter(
-          (t: any) => t.source_image_url && !t.source_image_url.includes(supabaseUrl)
+          (t: any) => !t.source_image_url || !t.source_image_url.includes(supabaseUrl)
         );
       }
     }
@@ -117,7 +140,22 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const trigger of targets) {
-      const url = trigger.source_image_url;
+      let url = trigger.source_image_url;
+      
+      // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
+      if (!url && trigger.source_url) {
+        console.log(`[cache-image] No image for ${trigger.id}, fetching OG from ${trigger.source_url}`);
+        const ogUrl = await fetchOgImage(trigger.source_url);
+        if (ogUrl) {
+          url = ogUrl;
+          console.log(`[cache-image] Found OG image for ${trigger.id}: ${ogUrl}`);
+        } else {
+          console.warn(`[cache-image] No OG image found for ${trigger.id}`);
+          failed++;
+          continue;
+        }
+      }
+      
       if (!url || url.includes(supabaseUrl)) continue;
 
       const image = await downloadImage(url);
