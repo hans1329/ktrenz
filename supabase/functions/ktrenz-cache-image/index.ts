@@ -13,7 +13,16 @@ const BUCKET = "trend-images";
 // 이미지 다운로드가 불가능한 도메인 블랙리스트 (봇 차단, 핫링크 차단 등)
 const IMAGE_DOMAIN_BLACKLIST = [
   "ddaily.co.kr",
+  "fbcdn.net",
+  "cdninstagram.com",
+  "scontent.",
 ];
+
+// URL 정규화: HTML 엔티티 디코딩
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/&amp;/g, "&");
+}
 
 async function downloadImage(url: string): Promise<{ data: Uint8Array; contentType: string } | null> {
   try {

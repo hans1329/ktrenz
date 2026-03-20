@@ -11,7 +11,16 @@ const corsHeaders = {
 // 이미지 수집 불가 도메인
 const SOURCE_IMAGE_BLACKLIST = [
   "ddaily.co.kr",
+  "fbcdn.net",
+  "cdninstagram.com",
+  "scontent.",
 ];
+
+// URL 정규화: HTML 엔티티 디코딩
+function sanitizeImageUrl(url: string | null): string | null {
+  if (!url) return null;
+  return url.replace(/&amp;/g, "&");
+}
 
 interface ExtractedKeyword {
   keyword: string;
