@@ -704,7 +704,7 @@ async function detectForMember(
       wiki_entry_id: member.group_wiki_entry_id || null,
       star_id: member.id || null,
       trigger_type: "news_mention",
-      trigger_source: "naver_news",
+      trigger_source: keywordData.context?.startsWith("[Shop]") ? "naver_shop" : "naver_multi",
       artist_name: member.display_name,
       keyword: keywordData.keyword,
       keyword_en: keywordData.keyword_en || null,
