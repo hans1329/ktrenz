@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const currentPoints = pointsData?.points ?? 0;
     if (currentPoints < betAmount) {
-      return new Response(JSON.stringify({ error: "Insufficient K-Points" }), {
+      return new Response(JSON.stringify({ error: "Insufficient K-Token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
