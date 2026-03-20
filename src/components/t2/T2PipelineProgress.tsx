@@ -64,11 +64,21 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     staleTime: 300_000,
   });
 
-  // Poll for recently detected keywords since run started
+  // Poll for keywords: detect phases show newly detected, track phase shows active keywords being tracked
   const { data: recentKeywords } = useQuery({
-    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString()],
+    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase],
     queryFn: async () => {
       if (!run) return [];
+      if (isTrackPhase) {
+        // Track phase: show active keywords currently being tracked
+        const { data } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
+          .eq("status", "active")
+          .order("detected_at", { ascending: false })
+          .limit(50);
+        return (data ?? []) as unknown as RecentKeyword[];
+      }
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
