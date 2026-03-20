@@ -456,6 +456,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     }
   }, [categoryStats, dedupedTriggers.length, myKeywords.length, onCategoryStatsChange]);
 
+  if (isLoading) {
     return (
       <div className="px-4 pb-4">
         <div className="pt-4 pb-3">
