@@ -96,7 +96,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       }
 
       const { data } = await query;
-      const rows = (data ?? []) as Array<{ status: string; star_id: string | null }>;
+      const rows = ((data ?? []) as unknown) as Array<{ status: string; star_id: string | null }>;
       const uniqueProcessedStars = new Set(rows.map((row) => row.star_id).filter(Boolean));
 
       return {
