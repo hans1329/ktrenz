@@ -21,7 +21,21 @@ interface ExtractedKeyword {
   context_ja?: string;
   context_zh?: string;
   source_article_index?: number;
+  commercial_intent?: "ad" | "sponsorship" | "collaboration" | "organic" | "rumor";
+  brand_intent?: "awareness" | "conversion" | "association" | "loyalty";
+  fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
+  trend_potential?: number;
 }
+
+// Platform names and non-trackable entities blacklist
+const PLATFORM_BLACKLIST = new Set([
+  "youtube", "spotify", "tiktok", "instagram", "twitter", "x", "facebook",
+  "apple music", "melon", "genie", "bugs", "flo", "vibe", "soundcloud",
+  "weverse", "vlive", "bubble", "universe", "phoning", "lysn",
+  "naver", "google", "daum", "kakao", "naver news", "theqoo", "pann",
+  "billboard", "hanteo", "gaon", "circle chart", "oricon",
+  "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "tv chosun",
+]);
 
 interface NaverNewsItem {
   title: string;
@@ -174,20 +188,29 @@ RULES:
    - ANY combination containing the artist/group name (e.g., "${memberName} + descriptor" like "아이브 가을" for artist "가을" is FORBIDDEN)
    - Agency/label names (SM, JYP, HYBE, YG, etc.), generic music terms (album, comeback, 컴백)
    - Brand reputation rankings/indexes (브랜드평판, brand reputation) — these are NOT commercial entities
+   - Platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Melon, Genie, Apple Music, Weverse, VLive, Bubble, etc.) — we track what trends ON platforms, not the platforms themselves
+   - Broadcast networks as standalone keywords (KBS, MBC, SBS, JTBC, tvN, Mnet) — UNLESS the specific SHOW NAME is the keyword
 4. Chart names (Billboard, Hanteo, etc.), concert/tour names, and festival names (Coachella, MAMA, etc.) are FORBIDDEN as standalone keywords. ONLY extract them if tied to a specific commercial brand (e.g., "Coachella x Adidas" → extract "Adidas", NOT "Coachella").
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
- 7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes TV shows, dramas, movies, variety shows, interviews, and entertainment content. Songs/albums by the artist themselves are NOT valid keywords. Songs/albums by OTHER artists CAN be extracted if there's a collaboration. "product" is for physical consumer goods.
- 7a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "media", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
+7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes TV shows, dramas, movies, variety shows, interviews, and entertainment content. Songs/albums by the artist themselves are NOT valid keywords. Songs/albums by OTHER artists CAN be extracted if there's a collaboration. "product" is for physical consumer goods.
+7a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "media", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
 8. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
 9. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
 10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
 11. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
 12. SKIP articles that are just ranking/reputation lists mentioning many artists. Only extract from articles with SPECIFIC, unique content about "${memberName}" and a commercial entity.
 
+INTENT ANALYSIS (required for each keyword):
+13. "commercial_intent": Classify the nature of the association — "ad" (paid advertisement), "sponsorship" (official brand deal/ambassador), "collaboration" (creative partnership), "organic" (natural/unpaid mention or usage), "rumor" (unconfirmed association).
+14. "brand_intent": From the brand's perspective — "awareness" (brand name exposure/visibility), "conversion" (driving purchases/sales), "association" (image/identity linking), "loyalty" (deepening existing fan-brand relationship).
+15. "fan_sentiment": Predicted fandom reaction — "positive" (fans excited/supportive), "negative" (fans upset/boycotting), "neutral" (informational, no strong reaction), "mixed" (divided opinions).
+16. "trend_potential": A 0.0-1.0 score predicting whether this keyword will become a viral trend. Consider: Is this novel/surprising? Is there emotional resonance with fans? Is there visual/shareable content? Does it involve a major brand or cultural moment? Higher for new collaborations, lower for routine mentions.
+
+TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Ask: "Would a brand strategist or trend forecaster want to monitor this?" If not, skip it.
+
 If NO commercial entities are found, return [].
-Example for Korean entity: [{"keyword":"이연복","keyword_en":"Lee Yeon-bok","keyword_ko":"이연복","keyword_ja":"イ・ヨンボク","keyword_zh":"李连福","category":"food","confidence":0.9,"context":"이연복 셰프와 함께 요리 방송 출연","context_ko":"이연복 셰프와 함께 요리 방송 출연","context_ja":"イ・ヨンボクシェフと料理番組に出演","context_zh":"与李连福厨师一起参加烹饪节目","source_article_index":1}]
-Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1}]`;
+Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.7}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -203,7 +226,7 @@ Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko
           { role: "user", content: userPrompt },
         ],
         temperature: 0.05,
-        max_tokens: 1000,
+        max_tokens: 1500,
       }),
     });
 
@@ -232,14 +255,20 @@ Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       
-      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
+      // ── 플랫폼 블랙리스트 필터 ──
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
       const kwEn = k.keyword_en?.toLowerCase() || "";
+      
+      if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
+        console.warn(`[trend-detect] Blocked platform keyword: "${k.keyword}"`);
+        return false;
+      }
+      
+      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
       const memberLower = memberName.toLowerCase();
       const groupLower = (groupName || "").toLowerCase();
       
-      // 키워드가 아티스트/그룹 이름을 포함하거나 일치하면 제거
       const nameBlacklist = [memberLower, groupLower].filter(Boolean);
       for (const blocked of nameBlacklist) {
         if (!blocked) continue;
@@ -247,7 +276,6 @@ Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko
           console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
           return false;
         }
-        // "아이브 가을" contains "가을" (memberName)
         if (kwLower.includes(blocked) || kwKo.includes(blocked) || blocked.includes(kwLower)) {
           console.warn(`[trend-detect] Blocked keyword containing artist/group name: "${k.keyword}" (matches "${blocked}")`);
           return false;
@@ -538,6 +566,10 @@ async function detectForMember(
       source_url: sourceUrl,
       source_title: sourceArticle?.title || null,
       source_image_url: sourceUrl ? ogImageMap.get(sourceUrl) || null : null,
+      commercial_intent: keywordData.commercial_intent || null,
+      brand_intent: keywordData.brand_intent || null,
+      fan_sentiment: keywordData.fan_sentiment || null,
+      trend_potential: keywordData.trend_potential ?? null,
       status: "active",
       metadata: {
         article_count: articles.length,

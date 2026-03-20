@@ -21,7 +21,19 @@ interface ExtractedKeyword {
   context_ja?: string;
   context_zh?: string;
   source_video_index?: number;
+  commercial_intent?: "ad" | "sponsorship" | "collaboration" | "organic" | "rumor";
+  brand_intent?: "awareness" | "conversion" | "association" | "loyalty";
+  fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
+  trend_potential?: number;
 }
+
+const PLATFORM_BLACKLIST = new Set([
+  "youtube", "spotify", "tiktok", "instagram", "twitter", "x", "facebook",
+  "apple music", "melon", "genie", "bugs", "flo", "vibe", "soundcloud",
+  "weverse", "vlive", "bubble", "universe", "phoning", "lysn",
+  "naver", "google", "daum", "kakao", "billboard", "hanteo", "gaon",
+  "circle chart", "oricon", "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn",
+]);
 
 interface YouTubeVideo {
   videoId: string;
@@ -99,18 +111,28 @@ RULES:
 1. ONLY extract entities whose name literally appears in the video text above.
 2. "${memberName}" should be mentioned or the video should be about "${memberName}" or their group. Group videos are acceptable IF they contain commercial entities.
 3. Do NOT extract: the artist's own name, group name, agency/label name, generic music terms (album, comeback, MV, music video, official), channel names.
-4. Chart names, concert names, and festival names CAN provide context but should NOT be extracted as standalone keywords. Extract the commercial entity instead.
-5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
-6. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
-7. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-8. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
-9. IMPORTANT: Use the ORIGINAL name as it appears in the video text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name. For Korean-origin names (이연복, 컴포즈커피, etc.), keep the Korean as "keyword". YouTube titles may mix Korean and English — preserve whichever form the entity appears in.
-10. Always provide "keyword_en" (English translation/name), "keyword_ko", "keyword_ja", "keyword_zh".
-11. Include "source_video_index" (1-based) pointing to the video where the entity appears.
-12. Provide translated context: context, context_ko, context_ja, context_zh.
+4. Do NOT extract platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Apple Music, Melon, Weverse, etc.) — we track what trends ON platforms, not the platforms themselves.
+5. Do NOT extract broadcast networks as standalone keywords (KBS, MBC, SBS, JTBC, tvN, Mnet) — UNLESS the specific SHOW NAME is the keyword.
+6. Chart names, concert names, and festival names CAN provide context but should NOT be extracted as standalone keywords. Extract the commercial entity instead.
+7. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
+8. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations — focus on these.
+9. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
+10. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
+11. IMPORTANT: Use the ORIGINAL name as it appears in the video text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name. For Korean-origin names (이연복, 컴포즈커피, etc.), keep the Korean as "keyword". YouTube titles may mix Korean and English — preserve whichever form the entity appears in.
+12. Always provide "keyword_en" (English translation/name), "keyword_ko", "keyword_ja", "keyword_zh".
+13. Include "source_video_index" (1-based) pointing to the video where the entity appears.
+14. Provide translated context: context, context_ko, context_ja, context_zh.
+
+INTENT ANALYSIS (required for each keyword):
+15. "commercial_intent": "ad" (paid advertisement) | "sponsorship" (official brand deal) | "collaboration" (creative partnership) | "organic" (natural/unpaid mention) | "rumor" (unconfirmed).
+16. "brand_intent": "awareness" (brand exposure) | "conversion" (driving purchases) | "association" (image linking) | "loyalty" (deepening fan-brand bond).
+17. "fan_sentiment": "positive" | "negative" | "neutral" | "mixed".
+18. "trend_potential": 0.0-1.0 score predicting viral trend likelihood. Higher for novel/surprising content, lower for routine mentions.
+
+TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Skip routine/low-value mentions.
 
 If NO commercial entities are found, return [].
-Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용","context_ja":"Vlogでジェントルモンスターのサングラスを着用","context_zh":"在Vlog中佩戴Gentle Monster太阳镜","source_video_index":2}]`;
+Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용","context_ja":"Vlogでジェントルモンスターのサングラスを着用","context_zh":"在Vlog中佩戴Gentle Monster太阳镜","source_video_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.6}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -126,7 +148,7 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
           { role: "user", content: userPrompt },
         ],
         temperature: 0.05,
-        max_tokens: 1000,
+        max_tokens: 1500,
       }),
     });
 
@@ -150,6 +172,14 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
+      const kwEn = k.keyword_en?.toLowerCase() || "";
+      
+      // Platform blacklist filter
+      if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
+        console.warn(`[detect-youtube] Blocked platform keyword: "${k.keyword}"`);
+        return false;
+      }
+      
       const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
       if (!existsInText) {
         console.warn(`[detect-youtube] Filtered hallucinated keyword: "${k.keyword}"`);
@@ -260,6 +290,10 @@ async function detectForMember(
         source_url: `https://www.youtube.com/watch?v=${sourceVideo.videoId}`,
         source_title: sourceVideo.title,
         source_image_url: sourceVideo.thumbnailUrl,
+        commercial_intent: kw.commercial_intent || null,
+        brand_intent: kw.brand_intent || null,
+        fan_sentiment: kw.fan_sentiment || null,
+        trend_potential: kw.trend_potential ?? null,
         status: "active",
         metadata: {
           video_count: videos.length,

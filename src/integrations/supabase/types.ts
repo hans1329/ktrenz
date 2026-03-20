@@ -3816,6 +3816,8 @@ export type Database = {
         Row: {
           artist_name: string
           baseline_score: number | null
+          brand_intent: string | null
+          commercial_intent: string | null
           confidence: number | null
           context: string | null
           context_ja: string | null
@@ -3824,6 +3826,7 @@ export type Database = {
           created_at: string
           detected_at: string
           expired_at: string | null
+          fan_sentiment: string | null
           id: string
           influence_index: number | null
           keyword: string
@@ -3842,6 +3845,7 @@ export type Database = {
           source_url: string | null
           star_id: string | null
           status: string
+          trend_potential: number | null
           trigger_source: string
           trigger_type: string
           wiki_entry_id: string | null
@@ -3849,6 +3853,8 @@ export type Database = {
         Insert: {
           artist_name: string
           baseline_score?: number | null
+          brand_intent?: string | null
+          commercial_intent?: string | null
           confidence?: number | null
           context?: string | null
           context_ja?: string | null
@@ -3857,6 +3863,7 @@ export type Database = {
           created_at?: string
           detected_at?: string
           expired_at?: string | null
+          fan_sentiment?: string | null
           id?: string
           influence_index?: number | null
           keyword: string
@@ -3875,6 +3882,7 @@ export type Database = {
           source_url?: string | null
           star_id?: string | null
           status?: string
+          trend_potential?: number | null
           trigger_source?: string
           trigger_type?: string
           wiki_entry_id?: string | null
@@ -3882,6 +3890,8 @@ export type Database = {
         Update: {
           artist_name?: string
           baseline_score?: number | null
+          brand_intent?: string | null
+          commercial_intent?: string | null
           confidence?: number | null
           context?: string | null
           context_ja?: string | null
@@ -3890,6 +3900,7 @@ export type Database = {
           created_at?: string
           detected_at?: string
           expired_at?: string | null
+          fan_sentiment?: string | null
           id?: string
           influence_index?: number | null
           keyword?: string
@@ -3908,6 +3919,7 @@ export type Database = {
           source_url?: string | null
           star_id?: string | null
           status?: string
+          trend_potential?: number | null
           trigger_source?: string
           trigger_type?: string
           wiki_entry_id?: string | null
