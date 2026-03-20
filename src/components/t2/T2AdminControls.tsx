@@ -78,26 +78,7 @@ const T2AdminControls = () => {
         }
       }
 
-      // Check postprocess status from collection_log
-      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data: ppLogs } = await supabase
-        .from("ktrenz_collection_log" as any)
-        .select("status, collected_at")
-        .eq("platform", "trend_postprocess")
-        .gte("collected_at", tenMinAgo)
-        .order("collected_at", { ascending: false })
-        .limit(2);
-
-      if (ppLogs && ppLogs.length > 0) {
-        const latest = ppLogs[0] as any;
-        // Show postprocess if running, or recently completed (within 5 min)
-        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-        if (latest.status === "running" || (latest.status === "success" && latest.collected_at > fiveMinAgo)) {
-          // Find the "running" entry's timestamp as start time
-          const runningEntry = (ppLogs as any[]).find((l: any) => l.status === "running");
-          phases.postprocess = runningEntry?.collected_at || latest.collected_at;
-        }
-      }
+      // postprocess는 collection_log가 아니라 각 감지 phase 카드 내부에서 실제 trigger status 기반으로 표시한다.
 
       return Object.keys(phases).length > 0 ? phases : null;
     },
