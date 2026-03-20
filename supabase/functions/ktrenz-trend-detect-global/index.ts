@@ -184,7 +184,7 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
     return parsed
       .filter((k) => {
         if (!k.keyword) return false;
-        if ((k.confidence || 0) < 0.65) return false;
+        if ((k.confidence || 0) < 0.5) return false;
         const kwLower = k.keyword.toLowerCase();
         if (NOISE_BLACKLIST.has(kwLower)) return false;
         if (k.keyword.length <= 2) return false;
