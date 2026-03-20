@@ -67,7 +67,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
   betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
   betNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
-  betPlaceholder: { en: "Enter points (min 10P)", ko: "포인트 입력 (최소 10P)", ja: "ポイント入力 (最小10P)", zh: "输入积分 (最低10P)" },
+  betPlaceholder: { en: "Enter K-Token (min 10T)", ko: "K-Token 입력 (최소 10T)", ja: "K-Token入力 (最小10T)", zh: "输入K-Token (最低10T)" },
   placeBet: { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
   yourBets: { en: "Your bets", ko: "내 예측", ja: "あなたの予測", zh: "我的预测" },
   totalPool: { en: "Total pool", ko: "총 포인트", ja: "合計ポイント", zh: "总积分" },
