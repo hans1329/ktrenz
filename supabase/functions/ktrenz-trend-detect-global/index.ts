@@ -11,6 +11,7 @@ const corsHeaders = {
 
 interface ExtractedKeyword {
   keyword: string;
+  keyword_en?: string;
   keyword_ko?: string;
   keyword_ja?: string;
   keyword_zh?: string;
