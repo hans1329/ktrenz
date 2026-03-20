@@ -199,6 +199,7 @@ const T2TrendMap = () => {
                   selectedCategory={category}
                   onCategoryChange={setCategory}
                   hideCategory
+                  onCategoryStatsChange={handleCategoryStatsChange}
                 />
               </div>
             </div>
