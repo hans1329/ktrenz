@@ -84,6 +84,8 @@ async function detectViaFirecrawl(
       ? `"${artistName}" "${groupName}" brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`
       : `"${artistName}" kpop brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`;
 
+    const fcController = new AbortController();
+    const fcTimeout = setTimeout(() => fcController.abort(), 15000);
     const fcResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
@@ -94,10 +96,12 @@ async function detectViaFirecrawl(
         query: searchQuery,
         limit: 8,
         lang: "en",
-        tbs: "qdr:m", // 최근 1개월로 확대 (주간→월간)
+        tbs: "qdr:m",
         scrapeOptions: { formats: ["markdown"] },
       }),
+      signal: fcController.signal,
     });
+    clearTimeout(fcTimeout);
 
     if (!fcResponse.ok) {
       const errText = await fcResponse.text();
