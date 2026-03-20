@@ -255,14 +255,20 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       
-      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
+      // ── 플랫폼 블랙리스트 필터 ──
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
       const kwEn = k.keyword_en?.toLowerCase() || "";
+      
+      if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
+        console.warn(`[trend-detect] Blocked platform keyword: "${k.keyword}"`);
+        return false;
+      }
+      
+      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
       const memberLower = memberName.toLowerCase();
       const groupLower = (groupName || "").toLowerCase();
       
-      // 키워드가 아티스트/그룹 이름을 포함하거나 일치하면 제거
       const nameBlacklist = [memberLower, groupLower].filter(Boolean);
       for (const blocked of nameBlacklist) {
         if (!blocked) continue;
@@ -270,7 +276,6 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
           console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
           return false;
         }
-        // "아이브 가을" contains "가을" (memberName)
         if (kwLower.includes(blocked) || kwKo.includes(blocked) || blocked.includes(kwLower)) {
           console.warn(`[trend-detect] Blocked keyword containing artist/group name: "${k.keyword}" (matches "${blocked}")`);
           return false;
