@@ -106,7 +106,7 @@ const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onK
 
             {/* Row 2: Artist/Member + Source */}
             {(kw.artist || kw.source_title) && (
-              <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 mb-1.5 text-xs text-muted-foreground">
                 {kw.artist && (
                   <span className="font-medium text-foreground/70">by {kw.artist}</span>
                 )}
