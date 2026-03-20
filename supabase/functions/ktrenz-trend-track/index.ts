@@ -37,7 +37,9 @@ async function fetchGoogleTrends(
   artistName: string,
   region: string = "worldwide"
 ): Promise<TrendResult | null> {
-  const query = `${artistName} ${keyword}`;
+  // 키워드 단독 검색: 아티스트+키워드 조합은 검색량이 너무 적어 0이 되는 문제 해결
+  // 아티스트 연관성은 감지(detect) 단계에서 이미 확보됨
+  const query = keyword;
 
   const params = new URLSearchParams({
     engine: "google_trends",
