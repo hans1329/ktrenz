@@ -45,18 +45,19 @@ interface NaverNewsItem {
   pubDate: string;
 }
 
-// ─── Naver News 실시간 검색 ───
-async function searchNaverNews(
+// ─── Naver 통합 검색 (News / Blog / Shop) ───
+async function searchNaver(
   clientId: string,
   clientSecret: string,
+  endpoint: "news" | "blog" | "shop",
   query: string,
   display: number = 50,
-): Promise<NaverNewsItem[]> {
+): Promise<any[]> {
   try {
-    const url = new URL("https://openapi.naver.com/v1/search/news.json");
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
     url.searchParams.set("display", String(Math.min(display, 100)));
-    url.searchParams.set("sort", "date");
+    url.searchParams.set("sort", endpoint === "shop" ? "date" : "date");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -66,16 +67,26 @@ async function searchNaverNews(
     });
 
     if (!response.ok) {
-      console.warn(`[trend-detect] Naver API failed: ${response.status}`);
+      console.warn(`[trend-detect] Naver ${endpoint} API failed: ${response.status}`);
       return [];
     }
 
     const data = await response.json();
     return data.items || [];
   } catch (e) {
-    console.warn(`[trend-detect] Naver search error: ${(e as Error).message}`);
+    console.warn(`[trend-detect] Naver ${endpoint} search error: ${(e as Error).message}`);
     return [];
   }
+}
+
+// 하위 호환용 래퍼
+async function searchNaverNews(
+  clientId: string,
+  clientSecret: string,
+  query: string,
+  display: number = 50,
+): Promise<NaverNewsItem[]> {
+  return searchNaver(clientId, clientSecret, "news", query, display) as Promise<NaverNewsItem[]>;
 }
 
 function stripHtml(html: string): string {
@@ -318,6 +329,114 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
   }
 }
 
+// ─── 쇼핑 결과에서 브랜드/상품 키워드 직접 추출 ───
+function extractShopKeywords(
+  shopItems: any[],
+  memberName: string,
+  groupName: string | null,
+): ExtractedKeyword[] {
+  if (!shopItems.length) return [];
+
+  const memberLower = memberName.toLowerCase();
+  const groupLower = (groupName || "").toLowerCase();
+  // name_ko 추출 (괄호 안 한글명도 체크)
+  const koMatch = memberName.match(/\(([가-힣]+)\)/);
+  const nameKoLower = koMatch ? koMatch[1].toLowerCase() : "";
+  const allNameVariants = [memberLower, groupLower, nameKoLower].filter(Boolean);
+
+  // 쇼핑 상품명에서 브랜드명 추출: "아이유 x 뉴발란스 530" → "뉴발란스 530"
+  const brandCounts = new Map<string, { count: number; category: string; title: string; mallName: string }>();
+
+  for (const item of shopItems) {
+    const title = stripHtml(item.title || "");
+    const mallName = item.mallName || "";
+    const brand = item.brand || "";
+    const category1 = (item.category1 || "").toLowerCase();
+    const category2 = (item.category2 || "").toLowerCase();
+
+    // 카테고리 매핑
+    let kwCategory: ExtractedKeyword["category"] = "product";
+    if (/패션|의류|신발|가방|액세서리/.test(category1 + category2)) kwCategory = "fashion";
+    else if (/화장품|뷰티|스킨케어/.test(category1 + category2)) kwCategory = "beauty";
+    else if (/식품|음료/.test(category1 + category2)) kwCategory = "food";
+
+    // 브랜드 필드가 명확한 경우만 사용
+    const brandName = brand;
+    if (!brandName || brandName.length < 2) continue;
+    const brandLower = brandName.toLowerCase();
+    // 무의미 브랜드명 필터
+    if (["unknown", "기타", "없음", "no brand", "etc", "n/a"].includes(brandLower)) continue;
+    // 아티스트/그룹 이름 변형 모두 필터
+    if (allNameVariants.some(n => brandLower === n || brandLower.includes(n) || n.includes(brandLower))) continue;
+    if (PLATFORM_BLACKLIST.has(brandLower)) continue;
+
+    const existing = brandCounts.get(brandLower);
+    if (existing) {
+      existing.count++;
+    } else {
+      brandCounts.set(brandLower, { count: 1, category: kwCategory, title, mallName });
+    }
+  }
+
+  // 2회 이상 등장하거나 명확한 브랜드명이 있는 것만 추출
+  const results: ExtractedKeyword[] = [];
+  for (const [brand, info] of brandCounts) {
+    if (info.count < 2 && brand.split(/\s+/).length > 2) continue; // 긴 상품명은 2회 이상만
+    results.push({
+      keyword: brand,
+      keyword_ko: brand,
+      keyword_en: brand, // 쇼핑 결과에서 영문 변환은 후처리에서
+      category: info.category as ExtractedKeyword["category"],
+      confidence: Math.min(0.5 + info.count * 0.1, 0.9),
+      context: `${memberName} related product found in Naver Shopping (${info.count} listings)`,
+      context_ko: `네이버 쇼핑에서 ${memberName} 관련 상품 ${info.count}건 발견`,
+      source_article_index: 0,
+      commercial_intent: "organic",
+      brand_intent: "conversion",
+      fan_sentiment: "positive",
+      trend_potential: Math.min(0.3 + info.count * 0.05, 0.8),
+    });
+  }
+
+  return results.slice(0, 5);
+}
+
+// ─── AI 키워드 + 쇼핑 키워드 병합 (중복 제거) ───
+function mergeKeywords(
+  aiKeywords: ExtractedKeyword[],
+  shopKeywords: ExtractedKeyword[],
+): ExtractedKeyword[] {
+  const seen = new Set<string>();
+  const merged: ExtractedKeyword[] = [];
+
+  // AI 키워드 우선
+  for (const k of aiKeywords) {
+    const key = (k.keyword_ko || k.keyword).toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(k);
+    }
+  }
+
+  // 쇼핑 키워드 추가 (AI에서 이미 발견된 것은 스킵)
+  for (const k of shopKeywords) {
+    const key = (k.keyword_ko || k.keyword).toLowerCase();
+    // AI 키워드와 부분 매칭도 체크
+    const isDuplicate = seen.has(key) || [...seen].some(existing =>
+      existing.includes(key) || key.includes(existing)
+    );
+    if (!isDuplicate) {
+      seen.add(key);
+      // 쇼핑 소스 표시
+      k.context = `[Shop] ${k.context}`;
+      merged.push(k);
+    }
+  }
+
+  return merged;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -495,36 +614,63 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // 네이버 뉴스 실시간 검색
-  const newsItems = await searchNaverNews(naverClientId, naverClientSecret, searchQuery, 50);
+  // ─── 3소스 병렬 검색: News + Blog + Shopping ───
+  const [newsItems, blogItems, shopItems] = await Promise.all([
+    searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
+    searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
+    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 30),
+  ]);
 
-  // 24시간 이내 + 일본어 기사 필터링
+  // 24시간 이내 + 일본어 기사 필터링 (News + Blog)
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
-  const filtered = newsItems.filter((item) => {
-    const pubTime = new Date(item.pubDate).getTime();
+  const filterByTime = (items: any[]) => items.filter((item) => {
+    const pubTime = new Date(item.pubDate || item.postdate).getTime();
     if (isNaN(pubTime) || pubTime < cutoff24h) return false;
-    if (isJapanese(item.title) || isJapanese(item.description)) return false;
+    if (isJapanese(item.title) || isJapanese(item.description || item.bloggername || "")) return false;
     return true;
   });
 
-  const articles = filtered.map((item) => ({
-    title: stripHtml(item.title),
-    description: stripHtml(item.description),
-    url: item.originallink || item.link,
-  }));
+  const filteredNews = filterByTime(newsItems);
+  const filteredBlogs = filterByTime(blogItems);
 
-  if (!articles.length) {
+  // News + Blog → AI 분석용 기사 목록으로 통합
+  const articles = [
+    ...filteredNews.map((item: any) => ({
+      title: stripHtml(item.title),
+      description: stripHtml(item.description),
+      url: item.originallink || item.link,
+    })),
+    ...filteredBlogs.map((item: any) => ({
+      title: stripHtml(item.title),
+      description: stripHtml(item.description || ""),
+      url: item.link,
+    })),
+  ];
+
+  // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
+  const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
+  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length} blog=${filteredBlogs.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+
+  if (!articles.length && !shopKeywords.length) {
     return { keywordsFound: 0, articlesFound: 0, keywords: [] };
   }
 
-  // AI로 상업 키워드 추출
-  const keywords = await extractCommercialKeywords(
-    openaiKey, member.display_name, member.group_name, articles, member.star_category
-  );
+  // AI로 상업 키워드 추출 (News + Blog 통합)
+  const aiKeywords = articles.length > 0
+    ? await extractCommercialKeywords(
+        openaiKey, member.display_name, member.group_name, articles, member.star_category
+      )
+    : [];
 
-  if (!keywords.length) {
+  // Shop 키워드 + AI 키워드 병합 (중복 제거)
+  const mergedKeywords = mergeKeywords(aiKeywords, shopKeywords);
+
+  if (!mergedKeywords.length) {
     return { keywordsFound: 0, articlesFound: articles.length, keywords: [] };
   }
+
+  // 아래부터 기존 로직 (keywords → mergedKeywords로 교체)
+  const keywords = mergedKeywords;
 
   // 최근 7일 내 동일 멤버 키워드는 재삽입하지 않되, 빈 필드는 백필
   const keywordSources = keywords.map((k) => {
@@ -554,7 +700,7 @@ async function detectForMember(
       wiki_entry_id: member.group_wiki_entry_id || null,
       star_id: member.id || null,
       trigger_type: "news_mention",
-      trigger_source: "naver_news",
+      trigger_source: keywordData.context?.startsWith("[Shop]") ? "naver_shop" : "naver_multi",
       artist_name: member.display_name,
       keyword: keywordData.keyword,
       keyword_en: keywordData.keyword_en || null,
