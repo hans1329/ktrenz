@@ -186,7 +186,7 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
     return parsed
       .filter((k) => {
         if (!k.keyword) { console.log(`[detect-global] FILTER: empty keyword`); return false; }
-        if ((k.confidence || 0) < 0.5) { console.log(`[detect-global] FILTER: low confidence ${k.keyword}=${k.confidence}`); return false; }
+        if (typeof k.confidence === "number" && k.confidence < 0.5) { console.log(`[detect-global] FILTER: low confidence ${k.keyword}=${k.confidence}`); return false; }
         const kwLower = k.keyword.toLowerCase();
         if (NOISE_BLACKLIST.has(kwLower)) { console.log(`[detect-global] FILTER: blacklist "${k.keyword}"`); return false; }
         if (k.keyword.length <= 2) { console.log(`[detect-global] FILTER: too short "${k.keyword}"`); return false; }
