@@ -427,7 +427,7 @@ export default function T2PitchDeck() {
 
           <div className="flex flex-wrap justify-center gap-4 mb-16">
             <button
-              onClick={() => navigate("/t2")}
+              onClick={() => navigate("/")}
               className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:brightness-110 transition-all shadow-[0_0_20px_hsl(11_100%_46%/0.3)]"
             >
               {l.heroCta} <ArrowRight className="w-4 h-4 inline ml-1" />
@@ -807,7 +807,7 @@ export default function T2PitchDeck() {
 
           <div className="flex flex-wrap justify-center gap-4">
             <button
-              onClick={() => navigate("/t2")}
+              onClick={() => navigate("/")}
               className="px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:brightness-110 transition-all shadow-[0_0_20px_hsl(11_100%_46%/0.3)]"
             >
               {l.ctaCta1} <ArrowRight className="w-4 h-4 inline ml-1" />
