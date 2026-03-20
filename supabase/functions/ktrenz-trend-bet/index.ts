@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     }
     const betAmount = Number(amount);
     if (isNaN(betAmount) || betAmount < 10) {
-      return new Response(JSON.stringify({ error: "Minimum bet is 10 K-Points" }), {
+      return new Response(JSON.stringify({ error: "Minimum bet is 10 K-Token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
