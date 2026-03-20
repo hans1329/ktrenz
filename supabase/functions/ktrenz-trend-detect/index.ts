@@ -506,36 +506,63 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // 네이버 뉴스 실시간 검색
-  const newsItems = await searchNaverNews(naverClientId, naverClientSecret, searchQuery, 50);
+  // ─── 3소스 병렬 검색: News + Blog + Shopping ───
+  const [newsItems, blogItems, shopItems] = await Promise.all([
+    searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
+    searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
+    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 30),
+  ]);
 
-  // 24시간 이내 + 일본어 기사 필터링
+  // 24시간 이내 + 일본어 기사 필터링 (News + Blog)
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
-  const filtered = newsItems.filter((item) => {
-    const pubTime = new Date(item.pubDate).getTime();
+  const filterByTime = (items: any[]) => items.filter((item) => {
+    const pubTime = new Date(item.pubDate || item.postdate).getTime();
     if (isNaN(pubTime) || pubTime < cutoff24h) return false;
-    if (isJapanese(item.title) || isJapanese(item.description)) return false;
+    if (isJapanese(item.title) || isJapanese(item.description || item.bloggername || "")) return false;
     return true;
   });
 
-  const articles = filtered.map((item) => ({
-    title: stripHtml(item.title),
-    description: stripHtml(item.description),
-    url: item.originallink || item.link,
-  }));
+  const filteredNews = filterByTime(newsItems);
+  const filteredBlogs = filterByTime(blogItems);
 
-  if (!articles.length) {
+  // News + Blog → AI 분석용 기사 목록으로 통합
+  const articles = [
+    ...filteredNews.map((item: any) => ({
+      title: stripHtml(item.title),
+      description: stripHtml(item.description),
+      url: item.originallink || item.link,
+    })),
+    ...filteredBlogs.map((item: any) => ({
+      title: stripHtml(item.title),
+      description: stripHtml(item.description || ""),
+      url: item.link,
+    })),
+  ];
+
+  // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
+  const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
+  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length} blog=${filteredBlogs.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+
+  if (!articles.length && !shopKeywords.length) {
     return { keywordsFound: 0, articlesFound: 0, keywords: [] };
   }
 
-  // AI로 상업 키워드 추출
-  const keywords = await extractCommercialKeywords(
-    openaiKey, member.display_name, member.group_name, articles, member.star_category
-  );
+  // AI로 상업 키워드 추출 (News + Blog 통합)
+  const aiKeywords = articles.length > 0
+    ? await extractCommercialKeywords(
+        openaiKey, member.display_name, member.group_name, articles, member.star_category
+      )
+    : [];
 
-  if (!keywords.length) {
+  // Shop 키워드 + AI 키워드 병합 (중복 제거)
+  const mergedKeywords = mergeKeywords(aiKeywords, shopKeywords);
+
+  if (!mergedKeywords.length) {
     return { keywordsFound: 0, articlesFound: articles.length, keywords: [] };
   }
+
+  // 아래부터 기존 로직 (keywords → mergedKeywords로 교체)
+  const keywords = mergedKeywords;
 
   // 최근 7일 내 동일 멤버 키워드는 재삽입하지 않되, 빈 필드는 백필
   const keywordSources = keywords.map((k) => {
