@@ -238,11 +238,17 @@ const T2KeywordDetail = () => {
         .eq("market_id", marketData.id)
         .eq("user_id", user.id);
       if (!bets || bets.length === 0) return null;
-      const yesAmount = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.amount), 0);
-      const noAmount = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.amount), 0);
-      const yesShares = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.shares), 0);
-      const noShares = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.shares), 0);
-      return { yesAmount, noAmount, yesShares, noShares, totalSpent: yesAmount + noAmount };
+      const outcomes = ["decline", "mild", "strong", "explosive"] as const;
+      const result: Record<string, { amount: number; shares: number }> = {};
+      let totalSpent = 0;
+      for (const o of outcomes) {
+        const filtered = (bets as any[]).filter(b => b.outcome === o);
+        const amount = filtered.reduce((s, b) => s + Number(b.amount), 0);
+        const shares = filtered.reduce((s, b) => s + Number(b.shares), 0);
+        result[o] = { amount, shares };
+        totalSpent += amount;
+      }
+      return { ...result, totalSpent };
     },
     enabled: !!marketData?.id && !!user?.id,
   });
