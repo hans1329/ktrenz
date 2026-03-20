@@ -3677,9 +3677,9 @@ export type Database = {
           created_at: string
           id: string
           market_id: string
+          outcome: string
           payout: number | null
           shares: number
-          side: string
           user_id: string
         }
         Insert: {
@@ -3687,9 +3687,9 @@ export type Database = {
           created_at?: string
           id?: string
           market_id: string
+          outcome?: string
           payout?: number | null
           shares: number
-          side: string
           user_id: string
         }
         Update: {
@@ -3697,9 +3697,9 @@ export type Database = {
           created_at?: string
           id?: string
           market_id?: string
+          outcome?: string
           payout?: number | null
           shares?: number
-          side?: string
           user_id?: string
         }
         Relationships: [
@@ -3717,11 +3717,13 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          initial_influence: number | null
           outcome: string | null
-          pool_no: number
-          pool_yes: number
+          pool_decline: number
+          pool_explosive: number
+          pool_mild: number
+          pool_strong: number
           settled_at: string | null
-          settlement_threshold: number
           status: string
           total_volume: number
           trigger_id: string
@@ -3731,11 +3733,13 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          initial_influence?: number | null
           outcome?: string | null
-          pool_no?: number
-          pool_yes?: number
+          pool_decline?: number
+          pool_explosive?: number
+          pool_mild?: number
+          pool_strong?: number
           settled_at?: string | null
-          settlement_threshold?: number
           status?: string
           total_volume?: number
           trigger_id: string
@@ -3745,11 +3749,13 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          initial_influence?: number | null
           outcome?: string | null
-          pool_no?: number
-          pool_yes?: number
+          pool_decline?: number
+          pool_explosive?: number
+          pool_mild?: number
+          pool_strong?: number
           settled_at?: string | null
-          settlement_threshold?: number
           status?: string
           total_volume?: number
           trigger_id?: string
