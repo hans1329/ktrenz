@@ -108,7 +108,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
           .eq("status", "active")
           .order("detected_at", { ascending: false })
-          .limit(50);
+          .limit(500);
         return (data ?? []) as unknown as RecentKeyword[];
       }
       let query = supabase
@@ -116,7 +116,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
         .gte("detected_at", run.startedAt.toISOString())
         .order("detected_at", { ascending: false })
-        .limit(50);
+        .limit(500);
       if (triggerSourceFilter) {
         query = query.eq("trigger_source", triggerSourceFilter);
       }
