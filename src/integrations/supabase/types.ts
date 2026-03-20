@@ -3568,6 +3568,7 @@ export type Database = {
           display_name: string
           group_star_id: string | null
           id: string
+          image_url: string | null
           influence_categories: string[] | null
           is_active: boolean | null
           musicbrainz_id: string | null
@@ -3585,6 +3586,7 @@ export type Database = {
           display_name: string
           group_star_id?: string | null
           id?: string
+          image_url?: string | null
           influence_categories?: string[] | null
           is_active?: boolean | null
           musicbrainz_id?: string | null
@@ -3602,6 +3604,7 @@ export type Database = {
           display_name?: string
           group_star_id?: string | null
           id?: string
+          image_url?: string | null
           influence_categories?: string[] | null
           is_active?: boolean | null
           musicbrainz_id?: string | null
