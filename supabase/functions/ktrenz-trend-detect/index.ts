@@ -151,13 +151,14 @@ RULES:
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
 7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
-8. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
-9. Provide translations: keyword_ko, keyword_ja, keyword_zh.
+8. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
+9. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
 10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
 11. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
 
 If NO commercial entities are found, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1}]`;
+Example for Korean entity: [{"keyword":"이연복","keyword_en":"Lee Yeon-bok","keyword_ko":"이연복","keyword_ja":"イ・ヨンボク","keyword_zh":"李连福","category":"food","confidence":0.9,"context":"이연복 셰프와 함께 요리 방송 출연","context_ko":"이연복 셰프와 함께 요리 방송 출연","context_ja":"イ・ヨンボクシェフと料理番組に出演","context_zh":"与李连福厨师一起参加烹饪节目","source_article_index":1}]
+Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
