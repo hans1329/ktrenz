@@ -10,6 +10,11 @@ const corsHeaders = {
 
 const BUCKET = "trend-images";
 
+// 이미지 다운로드가 불가능한 도메인 블랙리스트 (봇 차단, 핫링크 차단 등)
+const IMAGE_DOMAIN_BLACKLIST = [
+  "ddaily.co.kr",
+];
+
 async function downloadImage(url: string): Promise<{ data: Uint8Array; contentType: string } | null> {
   try {
     const res = await fetch(url, {
