@@ -406,33 +406,28 @@ Deno.serve(async (req) => {
 
     console.log("[postprocess] Starting post-processing...");
 
-    // 1단계: 멤버 우선 중복제거 (rule-based)
-    const dedupResult = await memberPriorityDedup(sb);
-    console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
-
-    // 2단계: 국내 우선 소스 중복제거
-    const srcDedupResult = await domesticPriorityDedup(sb);
-    console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
-
-    // 3단계: 복합 키워드 병합 (rule-based)
-    const mergeResult = await mergeCompoundKeywords(sb);
-    console.log(`[postprocess] Compound merge: merged ${mergeResult.merged} entries`);
-
-    // 4단계: AI 분류 (그룹→멤버 귀속 + 복합 키워드 분리)
+    // 1단계: AI 분류 (그룹→멤버 귀속 + 복합 키워드 분리) — pending 대상이므로 먼저 실행
     const aiResult = await aiClassification(sb);
     console.log(`[postprocess] AI classification: reclassified ${aiResult.reclassified} entries`);
 
-    // 5단계: pending → active 전환
+    // 2단계: 멤버 우선 중복제거 (rule-based) — AI 귀속 후 실행해야 정확
+    const dedupResult = await memberPriorityDedup(sb);
+    console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
+
+    // 3단계: 국내 우선 소스 중복제거
+    const srcDedupResult = await domesticPriorityDedup(sb);
+    console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
+
+    // 4단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
 
     return new Response(
       JSON.stringify({
         success: true,
+        aiClassification: aiResult,
         memberPriority: dedupResult,
         domesticPriority: srcDedupResult,
-        compoundMerge: mergeResult,
-        aiClassification: aiResult,
         activated,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
