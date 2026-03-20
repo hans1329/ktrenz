@@ -92,7 +92,11 @@ async function detectViaFirecrawl(
 
     const fcData = await fcResponse.json();
     const results = fcData.data || [];
-    if (!results.length) return [];
+    console.log(`[detect-global] Firecrawl "${artistName}": ${results.length} results, success=${fcData.success}`);
+    if (!results.length) {
+      console.warn(`[detect-global] Firecrawl returned 0 results for "${artistName}". Raw keys: ${Object.keys(fcData).join(",")}`);
+      return [];
+    }
 
     const searchContent = results
       .map((r: any) => {
