@@ -287,7 +287,7 @@ const UserDashboard = () => {
       const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
       const { data: markets } = await supabase
         .from("ktrenz_trend_markets" as any)
-        .select("id, trigger_id, status, outcome, pool_yes, pool_no, total_volume, expires_at")
+        .select("id, trigger_id, status, outcome, pool_decline, pool_mild, pool_strong, pool_explosive, total_volume, expires_at")
         .in("id", marketIds);
       const marketMap = new Map<string, any>();
       (markets ?? []).forEach((m: any) => marketMap.set(m.id, m));
