@@ -764,9 +764,11 @@ async function detectForMember(
   const uniqueUrls = [...new Set(keywordSources.map((item) => item.sourceUrl).filter(Boolean))] as string[];
   const ogImageMap = new Map<string, string | null>();
   await Promise.allSettled(
-    uniqueUrls.map(async (url) => {
-      ogImageMap.set(url, await fetchOgImage(url));
-    })
+    uniqueUrls
+      .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
+      .map(async (url) => {
+        ogImageMap.set(url, await fetchOgImage(url));
+      })
   );
 
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => ({
