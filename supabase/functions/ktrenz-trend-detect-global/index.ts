@@ -72,13 +72,13 @@ STRICT Rules:
 - Assign confidence 0.0-1.0 based on how clearly the entity is linked
 - Categorize as: brand, product, place, food, fashion, beauty, or media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
 - Maximum 5 keywords
-- Use ENGLISH names for keywords
-- Provide translations: keyword_ko, keyword_ja, keyword_zh
+- Use ENGLISH names for keywords (global sources are in English)
+- Provide "keyword_en" (same as keyword for global sources), "keyword_ko", "keyword_ja", "keyword_zh"
 - Provide translated context: context_ko, context_ja, context_zh
 - Include source_url and source_title if available from your search
 
 Return ONLY a JSON array. If no commercial entities found, return [].
-Example: [{"keyword":"Dior","keyword_ko":"디올","keyword_ja":"ディオール","keyword_zh":"迪奥","category":"fashion","confidence":0.95,"context":"appointed as global ambassador for Dior Beauty","context_ko":"디올 뷰티 글로벌 앰배서더로 발탁","context_ja":"ディオール ビューティーのグローバルアンバサダーに任命","context_zh":"被任命为迪奥美妆全球大使","source_url":"https://example.com/article","source_title":"Artist Named Dior Ambassador"}]`;
+Example: [{"keyword":"Dior","keyword_en":"Dior","keyword_ko":"디올","keyword_ja":"ディオール","keyword_zh":"迪奥","category":"fashion","confidence":0.95,"context":"appointed as global ambassador for Dior Beauty","context_ko":"디올 뷰티 글로벌 앰배서더로 발탁","context_ja":"ディオール ビューティーのグローバルアンバサダーに任命","context_zh":"被任命为迪奥美妆全球大使","source_url":"https://example.com/article","source_title":"Artist Named Dior Ambassador"}]`;
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
