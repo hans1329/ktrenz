@@ -494,24 +494,40 @@ async function detectForMember(
   }));
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  // 키워드 목록: keyword (원문) + keyword_en (영문) + keyword_ko (한글) 모두로 중복 체크
+  const allKeywordVariants = keywords.flatMap((k) => [
+    k.keyword, k.keyword_en, k.keyword_ko
+  ].filter(Boolean) as string[]);
+  const uniqueVariants = [...new Set(allKeywordVariants)];
+
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
+    .select("id, keyword, keyword_en, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
     .eq("star_id", member.id)
-    .gte("detected_at", threeDaysAgo)
-    .in("keyword", keywords.map((k) => k.keyword));
+    .gte("detected_at", threeDaysAgo);
 
-  const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
+  // keyword, keyword_en, keyword_ko 모두를 키로 매핑하여 크로스 소스 중복 감지
+  const existingByKeyword = new Map<string, any>();
+  for (const e of (existing || [])) {
+    for (const field of [e.keyword, e.keyword_en, e.keyword_ko]) {
+      if (field) existingByKeyword.set(field.toLowerCase(), e);
+    }
+  }
 
-  // 크로스 아티스트 중복 제거
+  // 크로스 아티스트 중복 제거 (keyword, keyword_en, keyword_ko 모두 체크)
   const { data: crossExisting } = await sb
     .from("ktrenz_trend_triggers")
-    .select("keyword")
+    .select("keyword, keyword_en, keyword_ko")
     .neq("star_id", member.id)
-    .gte("detected_at", threeDaysAgo)
-    .in("keyword", keywords.map((k) => k.keyword));
+    .gte("detected_at", threeDaysAgo);
 
-  const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));
+  const crossSet = new Set<string>();
+  for (const e of (crossExisting || [])) {
+    if (e.keyword) crossSet.add(e.keyword.toLowerCase());
+    if (e.keyword_en) crossSet.add(e.keyword_en.toLowerCase());
+    if (e.keyword_ko) crossSet.add(e.keyword_ko.toLowerCase());
+  }
 
   const rowsToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
