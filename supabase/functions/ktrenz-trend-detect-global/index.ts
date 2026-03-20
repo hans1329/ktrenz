@@ -335,7 +335,9 @@ Deno.serve(async (req) => {
         const uniqueUrls = [...new Set(deduped.map((k) => k.source_url).filter(Boolean))] as string[];
         const ogImageMap = new Map<string, string | null>();
         await Promise.allSettled(
-          uniqueUrls.map(async (url) => ogImageMap.set(url, await fetchOgImage(url)))
+          uniqueUrls
+            .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
+            .map(async (url) => ogImageMap.set(url, await fetchOgImage(url)))
         );
 
         const candidateRows = deduped.map((k) => ({
