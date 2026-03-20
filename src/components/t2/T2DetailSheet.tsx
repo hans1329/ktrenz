@@ -159,7 +159,40 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       return data;
     },
     onSuccess: (data) => {
-      // Invalidate my-bets first, then market — order matters to avoid myBets losing its enabled condition
+      const amount = Number(betAmount);
+      // Optimistic: update market data instantly from response
+      if (data && marketData) {
+        queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
+          ...(old || marketData),
+          pool_yes: data.poolYes,
+          pool_no: data.poolNo,
+          total_volume: data.totalVolume,
+        }));
+      }
+      // Optimistic: prepend new bet to myBets
+      if (data && user) {
+        queryClient.setQueryData(["t2-my-bets", marketData?.id, user.id], (old: any[]) => [
+          {
+            id: crypto.randomUUID(),
+            market_id: marketData?.id,
+            user_id: user.id,
+            side: betSide,
+            amount,
+            shares: data.shares,
+            payout: null,
+            created_at: new Date().toISOString(),
+          },
+          ...(old || []),
+        ]);
+      }
+      // Optimistic: update points
+      queryClient.setQueryData(["ktrenz-points"], (old: any) =>
+        old != null ? old - amount : old
+      );
+      queryClient.setQueryData(["user-points"], (old: any) =>
+        old != null ? old - amount : old
+      );
+      // Background refetch for consistency
       queryClient.invalidateQueries({ queryKey: ["t2-my-bets", marketData?.id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
