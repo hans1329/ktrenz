@@ -125,8 +125,10 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             key={item.id}
             className={cn(
               "rounded-none md:rounded-2xl border-x-0 border-y md:border overflow-hidden bg-card transition-all",
-              isSelected ? "border-primary ring-1 ring-primary/20" : "border-border"
+              isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
+              isNew && "animate-flip-in"
             )}
+            style={isNew ? { animationDelay: `${idx * 60}ms` } : undefined}
           >
             {/* Header — keyword + artist row */}
             <div className="px-3.5 pt-4 pb-3 lg:px-5 lg:pt-5 lg:pb-4">
