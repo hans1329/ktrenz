@@ -13,12 +13,17 @@ const corsHeaders = {
 async function memberPriorityDedup(sb: any): Promise<{ expired: number; details: string[] }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-  // 활성 트리거 가져오기
-  const { data: active } = await sb
+  // 활성 트리거 가져오기 (멤버 참조용으로 expired도 포함)
+  const { data: allRecent } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, star_id, source_url")
-    .eq("status", "active")
+    .select("id, keyword, star_id, source_url, status")
+    .in("status", ["active", "expired", "merged"])
     .gte("detected_at", threeDaysAgo);
+
+  if (!allRecent?.length) return { expired: 0, details: [] };
+
+  const active = allRecent.filter((e: any) => e.status === "active");
+  if (!active.length) return { expired: 0, details: [] };
 
   if (!active?.length) return { expired: 0, details: [] };
 
