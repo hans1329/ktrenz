@@ -242,7 +242,7 @@ const UserDashboard = () => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
-    return { totalEvents: events.length, externalClicks, detailViews, agentChats, topArtists };
+    return { uniqueArtists: artistData.size, externalClicks, detailViews, agentChats, topArtists };
   }, [events]);
 
   // ── Resolve top artist's wiki entry for image ──
