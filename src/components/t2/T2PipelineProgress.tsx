@@ -62,7 +62,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .from("ktrenz_stars" as any)
         .select("id", { count: "exact", head: true })
         .eq("is_active", true)
-        .in("star_type", ["group", "solo", "member"]);
+        .not("wiki_entry_id", "is", null);
       return count ?? 0;
     },
     enabled: !!run,
