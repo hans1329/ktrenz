@@ -387,10 +387,16 @@ const UserDashboard = () => {
             </Card>
           ) : !myTrends?.length ? (
             <Card className="p-6 text-center border-border bg-card">
-              <p className="text-sm text-muted-foreground mb-2">{t("dash.noTrends")}</p>
-              <button onClick={() => navigate("/agent")} className="text-xs text-primary font-bold">
-                {t("dash.followArtists")}
-              </button>
+              {watchedSlots && watchedSlots.length > 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dash.noTrends")}</p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-2">{t("dash.noTrends")}</p>
+                  <button onClick={() => navigate("/agent")} className="text-xs text-primary font-bold">
+                    {t("dash.followArtists")}
+                  </button>
+                </>
+              )}
             </Card>
           ) : (
             <div className="space-y-2">
