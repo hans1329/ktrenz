@@ -501,7 +501,7 @@ Deno.serve(async (req) => {
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
-        console.error(`[detect-global] ✗ ${entryId}: ${(e as Error).message}`);
+        console.error(`[detect-global] ✗ ${candidate.displayName} (${candidate.starId}): ${(e as Error).message}`);
       }
     }
 
@@ -511,7 +511,7 @@ Deno.serve(async (req) => {
         batchOffset,
         batchSize,
         processed: batch.length,
-        totalCandidates: uniqueIds.length,
+        totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
       }),
