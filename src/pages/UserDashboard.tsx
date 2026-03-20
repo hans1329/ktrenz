@@ -209,7 +209,7 @@ const UserDashboard = () => {
 
   const stats = useMemo(() => {
     if (!events?.length) return {
-      totalEvents: 0, externalClicks: 0, detailViews: 0, agentChats: 0,
+      uniqueArtists: 0, externalClicks: 0, detailViews: 0, agentChats: 0,
       topArtists: [] as { name: string; count: number; score: number; breakdown: { type: string; count: number }[] }[],
     };
     
