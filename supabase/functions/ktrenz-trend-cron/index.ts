@@ -77,8 +77,8 @@ Deno.serve(async (req) => {
         result = JSON.parse(text);
       } catch {
         console.warn(`[trend-cron] Non-JSON response for phase=${phase} offset=${batchOffset}: ${text.slice(0, 200)}`);
-        // 파싱 실패해도 체이닝은 계속 — 빈 성공으로 간주
-        result = { success: true, totalCandidates: 0, successCount: 0, totalKeywords: 0, fallback: true };
+        // 파싱 실패해도 체이닝은 계속 — 다음 배치로 진행
+        result = { success: true, totalCandidates: batchOffset + batchSize + 1, successCount: 0, totalKeywords: 0, fallback: true };
       }
     } catch (fetchErr) {
       clearTimeout(timeout);
