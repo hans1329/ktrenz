@@ -648,7 +648,13 @@ async function detectForMember(
   naverClientId: string,
   naverClientSecret: string,
   member: MemberInfo,
-): Promise<{ keywordsFound: number; articlesFound: number; keywords: ExtractedKeyword[] }> {
+): Promise<{
+  keywordsFound: number;
+  articlesFound: number;
+  keywords: ExtractedKeyword[];
+  sourceStats: { news: number; blog: number; shop: number; aiExtracted: number; shopExtracted: number };
+  insertStats: { inserted: number; backfilled: number; filtered: number };
+}> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
   // 그룹 멤버인 경우 "그룹명 멤버명" 형태로 검색하여 동명이인 방지 (예: "스트레이 키즈 필릭스")
   const searchName = member.name_ko || member.display_name;
