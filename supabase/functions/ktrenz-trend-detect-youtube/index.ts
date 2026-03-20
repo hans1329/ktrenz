@@ -467,6 +467,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 후처리: 멤버 우선 중복제거 + 복합 키워드 병합 (fire-and-forget)
+    if (totalKeywords > 0) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).catch((e) => console.warn(`[detect-youtube] postprocess fire-and-forget error: ${e.message}`));
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

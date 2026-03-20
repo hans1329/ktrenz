@@ -408,6 +408,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 후처리: 멤버 우선 중복제거 + 복합 키워드 병합 (fire-and-forget)
+    if (totalKeywords > 0) {
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).catch((e) => console.warn(`[detect-global] postprocess fire-and-forget error: ${e.message}`));
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
