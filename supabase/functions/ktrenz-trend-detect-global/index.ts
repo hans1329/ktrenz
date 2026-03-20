@@ -8,6 +8,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// 이미지 수집 불가 도메인
+const SOURCE_IMAGE_BLACKLIST = [
+  "ddaily.co.kr",
+];
+
 interface ExtractedKeyword {
   keyword: string;
   keyword_en?: string;
