@@ -90,11 +90,21 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 500));
     }
 
-    // 현재 phase가 완료되고 다음 phase로 넘어가야 하는 경우
-    const phaseOrder = ["detect", "detect_global", "detect_youtube", "track"];
-    if (result.success && nextOffset >= totalCandidates && batchOffset === 0) {
-      // 첫 번째 배치에서만 다음 phase 체이닝 (중복 방지)
-      // totalCandidates가 0이면 해당 phase는 스킵
+    // 현재 phase의 마지막 배치가 완료되면 postprocess 호출
+    const isLastBatch = result.success && nextOffset >= totalCandidates;
+    const isDetectPhase = ["detect", "detect_global", "detect_youtube"].includes(phase);
+
+    if (isLastBatch && isDetectPhase) {
+      console.log(`[trend-cron] Phase "${phase}" complete. Running postprocess...`);
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ triggeredBy: phase }),
+      }).catch((e) => console.error(`[trend-cron] Postprocess trigger error: ${e.message}`));
+      await new Promise((r) => setTimeout(r, 500));
     }
 
     return new Response(
