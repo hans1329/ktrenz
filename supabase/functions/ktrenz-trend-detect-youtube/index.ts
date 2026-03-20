@@ -290,6 +290,10 @@ async function detectForMember(
         source_url: `https://www.youtube.com/watch?v=${sourceVideo.videoId}`,
         source_title: sourceVideo.title,
         source_image_url: sourceVideo.thumbnailUrl,
+        commercial_intent: kw.commercial_intent || null,
+        brand_intent: kw.brand_intent || null,
+        fan_sentiment: kw.fan_sentiment || null,
+        trend_potential: kw.trend_potential ?? null,
         status: "active",
         metadata: {
           video_count: videos.length,
