@@ -316,7 +316,7 @@ Deno.serve(async (req) => {
             brand_intent: k.brand_intent || null,
             fan_sentiment: k.fan_sentiment || null,
             trend_potential: k.trend_potential ?? null,
-            status: "active",
+            status: "pending",
             metadata: { source: "global_detect", perplexity_count: allKeywords.length },
           },
         }));
