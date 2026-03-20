@@ -283,7 +283,7 @@ Return ONLY a JSON array. If no commercial entities found, return [].`,
     let parsed: ExtractedKeyword[];
     try {
       const obj = JSON.parse(aiContent);
-      parsed = Array.isArray(obj) ? obj : (obj.keywords || obj.entities || obj.results || []);
+      parsed = Array.isArray(obj) ? obj : (obj.keywords || obj.entities || obj.results || obj.data || obj.commercial_entities || obj.items || []);
     } catch {
       const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
       if (!jsonMatch) return [];
