@@ -1,4 +1,4 @@
-// T2 Trend Post-Processing: 멤버 우선 중복제거 + 복합 키워드 병합
+// T2 Trend Post-Processing: 멤버 우선 중복제거 + 국내 우선 소스 중복제거 + 복합 키워드 병합
 // 수집 후 호출하여 데이터 품질을 개선하는 후처리 함수
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
