@@ -207,7 +207,12 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     .eq("status", "pending")
     .gte("detected_at", threeDaysAgo);
 
-  if (!pending?.length) return { reclassified: 0, details: [] };
+  if (!pending?.length) {
+    console.log(`[postprocess] No pending entries for AI classification`);
+    return { reclassified: 0, details: [] };
+  }
+
+  console.log(`[postprocess] AI classification: ${pending.length} pending entries to analyze`);
 
   // 스타 정보
   const starIds = [...new Set(pending.map((p: any) => p.star_id).filter(Boolean))];
@@ -219,14 +224,23 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
   const starMap = new Map<string, any>();
   for (const s of (stars || [])) starMap.set(s.id, s);
 
-  // 그룹 ID → 멤버 목록 매핑
-  const groupMembers = new Map<string, string[]>();
-  for (const s of (stars || [])) {
-    if (s.star_type === "member" && s.group_star_id) {
-      const list = groupMembers.get(s.group_star_id) || [];
-      list.push(s.display_name);
-      groupMembers.set(s.group_star_id, list);
+  // 그룹 star_id 목록을 모아서 멤버를 별도 조회
+  const groupStarIds = (stars || []).filter((s: any) => s.star_type === "group").map((s: any) => s.id);
+  const groupMembers = new Map<string, any[]>();
+
+  if (groupStarIds.length > 0) {
+    const { data: members } = await sb
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, star_type, group_star_id")
+      .eq("star_type", "member")
+      .in("group_star_id", groupStarIds);
+
+    for (const m of (members || [])) {
+      const list = groupMembers.get(m.group_star_id) || [];
+      list.push(m);
+      groupMembers.set(m.group_star_id, list);
     }
+    console.log(`[postprocess] Found members for ${groupMembers.size} groups: ${[...groupMembers.entries()].map(([gid, ms]) => `${starMap.get(gid)?.display_name}(${ms.length})`).join(", ")}`);
   }
 
   // 같은 아티스트의 pending 키워드들을 묶어서 AI에 보냄 (배치 효율)
@@ -247,8 +261,12 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     // 그룹 엔트리만 AI 분류 대상 (멤버/솔로는 이미 정확)
     if (star.star_type !== "group") continue;
 
-    const members = groupMembers.get(starId) || [];
-    if (!members.length) continue; // 멤버가 없으면 그룹 귀속 유지
+    const memberList = groupMembers.get(starId) || [];
+    const memberNames = memberList.map((m: any) => m.display_name);
+    if (!memberNames.length) {
+      console.log(`[postprocess] No members found for group ${star.display_name}, skipping`);
+      continue;
+    }
 
     const keywordList = entries.map((e: any) => ({
       id: e.id,
