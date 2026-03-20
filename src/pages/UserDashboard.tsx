@@ -210,7 +210,7 @@ const UserDashboard = () => {
   const stats = useMemo(() => {
     if (!events?.length) return {
       uniqueArtists: 0, externalClicks: 0, detailViews: 0, agentChats: 0,
-      topArtists: [] as { name: string; count: number; score: number; breakdown: { type: string; count: number }[] }[],
+      topArtists: [] as { name: string; count: number; score: number; normalizedScore: number; breakdown: { type: string; count: number }[] }[],
     };
     
     // Per-artist: count + weighted score + type breakdown
@@ -242,7 +242,14 @@ const UserDashboard = () => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
-    return { uniqueArtists: artistData.size, externalClicks, detailViews, agentChats, topArtists };
+    // Normalize scores to 0-100 scale based on max score
+    const maxScore = topArtists[0]?.score || 1;
+    const normalizedArtists = topArtists.map(a => ({
+      ...a,
+      normalizedScore: Math.round(Math.min(100, (a.score / maxScore) * 100)),
+    }));
+
+    return { uniqueArtists: artistData.size, externalClicks, detailViews, agentChats, topArtists: normalizedArtists };
   }, [events]);
 
   // ── Resolve top artist's wiki entry for image ──
@@ -624,9 +631,9 @@ const UserDashboard = () => {
                 <div className="flex items-center gap-4 mb-3">
                   <div className="text-center">
                     <p className="text-2xl font-black bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {Math.round(stats.topArtists[0].score)}
+                      {stats.topArtists[0].normalizedScore}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">{t("dash.engagementScore")}</p>
+                    <p className="text-[9px] text-muted-foreground">{t("dash.engagementScore")} /100</p>
                   </div>
                   <div className="h-6 w-px bg-border" />
                   <div className="text-center">
