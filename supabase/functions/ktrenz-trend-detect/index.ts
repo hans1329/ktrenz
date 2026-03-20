@@ -37,6 +37,11 @@ const PLATFORM_BLACKLIST = new Set([
   "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "tv chosun",
 ]);
 
+// 이미지 수집 불가 도메인 (봇 차단, 핫링크 차단)
+const SOURCE_IMAGE_BLACKLIST = [
+  "ddaily.co.kr",
+];
+
 interface NaverNewsItem {
   title: string;
   originallink: string;
@@ -759,9 +764,11 @@ async function detectForMember(
   const uniqueUrls = [...new Set(keywordSources.map((item) => item.sourceUrl).filter(Boolean))] as string[];
   const ogImageMap = new Map<string, string | null>();
   await Promise.allSettled(
-    uniqueUrls.map(async (url) => {
-      ogImageMap.set(url, await fetchOgImage(url));
-    })
+    uniqueUrls
+      .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
+      .map(async (url) => {
+        ogImageMap.set(url, await fetchOgImage(url));
+      })
   );
 
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => ({
