@@ -369,8 +369,8 @@ Deno.serve(async (req) => {
 
         const candidateRows = deduped.map((k) => ({
           row: {
-            wiki_entry_id: entryId,
-            star_id: sid || null,
+            wiki_entry_id: wikiEntryId || null,
+            star_id: starId || null,
             trigger_type: "news_mention",
             trigger_source: "global_news",
             artist_name: name,
@@ -393,17 +393,24 @@ Deno.serve(async (req) => {
             fan_sentiment: k.fan_sentiment || null,
             trend_potential: k.trend_potential ?? null,
             status: "pending",
-            metadata: { source: "global_detect_v5", detection_source: k.detection_source },
+            metadata: { source: "global_detect_v6", detection_source: k.detection_source },
           },
         }));
 
-        // 3일 내 중복 체크
+        // 3일 내 중복 체크 (star_id 기준, 없으면 wiki_entry_id)
         const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: existing } = await sb
+        let existingQuery = sb
           .from("ktrenz_trend_triggers")
           .select("id, keyword, keyword_en, keyword_ko, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
-          .eq("wiki_entry_id", entryId)
           .gte("detected_at", threeDaysAgo);
+        if (starId) {
+          existingQuery = existingQuery.eq("star_id", starId);
+        } else if (wikiEntryId) {
+          existingQuery = existingQuery.eq("wiki_entry_id", wikiEntryId);
+        } else {
+          existingQuery = existingQuery.eq("artist_name", name);
+        }
+        const { data: existing } = await existingQuery;
 
         const existingByKeyword = new Map<string, any>();
         for (const e of (existing || [])) {
