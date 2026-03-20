@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,8 +25,7 @@ const loadPersistedRuns = (): Record<string, PipelineRun> => {
     const runs: Record<string, PipelineRun> = {};
     for (const [key, val] of Object.entries(parsed)) {
       const started = new Date(val.startedAt);
-      // Ignore runs older than 30 minutes (likely stale)
-      if (Date.now() - started.getTime() > 30 * 60 * 1000) continue;
+      if (Date.now() - started.getTime() > 60 * 60 * 1000) continue;
       runs[key] = { startedAt: started, phase: val.phase as PipelineRun["phase"] };
     }
     return runs;
@@ -47,11 +46,59 @@ const T2AdminControls = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeRuns, setActiveRuns] = useState<Record<string, PipelineRun>>(loadPersistedRuns);
+  const [hasAutoDetected, setHasAutoDetected] = useState(false);
 
   // Persist runs to localStorage
   useEffect(() => {
     persistRuns(activeRuns);
   }, [activeRuns]);
+
+  // Auto-detect running pipelines from DB on mount
+  // Check if there are pending triggers created in the last 30 min (= pipeline is running)
+  const { data: detectedPhases } = useQuery({
+    queryKey: ["pipeline-auto-detect"],
+    queryFn: async () => {
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("trigger_source, detected_at")
+        .gte("detected_at", thirtyMinAgo)
+        .order("detected_at", { ascending: true })
+        .limit(200);
+      if (!data || data.length === 0) return null;
+
+      const phases: Record<string, string> = {};
+      for (const row of data as any[]) {
+        const src = row.trigger_source;
+        if (src === "naver_news" && !phases.detect) phases.detect = row.detected_at;
+        if (src === "global_news" && !phases.detect_global) phases.detect_global = row.detected_at;
+      }
+      return phases;
+    },
+    enabled: !hasAutoDetected && isAdmin === true,
+    staleTime: Infinity,
+  });
+
+  useEffect(() => {
+    if (!detectedPhases || hasAutoDetected) return;
+    setHasAutoDetected(true);
+
+    const existing = loadPersistedRuns();
+    const newRuns: Record<string, PipelineRun> = { ...existing };
+
+    for (const [phase, firstDetected] of Object.entries(detectedPhases)) {
+      if (!existing[phase]) {
+        newRuns[phase] = {
+          startedAt: new Date(firstDetected),
+          phase: phase as PipelineRun["phase"],
+        };
+      }
+    }
+
+    if (Object.keys(newRuns).length > Object.keys(existing).length) {
+      setActiveRuns(newRuns);
+    }
+  }, [detectedPhases, hasAutoDetected]);
 
   const startRun = (phase: PipelineRun["phase"]) => {
     setActiveRuns((prev) => ({ ...prev, [phase]: { startedAt: new Date(), phase } }));
