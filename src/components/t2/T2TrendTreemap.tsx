@@ -330,14 +330,31 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         const activeStars = (stars ?? []).filter((s: any) => s.is_active !== false);
         activeStars.forEach((s: any) => activeStarIds.add(s.id));
 
-        const wikiIds = activeStars.map((s: any) => s.wiki_entry_id).filter(Boolean);
+        // Collect wiki_entry_ids from both the star itself and its group parent
+        const wikiIds = new Set<string>();
+        const groupStarIds = new Set<string>();
+        activeStars.forEach((s: any) => {
+          if (s.wiki_entry_id) wikiIds.add(s.wiki_entry_id);
+          if (s.group_star_id) groupStarIds.add(s.group_star_id);
+        });
+        // Also fetch group stars' wiki_entry_ids for fallback images
+        const groupWikiMap = new Map<string, string>(); // group_star_id -> wiki_entry_id
+        if (groupStarIds.size > 0) {
+          const { data: groupStars } = await supabase.from("ktrenz_stars").select("id, wiki_entry_id").in("id", Array.from(groupStarIds));
+          (groupStars ?? []).forEach((g: any) => {
+            if (g.wiki_entry_id) { groupWikiMap.set(g.id, g.wiki_entry_id); wikiIds.add(g.wiki_entry_id); }
+          });
+        }
         const imageMap = new Map<string, string>();
-        if (wikiIds.length > 0) {
-          const { data: wikiEntries } = await supabase.from("wiki_entries").select("id, image_url").in("id", wikiIds);
+        if (wikiIds.size > 0) {
+          const { data: wikiEntries } = await supabase.from("wiki_entries").select("id, image_url").in("id", Array.from(wikiIds));
           (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
         }
         activeStars.forEach((s: any) => {
-          starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: imageMap.get(s.wiki_entry_id) || null, wiki_entry_id: s.wiki_entry_id });
+          const ownImage = s.wiki_entry_id ? imageMap.get(s.wiki_entry_id) : null;
+          const groupWikiId = s.group_star_id ? groupWikiMap.get(s.group_star_id) : null;
+          const groupImage = groupWikiId ? imageMap.get(groupWikiId) : null;
+          starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: ownImage || groupImage || null, wiki_entry_id: s.wiki_entry_id || groupWikiId });
         });
       }
 
