@@ -668,6 +668,7 @@ async function detectForMember(
       "source_url",
       "source_title",
       "source_image_url",
+      "source_snippet",
     ] as const;
 
     for (const field of backfillFields) {
