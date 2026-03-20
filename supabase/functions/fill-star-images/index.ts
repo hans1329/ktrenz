@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[fill-star-images] Processing ${targets.length} stars (offset=${offset})`);
+    console.log(`[fill-star-images] Processing ${targets.length} stars`);
 
     let filled = 0;
     let failed = 0;
