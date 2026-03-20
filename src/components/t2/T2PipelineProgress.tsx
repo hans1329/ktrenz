@@ -58,11 +58,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         return count ?? 0;
       }
 
+      // 감지 엔진은 모든 active 스타(group/solo/member)를 대상으로 함
       const { count } = await supabase
         .from("ktrenz_stars" as any)
         .select("id", { count: "exact", head: true })
         .eq("is_active", true)
-        .not("wiki_entry_id", "is", null);
+        .in("star_type", ["group", "solo", "member"]);
       return count ?? 0;
     },
     enabled: !!run,
