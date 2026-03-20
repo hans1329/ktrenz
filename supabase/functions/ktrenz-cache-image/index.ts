@@ -140,7 +140,22 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const trigger of targets) {
-      const url = trigger.source_image_url;
+      let url = trigger.source_image_url;
+      
+      // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
+      if (!url && trigger.source_url) {
+        console.log(`[cache-image] No image for ${trigger.id}, fetching OG from ${trigger.source_url}`);
+        const ogUrl = await fetchOgImage(trigger.source_url);
+        if (ogUrl) {
+          url = ogUrl;
+          console.log(`[cache-image] Found OG image for ${trigger.id}: ${ogUrl}`);
+        } else {
+          console.warn(`[cache-image] No OG image found for ${trigger.id}`);
+          failed++;
+          continue;
+        }
+      }
+      
       if (!url || url.includes(supabaseUrl)) continue;
 
       const image = await downloadImage(url);
