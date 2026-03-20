@@ -21,7 +21,19 @@ interface ExtractedKeyword {
   context_ja?: string;
   context_zh?: string;
   source_video_index?: number;
+  commercial_intent?: "ad" | "sponsorship" | "collaboration" | "organic" | "rumor";
+  brand_intent?: "awareness" | "conversion" | "association" | "loyalty";
+  fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
+  trend_potential?: number;
 }
+
+const PLATFORM_BLACKLIST = new Set([
+  "youtube", "spotify", "tiktok", "instagram", "twitter", "x", "facebook",
+  "apple music", "melon", "genie", "bugs", "flo", "vibe", "soundcloud",
+  "weverse", "vlive", "bubble", "universe", "phoning", "lysn",
+  "naver", "google", "daum", "kakao", "billboard", "hanteo", "gaon",
+  "circle chart", "oricon", "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn",
+]);
 
 interface YouTubeVideo {
   videoId: string;
