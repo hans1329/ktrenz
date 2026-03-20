@@ -158,6 +158,7 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
+    console.log(`[detect-global] AI raw for ${artistName}: ${aiContent.slice(0, 300)}`);
 
     let parsed: ExtractedKeyword[];
     try {
@@ -172,6 +173,7 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
     }
 
     if (!Array.isArray(parsed)) parsed = [];
+    console.log(`[detect-global] AI parsed ${artistName}: ${parsed.length} keywords before filter`);
 
     parsed = parsed.map((k: any) => ({
       ...k,
