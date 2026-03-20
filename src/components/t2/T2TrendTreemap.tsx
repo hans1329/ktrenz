@@ -323,7 +323,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       if (starIds.length > 0) {
         const { data: stars } = await supabase
           .from("ktrenz_stars" as any)
-          .select("id, wiki_entry_id, display_name, name_ko, is_active")
+          .select("id, wiki_entry_id, display_name, name_ko, is_active, group_star_id, image_url")
           .in("id", starIds);
         
         // Only include active stars
