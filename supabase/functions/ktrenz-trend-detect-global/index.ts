@@ -369,7 +369,7 @@ Deno.serve(async (req) => {
             confidence: k.confidence,
             source_url: k.source_url || null,
             source_title: k.source_title || null,
-            source_image_url: k.source_url ? ogImageMap.get(k.source_url) || null : null,
+            source_image_url: sanitizeImageUrl(k.source_url ? ogImageMap.get(k.source_url) || null : null),
             commercial_intent: k.commercial_intent || null,
             brand_intent: k.brand_intent || null,
             fan_sentiment: k.fan_sentiment || null,

@@ -801,7 +801,7 @@ async function detectForMember(
       confidence: keywordData.confidence,
       source_url: sourceUrl,
       source_title: sourceArticle?.title || null,
-      source_image_url: sourceUrl ? ogImageMap.get(sourceUrl) || null : null,
+      source_image_url: sanitizeImageUrl(sourceUrl ? ogImageMap.get(sourceUrl) || null : null),
       source_snippet: sourceArticle?.description?.slice(0, 500) || null,
       commercial_intent: keywordData.commercial_intent || null,
       brand_intent: keywordData.brand_intent || null,
