@@ -329,17 +329,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[detect-global] v5 batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Firecrawl only)`);
+    console.log(`[detect-global] v6 batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} stars (all active, Firecrawl only)`);
 
     let successCount = 0;
     let totalKeywords = 0;
 
-    for (const entryId of batch) {
+    for (const candidate of batch) {
       try {
-        const entry = entryMap.get(entryId);
-        const name = entry?.displayName || "Unknown";
-        const sid = entry?.starId || null;
-        const gName = entry?.groupName || null;
+        const { starId, displayName: name, groupName: gName, wikiEntryId, starCategory } = candidate;
 
         // Firecrawl 단독 실행
         const keywords = await detectViaFirecrawl(firecrawlKey, name, gName, openaiKey);
