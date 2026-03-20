@@ -337,6 +337,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           sourceUrl: t.source_url || null,
           sourceTitle: t.source_title || null,
           sourceImageUrl: t.source_image_url || null,
+          sourceSnippet: t.source_snippet || null,
           starId: t.star_id || null,
           status: t.status,
         };
