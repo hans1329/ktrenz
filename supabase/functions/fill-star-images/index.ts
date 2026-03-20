@@ -249,8 +249,7 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 800));
     }
 
-    // Auto-chain if more targets remain
-    const nextOffset = offset + limit;
+    // Auto-chain if more targets remain (no offset needed - we query by image_url IS NULL)
     let chained = false;
 
     if (!starId && targets.length === limit) {
@@ -264,10 +263,10 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${anonKey}`,
           },
-          body: JSON.stringify({ limit, offset: nextOffset }),
+          body: JSON.stringify({ limit }),
         });
         chained = true;
-        console.log(`[fill-star-images] Chained next batch offset=${nextOffset}`);
+        console.log(`[fill-star-images] Chained next batch`);
       } catch (e) {
         console.error(`[fill-star-images] Chain error:`, (e as Error).message);
       }
@@ -279,7 +278,7 @@ Deno.serve(async (req) => {
         processed: targets.length,
         filled,
         failed,
-        nextOffset: chained ? nextOffset : null,
+        chained,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
