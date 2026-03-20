@@ -13,6 +13,7 @@ import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight,
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
+import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "./T2TrendTreemap";
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
@@ -381,28 +382,38 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             {/* Source thumbnail + title card */}
             {(tile.sourceTitle || tile.sourceImageUrl) && (
               <div className="relative">
-                {tile.sourceImageUrl ? (
-                  <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
-                    <img
-                      src={tile.sourceImageUrl}
-                      alt={tile.sourceTitle || ""}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
-                        {getLocalizedSourceTitle(tile, language)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <ExternalLink className="w-2.5 h-2.5 text-white/60" />
-                        <span className="text-[10px] text-white/60">
-                          {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
-                        </span>
+                {(() => {
+                  const rawImg = sanitizeImageUrl(tile.sourceImageUrl);
+                  const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
+                  const platformLogo = detectPlatformLogo(tile.sourceUrl, tile.sourceImageUrl);
+                  const displayImg = safeImg || tile.artistImageUrl || platformLogo;
+                  
+                  if (displayImg) {
+                    return (
+                      <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                        <img
+                          src={displayImg}
+                          alt={tile.sourceTitle || ""}
+                          className={cn("w-full h-full object-cover", platformLogo && !safeImg && !tile.artistImageUrl && "object-contain p-8 bg-muted")}
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
+                            {getLocalizedSourceTitle(tile, language)}
+                          </p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <ExternalLink className="w-2.5 h-2.5 text-white/60" />
+                            <span className="text-[10px] text-white/60">
+                              {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ) : tile.sourceTitle ? (
+                    );
+                  }
+                  
+                  return tile.sourceTitle ? (
                   <div className="flex items-start gap-2.5 p-3 border-b border-border/50">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Newspaper className="w-4 h-4 text-primary" />
@@ -431,7 +442,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       )}
                     </div>
                   </div>
-                ) : null}
+                ) : null;
+                })()}
               </div>
             )}
 
