@@ -95,7 +95,8 @@ Deno.serve(async (req) => {
     const results: { id: string; url: string; image: string | null }[] = [];
 
     for (const row of rows) {
-      const img = await fetchOgImage(row.source_url);
+      const isBlacklisted = SOURCE_IMAGE_BLACKLIST.some(d => row.source_url.includes(d));
+      const img = isBlacklisted ? null : await fetchOgImage(row.source_url);
       results.push({ id: row.id, url: row.source_url, image: img });
 
       if (img) {
