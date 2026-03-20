@@ -211,9 +211,10 @@ Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko
       
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
+      const kwEn = k.keyword_en?.toLowerCase() || "";
       
-      // 1) 정확 매칭
-      if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo))) return true;
+      // 1) 정확 매칭 (keyword, keyword_ko, keyword_en 중 하나라도)
+      if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo)) || (kwEn && allText.includes(kwEn))) return true;
       
       // 2) 단어 분리 매칭: keyword_ko를 공백으로 분리 후 2글자 이상 단어 중 하나라도 매칭
       if (kwKo) {
