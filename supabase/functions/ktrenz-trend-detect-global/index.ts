@@ -84,6 +84,8 @@ async function detectViaFirecrawl(
       ? `"${artistName}" "${groupName}" brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`
       : `"${artistName}" kpop brand OR fashion OR beauty OR wearing OR ambassador OR campaign OR collection 2026`;
 
+    const fcController = new AbortController();
+    const fcTimeout = setTimeout(() => fcController.abort(), 15000);
     const fcResponse = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
@@ -94,10 +96,12 @@ async function detectViaFirecrawl(
         query: searchQuery,
         limit: 8,
         lang: "en",
-        tbs: "qdr:m", // 최근 1개월로 확대 (주간→월간)
+        tbs: "qdr:m",
         scrapeOptions: { formats: ["markdown"] },
       }),
+      signal: fcController.signal,
     });
+    clearTimeout(fcTimeout);
 
     if (!fcResponse.ok) {
       const errText = await fcResponse.text();
@@ -122,6 +126,8 @@ async function detectViaFirecrawl(
       .join("\n---\n")
       .slice(0, 4000);
 
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 20000);
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -163,7 +169,9 @@ Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "ke
         max_tokens: 800,
         response_format: { type: "json_object" },
       }),
+      signal: aiController.signal,
     });
+    clearTimeout(aiTimeout);
 
     if (!aiResponse.ok) {
       console.warn(`[detect-global] OpenAI error for ${artistName}: ${aiResponse.status}`);

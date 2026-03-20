@@ -77,15 +77,16 @@ Deno.serve(async (req) => {
         result = JSON.parse(text);
       } catch {
         console.warn(`[trend-cron] Non-JSON response for phase=${phase} offset=${batchOffset}: ${text.slice(0, 200)}`);
-        // 파싱 실패해도 체이닝은 계속 — 빈 성공으로 간주
-        result = { success: true, totalCandidates: 0, successCount: 0, totalKeywords: 0, fallback: true };
+        // 파싱 실패해도 체이닝은 계속 — 다음 배치로 진행
+        result = { success: true, totalCandidates: batchOffset + batchSize + 1, successCount: 0, totalKeywords: 0, fallback: true };
       }
     } catch (fetchErr) {
       clearTimeout(timeout);
       const msg = (fetchErr as Error).message || "unknown";
       console.warn(`[trend-cron] Fetch failed for phase=${phase} offset=${batchOffset}: ${msg}`);
-      // 타임아웃/네트워크 오류에도 체이닝 계속
-      result = { success: true, totalCandidates: 0, successCount: 0, totalKeywords: 0, fallback: true };
+      // 타임아웃/네트워크 오류 → 이 배치만 건너뛰고 체이닝은 계속
+      // totalCandidates를 큰 값으로 잡아 nextOffset 체이닝이 끊기지 않도록 함
+      result = { success: true, totalCandidates: batchOffset + batchSize + 1, successCount: 0, totalKeywords: 0, fallback: true, skippedError: msg };
     }
 
     console.log(`[trend-cron] phase=${phase} offset=${batchOffset} result:`, JSON.stringify(result).slice(0, 300));
