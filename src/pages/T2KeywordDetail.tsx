@@ -475,35 +475,26 @@ const T2KeywordDetail = () => {
                   {language === "ko" ? "내 포지션" : "My Position"}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {myPosition.yesAmount > 0 && (
-                    <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-2">
-                      <div className="text-[10px] text-green-400 mb-0.5">
-                        {language === "ko" ? "오를 것 지분" : "Rise Stake"}
+                  {(["decline", "mild", "strong", "explosive"] as const).map(o => {
+                    const data = (myPosition as any)[o];
+                    if (!data || data.amount <= 0) return null;
+                    const emoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
+                    const color: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                    return (
+                      <div key={o} className={cn(`rounded-lg bg-${color[o]}-500/10 border border-${color[o]}-500/20 p-2`)}>
+                        <div className={cn("text-[10px]", `text-${color[o]}-400`)} >{emoji[o]} {o}</div>
+                        <div className="text-sm font-bold text-foreground">
+                          {data.amount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                        </div>
+                        <div className={cn("text-[10px]", `text-${color[o]}-400`)}>
+                          {language === "ko" ? "성공시" : "If win"} +{Math.round(data.shares - data.amount).toLocaleString()}P
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-foreground">
-                        {myPosition.yesAmount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
-                      </div>
-                      <div className="text-[10px] text-green-400 mt-0.5">
-                        {language === "ko" ? "성공시" : "If win"} +{Math.round(myPosition.yesShares - myPosition.yesAmount).toLocaleString()}<span className="text-[9px] text-muted-foreground ml-0.5">P</span>
-                      </div>
-                    </div>
-                  )}
-                  {myPosition.noAmount > 0 && (
-                    <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2">
-                      <div className="text-[10px] text-red-400 mb-0.5">
-                        {language === "ko" ? "내릴 것 지분" : "Fall Stake"}
-                      </div>
-                      <div className="text-sm font-bold text-foreground">
-                        {myPosition.noAmount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
-                      </div>
-                      <div className="text-[10px] text-red-400 mt-0.5">
-                        {language === "ko" ? "성공시" : "If win"} +{Math.round(myPosition.noShares - myPosition.noAmount).toLocaleString()}<span className="text-[9px] text-muted-foreground ml-0.5">P</span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {language === "ko" ? "총 투자" : "Total invested"}: {myPosition.totalSpent.toLocaleString()}P
+                  {language === "ko" ? "총 투자" : "Total invested"}: {(myPosition as any).totalSpent?.toLocaleString()}P
                 </div>
               </div>
             )}

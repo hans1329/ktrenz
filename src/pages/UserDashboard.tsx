@@ -341,7 +341,7 @@ const UserDashboard = () => {
       totalAmount += Number(b.amount) || 0;
       totalPayout += Number(b.payout) || 0;
       if (!b.market || b.market.status === "open") { pending++; continue; }
-      if (b.market.outcome === b.side) won++;
+      if (b.market.outcome === b.outcome) won++;
       else if (b.market.outcome) lost++;
       else pending++;
     }
