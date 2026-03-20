@@ -490,64 +490,90 @@ const UserDashboard = () => {
               </Card>
             )}
 
-            {/* Recent bets */}
+            {/* Recent bets – grouped by keyword */}
             <div className="space-y-2">
-              {myBets.slice(0, 6).map((bet: any) => {
-                const trigger = bet.trigger;
-                const market = bet.market;
-                const isSettled = market?.status === "settled";
-                const isWon = isSettled && market?.outcome === bet.side;
-                const isLost = isSettled && market?.outcome && market?.outcome !== bet.side;
-                const keyword = trigger
-                  ? (language === "ko" && trigger.keyword_ko ? trigger.keyword_ko : trigger.keyword)
-                  : "Unknown";
-                const config = trigger ? CATEGORY_CONFIG[trigger.keyword_category] : null;
-                const artistName = trigger
-                  ? (language === "ko" && trigger.artistNameKo ? trigger.artistNameKo : (trigger.artistName || ""))
-                  : "";
+              {(() => {
+                // Group bets by trigger_id (same keyword)
+                const grouped = new Map<string, { bets: any[]; trigger: any; market: any; keyword: string; artistName: string; config: any }>();
+                for (const bet of myBets) {
+                  const triggerId = bet.market?.trigger_id || bet.id;
+                  const existing = grouped.get(triggerId);
+                  const trigger = bet.trigger;
+                  const kw = trigger
+                    ? (language === "ko" && trigger.keyword_ko ? trigger.keyword_ko : trigger.keyword)
+                    : "Unknown";
+                  const an = trigger
+                    ? (language === "ko" && trigger.artistNameKo ? trigger.artistNameKo : (trigger.artistName || ""))
+                    : "";
+                  const cfg = trigger ? CATEGORY_CONFIG[trigger.keyword_category] : null;
+                  if (existing) {
+                    existing.bets.push(bet);
+                  } else {
+                    grouped.set(triggerId, { bets: [bet], trigger, market: bet.market, keyword: kw, artistName: an, config: cfg });
+                  }
+                }
 
-                return (
-                  <button
-                    key={bet.id}
-                    onClick={() => trigger && navigate(`/t2/${market?.trigger_id}`)}
-                    className={cn(
-                      "w-full rounded-xl border p-3 flex items-center gap-3 text-left transition-all",
-                      isWon ? "border-green-500/30 bg-green-500/5" :
-                      isLost ? "border-red-500/30 bg-red-500/5" :
-                      "border-border bg-card hover:bg-muted/50"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                      isWon ? "bg-green-500/15" : isLost ? "bg-red-500/15" : "bg-yellow-500/15"
-                    )}>
-                      {isWon ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
-                       isLost ? <XCircle className="w-4 h-4 text-red-400" /> :
-                       <Timer className="w-4 h-4 text-yellow-400" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-sm font-bold text-foreground truncate">{keyword}</span>
-                        {config && (
-                          <span className="text-[8px] font-bold px-1 py-0.5 rounded text-white shrink-0" style={{ background: config.color }}>
-                            {config.label}
-                          </span>
-                        )}
+                return Array.from(grouped.values()).slice(0, 6).map((group) => {
+                  const { bets: groupBets, market, trigger, keyword, artistName, config } = group;
+                  const isSettled = market?.status === "settled";
+                  const totalAmount = groupBets.reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
+                  const totalPayout = groupBets.reduce((s: number, b: any) => s + (Number(b.payout) || 0), 0);
+                  const yesAmount = groupBets.filter((b: any) => b.side === "yes").reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
+                  const noAmount = groupBets.filter((b: any) => b.side === "no").reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
+                  const hasWon = isSettled && groupBets.some((b: any) => market?.outcome === b.side);
+                  const hasLost = isSettled && market?.outcome && !hasWon;
+
+                  return (
+                    <button
+                      key={market?.trigger_id || groupBets[0].id}
+                      onClick={() => trigger && navigate(`/t2/${market?.trigger_id}`)}
+                      className={cn(
+                        "w-full rounded-xl border p-3 flex items-center gap-3 text-left transition-all",
+                        hasWon ? "border-green-500/30 bg-green-500/5" :
+                        hasLost ? "border-red-500/30 bg-red-500/5" :
+                        "border-border bg-card hover:bg-muted/50"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                        hasWon ? "bg-green-500/15" : hasLost ? "bg-red-500/15" : "bg-yellow-500/15"
+                      )}>
+                        {hasWon ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
+                         hasLost ? <XCircle className="w-4 h-4 text-red-400" /> :
+                         <Timer className="w-4 h-4 text-yellow-400" />}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        {artistName && <span>{artistName}</span>}
-                        <span className={cn("font-bold", bet.side === "yes" ? "text-green-400" : "text-red-400")}>
-                          {bet.side === "yes" ? "▲ YES" : "▼ NO"}
-                        </span>
-                        <span>{Number(bet.amount).toFixed(0)} pts</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-sm font-bold text-foreground truncate">{keyword}</span>
+                          {config && (
+                            <span className="text-[8px] font-bold px-1 py-0.5 rounded text-white shrink-0" style={{ background: config.color }}>
+                              {config.label}
+                            </span>
+                          )}
+                          {groupBets.length > 1 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
+                              ×{groupBets.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          {artistName && <span>{artistName}</span>}
+                          {yesAmount > 0 && (
+                            <span className="font-bold text-green-400">▲ {yesAmount.toFixed(0)}</span>
+                          )}
+                          {noAmount > 0 && (
+                            <span className="font-bold text-red-400">▼ {noAmount.toFixed(0)}</span>
+                          )}
+                          <span>{totalAmount.toFixed(0)} pts</span>
+                        </div>
                       </div>
-                    </div>
-                    {isWon && bet.payout > 0 && (
-                      <span className="text-xs font-black text-green-400 shrink-0">+{Number(bet.payout).toFixed(0)}</span>
-                    )}
-                  </button>
-                );
-              })}
+                      {hasWon && totalPayout > 0 && (
+                        <span className="text-xs font-black text-green-400 shrink-0">+{totalPayout.toFixed(0)}</span>
+                      )}
+                    </button>
+                  );
+                });
+              })()}
             </div>
           </section>
         )}
