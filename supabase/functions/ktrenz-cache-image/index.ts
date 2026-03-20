@@ -163,6 +163,14 @@ Deno.serve(async (req) => {
       
       if (!url || url.includes(supabaseUrl)) continue;
 
+      // 블랙리스트 도메인 체크
+      const isBlacklisted = IMAGE_DOMAIN_BLACKLIST.some(domain => url!.includes(domain));
+      if (isBlacklisted) {
+        console.warn(`[cache-image] Skipping blacklisted domain for ${trigger.id}: ${url}`);
+        failed++;
+        continue;
+      }
+
       const image = await downloadImage(url);
       if (!image) {
         failed++;
