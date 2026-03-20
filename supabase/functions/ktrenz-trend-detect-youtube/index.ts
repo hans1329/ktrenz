@@ -296,7 +296,7 @@ async function detectForMember(
         brand_intent: kw.brand_intent || null,
         fan_sentiment: kw.fan_sentiment || null,
         trend_potential: kw.trend_potential ?? null,
-        status: "active",
+        status: "pending",
         metadata: {
           video_count: videos.length,
           search_query: query,

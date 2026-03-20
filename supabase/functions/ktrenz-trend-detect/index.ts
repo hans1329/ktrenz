@@ -581,7 +581,7 @@ async function detectForMember(
       brand_intent: keywordData.brand_intent || null,
       fan_sentiment: keywordData.fan_sentiment || null,
       trend_potential: keywordData.trend_potential ?? null,
-      status: "active",
+      status: "pending",
       metadata: {
         article_count: articles.length,
         search_name: searchName,
