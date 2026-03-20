@@ -354,7 +354,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           const ownImage = s.wiki_entry_id ? imageMap.get(s.wiki_entry_id) : null;
           const groupWikiId = s.group_star_id ? groupWikiMap.get(s.group_star_id) : null;
           const groupImage = groupWikiId ? imageMap.get(groupWikiId) : null;
-          starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: ownImage || groupImage || null, wiki_entry_id: s.wiki_entry_id || groupWikiId });
+          const starDirectImage = s.image_url && s.image_url !== "" ? s.image_url : null;
+          starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: ownImage || starDirectImage || groupImage || null, wiki_entry_id: s.wiki_entry_id || groupWikiId });
         });
       }
 
