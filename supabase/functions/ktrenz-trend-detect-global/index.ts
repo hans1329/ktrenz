@@ -40,15 +40,15 @@ const PLATFORM_BLACKLIST = new Set([
   "reddit", "allkpop", "soompi", "koreaboo",
 ]);
 
-// 뉴스 매체 블랙리스트 — 한국 뉴스의 영문 번역 사이트 포함
+// 뉴스 매체 블랙리스트 — Perplexity 최대 20개 제한
 const NEWS_DOMAIN_EXCLUDES = [
   "-allkpop.com", "-soompi.com", "-koreaboo.com", "-kpopstarz.com",
-  "-hellokpop.com", "-kpopchart.net", "-kpopmap.com",
-  "-billboard.com", "-variety.com", "-nme.com", "-rollingstone.com",
-  "-naver.com", "-daum.net", "-nate.com", "-chosun.com",
-  "-donga.com", "-hankyung.com", "-mk.co.kr", "-edaily.co.kr",
-  "-yna.co.kr", "-yonhapnews.co.kr", "-hani.co.kr",
+  "-hellokpop.com", "-kpopmap.com",
+  "-billboard.com", "-variety.com", "-rollingstone.com",
+  "-naver.com", "-daum.net", "-chosun.com",
+  "-donga.com", "-yna.co.kr", "-yonhapnews.co.kr",
   "-news1.kr", "-newsis.com", "-theqoo.net", "-dcinside.com",
+  "-nme.com",
 ];
 
 function getCategoryLabel(category: string): string {
