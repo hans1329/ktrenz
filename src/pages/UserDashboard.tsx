@@ -242,11 +242,11 @@ const UserDashboard = () => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
-    // Normalize scores to 0-100 scale based on max score
-    const maxScore = topArtists[0]?.score || 1;
+    // Normalize scores to 0-100 scale using absolute max (300 events × 3 max weight = 900)
+    const ABSOLUTE_MAX_SCORE = 900;
     const normalizedArtists = topArtists.map(a => ({
       ...a,
-      normalizedScore: Math.round(Math.min(100, (a.score / maxScore) * 100)),
+      normalizedScore: Math.round(Math.min(100, (a.score / ABSOLUTE_MAX_SCORE) * 100)),
     }));
 
     return { uniqueArtists: artistData.size, externalClicks, detailViews, agentChats, topArtists: normalizedArtists };
