@@ -700,8 +700,10 @@ async function detectForMember(
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
   console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length} blog=${filteredBlogs.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
+  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, aiExtracted: 0, shopExtracted: shopKeywords.length };
+
   if (!articles.length && !shopKeywords.length) {
-    return { keywordsFound: 0, articlesFound: 0, keywords: [] };
+    return { keywordsFound: 0, articlesFound: 0, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
   // AI로 상업 키워드 추출 (News + Blog 통합)
