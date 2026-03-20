@@ -158,7 +158,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           {/* Progress bar */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>{total}명 멤버 · {batchSize}명/배치</span>
+              <span>{total}{isTrackPhase ? "개 키워드" : "명 멤버"} · {batchSize}{isTrackPhase ? "개" : "명"}/배치</span>
               <span>
                 {isDone
                   ? "완료"
