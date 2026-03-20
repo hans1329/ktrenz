@@ -565,8 +565,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       {yesStake > 0 && (
                         <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center min-w-[120px]">
                           <div className="text-[10px] text-muted-foreground">🔥 {language === "ko" ? "오를 것" : "Rise"}</div>
-                          <div className="text-sm font-bold text-emerald-400">{yesStake}P</div>
-                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}P</span></div>
+                          <div className="text-sm font-bold text-emerald-400">{yesStake}T</div>
+                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}T</span></div>
                         </div>
                       )}
                       {noStake > 0 && (
