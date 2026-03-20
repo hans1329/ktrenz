@@ -134,20 +134,27 @@ Return ONLY a JSON array. If no genuine commercial entities found, return [].`,
       }),
     });
 
-    if (!aiResponse.ok) return [];
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.warn(`[detect-global] Firecrawl AI error: ${errText.slice(0, 200)}`);
+      return [];
+    }
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
+    console.log(`[detect-global] Firecrawl AI response for "${searchName}": ${aiContent.slice(0, 300)}`);
 
     let parsed: ExtractedKeyword[];
     try {
       const obj = JSON.parse(aiContent);
-      parsed = Array.isArray(obj) ? obj : (obj.keywords || obj.entities || obj.results || []);
+      parsed = Array.isArray(obj) ? obj : (obj.keywords || obj.entities || obj.results || obj.data || []);
     } catch {
       const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
       if (!jsonMatch) return [];
       parsed = JSON.parse(jsonMatch[0]);
     }
+
+    if (!Array.isArray(parsed)) parsed = [];
 
     return parsed
       .filter((k) => {
