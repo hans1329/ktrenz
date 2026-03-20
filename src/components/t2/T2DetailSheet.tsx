@@ -114,7 +114,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
   const track = useTrackEvent();
 
-  const [betSide, setBetSide] = useState<"yes" | "no">("yes");
+  const [betOutcome, setBetOutcome] = useState<"decline" | "mild" | "strong" | "explosive">("mild");
   const [betAmount, setBetAmount] = useState("");
 
   // Market data
@@ -151,9 +151,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   // Bet mutation
   const betMutation = useMutation({
-    mutationFn: async ({ side, amount }: { side: "yes" | "no"; amount: number }) => {
+    mutationFn: async ({ outcome, amount }: { outcome: string; amount: number }) => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-bet", {
-        body: { triggerId: tile!.id, side, amount },
+        body: { triggerId: tile!.id, outcome, amount },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
@@ -165,8 +165,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       if (data && marketData) {
         queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
           ...(old || marketData),
-          pool_yes: data.poolYes,
-          pool_no: data.poolNo,
+          pool_decline: data.pools?.decline,
+          pool_mild: data.pools?.mild,
+          pool_strong: data.pools?.strong,
+          pool_explosive: data.pools?.explosive,
           total_volume: data.totalVolume,
         }));
       }
@@ -177,7 +179,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             id: crypto.randomUUID(),
             market_id: marketData?.id,
             user_id: user.id,
-            side: betSide,
+            outcome: betOutcome,
             amount,
             shares: data.shares,
             payout: null,
@@ -220,14 +222,21 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       toast.error(t("betMinError", language));
       return;
     }
-    betMutation.mutate({ side: betSide, amount });
+    betMutation.mutate({ outcome: betOutcome, amount });
   };
 
-  // Calculate prices from pool
-  const poolYes = Number(marketData?.pool_yes ?? 100);
-  const poolNo = Number(marketData?.pool_no ?? 100);
-  const priceYes = poolNo / (poolYes + poolNo);
-  const priceNo = poolYes / (poolYes + poolNo);
+  // Calculate prices from 4-outcome pools
+  const poolDecline = Number(marketData?.pool_decline ?? 100);
+  const poolMild = Number(marketData?.pool_mild ?? 100);
+  const poolStrong = Number(marketData?.pool_strong ?? 100);
+  const poolExplosive = Number(marketData?.pool_explosive ?? 100);
+  const invSum = (1/poolDecline) + (1/poolMild) + (1/poolStrong) + (1/poolExplosive);
+  const prices = {
+    decline: (1/poolDecline) / invSum,
+    mild: (1/poolMild) / invSum,
+    strong: (1/poolStrong) / invSum,
+    explosive: (1/poolExplosive) / invSum,
+  };
   const totalVolume = Number(marketData?.total_volume ?? 0);
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
@@ -555,80 +564,77 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 {t("voteRelevance", language)}
               </p>
 
-              {/* Odds display */}
-              <div className="flex items-center gap-2">
-                <div className={cn("flex-1 rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
-                  betSide === "yes"
-                    ? "bg-emerald-500/20 border-emerald-500/50"
-                    : "bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40"
-                )} onClick={() => setBetSide("yes")}>
-                  <div className="text-[10px] text-muted-foreground mb-0.5">{t("betYes", language)}</div>
-                  <div className="text-lg font-bold text-emerald-400">{(priceYes * 100).toFixed(1)}%</div>
-                </div>
-                <div className={cn("flex-1 rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
-                  betSide === "no"
-                    ? "bg-rose-500/20 border-rose-500/50"
-                    : "bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40"
-                )} onClick={() => setBetSide("no")}>
-                  <div className="text-[10px] text-muted-foreground mb-0.5">{t("betNo", language)}</div>
-                  <div className="text-lg font-bold text-rose-400">{(priceNo * 100).toFixed(1)}%</div>
-                </div>
+              {/* 4-outcome selector */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {([
+                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "rose" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "amber" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple" },
+                ]).map(({ key, label, emoji, color }) => (
+                  <div
+                    key={key}
+                    className={cn(
+                      "rounded-lg p-2 text-center cursor-pointer transition-all border-2",
+                      betOutcome === key
+                        ? `bg-${color}-500/20 border-${color}-500/50`
+                        : `bg-${color}-500/5 border-${color}-500/15 hover:border-${color}-500/30`
+                    )}
+                    onClick={() => setBetOutcome(key)}
+                  >
+                    <div className="text-lg">{emoji}</div>
+                    <div className="text-[10px] text-muted-foreground">{label}</div>
+                    <div className={cn("text-sm font-bold", `text-${color}-400`)}>{(prices[key] * 100).toFixed(0)}%</div>
+                  </div>
+                ))}
               </div>
 
-              {/* Probability bar graph */}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1 h-7 rounded-full overflow-hidden">
+              {/* Probability bar */}
+              <div className="flex items-center gap-0.5 h-6 rounded-full overflow-hidden">
+                {([
+                  { key: "decline" as const, color: "bg-rose-500" },
+                  { key: "mild" as const, color: "bg-amber-500" },
+                  { key: "strong" as const, color: "bg-emerald-500" },
+                  { key: "explosive" as const, color: "bg-purple-500" },
+                ]).map(({ key, color }, i) => (
                   <div
-                    className="h-full rounded-l-full bg-emerald-500 flex items-center justify-end pr-2 transition-all duration-500"
-                    style={{ width: `${Math.max(priceYes * 100, 8)}%` }}
-                  >
-                    {priceYes >= 0.15 && (
-                      <span className="text-[11px] font-bold text-white whitespace-nowrap">
-                        🔥 {(priceYes * 100).toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    className="h-full rounded-r-full bg-rose-500 flex items-center justify-start pl-2 transition-all duration-500"
-                    style={{ width: `${Math.max(priceNo * 100, 8)}%` }}
-                  >
-                    {priceNo >= 0.15 && (
-                      <span className="text-[11px] font-bold text-white whitespace-nowrap">
-                        {(priceNo * 100).toFixed(1)}% 🤷
-                      </span>
-                    )}
-                  </div>
-                </div>
+                    key={key}
+                    className={cn("h-full transition-all duration-500", color, i === 0 && "rounded-l-full", i === 3 && "rounded-r-full")}
+                    style={{ width: `${Math.max(prices[key] * 100, 5)}%` }}
+                  />
+                ))}
               </div>
-
 
               {/* My Position */}
               {myBets && myBets.length > 0 && (() => {
-                const yesStake = myBets.filter((b: any) => b.side === "yes").reduce((s: number, b: any) => s + Number(b.amount), 0);
-                const noStake = myBets.filter((b: any) => b.side === "no").reduce((s: number, b: any) => s + Number(b.amount), 0);
-                const yesShares = myBets.filter((b: any) => b.side === "yes").reduce((s: number, b: any) => s + Number(b.shares), 0);
-                const noShares = myBets.filter((b: any) => b.side === "no").reduce((s: number, b: any) => s + Number(b.shares), 0);
-                const totalInvested = yesStake + noStake;
+                const outcomes = ["decline", "mild", "strong", "explosive"] as const;
+                const outcomeEmoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
+                const outcomeColor: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                const stakes = Object.fromEntries(outcomes.map(o => [o, {
+                  amount: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.amount), 0),
+                  shares: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.shares), 0),
+                }]));
+                const totalInvested = outcomes.reduce((s, o) => s + stakes[o].amount, 0);
                 return (
                   <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                     <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
-                    <div className="flex items-center justify-center gap-2">
-                      {yesStake > 0 && (
-                        <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2 text-center min-w-[120px]">
-                          <div className="text-[10px] text-muted-foreground">🔥 {language === "ko" ? "오를 것" : "Rise"}</div>
-                          <div className="text-sm font-bold text-emerald-400">{yesStake}T</div>
-                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-emerald-400 font-semibold">+{Math.round(yesShares - yesStake)}T</span></div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {outcomes.filter(o => stakes[o].amount > 0).map(o => (
+                        <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
+                          <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
+                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount}T</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {language === "ko" ? "성공시" : "If win"}{" "}
+                            <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
+                              +{Math.round(stakes[o].shares - stakes[o].amount)}T
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      {noStake > 0 && (
-                        <div className="rounded-md bg-rose-500/10 border border-rose-500/20 p-2 text-center min-w-[120px]">
-                          <div className="text-[10px] text-muted-foreground">🤷 {language === "ko" ? "내릴 것" : "Fall"}</div>
-                          <div className="text-sm font-bold text-rose-400">{noStake}T</div>
-                          <div className="text-[10px] text-muted-foreground">{language === "ko" ? "성공시" : "If win"} <span className="text-rose-400 font-semibold">+{Math.round(noShares - noStake)}T</span></div>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                    <div className="text-[10px] text-muted-foreground text-center">{language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested}T</span></div>
+                    <div className="text-[10px] text-muted-foreground text-center">
+                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested}T</span>
+                    </div>
                   </div>
                 );
               })()}
@@ -637,14 +643,14 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {isSettled ? (
                 <div className="rounded-lg bg-muted/50 border border-border p-3 text-center space-y-1">
                   <p className="text-sm font-bold text-foreground">{t("marketSettled", language)}</p>
-                  <Badge variant={marketOutcome === "yes" ? "default" : "secondary"} className="text-xs">
-                    {marketOutcome === "yes" ? "Yes 🔥" : "No 🤷"}
+                  <Badge variant="default" className="text-xs capitalize">
+                    {marketOutcome}
                   </Badge>
                   {myBets && myBets.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {myBets.map((bet: any) => (
                         <div key={bet.id} className="text-[11px] text-muted-foreground">
-                          {bet.side === "yes" ? "🔥" : "🤷"} {bet.amount}T → {bet.payout != null
+                          {bet.outcome} {bet.amount}T → {bet.payout != null
                             ? (bet.payout > 0
                               ? <span className="text-emerald-400 font-bold">+{bet.payout}T {t("won", language)}</span>
                               : <span className="text-rose-400">{t("lost", language)}</span>)

@@ -207,13 +207,19 @@ const T2KeywordDetail = () => {
         .from("ktrenz_trend_bets" as any)
         .select("id", { count: "exact", head: true })
         .eq("market_id", m.id);
-      const poolYes = Number(m.pool_yes);
-      const poolNo = Number(m.pool_no);
-      const total = poolYes + poolNo;
+      const pD = Number(m.pool_decline);
+      const pM = Number(m.pool_mild);
+      const pS = Number(m.pool_strong);
+      const pE = Number(m.pool_explosive);
+      const invSum = (1/pD) + (1/pM) + (1/pS) + (1/pE);
       return {
         ...m,
-        priceYes: total > 0 ? poolNo / total : 0.5,
-        priceNo: total > 0 ? poolYes / total : 0.5,
+        prices: {
+          decline: (1/pD)/invSum,
+          mild: (1/pM)/invSum,
+          strong: (1/pS)/invSum,
+          explosive: (1/pE)/invSum,
+        },
         totalBettors: totalBettors ?? 0,
         totalBets: totalBets ?? 0,
       };
@@ -232,11 +238,17 @@ const T2KeywordDetail = () => {
         .eq("market_id", marketData.id)
         .eq("user_id", user.id);
       if (!bets || bets.length === 0) return null;
-      const yesAmount = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.amount), 0);
-      const noAmount = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.amount), 0);
-      const yesShares = (bets as any[]).filter(b => b.side === "yes").reduce((s, b) => s + Number(b.shares), 0);
-      const noShares = (bets as any[]).filter(b => b.side === "no").reduce((s, b) => s + Number(b.shares), 0);
-      return { yesAmount, noAmount, yesShares, noShares, totalSpent: yesAmount + noAmount };
+      const outcomes = ["decline", "mild", "strong", "explosive"] as const;
+      const result: Record<string, { amount: number; shares: number }> = {};
+      let totalSpent = 0;
+      for (const o of outcomes) {
+        const filtered = (bets as any[]).filter(b => b.outcome === o);
+        const amount = filtered.reduce((s, b) => s + Number(b.amount), 0);
+        const shares = filtered.reduce((s, b) => s + Number(b.shares), 0);
+        result[o] = { amount, shares };
+        totalSpent += amount;
+      }
+      return { ...result, totalSpent };
     },
     enabled: !!marketData?.id && !!user?.id,
   });
@@ -404,21 +416,26 @@ const T2KeywordDetail = () => {
               {language === "ko" ? "사용자 예측" : language === "ja" ? "ユーザー予測" : language === "zh" ? "用户预测" : "Community Predictions"}
             </h2>
 
-            {/* Yes/No probability bar */}
+            {/* 4-outcome probability bar */}
             <div className="mb-4">
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-bold text-green-400">
-                  {language === "ko" ? "오를 것" : "Will Rise"} {(marketData.priceYes * 100).toFixed(1)}%
-                </span>
-                <span className="font-bold text-red-400">
-                  {language === "ko" ? "내릴 것" : "Will Fall"} {(marketData.priceNo * 100).toFixed(1)}%
-                </span>
+              <div className="grid grid-cols-4 gap-1 text-xs mb-2">
+                {([
+                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "text-rose-400" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "text-amber-400" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "text-emerald-400" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "text-purple-400" },
+                ]).map(({ key, label, emoji, color }) => (
+                  <div key={key} className="text-center">
+                    <span className={cn("font-bold", color)}>{emoji} {(marketData.prices[key] * 100).toFixed(0)}%</span>
+                    <div className="text-[9px] text-muted-foreground">{label}</div>
+                  </div>
+                ))}
               </div>
-              <div className="relative h-3 rounded-full overflow-hidden bg-red-500/20">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
-                  style={{ width: `${marketData.priceYes * 100}%` }}
-                />
+              <div className="flex items-center gap-0.5 h-3 rounded-full overflow-hidden">
+                <div className="h-full rounded-l-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.decline * 100, 5)}%` }} />
+                <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.mild * 100, 5)}%` }} />
+                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.strong * 100, 5)}%` }} />
+                <div className="h-full rounded-r-full bg-purple-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.explosive * 100, 5)}%` }} />
               </div>
             </div>
 
@@ -458,35 +475,26 @@ const T2KeywordDetail = () => {
                   {language === "ko" ? "내 포지션" : "My Position"}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {myPosition.yesAmount > 0 && (
-                    <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-2">
-                      <div className="text-[10px] text-green-400 mb-0.5">
-                        {language === "ko" ? "오를 것 지분" : "Rise Stake"}
+                  {(["decline", "mild", "strong", "explosive"] as const).map(o => {
+                    const data = (myPosition as any)[o];
+                    if (!data || data.amount <= 0) return null;
+                    const emoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
+                    const color: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                    return (
+                      <div key={o} className={cn(`rounded-lg bg-${color[o]}-500/10 border border-${color[o]}-500/20 p-2`)}>
+                        <div className={cn("text-[10px]", `text-${color[o]}-400`)} >{emoji[o]} {o}</div>
+                        <div className="text-sm font-bold text-foreground">
+                          {data.amount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                        </div>
+                        <div className={cn("text-[10px]", `text-${color[o]}-400`)}>
+                          {language === "ko" ? "성공시" : "If win"} +{Math.round(data.shares - data.amount).toLocaleString()}P
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-foreground">
-                        {myPosition.yesAmount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
-                      </div>
-                      <div className="text-[10px] text-green-400 mt-0.5">
-                        {language === "ko" ? "성공시" : "If win"} +{Math.round(myPosition.yesShares - myPosition.yesAmount).toLocaleString()}<span className="text-[9px] text-muted-foreground ml-0.5">P</span>
-                      </div>
-                    </div>
-                  )}
-                  {myPosition.noAmount > 0 && (
-                    <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2">
-                      <div className="text-[10px] text-red-400 mb-0.5">
-                        {language === "ko" ? "내릴 것 지분" : "Fall Stake"}
-                      </div>
-                      <div className="text-sm font-bold text-foreground">
-                        {myPosition.noAmount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
-                      </div>
-                      <div className="text-[10px] text-red-400 mt-0.5">
-                        {language === "ko" ? "성공시" : "If win"} +{Math.round(myPosition.noShares - myPosition.noAmount).toLocaleString()}<span className="text-[9px] text-muted-foreground ml-0.5">P</span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {language === "ko" ? "총 투자" : "Total invested"}: {myPosition.totalSpent.toLocaleString()}P
+                  {language === "ko" ? "총 투자" : "Total invested"}: {(myPosition as any).totalSpent?.toLocaleString()}P
                 </div>
               </div>
             )}
