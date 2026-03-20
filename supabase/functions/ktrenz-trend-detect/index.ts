@@ -559,6 +559,7 @@ async function detectForMember(
 
     const patch: Record<string, unknown> = {};
     const backfillFields = [
+      "keyword_en",
       "keyword_ko",
       "keyword_ja",
       "keyword_zh",
