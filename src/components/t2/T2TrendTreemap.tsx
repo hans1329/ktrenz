@@ -61,6 +61,28 @@ function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   }
 }
 
+// Platform logo SVGs for fallback when source image is missing
+const PLATFORM_LOGOS: Record<string, string> = {
+  facebook: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231877F2'/%3E%3Cpath d='M62.5 52.5h-8.75v26.25h-11.25V52.5H35V42.5h7.5v-6.25c0-7.5 4.5-11.25 11.25-11.25 3.25 0 6.25.625 6.25.625V33h-3.5c-3.5 0-4.5 2.125-4.5 4.375V42.5h8l-1.25 10h-6.75v26.25' fill='white'/%3E%3C/svg%3E",
+  instagram: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='ig' x1='0' y1='1' x2='1' y2='0'%3E%3Cstop offset='0%25' stop-color='%23feda75'/%3E%3Cstop offset='25%25' stop-color='%23fa7e1e'/%3E%3Cstop offset='50%25' stop-color='%23d62976'/%3E%3Cstop offset='75%25' stop-color='%23962fbf'/%3E%3Cstop offset='100%25' stop-color='%234f5bd5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='16' fill='url(%23ig)'/%3E%3Crect x='22' y='22' width='56' height='56' rx='14' stroke='white' stroke-width='5' fill='none'/%3E%3Ccircle cx='50' cy='50' r='14' stroke='white' stroke-width='5' fill='none'/%3E%3Ccircle cx='68' cy='32' r='4' fill='white'/%3E%3C/svg%3E",
+  reddit: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%23FF4500'/%3E%3Ccircle cx='50' cy='55' r='20' fill='white'/%3E%3Ccircle cx='42' cy='52' r='4' fill='%23FF4500'/%3E%3Ccircle cx='58' cy='52' r='4' fill='%23FF4500'/%3E%3Cpath d='M40 62c0 0 4 6 10 6s10-6 10-6' stroke='%23FF4500' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='68' cy='32' r='6' fill='white'/%3E%3Cpath d='M56 30l10 2' stroke='white' stroke-width='3'/%3E%3C/svg%3E",
+  tiktok: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%23000'/%3E%3Cpath d='M62 25c0 0 3 12 14 14v10c-5 0-10-2-14-5v22c0 12-10 20-20 20-12 0-20-10-20-20 0-12 10-20 20-20v10c-6 0-10 4-10 10s4 10 10 10c6 0 10-5 10-10V25h10z' fill='white'/%3E%3C/svg%3E",
+  youtube: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%23FF0000'/%3E%3Cpath d='M40 35v30l25-15z' fill='white'/%3E%3C/svg%3E",
+  naver: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%2303C75A'/%3E%3Cpath d='M30 30h12l10 16V30h12v40H52L42 54v16H30z' fill='white'/%3E%3C/svg%3E",
+};
+
+function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: string | null): string | null {
+  const url = (sourceUrl || sourceImageUrl || '').toLowerCase();
+  if (!url) return null;
+  if (url.includes('facebook.com') || url.includes('fb.com') || url.includes('fbcdn.net')) return PLATFORM_LOGOS.facebook;
+  if (url.includes('instagram.com') || url.includes('cdninstagram.com')) return PLATFORM_LOGOS.instagram;
+  if (url.includes('reddit.com') || url.includes('redd.it')) return PLATFORM_LOGOS.reddit;
+  if (url.includes('tiktok.com')) return PLATFORM_LOGOS.tiktok;
+  if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('ytimg.com')) return PLATFORM_LOGOS.youtube;
+  if (url.includes('naver.com') || url.includes('naver.net')) return PLATFORM_LOGOS.naver;
+  return null;
+}
+
 export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
@@ -374,6 +396,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const containerHeight = isMobile ? 2000 : 1200;
 
 
+
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 50 with extras if needed
     const TARGET = 50;
@@ -591,7 +614,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       width: `${width}%`, height: `${height}%`,
                       backgroundImage: (() => {
                         const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
-                        const bgImg = safeSourceImg || rect.item.artistImageUrl;
+                        const platformLogo = !safeSourceImg ? detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl) : null;
+                        const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
                         return quotedBgImg
                           ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${quotedBgImg})`
@@ -601,7 +625,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       backgroundPosition: 'center',
                       backgroundColor: (() => {
                         const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
-                        const bgImg = safeSourceImg || rect.item.artistImageUrl;
+                        const platformLogo = !safeSourceImg ? detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl) : null;
+                        const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         return bgImg ? undefined : tileColor;
                       })(),
                     }}
