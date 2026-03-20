@@ -112,9 +112,15 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 500));
     }
 
-    // 현재 phase의 마지막 배치가 완료되면 postprocess 호출
+    // 현재 phase의 마지막 배치가 완료되면 postprocess 호출 + 다음 phase 자동 시작
     const isLastBatch = result.success && nextOffset >= totalCandidates;
     const isDetectPhase = ["detect", "detect_global", "detect_youtube"].includes(phase);
+    const nextPhaseMap: Record<string, string | null> = {
+      detect: "detect_global",
+      detect_global: "detect_youtube",
+      detect_youtube: "track",
+      track: null,
+    };
 
     if (isLastBatch && isDetectPhase) {
       console.log(`[trend-cron] Phase "${phase}" complete. Running postprocess...`);
@@ -127,6 +133,22 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ triggeredBy: phase }),
       }).catch((e) => console.error(`[trend-cron] Postprocess trigger error: ${e.message}`));
       await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if (isLastBatch) {
+      const nextPhase = nextPhaseMap[phase];
+      if (nextPhase) {
+        console.log(`[trend-cron] Phase "${phase}" complete. Starting next phase="${nextPhase}"`);
+        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phase: nextPhase, batchOffset: 0, batchSize }),
+        }).catch((e) => console.error(`[trend-cron] Next phase trigger error: ${e.message}`));
+        await new Promise((r) => setTimeout(r, 500));
+      }
     }
 
     return new Response(
