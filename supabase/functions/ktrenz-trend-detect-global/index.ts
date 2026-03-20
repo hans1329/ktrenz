@@ -147,7 +147,10 @@ Return ONLY a JSON array. If no genuine commercial entities found, return [].`,
     let parsed: ExtractedKeyword[];
     try {
       const obj = JSON.parse(aiContent);
-      parsed = Array.isArray(obj) ? obj : (obj.keywords || obj.entities || obj.results || obj.data || []);
+      // AI가 다양한 키로 반환할 수 있으므로 모두 체크
+      parsed = Array.isArray(obj)
+        ? obj
+        : (obj.keywords || obj.entities || obj.results || obj.data || obj.commercial_entities || obj.items || []);
     } catch {
       const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
       if (!jsonMatch) return [];
