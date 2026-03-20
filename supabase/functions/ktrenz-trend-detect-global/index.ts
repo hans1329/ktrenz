@@ -159,13 +159,18 @@ Return ONLY a JSON array. If no genuine commercial entities found, return [].`,
 
     if (!Array.isArray(parsed)) parsed = [];
 
+    // keyword 필드가 없으면 keyword_en으로 대체
+    parsed = parsed.map((k) => ({
+      ...k,
+      keyword: k.keyword || k.keyword_en || "",
+    }));
+
     return parsed
       .filter((k) => {
         if (!k.keyword || !k.category) return false;
         if ((k.confidence || 0) < 0.6) return false;
         const kwLower = k.keyword.toLowerCase();
         if (NOISE_BLACKLIST.has(kwLower)) return false;
-        // 2글자 이하 키워드 제거 (CB, GO 등 노이즈)
         if (k.keyword.length <= 2) return false;
         return true;
       })
