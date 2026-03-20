@@ -119,26 +119,26 @@ async function detectViaFirecrawl(
         messages: [
           {
             role: "system",
-            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, food/beverage brands) mentioned in fan community discussions about a K-pop artist.
+            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, food/beverage brands) mentioned in articles/discussions about a K-pop artist.
 
-STRICT RULES:
-- ONLY extract named commercial brands/products/places that the artist is associated with
-- Do NOT include: artist names, group names, song/album titles, agency/label names
-- Do NOT include: platform names (YouTube, Netflix, Spotify, TikTok, etc.)
+RULES:
+- Extract named commercial brands, products, places, restaurants, fashion brands, beauty brands the artist is linked to
+- Include: brand ambassador deals, airport fashion items, products seen in content, endorsed products, CF deals
+- Do NOT include: artist names, group names, song/album titles, agency names
+- Do NOT include: platform names (YouTube, Netflix, Spotify, TikTok, Instagram, etc.)
 - Do NOT include: generic terms (fashion, beauty, music, dance, etc.)
 - Do NOT include: chart names, show names, award names
-- COMPOUND NAMES: Keep multi-word brand names together (e.g. "Maison Valentino" not "Valentino")
-- 1 keyword = 1 entity. Split "Chanel shoes Prada jacket" into separate keywords
-- Maximum 5 keywords, minimum confidence 0.65
-- Provide keyword (English), keyword_ko (Korean), keyword_ja (Japanese), keyword_zh (Chinese)
-- Provide context (English) and context_ko, context_ja, context_zh
-- category must be one of: brand, product, place, food, fashion, beauty
-- commercial_intent: ad, sponsorship, collaboration, organic, rumor
-- brand_intent: awareness, conversion, association, loyalty
-- fan_sentiment: positive, negative, neutral, mixed
+- COMPOUND NAMES: Keep multi-word brand names together (e.g. "Louis Vuitton" not "Vuitton")
+- Maximum 5 keywords, minimum confidence 0.5
+- Provide keyword (English), keyword_ko (Korean translation), keyword_ja (Japanese), keyword_zh (Chinese)
+- Provide context (English sentence about the association) and context_ko, context_ja, context_zh
+- category: brand | product | place | food | fashion | beauty
+- commercial_intent: ad | sponsorship | collaboration | organic | rumor
+- brand_intent: awareness | conversion | association | loyalty
+- fan_sentiment: positive | negative | neutral | mixed
 - trend_potential: 0-100
 
-Return ONLY a JSON object: { "keywords": [...] }. If no commercial entities found, return { "keywords": [] }.`,
+Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "keywords": [] }.`,
           },
           {
             role: "user",
