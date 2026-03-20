@@ -71,10 +71,12 @@ const T2AdminControls = () => {
 
       const phases: Record<string, string> = {};
       if (data && data.length > 0) {
+        const domesticSources = ["naver_multi", "naver_shop", "naver_news"];
+        const globalSources = ["global_news", "firecrawl_social", "youtube_comments"];
         for (const row of data as any[]) {
           const src = row.trigger_source;
-          if (src === "naver_news" && !phases.detect) phases.detect = row.detected_at;
-          if (src === "global_news" && !phases.detect_global) phases.detect_global = row.detected_at;
+          if (domesticSources.includes(src) && !phases.detect) phases.detect = row.detected_at;
+          if (globalSources.includes(src) && !phases.detect_global) phases.detect_global = row.detected_at;
         }
       }
 
