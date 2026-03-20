@@ -242,7 +242,14 @@ const UserDashboard = () => {
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
 
-    return { uniqueArtists: artistData.size, externalClicks, detailViews, agentChats, topArtists };
+    // Normalize scores to 0-100 scale based on max score
+    const maxScore = topArtists[0]?.score || 1;
+    const normalizedArtists = topArtists.map(a => ({
+      ...a,
+      normalizedScore: Math.round(Math.min(100, (a.score / maxScore) * 100)),
+    }));
+
+    return { uniqueArtists: artistData.size, externalClicks, detailViews, agentChats, topArtists: normalizedArtists };
   }, [events]);
 
   // ── Resolve top artist's wiki entry for image ──
