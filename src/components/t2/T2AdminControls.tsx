@@ -24,6 +24,7 @@ const loadPersistedRuns = (): Record<string, PipelineRun> => {
     const parsed = JSON.parse(raw) as Record<string, { startedAt: string; phase: string }>;
     const runs: Record<string, PipelineRun> = {};
     for (const [key, val] of Object.entries(parsed)) {
+      if (val.phase === "postprocess") continue;
       const started = new Date(val.startedAt);
       if (Date.now() - started.getTime() > 2 * 60 * 60 * 1000) continue;
       runs[key] = { startedAt: started, phase: val.phase as PipelineRun["phase"] };
