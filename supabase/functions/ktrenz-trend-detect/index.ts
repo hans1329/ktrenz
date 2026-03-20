@@ -14,7 +14,7 @@ interface ExtractedKeyword {
   keyword_ko?: string;
   keyword_ja?: string;
   keyword_zh?: string;
-  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
+  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music";
   confidence: number;
   context: string;
   context_ko?: string;
@@ -217,7 +217,7 @@ async function extractCommercialKeywords(
 
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities (brands, products, places, foods, fashion items, beauty products, media appearances) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities AND music events (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
 
 Articles:
 ${articleTexts}
@@ -228,33 +228,42 @@ RULES:
 3. STRICTLY FORBIDDEN keywords — NEVER extract any of these:
    - The artist's own name ("${memberName}"), group name ("${groupName || "N/A"}"), other member names, sub-unit names
    - ANY combination containing the artist/group name (e.g., "${memberName} + descriptor" like "아이브 가을" for artist "가을" is FORBIDDEN)
-   - Agency/label names (SM, JYP, HYBE, YG, etc.), generic music terms (album, comeback, 컴백)
+   - Agency/label names (SM, JYP, HYBE, YG, etc.)
    - Brand reputation rankings/indexes (브랜드평판, brand reputation) — these are NOT commercial entities
    - Platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Melon, Genie, Apple Music, Weverse, VLive, Bubble, etc.) — we track what trends ON platforms, not the platforms themselves
    - Broadcast networks as standalone keywords (KBS, MBC, SBS, JTBC, tvN, Mnet) — UNLESS the specific SHOW NAME is the keyword
-4. Chart names (Billboard, Hanteo, etc.), concert/tour names, and festival names (Coachella, MAMA, etc.) are FORBIDDEN as standalone keywords. ONLY extract them if tied to a specific commercial brand (e.g., "Coachella x Adidas" → extract "Adidas", NOT "Coachella").
-5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
-6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes TV shows, dramas, movies, variety shows, interviews, and entertainment content. Songs/albums by the artist themselves are NOT valid keywords. Songs/albums by OTHER artists CAN be extracted if there's a collaboration. "product" is for physical consumer goods.
-7a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "media", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
-7b. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy" separately; "나이키 에어맥스" NOT "나이키" and "에어맥스" separately. If a brand, product, or place name consists of multiple words, keep them together as one keyword.
-7c. ONE ENTITY PER KEYWORD (CRITICAL): Each keyword must contain exactly ONE brand/product/entity. If an article mentions multiple items (e.g., "wearing Chanel shoes and a Prada jacket"), extract them as SEPARATE keywords: "Chanel 투톤슈즈" and "Prada 자켓" — NEVER combine them into one keyword like "Chanel투톤슈즈 Prada자켓". Each keyword = one trackable commercial entity.
-8. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
-9. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
-10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
-11. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
-12. SKIP articles that are just ranking/reputation lists mentioning many artists. Only extract from articles with SPECIFIC, unique content about "${memberName}" and a commercial entity.
+   - Generic standalone words: "컴백", "comeback", "album", "앨범", "tour", "concert" — these are NOT keywords by themselves. But SPECIFIC named events ARE valid (see rule 4).
+4. MUSIC EVENTS (category "music"): Extract SPECIFIC named music releases, tours, concerts, and festivals AS keywords when they have a proper name:
+   - Album/single titles: e.g., "MAP OF THE SOUL: 7", "BORN PINK", "Golden" → category "music"
+   - Named tours/concerts: e.g., "PERMISSION TO DANCE ON STAGE", "BORN PINK WORLD TOUR" → category "music"
+   - Named festivals where the artist performs: e.g., "Coachella 2026", "Lollapalooza" → category "music"
+   - Do NOT extract generic terms like "컴백", "앨범", "콘서트" alone — they must be the SPECIFIC name.
+5. Chart names (Billboard, Hanteo, etc.) are FORBIDDEN as standalone keywords.
+6. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
+7. Maximum 7 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
+8. Categories: brand, product, place, food, fashion, beauty, media, music. Category guide:
+   - "music": album titles, single titles, named tours/concerts, named festivals, music releases by the artist
+   - "media": TV shows, dramas, movies, variety shows, interviews, entertainment content
+   - "product": physical consumer goods
+8a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "music", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
+8b. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy" separately; "나이키 에어맥스" NOT "나이키" and "에어맥스" separately. If a brand, product, or place name consists of multiple words, keep them together as one keyword.
+8c. ONE ENTITY PER KEYWORD (CRITICAL): Each keyword must contain exactly ONE brand/product/entity. If an article mentions multiple items (e.g., "wearing Chanel shoes and a Prada jacket"), extract them as SEPARATE keywords: "Chanel 투톤슈즈" and "Prada 자켓" — NEVER combine them into one keyword like "Chanel투톤슈즈 Prada자켓". Each keyword = one trackable commercial entity.
+9. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
+10. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
+11. Include "source_article_index" (1-based) pointing to the article where the entity appears.
+12. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
+13. SKIP articles that are just ranking/reputation lists mentioning many artists. Only extract from articles with SPECIFIC, unique content about "${memberName}" and a commercial entity or music event.
 
 INTENT ANALYSIS (required for each keyword):
-13. "commercial_intent": Classify the nature of the association — "ad" (paid advertisement), "sponsorship" (official brand deal/ambassador), "collaboration" (creative partnership), "organic" (natural/unpaid mention or usage), "rumor" (unconfirmed association).
-14. "brand_intent": From the brand's perspective — "awareness" (brand name exposure/visibility), "conversion" (driving purchases/sales), "association" (image/identity linking), "loyalty" (deepening existing fan-brand relationship).
-15. "fan_sentiment": Predicted fandom reaction — "positive" (fans excited/supportive), "negative" (fans upset/boycotting), "neutral" (informational, no strong reaction), "mixed" (divided opinions).
-16. "trend_potential": A 0.0-1.0 score predicting whether this keyword will become a viral trend. Consider: Is this novel/surprising? Is there emotional resonance with fans? Is there visual/shareable content? Does it involve a major brand or cultural moment? Higher for new collaborations, lower for routine mentions.
+14. "commercial_intent": Classify the nature of the association — "ad" (paid advertisement), "sponsorship" (official brand deal/ambassador), "collaboration" (creative partnership), "organic" (natural/unpaid mention or usage), "rumor" (unconfirmed association). For music events, use "organic".
+15. "brand_intent": From the brand's perspective — "awareness" (brand name exposure/visibility), "conversion" (driving purchases/sales), "association" (image/identity linking), "loyalty" (deepening existing fan-brand relationship). For music events, use "awareness".
+16. "fan_sentiment": Predicted fandom reaction — "positive" (fans excited/supportive), "negative" (fans upset/boycotting), "neutral" (informational, no strong reaction), "mixed" (divided opinions).
+17. "trend_potential": A 0.0-1.0 score predicting whether this keyword will become a viral trend. For comebacks/new albums, this should be HIGH (0.8+). For tours, also high. Consider: Is this novel/surprising? Is there emotional resonance with fans?
 
-TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Ask: "Would a brand strategist or trend forecaster want to monitor this?" If not, skip it.
+TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Ask: "Would a brand strategist or trend forecaster want to monitor this?" If not, skip it. Music releases and comebacks are ALWAYS worth tracking.
 
-If NO commercial entities are found, return [].
-Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.7}]`;
+If NO entities are found, return [].
+Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.7},{"keyword":"MAP OF THE SOUL: 7","keyword_en":"MAP OF THE SOUL: 7","keyword_ko":"MAP OF THE SOUL: 7","keyword_ja":"MAP OF THE SOUL: 7","keyword_zh":"MAP OF THE SOUL: 7","category":"music","confidence":0.95,"context":"New album comeback announced","context_ko":"새 앨범 컴백 발표","context_ja":"ニューアルバムカムバック発表","context_zh":"新专辑回归发布","source_article_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.95}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {

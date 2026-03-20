@@ -55,10 +55,10 @@ const NOISE_BLACKLIST = new Set([
   "billboard", "hanteo", "gaon", "circle chart", "oricon",
   "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "kcon",
   "reddit", "allkpop", "soompi", "koreaboo",
-  // 일반 노이즈
-  "kpop", "k-pop", "korean", "korea", "seoul", "comeback", "album",
-  "music video", "mv", "teaser", "concert", "tour", "fan", "fandom",
-  "idol", "debut", "ep", "single", "tracklist", "photocard",
+  // 일반 노이즈 (음악 이벤트 키워드는 제거 — music 카테고리로 감지)
+  "kpop", "k-pop", "korean", "korea", "seoul",
+  "music video", "mv", "teaser", "fan", "fandom",
+  "idol", "ep", "single", "tracklist", "photocard",
   "merch", "merchandise", "lightstick", "official", "channel",
   // 엔터사
   "hybe", "sm entertainment", "yg entertainment", "jyp entertainment",
@@ -139,24 +139,26 @@ async function detectViaFirecrawl(
         messages: [
           {
             role: "system",
-            content: `Extract commercial entities (brands, products, places, fashion items, beauty products, food/beverage brands) mentioned in articles/discussions about a K-pop artist.
+            content: `Extract commercial entities AND music events mentioned in articles/discussions about a K-pop artist.
 
 RULES:
 - Extract named commercial brands, products, places, restaurants, fashion brands, beauty brands the artist is linked to
 - Include: brand ambassador deals, airport fashion items, products seen in content, endorsed products, CF deals
-- Do NOT include: artist names, group names, song/album titles, agency names
+- ALSO extract MUSIC EVENTS: named album/single titles, named tours/concerts, comeback announcements with specific release names
+  - Use category "music" for these. Generic terms like "comeback" or "album" alone are NOT valid — must be a SPECIFIC named release/event.
+- Do NOT include: artist names, group names, agency names
 - Do NOT include: platform names (YouTube, Netflix, Spotify, TikTok, Instagram, etc.)
 - Do NOT include: generic terms (fashion, beauty, music, dance, etc.)
 - Do NOT include: chart names, show names, award names
 - COMPOUND NAMES: Keep multi-word brand names together (e.g. "Louis Vuitton" not "Vuitton")
-- Maximum 5 keywords, minimum confidence 0.5
+- Maximum 7 keywords, minimum confidence 0.5
 - Provide keyword (English), keyword_ko (Korean translation), keyword_ja (Japanese), keyword_zh (Chinese)
 - Provide context (English sentence about the association) and context_ko, context_ja, context_zh
-- category: brand | product | place | food | fashion | beauty
-- commercial_intent: ad | sponsorship | collaboration | organic | rumor
+- category: brand | product | place | food | fashion | beauty | music
+- commercial_intent: ad | sponsorship | collaboration | organic | rumor (use "organic" for music events)
 - brand_intent: awareness | conversion | association | loyalty
 - fan_sentiment: positive | negative | neutral | mixed
-- trend_potential: 0-100
+- trend_potential: 0-100 (comebacks/new albums should be 80+)
 
 Return ONLY a JSON object: { "keywords": [...] }. If nothing found, return { "keywords": [] }.`,
           },
