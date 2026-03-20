@@ -208,15 +208,33 @@ Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       
-      // confidence 0.7 이상이면 후검증 스킵 (AI가 확신하는 경우)
+      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
+      const kwLower = k.keyword.toLowerCase();
+      const kwKo = k.keyword_ko?.toLowerCase() || "";
+      const kwEn = k.keyword_en?.toLowerCase() || "";
+      const memberLower = memberName.toLowerCase();
+      const groupLower = (groupName || "").toLowerCase();
+      
+      // 키워드가 아티스트/그룹 이름을 포함하거나 일치하면 제거
+      const nameBlacklist = [memberLower, groupLower].filter(Boolean);
+      for (const blocked of nameBlacklist) {
+        if (!blocked) continue;
+        if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
+          console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
+          return false;
+        }
+        // "아이브 가을" contains "가을" (memberName)
+        if (kwLower.includes(blocked) || kwKo.includes(blocked) || blocked.includes(kwLower)) {
+          console.warn(`[trend-detect] Blocked keyword containing artist/group name: "${k.keyword}" (matches "${blocked}")`);
+          return false;
+        }
+      }
+      
+      // confidence 0.8 이상이면 후검증 스킵 (AI가 확신하는 경우)
       if (k.confidence >= 0.8) {
         console.log(`[trend-detect] High confidence (${k.confidence}), skipping text check: "${k.keyword}"`);
         return true;
       }
-      
-      const kwLower = k.keyword.toLowerCase();
-      const kwKo = k.keyword_ko?.toLowerCase() || "";
-      const kwEn = k.keyword_en?.toLowerCase() || "";
       
       // 1) 정확 매칭 (keyword, keyword_ko, keyword_en 중 하나라도)
       if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo)) || (kwEn && allText.includes(kwEn))) return true;
