@@ -25,10 +25,8 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
   const active = allRecent.filter((e: any) => e.status === "active");
   if (!active.length) return { expired: 0, details: [] };
 
-  if (!active?.length) return { expired: 0, details: [] };
-
-  // 관련 스타 정보 가져오기
-  const starIds = [...new Set(active.map((a: any) => a.star_id).filter(Boolean))];
+  // 관련 스타 정보 가져오기 (allRecent 전체 대상)
+  const starIds = [...new Set(allRecent.map((a: any) => a.star_id).filter(Boolean))];
   if (!starIds.length) return { expired: 0, details: [] };
 
   const { data: stars } = await sb
@@ -44,9 +42,9 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
   const expireIds = new Set<string>();
   const details: string[] = [];
 
-  // 1a. 같은 키워드 기반 멤버 우선
+  // 1a. 같은 키워드 기반 멤버 우선 (allRecent에서 멤버 참조, active 그룹만 만료 대상)
   const byKeyword = new Map<string, any[]>();
-  for (const entry of active) {
+  for (const entry of allRecent) {
     const kw = entry.keyword.toLowerCase();
     const list = byKeyword.get(kw) || [];
     list.push(entry);
@@ -62,7 +60,9 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
     for (const e of entries) {
       const info = starMap.get(e.star_id);
       if (!info) continue;
-      if (info.star_type === "group") groupEntries.push({ ...e, starInfo: info });
+      // 그룹은 active인 것만 만료 대상
+      if (info.star_type === "group" && e.status === "active") groupEntries.push({ ...e, starInfo: info });
+      // 멤버는 모든 상태 참조 (expired라도 존재하면 그룹 만료 근거)
       if (info.star_type === "member") memberEntries.push({ ...e, starInfo: info });
     }
 
@@ -77,10 +77,9 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
     }
   }
 
-  // 1b. 같은 source_url 기반 멤버 우선
-  // 같은 기사(URL)에서 그룹과 그 멤버 모두 키워드가 잡혔으면 그룹 것을 만료
+  // 1b. 같은 source_url 기반 멤버 우선 (allRecent에서 멤버 참조)
   const byUrl = new Map<string, any[]>();
-  for (const entry of active) {
+  for (const entry of allRecent) {
     if (!entry.source_url) continue;
     const list = byUrl.get(entry.source_url) || [];
     list.push(entry);
