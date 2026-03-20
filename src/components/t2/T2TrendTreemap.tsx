@@ -620,8 +620,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       left: `${left}%`, top: `${top}%`,
                       width: `${width}%`, height: `${height}%`,
                       backgroundImage: (() => {
-                        const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
-                        const platformLogo = !safeSourceImg ? detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl) : null;
+                        const rawSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
+                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                        const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
                         const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
                         return quotedBgImg
@@ -631,8 +632,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                       backgroundColor: (() => {
-                        const safeSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
-                        const platformLogo = !safeSourceImg ? detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl) : null;
+                        const rawSourceImg = (rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null;
+                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                        const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
                         const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         return bgImg ? undefined : tileColor;
                       })(),
