@@ -331,11 +331,9 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
 
         // 멤버 귀속 처리
         if (r.attribution === "member" && r.attributed_member) {
-          // 해당 멤버의 star_id 찾기
-          const memberStar = (stars || []).find((s: any) =>
-            s.star_type === "member" &&
-            s.group_star_id === starId &&
-            (s.display_name === r.attributed_member || s.name_ko === r.attributed_member)
+          // 해당 멤버의 star_id 찾기 (memberList에서 검색)
+          const memberStar = memberList.find((m: any) =>
+            m.display_name === r.attributed_member || m.name_ko === r.attributed_member
           );
           if (memberStar) {
             await sb.from("ktrenz_trend_triggers").update({
