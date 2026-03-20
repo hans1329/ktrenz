@@ -356,11 +356,8 @@ function extractShopKeywords(
     else if (/화장품|뷰티|스킨케어/.test(category1 + category2)) kwCategory = "beauty";
     else if (/식품|음료/.test(category1 + category2)) kwCategory = "food";
 
-    // 브랜드 필드가 명확한 경우만 사용 (상품명 파싱은 노이즈가 심함)
-    let brandName = brand;
-    if (!brandName || brandName.length < 2) continue;
-    }
-
+    // 브랜드 필드가 명확한 경우만 사용
+    const brandName = brand;
     if (!brandName || brandName.length < 2) continue;
     const brandLower = brandName.toLowerCase();
     if (brandLower === memberLower || brandLower === groupLower) continue;
