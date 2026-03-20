@@ -257,7 +257,11 @@ Deno.serve(async (req) => {
     const dedupResult = await memberPriorityDedup(sb);
     console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
 
-    // 2단계: 복합 키워드 병합
+    // 2단계: 국내 우선 소스 중복제거
+    const srcDedupResult = await domesticPriorityDedup(sb);
+    console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
+
+    // 3단계: 복합 키워드 병합
     const mergeResult = await mergeCompoundKeywords(sb);
     console.log(`[postprocess] Compound merge: merged ${mergeResult.merged} entries`);
 
