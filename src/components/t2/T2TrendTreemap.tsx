@@ -71,7 +71,7 @@ const PLATFORM_LOGOS: Record<string, string> = {
   naver: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%2303C75A'/%3E%3Cpath d='M30 30h12l10 16V30h12v40H52L42 54v16H30z' fill='white'/%3E%3C/svg%3E",
 };
 
-function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: string | null): string | null {
+export function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: string | null): string | null {
   const url = (sourceUrl || sourceImageUrl || '').toLowerCase();
   if (!url) return null;
   if (url.includes('facebook.com') || url.includes('fb.com') || url.includes('fbcdn.net')) return PLATFORM_LOGOS.facebook;
@@ -84,13 +84,13 @@ function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: string | n
 }
 
 // URLs from these domains are hotlink-protected and will always fail to load
-function isBlockedImageDomain(url: string | null): boolean {
+export function isBlockedImageDomain(url: string | null): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
   return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.');
 }
 
-function sanitizeImageUrl(url: string | null): string | null {
+export function sanitizeImageUrl(url: string | null): string | null {
   if (!url) return null;
   return url.replace(/&amp;/g, '&');
 }

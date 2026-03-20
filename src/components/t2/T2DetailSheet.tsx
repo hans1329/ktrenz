@@ -13,6 +13,7 @@ import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight,
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
+import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "./T2TrendTreemap";
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
