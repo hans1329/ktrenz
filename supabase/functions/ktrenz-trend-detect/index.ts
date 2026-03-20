@@ -348,18 +348,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 배치 모드: ktrenz_stars의 member 타입 순회
-    const { data: members } = await sb
+    // 배치 모드: ktrenz_stars의 group/solo/member 타입 순회
+    const { data: allStars } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, group_star_id, star_category")
+      .select("id, display_name, name_ko, group_star_id, star_category, star_type")
       .eq("is_active", true)
-      .eq("star_type", "member")
+      .in("star_type", ["group", "solo", "member"])
       .order("display_name", { ascending: true });
 
-    const allMembers = members || [];
+    const allCandidates = allStars || [];
 
-    // group_star_id로 그룹 정보 일괄 조회
-    const groupIds = [...new Set(allMembers.map((m: any) => m.group_star_id).filter(Boolean))];
+    // group_star_id로 그룹 정보 일괄 조회 (member 타입용)
+    const groupIds = [...new Set(allCandidates.map((m: any) => m.group_star_id).filter(Boolean))];
     let groupMap: Record<string, { display_name: string; name_ko: string | null; wiki_entry_id: string | null }> = {};
     if (groupIds.length > 0) {
       const { data: groups } = await sb
@@ -371,16 +371,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    const batch = allMembers.slice(batchOffset, batchOffset + batchSize);
+    const batch = allCandidates.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No members in batch", batchOffset, totalCandidates: allMembers.length }),
+        JSON.stringify({ success: true, message: "No stars in batch", batchOffset, totalCandidates: allCandidates.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[trend-detect] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} members (total: ${allMembers.length})`);
+    console.log(`[trend-detect] Batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} stars (total: ${allCandidates.length})`);
 
     let successCount = 0;
     let totalKeywords = 0;
