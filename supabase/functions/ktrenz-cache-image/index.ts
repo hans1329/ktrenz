@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const trigger of targets) {
-      let url = trigger.source_image_url;
+      let url = sanitizeImageUrl(trigger.source_image_url);
       
       // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
       if (!url && trigger.source_url) {
