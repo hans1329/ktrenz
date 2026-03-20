@@ -416,21 +416,26 @@ const T2KeywordDetail = () => {
               {language === "ko" ? "사용자 예측" : language === "ja" ? "ユーザー予測" : language === "zh" ? "用户预测" : "Community Predictions"}
             </h2>
 
-            {/* Yes/No probability bar */}
+            {/* 4-outcome probability bar */}
             <div className="mb-4">
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-bold text-green-400">
-                  {language === "ko" ? "오를 것" : "Will Rise"} {(marketData.priceYes * 100).toFixed(1)}%
-                </span>
-                <span className="font-bold text-red-400">
-                  {language === "ko" ? "내릴 것" : "Will Fall"} {(marketData.priceNo * 100).toFixed(1)}%
-                </span>
+              <div className="grid grid-cols-4 gap-1 text-xs mb-2">
+                {([
+                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "text-rose-400" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "text-amber-400" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "text-emerald-400" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "text-purple-400" },
+                ]).map(({ key, label, emoji, color }) => (
+                  <div key={key} className="text-center">
+                    <span className={cn("font-bold", color)}>{emoji} {(marketData.prices[key] * 100).toFixed(0)}%</span>
+                    <div className="text-[9px] text-muted-foreground">{label}</div>
+                  </div>
+                ))}
               </div>
-              <div className="relative h-3 rounded-full overflow-hidden bg-red-500/20">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
-                  style={{ width: `${marketData.priceYes * 100}%` }}
-                />
+              <div className="flex items-center gap-0.5 h-3 rounded-full overflow-hidden">
+                <div className="h-full rounded-l-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.decline * 100, 5)}%` }} />
+                <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.mild * 100, 5)}%` }} />
+                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.strong * 100, 5)}%` }} />
+                <div className="h-full rounded-r-full bg-purple-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.explosive * 100, 5)}%` }} />
               </div>
             </div>
 
