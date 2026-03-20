@@ -10,6 +10,7 @@ const corsHeaders = {
 
 interface ExtractedKeyword {
   keyword: string;
+  keyword_en?: string;
   keyword_ko?: string;
   keyword_ja?: string;
   keyword_zh?: string;
@@ -150,13 +151,14 @@ RULES:
 5. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 6. Maximum 5 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
 7. Categories: brand, product, place, food, fashion, beauty, media. Category guide: "media" includes songs, albums, music releases, TV shows, dramas, movies, variety shows, interviews, and any entertainment content. "product" is for physical consumer goods (electronics, cosmetics, accessories, etc.). Do NOT categorize songs or albums as "product".
-8. Use the ENGLISH name as "keyword". Romanize Korean-origin names.
-9. Provide translations: keyword_ko, keyword_ja, keyword_zh.
+8. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
+9. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
 10. Include "source_article_index" (1-based) pointing to the article where the entity appears.
 11. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
 
 If NO commercial entities are found, return [].
-Example: [{"keyword":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1}]`;
+Example for Korean entity: [{"keyword":"이연복","keyword_en":"Lee Yeon-bok","keyword_ko":"이연복","keyword_ja":"イ・ヨンボク","keyword_zh":"李连福","category":"food","confidence":0.9,"context":"이연복 셰프와 함께 요리 방송 출연","context_ko":"이연복 셰프와 함께 요리 방송 출연","context_ja":"イ・ヨンボクシェフと料理番組に出演","context_zh":"与李连福厨师一起参加烹饪节目","source_article_index":1}]
+Example for global brand: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -469,6 +471,7 @@ async function detectForMember(
       trigger_source: "naver_news",
       artist_name: member.display_name,
       keyword: keywordData.keyword,
+      keyword_en: keywordData.keyword_en || null,
       keyword_ko: keywordData.keyword_ko || null,
       keyword_ja: keywordData.keyword_ja || null,
       keyword_zh: keywordData.keyword_zh || null,
@@ -491,24 +494,40 @@ async function detectForMember(
   }));
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  // 키워드 목록: keyword (원문) + keyword_en (영문) + keyword_ko (한글) 모두로 중복 체크
+  const allKeywordVariants = keywords.flatMap((k) => [
+    k.keyword, k.keyword_en, k.keyword_ko
+  ].filter(Boolean) as string[]);
+  const uniqueVariants = [...new Set(allKeywordVariants)];
+
   const { data: existing } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
+    .select("id, keyword, keyword_en, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
     .eq("star_id", member.id)
-    .gte("detected_at", threeDaysAgo)
-    .in("keyword", keywords.map((k) => k.keyword));
+    .gte("detected_at", threeDaysAgo);
 
-  const existingByKeyword = new Map((existing || []).map((e: any) => [e.keyword.toLowerCase(), e]));
+  // keyword, keyword_en, keyword_ko 모두를 키로 매핑하여 크로스 소스 중복 감지
+  const existingByKeyword = new Map<string, any>();
+  for (const e of (existing || [])) {
+    for (const field of [e.keyword, e.keyword_en, e.keyword_ko]) {
+      if (field) existingByKeyword.set(field.toLowerCase(), e);
+    }
+  }
 
-  // 크로스 아티스트 중복 제거
+  // 크로스 아티스트 중복 제거 (keyword, keyword_en, keyword_ko 모두 체크)
   const { data: crossExisting } = await sb
     .from("ktrenz_trend_triggers")
-    .select("keyword")
+    .select("keyword, keyword_en, keyword_ko")
     .neq("star_id", member.id)
-    .gte("detected_at", threeDaysAgo)
-    .in("keyword", keywords.map((k) => k.keyword));
+    .gte("detected_at", threeDaysAgo);
 
-  const crossSet = new Set((crossExisting || []).map((e: any) => e.keyword.toLowerCase()));
+  const crossSet = new Set<string>();
+  for (const e of (crossExisting || [])) {
+    if (e.keyword) crossSet.add(e.keyword.toLowerCase());
+    if (e.keyword_en) crossSet.add(e.keyword_en.toLowerCase());
+    if (e.keyword_ko) crossSet.add(e.keyword_ko.toLowerCase());
+  }
 
   const rowsToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
@@ -517,14 +536,16 @@ async function detectForMember(
 
   for (const candidate of candidateRows) {
     const kwLower = candidate.row.keyword.toLowerCase();
+    const kwEnLower = candidate.row.keyword_en?.toLowerCase() || "";
+    const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
 
-    // 크로스 아티스트 중복 필터
-    if (crossSet.has(kwLower)) {
+    // 크로스 아티스트 중복 필터 (keyword, keyword_en, keyword_ko 모두 체크)
+    if (crossSet.has(kwLower) || (kwEnLower && crossSet.has(kwEnLower)) || (kwKoLower && crossSet.has(kwKoLower))) {
       console.warn(`[trend-detect] Cross-artist duplicate filtered: "${candidate.row.keyword}"`);
       continue;
     }
 
-    const current = existingByKeyword.get(kwLower);
+    const current = existingByKeyword.get(kwLower) || (kwEnLower ? existingByKeyword.get(kwEnLower) : null) || (kwKoLower ? existingByKeyword.get(kwKoLower) : null);
 
     if (!current) {
       if (batchInsertedKeys.has(kwLower)) {
@@ -538,6 +559,7 @@ async function detectForMember(
 
     const patch: Record<string, unknown> = {};
     const backfillFields = [
+      "keyword_en",
       "keyword_ko",
       "keyword_ja",
       "keyword_zh",
