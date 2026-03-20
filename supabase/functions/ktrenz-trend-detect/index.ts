@@ -73,14 +73,14 @@ function isJapanese(text: string): boolean {
   return (jpChars?.length || 0) >= 3;
 }
 
-// ─── OG Image 추출 ───
+// ─── OG Image 추출 (본문 img 폴백 포함) ───
 async function fetchOgImage(url: string): Promise<string | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; KTrenzBot/1.0)" },
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" },
       redirect: "follow",
     });
     clearTimeout(timeout);
@@ -89,15 +89,38 @@ async function fetchOgImage(url: string): Promise<string | null> {
     if (!reader) return null;
     let html = "";
     const decoder = new TextDecoder();
-    while (html.length < 30000) {
+    // 50KB까지 읽어 og:image가 뒤에 있는 사이트도 커버
+    while (html.length < 50000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
     }
     reader.cancel();
-    const match = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+
+    // 1) og:image 메타 태그
+    const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    return match?.[1] || null;
+    if (ogMatch?.[1]) return ogMatch[1];
+
+    // 2) twitter:image 메타 태그
+    const twMatch = html.match(/<meta[^>]*(?:name|property)=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["']twitter:image["']/i);
+    if (twMatch?.[1]) return twMatch[1];
+
+    // 3) 본문 내 첫 번째 <img> 폴백 (광고/아이콘 제외)
+    const imgMatches = html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi);
+    for (const m of imgMatches) {
+      const src = m[1];
+      // 작은 아이콘, 광고, 트래커 이미지 제외
+      if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
+      if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner/i.test(src)) continue;
+      // 최소한 뉴스 사진일 가능성이 있는 것만
+      if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("//")) {
+        return src.startsWith("//") ? `https:${src}` : src;
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }
