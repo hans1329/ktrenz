@@ -80,6 +80,22 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   const navigate = useNavigate();
   const track = useTrackEvent();
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const prevItemIdsRef = useRef<string[]>([]);
+  const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
+
+  // Detect new/changed items and trigger flip animation
+  useEffect(() => {
+    const currentIds = items.map(i => i.id);
+    const prevIds = prevItemIdsRef.current;
+    const newIds = currentIds.filter(id => !prevIds.includes(id));
+    
+    if (newIds.length > 0 && prevIds.length > 0) {
+      setAnimatingIds(new Set(newIds));
+      const timer = setTimeout(() => setAnimatingIds(new Set()), 600);
+      return () => clearTimeout(timer);
+    }
+    prevItemIdsRef.current = currentIds;
+  }, [items]);
 
   useEffect(() => {
     if (!hasMore || !onLoadMore) return;
@@ -102,6 +118,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         const rank = idx + 1;
         const heroImage = item.sourceImageUrl || item.artistImageUrl;
         const context = getLocalizedContext(item, language);
+        const isNew = animatingIds.has(item.id);
 
         return (
           <article
