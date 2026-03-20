@@ -1,4 +1,4 @@
-// FPMM Settlement: Auto-settle markets based on influence_index
+// Multi-outcome CPMM Settlement: Settle markets based on influence_index change
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,6 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+/** Determine winning outcome based on % change from initial influence */
+function determineOutcome(initialInfluence: number, currentInfluence: number): string {
+  const changePct = initialInfluence > 0
+    ? ((currentInfluence - initialInfluence) / initialInfluence) * 100
+    : currentInfluence > 0 ? 100 : 0;
+
+  if (changePct < 10) return "decline";      // < +10% = decline/flat
+  if (changePct < 50) return "mild";          // +10% ~ +50%
+  if (changePct < 100) return "strong";       // +50% ~ +100%
+  return "explosive";                          // +100%+
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,7 +32,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { marketId } = body;
 
-    // Get markets to settle: either specific or all expired open markets
+    // Get markets to settle
     let markets: any[];
     if (marketId) {
       const { data } = await sb
@@ -30,7 +42,7 @@ Deno.serve(async (req) => {
         .eq("status", "open");
       markets = data || [];
     } else {
-      // Auto-settle: expired markets or markets with high/low influence
+      // Auto-settle: expired markets
       const { data } = await sb
         .from("ktrenz_trend_markets")
         .select("*, ktrenz_trend_triggers!inner(influence_index)")
@@ -43,9 +55,9 @@ Deno.serve(async (req) => {
     let totalPayouts = 0;
 
     for (const market of markets) {
-      const influence = Number(market.ktrenz_trend_triggers?.influence_index ?? 0);
-      const threshold = Number(market.settlement_threshold);
-      const outcome = influence >= threshold ? "yes" : "no";
+      const currentInfluence = Number(market.ktrenz_trend_triggers?.influence_index ?? 0);
+      const initialInfluence = Number(market.initial_influence ?? 0);
+      const outcome = determineOutcome(initialInfluence, currentInfluence);
 
       // Get all bets for this market
       const { data: bets } = await sb
@@ -54,7 +66,6 @@ Deno.serve(async (req) => {
         .eq("market_id", market.id);
 
       if (!bets || bets.length === 0) {
-        // No bets, just close the market
         await sb
           .from("ktrenz_trend_markets")
           .update({ status: "settled", outcome, settled_at: new Date().toISOString() })
@@ -63,9 +74,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Calculate total shares for winning side
-      const winningBets = bets.filter((b: any) => b.side === outcome);
-      const losingBets = bets.filter((b: any) => b.side !== outcome);
+      // Calculate total shares for winning outcome
+      const winningBets = bets.filter((b: any) => b.outcome === outcome);
+      const losingBets = bets.filter((b: any) => b.outcome !== outcome);
       const totalWinningShares = winningBets.reduce((s: number, b: any) => s + Number(b.shares), 0);
       const totalPool = bets.reduce((s: number, b: any) => s + Number(b.amount), 0);
 
@@ -77,19 +88,14 @@ Deno.serve(async (req) => {
         const payout = Math.round(totalPool * shareRatio);
 
         if (payout > 0) {
-          // Credit points back to user
           payoutPromises.push(
             sb.rpc("ktrenz_increment_points" as any, {
               p_user_id: bet.user_id,
               p_amount: payout,
             })
           );
-          // Update bet record with payout
           payoutPromises.push(
-            sb
-              .from("ktrenz_trend_bets")
-              .update({ payout })
-              .eq("id", bet.id)
+            sb.from("ktrenz_trend_bets").update({ payout }).eq("id", bet.id)
           );
           totalPayouts += payout;
         }
@@ -98,10 +104,7 @@ Deno.serve(async (req) => {
       // Mark losing bets with 0 payout
       for (const bet of losingBets) {
         payoutPromises.push(
-          sb
-            .from("ktrenz_trend_bets")
-            .update({ payout: 0 })
-            .eq("id", bet.id)
+          sb.from("ktrenz_trend_bets").update({ payout: 0 }).eq("id", bet.id)
         );
       }
 
@@ -114,7 +117,10 @@ Deno.serve(async (req) => {
         .eq("id", market.id);
 
       settledCount++;
-      console.log(`[trend-settle] Market ${market.id}: outcome=${outcome}, influence=${influence}, winners=${winningBets.length}, pool=${totalPool}`);
+      const changePct = initialInfluence > 0
+        ? ((currentInfluence - initialInfluence) / initialInfluence * 100).toFixed(1)
+        : "N/A";
+      console.log(`[trend-settle] Market ${market.id}: outcome=${outcome}, change=${changePct}%, winners=${winningBets.length}, pool=${totalPool}`);
     }
 
     return new Response(
