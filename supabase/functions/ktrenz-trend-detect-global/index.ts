@@ -276,57 +276,67 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ktrenz_stars에서 active 아티스트 가져오기
+    // ktrenz_stars에서 active 아티스트 가져오기 (wiki_entry_id 필터 제거 — 모든 스타 대상)
     const { data: stars } = await sb
       .from("ktrenz_stars")
       .select("id, wiki_entry_id, display_name, star_type, group_star_id, star_category")
       .eq("is_active", true)
-      .not("wiki_entry_id", "is", null)
+      .in("star_type", ["group", "solo", "member"])
       .order("display_name", { ascending: true });
 
-    // 그룹 정보 일괄 조회
+    // 그룹 정보 일괄 조회 (display_name + wiki_entry_id)
     const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
-    const groupNameMap = new Map<string, string>();
+    const groupInfoMap = new Map<string, { displayName: string; wikiEntryId: string | null }>();
     if (groupStarIds.length > 0) {
       const { data: groups } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name")
+        .select("id, display_name, wiki_entry_id")
         .in("id", groupStarIds);
       for (const g of (groups || [])) {
-        groupNameMap.set(g.id, g.display_name);
+        groupInfoMap.set(g.id, { displayName: g.display_name, wikiEntryId: g.wiki_entry_id });
       }
     }
 
-    // wiki_entry_id 기준 중복 제거
-    const entryMap = new Map<string, { starId: string; displayName: string; groupName: string | null; starCategory: string }>();
+    // star_id 기준으로 배치 구성 (wiki_entry_id 없어도 포함)
+    interface StarCandidate {
+      starId: string;
+      displayName: string;
+      groupName: string | null;
+      wikiEntryId: string | null;
+      starCategory: string;
+    }
+    const allCandidates: StarCandidate[] = [];
     for (const s of (stars || [])) {
-      if (s.wiki_entry_id && !entryMap.has(s.wiki_entry_id)) {
-        const gName = s.group_star_id ? groupNameMap.get(s.group_star_id) || null : null;
-        entryMap.set(s.wiki_entry_id, { starId: s.id, displayName: s.display_name, groupName: gName, starCategory: s.star_category || "kpop" });
-      }
+      const groupInfo = s.group_star_id ? groupInfoMap.get(s.group_star_id) : null;
+      const gName = groupInfo?.displayName || null;
+      // wiki_entry_id: 자기 것 우선, 없으면 그룹 것 사용
+      const resolvedWikiEntryId = s.wiki_entry_id || groupInfo?.wikiEntryId || null;
+      allCandidates.push({
+        starId: s.id,
+        displayName: s.display_name,
+        groupName: gName,
+        wikiEntryId: resolvedWikiEntryId,
+        starCategory: s.star_category || "kpop",
+      });
     }
 
-    const uniqueIds = [...entryMap.keys()];
-    const batch = uniqueIds.slice(batchOffset, batchOffset + batchSize);
+    const batch = allCandidates.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: uniqueIds.length }),
+        JSON.stringify({ success: true, message: "No artists in batch", batchOffset, totalCandidates: allCandidates.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[detect-global] v5 batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} artists (Firecrawl only)`);
+    console.log(`[detect-global] v6 batch offset=${batchOffset} size=${batchSize}, processing ${batch.length} stars (all active, Firecrawl only)`);
 
     let successCount = 0;
     let totalKeywords = 0;
 
-    for (const entryId of batch) {
+    for (const candidate of batch) {
       try {
-        const entry = entryMap.get(entryId);
-        const name = entry?.displayName || "Unknown";
-        const sid = entry?.starId || null;
-        const gName = entry?.groupName || null;
+        const { starId, displayName: name, groupName: gName, wikiEntryId, starCategory } = candidate;
 
         // Firecrawl 단독 실행
         const keywords = await detectViaFirecrawl(firecrawlKey, name, gName, openaiKey);
@@ -359,8 +369,8 @@ Deno.serve(async (req) => {
 
         const candidateRows = deduped.map((k) => ({
           row: {
-            wiki_entry_id: entryId,
-            star_id: sid || null,
+            wiki_entry_id: wikiEntryId || null,
+            star_id: starId || null,
             trigger_type: "news_mention",
             trigger_source: "global_news",
             artist_name: name,
@@ -383,17 +393,24 @@ Deno.serve(async (req) => {
             fan_sentiment: k.fan_sentiment || null,
             trend_potential: k.trend_potential ?? null,
             status: "pending",
-            metadata: { source: "global_detect_v5", detection_source: k.detection_source },
+            metadata: { source: "global_detect_v6", detection_source: k.detection_source },
           },
         }));
 
-        // 3일 내 중복 체크
+        // 3일 내 중복 체크 (star_id 기준, 없으면 wiki_entry_id)
         const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: existing } = await sb
+        let existingQuery = sb
           .from("ktrenz_trend_triggers")
           .select("id, keyword, keyword_en, keyword_ko, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
-          .eq("wiki_entry_id", entryId)
           .gte("detected_at", threeDaysAgo);
+        if (starId) {
+          existingQuery = existingQuery.eq("star_id", starId);
+        } else if (wikiEntryId) {
+          existingQuery = existingQuery.eq("wiki_entry_id", wikiEntryId);
+        } else {
+          existingQuery = existingQuery.eq("artist_name", name);
+        }
+        const { data: existing } = await existingQuery;
 
         const existingByKeyword = new Map<string, any>();
         for (const e of (existing || [])) {
@@ -404,12 +421,19 @@ Deno.serve(async (req) => {
 
         // 크로스 아티스트 중복 제거
         const allKwTexts = deduped.flatMap((k) => [k.keyword, k.keyword_en || k.keyword].filter(Boolean));
-        const { data: crossExisting } = await sb
+        let crossQuery = sb
           .from("ktrenz_trend_triggers")
           .select("keyword, keyword_en")
-          .neq("wiki_entry_id", entryId)
           .gte("detected_at", threeDaysAgo)
           .in("keyword", allKwTexts);
+        if (starId) {
+          crossQuery = crossQuery.neq("star_id", starId);
+        } else if (wikiEntryId) {
+          crossQuery = crossQuery.neq("wiki_entry_id", wikiEntryId);
+        } else {
+          crossQuery = crossQuery.neq("artist_name", name);
+        }
+        const { data: crossExisting } = await crossQuery;
 
         const crossSet = new Set<string>();
         for (const e of (crossExisting || [])) {
@@ -477,7 +501,7 @@ Deno.serve(async (req) => {
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
-        console.error(`[detect-global] ✗ ${entryId}: ${(e as Error).message}`);
+        console.error(`[detect-global] ✗ ${candidate.displayName} (${candidate.starId}): ${(e as Error).message}`);
       }
     }
 
@@ -487,7 +511,7 @@ Deno.serve(async (req) => {
         batchOffset,
         batchSize,
         processed: batch.length,
-        totalCandidates: uniqueIds.length,
+        totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
       }),
