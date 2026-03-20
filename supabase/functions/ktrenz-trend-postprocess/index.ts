@@ -95,7 +95,7 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
     for (const e of entries) {
       const info = starMap.get(e.star_id);
       if (!info) continue;
-      if (info.star_type === "group") groupEntries.push({ ...e, starInfo: info });
+      if (info.star_type === "group" && e.status === "active") groupEntries.push({ ...e, starInfo: info });
       if (info.star_type === "member") memberEntries.push({ ...e, starInfo: info });
     }
 
