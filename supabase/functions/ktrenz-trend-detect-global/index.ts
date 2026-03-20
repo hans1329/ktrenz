@@ -116,13 +116,21 @@ Example: [{"keyword":"Dior","keyword_en":"Dior","keyword_ko":"디올","keyword_j
         messages: [
           {
             role: "system",
-            content: "You are a trend analysis expert specializing in K-pop industry commercial trends. Search for the most recent global news and extract commercial entities. Return ONLY valid JSON arrays.",
+            content: "You are a trend analysis expert specializing in K-pop industry commercial trends. Search ONLY English-language global news sources (Billboard, Variety, NME, Soompi, AllKPop, SCMP, etc.). Do NOT search Korean-language news sites (Naver, Daum, Nate, Korean portals). Return ONLY valid JSON arrays.",
           },
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
         max_tokens: 1500,
         search_recency_filter: "day",
+        search_domain_filter: [
+          "-naver.com", "-daum.net", "-nate.com", "-chosun.com",
+          "-donga.com", "-hankyung.com", "-mk.co.kr", "-edaily.co.kr",
+          "-yna.co.kr", "-yonhapnews.co.kr", "-hani.co.kr", "-kmib.co.kr",
+          "-khan.co.kr", "-seoul.co.kr", "-sedaily.com", "-mt.co.kr",
+          "-news1.kr", "-newsis.com", "-tvdaily.co.kr", "-tenasia.co.kr",
+          "-esquirekorea.co.kr", "-theqoo.net", "-instiz.net", "-dcinside.com",
+        ],
       }),
     });
 
