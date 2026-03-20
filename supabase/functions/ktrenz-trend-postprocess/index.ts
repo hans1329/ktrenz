@@ -278,7 +278,7 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     }));
 
     const prompt = `Analyze the following trend keywords detected for K-pop group "${star.display_name}" (${star.name_ko}).
-The group has these members: ${members.join(", ")}.
+The group has these members: ${memberNames.join(", ")}.
 
 For each keyword, determine:
 1. "attribution": Is this keyword about the GROUP's collective activity or a specific MEMBER's individual activity?
