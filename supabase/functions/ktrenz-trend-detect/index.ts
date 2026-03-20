@@ -329,7 +329,119 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
   }
 }
 
-Deno.serve(async (req) => {
+// ─── 쇼핑 결과에서 브랜드/상품 키워드 직접 추출 ───
+function extractShopKeywords(
+  shopItems: any[],
+  memberName: string,
+  groupName: string | null,
+): ExtractedKeyword[] {
+  if (!shopItems.length) return [];
+
+  const memberLower = memberName.toLowerCase();
+  const groupLower = (groupName || "").toLowerCase();
+
+  // 쇼핑 상품명에서 브랜드명 추출: "아이유 x 뉴발란스 530" → "뉴발란스 530"
+  const brandCounts = new Map<string, { count: number; category: string; title: string; mallName: string }>();
+
+  for (const item of shopItems) {
+    const title = stripHtml(item.title || "");
+    const mallName = item.mallName || "";
+    const brand = item.brand || "";
+    const category1 = (item.category1 || "").toLowerCase();
+    const category2 = (item.category2 || "").toLowerCase();
+
+    // 카테고리 매핑
+    let kwCategory: ExtractedKeyword["category"] = "product";
+    if (/패션|의류|신발|가방|액세서리/.test(category1 + category2)) kwCategory = "fashion";
+    else if (/화장품|뷰티|스킨케어/.test(category1 + category2)) kwCategory = "beauty";
+    else if (/식품|음료/.test(category1 + category2)) kwCategory = "food";
+
+    // 브랜드명이 있으면 사용, 없으면 상품명에서 추출
+    let brandName = brand;
+    if (!brandName) {
+      // 상품명에서 아티스트명/그룹명 제거 후 첫 번째 의미있는 단어 추출
+      const cleaned = title
+        .replace(new RegExp(memberLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "")
+        .replace(groupLower ? new RegExp(groupLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi") : /(?!)/g, "")
+        .replace(/[x×]\s*/gi, "")
+        .trim();
+      // 첫 2-3단어를 브랜드명 후보로
+      const words = cleaned.split(/\s+/).filter(w => w.length >= 2).slice(0, 3);
+      brandName = words.join(" ");
+    }
+
+    if (!brandName || brandName.length < 2) continue;
+    const brandLower = brandName.toLowerCase();
+    if (brandLower === memberLower || brandLower === groupLower) continue;
+    if (PLATFORM_BLACKLIST.has(brandLower)) continue;
+
+    const existing = brandCounts.get(brandLower);
+    if (existing) {
+      existing.count++;
+    } else {
+      brandCounts.set(brandLower, { count: 1, category: kwCategory, title, mallName });
+    }
+  }
+
+  // 2회 이상 등장하거나 명확한 브랜드명이 있는 것만 추출
+  const results: ExtractedKeyword[] = [];
+  for (const [brand, info] of brandCounts) {
+    if (info.count < 2 && brand.split(/\s+/).length > 2) continue; // 긴 상품명은 2회 이상만
+    results.push({
+      keyword: brand,
+      keyword_ko: brand,
+      keyword_en: brand, // 쇼핑 결과에서 영문 변환은 후처리에서
+      category: info.category as ExtractedKeyword["category"],
+      confidence: Math.min(0.5 + info.count * 0.1, 0.9),
+      context: `${memberName} related product found in Naver Shopping (${info.count} listings)`,
+      context_ko: `네이버 쇼핑에서 ${memberName} 관련 상품 ${info.count}건 발견`,
+      source_article_index: 0,
+      commercial_intent: "organic",
+      brand_intent: "conversion",
+      fan_sentiment: "positive",
+      trend_potential: Math.min(0.3 + info.count * 0.05, 0.8),
+    });
+  }
+
+  return results.slice(0, 5);
+}
+
+// ─── AI 키워드 + 쇼핑 키워드 병합 (중복 제거) ───
+function mergeKeywords(
+  aiKeywords: ExtractedKeyword[],
+  shopKeywords: ExtractedKeyword[],
+): ExtractedKeyword[] {
+  const seen = new Set<string>();
+  const merged: ExtractedKeyword[] = [];
+
+  // AI 키워드 우선
+  for (const k of aiKeywords) {
+    const key = (k.keyword_ko || k.keyword).toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(k);
+    }
+  }
+
+  // 쇼핑 키워드 추가 (AI에서 이미 발견된 것은 스킵)
+  for (const k of shopKeywords) {
+    const key = (k.keyword_ko || k.keyword).toLowerCase();
+    // AI 키워드와 부분 매칭도 체크
+    const isDuplicate = seen.has(key) || [...seen].some(existing =>
+      existing.includes(key) || key.includes(existing)
+    );
+    if (!isDuplicate) {
+      seen.add(key);
+      // 쇼핑 소스 표시
+      k.context = `[Shop] ${k.context}`;
+      merged.push(k);
+    }
+  }
+
+  return merged;
+}
+
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
