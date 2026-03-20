@@ -274,6 +274,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("status", "active")
+        .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
