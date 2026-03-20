@@ -64,11 +64,21 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     staleTime: 300_000,
   });
 
-  // Poll for recently detected keywords since run started
+  // Poll for keywords: detect phases show newly detected, track phase shows active keywords being tracked
   const { data: recentKeywords } = useQuery({
-    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString()],
+    queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase],
     queryFn: async () => {
       if (!run) return [];
+      if (isTrackPhase) {
+        // Track phase: show active keywords currently being tracked
+        const { data } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
+          .eq("status", "active")
+          .order("detected_at", { ascending: false })
+          .limit(50);
+        return (data ?? []) as unknown as RecentKeyword[];
+      }
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category")
@@ -171,7 +181,9 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           {/* Recent keywords feed */}
           {recentKeywords && recentKeywords.length > 0 && (
             <div className="space-y-1 max-h-40 overflow-y-auto">
-              <p className="text-[10px] font-bold text-muted-foreground">최근 감지된 키워드</p>
+              <p className="text-[10px] font-bold text-muted-foreground">
+                {isTrackPhase ? "추적 중인 키워드" : "최근 감지된 키워드"}
+              </p>
               {recentKeywords.slice(0, 10).map((kw) => (
                 <div
                   key={kw.id}
