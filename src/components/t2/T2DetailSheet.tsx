@@ -707,7 +707,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       <span className="text-lg font-bold text-muted-foreground/90">T</span>
                     </div>
                     {user && (
-                      <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
+                      <span className="text-[11px] font-bold text-primary whitespace-nowrap">
                         {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/90 font-normal">T</span>
                       </span>
                     )}
