@@ -315,7 +315,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {totalTriggers > 0 && (
+          {isTrackPhase && trackedCount > 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-primary bg-primary/10">
+              {trackedCount} tracked
+            </span>
+          )}
+          {!isTrackPhase && totalTriggers > 0 && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-primary bg-primary/10">
               {totalTriggers} saved
             </span>
