@@ -11,13 +11,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["detect", "detect_global"] as const;
+const PHASE_ORDER = ["detect"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
-  detect_global: "ktrenz-trend-detect-global",
   track: "ktrenz-trend-track",
 };
-const DETECT_PHASES = new Set(["detect", "detect_global"]);
+const DETECT_PHASES = new Set(["detect"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
