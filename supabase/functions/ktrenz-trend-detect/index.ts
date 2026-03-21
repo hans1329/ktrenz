@@ -1095,8 +1095,8 @@ async function trackExistingKeywords(
       const searchQuery = `"${artistLabel}" "${kwQuery}"`;
 
       const [newsTotal, blogTotal] = await Promise.all([
-        searchNaverTotal(naverClientId, naverClientSecret, "news", searchQuery),
-        searchNaverTotal(naverClientId, naverClientSecret, "blog", searchQuery),
+        searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
+        searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
       ]);
 
       const rawCount = newsTotal + blogTotal;
