@@ -506,10 +506,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     href={tile.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
                     onClick={handleReadBoost}
                   >
                     {t("readBoostReward", language)}
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
                   <span className={cn(
@@ -701,7 +702,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         placeholder="10~1000"
                         value={betAmount}
                         onChange={(e) => setBetAmount(e.target.value)}
-                        className="w-36 sm:w-44 h-12 sm:h-14 text-center !text-lg sm:!text-3xl font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-lg lg:text-3xl font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <span className="text-lg font-bold text-muted-foreground/90">T</span>
                     </div>
