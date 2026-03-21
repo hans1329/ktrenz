@@ -126,7 +126,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
       <header
         className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 pt-[env(safe-area-inset-top)]"
         style={{
-          backgroundColor: "hsl(var(--background) / 0.35)",
+          backgroundColor: "hsl(var(--background) / 0.18)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
         }}
