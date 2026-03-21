@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     // ── action: start — 새 파이프라인 실행 시작 ──
     if (action === "start") {
-      const newRunId = `run_${Date.now()}`;
+      const newRunId = singlePhase ? `single_${Date.now()}` : `run_${Date.now()}`;
       const firstPhase = phase || "detect";
 
       await sb.from("ktrenz_pipeline_state").insert({
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         total_candidates: null,
       });
 
-      console.log(`[cron] Started new run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}`);
+      console.log(`[cron] Started ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}`);
 
       // 즉시 첫 배치 실행
       const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, 0, batchSize);
