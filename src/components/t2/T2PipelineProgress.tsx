@@ -405,29 +405,29 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
 
           {/* Recent keywords with source tag */}
           {recentKeywords && recentKeywords.length > 0 && (
-            <div className="space-y-1 max-h-40 overflow-y-auto">
-              <p className="text-[10px] font-bold text-muted-foreground">
+            <div className="space-y-1 max-h-32 sm:max-h-40 overflow-y-auto">
+              <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground">
                 {isTrackPhase ? "추적 중인 키워드" : `저장된 키워드 (${keywordCount}건)`}
               </p>
-              {recentKeywords.slice(0, 15).map((kw) => (
+              {recentKeywords.slice(0, 10).map((kw) => (
                 <div
                   key={kw.id}
-                  className="flex items-center gap-1.5 text-[11px] py-1 px-2 rounded-lg bg-background/60"
+                  className="flex items-center gap-1 text-[10px] sm:text-[11px] py-0.5 sm:py-1 px-1.5 sm:px-2 rounded-lg bg-background/60"
                 >
-                  <Zap className="w-3 h-3 shrink-0 text-primary" />
-                  <span className="font-bold text-foreground truncate">{kw.keyword_ko || kw.keyword}</span>
+                  <Zap className="w-2.5 sm:w-3 h-2.5 sm:h-3 shrink-0 text-primary" />
+                  <span className="font-bold text-foreground truncate max-w-[100px] sm:max-w-none">{kw.keyword_ko || kw.keyword}</span>
                   <span className="text-muted-foreground truncate">· {kw.artist_name}</span>
                   {!isTrackPhase && kw.trigger_source && (
-                    <span className={`text-[9px] shrink-0 px-1 py-0 rounded ${
+                    <span className={`text-[8px] sm:text-[9px] shrink-0 px-1 py-0 rounded ${
                       sourceLabel[kw.trigger_source]?.color || "text-muted-foreground"
                     } bg-muted/50`}>
                       {triggerSourceLabel(kw.trigger_source)}
                     </span>
                   )}
                   {!isTrackPhase && kw.status && (
-                    <span className="text-muted-foreground/70 text-[9px] shrink-0 uppercase">{kw.status}</span>
+                    <span className="text-muted-foreground/70 text-[8px] sm:text-[9px] shrink-0 uppercase">{kw.status}</span>
                   )}
-                  <span className="text-muted-foreground/60 text-[9px] ml-auto shrink-0">
+                  <span className="text-muted-foreground/60 text-[8px] sm:text-[9px] ml-auto shrink-0">
                     {kw.keyword_category}
                   </span>
                 </div>
