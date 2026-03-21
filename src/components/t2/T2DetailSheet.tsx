@@ -387,7 +387,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
-          <div className="-mx-6">
+          <div>
             {/* Source thumbnail + title card */}
             {(tile.sourceTitle || tile.sourceImageUrl) && (
               <div className="relative">
@@ -404,7 +404,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   if (finalImg) {
                     const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
                     return (
-                      <div className="relative overflow-hidden bg-muted">
+                      <div className="relative w-[calc(100%+48px)] -ml-6 overflow-hidden bg-muted">
                         <img
                           src={finalImg}
                           alt={tile.sourceTitle || ""}
