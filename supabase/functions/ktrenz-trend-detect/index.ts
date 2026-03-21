@@ -502,8 +502,15 @@ Call extract_keywords with the specific named entities found, then call analyze_
       }
     }
 
-    // ── 후검증: 플랫폼 블랙리스트 + 아티스트명 필터 ──
+    // ── 후검증: 플랫폼 블랙리스트 + 아티스트명 필터 (강화) ──
     const allText = articles.map(a => `${a.title} ${a.description || ""}`).join(" ").toLowerCase();
+
+    // 모든 이름 변형 수집 (한글/영문/그룹명 모두)
+    const allNameVariants = new Set<string>();
+    for (const n of [memberName, nameKo, groupName, groupNameKo]) {
+      if (n) allNameVariants.add(n.toLowerCase());
+    }
+
     extractedKeywords = extractedKeywords.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
 
@@ -517,19 +524,36 @@ Call extract_keywords with the specific named entities found, then call analyze_
         return false;
       }
 
-      // 아티스트/그룹 이름 정확 일치 차단
-      const memberLower = memberName.toLowerCase();
-      const groupLower = (groupName || "").toLowerCase();
-      const nameBlacklist = [memberLower, groupLower].filter(Boolean);
-      for (const blocked of nameBlacklist) {
+      // 아티스트/그룹 이름 차단 — 정확 일치 OR 키워드가 이름과 동일
+      for (const blocked of allNameVariants) {
+        // 정확 일치
         if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
-          console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
+          console.warn(`[trend-detect] Blocked artist/group name as keyword (exact): "${k.keyword}"`);
+          return false;
+        }
+        // 키워드가 이름만으로 구성 (공백/조사 제거 후)
+        const kwStripped = kwLower.replace(/[\s·,\-]+/g, "");
+        const blockedStripped = blocked.replace(/[\s·,\-]+/g, "");
+        if (kwStripped === blockedStripped) {
+          console.warn(`[trend-detect] Blocked artist/group name as keyword (normalized): "${k.keyword}"`);
           return false;
         }
       }
 
       // 2글자 이하 단문 차단
       if (kwLower.length <= 1 && (!kwKo || kwKo.length <= 1)) return false;
+
+      // 일반적인 한국어 K-pop 노이즈 키워드 차단
+      const NOISE_BLACKLIST = new Set([
+        "브랜드평판", "아이돌", "인기", "팬들", "컴백", "활동", "무대",
+        "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
+        "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
+        "김포국제공항", "대만", "일본", "중국", "미국", "한국",
+      ]);
+      if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
+        console.warn(`[trend-detect] Blocked noise keyword: "${k.keyword}"`);
+        return false;
+      }
 
       // confidence 0.8 이상이면 텍스트 검증 스킵
       if (k.confidence >= 0.8) return true;
