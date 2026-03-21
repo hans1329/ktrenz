@@ -10,7 +10,7 @@ const corsHeaders = {
 const MULTIPLIERS: Record<string, number> = {
   mild: 1.2,
   strong: 3.0,
-  explosive: 8.0,
+  explosive: 6.0,
 };
 
 /** Determine winning outcome based on % change from initial influence */

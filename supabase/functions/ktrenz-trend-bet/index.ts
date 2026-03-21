@@ -14,7 +14,7 @@ type Outcome = typeof VALID_OUTCOMES[number];
 const MULTIPLIERS: Record<Outcome, number> = {
   mild: 1.2,
   strong: 3.0,
-  explosive: 8.0,
+  explosive: 6.0,
 };
 
 // Settlement thresholds (influence_index % change)
