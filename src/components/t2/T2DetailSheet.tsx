@@ -533,7 +533,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   <>
                     {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {getLocalizedArtistName(tile, language)}{t("newsMention", language)}
                     {tile.baselineScore != null && tile.peakScore != null && (
-                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
+                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore?.toLocaleString()}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore?.toLocaleString()}</span>.</>
                     )}
                     {totalCount && totalCount > 1 && (
                       <> {t("highestAmong", language)} {totalCount} {t("activeKeywords", language)}</>
