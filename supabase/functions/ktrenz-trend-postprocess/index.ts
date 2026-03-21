@@ -498,11 +498,15 @@ Deno.serve(async (req) => {
     const dedupResult = await memberPriorityDedup(sb);
     console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
 
-    // 3단계: 국내 우선 소스 중복제거
+    // 3단계: 동일 아티스트 내 키워드 중복제거
+    const sameArtistResult = await sameArtistKeywordDedup(sb);
+    console.log(`[postprocess] Same-artist keyword dedup: expired ${sameArtistResult.expired} duplicates`);
+
+    // 4단계: 국내 우선 소스 중복제거
     const srcDedupResult = await domesticPriorityDedup(sb);
     console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
 
-    // 4단계: pending → active 전환
+    // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
 
@@ -511,7 +515,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai_reclassified=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, domestic_dedup=${srcDedupResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -520,6 +524,7 @@ Deno.serve(async (req) => {
         mode,
         aiClassification: aiResult,
         memberPriority: dedupResult,
+        sameArtistDedup: sameArtistResult,
         domesticPriority: srcDedupResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
