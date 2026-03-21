@@ -635,7 +635,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
                           <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
-                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount}T</div>
+                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/60">T</span></div>
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
