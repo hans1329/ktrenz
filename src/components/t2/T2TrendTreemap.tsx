@@ -270,6 +270,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
   const setViewMode = onViewModeChange ?? setInternalViewMode;
+  const [sortMode, setSortMode] = useState<SortMode>("rate");
   
   const isMobile = useIsMobile();
   const { language } = useLanguage();
