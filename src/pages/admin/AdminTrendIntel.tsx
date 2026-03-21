@@ -23,6 +23,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   fashion: "bg-pink-500/10 text-pink-600 border-pink-500/30",
   beauty: "bg-rose-500/10 text-rose-600 border-rose-500/30",
   media: "bg-cyan-500/10 text-cyan-600 border-cyan-500/30",
+  music: "bg-violet-500/10 text-violet-600 border-violet-500/30",
+  event: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
 };
 
 const formatAge = (dateStr: string): string => {
