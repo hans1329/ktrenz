@@ -758,9 +758,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       })(),
                     }}
                   >
-                    {isMedium && rect.item.influenceIndex > 0 && (
+                    {isMedium && sortMode === "rate" && rect.item.influenceIndex > 0 && (
                       <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
                         +{rect.item.influenceIndex.toFixed(0)}%
+                      </span>
+                    )}
+                    {isMedium && sortMode === "volume" && (
+                      <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
+                        +{((rect.item.peakScore ?? 0) - (rect.item.baselineScore ?? 0)).toLocaleString()}
                       </span>
                     )}
                     {isMedium && (
