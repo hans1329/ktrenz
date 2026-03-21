@@ -41,11 +41,17 @@ async function fetchGoogleTrends(
   // 아티스트 연관성은 감지(detect) 단계에서 이미 확보됨
   const query = keyword;
 
+  // 48시간 커스텀 범위: SerpAPI는 "now 2-d" 미지원이므로 날짜 범위 사용
+  const now = new Date();
+  const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10); // yyyy-mm-dd
+  const dateRange = `${fmt(twoDaysAgo)} ${fmt(now)}`;
+
   const params = new URLSearchParams({
     engine: "google_trends",
     q: query,
     data_type: "TIMESERIES",
-    date: "now 2-d",
+    date: dateRange,
     api_key: serpApiKey,
   });
 
