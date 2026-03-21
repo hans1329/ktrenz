@@ -194,15 +194,13 @@ const AdminTrendIntel = () => {
   const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullPipelineMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">T2 트렌드 인텔리전스</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            K-pop 스타 파생 상업 트렌드 감지 및 추적
-          </p>
-        </div>
+      <div>
+        <h1 className="text-lg sm:text-xl font-bold text-foreground">T2 트렌드 인텔리전스</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          K-pop 스타 파생 상업 트렌드 감지 및 추적
+        </p>
       </div>
 
       {/* Controls */}
