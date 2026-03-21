@@ -223,8 +223,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const trackOffset = isTrackPhase ? (phaseState as any)?.processed ?? dbPipelineState?.current_offset ?? 0 : 0;
   const trackedCount = isTrackPhase ? (phaseState as any)?.trackedCount ?? 0 : 0;
   
+  // 스타 로그 기반 processed 보정 (DB에 기록된 실제 처리 수)
+  const starLogCount = starLogs?.length ?? 0;
+  const effectiveProcessed = isTrackPhase ? processed : Math.max(processed, starLogCount);
+  
   const total = isTrackPhase ? trackTotal : (totalCount ?? 0);
-  const processed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
+  const processed_final = isTrackPhase ? trackOffset : effectiveProcessed;
   const pending = phaseState?.pending ?? 0;
   const active = phaseState?.active ?? 0;
   const expired = phaseState?.expired ?? 0;
