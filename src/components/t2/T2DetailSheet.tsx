@@ -533,7 +533,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   <>
                     {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {getLocalizedArtistName(tile, language)}{t("newsMention", language)}
                     {tile.baselineScore != null && tile.peakScore != null && (
-                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore}</span>.</>
+                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore?.toLocaleString()}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore?.toLocaleString()}</span>.</>
                     )}
                     {totalCount && totalCount > 1 && (
                       <> {t("highestAmong", language)} {totalCount} {t("activeKeywords", language)}</>
@@ -557,13 +557,13 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <div className="rounded-lg bg-muted/30 border border-border p-3">
               <div className="text-[11px] text-muted-foreground mb-1">{t("baseline", language)}</div>
               <div className="text-xl font-bold text-foreground">
-                {tile.baselineScore != null ? tile.baselineScore : "—"}
+                {tile.baselineScore != null ? tile.baselineScore.toLocaleString() : "—"}
               </div>
             </div>
             <div className="rounded-lg bg-muted/30 border border-border p-3">
               <div className="text-[11px] text-muted-foreground mb-1">{t("peak", language)}</div>
               <div className="text-xl font-bold text-foreground">
-                {tile.peakScore != null ? tile.peakScore : "—"}
+                {tile.peakScore != null ? tile.peakScore.toLocaleString() : "—"}
               </div>
             </div>
           </div>
