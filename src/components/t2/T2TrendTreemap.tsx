@@ -173,8 +173,10 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
 
   const tileSize = (item: TrendTile, idx: number) => {
-    const base = Math.max(item.influenceIndex, 1);
-    const logBase = Math.log1p(base);
+    const metric = sortMode === "volume"
+      ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
+      : Math.max(item.influenceIndex, 1);
+    const logBase = Math.log1p(metric);
     // Rank-based multiplier: #1 is dramatically larger
     if (idx === 0) return logBase * 12;
     if (idx === 1) return logBase * 7;
