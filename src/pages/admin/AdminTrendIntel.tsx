@@ -167,59 +167,16 @@ const AdminTrendIntel = () => {
 
       {/* Controls */}
       <Card className="p-3 sm:p-4">
-        <div className="flex flex-col gap-2">
-          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
-            <Button
-              size="sm"
-              onClick={() => fullPipelineMutation.mutate()}
-              disabled={isAnyRunning}
-              className="gap-1 text-[11px] sm:text-xs h-8"
-            >
-              {fullPipelineMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">전체 파이프라인</span>
-              <span className="sm:hidden">전체</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => detectMutation.mutate()}
-              disabled={isAnyRunning}
-              className="gap-1 text-[11px] sm:text-xs h-8"
-            >
-              {detectMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">키워드 감지만</span>
-              <span className="sm:hidden">감지</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => trackMutation.mutate()}
-              disabled={isAnyRunning}
-              className="gap-1 text-[11px] sm:text-xs h-8"
-            >
-              {trackMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TrendingUp className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">검색량 추적만</span>
-              <span className="sm:hidden">추적</span>
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">지역:</span>
-            {REGIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setSelectedRegion(r)}
-                className={cn(
-                  "px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-medium border transition-colors shrink-0",
-                  selectedRegion === r
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-muted text-muted-foreground border-border hover:bg-accent"
-                )}
-              >
-                {r === "worldwide" ? "🌍 전체" : r}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => runMutation.mutate()}
+            disabled={isAnyRunning}
+            className="gap-1 text-[11px] sm:text-xs h-8"
+          >
+            {runMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+            트렌드 수집 실행
+          </Button>
         </div>
       </Card>
 
