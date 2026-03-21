@@ -25,6 +25,7 @@ const navItems = [
   { label: '등록 요청', path: '/admin/listing-requests', icon: UserPlus },
   { label: '스타 관리', path: '/admin/stars', icon: Star },
   { label: 'T2 트렌드 인텔', path: '/admin/trend-intel', icon: TrendingUp },
+  { label: '쇼핑 키워드', path: '/admin/shopping-keywords', icon: ShoppingBag },
   { label: 'Wiki 항목', path: '/admin/entries', icon: FileText },
 ];
 
