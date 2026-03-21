@@ -1017,10 +1017,22 @@ async function detectForMember(
   const backfillPromises: PromiseLike<unknown>[] = [];
   const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
+  // 아티스트/그룹명과 완전 일치하는 키워드 차단용 셋
+  const artistNameSet = new Set<string>();
+  for (const n of [member.display_name, member.name_ko, member.group_name, member.group_name_ko]) {
+    if (n) artistNameSet.add(n.toLowerCase());
+  }
+
   for (const candidate of candidateRows) {
     const kwLower = candidate.row.keyword.toLowerCase();
     const kwEnLower = candidate.row.keyword_en?.toLowerCase() || "";
     const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
+
+    // 아티스트/그룹명과 완전 일치하는 키워드 차단
+    if (artistNameSet.has(kwLower) || (kwKoLower && artistNameSet.has(kwKoLower)) || (kwEnLower && artistNameSet.has(kwEnLower))) {
+      console.warn(`[trend-detect] Artist name keyword filtered: "${candidate.row.keyword}"`);
+      continue;
+    }
 
     // 크로스 아티스트 중복 필터 (keyword, keyword_en, keyword_ko 모두 체크)
     if (crossSet.has(kwLower) || (kwEnLower && crossSet.has(kwEnLower)) || (kwKoLower && crossSet.has(kwKoLower))) {
