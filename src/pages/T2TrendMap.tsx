@@ -132,17 +132,20 @@ const T2TrendMap = () => {
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border"
                   style={{
-                    backgroundColor: "hsl(var(--muted))",
-                    color: "hsl(var(--foreground))",
-                    borderColor:
-                      cat === "all"
+                    backgroundColor: isActive
+                      ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
+                      : "hsl(var(--muted))",
+                    color: isActive ? "#fff" : "hsl(var(--foreground))",
+                    borderColor: isActive
+                      ? "transparent"
+                      : cat === "all"
                         ? "hsl(var(--border))"
                         : cat === "my"
                         ? "hsl(45, 90%, 50%)"
                         : config?.color ?? "hsl(var(--border))",
                   }}
                 >
-                  {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
+                  {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
                   {(() => {
                     const count = cat === "all" ? totalCount : cat === "my" ? myCount : categoryStats[cat] || 0;
                     return count > 0 ? (

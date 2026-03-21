@@ -649,21 +649,24 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
               key={cat}
               onClick={() => { setSelectedCategory(cat); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border bg-muted text-foreground",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
                 isActive && "shadow-sm"
               )}
               style={{
-                backgroundColor: "hsl(var(--muted))",
-                color: "hsl(var(--foreground))",
-                borderColor:
-                  cat === "all"
+                backgroundColor: isActive
+                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
+                  : "hsl(var(--muted))",
+                color: isActive ? "#fff" : "hsl(var(--foreground))",
+                borderColor: isActive
+                  ? "transparent"
+                  : cat === "all"
                     ? "hsl(var(--border))"
                     : cat === "my"
                     ? "hsl(45, 90%, 50%)"
                     : config?.color ?? "hsl(var(--border))",
               }}
             >
-              {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
+              {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
               <span
                 className="text-[10px] text-muted-foreground/60"
               >
