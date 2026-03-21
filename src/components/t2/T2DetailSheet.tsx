@@ -384,7 +384,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
         </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide -mx-6 px-6 pt-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="space-y-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide px-6 pt-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
@@ -404,7 +404,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   if (finalImg) {
                     const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
                     return (
-                      <div className="relative w-[calc(100%+52px)] -ml-[26px] overflow-hidden bg-muted">
+                      <div className="relative w-full overflow-hidden bg-muted rounded-xl">
                         <img
                           src={finalImg}
                           alt={tile.sourceTitle || ""}
