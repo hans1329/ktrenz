@@ -3316,6 +3316,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_pipeline_state: {
+        Row: {
+          batch_size: number
+          created_at: string
+          current_offset: number
+          error_message: string | null
+          id: string
+          phase: string
+          postprocess_done: boolean
+          run_id: string
+          status: string
+          total_candidates: number | null
+          updated_at: string
+        }
+        Insert: {
+          batch_size?: number
+          created_at?: string
+          current_offset?: number
+          error_message?: string | null
+          id?: string
+          phase: string
+          postprocess_done?: boolean
+          run_id: string
+          status?: string
+          total_candidates?: number | null
+          updated_at?: string
+        }
+        Update: {
+          batch_size?: number
+          created_at?: string
+          current_offset?: number
+          error_message?: string | null
+          id?: string
+          phase?: string
+          postprocess_done?: boolean
+          run_id?: string
+          status?: string
+          total_candidates?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ktrenz_point_packages: {
         Row: {
           bonus_label: string | null
