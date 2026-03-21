@@ -150,13 +150,24 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
 
       if (isTrackPhase) {
+        // 최근 추적된 키워드 (ktrenz_trend_tracking)
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category, status, trigger_source")
-          .eq("status", "active")
-          .order("detected_at", { ascending: false })
-          .limit(500);
-        return (data ?? []) as unknown as RecentKeyword[];
+          .from("ktrenz_trend_tracking" as any)
+          .select("id, keyword, keyword_ko, artist_name, tracked_at, keyword_category, score")
+          .gte("tracked_at", twoHoursAgo)
+          .order("tracked_at", { ascending: false })
+          .limit(20);
+        return ((data ?? []) as any[]).map((r: any) => ({
+          id: r.id,
+          keyword: r.keyword,
+          keyword_ko: r.keyword_ko,
+          artist_name: r.artist_name,
+          detected_at: r.tracked_at,
+          keyword_category: r.keyword_category || "",
+          status: r.score != null ? `${r.score}점` : undefined,
+          trigger_source: undefined,
+        })) as RecentKeyword[];
       }
 
       const domesticSources = ["naver_multi", "naver_shop", "naver_news"];
