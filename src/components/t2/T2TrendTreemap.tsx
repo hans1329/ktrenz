@@ -101,16 +101,16 @@ export function sanitizeImageUrl(url: string | null): string | null {
 export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
-  brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 60%, 58%, 0.75)" },
-  product: { label: "Product", color: "hsl(270, 60%, 55%)", tileColor: "hsla(270, 50%, 56%, 0.75)" },
-  place:   { label: "Place",   color: "hsl(145, 55%, 45%)", tileColor: "hsla(145, 45%, 50%, 0.75)" },
-  food:    { label: "Food",    color: "hsl(25, 80%, 55%)",  tileColor: "hsla(25, 65%, 58%, 0.75)" },
-  fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)", tileColor: "hsla(330, 50%, 58%, 0.75)" },
-  beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)", tileColor: "hsla(350, 48%, 58%, 0.75)" },
-  media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 55%, 50%, 0.75)" },
-  music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 55%, 58%, 0.75)" },
-  event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 70%, 52%, 0.75)" },
-  shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 48%, 50%, 0.75)" },
+  brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 60%, 58%, 0.45)" },
+  product: { label: "Product", color: "hsl(270, 60%, 55%)", tileColor: "hsla(270, 50%, 56%, 0.45)" },
+  place:   { label: "Place",   color: "hsl(145, 55%, 45%)", tileColor: "hsla(145, 45%, 50%, 0.45)" },
+  food:    { label: "Food",    color: "hsl(25, 80%, 55%)",  tileColor: "hsla(25, 65%, 58%, 0.45)" },
+  fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)", tileColor: "hsla(330, 50%, 58%, 0.45)" },
+  beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)", tileColor: "hsla(350, 48%, 58%, 0.45)" },
+  media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 55%, 50%, 0.45)" },
+  music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 55%, 58%, 0.45)" },
+  event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 70%, 52%, 0.45)" },
+  shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 48%, 50%, 0.45)" },
 };
 
 export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "shopping"];
@@ -634,9 +634,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
       {!hideCategory && (
       <div className={cn(
-        "flex items-center gap-2 mb-3 overflow-x-auto pb-1",
+        "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
         "sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4"
-      )} style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
+      )}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
           const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
