@@ -25,7 +25,7 @@ html {
 @layer base {
   :root {
     --background: 220 10% 95%;
-    --foreground: 220 15% 15%;
+    --foreground: 0 0% 15%;
     --card: 0 0% 100%;
     --card-foreground: 220 15% 15%;
     --popover: 0 0% 100%;
