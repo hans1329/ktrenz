@@ -69,6 +69,36 @@ const NOISE_BLACKLIST = new Set([
   "news", "article", "interview", "performance", "stage", "award",
 ]);
 
+// ── 네이버 검색 건수 조회 (buzz score 실측용) ──
+async function searchNaverCount(
+  clientId: string,
+  clientSecret: string,
+  endpoint: "news" | "blog",
+  query: string,
+): Promise<number> {
+  try {
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", "1");
+    url.searchParams.set("sort", "date");
+    const response = await fetch(url.toString(), {
+      headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
+    });
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return data.total || 0;
+  } catch { return 0; }
+}
+
+// ── Buzz Score 정규화 ──
+function normalizeBuzzScore(newsTotal: number, blogTotal: number): number {
+  const newsCap = 1000;
+  const blogCap = 10000;
+  const newsNorm = newsTotal > 0 ? (Math.log10(newsTotal + 1) / Math.log10(newsCap)) * 100 : 0;
+  const blogNorm = blogTotal > 0 ? (Math.log10(blogTotal + 1) / Math.log10(blogCap)) * 100 : 0;
+  return Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
+}
+
 // ── Firecrawl — Reddit/TikTok 검색 (주력) ──
 async function detectViaFirecrawl(
   apiKey: string,
