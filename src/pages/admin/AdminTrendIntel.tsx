@@ -153,7 +153,7 @@ const AdminTrendIntel = () => {
   // Unique artist names in active triggers (for bulk expire)
   const activeArtistNames = [...new Set(activeTriggers.map((t: any) => t.artist_name as string))].sort();
 
-  const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullPipelineMutation.isPending;
+  const isAnyRunning = runMutation.isPending;
 
   return (
     <div className="space-y-4 sm:space-y-6">
