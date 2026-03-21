@@ -606,7 +606,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       {/* Header */}
       <div className="pt-4 pb-3 flex items-end justify-between gap-3 px-4 md:px-0">
         {/* Title & Sort Toggle */}
-        <h2 className="text-base font-bold text-foreground">Trending Now</h2>
+        <h2 className="text-base font-bold text-foreground">Artist-Triggered Trend Spectrum</h2>
         <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
           <button
             onClick={() => setSortMode("rate")}
