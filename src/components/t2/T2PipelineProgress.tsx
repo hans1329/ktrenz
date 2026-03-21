@@ -192,21 +192,38 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     refetchInterval: 5000,
   });
 
-  const total = totalCount ?? 0;
-  const processed = phaseState?.processed ?? 0;
+  // track 페이즈는 DB pipeline_state에서 직접 진행률 계산
+  const trackTotal = isTrackPhase ? (phaseState as any)?.total ?? dbPipelineState?.total_candidates ?? 0 : 0;
+  const trackOffset = isTrackPhase ? (phaseState as any)?.processed ?? dbPipelineState?.current_offset ?? 0 : 0;
+  const trackedCount = isTrackPhase ? (phaseState as any)?.trackedCount ?? 0 : 0;
+  
+  const total = isTrackPhase ? trackTotal : (totalCount ?? 0);
+  const processed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
   const pending = phaseState?.pending ?? 0;
   const active = phaseState?.active ?? 0;
   const expired = phaseState?.expired ?? 0;
   const merged = phaseState?.merged ?? 0;
   const bySource = phaseState?.bySource ?? {};
-  const batchSize = 5;
+  const batchSize = dbPipelineState?.batch_size ?? 5;
+
+  // Track: offset 기반 정확한 진행률
+  const progress = isTrackPhase
+    ? (total > 0 ? Math.min((processed / total) * 100, 99) : 0)
+    : (() => {
+        const batchesDone = Math.ceil(processed / batchSize);
+        const totalBatches = Math.ceil(total / batchSize);
+        const batchTime = 30;
+        const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
+        const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
+        return totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
+      })();
+
+  const totalBatches = isTrackPhase ? Math.ceil(total / batchSize) : Math.ceil(total / batchSize);
   const batchesDone = Math.ceil(processed / batchSize);
-  const totalBatches = Math.ceil(total / batchSize);
   const batchTime = 30;
-  const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
-  const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
-  const progress = totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
-  const estimatedRemaining = totalBatches > 0 ? Math.max((totalBatches - effectiveBatches) * batchTime, 0) : 0;
+  const estimatedRemaining = isTrackPhase
+    ? Math.max(Math.ceil((total - processed) / batchSize) * 8, 0) // 8초/배치
+    : Math.max((totalBatches - Math.max(Math.floor(elapsed / batchTime), batchesDone)) * batchTime, 0);
   const remainMin = Math.floor(estimatedRemaining / 60);
   const remainSec = estimatedRemaining % 60;
 
