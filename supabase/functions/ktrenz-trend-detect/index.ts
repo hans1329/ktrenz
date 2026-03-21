@@ -842,7 +842,7 @@ async function detectForMember(
    const cutoff72h = Date.now() - 72 * 60 * 60 * 1000;
   const filterByTime = (items: any[]) => items.filter((item) => {
     const pubTime = new Date(item.pubDate || item.postdate).getTime();
-    if (isNaN(pubTime) || pubTime < cutoff24h) return false;
+    if (isNaN(pubTime) || pubTime < cutoff72h) return false;
     if (isJapanese(item.title) || isJapanese(item.description || item.bloggername || "")) return false;
     return true;
   });
