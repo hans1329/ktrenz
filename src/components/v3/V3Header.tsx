@@ -126,7 +126,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
       <header
         className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 pt-[env(safe-area-inset-top)]"
         style={{
-          backgroundColor: "hsl(var(--background) / 0.56)",
+          backgroundColor: "hsl(var(--background) / 0.35)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
         }}
@@ -205,7 +205,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 <img
                   src={isMobile ? ktrenzMobileLogo : ktrenzLogo}
                   alt="K-TRENZ"
-                  className={isMobile ? "h-6 w-auto" : "h-8 w-auto"}
+                  className={isMobile ? "h-5 w-auto" : "h-6 w-auto"}
                   fetchPriority="high"
                   decoding="async"
                 />
