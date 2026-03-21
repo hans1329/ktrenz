@@ -38,6 +38,11 @@ const T2TrendMap = () => {
 
   const currentIndex = VIEW_ORDER.indexOf(viewMode);
 
+  const isDrawerInteraction = useCallback((target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return false;
+    return Boolean(target.closest('[data-vaul-drawer], [data-vaul-overlay], [role="dialog"]'));
+  }, []);
+
   const handleSwipe = useCallback((deltaX: number) => {
     const idx = VIEW_ORDER.indexOf(viewMode);
     if (deltaX < -SWIPE_THRESHOLD && idx < VIEW_ORDER.length - 1) {
@@ -48,13 +53,21 @@ const T2TrendMap = () => {
   }, [viewMode]);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isDrawerInteraction(e.target)) {
+      touchRef.current = null;
+      setIsDragging(false);
+      setDragOffset(0);
+      return;
+    }
+
     const t = e.touches[0];
     touchRef.current = { startX: t.clientX, startY: t.clientY };
     setIsDragging(true);
-  }, []);
+  }, [isDrawerInteraction]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchRef.current) return;
+    if (isDrawerInteraction(e.target) || !touchRef.current) return;
+
     const t = e.touches[0];
     const dx = t.clientX - touchRef.current.startX;
     const dy = t.clientY - touchRef.current.startY;
@@ -63,9 +76,16 @@ const T2TrendMap = () => {
       const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
       setDragOffset(atEdge ? dx * 0.2 : dx);
     }
-  }, [viewMode]);
+  }, [isDrawerInteraction, viewMode]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (isDrawerInteraction(e.target)) {
+      touchRef.current = null;
+      setIsDragging(false);
+      setDragOffset(0);
+      return;
+    }
+
     setIsDragging(false);
     setDragOffset(0);
     if (!touchRef.current) return;
@@ -76,7 +96,7 @@ const T2TrendMap = () => {
     if (Math.abs(dx) > Math.abs(dy) * 1.5) {
       handleSwipe(dx);
     }
-  }, [handleSwipe]);
+  }, [handleSwipe, isDrawerInteraction]);
 
   useEffect(() => {
     document.documentElement.classList.add("v3-theme");
