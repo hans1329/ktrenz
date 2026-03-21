@@ -404,7 +404,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   if (finalImg) {
                     const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
                     return (
-                      <div className="relative w-full overflow-hidden bg-muted rounded-xl">
+                      <div className="relative -mx-6 overflow-hidden bg-muted">
                         <img
                           src={finalImg}
                           alt={tile.sourceTitle || ""}
