@@ -555,13 +555,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [searchParams, selectedTile?.id, setSearchParams, track]);
 
   const categoryStats = useMemo(() => {
-    if (!dedupedTriggers?.length) return {};
     const stats: Record<string, number> = {};
     for (const t of dedupedTriggers) {
       stats[t.category] = (stats[t.category] || 0) + 1;
     }
+    stats["shopping"] = dedupedShopTriggers.length;
     return stats;
-  }, [dedupedTriggers]);
+  }, [dedupedTriggers, dedupedShopTriggers]);
 
   useEffect(() => {
     if (onCategoryStatsChange && dedupedTriggers.length > 0) {
