@@ -120,7 +120,62 @@ async function memberPriorityDedup(sb: any): Promise<{ expired: number; details:
   return { expired: expireArr.length, details };
 }
 
-// ── 2. 국내 우선 소스 중복제거 ──
+// ── 2. 동일 아티스트 내 동일 키워드 중복제거 ──
+// 같은 star_id + 같은 keyword가 여러 건 있으면 가장 높은 baseline_score 것만 유지
+async function sameArtistKeywordDedup(sb: any): Promise<{ expired: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, star_id, artist_name, baseline_score, detected_at")
+    .in("status", ["active", "pending"])
+    .gte("detected_at", threeDaysAgo);
+
+  if (!active?.length) return { expired: 0, details: [] };
+
+  // star_id + keyword(lowercase) 기준 그룹화
+  const byKey = new Map<string, any[]>();
+  for (const e of active) {
+    const key = `${e.star_id}::${(e.keyword || "").toLowerCase()}`;
+    const list = byKey.get(key) || [];
+    list.push(e);
+    byKey.set(key, list);
+  }
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+
+  for (const [_key, entries] of byKey) {
+    if (entries.length <= 1) continue;
+
+    // baseline_score가 가장 높은 것을 유지, 동점이면 최신 것 유지
+    entries.sort((a: any, b: any) => {
+      const scoreDiff = (b.baseline_score || 0) - (a.baseline_score || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime();
+    });
+
+    // 첫 번째(최고 점수) 외 나머지 만료
+    for (let i = 1; i < entries.length; i++) {
+      expireIds.push(entries[i].id);
+    }
+    details.push(`"${entries[0].keyword}" (${entries[0].artist_name}): ${entries.length - 1}건 중복 제거`);
+  }
+
+  if (expireIds.length > 0) {
+    // 배치로 처리 (Supabase 기본 한도 고려)
+    for (let i = 0; i < expireIds.length; i += 500) {
+      const batch = expireIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ status: "expired", expired_at: new Date().toISOString() })
+        .in("id", batch);
+    }
+  }
+
+  return { expired: expireIds.length, details };
+}
+
+// ── 3. 국내 우선 소스 중복제거 ──
 // 같은 아티스트 + 같은/유사 키워드가 국내(naver_news)와 해외(global_news)에서 모두 감지되면 국내만 유지
 async function domesticPriorityDedup(sb: any): Promise<{ expired: number; details: string[] }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
