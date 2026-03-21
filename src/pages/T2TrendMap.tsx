@@ -132,29 +132,14 @@ const T2TrendMap = () => {
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border"
                   style={{
-                    backgroundColor: isActive
-                      ? cat === "my"
+                    backgroundColor: "hsl(var(--muted))",
+                    color: "hsl(var(--foreground))",
+                    borderColor:
+                      cat === "all"
+                        ? "hsl(var(--border))"
+                        : cat === "my"
                         ? "hsl(45, 90%, 50%)"
-                        : config?.color ?? "hsl(var(--primary))"
-                      : cat === "my"
-                        ? "hsla(45, 90%, 50%, 0.12)"
-                        : config?.color
-                          ? `${config.color.replace(")", ", 0.12)").replace("hsl(", "hsla(")}`
-                          : "hsl(var(--muted) / 0.5)",
-                    color: isActive
-                      ? "#fff"
-                      : cat === "my"
-                        ? "hsl(45, 90%, 50%)"
-                        : config?.color ?? "hsl(var(--muted-foreground))",
-                    borderColor: isActive
-                      ? cat === "my"
-                        ? "hsl(45, 90%, 50%)"
-                        : config?.color ?? "hsl(var(--primary))"
-                      : cat === "my"
-                        ? "hsla(45, 90%, 50%, 0.25)"
-                        : config?.color
-                          ? `${config.color.replace(")", ", 0.25)").replace("hsl(", "hsla(")}`
-                          : "hsl(var(--border))",
+                        : config?.color ?? "hsl(var(--border))",
                   }}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
