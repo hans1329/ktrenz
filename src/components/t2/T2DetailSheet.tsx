@@ -342,7 +342,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   return (
     <Sheet open={!!tile} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-hidden border-border sm:max-w-lg sm:mx-auto flex flex-col bg-muted">
-        <SheetHeader className="pb-3 shrink-0 bg-background -mx-6 px-6 -mt-6 pt-6 rounded-t-2xl">
+        <SheetHeader className="pb-0 shrink-0 bg-background -mx-6 px-6 -mt-6 pt-6 rounded-t-2xl">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
