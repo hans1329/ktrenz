@@ -242,7 +242,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const isStalled = stallTimer > 18;
   const estimatedTotal = totalBatches * batchTime;
   const isDone = isTrackPhase
-    ? ((processed > 0 && effectiveBatches >= totalBatches) || elapsed > estimatedTotal + 60)
+    ? (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (processed > 0 && processed >= total))
     : processed > 0 && pending === 0;
 
   useEffect(() => {
