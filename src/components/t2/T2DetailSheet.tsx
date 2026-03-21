@@ -84,7 +84,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   betSuccess: { en: "Prediction locked in! ✨", ko: "예측 완료! ✨", ja: "予測完了！✨", zh: "预测成功！✨" },
   betMinError: { en: "Please enter at least 10T", ko: "최소 10T 이상 입력해주세요", ja: "10T以上を入力してください", zh: "请输入至少10T" },
   somethingWentWrong: { en: "Something went wrong, try again", ko: "문제가 발생했어요, 다시 시도해주세요", ja: "エラーが発生しました、再度お試しください", zh: "出了点问题，请重试" },
-  boostTrend: { en: "Boost this trend", ko: "이 트렌드 밀어주기", ja: "このトレンドを応援", zh: "推动这个趋势" },
+  boostTrend: { en: "Spread this trend", ko: "이 트렌드 확산하기", ja: "このトレンドを広める", zh: "扩散这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied! 📋", ko: "링크 복사했어요! 📋", ja: "リンクコピー済み！📋", zh: "链接已复制！📋" },
   boosted: { en: "Shared! +5 K-Token earned 🚀", ko: "공유 완료! +5 K-Token 획득 🚀", ja: "共有完了！+5 K-Token獲得 🚀", zh: "分享完成！获得+5 K-Token 🚀" },
