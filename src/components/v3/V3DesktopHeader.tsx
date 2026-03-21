@@ -22,6 +22,15 @@ interface SearchResult {
   schema_type: string;
 }
 
+interface KeywordResult {
+  id: string;
+  keyword: string;
+  keyword_ko: string | null;
+  artist_name: string;
+  keyword_category: string;
+  star_id: string | null;
+}
+
 const navItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
   { id: "agent", titleKey: "nav.fanAgent", icon: Bot },
