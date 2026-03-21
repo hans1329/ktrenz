@@ -372,7 +372,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-2">
             {rank != null && (
-              <Badge className="bg-primary/10 text-primary border-primary/30 text-[11px] font-black">
+              <Badge className="bg-muted-foreground/10 text-primary border-muted-foreground/20 text-[11px] font-black">
                 <Trophy className="w-3 h-3 mr-0.5" />
                 #{rank}
               </Badge>
