@@ -495,32 +495,18 @@ Deno.serve(async (req) => {
 
     console.log(`[trend-track] Done: tracked ${trackedCount} pairs${throttled ? " (throttled)" : ""}`);
 
-    // 체이닝
-    let chained = false;
-    if (!triggerId && !throttled) {
-      const nextOffset = batchOffset + batchSize;
-      if (nextOffset < totalTriggers) {
-        console.log(`[trend-track] Chaining next batch: offset=${nextOffset}`);
-        await new Promise((r) => setTimeout(r, 15000));
-
-        sb.functions.invoke("ktrenz-trend-track", {
-          body: { batchSize, batchOffset: nextOffset, regions },
-        }).catch((e: any) => console.warn(`[trend-track] Chain error: ${e.message}`));
-        chained = true;
-      }
-    }
-
+    // DB 상태머신 호환: totalCandidates를 반환하여 cron이 마지막 배치를 판정
     return new Response(
       JSON.stringify({
         success: true,
         batchOffset,
+        totalCandidates: totalTriggers,
         totalTriggers,
         triggersProcessed: triggers.length,
         uniqueTracked: dedupTriggers.length,
         duplicatesSkipped: skippedDups,
         tracked: trackedCount,
         throttled,
-        chained,
         youtubeEnabled: !!ytApiKey,
         results,
       }),
