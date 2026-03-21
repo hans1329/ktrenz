@@ -241,9 +241,10 @@ RULES:
 5. Chart names (Billboard, Hanteo, etc.) are FORBIDDEN as standalone keywords.
 6. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 7. Maximum 7 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-8. Categories: brand, product, place, food, fashion, beauty, media, music. Category guide:
+8. Categories: brand, product, place, food, fashion, beauty, media, music, event. Category guide:
    - "music": album titles, single titles, named tours/concerts, named festivals, music releases by the artist
    - "media": TV shows, dramas, movies, variety shows, interviews, entertainment content
+   - "event": fan meetings, pop-up stores, exhibitions, viral social phenomena, public gatherings, cultural moments, trending locations tied to the artist (e.g., "광화문" when it becomes a gathering spot for fans). If a place becomes newsworthy BECAUSE of the artist, classify as "event" not "place".
    - "product": physical consumer goods
 8a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "music", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
 8b. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy" separately; "나이키 에어맥스" NOT "나이키" and "에어맥스" separately. If a brand, product, or place name consists of multiple words, keep them together as one keyword.
