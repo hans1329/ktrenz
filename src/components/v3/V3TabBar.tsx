@@ -150,14 +150,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
                   {showAgentBadge && (
                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
                   )}
-                  {agentAvatarUrl ? (
-                    <Avatar className="w-[22px] h-[22px]">
-                      <AvatarImage src={agentAvatarUrl} className="object-cover" />
-                      <AvatarFallback><Bot className="w-4 h-4" /></AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Bot className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
-                  )}
+                  <Bot className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
                   <span className={cn("text-[10px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
                 </button>
               );
