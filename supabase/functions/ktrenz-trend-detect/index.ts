@@ -217,7 +217,7 @@ async function extractCommercialKeywords(
 
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities AND music events (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities, music events, AND social/cultural phenomena (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts, fan gatherings, viral moments, trending locations) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
 
 Articles:
 ${articleTexts}
