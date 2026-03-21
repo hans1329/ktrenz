@@ -177,15 +177,15 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
       ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
       : Math.max(item.influenceIndex, 1);
     const logBase = Math.log1p(metric);
-    // Rank-based multiplier: #1 is dramatically larger
+    // Rank-based multiplier: #1 is dramatically larger, lower ranks get bigger minimum
     if (idx === 0) return logBase * 12;
     if (idx === 1) return logBase * 7;
     if (idx === 2) return logBase * 5;
     if (idx < 6) return logBase * 3.5;
-    if (idx < 12) return logBase * 2.5;
-    if (idx < 25) return logBase * 1.8;
-    if (idx < 40) return logBase * 1.4;
-    return logBase * 1.1;
+    if (idx < 12) return logBase * 2.8;
+    if (idx < 25) return logBase * 2.2;
+    if (idx < 40) return logBase * 1.8;
+    return logBase * 1.5;
   };
 
   const totalValue = items.reduce((s, item, idx) => s + tileSize(item, idx), 0);
@@ -721,7 +721,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 const height = (rect.h / containerHeight) * 100;
                  const isTop20 = rectIndex < 20;
                  const isLarge = width > 18 && height > 15;
-                 const isMedium = isTop20 || (width > 10 && height > 8);
+                 const isMedium = isTop20 || (width > 6 && height > 5);
                 const isSelected = selectedTile?.id === rect.item.id;
                 const config = CATEGORY_CONFIG[rect.item.category];
                 const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";

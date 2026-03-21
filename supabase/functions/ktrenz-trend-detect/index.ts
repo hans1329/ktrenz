@@ -380,7 +380,7 @@ async function extractCommercialKeywords(
   const allNames = [memberName, nameKo, groupName, groupNameKo].filter(Boolean) as string[];
   const nameListStr = allNames.map(n => `"${n}"`).join(", ");
 
-  const systemPrompt = `You are a trend-forecasting analyst extracting SPECIFIC NAMED ENTITIES from Korean news articles.
+  const systemPrompt = `You are a trend-forecasting analyst and cultural intelligence expert. Your job is to extract SPECIFIC NAMED ENTITIES that have a DIRECT, ACTIVE commercial or cultural relationship with the given artist from Korean news articles.
 
 CRITICAL RULES — READ CAREFULLY:
 
@@ -390,26 +390,41 @@ CRITICAL RULES — READ CAREFULLY:
    - Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
    - Chart names (Billboard, Hanteo, Gaon, etc.)
    - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
+   - Generic locations: city names, district names, country names, airports
 
 2. CONTEXTUAL RELEVANCE — MOST IMPORTANT RULE:
    - A keyword is valid ONLY if the artist has a DIRECT, ACTIVE relationship with the entity
-   - ✅ VALID relationships: wearing/using a product, endorsing a brand, visiting a place for work, starring in a show, performing at a venue, collaborating with a brand
-   - ❌ INVALID relationships: entity merely MENTIONED in passing, used as comparison/metaphor, referenced for background context, part of someone else's story
-   - Example: "미쓰라가 삼성 이재용 회장과 동문인지 확인" → "삼성" is INVALID (just a comparison reference, no business relationship)
-   - Example: "카리나가 프라다 매장에서 촬영" → "프라다" is VALID (direct brand interaction)
-   - ASK YOURSELF: "Is the artist actively DOING something with this entity, or is it just mentioned nearby?"
+   - ✅ VALID: The artist endorses/wears/uses the brand, stars in the show, performs at the event, collaborates with the entity
+   - ❌ INVALID: Entity merely MENTIONED in passing, used as comparison/metaphor, part of another person's story, or background context
+   
+   DETAILED EXAMPLES of what to REJECT:
+   - "미쓰라가 삼성 이재용 회장과 동문인지 확인" → "삼성" INVALID (comparison, no business relationship)
+   - "하이라이트 멤버들이 BTS 공연 하이라이트를 감상" → "BTS" INVALID (the article mentions BTS but the keyword is about Highlight watching it)
+   - Article about Artist A mentions "이 곡은 마치 뉴진스의 Hype Boy 같다" → "Hype Boy" INVALID (metaphorical comparison)
+   - "한(Han)이 카르티에 행사에 참석" but the article is actually about Hyunjin → "Cartier" INVALID for Han (misattribution)
+   
+   DETAILED EXAMPLES of what to ACCEPT:
+   - "카리나가 프라다 2026 S/S 컬렉션 앰버서더로 발탁" → "프라다" VALID (direct endorsement)
+   - "뉴진스 x 코카콜라 컬래버 광고 공개" → "코카콜라" VALID (brand collaboration)
+   - "아이유가 '나의 아저씨' 재방송으로 화제" → "나의 아저씨" VALID (starred in the show)
 
-3. WHAT TO EXTRACT (specific named entities ONLY):
-    ✅ GOOD examples: "프라다" (brand worn/endorsed), "왕과 사는 남자" (drama starring in), "Galaxy S25" (product used/endorsed), "워터밤 2026" (event performing at)
-    ❌ BAD examples: "삼성" (mentioned as comparison), "서울" (generic city), "강남구" (generic district), "경복고" (school just visited briefly), "인기" (vague)
-    - NEVER extract generic city/district/country names (서울, 부산, 강남, 명동, 도쿄, etc.)
-    - Only extract specific venues or stores (e.g., "고척돔", "더현대 서울")
+3. AMBIGUOUS ARTIST NAMES — CRITICAL:
+   - Some artist names are common words (e.g., "Highlight" = 하이라이트, "Han" = 한, "Win" = 윈, "Joy" = 조이)
+   - When the artist name is ambiguous, CAREFULLY verify the article is actually about THIS specific artist
+   - If an article uses the word in its general meaning (e.g., "하이라이트 영상" = highlight video), it is NOT about the artist
+   - Set ownership_confidence to 0.0 if the article isn't clearly about the searched artist
 
-4. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
-5. The keyword must LITERALLY appear in the article text
-6. OWNERSHIP CHECK: Set ownership_confidence below 0.5 if the relationship is indirect, metaphorical, or just a passing mention
-7. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.
-8. When in doubt, DO NOT extract. False negatives are far better than false positives.`;
+4. CROSS-ARTIST CONTAMINATION — VERIFY OWNERSHIP:
+   - If the article mentions multiple artists, each keyword belongs ONLY to the artist who has the direct relationship
+   - "로제 콘서트에서 골든 앨범 언급" → "Golden" belongs to Jungkook, NOT Rosé
+   - "P1Harmony 기사에서 AB6IX 멤버 비교" → "AB6IX" does NOT belong to P1Harmony
+   - Always ask: "WHO is the true owner of this keyword?" and set ownership_artist accordingly
+
+5. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
+6. The keyword must LITERALLY appear in the article text
+7. OWNERSHIP CHECK: Set ownership_confidence below 0.5 if the relationship is indirect, metaphorical, or just a passing mention
+8. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.
+9. When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
   const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
