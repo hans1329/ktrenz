@@ -392,8 +392,10 @@ CRITICAL RULES — READ CAREFULLY:
    - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
 
 2. WHAT TO EXTRACT (specific named entities ONLY):
-   ✅ GOOD examples: "광화문" (place visited), "프라다" (brand worn), "왕과 사는 남자" (drama title), "Galaxy S25" (product used), "투썸플레이스" (cafe visited), "나이키 에어맥스" (shoes worn)
-   ❌ BAD examples: "카리나" (artist name), "에스파" (group name), "SM엔터" (agency), "브랜드평판" (generic term), "인기" (vague), "팬들" (generic)
+    ✅ GOOD examples: "광화문 교보빌딩" (specific landmark), "프라다" (brand worn), "왕과 사는 남자" (drama title), "Galaxy S25" (product used), "투썸플레이스" (cafe visited), "나이키 에어맥스" (shoes worn)
+    ❌ BAD examples: "카리나" (artist name), "에스파" (group name), "SM엔터" (agency), "브랜드평판" (generic term), "인기" (vague), "팬들" (generic), "서울" (generic city), "강남구" (generic district), "명동" (generic area), "공항" (generic)
+    - NEVER extract generic city/district/country names as keywords (서울, 부산, 강남, 명동, 도쿄, etc.) — these have no trend value
+    - Only extract specific place names that are unique landmarks, venues, or stores (e.g., "고척돔", "올림픽공원", "더현대 서울")
 
 3. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
 4. The keyword must LITERALLY appear in the article text
@@ -549,6 +551,13 @@ Call extract_keywords with the specific named entities found, then call analyze_
         "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
         "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
         "김포국제공항", "대만", "일본", "중국", "미국", "한국",
+        // 일반 지명 (트렌드 가치 없음)
+        "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+        "경기도", "강원도", "충청도", "전라도", "경상도", "제주도",
+        "강남", "강남구", "서울 강남구", "서초구", "송파구", "종로구", "서울시 종로구",
+        "홍대", "이태원", "명동", "동대문", "압구정", "청담",
+        "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
+        "airport", "인천공항", "공항", "출국", "입국",
       ]);
       if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
         console.warn(`[trend-detect] Blocked noise keyword: "${k.keyword}"`);
@@ -1151,6 +1160,12 @@ async function detectForMember(
     "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
     "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
     "김포국제공항", "대만", "일본", "중국", "미국", "한국",
+    "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+    "경기도", "강원도", "충청도", "전라도", "경상도", "제주도",
+    "강남", "강남구", "서울 강남구", "서초구", "송파구", "종로구", "서울시 종로구",
+    "홍대", "이태원", "명동", "동대문", "압구정", "청담",
+    "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
+    "airport", "인천공항", "공항", "출국", "입국",
   ]);
 
   for (const candidate of candidateRows) {
