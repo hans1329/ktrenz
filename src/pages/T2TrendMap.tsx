@@ -96,13 +96,13 @@ const T2TrendMap = () => {
       />
       <V3Header
         centerSlot={
-          <div className="flex items-center gap-1 bg-muted rounded-full border border-border p-1 md:p-1">
+          <div className="flex items-center gap-0.5 bg-muted rounded-full border border-border p-0.5 md:gap-1 md:p-1">
             {VIEW_TABS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => { setViewMode(key); window.scrollTo({ top: 0 }); }}
                 className={cn(
-                  "flex items-center justify-center w-10 h-7 md:w-12 md:h-8 rounded-full transition-all",
+                  "flex items-center justify-center w-8 h-6 md:w-12 md:h-8 rounded-full transition-all",
                   viewMode === key
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
