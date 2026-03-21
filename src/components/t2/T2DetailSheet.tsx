@@ -577,7 +577,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <div className="space-y-3">
               <div className="text-center">
                 <p className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
-                  <Coins className="w-5 h-5 text-primary" />
+                  <TrendingUp className="w-5 h-5 text-primary" />
                   {t("voteRelevance", language)}
                 </p>
                 {(() => {
@@ -611,7 +611,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   >
                     <div className="text-lg">{emoji}</div>
                     <div className="text-sm font-bold text-foreground">{label}</div>
-                    <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
+                    <div className={cn("text-sm font-black", color === "amber" ? "text-amber-600" : `text-${color}-400`)}>{multi}</div>
                     <div className="text-[9px] text-teal-400 mt-0.5">{threshold}</div>
                   </div>
                 ))}
