@@ -547,7 +547,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const rects = useMemo(() => {
     if (!visibleBoxItems.length) return [];
-    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight);
+    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight, sortMode);
   }, [visibleBoxItems, containerWidth, containerHeight]);
 
   useEffect(() => {
