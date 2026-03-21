@@ -49,14 +49,24 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const { data: dbPipelineState } = useQuery({
     queryKey: ["pipeline-db-state", run?.phase],
     queryFn: async () => {
-      const { data } = await supabase
+      // 먼저 running 상태 조회
+      const { data: running } = await supabase
         .from("ktrenz_pipeline_state" as any)
         .select("current_offset, total_candidates, status, run_id, batch_size")
         .eq("phase", run?.phase ?? "track")
         .in("status", ["running", "postprocess_requested", "postprocess_running"])
         .order("updated_at", { ascending: false })
         .limit(1);
-      return (data as any[])?.[0] ?? null;
+      if ((running as any[])?.length) return (running as any[])[0];
+      // running이 없으면 최근 done 상태 조회 (완료 표시용)
+      const { data: done } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("current_offset, total_candidates, status, run_id, batch_size")
+        .eq("phase", run?.phase ?? "track")
+        .in("status", ["done", "postprocess_done"])
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      return (done as any[])?.[0] ?? null;
     },
     enabled: !!run && isTrackPhase,
     refetchInterval: 3000,
