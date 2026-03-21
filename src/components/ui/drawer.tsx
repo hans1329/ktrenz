@@ -35,6 +35,9 @@ const DrawerContent = React.forwardRef<
         className,
       )}
       style={{ touchAction: "pan-y" }}
+      onTouchStartCapture={(event) => event.stopPropagation()}
+      onTouchMoveCapture={(event) => event.stopPropagation()}
+      onTouchEndCapture={(event) => event.stopPropagation()}
       {...props}
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
