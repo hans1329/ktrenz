@@ -45,7 +45,7 @@ async function fetchGoogleTrends(
     engine: "google_trends",
     q: query,
     data_type: "TIMESERIES",
-    date: "now 7-d",
+    date: "now 2-d",
     api_key: serpApiKey,
   });
 
