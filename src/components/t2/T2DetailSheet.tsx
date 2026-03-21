@@ -397,16 +397,30 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   const rawImg = sanitizeImageUrl(tile.sourceImageUrl);
                   const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
                   const platformLogo = detectPlatformLogo(tile.sourceUrl, tile.sourceImageUrl);
+                  // Always try artist image as primary fallback
                   const displayImg = safeImg || tile.artistImageUrl || platformLogo;
                   
-                  if (displayImg) {
+                  // Even if no source/platform image, show artist image or category placeholder
+                  const finalImg = displayImg || null;
+                  
+                  if (finalImg) {
+                    const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
                     return (
                       <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
                         <img
-                          src={displayImg}
+                          src={finalImg}
                           alt={tile.sourceTitle || ""}
-                          className={cn("w-full h-full object-cover", platformLogo && !safeImg && !tile.artistImageUrl && "object-contain p-8 bg-muted")}
+                          className={cn("w-full h-full object-cover", isLogoOnly && "object-contain p-8 bg-muted")}
                           loading="lazy"
+                          onError={(e) => {
+                            // On image load error, try artist image or hide
+                            const target = e.currentTarget;
+                            if (tile.artistImageUrl && target.src !== tile.artistImageUrl) {
+                              target.src = tile.artistImageUrl;
+                            } else {
+                              target.style.display = "none";
+                            }
+                          }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-3">
