@@ -238,7 +238,7 @@ const T2KeywordDetail = () => {
         .eq("market_id", marketData.id)
         .eq("user_id", user.id);
       if (!bets || bets.length === 0) return null;
-      const outcomes = ["decline", "mild", "strong", "explosive"] as const;
+      const outcomes = ["mild", "strong", "explosive"] as const;
       const result: Record<string, { amount: number; shares: number }> = {};
       let totalSpent = 0;
       for (const o of outcomes) {
