@@ -1,0 +1,1 @@
+UPDATE ktrenz_pipeline_state SET status = 'done', updated_at = now() WHERE id = '71c23bd8-f569-4e44-84e8-616736693b4a' AND run_id = 'run_1774068482165';
