@@ -992,10 +992,11 @@ async function detectForMember(
     return { keywordsFound: 0, articlesFound: 0, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
-  // AI로 상업 키워드 추출 (News + Blog 통합)
+  // AI로 상업 키워드 추출 (News + Blog 통합) — nameKo, groupNameKo 전달
   const aiKeywords = articles.length > 0
     ? await extractCommercialKeywords(
-        openaiKey, member.display_name, member.group_name, articles, member.star_category
+        openaiKey, member.display_name, member.group_name, articles, member.star_category,
+        member.name_ko, member.group_name_ko
       )
     : [];
 
