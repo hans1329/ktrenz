@@ -96,7 +96,10 @@ const T2TrendMap = () => {
       />
       <V3Header
         centerSlot={
-          <div className="flex items-center gap-0 bg-muted rounded-full border border-border p-0.5 md:gap-1 md:p-1">
+          <div
+            className="flex items-center gap-0 rounded-full border border-border p-0.5 md:gap-1 md:p-1"
+            style={{ backgroundColor: "hsl(var(--muted) / 0.72)" }}
+          >
             {VIEW_TABS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
@@ -116,7 +119,10 @@ const T2TrendMap = () => {
         }
       />
 
-      <div className="sticky top-14 z-30 bg-background/60 backdrop-blur-md pt-3 pb-2 mt-14">
+      <div
+        className="sticky top-14 z-30 backdrop-blur-md pt-3 pb-2 mt-14"
+        style={{ backgroundColor: "hsl(var(--background) / 0.6)" }}
+      >
         <div className="md:max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max px-4">
             {ALL_CATEGORIES.map((cat) => {
@@ -136,16 +142,16 @@ const T2TrendMap = () => {
                   )}
                   style={{
                     backgroundColor: isActive
-                      ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
-                      : "hsl(var(--muted) / 0.5)",
-                    color: isActive ? "#fff" : "hsl(220, 10%, 55%)",
+                      ? (cat === "my" ? "hsl(45 90% 50%)" : config?.color ?? "hsl(var(--primary))")
+                      : "hsl(var(--muted) / 0.35)",
+                    color: isActive ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
                     borderColor: isActive
                       ? "transparent"
                       : cat === "all"
-                        ? "hsl(var(--border))"
+                        ? "hsl(var(--border) / 0.9)"
                         : cat === "my"
-                        ? "hsla(45, 90%, 50%, 0.3)"
-                        : config?.color ? `${config.color.replace(")", ", 0.3)").replace("hsl(", "hsla(")}` : "hsl(var(--border))",
+                        ? "hsl(45 90% 50% / 0.3)"
+                        : config?.color ? `${config.color.replace(")", ", 0.3)").replace("hsl(", "hsla(")}` : "hsl(var(--border) / 0.9)",
                   }}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
@@ -154,7 +160,7 @@ const T2TrendMap = () => {
                     return count > 0 ? (
                       <span
                         className="text-[10px]"
-                        style={{ color: isActive ? "rgba(255,255,255,0.75)" : "hsl(220, 10%, 65%)" }}
+                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : "hsl(var(--muted-foreground) / 0.8)" }}
                       >
                         {count}
                       </span>
