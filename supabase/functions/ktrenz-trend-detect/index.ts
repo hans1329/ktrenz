@@ -151,6 +151,43 @@ async function searchNaverTotal(
   }
 }
 
+// ─── 7일 이내 기사 카운트 + API total 반환 ───
+function parseBlogPostdate(pd: string): number {
+  if (!pd || pd.length !== 8) return 0;
+  return new Date(`${pd.slice(0,4)}-${pd.slice(4,6)}-${pd.slice(6,8)}T00:00:00+09:00`).getTime();
+}
+
+async function searchNaverRecent7d(
+  clientId: string, clientSecret: string,
+  endpoint: "news" | "blog", query: string,
+): Promise<{ recent: number; total: number }> {
+  try {
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", "100");
+    url.searchParams.set("sort", "date");
+    const response = await fetch(url.toString(), {
+      headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
+    });
+    if (!response.ok) return { recent: 0, total: 0 };
+    const data = await response.json();
+    const apiTotal = data.total || 0;
+    const items = data.items || [];
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let count = 0;
+    for (const item of items) {
+      let pubTime: number;
+      if (endpoint === "blog") {
+        pubTime = parseBlogPostdate(item.postdate);
+      } else {
+        pubTime = item.pubDate ? new Date(item.pubDate).getTime() : 0;
+      }
+      if (pubTime >= sevenDaysAgo) count++;
+    }
+    return { recent: count, total: apiTotal };
+  } catch { return { recent: 0, total: 0 }; }
+}
+
 // 하위 호환용 래퍼
 async function searchNaverNews(
   clientId: string,
@@ -1094,17 +1131,23 @@ async function trackExistingKeywords(
       const kwQuery = trigger.keyword_ko || trigger.keyword;
       const searchQuery = `"${artistLabel}" "${kwQuery}"`;
 
-      const [newsTotal, blogTotal] = await Promise.all([
+      const [newsResult, blogResult] = await Promise.all([
         searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
         searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
       ]);
 
-      const rawCount = newsTotal + blogTotal;
-      const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
+      const newsRecent = newsResult.recent;
+      const blogRecent = blogResult.recent;
+      const rawCount = newsRecent + blogRecent;
+      const buzzScore = normalizeBuzzScore(newsRecent, blogRecent);
+      const apiTotal = newsResult.total + blogResult.total;
       const baseline = trigger.baseline_score || 0;
       const deltaPct = baseline > 0
         ? Math.round(((rawCount - baseline) / baseline) * 10000) / 100
         : rawCount > 0 ? 100 : 0;
+
+      const prevApiTotal = trigger.prev_api_total || 0;
+      const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
 
       // tracking 레코드 저장
       await sb.from("ktrenz_trend_tracking").insert({
@@ -1113,11 +1156,16 @@ async function trackExistingKeywords(
         interest_score: rawCount,
         region: "naver",
         delta_pct: deltaPct,
-        raw_response: { news_total: newsTotal, blog_total: blogTotal, buzz_score_normalized: buzzScore, search_query: searchQuery },
+        raw_response: {
+          news_recent: newsRecent, blog_recent: blogRecent,
+          news_api_total: newsResult.total, blog_api_total: blogResult.total,
+          api_total: apiTotal, daily_delta: dailyDelta,
+          buzz_score_normalized: buzzScore, search_query: searchQuery,
+        },
       });
 
-      // peak/influence 갱신
-      const updates: any = {};
+      // peak/influence 갱신 + prev_api_total 저장
+      const updates: any = { prev_api_total: apiTotal };
       if (baseline <= 0 && rawCount > 0) {
         updates.baseline_score = rawCount;
         updates.peak_score = rawCount;
@@ -1129,9 +1177,7 @@ async function trackExistingKeywords(
         const currentPeak = updates.peak_score ?? trigger.peak_score ?? rawCount;
         updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
       }
-      if (Object.keys(updates).length > 0) {
-        await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
-      }
+      await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
 
       // 스마트 만료
       const ageDays = (Date.now() - new Date(trigger.detected_at).getTime()) / 86400000;
