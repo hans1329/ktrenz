@@ -147,7 +147,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
           {/* Left: Logo */}
           <div className="flex items-center shrink-0">
             <Link to="/" className="flex items-center">
-              <img src={ktrenzLogo} alt="K-TRENZ" className="h-4 w-auto" loading="eager" fetchPriority="high" decoding="async" />
+              <img src={ktrenzLogo} alt="K-TRENZ" className="h-3.5 w-auto" loading="eager" fetchPriority="high" decoding="async" />
             </Link>
           </div>
 
