@@ -117,23 +117,23 @@ async function fetchKeywordBuzzCounts(
 ): Promise<{ newsTotal: number; blogTotal: number }> {
   const query = `"${artistName}" "${keyword}"`;
   const [newsResult, blogResult] = await Promise.all([
-    searchNaverCount(clientId, clientSecret, "news", query),
-    searchNaverCount(clientId, clientSecret, "blog", query),
+    searchNaverTotal(clientId, clientSecret, "news", query),
+    searchNaverTotal(clientId, clientSecret, "blog", query),
   ]);
   return { newsTotal: newsResult, blogTotal: blogResult };
 }
 
-async function searchNaverCount(
+// Naver API total 필드 사용 (display 제한 없는 전체 건수)
+async function searchNaverTotal(
   clientId: string,
   clientSecret: string,
   endpoint: "news" | "blog",
   query: string,
 ): Promise<number> {
   try {
-    // 최근 7일 기사만 카운트하기 위해 100건 가져와서 날짜 필터링
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "100");
+    url.searchParams.set("display", "1"); // total만 필요하므로 최소
     url.searchParams.set("sort", "date");
 
     const response = await fetch(url.toString(), {
@@ -145,17 +145,7 @@ async function searchNaverCount(
 
     if (!response.ok) return 0;
     const data = await response.json();
-    const items = data.items || [];
-    if (items.length === 0) return 0;
-
-    // 최근 7일 이내 기사만 카운트
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const recentCount = items.filter((item: any) => {
-      const pubTime = new Date(item.pubDate).getTime();
-      return !isNaN(pubTime) && pubTime >= sevenDaysAgo;
-    }).length;
-
-    return recentCount;
+    return data.total || 0;
   } catch {
     return 0;
   }
