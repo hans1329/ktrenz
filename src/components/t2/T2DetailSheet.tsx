@@ -633,7 +633,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* My Position */}
               {myBets && myBets.length > 0 && (() => {
                 const outcomes = ["mild", "strong", "explosive"] as const;
-                const outcomeEmoji: Record<string, string> = { mild: "📈", strong: "🔥", explosive: "🚀" };
+                const outcomeEmoji: Record<string, string> = { mild: "🌱", strong: "🔥", explosive: "🚀" };
+                const outcomeLabel: Record<string, string> = { mild: language === "ko" ? "소폭" : "Mild", strong: language === "ko" ? "강세" : "Strong", explosive: language === "ko" ? "폭발" : "Explosive" };
                 const outcomeColor: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
                 const stakes = Object.fromEntries(outcomes.map(o => [o, {
                   amount: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.amount), 0),
@@ -646,7 +647,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <div className="grid grid-cols-3 gap-1.5">
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
-                          <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
+                          <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {outcomeLabel[o]}</div>
                           <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/90">T</span></div>
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
