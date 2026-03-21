@@ -98,12 +98,12 @@ async function searchNaver(
   }
 }
 
-// ─── Buzz Score 정규화: log10(count+1)/log10(cap)*weight ───
-function normalizeBuzzScore(newsTotal: number, blogTotal: number): number {
-  const newsCap = 1000;
-  const blogCap = 10000;
-  const newsNorm = newsTotal > 0 ? (Math.log10(newsTotal + 1) / Math.log10(newsCap)) * 100 : 0;
-  const blogNorm = blogTotal > 0 ? (Math.log10(blogTotal + 1) / Math.log10(blogCap)) * 100 : 0;
+// ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
+function normalizeBuzzScore(newsCount: number, blogCount: number): number {
+  const newsCap = 100;  // display=100 기준 최대치
+  const blogCap = 100;
+  const newsNorm = newsCount > 0 ? (Math.log10(newsCount + 1) / Math.log10(newsCap + 1)) * 100 : 0;
+  const blogNorm = blogCount > 0 ? (Math.log10(blogCount + 1) / Math.log10(blogCap + 1)) * 100 : 0;
   const buzzScore = Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
   return buzzScore;
 }
@@ -130,9 +130,10 @@ async function searchNaverCount(
   query: string,
 ): Promise<number> {
   try {
+    // 최근 7일 기사만 카운트하기 위해 100건 가져와서 날짜 필터링
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "1");
+    url.searchParams.set("display", "100");
     url.searchParams.set("sort", "date");
 
     const response = await fetch(url.toString(), {
@@ -144,7 +145,17 @@ async function searchNaverCount(
 
     if (!response.ok) return 0;
     const data = await response.json();
-    return data.total || 0;
+    const items = data.items || [];
+    if (items.length === 0) return 0;
+
+    // 최근 7일 이내 기사만 카운트
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentCount = items.filter((item: any) => {
+      const pubTime = new Date(item.pubDate).getTime();
+      return !isNaN(pubTime) && pubTime >= sevenDaysAgo;
+    }).length;
+
+    return recentCount;
   } catch {
     return 0;
   }
