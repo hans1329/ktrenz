@@ -96,24 +96,49 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.trim().length < 2) { setSearchResults([]); return; }
+    if (query.trim().length < 2) { setSearchResults([]); setKeywordResults([]); return; }
     setIsSearching(true);
     try {
-      const { data, error } = await supabase
+      const wikiPromise = supabase
         .from("wiki_entries")
         .select("id, title, slug, image_url, schema_type")
         .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
         .in("schema_type", ["artist", "member"] as const)
         .limit(8);
+
+      const kwPromise = (supabase as any)
+        .from("ktrenz_trend_triggers")
+        .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
+        .eq("status", "active")
+        .or(`keyword.ilike.%${query}%,keyword_ko.ilike.%${query}%,keyword_en.ilike.%${query}%`)
+        .order("detected_at", { ascending: false })
+        .limit(8);
+
+      const [{ data, error }, { data: kwData }] = await Promise.all([wikiPromise, kwPromise]);
       if (!error && data) setSearchResults(data);
+
+      const seenKw = new Set<string>();
+      const uniqueKw: KeywordResult[] = [];
+      for (const kw of (kwData || []) as KeywordResult[]) {
+        const key = `${kw.keyword}-${kw.artist_name}`;
+        if (!seenKw.has(key)) { seenKw.add(key); uniqueKw.push(kw); }
+      }
+      setKeywordResults(uniqueKw.slice(0, 6));
     } catch (err) { console.error("Search error:", err); }
     finally { setIsSearching(false); }
   };
 
   const handleResultClick = (slug: string) => {
     navigate(`/artist/${slug}`);
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]);
+    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
+
+  const handleKeywordClick = (kw: KeywordResult) => {
+    navigate(`/keyword/${kw.id}`);
+    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
+  };
+
+  const hasResults = searchResults.length > 0 || keywordResults.length > 0;
 
   return (
     <>
