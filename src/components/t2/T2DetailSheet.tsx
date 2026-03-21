@@ -369,7 +369,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
             </button>
             {rank != null && (
-              <Badge className="bg-muted-foreground/10 text-primary border-muted-foreground/20 text-[11px] font-black">
+              <Badge className="bg-muted-foreground/10 text-primary border-muted-foreground/20 text-[11px] font-medium hover:bg-muted-foreground/10">
                 <Trophy className="w-3 h-3 mr-0.5" />
                 #{rank}
               </Badge>
