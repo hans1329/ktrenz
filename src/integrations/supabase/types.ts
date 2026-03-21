@@ -3613,6 +3613,8 @@ export type Database = {
           image_url: string | null
           influence_categories: string[] | null
           is_active: boolean | null
+          last_detect_result: Json | null
+          last_detected_at: string | null
           musicbrainz_id: string | null
           name_ko: string | null
           namuwiki_url: string | null
@@ -3631,6 +3633,8 @@ export type Database = {
           image_url?: string | null
           influence_categories?: string[] | null
           is_active?: boolean | null
+          last_detect_result?: Json | null
+          last_detected_at?: string | null
           musicbrainz_id?: string | null
           name_ko?: string | null
           namuwiki_url?: string | null
@@ -3649,6 +3653,8 @@ export type Database = {
           image_url?: string | null
           influence_categories?: string[] | null
           is_active?: boolean | null
+          last_detect_result?: Json | null
+          last_detected_at?: string | null
           musicbrainz_id?: string | null
           name_ko?: string | null
           namuwiki_url?: string | null

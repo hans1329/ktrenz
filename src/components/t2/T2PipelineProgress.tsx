@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, Zap, X, ChevronDown, ChevronUp, Newspaper, BookOpen, ShoppingBag } from "lucide-react";
+import { Loader2, CheckCircle2, Zap, X, ChevronDown, ChevronUp, Newspaper, BookOpen, ShoppingBag, AlertCircle, Search } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface PipelineRun {
@@ -154,13 +154,29 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     refetchInterval: 5000,
   });
 
+  // ─── 실시간 스타별 처리 로그 (ktrenz_stars.last_detect_result) ───
+  const { data: starLogs } = useQuery({
+    queryKey: ["pipeline-star-logs", run?.startedAt.toISOString()],
+    queryFn: async () => {
+      if (!run) return [];
+      const { data } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("id, display_name, star_type, last_detected_at, last_detect_result")
+        .gte("last_detected_at", run.startedAt.toISOString())
+        .order("last_detected_at", { ascending: false })
+        .limit(30);
+      return (data ?? []) as any[];
+    },
+    enabled: !!run && !isTrackPhase,
+    refetchInterval: 4000,
+  });
+
   const { data: recentKeywords } = useQuery({
     queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase, run?.phase],
     queryFn: async () => {
       if (!run) return [];
 
       if (isTrackPhase) {
-        // 최근 추적된 키워드 - trigger와 join하여 정보 가져옴
         const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
           .from("ktrenz_trend_tracking" as any)
@@ -207,8 +223,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const trackOffset = isTrackPhase ? (phaseState as any)?.processed ?? dbPipelineState?.current_offset ?? 0 : 0;
   const trackedCount = isTrackPhase ? (phaseState as any)?.trackedCount ?? 0 : 0;
   
+  // 스타 로그 기반 processed 보정 (DB에 기록된 실제 처리 수)
+  const starLogCount = starLogs?.length ?? 0;
+  
   const total = isTrackPhase ? trackTotal : (totalCount ?? 0);
-  const processed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
+  const rawProcessed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
+  const processed = isTrackPhase ? rawProcessed : Math.max(rawProcessed, starLogCount);
   const pending = phaseState?.pending ?? 0;
   const active = phaseState?.active ?? 0;
   const expired = phaseState?.expired ?? 0;
@@ -400,6 +420,61 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
                   <div className={`text-[10px] sm:text-xs font-bold ${item.color}`}>{item.value}</div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Live star processing log */}
+          {!isTrackPhase && starLogs && starLogs.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground">처리 로그 (최근 {starLogs.length}명)</p>
+              <div className="max-h-28 sm:max-h-36 overflow-y-auto space-y-0.5">
+                {starLogs.slice(0, 15).map((star: any) => {
+                  const r = star.last_detect_result;
+                  const status = r?.status;
+                  const isNoNews = status === "no_news";
+                  const isNoKw = status === "no_keywords";
+                  const isError = status === "error";
+                  const isFound = status === "found";
+                  return (
+                    <div
+                      key={star.id}
+                      className="flex items-center gap-1 text-[10px] sm:text-[11px] py-0.5 px-1.5 rounded bg-background/60"
+                    >
+                      {isFound ? (
+                        <CheckCircle2 className="w-2.5 h-2.5 shrink-0 text-emerald-400" />
+                      ) : isNoNews ? (
+                        <AlertCircle className="w-2.5 h-2.5 shrink-0 text-muted-foreground/50" />
+                      ) : isError ? (
+                        <AlertCircle className="w-2.5 h-2.5 shrink-0 text-destructive" />
+                      ) : (
+                        <Search className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className={`font-medium truncate max-w-[80px] sm:max-w-[120px] ${isNoNews ? "text-muted-foreground/60" : "text-foreground"}`}>
+                        {star.display_name}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground/60 uppercase shrink-0">
+                        {star.star_type}
+                      </span>
+                      {isFound && (
+                        <span className="text-[8px] text-emerald-400 ml-auto shrink-0">
+                          뉴스{r.news} 키워드{r.keywords} 삽입{r.inserted}
+                        </span>
+                      )}
+                      {isNoNews && (
+                        <span className="text-[8px] text-muted-foreground/50 ml-auto shrink-0">뉴스 없음</span>
+                      )}
+                      {isNoKw && (
+                        <span className="text-[8px] text-muted-foreground/50 ml-auto shrink-0">
+                          뉴스{r.news} · 키워드 없음
+                        </span>
+                      )}
+                      {isError && (
+                        <span className="text-[8px] text-destructive ml-auto shrink-0 truncate max-w-[80px]">에러</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
