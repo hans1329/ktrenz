@@ -986,6 +986,7 @@ async function detectForMember(
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_en, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
     .eq("star_id", member.id)
+    .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo);
 
   // keyword, keyword_en, keyword_ko 모두를 키로 매핑하여 크로스 소스 중복 감지
@@ -1001,6 +1002,7 @@ async function detectForMember(
     .from("ktrenz_trend_triggers")
     .select("keyword, keyword_en, keyword_ko")
     .neq("star_id", member.id)
+    .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo);
 
   const crossSet = new Set<string>();
