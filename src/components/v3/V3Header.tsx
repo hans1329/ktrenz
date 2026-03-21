@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import ktrenzLogo from "@/assets/k-trenz-logo.webp";
-import ktrenzMobileLogo from "@/assets/logo-ko-mobile.webp";
+import ktrenzLogo from "@/assets/logo_col.webp";
+import ktrenzMobileLogo from "@/assets/logo_col.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 
