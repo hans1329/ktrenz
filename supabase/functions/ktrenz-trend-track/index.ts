@@ -248,6 +248,7 @@ Deno.serve(async (req) => {
       batchSize = 5,
       batchOffset = 0,
       regions = ["worldwide"],
+      shopOnly = false,
     } = body;
 
     if (COLLECTION_PAUSED) {
