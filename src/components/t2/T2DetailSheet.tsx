@@ -581,9 +581,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* 3-outcome selector with multipliers */}
               <div className="grid grid-cols-3 gap-2">
                 {([
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "<50% 상승" : "<50% rise", emoji: "🌱", color: "amber", multi: "1.2x" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "50~100% 상승" : "50~100% rise", emoji: "🔥", color: "emerald", multi: "3x" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "100%+ 상승" : "100%+ rise", emoji: "🚀", color: "purple", multi: "8x" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "<15% 상승" : "<15% rise", emoji: "🌱", color: "amber", multi: "1.2x" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "15~50% 상승" : "15~50% rise", emoji: "🔥", color: "emerald", multi: "3x" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "50%+ 상승" : "50%+ rise", emoji: "🚀", color: "purple", multi: "6x" },
                 ]).map(({ key, label, threshold, emoji, color, multi }) => (
                   <div
                     key={key}
