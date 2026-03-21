@@ -391,16 +391,25 @@ CRITICAL RULES — READ CAREFULLY:
    - Chart names (Billboard, Hanteo, Gaon, etc.)
    - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
 
-2. WHAT TO EXTRACT (specific named entities ONLY):
-    ✅ GOOD examples: "광화문 교보빌딩" (specific landmark), "프라다" (brand worn), "왕과 사는 남자" (drama title), "Galaxy S25" (product used), "투썸플레이스" (cafe visited), "나이키 에어맥스" (shoes worn)
-    ❌ BAD examples: "카리나" (artist name), "에스파" (group name), "SM엔터" (agency), "브랜드평판" (generic term), "인기" (vague), "팬들" (generic), "서울" (generic city), "강남구" (generic district), "명동" (generic area), "공항" (generic)
-    - NEVER extract generic city/district/country names as keywords (서울, 부산, 강남, 명동, 도쿄, etc.) — these have no trend value
-    - Only extract specific place names that are unique landmarks, venues, or stores (e.g., "고척돔", "올림픽공원", "더현대 서울")
+2. CONTEXTUAL RELEVANCE — MOST IMPORTANT RULE:
+   - A keyword is valid ONLY if the artist has a DIRECT, ACTIVE relationship with the entity
+   - ✅ VALID relationships: wearing/using a product, endorsing a brand, visiting a place for work, starring in a show, performing at a venue, collaborating with a brand
+   - ❌ INVALID relationships: entity merely MENTIONED in passing, used as comparison/metaphor, referenced for background context, part of someone else's story
+   - Example: "미쓰라가 삼성 이재용 회장과 동문인지 확인" → "삼성" is INVALID (just a comparison reference, no business relationship)
+   - Example: "카리나가 프라다 매장에서 촬영" → "프라다" is VALID (direct brand interaction)
+   - ASK YOURSELF: "Is the artist actively DOING something with this entity, or is it just mentioned nearby?"
 
-3. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
-4. The keyword must LITERALLY appear in the article text
-5. OWNERSHIP CHECK: Determine if this entity is genuinely associated with the searched artist, not just mentioned in passing
-6. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.`;
+3. WHAT TO EXTRACT (specific named entities ONLY):
+    ✅ GOOD examples: "프라다" (brand worn/endorsed), "왕과 사는 남자" (drama starring in), "Galaxy S25" (product used/endorsed), "워터밤 2026" (event performing at)
+    ❌ BAD examples: "삼성" (mentioned as comparison), "서울" (generic city), "강남구" (generic district), "경복고" (school just visited briefly), "인기" (vague)
+    - NEVER extract generic city/district/country names (서울, 부산, 강남, 명동, 도쿄, etc.)
+    - Only extract specific venues or stores (e.g., "고척돔", "더현대 서울")
+
+4. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
+5. The keyword must LITERALLY appear in the article text
+6. OWNERSHIP CHECK: Set ownership_confidence below 0.5 if the relationship is indirect, metaphorical, or just a passing mention
+7. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.
+8. When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
   const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
