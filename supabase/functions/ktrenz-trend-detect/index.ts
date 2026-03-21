@@ -1002,6 +1002,7 @@ async function detectForMember(
     .from("ktrenz_trend_triggers")
     .select("keyword, keyword_en, keyword_ko")
     .neq("star_id", member.id)
+    .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo);
 
   const crossSet = new Set<string>();
