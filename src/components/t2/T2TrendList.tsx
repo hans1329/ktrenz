@@ -117,7 +117,9 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         const isMyArtist = watchedSet.has(item.wikiEntryId);
         const isSelected = selectedTileId === item.id;
         const rank = idx + 1;
-        const heroImage = item.sourceImageUrl || item.artistImageUrl;
+        const rawSourceImg = sanitizeImageUrl(item.sourceImageUrl);
+        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+        const heroImage = safeSourceImg || item.artistImageUrl;
         const context = getLocalizedContext(item, language);
         const isNew = animatingIds.has(item.id);
 

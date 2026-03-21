@@ -90,9 +90,17 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
           >
             {/* Artist image — large */}
             <div className="relative w-full aspect-square bg-muted overflow-hidden">
-              {(group.keywords[0]?.sourceImageUrl || group.artistImageUrl) ? (
+              {(() => {
+                const rawImg = sanitizeImageUrl(group.keywords[0]?.sourceImageUrl);
+                const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
+                const imgSrc = safeImg || group.artistImageUrl;
+                return imgSrc ? (
                 <img
-                  src={group.keywords[0]?.sourceImageUrl || group.artistImageUrl || ""}
+                  src={imgSrc}
+                  alt={displayName(group)}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
                   alt={displayName(group)}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
