@@ -655,7 +655,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 backgroundColor: isActive
                   ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
                   : "hsl(var(--muted))",
-                color: isActive ? "#fff" : (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--muted-foreground))"),
+                color: isActive ? "#fff" : "hsl(var(--foreground))",
                 borderColor: isActive
                   ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
                   : (cat === "my" ? "hsla(45, 90%, 50%, 0.4)" : config?.color ?? "hsl(var(--border))"),
