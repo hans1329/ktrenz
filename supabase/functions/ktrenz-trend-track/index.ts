@@ -22,16 +22,26 @@ async function searchNaverCount(
   endpoint: "news" | "blog", query: string,
 ): Promise<number> {
   try {
+    // 최근 7일 기사만 카운트
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "1");
+    url.searchParams.set("display", "100");
     url.searchParams.set("sort", "date");
     const response = await fetch(url.toString(), {
       headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
     });
     if (!response.ok) return 0;
     const data = await response.json();
-    return data.total || 0;
+    const items = data.items || [];
+    if (items.length === 0) return 0;
+
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentCount = items.filter((item: any) => {
+      const pubTime = new Date(item.pubDate).getTime();
+      return !isNaN(pubTime) && pubTime >= sevenDaysAgo;
+    }).length;
+
+    return recentCount;
   } catch { return 0; }
 }
 
