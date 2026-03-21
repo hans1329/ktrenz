@@ -581,10 +581,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* 3-outcome selector with multipliers */}
               <div className="grid grid-cols-3 gap-2">
                 {([
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "<50%", emoji: "🌱", color: "amber", multi: "1.2x" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald", multi: "3x" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple", multi: "8x" },
-                ]).map(({ key, label, emoji, color, multi }) => (
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "<50% 상승" : "<50% rise", emoji: "🌱", color: "amber", multi: "1.2x" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "50~100% 상승" : "50~100% rise", emoji: "🔥", color: "emerald", multi: "3x" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "100%+ 상승" : "100%+ rise", emoji: "🚀", color: "purple", multi: "8x" },
+                ]).map(({ key, label, threshold, emoji, color, multi }) => (
                   <div
                     key={key}
                     className={cn(
@@ -596,9 +596,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     onClick={() => setBetOutcome(key)}
                   >
                     <div className="text-lg">{emoji}</div>
-                    <div className="text-[10px] text-muted-foreground">{label}</div>
+                    <div className="text-[10px] font-medium text-foreground">{label}</div>
                     <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">{(prices[key] * 100).toFixed(0)}% {language === "ko" ? "예측" : "predicted"}</div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">{threshold}</div>
                   </div>
                 ))}
               </div>
