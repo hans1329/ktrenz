@@ -418,12 +418,11 @@ const T2KeywordDetail = () => {
 
             {/* 4-outcome probability bar */}
             <div className="mb-4">
-              <div className="grid grid-cols-4 gap-1 text-xs mb-2">
+              <div className="grid grid-cols-3 gap-1.5 text-xs mb-2">
                 {([
-                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "text-rose-400" },
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "text-amber-400" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "text-emerald-400" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "text-purple-400" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭 1.2x" : "<50% 1.2x", emoji: "📈", color: "text-amber-400" },
+                  { key: "strong" as const, label: language === "ko" ? "강세 3x" : "50~100% 3x", emoji: "🔥", color: "text-emerald-400" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발 8x" : "100%+ 8x", emoji: "🚀", color: "text-purple-400" },
                 ]).map(({ key, label, emoji, color }) => (
                   <div key={key} className="text-center">
                     <span className={cn("font-bold", color)}>{emoji} {(marketData.prices[key] * 100).toFixed(0)}%</span>
@@ -432,10 +431,9 @@ const T2KeywordDetail = () => {
                 ))}
               </div>
               <div className="flex items-center gap-0.5 h-3 rounded-full overflow-hidden">
-                <div className="h-full rounded-l-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.decline * 100, 5)}%` }} />
-                <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.mild * 100, 5)}%` }} />
-                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.strong * 100, 5)}%` }} />
-                <div className="h-full rounded-r-full bg-purple-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.explosive * 100, 5)}%` }} />
+                <div className="h-full rounded-l-full bg-amber-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.mild * 100, 8)}%` }} />
+                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.strong * 100, 8)}%` }} />
+                <div className="h-full rounded-r-full bg-purple-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.explosive * 100, 8)}%` }} />
               </div>
             </div>
 
