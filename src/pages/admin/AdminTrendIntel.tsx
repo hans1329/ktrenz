@@ -57,19 +57,13 @@ const AdminTrendIntel = () => {
 
   // Fetch tracking data
   const { data: trackingData, isLoading: trackingLoading } = useQuery({
-    queryKey: ["admin-trend-tracking", selectedRegion],
+    queryKey: ["admin-trend-tracking"],
     queryFn: async () => {
-      const query = supabase
+      const { data } = await supabase
         .from("ktrenz_trend_tracking" as any)
         .select("*")
         .order("tracked_at", { ascending: false })
         .limit(200);
-
-      if (selectedRegion !== "all") {
-        query.eq("region", selectedRegion);
-      }
-
-      const { data } = await query;
       return (data ?? []) as any[];
     },
     refetchInterval: 30_000,
