@@ -120,8 +120,12 @@ const T2TrendMap = () => {
       />
 
       <div
-        className="sticky top-14 z-30 backdrop-blur-md pt-3 pb-2 mt-14"
-        style={{ backgroundColor: "hsl(var(--background) / 0.6)" }}
+        className="fixed top-14 left-0 right-0 z-40 pt-3 pb-2"
+        style={{
+          backgroundColor: "hsl(var(--background) / 0.56)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+        }}
       >
         <div className="md:max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max px-4">
