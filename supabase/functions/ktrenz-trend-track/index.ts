@@ -75,9 +75,14 @@ async function fetchGoogleTrends(
     value: t.values?.[0]?.extracted_value ?? 0,
   }));
 
-  const latestValue = timeline[timeline.length - 1]?.value ?? 0;
+  // 평균값 사용: Google Trends는 peak=100으로 정규화하므로
+  // max/latest 대신 평균을 쓰면 실제 관심도 수준을 반영
+  const values = timeline.map((t: { value: number }) => t.value);
+  const avgScore = values.length > 0
+    ? Math.round(values.reduce((a: number, b: number) => a + b, 0) / values.length)
+    : 0;
 
-  return { keyword, interest_score: latestValue, region, timeline };
+  return { keyword, interest_score: avgScore, region, timeline };
 }
 
 // ─── YouTube Data API: 키워드 관련 최근 영상 검색 + 통계 수집 ───
