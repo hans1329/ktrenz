@@ -578,17 +578,16 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   <Coins className="w-5 h-5 text-primary" />
                   {t("voteRelevance", language)}
                 </p>
-                {marketData?.expires_at && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ⏳ {(() => {
-                      const diff = new Date(marketData.expires_at).getTime() - Date.now();
-                      if (diff <= 0) return language === "ko" ? "마감됨" : "Expired";
-                      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                      return language === "ko" ? `${days}일 ${hours}시간 남음` : `${days}d ${hours}h left`;
-                    })()}
-                  </p>
-                )}
+                {(() => {
+                  const expiresAt = marketData?.expires_at
+                    ? new Date(marketData.expires_at).getTime()
+                    : Date.now() + 14 * 24 * 60 * 60 * 1000; // default 14 days if no market yet
+                  const diff = expiresAt - Date.now();
+                  if (diff <= 0) return <p className="text-xs text-muted-foreground mt-1">⏳ {language === "ko" ? "마감됨" : "Expired"}</p>;
+                  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  return <p className="text-xs text-muted-foreground mt-1">⏳ {language === "ko" ? `${days}일 ${hours}시간 남음` : `${days}d ${hours}h left`}</p>;
+                })()}
               </div>
 
               {/* 3-outcome selector with multipliers */}
