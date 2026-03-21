@@ -98,12 +98,12 @@ async function searchNaver(
   }
 }
 
-// ─── Buzz Score 정규화: log10(count+1)/log10(cap)*weight ───
-function normalizeBuzzScore(newsTotal: number, blogTotal: number): number {
-  const newsCap = 1000;
-  const blogCap = 10000;
-  const newsNorm = newsTotal > 0 ? (Math.log10(newsTotal + 1) / Math.log10(newsCap)) * 100 : 0;
-  const blogNorm = blogTotal > 0 ? (Math.log10(blogTotal + 1) / Math.log10(blogCap)) * 100 : 0;
+// ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
+function normalizeBuzzScore(newsCount: number, blogCount: number): number {
+  const newsCap = 100;  // display=100 기준 최대치
+  const blogCap = 100;
+  const newsNorm = newsCount > 0 ? (Math.log10(newsCount + 1) / Math.log10(newsCap + 1)) * 100 : 0;
+  const blogNorm = blogCount > 0 ? (Math.log10(blogCount + 1) / Math.log10(blogCap + 1)) * 100 : 0;
   const buzzScore = Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
   return buzzScore;
 }
