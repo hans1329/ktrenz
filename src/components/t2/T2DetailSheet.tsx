@@ -691,7 +691,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   {/* Bet input */}
                   <div className="flex flex-col items-center gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">{language === "ko" ? "배팅액:" : "Bet:"}</span>
+                      <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">{language === "ko" ? "배팅:" : "Bet:"}</span>
                       <Input
                         type="number"
                         inputMode="numeric"
