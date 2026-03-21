@@ -1115,7 +1115,7 @@ async function trackExistingKeywords(
 
   const { data: activeTriggers } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, peak_at, trigger_source")
+    .select("id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, peak_at, trigger_source, prev_api_total")
     .eq("star_id", starId)
     .eq("status", "active")
     .gte("detected_at", weekAgo)
