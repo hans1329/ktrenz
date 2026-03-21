@@ -506,10 +506,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     href={tile.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
                     onClick={handleReadBoost}
                   >
                     {t("readBoostReward", language)}
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
                   <span className={cn(
