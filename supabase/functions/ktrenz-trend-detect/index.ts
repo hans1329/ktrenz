@@ -1041,3 +1041,109 @@ async function detectForMember(
     insertStats: { inserted: rowsToInsert.length, backfilled: backfillPromises.length, filtered: Math.max(0, filteredCount) },
   };
 }
+
+// ─── 기존 active 키워드 재측정 (track phase 통합) ───
+async function trackExistingKeywords(
+  sb: any,
+  naverClientId: string,
+  naverClientSecret: string,
+  starId: string,
+  displayName: string,
+  nameKo: string | null,
+): Promise<{ tracked: number }> {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: activeTriggers } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, peak_at, trigger_source")
+    .eq("star_id", starId)
+    .eq("status", "active")
+    .gte("detected_at", weekAgo)
+    .neq("trigger_source", "naver_shop");
+
+  if (!activeTriggers?.length) return { tracked: 0 };
+
+  let tracked = 0;
+  const artistLabel = nameKo || displayName;
+
+  for (const trigger of activeTriggers) {
+    try {
+      const kwQuery = trigger.keyword_ko || trigger.keyword;
+      const searchQuery = `"${artistLabel}" "${kwQuery}"`;
+
+      const [newsTotal, blogTotal] = await Promise.all([
+        searchNaverCount(naverClientId, naverClientSecret, "news", searchQuery),
+        searchNaverCount(naverClientId, naverClientSecret, "blog", searchQuery),
+      ]);
+
+      const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
+      const baseline = trigger.baseline_score || 0;
+      const deltaPct = baseline > 0
+        ? Math.round(((buzzScore - baseline) / baseline) * 10000) / 100
+        : buzzScore > 0 ? 100 : 0;
+
+      // tracking 레코드 저장
+      await sb.from("ktrenz_trend_tracking").insert({
+        trigger_id: trigger.id,
+        keyword: trigger.keyword,
+        interest_score: buzzScore,
+        region: "naver",
+        delta_pct: deltaPct,
+        raw_response: { news_total: newsTotal, blog_total: blogTotal, search_query: searchQuery },
+      });
+
+      // peak/influence 갱신
+      const updates: any = {};
+      if (baseline <= 0 && buzzScore > 0) {
+        updates.baseline_score = buzzScore;
+        updates.peak_score = buzzScore;
+      } else if (baseline > 0) {
+        if (buzzScore > (trigger.peak_score || 0)) {
+          updates.peak_score = buzzScore;
+          updates.peak_at = new Date().toISOString();
+        }
+        const currentPeak = updates.peak_score ?? trigger.peak_score ?? buzzScore;
+        updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
+      }
+      if (Object.keys(updates).length > 0) {
+        await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
+      }
+
+      // 스마트 만료
+      const ageDays = (Date.now() - new Date(trigger.detected_at).getTime()) / 86400000;
+      const influence = trigger.influence_index ?? 0;
+      let shouldExpire = false, expireReason = "";
+
+      if (ageDays >= 3 && influence <= 5) {
+        const { data: recent } = await sb.from("ktrenz_trend_tracking")
+          .select("interest_score").eq("trigger_id", trigger.id)
+          .gte("tracked_at", new Date(Date.now() - 3 * 86400000).toISOString())
+          .order("tracked_at", { ascending: false }).limit(10);
+        const scores = (recent ?? []).map((r: any) => r.interest_score);
+        if (scores.length >= 3 && scores.every((s: number) => s <= (trigger.baseline_score ?? 10))) {
+          shouldExpire = true; expireReason = "early_decay";
+        }
+      }
+      if (!shouldExpire && ageDays > 14 && influence <= 20) { shouldExpire = true; expireReason = "lifecycle_end"; }
+      if (!shouldExpire && ageDays > 30) { shouldExpire = true; expireReason = "hard_cap_30d"; }
+
+      if (shouldExpire) {
+        const now = new Date();
+        await sb.from("ktrenz_trend_triggers").update({
+          status: "expired",
+          expired_at: now.toISOString(),
+          lifetime_hours: Math.round((now.getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10,
+          peak_delay_hours: trigger.peak_at
+            ? Math.round((new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10 : 0,
+        }).eq("id", trigger.id);
+      }
+
+      tracked++;
+      await new Promise(r => setTimeout(r, 300)); // rate limit
+    } catch (e) {
+      console.warn(`[trend-detect] track error: ${trigger.keyword}: ${(e as Error).message}`);
+    }
+  }
+
+  return { tracked };
+}
