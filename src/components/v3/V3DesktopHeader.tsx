@@ -195,24 +195,49 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                     />
                     {isSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />}
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); }} className="w-8 h-8 rounded-full">
+                  <Button variant="ghost" size="icon" onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]); }} className="w-8 h-8 rounded-full">
                     <X className="w-4 h-4" />
                   </Button>
-                  {(searchResults.length > 0 || (searchQuery.length >= 2 && !isSearching)) && (
-                    <div className="absolute top-full right-0 mt-2 w-80 bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto">
-                      {searchResults.length > 0 ? searchResults.map((result) => (
-                        <button key={result.id} onClick={() => handleResultClick(result.slug)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
-                          <Avatar className="w-9 h-9 rounded-lg shrink-0">
-                            <AvatarImage src={result.image_url || undefined} className="object-cover" />
-                            <AvatarFallback className="rounded-lg text-xs bg-muted">{result.title.slice(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-foreground truncate">{result.title}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{result.schema_type}</p>
-                          </div>
-                        </button>
-                      )) : (
+                  {(hasResults || (searchQuery.length >= 2 && !isSearching)) && (
+                    <div className="absolute top-full right-0 mt-2 w-80 bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-96 overflow-y-auto">
+                      {/* Artist results */}
+                      {searchResults.length > 0 && (
+                        <>
+                          <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Artists</div>
+                          {searchResults.map((result) => (
+                            <button key={result.id} onClick={() => handleResultClick(result.slug)}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
+                              <Avatar className="w-9 h-9 rounded-lg shrink-0">
+                                <AvatarImage src={result.image_url || undefined} className="object-cover" />
+                                <AvatarFallback className="rounded-lg text-xs bg-muted">{result.title.slice(0, 2)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-foreground truncate">{result.title}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{result.schema_type}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {/* Keyword results */}
+                      {keywordResults.length > 0 && (
+                        <>
+                          <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Keywords</div>
+                          {keywordResults.map((kw) => (
+                            <button key={kw.id} onClick={() => handleKeywordClick(kw)}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
+                              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <Zap className="w-4 h-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-foreground truncate">{kw.keyword_ko || kw.keyword}</p>
+                                <p className="text-xs text-muted-foreground truncate">{kw.artist_name} · {kw.keyword_category}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {!hasResults && (
                         <div className="p-4 text-center text-sm text-muted-foreground">{t("search.noResults")}</div>
                       )}
                     </div>
