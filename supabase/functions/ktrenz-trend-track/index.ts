@@ -17,31 +17,22 @@ function normalizeBuzzScore(newsCount: number, blogCount: number): number {
   return Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
 }
 
-async function searchNaverCount(
+// Naver API total 필드 사용 (display 제한 없는 전체 건수)
+async function searchNaverTotal(
   clientId: string, clientSecret: string,
   endpoint: "news" | "blog", query: string,
 ): Promise<number> {
   try {
-    // 최근 7일 기사만 카운트
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "100");
+    url.searchParams.set("display", "1"); // total만 필요
     url.searchParams.set("sort", "date");
     const response = await fetch(url.toString(), {
       headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
     });
     if (!response.ok) return 0;
     const data = await response.json();
-    const items = data.items || [];
-    if (items.length === 0) return 0;
-
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const recentCount = items.filter((item: any) => {
-      const pubTime = new Date(item.pubDate).getTime();
-      return !isNaN(pubTime) && pubTime >= sevenDaysAgo;
-    }).length;
-
-    return recentCount;
+    return data.total || 0;
   } catch { return 0; }
 }
 
@@ -155,11 +146,11 @@ Deno.serve(async (req) => {
         const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
 
         const [newsTotal, blogTotal] = await Promise.all([
-          searchNaverCount(naverClientId, naverClientSecret, "news", searchQuery),
-          searchNaverCount(naverClientId, naverClientSecret, "blog", searchQuery),
+          searchNaverTotal(naverClientId, naverClientSecret, "news", searchQuery),
+          searchNaverTotal(naverClientId, naverClientSecret, "blog", searchQuery),
         ]);
 
-        const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
+        const buzzScore = newsTotal + blogTotal; // raw count 합계
 
         // delta: baseline 대비 변화율
         const prevScore = trigger.baseline_score || 0;
