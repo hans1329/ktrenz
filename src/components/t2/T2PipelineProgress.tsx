@@ -83,16 +83,23 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return null;
 
       if (isTrackPhase) {
-        const { data } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id")
-          .eq("status", "active")
-          .gte("last_tracked_at", run.startedAt.toISOString());
+        // DB 파이프라인 상태에서 직접 가져옴 (정확한 offset 기반)
+        const offset = dbPipelineState?.current_offset ?? 0;
+        const total = dbPipelineState?.total_candidates ?? 0;
+        
+        // 최근 추적 완료된 키워드 수 (ktrenz_trend_tracking에서)
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+        const { count } = await supabase
+          .from("ktrenz_trend_tracking" as any)
+          .select("id", { count: "exact", head: true })
+          .gte("tracked_at", twoHoursAgo);
 
         return {
-          processed: data?.length ?? 0,
+          processed: offset,
+          total: total,
+          trackedCount: count ?? 0,
           pending: 0,
-          active: data?.length ?? 0,
+          active: 0,
           expired: 0,
           merged: 0,
           bySource: {} as Record<string, number>,
