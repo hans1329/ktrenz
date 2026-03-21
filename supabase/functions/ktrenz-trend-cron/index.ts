@@ -3,7 +3,7 @@
 // 호출 방식: 1) 어드민 UI에서 새 run 시작, 2) pg_cron으로 주기적 poll, 3) 수동 호출
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const COLLECTION_PAUSED = true;
+const COLLECTION_PAUSED = false;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
