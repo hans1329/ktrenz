@@ -319,19 +319,16 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
         return false;
       }
       
-      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
+      // ── 아티스트/그룹 이름 필터 (정확 일치만 차단, 복합 키워드는 통과) ──
       const memberLower = memberName.toLowerCase();
       const groupLower = (groupName || "").toLowerCase();
       
       const nameBlacklist = [memberLower, groupLower].filter(Boolean);
       for (const blocked of nameBlacklist) {
         if (!blocked) continue;
+        // 정확 일치만 차단: 키워드가 아티스트명 자체인 경우
         if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
           console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
-          return false;
-        }
-        if (kwLower.includes(blocked) || kwKo.includes(blocked) || blocked.includes(kwLower)) {
-          console.warn(`[trend-detect] Blocked keyword containing artist/group name: "${k.keyword}" (matches "${blocked}")`);
           return false;
         }
       }
