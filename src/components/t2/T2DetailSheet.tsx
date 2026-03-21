@@ -693,6 +693,13 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       </span>
                     )}
                   </div>
+                  {/* Expected return display */}
+                  {betAmount && Number(betAmount) >= 10 && (
+                    <div className="text-center text-teal-400 text-sm font-bold">
+                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()}T
+                      <span className="text-[10px] text-muted-foreground ml-1">(×{MULTIPLIERS[betOutcome]})</span>
+                    </div>
+                  )}
                   <Button
                     className="w-full gap-2"
                     onClick={handlePlaceBet}
@@ -706,7 +713,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     ) : (
                       <>
                         <Coins className="w-4 h-4" />
-                        {t("placeBet", language)}
+                        {language === "ko" ? "예측하기" : "Predict"}
                       </>
                     )}
                   </Button>
