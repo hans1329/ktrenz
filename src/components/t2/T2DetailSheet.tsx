@@ -346,6 +346,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
+            <Badge variant="outline" className={cn("text-[11px] shrink-0", CATEGORY_COLORS[tile.category] || "")}>
+              {tile.category}
+            </Badge>
           </SheetTitle>
           {/* Artist name row */}
           <button
@@ -355,6 +358,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 navigate(`/t2/artist/${tile.starId}`);
               }
             }}
+            tabIndex={-1}
             className={cn(
               "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors w-fit",
               tile.starId
@@ -377,9 +381,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 #{rank}
               </Badge>
             )}
-            <Badge variant="outline" className={cn("text-[11px]", CATEGORY_COLORS[tile.category] || "")}>
-              {tile.category}
-            </Badge>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatAge(tile.detectedAt)}
