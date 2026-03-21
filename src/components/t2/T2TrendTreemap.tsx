@@ -95,7 +95,7 @@ export function sanitizeImageUrl(url: string | null): string | null {
   return url.replace(/&amp;/g, '&');
 }
 
-export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event";
+export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 70%, 45%, 0.85)" },
@@ -107,9 +107,10 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
   music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 65%, 48%, 0.85)" },
   event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 80%, 42%, 0.85)" },
+  shopping:{ label: "🛒 Shopping", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 55%, 38%, 0.85)" },
 };
 
-export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "shopping"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
@@ -402,6 +403,57 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     refetchInterval: 60_000,
   });
 
+  // Separate query for shopping (naver_shop) triggers
+  const { data: shopTriggers } = useQuery({
+    queryKey: ["t2-trend-triggers-shopping"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, star_id, wiki_entry_id, influence_index, context, context_ko, context_ja, context_zh, detected_at, peak_at, expired_at, lifetime_hours, peak_delay_hours, baseline_score, peak_score, source_url, source_title, source_image_url, source_snippet, status")
+        .eq("status", "active")
+        .eq("trigger_source", "naver_shop")
+        .order("influence_index", { ascending: false })
+        .limit(200);
+
+      return ((data ?? []) as any[]).map((t: any): TrendTile => ({
+        id: t.id,
+        keyword: t.keyword,
+        keywordKo: t.keyword_ko || null,
+        keywordJa: t.keyword_ja || null,
+        keywordZh: t.keyword_zh || null,
+        category: "shopping",
+        artistName: t.artist_name || "Unknown",
+        artistNameKo: null,
+        artistImageUrl: null,
+        wikiEntryId: t.wiki_entry_id || "",
+        influenceIndex: Number(t.influence_index) || 0,
+        context: t.context,
+        contextKo: t.context_ko || null,
+        contextJa: t.context_ja || null,
+        contextZh: t.context_zh || null,
+        detectedAt: t.detected_at,
+        peakAt: t.peak_at || null,
+        expiredAt: t.expired_at || null,
+        lifetimeHours: t.lifetime_hours != null ? Number(t.lifetime_hours) : null,
+        peakDelayHours: t.peak_delay_hours != null ? Number(t.peak_delay_hours) : null,
+        baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
+        peakScore: t.peak_score != null ? Number(t.peak_score) : null,
+        sourceUrl: t.source_url || null,
+        sourceTitle: t.source_title || null,
+        sourceImageUrl: t.source_image_url || null,
+        sourceSnippet: t.source_snippet || null,
+        starId: t.star_id || null,
+        status: t.status,
+      }));
+    },
+    staleTime: 60_000,
+  });
+
+  const dedupedShopTriggers = useMemo(() => {
+    if (!shopTriggers?.length) return [];
+    return dedupeTrendTiles(shopTriggers);
+  }, [shopTriggers]);
+
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
     return dedupeTrendTiles(triggers);
@@ -414,6 +466,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [dedupedTriggers, watchedSet]);
 
   const filteredItems = useMemo(() => {
+    if (selectedCategory === "shopping") {
+      return dedupedShopTriggers;
+    }
     if (!dedupedTriggers.length) return [];
     if (selectedCategory === "my") {
       return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
@@ -500,13 +555,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [searchParams, selectedTile?.id, setSearchParams, track]);
 
   const categoryStats = useMemo(() => {
-    if (!dedupedTriggers?.length) return {};
     const stats: Record<string, number> = {};
     for (const t of dedupedTriggers) {
       stats[t.category] = (stats[t.category] || 0) + 1;
     }
+    stats["shopping"] = dedupedShopTriggers.length;
     return stats;
-  }, [dedupedTriggers]);
+  }, [dedupedTriggers, dedupedShopTriggers]);
 
   useEffect(() => {
     if (onCategoryStatsChange && dedupedTriggers.length > 0) {
