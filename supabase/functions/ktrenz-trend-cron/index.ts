@@ -288,10 +288,10 @@ async function executeBatch(
       console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
     }
   } else {
-    // 다음 배치를 위해 offset 업데이트
+    // Offset already advanced by optimistic lock in tick handler
+    // Just update total_candidates for monitoring
     await sb.from("ktrenz_pipeline_state")
       .update({
-        current_offset: nextOffset,
         total_candidates: totalCandidates,
         updated_at: new Date().toISOString(),
       })
