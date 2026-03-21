@@ -121,24 +121,62 @@ const T2AdminControls = () => {
     });
   };
 
+  // ── DB 기반 상태머신 자동 폴링 ──
+  const { data: pipelineActive } = useQuery({
+    queryKey: ["pipeline-active-check"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("id, run_id, phase, status, current_offset, total_candidates")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return (data as any[])?.[0] ?? null;
+    },
+    refetchInterval: 3000,
+  });
+
+  // 자동 tick: running/postprocess_requested 상태가 있으면 5초마다 tick 호출
+  useEffect(() => {
+    if (!pipelineActive || !isAdmin) return;
+
+    const interval = setInterval(async () => {
+      try {
+        await supabase.functions.invoke("ktrenz-trend-cron", {
+          body: { action: "tick" },
+        });
+        queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
+        queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+      } catch (e) {
+        console.warn("Tick failed:", e);
+      }
+    }, 8000); // 8초 간격 (배치 실행 시간 고려)
+
+    return () => clearInterval(interval);
+  }, [pipelineActive, isAdmin, queryClient]);
+
+  // 파이프라인 active → UI run 자동 감지
+  useEffect(() => {
+    if (!pipelineActive) return;
+    const phase = pipelineActive.phase as PipelineRun["phase"];
+    setActiveRuns((prev) => {
+      if (prev[phase]) return prev;
+      return { ...prev, [phase]: { startedAt: new Date(), phase } };
+    });
+  }, [pipelineActive]);
+
   const detectMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "detect", batchSize: 5, batchOffset: 0 },
+        body: { action: "start", phase: "detect", batchSize: 5 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onMutate: () => startRun("detect"),
     onSuccess: (data) => {
-      const found = data?.detect?.totalKeywords ?? 0;
-      const total = data?.detect?.totalCandidates ?? 0;
-      const hasNext = data?.nextBatch !== undefined;
-      toast.success(
-        hasNext
-          ? `감지 1차 배치 완료 (${found}건). ${total}명 체이닝 중...`
-          : `감지 완료: ${found}건`
-      );
+      toast.success(`국내 감지 시작 (run: ${data?.runId})`);
+      queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
     onError: (err) => toast.error(`감지 실패: ${(err as Error).message}`),
@@ -147,14 +185,15 @@ const T2AdminControls = () => {
   const trackMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "track" },
+        body: { action: "start", phase: "track", batchSize: 5 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onMutate: () => startRun("track"),
     onSuccess: (data) => {
-      toast.success(`추적 완료: ${data?.track?.tracked ?? 0}건`);
+      toast.success(`추적 시작 (run: ${data?.runId})`);
+      queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
     onError: (err) => toast.error(`추적 실패: ${(err as Error).message}`),
@@ -163,17 +202,15 @@ const T2AdminControls = () => {
   const fullMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "detect", batchSize: 5, batchOffset: 0 },
+        body: { action: "start", phase: "detect", batchSize: 5 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onMutate: () => startRun("detect"),
-    onSuccess: () => {
-      toast.success("전체 파이프라인 시작 (detect → detect_global → track 체이닝)");
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
-      }, 60_000);
+    onSuccess: (data) => {
+      toast.success(`전체 파이프라인 시작 (run: ${data?.runId})`);
+      queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
     },
     onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
   });
@@ -181,14 +218,15 @@ const T2AdminControls = () => {
   const detectGlobalMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "detect_global", batchSize: 5, batchOffset: 0 },
+        body: { action: "start", phase: "detect_global", batchSize: 2 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onMutate: () => startRun("detect_global"),
     onSuccess: (data) => {
-      toast.success(`글로벌 감지 완료: ${data?.detect_global?.totalKeywords ?? 0}건`);
+      toast.success(`글로벌 감지 시작 (run: ${data?.runId})`);
+      queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
     onError: (err) => toast.error(`글로벌 감지 실패: ${(err as Error).message}`),
