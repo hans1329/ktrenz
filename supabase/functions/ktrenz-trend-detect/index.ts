@@ -854,6 +854,21 @@ async function detectForMember(
       })
   );
 
+  // ─── 키워드별 buzz_score 산출 (네이버 뉴스/블로그 건수 기반) ───
+  const keywordBuzzScores = new Map<string, number>();
+  // 키워드별 개별 검색으로 정확한 건수 확보 (최대 7개 키워드이므로 부담 적음)
+  const buzzPromises = keywords.map(async (k) => {
+    const kwQuery = k.keyword_ko || k.keyword;
+    const artistLabel = member.name_ko || member.display_name;
+    const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
+      naverClientId, naverClientSecret, artistLabel, kwQuery
+    );
+    const buzzScore = normalizeBuzzScore(newsTotal, blogTotal, 0);
+    keywordBuzzScores.set(k.keyword.toLowerCase(), buzzScore);
+    console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore}`);
+  });
+  await Promise.all(buzzPromises);
+
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => ({
     extractedKeyword: keywordData,
     row: {
@@ -881,11 +896,14 @@ async function detectForMember(
       brand_intent: keywordData.brand_intent || null,
       fan_sentiment: keywordData.fan_sentiment || null,
       trend_potential: keywordData.trend_potential ?? null,
+      baseline_score: keywordBuzzScores.get(keywordData.keyword.toLowerCase()) || 0,
       status: "pending",
       metadata: {
         article_count: articles.length,
         search_name: searchName,
         group_name: member.group_name,
+        buzz_news_total: 0,
+        buzz_blog_total: 0,
       },
     },
   }));
