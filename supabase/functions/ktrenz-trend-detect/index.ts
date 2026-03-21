@@ -694,7 +694,13 @@ Deno.serve(async (req) => {
           filtered: result.insertStats.filtered,
         });
 
-        console.log(`[trend-detect] ✓ ${star.display_name} (${star.star_type}): news=${result.sourceStats.news} blog=${result.sourceStats.blog} shop=${result.sourceStats.shop} → ins=${result.insertStats.inserted} bf=${result.insertStats.backfilled} flt=${result.insertStats.filtered}`);
+        // ─── 기존 active 키워드 추적 (track phase 통합) ───
+        const trackResult = await trackExistingKeywords(
+          sb, naverClientId, naverClientSecret, star.id, star.display_name, star.name_ko
+        );
+        if (trackResult.tracked > 0) {
+          console.log(`[trend-detect] ⟳ ${star.display_name}: tracked ${trackResult.tracked} existing keywords`);
+        }
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
