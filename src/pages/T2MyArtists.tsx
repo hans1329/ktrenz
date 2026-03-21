@@ -23,6 +23,8 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)" },
   beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)" },
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)" },
+  music:   { label: "Music",   color: "hsl(260, 70%, 60%)" },
+  event:   { label: "Event",   color: "hsl(45, 85%, 50%)" },
 };
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {

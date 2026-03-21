@@ -18,6 +18,8 @@ const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; color: s
   fashion: { label: "Fashion", labelKo: "패션",    color: "hsl(330, 65%, 55%)" },
   beauty:  { label: "Beauty",  labelKo: "뷰티",    color: "hsl(350, 60%, 55%)" },
   media:   { label: "Media",   labelKo: "미디어",  color: "hsl(190, 70%, 45%)" },
+  music:   { label: "Music",   labelKo: "음악",    color: "hsl(260, 70%, 60%)" },
+  event:   { label: "Event",   labelKo: "이벤트",  color: "hsl(45, 85%, 50%)" },
 };
 
 function formatAge(dateStr: string): string {
