@@ -581,7 +581,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* 3-outcome selector with multipliers */}
               <div className="grid grid-cols-3 gap-2">
                 {([
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "<50%", emoji: "📈", color: "amber", multi: "1.2x" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "<50%", emoji: "🌱", color: "amber", multi: "1.2x" },
                   { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald", multi: "3x" },
                   { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple", multi: "8x" },
                 ]).map(({ key, label, emoji, color, multi }) => (
@@ -598,7 +598,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <div className="text-lg">{emoji}</div>
                     <div className="text-[10px] text-muted-foreground">{label}</div>
                     <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">{(prices[key] * 100).toFixed(0)}% {language === "ko" ? "베팅" : "bets"}</div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">{(prices[key] * 100).toFixed(0)}% {language === "ko" ? "예측" : "predicted"}</div>
                   </div>
                 ))}
               </div>
