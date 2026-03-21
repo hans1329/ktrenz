@@ -168,7 +168,7 @@ function dedupeTrendTiles(items: TrendTile[], sortMode: SortMode = "rate"): Tren
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TrendTile; }
 
-function squarify(items: TrendTile[], x: number, y: number, w: number, h: number): Rect[] {
+function squarify(items: TrendTile[], x: number, y: number, w: number, h: number, sortMode: SortMode = "rate"): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
 
