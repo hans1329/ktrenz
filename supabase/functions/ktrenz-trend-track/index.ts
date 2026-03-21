@@ -17,22 +17,29 @@ function normalizeBuzzScore(newsCount: number, blogCount: number): number {
   return Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
 }
 
-// Naver API total 필드 사용 (display 제한 없는 전체 건수)
-async function searchNaverTotal(
+// display=100, sort=date → 7일 이내 기사만 카운트 (캡 없이 합산용)
+async function searchNaverRecent7d(
   clientId: string, clientSecret: string,
   endpoint: "news" | "blog", query: string,
 ): Promise<number> {
   try {
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
-    url.searchParams.set("display", "1"); // total만 필요
+    url.searchParams.set("display", "100");
     url.searchParams.set("sort", "date");
     const response = await fetch(url.toString(), {
       headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
     });
     if (!response.ok) return 0;
     const data = await response.json();
-    return data.total || 0;
+    const items = data.items || [];
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let count = 0;
+    for (const item of items) {
+      const pubDate = item.pubDate ? new Date(item.pubDate).getTime() : 0;
+      if (pubDate >= sevenDaysAgo) count++;
+    }
+    return count;
   } catch { return 0; }
 }
 
