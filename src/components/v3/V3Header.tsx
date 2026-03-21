@@ -201,7 +201,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 <img
                   src={isMobile ? ktrenzMobileLogo : ktrenzLogo}
                   alt="K-TRENZ"
-                  className={isMobile ? "h-8 w-auto" : "h-10 w-auto"}
+                  className={isMobile ? "h-6 w-auto" : "h-8 w-auto"}
                   fetchPriority="high"
                   decoding="async"
                 />
