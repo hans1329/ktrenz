@@ -3894,6 +3894,7 @@ export type Database = {
           peak_at: string | null
           peak_delay_hours: number | null
           peak_score: number | null
+          prev_api_total: number | null
           source_image_url: string | null
           source_snippet: string | null
           source_title: string | null
@@ -3932,6 +3933,7 @@ export type Database = {
           peak_at?: string | null
           peak_delay_hours?: number | null
           peak_score?: number | null
+          prev_api_total?: number | null
           source_image_url?: string | null
           source_snippet?: string | null
           source_title?: string | null
@@ -3970,6 +3972,7 @@ export type Database = {
           peak_at?: string | null
           peak_delay_hours?: number | null
           peak_score?: number | null
+          prev_api_total?: number | null
           source_image_url?: string | null
           source_snippet?: string | null
           source_title?: string | null
