@@ -602,7 +602,28 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   return (
     <div className="px-0 md:px-4 pb-4">
       {/* Header */}
-      <div className="pt-4 pb-3 flex items-end justify-end gap-3">
+      <div className="pt-4 pb-3 flex items-end justify-between gap-3 px-4 md:px-0">
+        {/* Sort Mode Toggle */}
+        <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
+          <button
+            onClick={() => setSortMode("rate")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all",
+              sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            📈 Rate
+          </button>
+          <button
+            onClick={() => setSortMode("volume")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all",
+              sortMode === "volume" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            📊 Volume
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <T2AdminControls />
         </div>
