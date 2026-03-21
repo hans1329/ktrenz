@@ -275,7 +275,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [sortMode, setSortMode] = useState<SortMode>("rate");
   
   const isMobile = useIsMobile();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { user } = useAuth();
 
   // Fetch user's watched artists (including group members)
@@ -606,7 +606,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       {/* Header */}
       <div className="pt-4 pb-3 flex items-center justify-between gap-3 px-4 md:px-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-bold text-foreground">Artist-Triggered Trend Spectrum</h2>
+          <h2 className="text-base font-bold text-foreground">{t("trend.spectrumTitle")}</h2>
           <T2AdminControls />
         </div>
         <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">

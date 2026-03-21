@@ -519,6 +519,7 @@ const translations: Record<string, Record<Language, string>> = {
   "dash.evTreemap": { en: "Treemap", ko: "트리맵", ja: "ツリーマップ", zh: "树图" },
   "dash.evList": { en: "List", ko: "리스트", ja: "リスト", zh: "列表" },
   "dash.mostExplored": { en: "Most Explored", ko: "가장 많이 탐색", ja: "最も探索した", zh: "探索最多" },
+  "trend.spectrumTitle": { en: "Artist-Triggered Trend Spectrum", ko: "아티스트 트렌드 스펙트럼", ja: "アーティスト発トレンドスペクトラム", zh: "艺人触发趋势谱" },
 };
 
 export default translations;
