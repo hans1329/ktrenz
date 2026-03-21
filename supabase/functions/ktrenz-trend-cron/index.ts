@@ -300,13 +300,17 @@ async function executeBatch(
         .eq("status", "running");
 
       if (nextPhase) {
-        await sb.from("ktrenz_pipeline_state").insert({
-          run_id: runId,
-          phase: nextPhase,
-          status: "running",
-          current_offset: 0,
-          batch_size: batchSize,
-        });
+        const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+          .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
+        if (!existingNext?.length) {
+          await sb.from("ktrenz_pipeline_state").insert({
+            run_id: runId,
+            phase: nextPhase,
+            status: "running",
+            current_offset: 0,
+            batch_size: batchSize,
+          });
+        }
       }
       console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
 
