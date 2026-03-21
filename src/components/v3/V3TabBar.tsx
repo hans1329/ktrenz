@@ -117,7 +117,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
   return (
     <>
-      <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-md bg-tabbar-background/95 backdrop-blur-md border border-purple-500/30 rounded-full overflow-visible"
+      <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-md bg-tabbar-background/95 backdrop-blur-md rounded-full overflow-visible"
         style={{
           transform: 'translate3d(-50%, 0, 0)',
         }}>
