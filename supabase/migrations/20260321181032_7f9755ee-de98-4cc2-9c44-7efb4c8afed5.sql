@@ -1,0 +1,1 @@
+TRUNCATE ktrenz_trend_triggers, ktrenz_trend_tracking, ktrenz_pipeline_state, ktrenz_trend_bets, ktrenz_trend_markets;
