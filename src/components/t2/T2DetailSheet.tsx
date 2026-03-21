@@ -633,7 +633,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* My Position */}
               {myBets && myBets.length > 0 && (() => {
                 const outcomes = ["mild", "strong", "explosive"] as const;
-                const outcomeEmoji: Record<string, string> = { mild: "📈", strong: "🔥", explosive: "🚀" };
+                const outcomeEmoji: Record<string, string> = { mild: "🌱", strong: "🔥", explosive: "🚀" };
+                const outcomeLabel: Record<string, string> = { mild: language === "ko" ? "소폭" : "Mild", strong: language === "ko" ? "강세" : "Strong", explosive: language === "ko" ? "폭발" : "Explosive" };
                 const outcomeColor: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
                 const stakes = Object.fromEntries(outcomes.map(o => [o, {
                   amount: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.amount), 0),
