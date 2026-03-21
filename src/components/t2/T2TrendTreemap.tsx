@@ -408,6 +408,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           sourceSnippet: t.source_snippet || null,
           starId: t.star_id || null,
           status: t.status,
+          prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
         };
       });
     },
