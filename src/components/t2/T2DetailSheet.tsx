@@ -608,7 +608,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     onClick={() => setBetOutcome(key)}
                   >
                     <div className="text-lg">{emoji}</div>
-                    <div className="text-[10px] font-medium text-foreground">{label}</div>
+                    <div className="text-sm font-bold text-foreground">{label}</div>
                     <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
                     <div className="text-[9px] text-teal-400 mt-0.5">{threshold}</div>
                   </div>
