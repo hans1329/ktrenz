@@ -702,7 +702,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         placeholder="10~1000"
                         value={betAmount}
                         onChange={(e) => setBetAmount(e.target.value)}
-                        className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-lg lg:text-3xl font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-base lg:text-lg font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <span className="text-lg font-bold text-muted-foreground/90">T</span>
                     </div>
