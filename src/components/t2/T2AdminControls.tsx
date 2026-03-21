@@ -218,7 +218,7 @@ const T2AdminControls = () => {
   const detectGlobalMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "detect_global", batchSize: 2 },
+        body: { action: "start", phase: "detect_global", batchSize: 2, singlePhase: true },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
