@@ -251,10 +251,7 @@ const AdminTrendIntel = () => {
           <div className="space-y-2">
             {activeTriggers.map((trigger: any) => {
               const tracking = trackingByTrigger.get(trigger.id) ?? [];
-              const regionTracking = tracking.filter((t: any) =>
-                selectedRegion === "all" ? true : t.region === selectedRegion
-              );
-              const latestTrack = regionTracking[0];
+              const latestTrack = tracking[0];
 
               return (
                 <Card key={trigger.id} className="p-3">
