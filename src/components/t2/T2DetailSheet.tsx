@@ -116,7 +116,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
   const track = useTrackEvent();
 
-  const [betOutcome, setBetOutcome] = useState<"decline" | "mild" | "strong" | "explosive">("mild");
+  const [betOutcome, setBetOutcome] = useState<"mild" | "strong" | "explosive">("mild");
   const [betAmount, setBetAmount] = useState("");
 
   // Market data
