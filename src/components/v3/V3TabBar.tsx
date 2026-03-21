@@ -125,17 +125,14 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
         <div className="flex items-center justify-evenly h-16 max-w-md mx-auto">
           {tabs.map((tab) => {
             if (tab.isCenter) {
+              // Profile center button
               return (
-                <button key={tab.id} onClick={() => navigate("/agent")} className="flex items-center justify-center -mt-6 relative">
-                  {showAgentBadge && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
-                  )}
-                   <div className={cn("w-16 h-16 rounded-full transition-all duration-200 overflow-hidden bg-black grid place-items-center")}
-                    >
-                    {agentAvatarUrl ? (
-                      <img src={agentAvatarUrl} alt="Agent" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+                <button key={tab.id} onClick={handleProfileClick} className="flex items-center justify-center -mt-6 relative">
+                   <div className={cn("w-16 h-16 rounded-full transition-all duration-200 overflow-hidden bg-black grid place-items-center")}>
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
                     ) : (
-                      <Bot className="w-6 h-6 text-primary -translate-y-[3px]" />
+                      <User className="w-6 h-6 text-primary -translate-y-[3px]" />
                     )}
                   </div>
                 </button>
@@ -143,10 +140,33 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             }
 
             const isActive = activeTab === tab.id;
+
+            // Agent tab with custom avatar
+            if (tab.id === "agent") {
+              return (
+                <button key={tab.id} onClick={() => navigate("/agent")}
+                  className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
+                    isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
+                  {showAgentBadge && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
+                  )}
+                  {agentAvatarUrl ? (
+                    <Avatar className="w-[22px] h-[22px]">
+                      <AvatarImage src={agentAvatarUrl} className="object-cover" />
+                      <AvatarFallback><Bot className="w-4 h-4" /></AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Bot className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
+                  )}
+                  <span className={cn("text-[10px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
+                </button>
+              );
+            }
+
             const Icon = tab.icon!;
 
             return (
-              <button key={tab.id} onClick={() => (tab.id === "rankings" ? navigate("/") : tab.id === "profile" ? handleProfileClick() : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : onTabChange(tab.id as V3Tab))}
+              <button key={tab.id} onClick={() => (tab.id === "rankings" ? navigate("/") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : onTabChange(tab.id as V3Tab))}
                 className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
