@@ -161,7 +161,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
       const { data } = await supabase
         .from("ktrenz_stars" as any)
-        .select("id, display_name, star_type, last_detected_at, last_detect_result")
+        .select("id, display_name, name_ko, star_type, last_detected_at, last_detect_result")
         .gte("last_detected_at", run.startedAt.toISOString())
         .order("last_detected_at", { ascending: false })
         .limit(30);
@@ -450,7 +450,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
                         <Search className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
                       )}
                       <span className={`font-medium truncate max-w-[80px] sm:max-w-[120px] ${isNoNews ? "text-muted-foreground/60" : "text-foreground"}`}>
-                        {star.display_name}
+                        {star.name_ko || star.display_name}
                       </span>
                       <span className="text-[8px] text-muted-foreground/60 uppercase shrink-0">
                         {star.star_type}
