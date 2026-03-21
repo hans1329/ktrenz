@@ -47,7 +47,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   beauty: "bg-rose-500/10 text-rose-400 border-rose-500/30",
   media: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
   music: "bg-violet-500/10 text-violet-400 border-violet-500/30",
-  event: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+  event: "bg-yellow-600/15 text-yellow-600 border-yellow-600/40",
 };
 
 const T2_LABELS: Record<string, Record<string, string>> = {
@@ -342,7 +342,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   return (
     <Sheet open={!!tile} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-hidden border-border sm:max-w-lg sm:mx-auto flex flex-col bg-muted">
-        <SheetHeader className="pb-3 shrink-0">
+        <SheetHeader className="pb-3 shrink-0 bg-muted/80 -mx-6 px-6 -mt-6 pt-6 rounded-t-2xl">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
@@ -358,8 +358,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             className={cn(
               "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors w-fit",
               tile.starId
-                ? "bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
-                : "text-muted-foreground cursor-default"
+                ? "bg-muted-foreground/10 text-primary hover:bg-muted-foreground/20 cursor-pointer"
+                : "bg-muted-foreground/10 text-muted-foreground cursor-default"
             )}
           >
             <span className="text-xs text-muted-foreground">by</span>
@@ -372,7 +372,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-2">
             {rank != null && (
-              <Badge className="bg-primary/10 text-primary border-primary/30 text-[11px] font-black">
+              <Badge className="bg-muted-foreground/10 text-primary border-muted-foreground/20 text-[11px] font-black">
                 <Trophy className="w-3 h-3 mr-0.5" />
                 #{rank}
               </Badge>
