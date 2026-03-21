@@ -39,7 +39,6 @@ const formatAge = (dateStr: string): string => {
 const AdminTrendIntel = () => {
   const queryClient = useQueryClient();
   const [artistFilter, setArtistFilter] = useState<string>("");
-  const [artistFilter, setArtistFilter] = useState<string>("");
   // Fetch active triggers
   const { data: triggers, isLoading: triggersLoading } = useQuery({
     queryKey: ["admin-trend-triggers"],
