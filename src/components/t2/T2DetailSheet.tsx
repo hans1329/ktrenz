@@ -648,18 +648,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
                           <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
-                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/60">T</span></div>
+                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/30">T</span></div>
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
-                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-muted-foreground/60">T</span>
+                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-muted-foreground/30">T</span>
                             </span>
                           </div>
                         </div>
                       ))}
                     </div>
                     <div className="text-[10px] text-muted-foreground text-center">
-                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested.toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span></span>
+                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested.toLocaleString()} <span className="text-muted-foreground/30 font-normal">T</span></span>
                     </div>
                   </div>
                 );
@@ -702,18 +702,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         onChange={(e) => setBetAmount(e.target.value)}
                         className="w-36 h-14 text-center text-3xl font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-lg font-bold text-muted-foreground/60">T</span>
+                      <span className="text-lg font-bold text-muted-foreground/30">T</span>
                     </div>
                     {user && (
                       <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
-                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
+                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/30 font-normal">T</span>
                       </span>
                     )}
                   </div>
                   {/* Expected return display */}
                   {betAmount && Number(betAmount) >= 10 && (
                     <div className="text-center text-teal-400 text-sm font-bold">
-                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
+                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} <span className="text-muted-foreground/30 font-normal">T</span>
                       <span className="text-[10px] text-muted-foreground ml-1">(×{MULTIPLIERS[betOutcome]})</span>
                     </div>
                   )}
