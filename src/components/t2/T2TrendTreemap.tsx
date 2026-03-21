@@ -604,9 +604,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   return (
     <div className="px-0 md:px-4 pb-4">
       {/* Header */}
-      <div className="pt-4 pb-3 flex items-end justify-between gap-3 px-4 md:px-0">
-        {/* Title & Sort Toggle */}
-        <h2 className="text-base font-bold text-foreground">Artist-Triggered Trend Spectrum</h2>
+      <div className="pt-4 pb-3 flex items-center justify-between gap-3 px-4 md:px-0">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-foreground">Artist-Triggered Trend Spectrum</h2>
+          <T2AdminControls />
+        </div>
         <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
           <button
             onClick={() => setSortMode("rate")}
@@ -626,9 +628,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           >
             Hot
           </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <T2AdminControls />
         </div>
       </div>
 
