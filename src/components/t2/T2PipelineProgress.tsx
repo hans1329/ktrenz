@@ -161,7 +161,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
       const { data } = await supabase
         .from("ktrenz_stars" as any)
-        .select("id, display_name, star_type, last_detected_at, last_detect_result")
+        .select("id, display_name, name_ko, star_type, last_detected_at, last_detect_result")
         .gte("last_detected_at", run.startedAt.toISOString())
         .order("last_detected_at", { ascending: false })
         .limit(30);
