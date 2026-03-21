@@ -236,7 +236,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     strong: totalPool > 0 ? poolStrong / totalPool : 1/3,
     explosive: totalPool > 0 ? poolExplosive / totalPool : 1/3,
   };
-  const MULTIPLIERS = { mild: 1.2, strong: 3.0, explosive: 6.0 };
+  const MULTIPLIERS = { mild: 1.2, strong: 3.0, explosive: 10.0 };
   const totalVolume = Number(marketData?.total_volume ?? 0);
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
