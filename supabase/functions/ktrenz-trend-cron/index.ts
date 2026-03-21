@@ -221,7 +221,8 @@ async function executeBatch(
 
   const totalCandidates = result.totalCandidates || 0;
   const nextOffset = offset + batchSize;
-  const isLastBatch = result.success && nextOffset >= totalCandidates;
+  const isThrottled = result.throttled === true;
+  const isLastBatch = (result.success && nextOffset >= totalCandidates) || isThrottled;
 
   if (isLastBatch) {
     // 이 phase 배치 완료
