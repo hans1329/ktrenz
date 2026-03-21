@@ -39,15 +39,15 @@ function getLocalizedArtistName(tile: TrendTile, lang: string): string {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  brand: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  product: "bg-purple-500/10 text-purple-400 border-purple-500/30",
-  place: "bg-green-500/10 text-green-400 border-green-500/30",
-  food: "bg-orange-500/10 text-orange-400 border-orange-500/30",
-  fashion: "bg-pink-500/10 text-pink-400 border-pink-500/30",
-  beauty: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-  media: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
-  music: "bg-violet-500/10 text-violet-400 border-violet-500/30",
-  event: "bg-yellow-600/15 text-yellow-600 border-yellow-600/40",
+  brand: "text-blue-400 border-blue-500/30",
+  product: "text-purple-400 border-purple-500/30",
+  place: "text-green-400 border-green-500/30",
+  food: "text-orange-400 border-orange-500/30",
+  fashion: "text-pink-400 border-pink-500/30",
+  beauty: "text-rose-400 border-rose-500/30",
+  media: "text-cyan-400 border-cyan-500/30",
+  music: "text-violet-400 border-violet-500/30",
+  event: "text-yellow-600 border-yellow-600/40",
 };
 
 const T2_LABELS: Record<string, Record<string, string>> = {
