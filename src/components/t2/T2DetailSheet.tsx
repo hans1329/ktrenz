@@ -227,18 +227,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     betMutation.mutate({ outcome: betOutcome, amount });
   };
 
-  // Calculate prices from 4-outcome pools
-  const poolDecline = Number(marketData?.pool_decline ?? 100);
-  const poolMild = Number(marketData?.pool_mild ?? 100);
-  const poolStrong = Number(marketData?.pool_strong ?? 100);
-  const poolExplosive = Number(marketData?.pool_explosive ?? 100);
-  const invSum = (1/poolDecline) + (1/poolMild) + (1/poolStrong) + (1/poolExplosive);
+  // Calculate pool distribution for 3 outcomes
+  const poolMild = Number(marketData?.pool_mild ?? 0);
+  const poolStrong = Number(marketData?.pool_strong ?? 0);
+  const poolExplosive = Number(marketData?.pool_explosive ?? 0);
+  const totalPool = poolMild + poolStrong + poolExplosive;
   const prices = {
-    decline: (1/poolDecline) / invSum,
-    mild: (1/poolMild) / invSum,
-    strong: (1/poolStrong) / invSum,
-    explosive: (1/poolExplosive) / invSum,
+    mild: totalPool > 0 ? poolMild / totalPool : 1/3,
+    strong: totalPool > 0 ? poolStrong / totalPool : 1/3,
+    explosive: totalPool > 0 ? poolExplosive / totalPool : 1/3,
   };
+  const MULTIPLIERS = { mild: 1.2, strong: 3.0, explosive: 8.0 };
   const totalVolume = Number(marketData?.total_volume ?? 0);
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
