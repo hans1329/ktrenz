@@ -167,7 +167,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       if (data && marketData) {
         queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
           ...(old || marketData),
-          pool_decline: data.pools?.decline,
           pool_mild: data.pools?.mild,
           pool_strong: data.pools?.strong,
           pool_explosive: data.pools?.explosive,
