@@ -18,13 +18,13 @@ const MULTIPLIERS: Record<Outcome, number> = {
 };
 
 // Settlement thresholds (influence_index % change)
-// mild: +0% ~ +50%
-// strong: +50% ~ +100%
-// explosive: +100%+
+// mild: +0% ~ +15%
+// strong: +15% ~ +50%
+// explosive: +50%+
 const THRESHOLDS = {
-  mild: { min: 0, max: 50 },
-  strong: { min: 50, max: 100 },
-  explosive: { min: 100, max: Infinity },
+  mild: { min: 0, max: 15 },
+  strong: { min: 15, max: 50 },
+  explosive: { min: 50, max: Infinity },
 };
 
 Deno.serve(async (req) => {

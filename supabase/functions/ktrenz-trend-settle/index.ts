@@ -19,9 +19,9 @@ function determineOutcome(initialInfluence: number, currentInfluence: number): s
     ? ((currentInfluence - initialInfluence) / initialInfluence) * 100
     : currentInfluence > 0 ? 100 : 0;
 
-  if (changePct < 50) return "mild";          // < +50%
-  if (changePct < 100) return "strong";       // +50% ~ +100%
-  return "explosive";                          // +100%+
+  if (changePct < 15) return "mild";          // < +15%
+  if (changePct < 50) return "strong";       // +15% ~ +50%
+  return "explosive";                          // +50%+
 }
 
 Deno.serve(async (req) => {
