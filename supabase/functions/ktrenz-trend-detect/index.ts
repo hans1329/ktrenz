@@ -363,7 +363,9 @@ async function extractCommercialKeywords(
   memberName: string,
   groupName: string | null,
   articles: { title: string; description?: string; url?: string }[],
-  starCategory: string = "kpop"
+  starCategory: string = "kpop",
+  nameKo: string | null = null,
+  groupNameKo: string | null = null,
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
@@ -374,38 +376,38 @@ async function extractCommercialKeywords(
 
   const categoryContext = getCategoryContext(starCategory);
 
-  const systemPrompt = `You are a strict text-analysis tool with TWO critical responsibilities:
-1. Extract commercial/cultural trend keywords from article texts
-2. VERIFY OWNERSHIP — determine if each keyword TRULY belongs to the searched artist
+  // 모든 이름 변형을 수집하여 프롬프트에 명시
+  const allNames = [memberName, nameKo, groupName, groupNameKo].filter(Boolean) as string[];
+  const nameListStr = allNames.map(n => `"${n}"`).join(", ");
 
-You MUST only analyze the provided article texts. You have NO external knowledge about artists' discographies.
+  const systemPrompt = `You are a trend-forecasting analyst extracting SPECIFIC NAMED ENTITIES from Korean news articles.
 
-OWNERSHIP VERIFICATION IS CRITICAL:
-- If an article about Artist A mentions a song/album/event that actually belongs to Artist B, you must set ownership_artist to "Artist B" and ownership_confidence to LOW.
-- Example: An article about HIGHLIGHT mentions "SWIM" → If SWIM is actually a BTS song, ownership_artist="BTS", ownership_confidence=0.1
-- When unsure about ownership, set ownership_confidence below 0.5 and note the uncertainty.
-- For brands/products/places, ownership is about who has the PRIMARY association (ambassador, sponsor, etc.)`;
+CRITICAL RULES — READ CAREFULLY:
 
-  const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
+1. ABSOLUTELY FORBIDDEN KEYWORDS (instant rejection):
+   - The artist's own name in ANY language/spelling: ${nameListStr}
+   - Any variation, nickname, or abbreviation of the above names
+   - Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
+   - Chart names (Billboard, Hanteo, Gaon, etc.)
+   - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
+
+2. WHAT TO EXTRACT (specific named entities ONLY):
+   ✅ GOOD examples: "광화문" (place visited), "프라다" (brand worn), "왕과 사는 남자" (drama title), "Galaxy S25" (product used), "투썸플레이스" (cafe visited), "나이키 에어맥스" (shoes worn)
+   ❌ BAD examples: "카리나" (artist name), "에스파" (group name), "SM엔터" (agency), "브랜드평판" (generic term), "인기" (vague), "팬들" (generic)
+
+3. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
+4. The keyword must LITERALLY appear in the article text
+5. OWNERSHIP CHECK: Determine if this entity is genuinely associated with the searched artist, not just mentioned in passing
+6. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.`;
+
+  const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
+
+REMEMBER: Do NOT extract ${nameListStr} or any artist/group names as keywords. Only extract specific brands, products, places, show titles, etc.
 
 Articles:
 ${articleTexts}
 
-EXTRACTION RULES:
-1. ONLY extract entities whose name literally appears in the article text
-2. "${memberName}" should be mentioned in the article or linked via group "${groupName || "N/A"}"
-3. FORBIDDEN keywords: artist/group names themselves, agency names, platform names, chart names, generic terms ("컴백", "album", "concert")
-4. ALLOWED: Specific named entities — album titles, brand names, products, places, shows, named tours/festivals
-5. Maximum 7 keywords
-6. Categories: brand, product, place, food, fashion, beauty, media, music, event
-7. CONTEXT-BASED DISAMBIGUATION: When a word is ordinary but article discusses charts/streaming/music, classify as "music"
-8. COMPOUND NAMES: Keep multi-word brand names as one keyword ("푸르지오 써밋", "Samsung Galaxy")
-9. ONE ENTITY PER KEYWORD: Separate "Chanel shoes" and "Prada jacket" into two keywords
-10. Use ORIGINAL Korean name as keyword for Korean-origin names; English for international brands
-11. CRITICAL — OWNERSHIP CHECK: For EVERY keyword, determine who actually OWNS it. Is this song/album by the searched artist? Is this brand deal with the searched artist? If the article merely MENTIONS another artist's work, that keyword does NOT belong to the searched artist.
-12. Do NOT include article reference numbers [1], [2] in context fields.
-
-Call extract_keywords first, then call analyze_trend_intent to summarize the overall trend signal.`;
+Call extract_keywords with the specific named entities found, then call analyze_trend_intent.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -421,7 +423,7 @@ Call extract_keywords first, then call analyze_trend_intent to summarize the ove
           { role: "user", content: userPrompt },
         ],
         tools: [TOOL_EXTRACT_KEYWORDS, TOOL_ANALYZE_INTENT],
-        tool_choice: "auto",
+        tool_choice: "required",
         temperature: 0.05,
         max_tokens: 2500,
       }),
@@ -500,8 +502,15 @@ Call extract_keywords first, then call analyze_trend_intent to summarize the ove
       }
     }
 
-    // ── 후검증: 플랫폼 블랙리스트 + 아티스트명 필터 ──
+    // ── 후검증: 플랫폼 블랙리스트 + 아티스트명 필터 (강화) ──
     const allText = articles.map(a => `${a.title} ${a.description || ""}`).join(" ").toLowerCase();
+
+    // 모든 이름 변형 수집 (한글/영문/그룹명 모두)
+    const allNameVariants = new Set<string>();
+    for (const n of [memberName, nameKo, groupName, groupNameKo]) {
+      if (n) allNameVariants.add(n.toLowerCase());
+    }
+
     extractedKeywords = extractedKeywords.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
 
@@ -515,19 +524,36 @@ Call extract_keywords first, then call analyze_trend_intent to summarize the ove
         return false;
       }
 
-      // 아티스트/그룹 이름 정확 일치 차단
-      const memberLower = memberName.toLowerCase();
-      const groupLower = (groupName || "").toLowerCase();
-      const nameBlacklist = [memberLower, groupLower].filter(Boolean);
-      for (const blocked of nameBlacklist) {
+      // 아티스트/그룹 이름 차단 — 정확 일치 OR 키워드가 이름과 동일
+      for (const blocked of allNameVariants) {
+        // 정확 일치
         if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
-          console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
+          console.warn(`[trend-detect] Blocked artist/group name as keyword (exact): "${k.keyword}"`);
+          return false;
+        }
+        // 키워드가 이름만으로 구성 (공백/조사 제거 후)
+        const kwStripped = kwLower.replace(/[\s·,\-]+/g, "");
+        const blockedStripped = blocked.replace(/[\s·,\-]+/g, "");
+        if (kwStripped === blockedStripped) {
+          console.warn(`[trend-detect] Blocked artist/group name as keyword (normalized): "${k.keyword}"`);
           return false;
         }
       }
 
       // 2글자 이하 단문 차단
       if (kwLower.length <= 1 && (!kwKo || kwKo.length <= 1)) return false;
+
+      // 일반적인 한국어 K-pop 노이즈 키워드 차단
+      const NOISE_BLACKLIST = new Set([
+        "브랜드평판", "아이돌", "인기", "팬들", "컴백", "활동", "무대",
+        "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
+        "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
+        "김포국제공항", "대만", "일본", "중국", "미국", "한국",
+      ]);
+      if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
+        console.warn(`[trend-detect] Blocked noise keyword: "${k.keyword}"`);
+        return false;
+      }
 
       // confidence 0.8 이상이면 텍스트 검증 스킵
       if (k.confidence >= 0.8) return true;
@@ -966,10 +992,11 @@ async function detectForMember(
     return { keywordsFound: 0, articlesFound: 0, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
-  // AI로 상업 키워드 추출 (News + Blog 통합)
+  // AI로 상업 키워드 추출 (News + Blog 통합) — nameKo, groupNameKo 전달
   const aiKeywords = articles.length > 0
     ? await extractCommercialKeywords(
-        openaiKey, member.display_name, member.group_name, articles, member.star_category
+        openaiKey, member.display_name, member.group_name, articles, member.star_category,
+        member.name_ko, member.group_name_ko
       )
     : [];
 
@@ -1109,20 +1136,40 @@ async function detectForMember(
   const backfillPromises: PromiseLike<unknown>[] = [];
   const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
-  // 아티스트/그룹명과 완전 일치하는 키워드 차단용 셋
+  // 아티스트/그룹명과 일치하는 키워드 차단용 셋 (정규화 포함)
   const artistNameSet = new Set<string>();
   for (const n of [member.display_name, member.name_ko, member.group_name, member.group_name_ko]) {
-    if (n) artistNameSet.add(n.toLowerCase());
+    if (n) {
+      artistNameSet.add(n.toLowerCase());
+      artistNameSet.add(n.toLowerCase().replace(/[\s·,\-]+/g, ""));
+    }
   }
+
+  // 노이즈 블랙리스트
+  const INSERT_NOISE_BLACKLIST = new Set([
+    "브랜드평판", "아이돌", "인기", "팬들", "컴백", "활동", "무대",
+    "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
+    "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
+    "김포국제공항", "대만", "일본", "중국", "미국", "한국",
+  ]);
 
   for (const candidate of candidateRows) {
     const kwLower = candidate.row.keyword.toLowerCase();
     const kwEnLower = candidate.row.keyword_en?.toLowerCase() || "";
     const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
+    const kwStripped = kwLower.replace(/[\s·,\-]+/g, "");
 
-    // 아티스트/그룹명과 완전 일치하는 키워드 차단
-    if (artistNameSet.has(kwLower) || (kwKoLower && artistNameSet.has(kwKoLower)) || (kwEnLower && artistNameSet.has(kwEnLower))) {
+    // 아티스트/그룹명과 일치하는 키워드 차단 (정규화 포함)
+    if (artistNameSet.has(kwLower) || artistNameSet.has(kwStripped) ||
+        (kwKoLower && (artistNameSet.has(kwKoLower) || artistNameSet.has(kwKoLower.replace(/[\s·,\-]+/g, "")))) ||
+        (kwEnLower && (artistNameSet.has(kwEnLower) || artistNameSet.has(kwEnLower.replace(/[\s·,\-]+/g, ""))))) {
       console.warn(`[trend-detect] Artist name keyword filtered: "${candidate.row.keyword}"`);
+      continue;
+    }
+
+    // 노이즈 필터
+    if (INSERT_NOISE_BLACKLIST.has(kwLower) || INSERT_NOISE_BLACKLIST.has(kwKoLower)) {
+      console.warn(`[trend-detect] Noise keyword filtered at insert: "${candidate.row.keyword}"`);
       continue;
     }
 
