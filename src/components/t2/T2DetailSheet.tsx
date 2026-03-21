@@ -360,7 +360,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors",
                 tile.starId
-                  ? "bg-muted-foreground/10 text-primary hover:bg-muted-foreground/20 cursor-pointer"
+                  ? "bg-muted-foreground/10 text-foreground hover:bg-muted-foreground/20 cursor-pointer"
                   : "bg-muted-foreground/10 text-muted-foreground cursor-default"
               )}
             >
