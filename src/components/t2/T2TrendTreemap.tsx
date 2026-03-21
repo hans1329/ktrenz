@@ -101,16 +101,16 @@ export function sanitizeImageUrl(url: string | null): string | null {
 export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
-  brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 70%, 45%, 0.85)" },
-  product: { label: "Product", color: "hsl(270, 60%, 55%)", tileColor: "hsla(270, 55%, 42%, 0.85)" },
-  place:   { label: "Place",   color: "hsl(145, 55%, 45%)", tileColor: "hsla(145, 50%, 38%, 0.85)" },
-  food:    { label: "Food",    color: "hsl(25, 80%, 55%)",  tileColor: "hsla(25, 75%, 45%, 0.85)" },
-  fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)", tileColor: "hsla(330, 60%, 45%, 0.85)" },
-  beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)", tileColor: "hsla(350, 55%, 45%, 0.85)" },
-  media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
-  music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 65%, 48%, 0.85)" },
-  event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 80%, 42%, 0.85)" },
-  shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 55%, 38%, 0.85)" },
+  brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 60%, 58%, 0.75)" },
+  product: { label: "Product", color: "hsl(270, 60%, 55%)", tileColor: "hsla(270, 50%, 56%, 0.75)" },
+  place:   { label: "Place",   color: "hsl(145, 55%, 45%)", tileColor: "hsla(145, 45%, 50%, 0.75)" },
+  food:    { label: "Food",    color: "hsl(25, 80%, 55%)",  tileColor: "hsla(25, 65%, 58%, 0.75)" },
+  fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)", tileColor: "hsla(330, 50%, 58%, 0.75)" },
+  beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)", tileColor: "hsla(350, 48%, 58%, 0.75)" },
+  media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 55%, 50%, 0.75)" },
+  music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 55%, 58%, 0.75)" },
+  event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 70%, 52%, 0.75)" },
+  shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 48%, 50%, 0.75)" },
 };
 
 export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "shopping"];
