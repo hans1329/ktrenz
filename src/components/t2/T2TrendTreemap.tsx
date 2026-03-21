@@ -721,7 +721,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 const height = (rect.h / containerHeight) * 100;
                  const isTop20 = rectIndex < 20;
                  const isLarge = width > 18 && height > 15;
-                 const isMedium = isTop20 || (width > 10 && height > 8);
+                 const isMedium = isTop20 || (width > 6 && height > 5);
                 const isSelected = selectedTile?.id === rect.item.id;
                 const config = CATEGORY_CONFIG[rect.item.category];
                 const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
