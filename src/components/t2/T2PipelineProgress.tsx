@@ -450,7 +450,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
                         <Search className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
                       )}
                       <span className={`font-medium truncate max-w-[80px] sm:max-w-[120px] ${isNoNews ? "text-muted-foreground/60" : "text-foreground"}`}>
-                        {star.display_name}
+                        {star.name_ko || star.display_name}
                       </span>
                       <span className="text-[8px] text-muted-foreground/60 uppercase shrink-0">
                         {star.star_type}
