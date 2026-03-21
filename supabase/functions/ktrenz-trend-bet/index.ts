@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
           total_volume: 0,
           status: "open",
           initial_influence: trigger?.influence_index ?? 0,
+          expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
