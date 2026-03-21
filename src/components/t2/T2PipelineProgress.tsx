@@ -45,19 +45,26 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const isDetect = run?.phase === "detect";
   const isGlobal = run?.phase === "detect_global";
 
+  // DB 기반 파이프라인 상태 (track 페이즈의 정확한 진행률)
+  const { data: dbPipelineState } = useQuery({
+    queryKey: ["pipeline-db-state", run?.phase],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("current_offset, total_candidates, status, run_id, batch_size")
+        .eq("phase", run?.phase ?? "track")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      return (data as any[])?.[0] ?? null;
+    },
+    enabled: !!run && isTrackPhase,
+    refetchInterval: 3000,
+  });
+
   const { data: totalCount } = useQuery({
     queryKey: ["pipeline-total-count", run?.phase],
     queryFn: async () => {
-      if (isTrackPhase) {
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const { count } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id", { count: "exact", head: true })
-          .eq("status", "active")
-          .gte("detected_at", weekAgo);
-        return count ?? 0;
-      }
-
       // 감지 엔진은 모든 active 스타(group/solo/member)를 대상으로 함
       const { count } = await supabase
         .from("ktrenz_stars" as any)
@@ -66,7 +73,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .in("star_type", ["group", "solo", "member"]);
       return count ?? 0;
     },
-    enabled: !!run,
+    enabled: !!run && !isTrackPhase,
     staleTime: 300_000,
   });
 
@@ -76,16 +83,23 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return null;
 
       if (isTrackPhase) {
-        const { data } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id")
-          .eq("status", "active")
-          .gte("last_tracked_at", run.startedAt.toISOString());
+        // DB 파이프라인 상태에서 직접 가져옴 (정확한 offset 기반)
+        const offset = dbPipelineState?.current_offset ?? 0;
+        const total = dbPipelineState?.total_candidates ?? 0;
+        
+        // 최근 추적 완료된 키워드 수 (ktrenz_trend_tracking에서)
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+        const { count } = await supabase
+          .from("ktrenz_trend_tracking" as any)
+          .select("id", { count: "exact", head: true })
+          .gte("tracked_at", twoHoursAgo);
 
         return {
-          processed: data?.length ?? 0,
+          processed: offset,
+          total: total,
+          trackedCount: count ?? 0,
           pending: 0,
-          active: data?.length ?? 0,
+          active: 0,
           expired: 0,
           merged: 0,
           bySource: {} as Record<string, number>,
@@ -136,13 +150,24 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
 
       if (isTrackPhase) {
+        // 최근 추적된 키워드 (ktrenz_trend_tracking)
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id, keyword, keyword_ko, artist_name, detected_at, keyword_category, status, trigger_source")
-          .eq("status", "active")
-          .order("detected_at", { ascending: false })
-          .limit(500);
-        return (data ?? []) as unknown as RecentKeyword[];
+          .from("ktrenz_trend_tracking" as any)
+          .select("id, keyword, keyword_ko, artist_name, tracked_at, keyword_category, score")
+          .gte("tracked_at", twoHoursAgo)
+          .order("tracked_at", { ascending: false })
+          .limit(20);
+        return ((data ?? []) as any[]).map((r: any) => ({
+          id: r.id,
+          keyword: r.keyword,
+          keyword_ko: r.keyword_ko,
+          artist_name: r.artist_name,
+          detected_at: r.tracked_at,
+          keyword_category: r.keyword_category || "",
+          status: r.score != null ? `${r.score}점` : undefined,
+          trigger_source: undefined,
+        })) as RecentKeyword[];
       }
 
       const domesticSources = ["naver_multi", "naver_shop", "naver_news"];
@@ -167,21 +192,38 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     refetchInterval: 5000,
   });
 
-  const total = totalCount ?? 0;
-  const processed = phaseState?.processed ?? 0;
+  // track 페이즈는 DB pipeline_state에서 직접 진행률 계산
+  const trackTotal = isTrackPhase ? (phaseState as any)?.total ?? dbPipelineState?.total_candidates ?? 0 : 0;
+  const trackOffset = isTrackPhase ? (phaseState as any)?.processed ?? dbPipelineState?.current_offset ?? 0 : 0;
+  const trackedCount = isTrackPhase ? (phaseState as any)?.trackedCount ?? 0 : 0;
+  
+  const total = isTrackPhase ? trackTotal : (totalCount ?? 0);
+  const processed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
   const pending = phaseState?.pending ?? 0;
   const active = phaseState?.active ?? 0;
   const expired = phaseState?.expired ?? 0;
   const merged = phaseState?.merged ?? 0;
   const bySource = phaseState?.bySource ?? {};
-  const batchSize = 5;
+  const batchSize = dbPipelineState?.batch_size ?? 5;
+
+  // Track: offset 기반 정확한 진행률
+  const progress = isTrackPhase
+    ? (total > 0 ? Math.min((processed / total) * 100, 99) : 0)
+    : (() => {
+        const batchesDone = Math.ceil(processed / batchSize);
+        const totalBatches = Math.ceil(total / batchSize);
+        const batchTime = 30;
+        const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
+        const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
+        return totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
+      })();
+
+  const totalBatches = isTrackPhase ? Math.ceil(total / batchSize) : Math.ceil(total / batchSize);
   const batchesDone = Math.ceil(processed / batchSize);
-  const totalBatches = Math.ceil(total / batchSize);
   const batchTime = 30;
-  const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
-  const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
-  const progress = totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
-  const estimatedRemaining = totalBatches > 0 ? Math.max((totalBatches - effectiveBatches) * batchTime, 0) : 0;
+  const estimatedRemaining = isTrackPhase
+    ? Math.max(Math.ceil((total - processed) / batchSize) * 8, 0) // 8초/배치
+    : Math.max((totalBatches - Math.max(Math.floor(elapsed / batchTime), batchesDone)) * batchTime, 0);
   const remainMin = Math.floor(estimatedRemaining / 60);
   const remainSec = estimatedRemaining % 60;
 
@@ -200,7 +242,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const isStalled = stallTimer > 18;
   const estimatedTotal = totalBatches * batchTime;
   const isDone = isTrackPhase
-    ? ((processed > 0 && effectiveBatches >= totalBatches) || elapsed > estimatedTotal + 60)
+    ? (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (processed > 0 && processed >= total))
     : processed > 0 && pending === 0;
 
   useEffect(() => {
@@ -273,7 +315,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {totalTriggers > 0 && (
+          {isTrackPhase && trackedCount > 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-primary bg-primary/10">
+              {trackedCount} tracked
+            </span>
+          )}
+          {!isTrackPhase && totalTriggers > 0 && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-primary bg-primary/10">
               {totalTriggers} saved
             </span>
@@ -299,7 +346,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span>
                 {isTrackPhase
-                  ? `${processed}/${total}개 추적됨`
+                  ? `${processed}/${total}개 처리 · ${trackedCount}건 추적됨`
                   : `대상 ${total}명 · 처리 ${processed}명`}
               </span>
               <span>{statusText}</span>
