@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
+import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
   brand:   { label: "Brand",   labelKo: "브랜드",  labelJa: "ブランド",  labelZh: "品牌",   color: "hsl(210, 70%, 55%)" },
