@@ -521,15 +521,31 @@ const UserDashboard = () => {
                   }
                 }
 
+                const OUTCOME_CONFIG: Record<string, { emoji: string; label: string; labelKo: string; color: string }> = {
+                  mild: { emoji: "🌱", label: "Mild", labelKo: "소폭", color: "amber" },
+                  strong: { emoji: "🔥", label: "Strong", labelKo: "강세", color: "emerald" },
+                  explosive: { emoji: "🚀", label: "Explosive", labelKo: "폭발", color: "purple" },
+                };
+                const MULTIPLIERS: Record<string, number> = { mild: 1.2, strong: 3.0, explosive: 10.0 };
+
                 return Array.from(grouped.values()).slice(0, 6).map((group) => {
                   const { bets: groupBets, market, trigger, keyword, artistName, config } = group;
                   const isSettled = market?.status === "settled";
                   const totalAmount = groupBets.reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
                   const totalPayout = groupBets.reduce((s: number, b: any) => s + (Number(b.payout) || 0), 0);
-                  const yesAmount = groupBets.filter((b: any) => b.side === "yes").reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
-                  const noAmount = groupBets.filter((b: any) => b.side === "no").reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
-                  const hasWon = isSettled && groupBets.some((b: any) => market?.outcome === b.side);
+
+                  // Group by outcome
+                  const outcomeBreakdown = ["mild", "strong", "explosive"].map(o => ({
+                    outcome: o,
+                    amount: groupBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0),
+                  })).filter(o => o.amount > 0);
+
+                  const hasWon = isSettled && groupBets.some((b: any) => market?.outcome === b.outcome);
                   const hasLost = isSettled && market?.outcome && !hasWon;
+
+                  // Remaining time
+                  const expiresAt = market?.expires_at ? new Date(market.expires_at).getTime() : null;
+                  const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 86400000)) : null;
 
                   return (
                     <button
@@ -558,25 +574,29 @@ const UserDashboard = () => {
                               {config.label}
                             </span>
                           )}
-                          {groupBets.length > 1 && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
-                              ×{groupBets.length}
-                            </span>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
                           {artistName && <span>{artistName}</span>}
-                          {yesAmount > 0 && (
-                            <span className="font-bold text-green-400">▲ {yesAmount.toFixed(0)}</span>
+                          {outcomeBreakdown.map(({ outcome, amount }) => {
+                            const oc = OUTCOME_CONFIG[outcome];
+                            return (
+                              <span key={outcome} className={cn("font-bold", `text-${oc?.color}-400`)}>
+                                {oc?.emoji} {language === "ko" ? oc?.labelKo : oc?.label} {amount.toLocaleString()}T
+                              </span>
+                            );
+                          })}
+                          {daysLeft !== null && !isSettled && (
+                            <span className="text-muted-foreground">⏳ {daysLeft}{language === "ko" ? "일" : "d"}</span>
                           )}
-                          {noAmount > 0 && (
-                            <span className="font-bold text-red-400">▼ {noAmount.toFixed(0)}</span>
-                          )}
-                          <span>{totalAmount.toFixed(0)} pts</span>
                         </div>
                       </div>
                       {hasWon && totalPayout > 0 && (
-                        <span className="text-xs font-black text-green-400 shrink-0">+{totalPayout.toFixed(0)}</span>
+                        <span className="text-xs font-black text-green-400 shrink-0">+{totalPayout.toLocaleString()}</span>
+                      )}
+                      {!isSettled && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {totalAmount.toLocaleString()} <span className="text-muted-foreground/60">T</span>
+                        </span>
                       )}
                     </button>
                   );
