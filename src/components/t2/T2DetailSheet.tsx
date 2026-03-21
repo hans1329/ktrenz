@@ -665,7 +665,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         <div key={bet.id} className="text-[11px] text-muted-foreground">
                           {bet.outcome} {Number(bet.amount).toLocaleString()} T → {bet.payout != null
                             ? (bet.payout > 0
-                              ? <span className="text-emerald-400 font-bold">+{bet.payout}T {t("won", language)}</span>
+                              ? <span className="text-emerald-400 font-bold">+{Number(bet.payout).toLocaleString()} T {t("won", language)}</span>
                               : <span className="text-rose-400">{t("lost", language)}</span>)
                             : "..."}
                         </div>
