@@ -208,16 +208,20 @@ Deno.serve(async (req) => {
             await sb.from("ktrenz_trend_tracking").insert({
               trigger_id: dupId, wiki_entry_id: dup.wiki_entry_id, keyword: dup.keyword,
               interest_score: buzzScore, region: "naver", delta_pct: deltaPct,
-              raw_response: { news_total: newsTotal, blog_total: blogTotal },
+              raw_response: { news_recent: newsRecent, blog_recent: blogRecent, api_total: apiTotal, daily_delta: dailyDelta },
             });
             await updateCausalMetrics(sb, dupId, buzzScore);
+            // prev_api_total 갱신
+            await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", dupId);
           }
         }
 
         await updateCausalMetrics(sb, trigger.id, buzzScore);
+        // prev_api_total 갱신 (다음 추적 시 daily_delta 계산용)
+        await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
         trackedCount++;
-        results.push({ keyword: trigger.keyword, artist: trigger.artist_name, buzz_score: buzzScore, delta_pct: deltaPct });
-        console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} Δ=${deltaPct}%`);
+        results.push({ keyword: trigger.keyword, artist: trigger.artist_name, buzz_score: buzzScore, daily_delta: dailyDelta, delta_pct: deltaPct, api_total: apiTotal });
+        console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} daily_delta=${dailyDelta} Δ=${deltaPct}%`);
 
         await new Promise(r => setTimeout(r, 500)); // rate limit
       } catch (e) {
