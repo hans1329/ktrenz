@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
     // 24시간 이내 필터링 + 일본어 기사 제외
     const filtered = allItems.filter((item) => {
       const pubTime = new Date(item.pubDate).getTime();
-      if (isNaN(pubTime) || pubTime < cutoff24h) return false;
+      if (isNaN(pubTime) || pubTime < cutoff72h) return false;
       if (isJapanese(item.title) || isJapanese(item.description)) return false;
       return true;
     });
