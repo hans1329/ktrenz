@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const REGIONS = ["worldwide", "KR", "US", "JP"] as const;
+// Region filter removed — domestic only
 const CATEGORY_COLORS: Record<string, string> = {
   brand: "bg-blue-500/10 text-blue-600 border-blue-500/30",
   product: "bg-purple-500/10 text-purple-600 border-purple-500/30",
@@ -38,7 +38,6 @@ const formatAge = (dateStr: string): string => {
 
 const AdminTrendIntel = () => {
   const queryClient = useQueryClient();
-  const [selectedRegion, setSelectedRegion] = useState<string>("worldwide");
   const [artistFilter, setArtistFilter] = useState<string>("");
   // Fetch active triggers
   const { data: triggers, isLoading: triggersLoading } = useQuery({
@@ -57,26 +56,20 @@ const AdminTrendIntel = () => {
 
   // Fetch tracking data
   const { data: trackingData, isLoading: trackingLoading } = useQuery({
-    queryKey: ["admin-trend-tracking", selectedRegion],
+    queryKey: ["admin-trend-tracking"],
     queryFn: async () => {
-      const query = supabase
+      const { data } = await supabase
         .from("ktrenz_trend_tracking" as any)
         .select("*")
         .order("tracked_at", { ascending: false })
         .limit(200);
-
-      if (selectedRegion !== "all") {
-        query.eq("region", selectedRegion);
-      }
-
-      const { data } = await query;
       return (data ?? []) as any[];
     },
     refetchInterval: 30_000,
   });
 
-  // Run detect
-  const detectMutation = useMutation({
+  // Run pipeline (detect + track unified)
+  const runMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
         body: { action: "start", phase: "detect", batchSize: 5 },
@@ -85,43 +78,11 @@ const AdminTrendIntel = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`키워드 감지 시작 (run: ${data?.runId})`);
-      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
-    },
-    onError: (err) => toast.error(`감지 실패: ${(err as Error).message}`),
-  });
-
-  // Run track
-  const trackMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "track", batchSize: 5 },
-      });
-      if (error) throw error;
-      return typeof data === "string" ? JSON.parse(data) : data;
-    },
-    onSuccess: (data) => {
-      toast.success(`트렌드 추적 시작 (run: ${data?.runId})`);
-      queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
-    },
-    onError: (err) => toast.error(`추적 실패: ${(err as Error).message}`),
-  });
-
-  // Run full pipeline
-  const fullPipelineMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "detect", batchSize: 5 },
-      });
-      if (error) throw error;
-      return typeof data === "string" ? JSON.parse(data) : data;
-    },
-    onSuccess: (data) => {
-      toast.success(`전체 파이프라인 시작 (run: ${data?.runId})`);
+      toast.success(`트렌드 수집 시작 (run: ${data?.runId})`);
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
     },
-    onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
+    onError: (err) => toast.error(`수집 실패: ${(err as Error).message}`),
   });
 
   // Expire single trigger
@@ -191,7 +152,7 @@ const AdminTrendIntel = () => {
   // Unique artist names in active triggers (for bulk expire)
   const activeArtistNames = [...new Set(activeTriggers.map((t: any) => t.artist_name as string))].sort();
 
-  const isAnyRunning = detectMutation.isPending || trackMutation.isPending || fullPipelineMutation.isPending;
+  const isAnyRunning = runMutation.isPending;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -205,59 +166,16 @@ const AdminTrendIntel = () => {
 
       {/* Controls */}
       <Card className="p-3 sm:p-4">
-        <div className="flex flex-col gap-2">
-          <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
-            <Button
-              size="sm"
-              onClick={() => fullPipelineMutation.mutate()}
-              disabled={isAnyRunning}
-              className="gap-1 text-[11px] sm:text-xs h-8"
-            >
-              {fullPipelineMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">전체 파이프라인</span>
-              <span className="sm:hidden">전체</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => detectMutation.mutate()}
-              disabled={isAnyRunning}
-              className="gap-1 text-[11px] sm:text-xs h-8"
-            >
-              {detectMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">키워드 감지만</span>
-              <span className="sm:hidden">감지</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => trackMutation.mutate()}
-              disabled={isAnyRunning}
-              className="gap-1 text-[11px] sm:text-xs h-8"
-            >
-              {trackMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TrendingUp className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">검색량 추적만</span>
-              <span className="sm:hidden">추적</span>
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">지역:</span>
-            {REGIONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setSelectedRegion(r)}
-                className={cn(
-                  "px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-medium border transition-colors shrink-0",
-                  selectedRegion === r
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-muted text-muted-foreground border-border hover:bg-accent"
-                )}
-              >
-                {r === "worldwide" ? "🌍 전체" : r}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => runMutation.mutate()}
+            disabled={isAnyRunning}
+            className="gap-1 text-[11px] sm:text-xs h-8"
+          >
+            {runMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+            트렌드 수집 실행
+          </Button>
         </div>
       </Card>
 
@@ -333,10 +251,7 @@ const AdminTrendIntel = () => {
           <div className="space-y-2">
             {activeTriggers.map((trigger: any) => {
               const tracking = trackingByTrigger.get(trigger.id) ?? [];
-              const regionTracking = tracking.filter((t: any) =>
-                selectedRegion === "all" ? true : t.region === selectedRegion
-              );
-              const latestTrack = regionTracking[0];
+              const latestTrack = tracking[0];
 
               return (
                 <Card key={trigger.id} className="p-3">
