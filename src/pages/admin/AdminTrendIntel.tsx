@@ -264,22 +264,22 @@ const AdminTrendIntel = () => {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <Card className="p-3">
-          <div className="text-[11px] text-muted-foreground">활성 키워드</div>
-          <div className="text-2xl font-bold text-foreground">{activeTriggers.length}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <Card className="p-2.5 sm:p-3">
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground">활성 키워드</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground">{activeTriggers.length}</div>
         </Card>
-        <Card className="p-3">
-          <div className="text-[11px] text-muted-foreground">만료 키워드</div>
-          <div className="text-2xl font-bold text-muted-foreground">{expiredTriggers.length}</div>
+        <Card className="p-2.5 sm:p-3">
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground">만료 키워드</div>
+          <div className="text-xl sm:text-2xl font-bold text-muted-foreground">{expiredTriggers.length}</div>
         </Card>
-        <Card className="p-3">
-          <div className="text-[11px] text-muted-foreground">추적 데이터</div>
-          <div className="text-2xl font-bold text-foreground">{(trackingData ?? []).length}</div>
+        <Card className="p-2.5 sm:p-3">
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground">추적 데이터</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground">{(trackingData ?? []).length}</div>
         </Card>
-        <Card className="p-3">
-          <div className="text-[11px] text-muted-foreground">아티스트 수</div>
-          <div className="text-2xl font-bold text-foreground">
+        <Card className="p-2.5 sm:p-3">
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground">아티스트 수</div>
+          <div className="text-xl sm:text-2xl font-bold text-foreground">
             {new Set((triggers ?? []).map((t: any) => t.wiki_entry_id)).size}
           </div>
         </Card>
