@@ -751,12 +751,12 @@ const V3TrendRankings = () => {
           </div>
           <div className="flex items-center rounded-full bg-muted p-1 shrink-0">
             <button onClick={() => setViewMode("list")}
-              className={cn("p-2 rounded-full transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
-              <List className="w-4 h-4" />
+              className={cn("p-2.5 rounded-full transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+              <List className="w-5 h-5" />
             </button>
             <button onClick={() => setViewMode("treemap")}
-              className={cn("p-2 rounded-full transition-colors", viewMode === "treemap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
-              <LayoutGrid className="w-4 h-4" />
+              className={cn("p-2.5 rounded-full transition-colors", viewMode === "treemap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+              <LayoutGrid className="w-5 h-5" />
             </button>
           </div>
         </div>
