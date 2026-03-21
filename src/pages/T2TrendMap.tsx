@@ -153,7 +153,8 @@ const T2TrendMap = () => {
                     const count = cat === "all" ? totalCount : cat === "my" ? myCount : categoryStats[cat] || 0;
                     return count > 0 ? (
                       <span
-                        className="text-[10px] text-muted-foreground/60"
+                        className="text-[10px]"
+                        style={{ color: isActive ? "rgba(255,255,255,0.75)" : "hsl(220, 10%, 65%)" }}
                       >
                         {count}
                       </span>
