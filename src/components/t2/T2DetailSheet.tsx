@@ -621,9 +621,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
               {/* My Position */}
               {myBets && myBets.length > 0 && (() => {
-                const outcomes = ["decline", "mild", "strong", "explosive"] as const;
-                const outcomeEmoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
-                const outcomeColor: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                const outcomes = ["mild", "strong", "explosive"] as const;
+                const outcomeEmoji: Record<string, string> = { mild: "📈", strong: "🔥", explosive: "🚀" };
+                const outcomeColor: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
                 const stakes = Object.fromEntries(outcomes.map(o => [o, {
                   amount: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.amount), 0),
                   shares: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.shares), 0),
@@ -632,7 +632,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 return (
                   <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                     <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
                           <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
@@ -640,7 +640,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
-                              +{Math.round(stakes[o].shares - stakes[o].amount)}T
+                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o])}T
                             </span>
                           </div>
                         </div>
