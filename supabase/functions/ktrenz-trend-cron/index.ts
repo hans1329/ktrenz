@@ -108,13 +108,18 @@ Deno.serve(async (req) => {
               .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
               .eq("id", ppState.id);
 
-            await sb.from("ktrenz_pipeline_state").insert({
-              run_id: ppState.run_id,
-              phase: nextPhase,
-              status: "running",
-              current_offset: 0,
-              batch_size: ppState.batch_size,
-            });
+            // Check for existing row before inserting (unique constraint safety)
+            const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+              .select("id").eq("run_id", ppState.run_id).eq("phase", nextPhase).limit(1);
+            if (!existingNext?.length) {
+              await sb.from("ktrenz_pipeline_state").insert({
+                run_id: ppState.run_id,
+                phase: nextPhase,
+                status: "running",
+                current_offset: 0,
+                batch_size: ppState.batch_size,
+              });
+            }
 
             console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
           } else {
@@ -295,13 +300,17 @@ async function executeBatch(
         .eq("status", "running");
 
       if (nextPhase) {
-        await sb.from("ktrenz_pipeline_state").insert({
-          run_id: runId,
-          phase: nextPhase,
-          status: "running",
-          current_offset: 0,
-          batch_size: batchSize,
-        });
+        const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+          .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
+        if (!existingNext?.length) {
+          await sb.from("ktrenz_pipeline_state").insert({
+            run_id: runId,
+            phase: nextPhase,
+            status: "running",
+            current_offset: 0,
+            batch_size: batchSize,
+          });
+        }
       }
       console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
 
