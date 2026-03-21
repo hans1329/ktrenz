@@ -306,9 +306,9 @@ Deno.serve(async (req) => {
         countQuery = countQuery.eq("trigger_source", "naver_shop");
         dataQuery = dataQuery.eq("trigger_source", "naver_shop");
       } else {
-        // 자동 파이프라인: 쇼핑 제외 + baseline > 0인 키워드만 (검색량 없는 키워드 스킵)
-        countQuery = countQuery.neq("trigger_source", "naver_shop").gt("baseline_score", 0);
-        dataQuery = dataQuery.neq("trigger_source", "naver_shop").gt("baseline_score", 0);
+        // 자동 파이프라인: 쇼핑 제외 (baseline=0도 최초 1회 추적 허용)
+        countQuery = countQuery.neq("trigger_source", "naver_shop");
+        dataQuery = dataQuery.neq("trigger_source", "naver_shop");
       }
 
       const { count: exactCount } = await countQuery;
