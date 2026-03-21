@@ -403,6 +403,57 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     refetchInterval: 60_000,
   });
 
+  // Separate query for shopping (naver_shop) triggers
+  const { data: shopTriggers } = useQuery({
+    queryKey: ["t2-trend-triggers-shopping"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, star_id, wiki_entry_id, influence_index, context, context_ko, context_ja, context_zh, detected_at, peak_at, expired_at, lifetime_hours, peak_delay_hours, baseline_score, peak_score, source_url, source_title, source_image_url, source_snippet, status")
+        .eq("status", "active")
+        .eq("trigger_source", "naver_shop")
+        .order("influence_index", { ascending: false })
+        .limit(200);
+
+      return ((data ?? []) as any[]).map((t: any): TrendTile => ({
+        id: t.id,
+        keyword: t.keyword,
+        keywordKo: t.keyword_ko || null,
+        keywordJa: t.keyword_ja || null,
+        keywordZh: t.keyword_zh || null,
+        category: "shopping",
+        artistName: t.artist_name || "Unknown",
+        artistNameKo: null,
+        artistImageUrl: null,
+        wikiEntryId: t.wiki_entry_id || "",
+        influenceIndex: Number(t.influence_index) || 0,
+        context: t.context,
+        contextKo: t.context_ko || null,
+        contextJa: t.context_ja || null,
+        contextZh: t.context_zh || null,
+        detectedAt: t.detected_at,
+        peakAt: t.peak_at || null,
+        expiredAt: t.expired_at || null,
+        lifetimeHours: t.lifetime_hours != null ? Number(t.lifetime_hours) : null,
+        peakDelayHours: t.peak_delay_hours != null ? Number(t.peak_delay_hours) : null,
+        baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
+        peakScore: t.peak_score != null ? Number(t.peak_score) : null,
+        sourceUrl: t.source_url || null,
+        sourceTitle: t.source_title || null,
+        sourceImageUrl: t.source_image_url || null,
+        sourceSnippet: t.source_snippet || null,
+        starId: t.star_id || null,
+        status: t.status,
+      }));
+    },
+    staleTime: 60_000,
+  });
+
+  const dedupedShopTriggers = useMemo(() => {
+    if (!shopTriggers?.length) return [];
+    return dedupeTrendTiles(shopTriggers);
+  }, [shopTriggers]);
+
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
     return dedupeTrendTiles(triggers);
@@ -415,6 +466,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [dedupedTriggers, watchedSet]);
 
   const filteredItems = useMemo(() => {
+    if (selectedCategory === "shopping") {
+      return dedupedShopTriggers;
+    }
     if (!dedupedTriggers.length) return [];
     if (selectedCategory === "my") {
       return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
