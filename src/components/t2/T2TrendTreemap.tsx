@@ -150,19 +150,19 @@ function buildTrendIdentity(tile: TrendTile): string {
   return `${artistKey}::${categoryKey}::${keywordKey}`;
 }
 
-function dedupeTrendTiles(items: TrendTile[]): TrendTile[] {
+function dedupeTrendTiles(items: TrendTile[], sortMode: SortMode = "rate"): TrendTile[] {
   const uniqueMap = new Map<string, TrendTile>();
 
   for (const item of items) {
     const identity = buildTrendIdentity(item);
     const existing = uniqueMap.get(identity);
 
-    if (!existing || compareTrendPriority(item, existing) < 0) {
+    if (!existing || compareTrendPriority(item, existing, sortMode) < 0) {
       uniqueMap.set(identity, item);
     }
   }
 
-  return Array.from(uniqueMap.values()).sort(compareTrendPriority);
+  return Array.from(uniqueMap.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
 }
 
 // ── Squarify layout ──
