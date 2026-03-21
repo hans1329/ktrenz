@@ -689,7 +689,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     />
                     {user && (
                       <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
-                        {Number(kPoints).toLocaleString()}T
+                        {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
                       </span>
                     )}
                   </div>
