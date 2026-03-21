@@ -153,6 +153,7 @@ const T2MyArtists = () => {
           peakScore: t.peak_score != null ? Number(t.peak_score) : null,
           sourceUrl: t.source_url || null, sourceTitle: t.source_title || null, sourceImageUrl: t.source_image_url || null,
           sourceSnippet: t.source_snippet || null, starId: t.star_id || null, status: t.status,
+          prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
         };
       });
     },

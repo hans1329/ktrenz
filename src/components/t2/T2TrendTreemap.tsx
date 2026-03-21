@@ -45,7 +45,10 @@ export interface TrendTile {
   sourceSnippet: string | null;
   starId: string | null;
   status: string;
+  prevApiTotal: number | null;
 }
+
+export type SortMode = "rate" | "volume";
 
 function getLocalizedArtistName(tile: TrendTile, lang: string): string {
   if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
@@ -125,7 +128,16 @@ function normalizeTrendKey(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function compareTrendPriority(a: TrendTile, b: TrendTile): number {
+function compareTrendPriority(a: TrendTile, b: TrendTile, sortMode: SortMode = "rate"): number {
+  if (sortMode === "volume") {
+    // 일일 증가량 기준: peakScore - baselineScore as proxy (or prevApiTotal diff)
+    const aVolume = (a.peakScore ?? 0) - (a.baselineScore ?? 0);
+    const bVolume = (b.peakScore ?? 0) - (b.baselineScore ?? 0);
+    if (bVolume !== aVolume) return bVolume - aVolume;
+    if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
+    return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
+  }
+  // rate mode (default): influence_index 기준
   if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
   if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
   return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
@@ -138,31 +150,33 @@ function buildTrendIdentity(tile: TrendTile): string {
   return `${artistKey}::${categoryKey}::${keywordKey}`;
 }
 
-function dedupeTrendTiles(items: TrendTile[]): TrendTile[] {
+function dedupeTrendTiles(items: TrendTile[], sortMode: SortMode = "rate"): TrendTile[] {
   const uniqueMap = new Map<string, TrendTile>();
 
   for (const item of items) {
     const identity = buildTrendIdentity(item);
     const existing = uniqueMap.get(identity);
 
-    if (!existing || compareTrendPriority(item, existing) < 0) {
+    if (!existing || compareTrendPriority(item, existing, sortMode) < 0) {
       uniqueMap.set(identity, item);
     }
   }
 
-  return Array.from(uniqueMap.values()).sort(compareTrendPriority);
+  return Array.from(uniqueMap.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
 }
 
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TrendTile; }
 
-function squarify(items: TrendTile[], x: number, y: number, w: number, h: number): Rect[] {
+function squarify(items: TrendTile[], x: number, y: number, w: number, h: number, sortMode: SortMode = "rate"): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
 
   const tileSize = (item: TrendTile, idx: number) => {
-    const base = Math.max(item.influenceIndex, 1);
-    const logBase = Math.log1p(base);
+    const metric = sortMode === "volume"
+      ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
+      : Math.max(item.influenceIndex, 1);
+    const logBase = Math.log1p(metric);
     // Rank-based multiplier: #1 is dramatically larger
     if (idx === 0) return logBase * 12;
     if (idx === 1) return logBase * 7;
@@ -258,6 +272,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
   const setViewMode = onViewModeChange ?? setInternalViewMode;
+  const [sortMode, setSortMode] = useState<SortMode>("rate");
   
   const isMobile = useIsMobile();
   const { language } = useLanguage();
@@ -396,6 +411,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           sourceSnippet: t.source_snippet || null,
           starId: t.star_id || null,
           status: t.status,
+          prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
         };
       });
     },
@@ -444,6 +460,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         sourceSnippet: t.source_snippet || null,
         starId: t.star_id || null,
         status: t.status,
+        prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
       }));
     },
     staleTime: 60_000,
@@ -451,13 +468,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const dedupedShopTriggers = useMemo(() => {
     if (!shopTriggers?.length) return [];
-    return dedupeTrendTiles(shopTriggers);
-  }, [shopTriggers]);
+    return dedupeTrendTiles(shopTriggers, sortMode);
+  }, [shopTriggers, sortMode]);
 
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    return dedupeTrendTiles(triggers);
-  }, [triggers]);
+    return dedupeTrendTiles(triggers, sortMode);
+  }, [triggers, sortMode]);
 
   // My artists' keywords
   const myKeywords = useMemo(() => {
@@ -530,8 +547,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const rects = useMemo(() => {
     if (!visibleBoxItems.length) return [];
-    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight);
-  }, [visibleBoxItems, containerWidth, containerHeight]);
+    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight, sortMode);
+  }, [visibleBoxItems, containerWidth, containerHeight, sortMode]);
 
   useEffect(() => {
     const modalId = searchParams.get("modal");
@@ -587,7 +604,28 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   return (
     <div className="px-0 md:px-4 pb-4">
       {/* Header */}
-      <div className="pt-4 pb-3 flex items-end justify-end gap-3">
+      <div className="pt-4 pb-3 flex items-end justify-between gap-3 px-4 md:px-0">
+        {/* Sort Mode Toggle */}
+        <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
+          <button
+            onClick={() => setSortMode("rate")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all",
+              sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            📈 Rate
+          </button>
+          <button
+            onClick={() => setSortMode("volume")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all",
+              sortMode === "volume" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            📊 Volume
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <T2AdminControls />
         </div>
@@ -720,9 +758,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       })(),
                     }}
                   >
-                    {isMedium && rect.item.influenceIndex > 0 && (
+                    {isMedium && sortMode === "rate" && rect.item.influenceIndex > 0 && (
                       <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
                         +{rect.item.influenceIndex.toFixed(0)}%
+                      </span>
+                    )}
+                    {isMedium && sortMode === "volume" && (
+                      <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
+                        +{((rect.item.peakScore ?? 0) - (rect.item.baselineScore ?? 0)).toLocaleString()}
                       </span>
                     )}
                     {isMedium && (
