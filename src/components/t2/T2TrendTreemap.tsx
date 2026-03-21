@@ -710,7 +710,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                           : undefined;
                       })(),
                       backgroundSize: 'cover',
-                      backgroundPosition: 'center',
+                      backgroundPosition: 'center top',
                       backgroundColor: (() => {
                         const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
                         const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
