@@ -640,7 +640,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           const isActive = selectedCategory === cat;
           const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
           const allCount = cat === "all"
-            ? dedupedTriggers.length
+            ? dedupedTriggers.filter(t => t.category !== "music").length
             : cat === "my"
             ? myKeywords.length
             : categoryStats[cat] || 0;
