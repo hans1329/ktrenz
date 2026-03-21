@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
+import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)" },
@@ -89,17 +90,22 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
           >
             {/* Artist image — large */}
             <div className="relative w-full aspect-square bg-muted overflow-hidden">
-              {(group.keywords[0]?.sourceImageUrl || group.artistImageUrl) ? (
-                <img
-                  src={group.keywords[0]?.sourceImageUrl || group.artistImageUrl || ""}
-                  alt={displayName(group)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground">
-                  {displayName(group).charAt(0)}
-                </div>
-              )}
+              {(() => {
+                const rawImg = sanitizeImageUrl(group.keywords[0]?.sourceImageUrl);
+                const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
+                const imgSrc = safeImg || group.artistImageUrl;
+                return imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={displayName(group)}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground">
+                    {displayName(group).charAt(0)}
+                  </div>
+                );
+              })()}
               {/* Rank badge */}
               <span className="absolute top-2 left-2 text-xs font-black text-white bg-black/60 backdrop-blur-sm rounded-full w-7 h-7 flex items-center justify-center">
                 {idx + 1}
