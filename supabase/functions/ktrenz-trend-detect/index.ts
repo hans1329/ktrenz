@@ -702,6 +702,21 @@ Deno.serve(async (req) => {
           console.log(`[trend-detect] ⟳ ${star.display_name}: tracked ${trackResult.tracked} existing keywords`);
         }
 
+        // ─── DB에 스타별 처리 결과 기록 ───
+        const detectResult = {
+          news: result.sourceStats.news,
+          blog: result.sourceStats.blog,
+          shop: result.sourceStats.shop,
+          keywords: result.keywordsFound,
+          inserted: result.insertStats.inserted,
+          tracked: trackResult.tracked,
+          status: result.keywordsFound > 0 ? "found" : (result.sourceStats.news === 0 && result.sourceStats.blog === 0 ? "no_news" : "no_keywords"),
+        };
+        await sb.from("ktrenz_stars").update({
+          last_detected_at: new Date().toISOString(),
+          last_detect_result: detectResult,
+        }).eq("id", star.id);
+
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
         console.error(`[trend-detect] ✗ ${star.display_name}: ${(e as Error).message}`);
@@ -712,6 +727,11 @@ Deno.serve(async (req) => {
           aiExtracted: 0, shopExtracted: 0,
           inserted: 0, backfilled: 0, filtered: 0,
         });
+        // 에러도 기록
+        await sb.from("ktrenz_stars").update({
+          last_detected_at: new Date().toISOString(),
+          last_detect_result: { status: "error", error: (e as Error).message },
+        }).eq("id", star.id).catch(() => {});
       }
     }
 
