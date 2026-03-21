@@ -113,7 +113,7 @@ const T2AdminControls = () => {
     },
     onMutate: () => startRun("detect"),
     onSuccess: (data) => {
-      toast.success(`트렌드 수집 시작 (run: ${data?.runId})`);
+      toast.success(`트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}`);
       queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },

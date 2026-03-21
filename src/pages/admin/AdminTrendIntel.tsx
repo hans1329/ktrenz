@@ -78,7 +78,7 @@ const AdminTrendIntel = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`트렌드 수집 시작 (run: ${data?.runId})`);
+      toast.success(`트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}`);
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
     },
