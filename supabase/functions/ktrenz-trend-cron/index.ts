@@ -11,10 +11,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["detect", "track"] as const;
+const PHASE_ORDER = ["detect"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
-  track: "ktrenz-trend-track",
 };
 const DETECT_PHASES = new Set(["detect"]);
 
@@ -100,20 +99,7 @@ Deno.serve(async (req) => {
 
           // postprocess 완료 → 다음 phase 시작 or done
           const isSinglePhaseRun = ppState.run_id.startsWith("single_");
-          let nextPhase = isSinglePhaseRun ? null : getNextPhase(ppState.phase);
-
-          // 첫 수집 판별: tracking 레코드가 0건이면 track phase 스킵
-          // (detect에서 baseline만 기록하고 비교 대상이 없으므로)
-          if (nextPhase === "track") {
-            const { count: trackingCount } = await sb
-              .from("ktrenz_trend_tracking")
-              .select("id", { count: "exact", head: true })
-              .limit(1);
-            if (!trackingCount || trackingCount === 0) {
-              console.log(`[cron] First run detected (no tracking records) → skipping track phase`);
-              nextPhase = null; // track 스킵 → 바로 done
-            }
-          }
+          const nextPhase = isSinglePhaseRun ? null : getNextPhase(ppState.phase);
 
           if (nextPhase) {
             // 현재 phase는 done, 다음 phase를 running으로 생성
