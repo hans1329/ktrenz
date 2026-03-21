@@ -644,10 +644,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 return (
                   <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                     <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="flex justify-center gap-1.5">
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
-                        <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
-                          <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {outcomeLabel[o]}</div>
+                        <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center min-w-[100px]`)}>
+                          <div className={cn("text-xs font-semibold", `text-${outcomeColor[o]}-400`)}>{outcomeEmoji[o]} {outcomeLabel[o]}</div>
                           <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/90">T</span></div>
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
