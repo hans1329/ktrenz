@@ -1164,8 +1164,8 @@ async function trackExistingKeywords(
         },
       });
 
-      // peak/influence 갱신
-      const updates: any = {};
+      // peak/influence 갱신 + prev_api_total 저장
+      const updates: any = { prev_api_total: apiTotal };
       if (baseline <= 0 && rawCount > 0) {
         updates.baseline_score = rawCount;
         updates.peak_score = rawCount;
@@ -1177,9 +1177,7 @@ async function trackExistingKeywords(
         const currentPeak = updates.peak_score ?? trigger.peak_score ?? rawCount;
         updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
       }
-      if (Object.keys(updates).length > 0) {
-        await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
-      }
+      await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
 
       // 스마트 만료
       const ageDays = (Date.now() - new Date(trigger.detected_at).getTime()) / 86400000;
