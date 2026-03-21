@@ -838,8 +838,8 @@ async function detectForMember(
   const blogItems = blogResult.items;
   const shopItems: any[] = []; // Shopping 수집 비활성화
 
-  // 24시간 이내 + 일본어 기사 필터링 (News + Blog)
-  const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+  // 72시간 이내 + 일본어 기사 필터링 (News + Blog)
+   const cutoff72h = Date.now() - 72 * 60 * 60 * 1000;
   const filterByTime = (items: any[]) => items.filter((item) => {
     const pubTime = new Date(item.pubDate || item.postdate).getTime();
     if (isNaN(pubTime) || pubTime < cutoff24h) return false;
