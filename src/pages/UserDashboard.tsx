@@ -277,7 +277,7 @@ const UserDashboard = () => {
     queryFn: async () => {
       const { data: bets } = await supabase
         .from("ktrenz_trend_bets" as any)
-        .select("id, market_id, side, amount, shares, payout, created_at")
+        .select("id, market_id, outcome, amount, shares, payout, created_at")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(20);
