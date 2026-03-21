@@ -45,19 +45,26 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const isDetect = run?.phase === "detect";
   const isGlobal = run?.phase === "detect_global";
 
+  // DB 기반 파이프라인 상태 (track 페이즈의 정확한 진행률)
+  const { data: dbPipelineState } = useQuery({
+    queryKey: ["pipeline-db-state", run?.phase],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("current_offset, total_candidates, status, run_id, batch_size")
+        .eq("phase", run?.phase ?? "track")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      return (data as any[])?.[0] ?? null;
+    },
+    enabled: !!run && isTrackPhase,
+    refetchInterval: 3000,
+  });
+
   const { data: totalCount } = useQuery({
     queryKey: ["pipeline-total-count", run?.phase],
     queryFn: async () => {
-      if (isTrackPhase) {
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const { count } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id", { count: "exact", head: true })
-          .eq("status", "active")
-          .gte("detected_at", weekAgo);
-        return count ?? 0;
-      }
-
       // 감지 엔진은 모든 active 스타(group/solo/member)를 대상으로 함
       const { count } = await supabase
         .from("ktrenz_stars" as any)
@@ -66,7 +73,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .in("star_type", ["group", "solo", "member"]);
       return count ?? 0;
     },
-    enabled: !!run,
+    enabled: !!run && !isTrackPhase,
     staleTime: 300_000,
   });
 
