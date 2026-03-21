@@ -273,16 +273,25 @@ Deno.serve(async (req) => {
       totalTriggers = triggers.length;
     } else {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Get accurate total count (not limited by default 1000 row cap)
+      const { count: exactCount } = await sb
+        .from("ktrenz_trend_triggers")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active")
+        .gte("detected_at", weekAgo);
+      totalTriggers = exactCount ?? 0;
+
+      // Fetch only the batch we need using .range()
       const { data } = await sb
         .from("ktrenz_trend_triggers")
         .select("*")
         .eq("status", "active")
         .gte("detected_at", weekAgo)
-        .order("detected_at", { ascending: false });
+        .order("detected_at", { ascending: false })
+        .range(batchOffset, batchOffset + batchSize - 1);
 
-      const allTriggers = data || [];
-      totalTriggers = allTriggers.length;
-      triggers = allTriggers.slice(batchOffset, batchOffset + batchSize);
+      triggers = data || [];
     }
 
     if (!triggers.length) {

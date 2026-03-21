@@ -140,9 +140,31 @@ Deno.serve(async (req) => {
       }
 
       const state = activeRuns[0];
+      const currentOffset = state.current_offset;
+      const bs = state.batch_size;
+
+      // Optimistic lock: atomically claim this batch by advancing offset BEFORE execution
+      // This prevents concurrent ticks from executing the same batch
+      const { data: lockResult } = await sb
+        .from("ktrenz_pipeline_state")
+        .update({
+          current_offset: currentOffset + bs,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", state.run_id)
+        .eq("phase", state.phase)
+        .eq("status", "running")
+        .eq("current_offset", currentOffset) // optimistic lock: only if offset hasn't changed
+        .select("id");
+
+      if (!lockResult?.length) {
+        // Another tick already claimed this batch, skip
+        return respond({ success: true, action: "tick", skipped: true, message: "Batch already claimed by another tick" });
+      }
+
       const result = await executeBatch(
         sb, supabaseUrl, supabaseKey,
-        state.run_id, state.phase, state.current_offset, state.batch_size
+        state.run_id, state.phase, currentOffset, bs
       );
 
       return respond({
@@ -150,7 +172,7 @@ Deno.serve(async (req) => {
         action: "tick",
         runId: state.run_id,
         phase: state.phase,
-        offset: state.current_offset,
+        offset: currentOffset,
         result,
         elapsed_ms: Date.now() - startTime,
       });
@@ -266,10 +288,10 @@ async function executeBatch(
       console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
     }
   } else {
-    // 다음 배치를 위해 offset 업데이트
+    // Offset already advanced by optimistic lock in tick handler
+    // Just update total_candidates for monitoring
     await sb.from("ktrenz_pipeline_state")
       .update({
-        current_offset: nextOffset,
         total_candidates: totalCandidates,
         updated_at: new Date().toISOString(),
       })
