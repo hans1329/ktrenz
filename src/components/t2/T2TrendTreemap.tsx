@@ -649,22 +649,23 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
               key={cat}
               onClick={() => { setSelectedCategory(cat); window.scrollTo({ top: 0, behavior: "smooth" }); }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border"
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border bg-muted text-foreground",
+                isActive && "shadow-sm"
               )}
               style={{
-                backgroundColor: isActive
-                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
-                  : "hsl(var(--muted))",
-                color: isActive ? "#fff" : "hsl(var(--foreground))",
-                borderColor: isActive
-                  ? (cat === "my" ? "hsl(45, 90%, 50%)" : config?.color ?? "hsl(var(--primary))")
-                  : (cat === "my" ? "hsla(45, 90%, 50%, 0.4)" : config?.color ?? "hsl(var(--border))"),
+                backgroundColor: "hsl(var(--muted))",
+                color: "hsl(var(--foreground))",
+                borderColor:
+                  cat === "all"
+                    ? "hsl(var(--border))"
+                    : cat === "my"
+                    ? "hsl(45, 90%, 50%)"
+                    : config?.color ?? "hsl(var(--border))",
               }}
             >
               {cat === "all" ? "All" : cat === "my" ? "⭐ My" : config?.label}
               <span
-                className={cn("text-[10px]", !isActive && "text-muted-foreground/60")}
-                style={isActive ? { color: "rgba(255,255,255,0.7)" } : undefined}
+                className="text-[10px] text-muted-foreground/60"
               >
                 {allCount}
               </span>
