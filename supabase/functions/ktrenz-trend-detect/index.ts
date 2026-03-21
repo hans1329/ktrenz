@@ -382,15 +382,20 @@ function extractShopKeywords(
   const nameKoLower = koMatch ? koMatch[1].toLowerCase() : "";
   const allNameVariants = [memberLower, groupLower, nameKoLower].filter(Boolean);
 
-  // 쇼핑 상품명에서 브랜드명 추출: "아이유 x 뉴발란스 530" → "뉴발란스 530"
+  // 쇼핑 상품명에서 브랜드명 추출 — 타이틀에 아티스트/그룹명이 포함된 상품만
   const brandCounts = new Map<string, { count: number; category: string; title: string; mallName: string }>();
 
   for (const item of shopItems) {
     const title = stripHtml(item.title || "");
+    const titleLower = title.toLowerCase();
     const mallName = item.mallName || "";
     const brand = item.brand || "";
     const category1 = (item.category1 || "").toLowerCase();
     const category2 = (item.category2 || "").toLowerCase();
+
+    // ★ 핵심 필터: 상품 타이틀에 아티스트/그룹/한글명이 실제 포함된 것만 통과
+    const titleContainsArtist = allNameVariants.some(n => n.length >= 2 && titleLower.includes(n));
+    if (!titleContainsArtist) continue;
 
     // 카테고리 매핑
     let kwCategory: ExtractedKeyword["category"] = "product";
@@ -404,7 +409,7 @@ function extractShopKeywords(
     const brandLower = brandName.toLowerCase();
     // 무의미 브랜드명 필터
     if (["unknown", "기타", "없음", "no brand", "etc", "n/a"].includes(brandLower)) continue;
-    // 아티스트/그룹 이름 변형 모두 필터
+    // 아티스트/그룹 이름 자체는 브랜드로 추출하지 않음
     if (allNameVariants.some(n => brandLower === n || brandLower.includes(n) || n.includes(brandLower))) continue;
     if (PLATFORM_BLACKLIST.has(brandLower)) continue;
 
