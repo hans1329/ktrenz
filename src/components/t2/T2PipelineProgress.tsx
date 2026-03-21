@@ -154,13 +154,29 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     refetchInterval: 5000,
   });
 
+  // ─── 실시간 스타별 처리 로그 (ktrenz_stars.last_detect_result) ───
+  const { data: starLogs } = useQuery({
+    queryKey: ["pipeline-star-logs", run?.startedAt.toISOString()],
+    queryFn: async () => {
+      if (!run) return [];
+      const { data } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("id, display_name, star_type, last_detected_at, last_detect_result")
+        .gte("last_detected_at", run.startedAt.toISOString())
+        .order("last_detected_at", { ascending: false })
+        .limit(30);
+      return (data ?? []) as any[];
+    },
+    enabled: !!run && !isTrackPhase,
+    refetchInterval: 4000,
+  });
+
   const { data: recentKeywords } = useQuery({
     queryKey: ["pipeline-recent-keywords", run?.startedAt.toISOString(), isTrackPhase, run?.phase],
     queryFn: async () => {
       if (!run) return [];
 
       if (isTrackPhase) {
-        // 최근 추적된 키워드 - trigger와 join하여 정보 가져옴
         const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
           .from("ktrenz_trend_tracking" as any)
