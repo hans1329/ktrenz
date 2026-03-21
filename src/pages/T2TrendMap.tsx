@@ -122,7 +122,7 @@ const T2TrendMap = () => {
       <div
         className="fixed top-14 left-0 right-0 z-40 pt-3 pb-2"
         style={{
-          backgroundColor: "hsl(var(--background) / 0.35)",
+          backgroundColor: "hsl(var(--background) / 0.18)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
         }}
