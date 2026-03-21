@@ -582,7 +582,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   useEffect(() => {
     if (onCategoryStatsChange && dedupedTriggers.length > 0) {
-      onCategoryStatsChange(categoryStats, dedupedTriggers.length, myKeywords.length);
+      const allCount = dedupedTriggers.filter(t => t.category !== "music").length;
+      onCategoryStatsChange(categoryStats, allCount, myKeywords.length);
     }
   }, [categoryStats, dedupedTriggers.length, myKeywords.length, onCategoryStatsChange]);
 
