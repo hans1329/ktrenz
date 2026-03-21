@@ -107,7 +107,7 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
   music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 65%, 48%, 0.85)" },
   event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 80%, 42%, 0.85)" },
-  shopping:{ label: "🛒 Shopping", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 55%, 38%, 0.85)" },
+  shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 55%, 38%, 0.85)" },
 };
 
 export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "shopping"];
