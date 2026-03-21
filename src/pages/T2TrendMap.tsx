@@ -178,7 +178,7 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className="h-[calc(100dvh-7rem)] overflow-hidden"
+        className="h-[100dvh] overflow-hidden"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
