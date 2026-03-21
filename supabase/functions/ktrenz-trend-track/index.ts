@@ -248,6 +248,7 @@ Deno.serve(async (req) => {
       batchSize = 5,
       batchOffset = 0,
       regions = ["worldwide"],
+      shopOnly = false,
     } = body;
 
     if (COLLECTION_PAUSED) {
@@ -286,23 +287,33 @@ Deno.serve(async (req) => {
     } else {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      // Get accurate total count (not limited by default 1000 row cap)
-      const { count: exactCount } = await sb
+      // shopOnly: 관리자 수동 실행 시 쇼핑 키워드만 추적
+      // 기본: 쇼핑 키워드 제외 (자동 파이프라인)
+      let countQuery = sb
         .from("ktrenz_trend_triggers")
         .select("id", { count: "exact", head: true })
         .eq("status", "active")
         .gte("detected_at", weekAgo);
-      totalTriggers = exactCount ?? 0;
 
-      // Fetch only the batch we need using .range()
-      const { data } = await sb
+      let dataQuery = sb
         .from("ktrenz_trend_triggers")
         .select("*")
         .eq("status", "active")
         .gte("detected_at", weekAgo)
-        .order("detected_at", { ascending: false })
-        .range(batchOffset, batchOffset + batchSize - 1);
+        .order("detected_at", { ascending: false });
 
+      if (shopOnly) {
+        countQuery = countQuery.eq("trigger_source", "naver_shop");
+        dataQuery = dataQuery.eq("trigger_source", "naver_shop");
+      } else {
+        countQuery = countQuery.neq("trigger_source", "naver_shop");
+        dataQuery = dataQuery.neq("trigger_source", "naver_shop");
+      }
+
+      const { count: exactCount } = await countQuery;
+      totalTriggers = exactCount ?? 0;
+
+      const { data } = await dataQuery.range(batchOffset, batchOffset + batchSize - 1);
       triggers = data || [];
     }
 
