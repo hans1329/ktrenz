@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { action = "tick", runId, phase, batchSize = 5 } = body;
+    const { action = "tick", runId, phase, batchSize = 5, singlePhase = false } = body;
 
     if (COLLECTION_PAUSED) {
       return respond({ success: true, paused: true, message: "Collection paused" });
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     // ── action: start — 새 파이프라인 실행 시작 ──
     if (action === "start") {
-      const newRunId = `run_${Date.now()}`;
+      const newRunId = singlePhase ? `single_${Date.now()}` : `run_${Date.now()}`;
       const firstPhase = phase || "detect";
 
       await sb.from("ktrenz_pipeline_state").insert({
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         total_candidates: null,
       });
 
-      console.log(`[cron] Started new run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}`);
+      console.log(`[cron] Started ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}`);
 
       // 즉시 첫 배치 실행
       const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, 0, batchSize);
@@ -100,7 +100,8 @@ Deno.serve(async (req) => {
           const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
 
           // postprocess 완료 → 다음 phase 시작 or done
-          const nextPhase = getNextPhase(ppState.phase);
+          const isSinglePhaseRun = ppState.run_id.startsWith("single_");
+          const nextPhase = isSinglePhaseRun ? null : getNextPhase(ppState.phase);
           if (nextPhase) {
             // 현재 phase는 done, 다음 phase를 running으로 생성
             await sb.from("ktrenz_pipeline_state")
@@ -117,11 +118,11 @@ Deno.serve(async (req) => {
 
             console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
           } else {
-            // 마지막 phase (track) → 전부 done
+            // 마지막 phase or single-phase → 전부 done
             await sb.from("ktrenz_pipeline_state")
               .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
               .eq("id", ppState.id);
-            console.log(`[cron] Pipeline run=${ppState.run_id} fully completed`);
+            console.log(`[cron] ${isSinglePhaseRun ? "Single-phase" : "Pipeline"} run=${ppState.run_id} completed`);
           }
 
           return respond({
