@@ -67,7 +67,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
-  voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
+  voteRelevance: { en: "Predict the trend!", ko: "유행을 예측 해보세요!", ja: "トレンドを予測しよう！", zh: "预测趋势！" },
   betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
   betNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
   betPlaceholder: { en: "Enter K-Token (min 10T)", ko: "K-Token 입력 (최소 10T)", ja: "K-Token入力 (最小10T)", zh: "输入K-Token (最低10T)" },
