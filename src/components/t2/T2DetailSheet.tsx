@@ -67,7 +67,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   baseline: { en: "Baseline", ko: "기본값", ja: "ベースライン", zh: "基准" },
   peak: { en: "Peak", ko: "최고값", ja: "ピーク", zh: "峰值" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
-  voteRelevance: { en: "Will this trend?", ko: "유행할까요?", ja: "流行しますか？", zh: "会流行吗？" },
+  voteRelevance: { en: "Predict the trend!", ko: "유행을 예측 해보세요!", ja: "トレンドを予測しよう！", zh: "预测趋势！" },
   betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
   betNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
   betPlaceholder: { en: "Enter K-Token (min 10T)", ko: "K-Token 입력 (최소 10T)", ja: "K-Token入力 (最小10T)", zh: "输入K-Token (最低10T)" },
@@ -573,10 +573,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* FPMM Prediction Market */}
           <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
             <div className="space-y-3">
-              <p className="text-lg font-bold text-foreground text-center flex items-center justify-center gap-2">
-                <Coins className="w-5 h-5 text-primary" />
-                {t("voteRelevance", language)}
-              </p>
+              <div className="text-center">
+                <p className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
+                  <Coins className="w-5 h-5 text-primary" />
+                  {t("voteRelevance", language)}
+                </p>
+                {marketData?.expires_at && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ⏳ {(() => {
+                      const diff = new Date(marketData.expires_at).getTime() - Date.now();
+                      if (diff <= 0) return language === "ko" ? "마감됨" : "Expired";
+                      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                      return language === "ko" ? `${days}일 ${hours}시간 남음` : `${days}d ${hours}h left`;
+                    })()}
+                  </p>
+                )}
+              </div>
 
               {/* 3-outcome selector with multipliers */}
               <div className="grid grid-cols-3 gap-2">
@@ -676,20 +689,20 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               ) : (
                 <>
                   {/* Bet input */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-2">
                      <Input
                        type="number"
                        inputMode="numeric"
                        min={10}
                        max={1000}
-                       placeholder="10~1000T"
+                       placeholder="10~1000"
                        value={betAmount}
                        onChange={(e) => setBetAmount(e.target.value)}
-                       className="flex-1 h-10 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                       className="w-full h-14 text-center text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     {user && (
                       <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
-                        {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
+                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
                       </span>
                     )}
                   </div>
