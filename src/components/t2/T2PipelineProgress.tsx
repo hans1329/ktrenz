@@ -350,16 +350,16 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       </div>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-2">
+        <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3 space-y-2">
           {/* Progress bar */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-              <span>
+            <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground">
+              <span className="truncate">
                 {isTrackPhase
-                  ? `${processed}/${total}개 처리 · ${trackedCount}건 추적됨`
-                  : `대상 ${total}명 · 처리 ${processed}명`}
+                  ? `${processed}/${total} 처리 · ${trackedCount}건`
+                  : `${total}명 중 ${processed}명`}
               </span>
-              <span>{statusText}</span>
+              <span className="shrink-0 ml-1">{statusText}</span>
             </div>
             <Progress value={isDone ? 100 : progress} className="h-1.5" />
           </div>
@@ -367,7 +367,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
           {/* Source breakdown */}
           {!isTrackPhase && Object.keys(bySource).length > 0 && (
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-muted-foreground">소스별 저장 현황</p>
+              <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground">소스별 현황</p>
               <div className="grid grid-cols-2 gap-1">
                 {Object.entries(bySource)
                   .sort(([, a], [, b]) => b - a)
@@ -375,10 +375,10 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
                     const info = sourceLabel[src];
                     const Icon = info?.icon || Newspaper;
                     return (
-                      <div key={src} className="flex items-center gap-1.5 py-1 px-2 rounded bg-background/60">
-                        <Icon className={`w-3 h-3 shrink-0 ${info?.color || "text-muted-foreground"}`} />
-                        <span className="text-[10px] text-foreground truncate">{info?.label || src}</span>
-                        <span className="text-[10px] font-bold text-foreground ml-auto">{count}</span>
+                      <div key={src} className="flex items-center gap-1 py-0.5 sm:py-1 px-1.5 sm:px-2 rounded bg-background/60">
+                        <Icon className={`w-2.5 sm:w-3 h-2.5 sm:h-3 shrink-0 ${info?.color || "text-muted-foreground"}`} />
+                        <span className="text-[9px] sm:text-[10px] text-foreground truncate">{info?.label || src}</span>
+                        <span className="text-[9px] sm:text-[10px] font-bold text-foreground ml-auto">{count}</span>
                       </div>
                     );
                   })}
@@ -388,16 +388,16 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
 
           {/* Status breakdown */}
           {!isTrackPhase && (active > 0 || expired > 0 || merged > 0 || pending > 0) && (
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-1">
               {[
                 { label: "Active", value: active, color: "text-emerald-400" },
                 { label: "Pending", value: pending, color: "text-amber-400" },
                 { label: "Expired", value: expired, color: "text-muted-foreground" },
                 { label: "Merged", value: merged, color: "text-blue-400" },
               ].map((item) => (
-                <div key={item.label} className="text-center py-1 px-1 rounded bg-background/60">
-                  <div className="text-[10px] text-muted-foreground">{item.label}</div>
-                  <div className={`text-xs font-bold ${item.color}`}>{item.value}</div>
+                <div key={item.label} className="text-center py-0.5 sm:py-1 px-0.5 sm:px-1 rounded bg-background/60">
+                  <div className="text-[8px] sm:text-[10px] text-muted-foreground">{item.label}</div>
+                  <div className={`text-[10px] sm:text-xs font-bold ${item.color}`}>{item.value}</div>
                 </div>
               ))}
             </div>
