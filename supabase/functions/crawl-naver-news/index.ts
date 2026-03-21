@@ -152,8 +152,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 24시간 필터를 위한 cutoff
-    const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+    // 72시간 필터를 위한 cutoff
+    const cutoff72h = Date.now() - 72 * 60 * 60 * 1000;
 
     // 한글명이 있으면 한글명 우선 검색, 없으면 영문명으로 fallback
     const primaryName = koreanName || artistName;
