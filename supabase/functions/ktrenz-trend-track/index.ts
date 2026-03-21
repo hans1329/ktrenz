@@ -163,18 +163,27 @@ Deno.serve(async (req) => {
         const kwQuery = trigger.keyword_ko || trigger.keyword;
         const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
 
-        const [newsTotal, blogTotal] = await Promise.all([
+        const [newsResult, blogResult] = await Promise.all([
           searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
         ]);
 
-        const buzzScore = newsTotal + blogTotal; // raw count 합계
+        const newsRecent = newsResult.recent;
+        const blogRecent = blogResult.recent;
+        const buzzScore = newsRecent + blogRecent; // raw recent count 합계
+        const apiNewsTotal = newsResult.total;
+        const apiBlogTotal = blogResult.total;
+        const apiTotal = apiNewsTotal + apiBlogTotal; // 전체 누적 건수
 
-        // delta: baseline 대비 변화율
+        // delta: baseline 대비 변화율 (recent count 기준)
         const prevScore = trigger.baseline_score || 0;
         const deltaPct = prevScore > 0
           ? Math.round(((buzzScore - prevScore) / prevScore) * 10000) / 100
           : buzzScore > 0 ? 100 : 0;
+
+        // 일일 증가량: api_total 스냅샷 기반 (이전 스냅샷과 비교)
+        const prevApiTotal = trigger.prev_api_total || 0;
+        const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
 
         // tracking 레코드 저장
         await sb.from("ktrenz_trend_tracking").insert({
@@ -184,7 +193,12 @@ Deno.serve(async (req) => {
           interest_score: buzzScore,
           region: "naver",
           delta_pct: deltaPct,
-          raw_response: { news_total: newsTotal, blog_total: blogTotal, search_query: searchQuery },
+          raw_response: {
+            news_recent: newsRecent, blog_recent: blogRecent,
+            news_api_total: apiNewsTotal, blog_api_total: apiBlogTotal,
+            api_total: apiTotal, daily_delta: dailyDelta,
+            search_query: searchQuery,
+          },
         });
 
         // 중복 트리거 복사
