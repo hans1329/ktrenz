@@ -491,7 +491,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // ── Dashboard / My Activity ──
   "dash.title": { en: "My Activity", ko: "나의 활동", ja: "マイ活動", zh: "我的活动" },
-  "dash.activeTrends": { en: "My Active Trends", ko: "나의 활성 트렌드", ja: "マイアクティブトレンド", zh: "我的活跃趋势" },
+  "dash.activeTrends": { en: "My Trends", ko: "나의 관심 트렌드", ja: "マイトレンド", zh: "我的关注趋势" },
   "dash.signInPrompt": { en: "Sign in to track your artists' trends", ko: "아티스트 트렌드를 추적하려면 로그인하세요", ja: "アーティストのトレンドを追跡するにはログインしてください", zh: "登录以追踪您的艺人趋势" },
   "dash.signIn": { en: "Sign In", ko: "로그인", ja: "ログイン", zh: "登录" },
    "dash.noTrends": { en: "No active trends for your artists right now", ko: "현재 나의 아티스트에 활성 트렌드가 없습니다", ja: "現在アーティストのアクティブなトレンドはありません", zh: "您的艺人目前没有活跃趋势" },
