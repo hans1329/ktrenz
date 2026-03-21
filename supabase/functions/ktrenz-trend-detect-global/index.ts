@@ -394,6 +394,8 @@ Deno.serve(async (req) => {
             brand_intent: k.brand_intent || null,
             fan_sentiment: k.fan_sentiment || null,
             trend_potential: k.trend_potential ?? null,
+            // Global buzz score: confidence(0-1) × trend_potential(0-100) → 0-100
+            baseline_score: Math.round((k.confidence || 0.7) * (k.trend_potential || 50)),
             status: "pending",
             metadata: { source: "global_detect_v6", detection_source: k.detection_source },
           },
