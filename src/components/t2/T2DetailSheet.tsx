@@ -368,7 +368,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </button>
         </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide -mx-6 px-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-2">
             {rank != null && (
