@@ -46,6 +46,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   fashion: "bg-pink-500/10 text-pink-400 border-pink-500/30",
   beauty: "bg-rose-500/10 text-rose-400 border-rose-500/30",
   media: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
+  music: "bg-violet-500/10 text-violet-400 border-violet-500/30",
+  event: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
 };
 
 const T2_LABELS: Record<string, Record<string, string>> = {

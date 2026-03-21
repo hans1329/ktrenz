@@ -95,7 +95,7 @@ export function sanitizeImageUrl(url: string | null): string | null {
   return url.replace(/&amp;/g, '&');
 }
 
-export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media";
+export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 70%, 45%, 0.85)" },
@@ -105,9 +105,11 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   fashion: { label: "Fashion", color: "hsl(330, 65%, 55%)", tileColor: "hsla(330, 60%, 45%, 0.85)" },
   beauty:  { label: "Beauty",  color: "hsl(350, 60%, 55%)", tileColor: "hsla(350, 55%, 45%, 0.85)" },
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 65%, 38%, 0.85)" },
+  music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 65%, 48%, 0.85)" },
+  event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 80%, 42%, 0.85)" },
 };
 
-export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
