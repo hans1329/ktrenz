@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  Loader2, Play, TrendingUp, Search, Clock, Globe,
+  Loader2, Play, TrendingUp, Search, Clock,
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap,
   XCircle, Trash2, Filter
 } from "lucide-react";
