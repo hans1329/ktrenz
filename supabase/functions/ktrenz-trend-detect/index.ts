@@ -790,16 +790,15 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 3소스 병렬 검색: News + Blog + Shopping ───
-  const [newsResult, blogResult, shopResult] = await Promise.all([
+  // ─── 2소스 병렬 검색: News + Blog (Shopping 비활성화) ───
+  const [newsResult, blogResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
-    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 30),
   ]);
 
   const newsItems = newsResult.items;
   const blogItems = blogResult.items;
-  const shopItems = shopResult.items;
+  const shopItems: any[] = []; // Shopping 수집 비활성화
 
   // 24시간 이내 + 일본어 기사 필터링 (News + Blog)
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
