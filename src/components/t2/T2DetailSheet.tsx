@@ -579,18 +579,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 {t("voteRelevance", language)}
               </p>
 
-              {/* 4-outcome selector */}
-              <div className="grid grid-cols-4 gap-1.5">
+              {/* 3-outcome selector with multipliers */}
+              <div className="grid grid-cols-3 gap-2">
                 {([
-                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "rose" },
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "amber" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple" },
-                ]).map(({ key, label, emoji, color }) => (
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "<50%", emoji: "📈", color: "amber", multi: "1.2x" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald", multi: "3x" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple", multi: "8x" },
+                ]).map(({ key, label, emoji, color, multi }) => (
                   <div
                     key={key}
                     className={cn(
-                      "rounded-lg p-2 text-center cursor-pointer transition-all border-2",
+                      "rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
                       betOutcome === key
                         ? `bg-${color}-500/20 border-${color}-500/50`
                         : `bg-${color}-500/5 border-${color}-500/15 hover:border-${color}-500/30`
@@ -599,7 +598,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   >
                     <div className="text-lg">{emoji}</div>
                     <div className="text-[10px] text-muted-foreground">{label}</div>
-                    <div className={cn("text-sm font-bold", `text-${color}-400`)}>{(prices[key] * 100).toFixed(0)}%</div>
+                    <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">{(prices[key] * 100).toFixed(0)}% {language === "ko" ? "베팅" : "bets"}</div>
                   </div>
                 ))}
               </div>
@@ -607,15 +607,14 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* Probability bar */}
               <div className="flex items-center gap-0.5 h-6 rounded-full overflow-hidden">
                 {([
-                  { key: "decline" as const, color: "bg-rose-500" },
                   { key: "mild" as const, color: "bg-amber-500" },
                   { key: "strong" as const, color: "bg-emerald-500" },
                   { key: "explosive" as const, color: "bg-purple-500" },
                 ]).map(({ key, color }, i) => (
                   <div
                     key={key}
-                    className={cn("h-full transition-all duration-500", color, i === 0 && "rounded-l-full", i === 3 && "rounded-r-full")}
-                    style={{ width: `${Math.max(prices[key] * 100, 5)}%` }}
+                    className={cn("h-full transition-all duration-500", color, i === 0 && "rounded-l-full", i === 2 && "rounded-r-full")}
+                    style={{ width: `${Math.max(prices[key] * 100, 8)}%` }}
                   />
                 ))}
               </div>
