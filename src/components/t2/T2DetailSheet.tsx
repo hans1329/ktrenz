@@ -368,7 +368,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </button>
         </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="space-y-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Meta */}
           <div className="flex flex-wrap items-center gap-2">
             {rank != null && (
@@ -387,7 +387,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
-          <div className="overflow-hidden -mx-6">
+          <div className="overflow-hidden">
             {/* Source thumbnail + title card */}
             {(tile.sourceTitle || tile.sourceImageUrl) && (
               <div className="relative">
@@ -404,7 +404,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   if (finalImg) {
                     const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
                     return (
-                      <div className="relative w-full overflow-hidden bg-muted">
+                      <div className="relative w-[calc(100%+48px)] -ml-6 overflow-hidden bg-muted">
                         <img
                           src={finalImg}
                           alt={tile.sourceTitle || ""}
@@ -469,8 +469,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 })()}
               </div>
             )}
+          </div>
 
-            {/* Context body */}
+          {/* Context body — separate card */}
+          <div className="rounded-xl bg-muted/30 border border-border overflow-hidden">
             <div className="p-3 space-y-1.5">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 <Newspaper className="w-4.5 h-4.5 text-primary" />
