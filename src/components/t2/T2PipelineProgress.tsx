@@ -49,14 +49,24 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const { data: dbPipelineState } = useQuery({
     queryKey: ["pipeline-db-state", run?.phase],
     queryFn: async () => {
-      const { data } = await supabase
+      // 먼저 running 상태 조회
+      const { data: running } = await supabase
         .from("ktrenz_pipeline_state" as any)
         .select("current_offset, total_candidates, status, run_id, batch_size")
         .eq("phase", run?.phase ?? "track")
         .in("status", ["running", "postprocess_requested", "postprocess_running"])
         .order("updated_at", { ascending: false })
         .limit(1);
-      return (data as any[])?.[0] ?? null;
+      if ((running as any[])?.length) return (running as any[])[0];
+      // running이 없으면 최근 done 상태 조회 (완료 표시용)
+      const { data: done } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("current_offset, total_candidates, status, run_id, batch_size")
+        .eq("phase", run?.phase ?? "track")
+        .in("status", ["done", "postprocess_done"])
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      return (done as any[])?.[0] ?? null;
     },
     enabled: !!run && isTrackPhase,
     refetchInterval: 3000,
@@ -150,22 +160,22 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       if (!run) return [];
 
       if (isTrackPhase) {
-        // 최근 추적된 키워드 (ktrenz_trend_tracking)
+        // 최근 추적된 키워드 - trigger와 join하여 정보 가져옴
         const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
           .from("ktrenz_trend_tracking" as any)
-          .select("id, keyword, keyword_ko, artist_name, tracked_at, keyword_category, score")
+          .select("id, keyword, interest_score, tracked_at, trigger:ktrenz_trend_triggers!trigger_id(keyword_ko, artist_name, keyword_category)")
           .gte("tracked_at", twoHoursAgo)
           .order("tracked_at", { ascending: false })
           .limit(20);
         return ((data ?? []) as any[]).map((r: any) => ({
           id: r.id,
           keyword: r.keyword,
-          keyword_ko: r.keyword_ko,
-          artist_name: r.artist_name,
+          keyword_ko: r.trigger?.keyword_ko ?? null,
+          artist_name: r.trigger?.artist_name ?? "",
           detected_at: r.tracked_at,
-          keyword_category: r.keyword_category || "",
-          status: r.score != null ? `${r.score}점` : undefined,
+          keyword_category: r.trigger?.keyword_category || "",
+          status: r.interest_score != null ? `${r.interest_score}점` : undefined,
           trigger_source: undefined,
         })) as RecentKeyword[];
       }
@@ -243,7 +253,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const estimatedTotal = totalBatches * batchTime;
   const isDone = isTrackPhase
     ? (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (processed > 0 && processed >= total))
-    : processed > 0 && pending === 0;
+    : processed > 0 && pending === 0 && elapsed > 30;
 
   useEffect(() => {
     if (!run) return;
