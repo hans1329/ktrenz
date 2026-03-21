@@ -346,7 +346,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span>
                 {isTrackPhase
-                  ? `${processed}/${total}개 추적됨`
+                  ? `${processed}/${total}개 처리 · ${trackedCount}건 추적됨`
                   : `대상 ${total}명 · 처리 ${processed}명`}
               </span>
               <span>{statusText}</span>
