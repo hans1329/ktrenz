@@ -384,7 +384,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
         </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide -mx-6 px-6 pt-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="space-y-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide px-6 pt-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
