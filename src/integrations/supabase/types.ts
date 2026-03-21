@@ -3761,7 +3761,6 @@ export type Database = {
           id: string
           initial_influence: number | null
           outcome: string | null
-          pool_decline: number
           pool_explosive: number
           pool_mild: number
           pool_strong: number
@@ -3777,7 +3776,6 @@ export type Database = {
           id?: string
           initial_influence?: number | null
           outcome?: string | null
-          pool_decline?: number
           pool_explosive?: number
           pool_mild?: number
           pool_strong?: number
@@ -3793,7 +3791,6 @@ export type Database = {
           id?: string
           initial_influence?: number | null
           outcome?: string | null
-          pool_decline?: number
           pool_explosive?: number
           pool_mild?: number
           pool_strong?: number
