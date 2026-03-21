@@ -30,30 +30,30 @@ html {
     --card-foreground: 0 0% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
-    --primary: 290 70% 50%;
+    --primary: 260 70% 50%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 93%;
     --secondary-foreground: 220 15% 25%;
     --muted: 220 14% 93%;
     --muted-foreground: 215 12% 45%;
-    --accent: 290 70% 50%;
+    --accent: 260 70% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 88%;
     --input: 220 13% 88%;
-    --ring: 290 70% 50%;
+    --ring: 260 70% 50%;
     --radius: 0.75rem;
     --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
-    --shadow-card-hover: 0 6px 20px 0 hsl(290 70% 50% / 0.1);
+    --shadow-card-hover: 0 6px 20px 0 hsl(260 70% 50% / 0.1);
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: 290 70% 50%;
+    --sidebar-primary: 260 70% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 93%;
     --sidebar-accent-foreground: 0 0% 15%;
     --sidebar-border: 220 13% 88%;
-    --sidebar-ring: 290 70% 50%;
+    --sidebar-ring: 260 70% 50%;
     --tabbar-background: 0 0% 100%;
   }
 
@@ -65,21 +65,21 @@ html {
     --card-foreground: 0 0% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
-    --primary: 290 70% 50%;
+    --primary: 260 70% 50%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 93%;
     --secondary-foreground: 220 15% 25%;
     --muted: 220 14% 93%;
     --muted-foreground: 215 12% 45%;
-    --accent: 290 70% 50%;
+    --accent: 260 70% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 88%;
     --input: 220 13% 88%;
-    --ring: 290 70% 50%;
+    --ring: 260 70% 50%;
     --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
-    --shadow-card-hover: 0 6px 20px 0 hsl(290 70% 50% / 0.1);
+    --shadow-card-hover: 0 6px 20px 0 hsl(260 70% 50% / 0.1);
   }
 }
 
