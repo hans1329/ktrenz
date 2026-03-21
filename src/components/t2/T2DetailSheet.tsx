@@ -581,10 +581,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* 3-outcome selector with multipliers */}
               <div className="grid grid-cols-3 gap-2">
                 {([
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "<50%", emoji: "🌱", color: "amber", multi: "1.2x" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald", multi: "3x" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple", multi: "8x" },
-                ]).map(({ key, label, emoji, color, multi }) => (
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "<50% 상승" : "<50% rise", emoji: "🌱", color: "amber", multi: "1.2x" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "50~100% 상승" : "50~100% rise", emoji: "🔥", color: "emerald", multi: "3x" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "100%+ 상승" : "100%+ rise", emoji: "🚀", color: "purple", multi: "8x" },
+                ]).map(({ key, label, threshold, emoji, color, multi }) => (
                   <div
                     key={key}
                     className={cn(
@@ -596,9 +596,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     onClick={() => setBetOutcome(key)}
                   >
                     <div className="text-lg">{emoji}</div>
-                    <div className="text-[10px] text-muted-foreground">{label}</div>
+                    <div className="text-[10px] font-medium text-foreground">{label}</div>
                     <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">{(prices[key] * 100).toFixed(0)}% {language === "ko" ? "예측" : "predicted"}</div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">{threshold}</div>
                   </div>
                 ))}
               </div>
@@ -635,18 +635,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
                           <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
-                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount}T</div>
+                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/60">T</span></div>
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
-                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o])}T
+                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-muted-foreground/60">T</span>
                             </span>
                           </div>
                         </div>
                       ))}
                     </div>
                     <div className="text-[10px] text-muted-foreground text-center">
-                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested}T</span>
+                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested.toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span></span>
                     </div>
                   </div>
                 );
@@ -663,9 +663,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <div className="mt-2 space-y-1">
                       {myBets.map((bet: any) => (
                         <div key={bet.id} className="text-[11px] text-muted-foreground">
-                          {bet.outcome} {bet.amount}T → {bet.payout != null
+                          {bet.outcome} {Number(bet.amount).toLocaleString()} T → {bet.payout != null
                             ? (bet.payout > 0
-                              ? <span className="text-emerald-400 font-bold">+{bet.payout}T {t("won", language)}</span>
+                              ? <span className="text-emerald-400 font-bold">+{Number(bet.payout).toLocaleString()} T {t("won", language)}</span>
                               : <span className="text-rose-400">{t("lost", language)}</span>)
                             : "..."}
                         </div>
@@ -689,14 +689,14 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     />
                     {user && (
                       <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
-                        {Number(kPoints).toLocaleString()}T
+                        {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
                       </span>
                     )}
                   </div>
                   {/* Expected return display */}
                   {betAmount && Number(betAmount) >= 10 && (
                     <div className="text-center text-teal-400 text-sm font-bold">
-                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()}T
+                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
                       <span className="text-[10px] text-muted-foreground ml-1">(×{MULTIPLIERS[betOutcome]})</span>
                     </div>
                   )}
