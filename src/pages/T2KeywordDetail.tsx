@@ -472,27 +472,28 @@ const T2KeywordDetail = () => {
                 <div className="text-[11px] font-bold text-foreground">
                   {language === "ko" ? "내 포지션" : "My Position"}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["decline", "mild", "strong", "explosive"] as const).map(o => {
+                <div className="grid grid-cols-3 gap-2">
+                  {(["mild", "strong", "explosive"] as const).map(o => {
                     const data = (myPosition as any)[o];
                     if (!data || data.amount <= 0) return null;
-                    const emoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
-                    const color: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                    const emoji: Record<string, string> = { mild: "📈", strong: "🔥", explosive: "🚀" };
+                    const color: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
+                    const multi: Record<string, number> = { mild: 1.2, strong: 3.0, explosive: 8.0 };
                     return (
                       <div key={o} className={cn(`rounded-lg bg-${color[o]}-500/10 border border-${color[o]}-500/20 p-2`)}>
                         <div className={cn("text-[10px]", `text-${color[o]}-400`)} >{emoji[o]} {o}</div>
                         <div className="text-sm font-bold text-foreground">
-                          {data.amount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                          {data.amount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">T</span>
                         </div>
                         <div className={cn("text-[10px]", `text-${color[o]}-400`)}>
-                          {language === "ko" ? "성공시" : "If win"} +{Math.round(data.shares - data.amount).toLocaleString()}P
+                          ×{multi[o]} = {Math.round(data.amount * multi[o]).toLocaleString()}T
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {language === "ko" ? "총 투자" : "Total invested"}: {(myPosition as any).totalSpent?.toLocaleString()}P
+                  {language === "ko" ? "총 투자" : "Total invested"}: {(myPosition as any).totalSpent?.toLocaleString()}T
                 </div>
               </div>
             )}
