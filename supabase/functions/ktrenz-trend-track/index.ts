@@ -146,11 +146,11 @@ Deno.serve(async (req) => {
         const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
 
         const [newsTotal, blogTotal] = await Promise.all([
-          searchNaverCount(naverClientId, naverClientSecret, "news", searchQuery),
-          searchNaverCount(naverClientId, naverClientSecret, "blog", searchQuery),
+          searchNaverTotal(naverClientId, naverClientSecret, "news", searchQuery),
+          searchNaverTotal(naverClientId, naverClientSecret, "blog", searchQuery),
         ]);
 
-        const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
+        const buzzScore = newsTotal + blogTotal; // raw count 합계
 
         // delta: baseline 대비 변화율
         const prevScore = trigger.baseline_score || 0;
