@@ -14,7 +14,7 @@ type Outcome = typeof VALID_OUTCOMES[number];
 const MULTIPLIERS: Record<Outcome, number> = {
   mild: 1.2,
   strong: 3.0,
-  explosive: 6.0,
+  explosive: 10.0,
 };
 
 // Settlement thresholds (influence_index % change)
@@ -23,8 +23,8 @@ const MULTIPLIERS: Record<Outcome, number> = {
 // explosive: +50%+
 const THRESHOLDS = {
   mild: { min: 0, max: 15 },
-  strong: { min: 15, max: 50 },
-  explosive: { min: 50, max: Infinity },
+  strong: { min: 15, max: 100 },
+  explosive: { min: 100, max: Infinity },
 };
 
 Deno.serve(async (req) => {

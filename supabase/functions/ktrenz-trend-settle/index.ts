@@ -10,7 +10,7 @@ const corsHeaders = {
 const MULTIPLIERS: Record<string, number> = {
   mild: 1.2,
   strong: 3.0,
-  explosive: 6.0,
+  explosive: 10.0,
 };
 
 /** Determine winning outcome based on % change from initial influence */
@@ -20,8 +20,8 @@ function determineOutcome(initialInfluence: number, currentInfluence: number): s
     : currentInfluence > 0 ? 100 : 0;
 
   if (changePct < 15) return "mild";          // < +15%
-  if (changePct < 50) return "strong";       // +15% ~ +50%
-  return "explosive";                          // +50%+
+  if (changePct < 100) return "strong";       // +15% ~ +100%
+  return "explosive";                          // +100%+
 }
 
 Deno.serve(async (req) => {
