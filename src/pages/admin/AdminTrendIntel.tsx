@@ -69,8 +69,8 @@ const AdminTrendIntel = () => {
     refetchInterval: 30_000,
   });
 
-  // Run detect
-  const detectMutation = useMutation({
+  // Run pipeline (detect + track unified)
+  const runMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
         body: { action: "start", phase: "detect", batchSize: 5 },
@@ -79,43 +79,11 @@ const AdminTrendIntel = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`키워드 감지 시작 (run: ${data?.runId})`);
-      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
-    },
-    onError: (err) => toast.error(`감지 실패: ${(err as Error).message}`),
-  });
-
-  // Run track
-  const trackMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "track", batchSize: 5 },
-      });
-      if (error) throw error;
-      return typeof data === "string" ? JSON.parse(data) : data;
-    },
-    onSuccess: (data) => {
-      toast.success(`트렌드 추적 시작 (run: ${data?.runId})`);
-      queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
-    },
-    onError: (err) => toast.error(`추적 실패: ${(err as Error).message}`),
-  });
-
-  // Run full pipeline
-  const fullPipelineMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "detect", batchSize: 5 },
-      });
-      if (error) throw error;
-      return typeof data === "string" ? JSON.parse(data) : data;
-    },
-    onSuccess: (data) => {
-      toast.success(`전체 파이프라인 시작 (run: ${data?.runId})`);
+      toast.success(`트렌드 수집 시작 (run: ${data?.runId})`);
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
     },
-    onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
+    onError: (err) => toast.error(`수집 실패: ${(err as Error).message}`),
   });
 
   // Expire single trigger
