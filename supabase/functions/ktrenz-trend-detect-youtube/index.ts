@@ -121,8 +121,9 @@ RULES:
 8. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 9. YouTube videos often contain brand collaborations, product placements, fashion items, mukbang/food items, travel destinations, AND music release announcements — focus on these.
 10. Maximum 7 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-11. Categories: brand, product, place, food, fashion, beauty, media, music. Category guide:
+11. Categories: brand, product, place, food, fashion, beauty, media, music, event. Category guide:
    - "music": album titles, single titles, named tours/concerts, music releases
+   - "event": fan meetings, pop-up stores, exhibitions, viral social phenomena, public gatherings, cultural moments
    - "media": TV shows, dramas, movies, variety shows, interviews, entertainment content. Songs/albums by OTHER artists CAN be extracted if there's a collaboration.
    - "product": physical consumer goods (electronics, cosmetics, accessories, etc.)
 11a. COMPOUND NAMES (CRITICAL): Keep multi-word names together as one keyword.
