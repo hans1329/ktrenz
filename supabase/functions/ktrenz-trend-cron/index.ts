@@ -1,5 +1,8 @@
-// T2 Trend Cron: detect → detect_global → detect_youtube → track 순차 오케스트레이션
-// 긴급 중지 상태에서는 모든 수집/체이닝을 즉시 차단한다.
+// T2 Trend Cron: DB 기반 상태머신 오케스트레이터
+// fire-and-forget 체이닝 대신 DB에 상태를 기록하고, 각 호출이 DB를 읽어 다음 작업을 결정한다.
+// 호출 방식: 1) 어드민 UI에서 새 run 시작, 2) pg_cron으로 주기적 poll, 3) 수동 호출
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const COLLECTION_PAUSED = false;
 
 const corsHeaders = {
@@ -7,6 +10,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const PHASE_ORDER = ["detect", "detect_global", "detect_youtube", "track"] as const;
+const PHASE_FUNCTION: Record<string, string> = {
+  detect: "ktrenz-trend-detect",
+  detect_global: "ktrenz-trend-detect-global",
+  detect_youtube: "ktrenz-trend-detect-youtube",
+  track: "ktrenz-trend-track",
+};
+const DETECT_PHASES = new Set(["detect", "detect_global", "detect_youtube"]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,158 +29,296 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { phase = "detect", batchOffset = 0, batchSize = 5 } = body;
+    const { action = "tick", runId, phase, batchSize = 5 } = body;
 
     if (COLLECTION_PAUSED) {
-      console.warn(`[trend-cron] Collection paused. Ignoring phase=${phase}, offset=${batchOffset}, size=${batchSize}`);
-      return new Response(
-        JSON.stringify({
-          success: true,
-          paused: true,
-          phase,
-          batchOffset,
-          batchSize,
-          message: "T2 trend collection is temporarily paused",
-          elapsed_ms: Date.now() - startTime,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return respond({ success: true, paused: true, message: "Collection paused" });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, supabaseKey);
 
-    // phase에 따라 적절한 함수 호출
-    const phaseMap: Record<string, string> = {
-      detect: "ktrenz-trend-detect",
-      detect_global: "ktrenz-trend-detect-global",
-      detect_youtube: "ktrenz-trend-detect-youtube",
-      track: "ktrenz-trend-track",
-    };
+    // ── action: start — 새 파이프라인 실행 시작 ──
+    if (action === "start") {
+      const newRunId = `run_${Date.now()}`;
+      const firstPhase = phase || "detect";
 
-    const functionName = phaseMap[phase];
-    if (!functionName) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Unknown phase: ${phase}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`[trend-cron] Dispatching phase=${phase}, offset=${batchOffset}, size=${batchSize}`);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 55000); // 55초 타임아웃
-
-    let result: any;
-    try {
-      const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ batchSize, batchOffset }),
-        signal: controller.signal,
+      await sb.from("ktrenz_pipeline_state").insert({
+        run_id: newRunId,
+        phase: firstPhase,
+        status: "running",
+        current_offset: 0,
+        batch_size: batchSize,
+        total_candidates: null,
       });
-      clearTimeout(timeout);
 
-      const text = await response.text();
-      try {
-        result = JSON.parse(text);
-      } catch {
-        console.warn(`[trend-cron] Non-JSON response for phase=${phase} offset=${batchOffset}: ${text.slice(0, 200)}`);
-        // 파싱 실패해도 체이닝은 계속 — 다음 배치로 진행
-        result = { success: true, totalCandidates: batchOffset + batchSize + 1, successCount: 0, totalKeywords: 0, fallback: true };
-      }
-    } catch (fetchErr) {
-      clearTimeout(timeout);
-      const msg = (fetchErr as Error).message || "unknown";
-      console.warn(`[trend-cron] Fetch failed for phase=${phase} offset=${batchOffset}: ${msg}`);
-      // 타임아웃/네트워크 오류 → 이 배치만 건너뛰고 체이닝은 계속
-      // totalCandidates를 큰 값으로 잡아 nextOffset 체이닝이 끊기지 않도록 함
-      result = { success: true, totalCandidates: batchOffset + batchSize + 1, successCount: 0, totalKeywords: 0, fallback: true, skippedError: msg };
-    }
+      console.log(`[cron] Started new run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}`);
 
-    console.log(`[trend-cron] phase=${phase} offset=${batchOffset} result:`, JSON.stringify(result).slice(0, 300));
+      // 즉시 첫 배치 실행
+      const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, 0, batchSize);
 
-    // 체이닝: 같은 phase의 다음 배치가 있으면 자동 호출
-    const totalCandidates = result.totalCandidates || 0;
-    const nextOffset = batchOffset + batchSize;
-
-    if (result.success && nextOffset < totalCandidates) {
-      console.log(`[trend-cron] Chaining next batch: phase=${phase}, offset=${nextOffset}`);
-
-      // 비동기 체이닝 (응답 대기하지 않음)
-      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phase, batchOffset: nextOffset, batchSize }),
-      }).catch((e) => console.error(`[trend-cron] Chain error: ${e.message}`));
-
-      // 체이닝 요청이 출발하도록 짧은 대기
-      await new Promise((r) => setTimeout(r, 500));
-    }
-
-    // 현재 phase의 마지막 배치가 완료되면 postprocess 호출 + 다음 phase 자동 시작
-    const isLastBatch = result.success && nextOffset >= totalCandidates;
-    const isDetectPhase = ["detect", "detect_global", "detect_youtube"].includes(phase);
-    const nextPhaseMap: Record<string, string | null> = {
-      detect: "detect_global",
-      detect_global: "detect_youtube",
-      detect_youtube: "track",
-      track: null,
-    };
-
-    if (isLastBatch && isDetectPhase) {
-      console.log(`[trend-cron] Phase "${phase}" complete. Running postprocess...`);
-      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ triggeredBy: phase }),
-      }).catch((e) => console.error(`[trend-cron] Postprocess trigger error: ${e.message}`));
-      await new Promise((r) => setTimeout(r, 500));
-    }
-
-    if (isLastBatch) {
-      const nextPhase = nextPhaseMap[phase];
-      if (nextPhase) {
-        console.log(`[trend-cron] Phase "${phase}" complete. Starting next phase="${nextPhase}"`);
-        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ phase: nextPhase, batchOffset: 0, batchSize }),
-        }).catch((e) => console.error(`[trend-cron] Next phase trigger error: ${e.message}`));
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    }
-
-    return new Response(
-      JSON.stringify({
+      return respond({
         success: true,
-        phase,
-        batchOffset,
-        batchSize,
-        totalCandidates,
-        nextOffset: nextOffset < totalCandidates ? nextOffset : null,
+        action: "start",
+        runId: newRunId,
+        phase: firstPhase,
         result,
         elapsed_ms: Date.now() - startTime,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      });
+    }
+
+    // ── action: tick — 진행 중인 작업 폴링 (핵심) ──
+    // DB에서 status='running' 인 레코드를 찾아 다음 배치를 실행한다.
+    if (action === "tick" || action === "poll") {
+      const { data: activeRuns } = await sb
+        .from("ktrenz_pipeline_state")
+        .select("*")
+        .eq("status", "running")
+        .order("created_at", { ascending: true })
+        .limit(1);
+
+      if (!activeRuns?.length) {
+        // running이 없으면 postprocess_requested 확인
+        const { data: ppReqs } = await sb
+          .from("ktrenz_pipeline_state")
+          .select("*")
+          .eq("status", "postprocess_requested")
+          .order("updated_at", { ascending: true })
+          .limit(1);
+
+        if (ppReqs?.length) {
+          const ppState = ppReqs[0];
+          console.log(`[cron] Found postprocess request for run=${ppState.run_id}, phase=${ppState.phase}`);
+
+          // postprocess_running으로 업데이트 (lock)
+          await sb.from("ktrenz_pipeline_state")
+            .update({ status: "postprocess_running", updated_at: new Date().toISOString() })
+            .eq("id", ppState.id)
+            .eq("status", "postprocess_requested"); // optimistic lock
+
+          // postprocess 실행
+          const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
+
+          // postprocess 완료 → 다음 phase 시작 or done
+          const nextPhase = getNextPhase(ppState.phase);
+          if (nextPhase) {
+            // 현재 phase는 done, 다음 phase를 running으로 생성
+            await sb.from("ktrenz_pipeline_state")
+              .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
+              .eq("id", ppState.id);
+
+            await sb.from("ktrenz_pipeline_state").insert({
+              run_id: ppState.run_id,
+              phase: nextPhase,
+              status: "running",
+              current_offset: 0,
+              batch_size: ppState.batch_size,
+            });
+
+            console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
+          } else {
+            // 마지막 phase (track) → 전부 done
+            await sb.from("ktrenz_pipeline_state")
+              .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
+              .eq("id", ppState.id);
+            console.log(`[cron] Pipeline run=${ppState.run_id} fully completed`);
+          }
+
+          return respond({
+            success: true,
+            action: "postprocess",
+            runId: ppState.run_id,
+            phase: ppState.phase,
+            ppResult,
+            nextPhase,
+            elapsed_ms: Date.now() - startTime,
+          });
+        }
+
+        return respond({ success: true, action: "tick", idle: true, message: "No active runs" });
+      }
+
+      const state = activeRuns[0];
+      const result = await executeBatch(
+        sb, supabaseUrl, supabaseKey,
+        state.run_id, state.phase, state.current_offset, state.batch_size
+      );
+
+      return respond({
+        success: true,
+        action: "tick",
+        runId: state.run_id,
+        phase: state.phase,
+        offset: state.current_offset,
+        result,
+        elapsed_ms: Date.now() - startTime,
+      });
+    }
+
+    // ── action: postprocess_only — 수동 후처리 ──
+    if (action === "postprocess_only") {
+      const ppResult = await executePostprocess(supabaseUrl, supabaseKey, "manual");
+      return respond({ success: true, action: "postprocess_only", ppResult, elapsed_ms: Date.now() - startTime });
+    }
+
+    // ── action: status — 현재 상태 조회 ──
+    if (action === "status") {
+      const { data } = await sb
+        .from("ktrenz_pipeline_state")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      return respond({ success: true, states: data });
+    }
+
+    return respond({ success: false, error: `Unknown action: ${action}` }, 400);
   } catch (error) {
-    console.error("[trend-cron] Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("[cron] Error:", error);
+    return respond({ success: false, error: (error as Error).message }, 500);
   }
 });
+
+// ── 배치 실행 & DB 상태 업데이트 ──
+async function executeBatch(
+  sb: any, supabaseUrl: string, supabaseKey: string,
+  runId: string, phase: string, offset: number, batchSize: number
+): Promise<any> {
+  const functionName = PHASE_FUNCTION[phase];
+  if (!functionName) return { error: `Unknown phase: ${phase}` };
+
+  console.log(`[cron] Executing batch: run=${runId}, phase=${phase}, offset=${offset}, size=${batchSize}`);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000);
+
+  let result: any;
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ batchSize, batchOffset: offset }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const text = await response.text();
+    try {
+      result = JSON.parse(text);
+    } catch {
+      console.warn(`[cron] Non-JSON response: ${text.slice(0, 200)}`);
+      result = { success: true, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true };
+    }
+  } catch (fetchErr) {
+    clearTimeout(timeout);
+    const msg = (fetchErr as Error).message || "unknown";
+    console.warn(`[cron] Fetch failed: ${msg}`);
+    result = { success: true, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true, skippedError: msg };
+  }
+
+  const totalCandidates = result.totalCandidates || 0;
+  const nextOffset = offset + batchSize;
+  const isLastBatch = result.success && nextOffset >= totalCandidates;
+
+  if (isLastBatch) {
+    // 이 phase 배치 완료
+    if (DETECT_PHASES.has(phase)) {
+      // detect 계열 → postprocess 요청
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: "postprocess_requested",
+          current_offset: nextOffset,
+          total_candidates: totalCandidates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", runId)
+        .eq("phase", phase)
+        .eq("status", "running");
+
+      console.log(`[cron] Phase ${phase} batches complete → postprocess_requested`);
+    } else {
+      // track phase → 바로 done
+      const nextPhase = getNextPhase(phase);
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: "done",
+          current_offset: nextOffset,
+          total_candidates: totalCandidates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", runId)
+        .eq("phase", phase)
+        .eq("status", "running");
+
+      if (nextPhase) {
+        await sb.from("ktrenz_pipeline_state").insert({
+          run_id: runId,
+          phase: nextPhase,
+          status: "running",
+          current_offset: 0,
+          batch_size: batchSize,
+        });
+      }
+      console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
+    }
+  } else {
+    // 다음 배치를 위해 offset 업데이트
+    await sb.from("ktrenz_pipeline_state")
+      .update({
+        current_offset: nextOffset,
+        total_candidates: totalCandidates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("run_id", runId)
+      .eq("phase", phase)
+      .eq("status", "running");
+  }
+
+  return { ...result, isLastBatch, nextOffset };
+}
+
+// ── postprocess 실행 ──
+async function executePostprocess(supabaseUrl: string, supabaseKey: string, triggeredBy: string): Promise<any> {
+  console.log(`[cron] Running postprocess, triggeredBy=${triggeredBy}`);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000);
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ triggeredBy }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { raw: text.slice(0, 500) };
+    }
+  } catch (e) {
+    clearTimeout(timeout);
+    console.error(`[cron] Postprocess error: ${(e as Error).message}`);
+    return { error: (e as Error).message };
+  }
+}
+
+function getNextPhase(currentPhase: string): string | null {
+  const idx = PHASE_ORDER.indexOf(currentPhase as any);
+  return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
+}
+
+function respond(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

@@ -77,13 +77,13 @@ const AdminTrendIntel = () => {
   const detectMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "detect", batchSize: 5, batchOffset: 0 },
+        body: { action: "start", phase: "detect", batchSize: 5 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`키워드 감지 완료: ${data?.detect?.totalKeywords ?? 0}건 추출`);
+      toast.success(`키워드 감지 시작 (run: ${data?.runId})`);
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
     },
     onError: (err) => toast.error(`감지 실패: ${(err as Error).message}`),
@@ -93,13 +93,13 @@ const AdminTrendIntel = () => {
   const trackMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "track" },
+        body: { action: "start", phase: "track", batchSize: 5 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`트렌드 추적 완료: ${data?.track?.tracked ?? 0}건 추적`);
+      toast.success(`트렌드 추적 시작 (run: ${data?.runId})`);
       queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
     },
     onError: (err) => toast.error(`추적 실패: ${(err as Error).message}`),
@@ -109,17 +109,15 @@ const AdminTrendIntel = () => {
   const fullPipelineMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { phase: "detect", batchSize: 5, batchOffset: 0 },
+        body: { action: "start", phase: "detect", batchSize: 5 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
-    onSuccess: () => {
-      toast.success("전체 파이프라인 시작됨 (detect → track 자동 체이닝)");
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
-      }, 30_000);
+    onSuccess: (data) => {
+      toast.success(`전체 파이프라인 시작 (run: ${data?.runId})`);
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
     },
     onError: (err) => toast.error(`파이프라인 실패: ${(err as Error).message}`),
   });

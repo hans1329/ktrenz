@@ -405,15 +405,16 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, supabaseKey);
     const body = await req.json().catch(() => ({}));
     const triggeredBy = body.triggeredBy || "manual";
+    const mode = body.mode || "full"; // "full" = AI 분류 포함, "fast" = rule-based만
 
-    console.log("[postprocess] Starting post-processing...");
+    console.log(`[postprocess] Starting post-processing... mode=${mode}, triggeredBy=${triggeredBy}`);
 
     // 시작 로그 기록 (UI에서 감지 가능)
     await sb.from("ktrenz_collection_log").insert({
       platform: "trend_postprocess",
       status: "running",
       records_collected: 0,
-      error_message: `triggered_by=${triggeredBy}`,
+      error_message: `triggered_by=${triggeredBy}, mode=${mode}`,
     });
 
     // pending 건수 확인
@@ -425,11 +426,20 @@ Deno.serve(async (req) => {
       .gte("detected_at", threeDaysAgo);
     console.log(`[postprocess] Pending entries before: ${pendingBefore}`);
 
-    // 1단계: AI 분류 (그룹→멤버 귀속 + 복합 키워드 분리) — pending 대상이므로 먼저 실행
-    const aiResult = await aiClassification(sb);
-    console.log(`[postprocess] AI classification: reclassified ${aiResult.reclassified} entries`);
+    let aiResult = { reclassified: 0, details: [] as string[] };
 
-    // 2단계: 멤버 우선 중복제거 (rule-based) — AI 귀속 후 실행해야 정확
+    // 1단계: AI 분류 (full 모드에서만, 시간 제한 40초)
+    if (mode === "full") {
+      const aiStart = Date.now();
+      try {
+        aiResult = await aiClassification(sb);
+      } catch (e) {
+        console.warn(`[postprocess] AI classification timed out or failed: ${(e as Error).message}`);
+      }
+      console.log(`[postprocess] AI classification: reclassified ${aiResult.reclassified} entries (${Date.now() - aiStart}ms)`);
+    }
+
+    // 2단계: 멤버 우선 중복제거 (rule-based)
     const dedupResult = await memberPriorityDedup(sb);
     console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
 
@@ -446,12 +456,13 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `ai_reclassified=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, domestic_dedup=${srcDedupResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai_reclassified=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, domestic_dedup=${srcDedupResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
       JSON.stringify({
         success: true,
+        mode,
         aiClassification: aiResult,
         memberPriority: dedupResult,
         domesticPriority: srcDedupResult,
