@@ -880,9 +880,8 @@ async function detectForMember(
       })
   );
 
-  // ─── 키워드별 buzz_score 산출 (네이버 뉴스/블로그 건수 기반) ───
-  const keywordBuzzScores = new Map<string, number>();
-  // 키워드별 개별 검색으로 정확한 건수 확보 (최대 7개 키워드이므로 부담 적음)
+  // ─── 키워드별 buzz raw counts + normalized score ───
+  const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
   const buzzPromises = keywords.map(async (k) => {
     const kwQuery = k.keyword_ko || k.keyword;
     const artistLabel = member.name_ko || member.display_name;
@@ -890,49 +889,53 @@ async function detectForMember(
       naverClientId, naverClientSecret, artistLabel, kwQuery
     );
     const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
-    keywordBuzzScores.set(k.keyword.toLowerCase(), buzzScore);
+    keywordBuzzData.set(k.keyword.toLowerCase(), { newsTotal, blogTotal, score: buzzScore });
     console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore}`);
   });
   await Promise.all(buzzPromises);
 
-  const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => ({
-    extractedKeyword: keywordData,
-    row: {
-      wiki_entry_id: member.group_wiki_entry_id || null,
-      star_id: member.id || null,
-      trigger_type: "news_mention",
-      trigger_source: keywordData.context?.startsWith("[Shop]") ? "naver_shop" : "naver_multi",
-      artist_name: member.display_name,
-      keyword: keywordData.keyword,
-      keyword_en: keywordData.keyword_en || null,
-      keyword_ko: keywordData.keyword_ko || null,
-      keyword_ja: keywordData.keyword_ja || null,
-      keyword_zh: keywordData.keyword_zh || null,
-      keyword_category: keywordData.category,
-      context: keywordData.context,
-      context_ko: keywordData.context_ko || null,
-      context_ja: keywordData.context_ja || null,
-      context_zh: keywordData.context_zh || null,
-      confidence: keywordData.confidence,
-      source_url: sourceUrl,
-      source_title: sourceArticle?.title || null,
-      source_image_url: sanitizeImageUrl(sourceUrl ? ogImageMap.get(sourceUrl) || null : null),
-      source_snippet: sourceArticle?.description?.slice(0, 500) || null,
-      commercial_intent: keywordData.commercial_intent || null,
-      brand_intent: keywordData.brand_intent || null,
-      fan_sentiment: keywordData.fan_sentiment || null,
-      trend_potential: keywordData.trend_potential ?? null,
-      baseline_score: keywordBuzzScores.get(keywordData.keyword.toLowerCase()) || 0,
-      status: "pending",
-      metadata: {
-        article_count: articles.length,
-        search_name: searchName,
-        group_name: member.group_name,
-        buzz_news_total: 0,
-        buzz_blog_total: 0,
+  const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => {
+    const buzz = keywordBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0, score: 0 };
+    return {
+      extractedKeyword: keywordData,
+      row: {
+        wiki_entry_id: member.group_wiki_entry_id || null,
+        star_id: member.id || null,
+        trigger_type: "news_mention",
+        trigger_source: keywordData.context?.startsWith("[Shop]") ? "naver_shop" : "naver_multi",
+        artist_name: member.display_name,
+        keyword: keywordData.keyword,
+        keyword_en: keywordData.keyword_en || null,
+        keyword_ko: keywordData.keyword_ko || null,
+        keyword_ja: keywordData.keyword_ja || null,
+        keyword_zh: keywordData.keyword_zh || null,
+        keyword_category: keywordData.category,
+        context: keywordData.context,
+        context_ko: keywordData.context_ko || null,
+        context_ja: keywordData.context_ja || null,
+        context_zh: keywordData.context_zh || null,
+        confidence: keywordData.confidence,
+        source_url: sourceUrl,
+        source_title: sourceArticle?.title || null,
+        source_image_url: sanitizeImageUrl(sourceUrl ? ogImageMap.get(sourceUrl) || null : null),
+        source_snippet: sourceArticle?.description?.slice(0, 500) || null,
+        commercial_intent: keywordData.commercial_intent || null,
+        brand_intent: keywordData.brand_intent || null,
+        fan_sentiment: keywordData.fan_sentiment || null,
+        trend_potential: keywordData.trend_potential ?? null,
+        baseline_score: buzz.newsTotal + buzz.blogTotal,
+        status: "pending",
+        metadata: {
+          article_count: articles.length,
+          search_name: searchName,
+          group_name: member.group_name,
+          buzz_news_total: buzz.newsTotal,
+          buzz_blog_total: buzz.blogTotal,
+          buzz_score_normalized: buzz.score,
+        },
       },
-    },
-  }));
+    };
+  });
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -1096,33 +1099,34 @@ async function trackExistingKeywords(
         searchNaverCount(naverClientId, naverClientSecret, "blog", searchQuery),
       ]);
 
+      const rawCount = newsTotal + blogTotal;
       const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
       const baseline = trigger.baseline_score || 0;
       const deltaPct = baseline > 0
-        ? Math.round(((buzzScore - baseline) / baseline) * 10000) / 100
-        : buzzScore > 0 ? 100 : 0;
+        ? Math.round(((rawCount - baseline) / baseline) * 10000) / 100
+        : rawCount > 0 ? 100 : 0;
 
       // tracking 레코드 저장
       await sb.from("ktrenz_trend_tracking").insert({
         trigger_id: trigger.id,
         keyword: trigger.keyword,
-        interest_score: buzzScore,
+        interest_score: rawCount,
         region: "naver",
         delta_pct: deltaPct,
-        raw_response: { news_total: newsTotal, blog_total: blogTotal, search_query: searchQuery },
+        raw_response: { news_total: newsTotal, blog_total: blogTotal, buzz_score_normalized: buzzScore, search_query: searchQuery },
       });
 
       // peak/influence 갱신
       const updates: any = {};
-      if (baseline <= 0 && buzzScore > 0) {
-        updates.baseline_score = buzzScore;
-        updates.peak_score = buzzScore;
+      if (baseline <= 0 && rawCount > 0) {
+        updates.baseline_score = rawCount;
+        updates.peak_score = rawCount;
       } else if (baseline > 0) {
-        if (buzzScore > (trigger.peak_score || 0)) {
-          updates.peak_score = buzzScore;
+        if (rawCount > (trigger.peak_score || 0)) {
+          updates.peak_score = rawCount;
           updates.peak_at = new Date().toISOString();
         }
-        const currentPeak = updates.peak_score ?? trigger.peak_score ?? buzzScore;
+        const currentPeak = updates.peak_score ?? trigger.peak_score ?? rawCount;
         updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
       }
       if (Object.keys(updates).length > 0) {
