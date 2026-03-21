@@ -752,7 +752,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                           ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${quotedBgImg})`
                           : undefined;
                       })(),
-                      backgroundSize: 'cover',
+                      backgroundSize: '102%',
                       backgroundPosition: 'center top',
                       backgroundColor: (() => {
                         const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
