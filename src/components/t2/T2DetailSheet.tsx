@@ -689,20 +689,20 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               ) : (
                 <>
                   {/* Bet input */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-2">
                      <Input
                        type="number"
                        inputMode="numeric"
                        min={10}
                        max={1000}
-                       placeholder="10~1000T"
+                       placeholder="10~1000"
                        value={betAmount}
                        onChange={(e) => setBetAmount(e.target.value)}
-                       className="flex-1 h-10 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                       className="w-full h-14 text-center text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     {user && (
                       <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
-                        {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
+                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
                       </span>
                     )}
                   </div>
