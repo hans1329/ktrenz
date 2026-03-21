@@ -110,8 +110,8 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   const tabs = [
     { id: "rankings" as const, labelKey: "nav.trendz", icon: TrendingUp },
     { id: "activity" as const, labelKey: "nav.activity", icon: Activity },
-    { id: "agent" as const, labelKey: "nav.agent", icon: null, isCenter: true },
-    { id: "profile" as const, labelKey: "nav.profile", icon: User },
+    { id: "profile" as const, labelKey: "nav.profile", icon: User, isCenter: true },
+    { id: "agent" as const, labelKey: "nav.agent", icon: null },
     { id: "notifications" as const, labelKey: "nav.notifications", icon: Bell },
   ];
 
