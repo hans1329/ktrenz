@@ -1,5 +1,5 @@
-// T2 Trend Detect Global v5: Firecrawl 단독 — Reddit/TikTok 팬 커뮤니티 상업 키워드 감지
-// YouTube API 제거 (쿼터 낭비 방지), SerpAPI 크레딧은 트래킹 전용으로 보존
+// T2 Trend Detect Global v7: Firecrawl 감지 + 네이버 실측 baseline
+// 감지 시점에 네이버 뉴스/블로그 검색으로 실제 buzz score를 baseline으로 설정
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
