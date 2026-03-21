@@ -506,7 +506,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     href={tile.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-medium text-emerald-500/70 hover:text-emerald-400 transition-colors"
+                    className="text-[10px] font-medium text-foreground hover:text-foreground/80 transition-colors"
                     onClick={handleReadBoost}
                   >
                     {t("readBoostReward", language)}
