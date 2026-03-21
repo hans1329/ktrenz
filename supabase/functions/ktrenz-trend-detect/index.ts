@@ -60,13 +60,18 @@ interface NaverNewsItem {
 }
 
 // ─── Naver 통합 검색 (News / Blog / Shop) ───
+interface NaverSearchResult {
+  items: any[];
+  total: number;
+}
+
 async function searchNaver(
   clientId: string,
   clientSecret: string,
   endpoint: "news" | "blog" | "shop",
   query: string,
   display: number = 50,
-): Promise<any[]> {
+): Promise<NaverSearchResult> {
   try {
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
@@ -82,14 +87,66 @@ async function searchNaver(
 
     if (!response.ok) {
       console.warn(`[trend-detect] Naver ${endpoint} API failed: ${response.status}`);
-      return [];
+      return { items: [], total: 0 };
     }
 
     const data = await response.json();
-    return data.items || [];
+    return { items: data.items || [], total: data.total || 0 };
   } catch (e) {
     console.warn(`[trend-detect] Naver ${endpoint} search error: ${(e as Error).message}`);
-    return [];
+    return { items: [], total: 0 };
+  }
+}
+
+// ─── Buzz Score 정규화: log10(count+1)/log10(cap)*100 ───
+function normalizeBuzzScore(newsTotal: number, blogTotal: number, globalScore: number = 0): number {
+  const newsCap = 1000;
+  const blogCap = 10000;
+  const newsNorm = newsTotal > 0 ? (Math.log10(newsTotal + 1) / Math.log10(newsCap)) * 100 : 0;
+  const blogNorm = blogTotal > 0 ? (Math.log10(blogTotal + 1) / Math.log10(blogCap)) * 100 : 0;
+  const buzzScore = Math.round(Math.min(newsNorm * 0.5 + blogNorm * 0.3 + globalScore * 0.2, 100));
+  return buzzScore;
+}
+
+// ─── 키워드별 Naver 뉴스/블로그 건수 조회 ───
+async function fetchKeywordBuzzCounts(
+  clientId: string,
+  clientSecret: string,
+  artistName: string,
+  keyword: string,
+): Promise<{ newsTotal: number; blogTotal: number }> {
+  const query = `"${artistName}" "${keyword}"`;
+  const [newsResult, blogResult] = await Promise.all([
+    searchNaverCount(clientId, clientSecret, "news", query),
+    searchNaverCount(clientId, clientSecret, "blog", query),
+  ]);
+  return { newsTotal: newsResult, blogTotal: blogResult };
+}
+
+async function searchNaverCount(
+  clientId: string,
+  clientSecret: string,
+  endpoint: "news" | "blog",
+  query: string,
+): Promise<number> {
+  try {
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", "1");
+    url.searchParams.set("sort", "date");
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+      },
+    });
+
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return data.total || 0;
+  } catch {
+    return 0;
   }
 }
 
