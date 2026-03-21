@@ -45,7 +45,10 @@ export interface TrendTile {
   sourceSnippet: string | null;
   starId: string | null;
   status: string;
+  prevApiTotal: number | null;
 }
+
+export type SortMode = "rate" | "volume";
 
 function getLocalizedArtistName(tile: TrendTile, lang: string): string {
   if (lang === "ko" && tile.artistNameKo) return tile.artistNameKo;
