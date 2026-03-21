@@ -1131,17 +1131,23 @@ async function trackExistingKeywords(
       const kwQuery = trigger.keyword_ko || trigger.keyword;
       const searchQuery = `"${artistLabel}" "${kwQuery}"`;
 
-      const [newsTotal, blogTotal] = await Promise.all([
+      const [newsResult, blogResult] = await Promise.all([
         searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
         searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
       ]);
 
-      const rawCount = newsTotal + blogTotal;
-      const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
+      const newsRecent = newsResult.recent;
+      const blogRecent = blogResult.recent;
+      const rawCount = newsRecent + blogRecent;
+      const buzzScore = normalizeBuzzScore(newsRecent, blogRecent);
+      const apiTotal = newsResult.total + blogResult.total;
       const baseline = trigger.baseline_score || 0;
       const deltaPct = baseline > 0
         ? Math.round(((rawCount - baseline) / baseline) * 10000) / 100
         : rawCount > 0 ? 100 : 0;
+
+      const prevApiTotal = trigger.prev_api_total || 0;
+      const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
 
       // tracking 레코드 저장
       await sb.from("ktrenz_trend_tracking").insert({
@@ -1150,7 +1156,12 @@ async function trackExistingKeywords(
         interest_score: rawCount,
         region: "naver",
         delta_pct: deltaPct,
-        raw_response: { news_total: newsTotal, blog_total: blogTotal, buzz_score_normalized: buzzScore, search_query: searchQuery },
+        raw_response: {
+          news_recent: newsRecent, blog_recent: blogRecent,
+          news_api_total: newsResult.total, blog_api_total: blogResult.total,
+          api_total: apiTotal, daily_delta: dailyDelta,
+          buzz_score_normalized: buzzScore, search_query: searchQuery,
+        },
       });
 
       // peak/influence 갱신
