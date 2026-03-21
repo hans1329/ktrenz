@@ -14,7 +14,7 @@ interface ExtractedKeyword {
   keyword_ko?: string;
   keyword_ja?: string;
   keyword_zh?: string;
-  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music";
+  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event";
   confidence: number;
   context: string;
   context_ko?: string;
@@ -217,7 +217,7 @@ async function extractCommercialKeywords(
 
   const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities AND music events (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
+  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities, music events, AND social/cultural phenomena (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts, fan gatherings, viral moments, trending locations) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
 
 Articles:
 ${articleTexts}
@@ -241,9 +241,10 @@ RULES:
 5. Chart names (Billboard, Hanteo, etc.) are FORBIDDEN as standalone keywords.
 6. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
 7. Maximum 7 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-8. Categories: brand, product, place, food, fashion, beauty, media, music. Category guide:
+8. Categories: brand, product, place, food, fashion, beauty, media, music, event. Category guide:
    - "music": album titles, single titles, named tours/concerts, named festivals, music releases by the artist
    - "media": TV shows, dramas, movies, variety shows, interviews, entertainment content
+   - "event": fan meetings, pop-up stores, exhibitions, viral social phenomena, public gatherings, cultural moments, trending locations tied to the artist (e.g., "광화문" when it becomes a gathering spot for fans). If a place becomes newsworthy BECAUSE of the artist, classify as "event" not "place".
    - "product": physical consumer goods
 8a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "music", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
 8b. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy" separately; "나이키 에어맥스" NOT "나이키" and "에어맥스" separately. If a brand, product, or place name consists of multiple words, keep them together as one keyword.
@@ -260,7 +261,7 @@ INTENT ANALYSIS (required for each keyword):
 16. "fan_sentiment": Predicted fandom reaction — "positive" (fans excited/supportive), "negative" (fans upset/boycotting), "neutral" (informational, no strong reaction), "mixed" (divided opinions).
 17. "trend_potential": A 0.0-1.0 score predicting whether this keyword will become a viral trend. For comebacks/new albums, this should be HIGH (0.8+). For tours, also high. Consider: Is this novel/surprising? Is there emotional resonance with fans?
 
-TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Ask: "Would a brand strategist or trend forecaster want to monitor this?" If not, skip it. Music releases and comebacks are ALWAYS worth tracking.
+TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Ask: "Would a trend forecaster, entertainment strategist, or cultural analyst want to monitor this?" If not, skip it. Music releases, comebacks, and viral social phenomena are ALWAYS worth tracking.
 
 If NO entities are found, return [].
 Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.7},{"keyword":"MAP OF THE SOUL: 7","keyword_en":"MAP OF THE SOUL: 7","keyword_ko":"MAP OF THE SOUL: 7","keyword_ja":"MAP OF THE SOUL: 7","keyword_zh":"MAP OF THE SOUL: 7","category":"music","confidence":0.95,"context":"New album comeback announced","context_ko":"새 앨범 컴백 발표","context_ja":"ニューアルバムカムバック発表","context_zh":"新专辑回归发布","source_article_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.95}]`;
@@ -318,19 +319,16 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
         return false;
       }
       
-      // ── 아티스트/그룹 이름 필터 (하드코드 방어) ──
+      // ── 아티스트/그룹 이름 필터 (정확 일치만 차단, 복합 키워드는 통과) ──
       const memberLower = memberName.toLowerCase();
       const groupLower = (groupName || "").toLowerCase();
       
       const nameBlacklist = [memberLower, groupLower].filter(Boolean);
       for (const blocked of nameBlacklist) {
         if (!blocked) continue;
+        // 정확 일치만 차단: 키워드가 아티스트명 자체인 경우
         if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
           console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
-          return false;
-        }
-        if (kwLower.includes(blocked) || kwKo.includes(blocked) || blocked.includes(kwLower)) {
-          console.warn(`[trend-detect] Blocked keyword containing artist/group name: "${k.keyword}" (matches "${blocked}")`);
           return false;
         }
       }

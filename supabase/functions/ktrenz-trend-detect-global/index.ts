@@ -28,7 +28,7 @@ interface ExtractedKeyword {
   keyword_ko?: string;
   keyword_ja?: string;
   keyword_zh?: string;
-  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music";
+  category: "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event";
   confidence: number;
   context: string;
   context_ko?: string;
