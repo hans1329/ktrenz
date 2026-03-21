@@ -45,7 +45,7 @@ html {
     --ring: 290 55% 50%;
     --radius: 0.75rem;
     --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
-    --shadow-card-hover: 0 6px 20px 0 hsl(290 70% 50% / 0.1);
+    --shadow-card-hover: 0 6px 20px 0 hsl(290 55% 50% / 0.1);
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 15%;
     --sidebar-primary: 290 70% 50%;
