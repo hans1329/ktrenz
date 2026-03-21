@@ -346,6 +346,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
+            <Badge variant="outline" className={cn("text-[11px] shrink-0", CATEGORY_COLORS[tile.category] || "")}>
+              {tile.category}
+            </Badge>
           </SheetTitle>
           {/* Artist name row */}
           <button
