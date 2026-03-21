@@ -690,16 +690,20 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 <>
                   {/* Bet input */}
                   <div className="flex flex-col items-center gap-2">
-                     <Input
-                       type="number"
-                       inputMode="numeric"
-                       min={10}
-                       max={1000}
-                       placeholder="10~1000"
-                       value={betAmount}
-                       onChange={(e) => setBetAmount(e.target.value)}
-                       className="w-full h-14 text-center text-2xl font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">{language === "ko" ? "배팅액:" : "Bet:"}</span>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={10}
+                        max={1000}
+                        placeholder="10~1000"
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(e.target.value)}
+                        className="w-36 h-14 text-center text-3xl font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-lg font-bold text-muted-foreground/60">T</span>
+                    </div>
                     {user && (
                       <span className="text-[11px] font-bold text-teal-400 whitespace-nowrap">
                         {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/60 font-normal">T</span>
