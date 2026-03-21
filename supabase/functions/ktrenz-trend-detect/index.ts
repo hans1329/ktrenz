@@ -1136,20 +1136,40 @@ async function detectForMember(
   const backfillPromises: PromiseLike<unknown>[] = [];
   const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
-  // 아티스트/그룹명과 완전 일치하는 키워드 차단용 셋
+  // 아티스트/그룹명과 일치하는 키워드 차단용 셋 (정규화 포함)
   const artistNameSet = new Set<string>();
   for (const n of [member.display_name, member.name_ko, member.group_name, member.group_name_ko]) {
-    if (n) artistNameSet.add(n.toLowerCase());
+    if (n) {
+      artistNameSet.add(n.toLowerCase());
+      artistNameSet.add(n.toLowerCase().replace(/[\s·,\-]+/g, ""));
+    }
   }
+
+  // 노이즈 블랙리스트
+  const INSERT_NOISE_BLACKLIST = new Set([
+    "브랜드평판", "아이돌", "인기", "팬들", "컴백", "활동", "무대",
+    "음방", "팬미팅", "콘서트", "앨범", "신곡", "타이틀곡",
+    "데뷔", "연습생", "아이돌 개인 브랜드평판", "인천국제공항",
+    "김포국제공항", "대만", "일본", "중국", "미국", "한국",
+  ]);
 
   for (const candidate of candidateRows) {
     const kwLower = candidate.row.keyword.toLowerCase();
     const kwEnLower = candidate.row.keyword_en?.toLowerCase() || "";
     const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
+    const kwStripped = kwLower.replace(/[\s·,\-]+/g, "");
 
-    // 아티스트/그룹명과 완전 일치하는 키워드 차단
-    if (artistNameSet.has(kwLower) || (kwKoLower && artistNameSet.has(kwKoLower)) || (kwEnLower && artistNameSet.has(kwEnLower))) {
+    // 아티스트/그룹명과 일치하는 키워드 차단 (정규화 포함)
+    if (artistNameSet.has(kwLower) || artistNameSet.has(kwStripped) ||
+        (kwKoLower && (artistNameSet.has(kwKoLower) || artistNameSet.has(kwKoLower.replace(/[\s·,\-]+/g, "")))) ||
+        (kwEnLower && (artistNameSet.has(kwEnLower) || artistNameSet.has(kwEnLower.replace(/[\s·,\-]+/g, ""))))) {
       console.warn(`[trend-detect] Artist name keyword filtered: "${candidate.row.keyword}"`);
+      continue;
+    }
+
+    // 노이즈 필터
+    if (INSERT_NOISE_BLACKLIST.has(kwLower) || INSERT_NOISE_BLACKLIST.has(kwKoLower)) {
+      console.warn(`[trend-detect] Noise keyword filtered at insert: "${candidate.row.keyword}"`);
       continue;
     }
 
