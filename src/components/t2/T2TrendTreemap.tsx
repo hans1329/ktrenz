@@ -128,7 +128,16 @@ function normalizeTrendKey(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function compareTrendPriority(a: TrendTile, b: TrendTile): number {
+function compareTrendPriority(a: TrendTile, b: TrendTile, sortMode: SortMode = "rate"): number {
+  if (sortMode === "volume") {
+    // 일일 증가량 기준: peakScore - baselineScore as proxy (or prevApiTotal diff)
+    const aVolume = (a.peakScore ?? 0) - (a.baselineScore ?? 0);
+    const bVolume = (b.peakScore ?? 0) - (b.baselineScore ?? 0);
+    if (bVolume !== aVolume) return bVolume - aVolume;
+    if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
+    return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
+  }
+  // rate mode (default): influence_index 기준
   if (b.influenceIndex !== a.influenceIndex) return b.influenceIndex - a.influenceIndex;
   if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
   return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
