@@ -98,13 +98,13 @@ async function searchNaver(
   }
 }
 
-// ─── Buzz Score 정규화: log10(count+1)/log10(cap)*100 ───
-function normalizeBuzzScore(newsTotal: number, blogTotal: number, globalScore: number = 0): number {
+// ─── Buzz Score 정규화: log10(count+1)/log10(cap)*weight ───
+function normalizeBuzzScore(newsTotal: number, blogTotal: number): number {
   const newsCap = 1000;
   const blogCap = 10000;
   const newsNorm = newsTotal > 0 ? (Math.log10(newsTotal + 1) / Math.log10(newsCap)) * 100 : 0;
   const blogNorm = blogTotal > 0 ? (Math.log10(blogTotal + 1) / Math.log10(blogCap)) * 100 : 0;
-  const buzzScore = Math.round(Math.min(newsNorm * 0.5 + blogNorm * 0.3 + globalScore * 0.2, 100));
+  const buzzScore = Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
   return buzzScore;
 }
 
