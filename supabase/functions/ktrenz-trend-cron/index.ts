@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { action = "tick", runId, phase, batchSize = 5 } = body;
+    const { action = "tick", runId, phase, batchSize = 5, singlePhase = false } = body;
 
     if (COLLECTION_PAUSED) {
       return respond({ success: true, paused: true, message: "Collection paused" });
