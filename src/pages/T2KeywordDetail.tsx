@@ -209,18 +209,16 @@ const T2KeywordDetail = () => {
         .from("ktrenz_trend_bets" as any)
         .select("id", { count: "exact", head: true })
         .eq("market_id", m.id);
-      const pD = Number(m.pool_decline);
       const pM = Number(m.pool_mild);
       const pS = Number(m.pool_strong);
       const pE = Number(m.pool_explosive);
-      const invSum = (1/pD) + (1/pM) + (1/pS) + (1/pE);
+      const total = pM + pS + pE;
       return {
         ...m,
         prices: {
-          decline: (1/pD)/invSum,
-          mild: (1/pM)/invSum,
-          strong: (1/pS)/invSum,
-          explosive: (1/pE)/invSum,
+          mild: total > 0 ? pM / total : 1/3,
+          strong: total > 0 ? pS / total : 1/3,
+          explosive: total > 0 ? pE / total : 1/3,
         },
         totalBettors: totalBettors ?? 0,
         totalBets: totalBets ?? 0,
@@ -240,7 +238,7 @@ const T2KeywordDetail = () => {
         .eq("market_id", marketData.id)
         .eq("user_id", user.id);
       if (!bets || bets.length === 0) return null;
-      const outcomes = ["decline", "mild", "strong", "explosive"] as const;
+      const outcomes = ["mild", "strong", "explosive"] as const;
       const result: Record<string, { amount: number; shares: number }> = {};
       let totalSpent = 0;
       for (const o of outcomes) {
@@ -420,12 +418,11 @@ const T2KeywordDetail = () => {
 
             {/* 4-outcome probability bar */}
             <div className="mb-4">
-              <div className="grid grid-cols-4 gap-1 text-xs mb-2">
+              <div className="grid grid-cols-3 gap-1.5 text-xs mb-2">
                 {([
-                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "text-rose-400" },
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "text-amber-400" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "text-emerald-400" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "text-purple-400" },
+                  { key: "mild" as const, label: language === "ko" ? "소폭 1.2x" : "<50% 1.2x", emoji: "📈", color: "text-amber-400" },
+                  { key: "strong" as const, label: language === "ko" ? "강세 3x" : "50~100% 3x", emoji: "🔥", color: "text-emerald-400" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발 8x" : "100%+ 8x", emoji: "🚀", color: "text-purple-400" },
                 ]).map(({ key, label, emoji, color }) => (
                   <div key={key} className="text-center">
                     <span className={cn("font-bold", color)}>{emoji} {(marketData.prices[key] * 100).toFixed(0)}%</span>
@@ -434,10 +431,9 @@ const T2KeywordDetail = () => {
                 ))}
               </div>
               <div className="flex items-center gap-0.5 h-3 rounded-full overflow-hidden">
-                <div className="h-full rounded-l-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.decline * 100, 5)}%` }} />
-                <div className="h-full bg-amber-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.mild * 100, 5)}%` }} />
-                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.strong * 100, 5)}%` }} />
-                <div className="h-full rounded-r-full bg-purple-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.explosive * 100, 5)}%` }} />
+                <div className="h-full rounded-l-full bg-amber-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.mild * 100, 8)}%` }} />
+                <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.strong * 100, 8)}%` }} />
+                <div className="h-full rounded-r-full bg-purple-500 transition-all duration-500" style={{ width: `${Math.max(marketData.prices.explosive * 100, 8)}%` }} />
               </div>
             </div>
 
@@ -476,27 +472,28 @@ const T2KeywordDetail = () => {
                 <div className="text-[11px] font-bold text-foreground">
                   {language === "ko" ? "내 포지션" : "My Position"}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["decline", "mild", "strong", "explosive"] as const).map(o => {
+                <div className="grid grid-cols-3 gap-2">
+                  {(["mild", "strong", "explosive"] as const).map(o => {
                     const data = (myPosition as any)[o];
                     if (!data || data.amount <= 0) return null;
-                    const emoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
-                    const color: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                    const emoji: Record<string, string> = { mild: "📈", strong: "🔥", explosive: "🚀" };
+                    const color: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
+                    const multi: Record<string, number> = { mild: 1.2, strong: 3.0, explosive: 8.0 };
                     return (
                       <div key={o} className={cn(`rounded-lg bg-${color[o]}-500/10 border border-${color[o]}-500/20 p-2`)}>
                         <div className={cn("text-[10px]", `text-${color[o]}-400`)} >{emoji[o]} {o}</div>
                         <div className="text-sm font-bold text-foreground">
-                          {data.amount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">P</span>
+                          {data.amount.toLocaleString()}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">T</span>
                         </div>
                         <div className={cn("text-[10px]", `text-${color[o]}-400`)}>
-                          {language === "ko" ? "성공시" : "If win"} +{Math.round(data.shares - data.amount).toLocaleString()}P
+                          ×{multi[o]} = {Math.round(data.amount * multi[o]).toLocaleString()}T
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  {language === "ko" ? "총 투자" : "Total invested"}: {(myPosition as any).totalSpent?.toLocaleString()}P
+                  {language === "ko" ? "총 투자" : "Total invested"}: {(myPosition as any).totalSpent?.toLocaleString()}T
                 </div>
               </div>
             )}

@@ -116,7 +116,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
   const track = useTrackEvent();
 
-  const [betOutcome, setBetOutcome] = useState<"decline" | "mild" | "strong" | "explosive">("mild");
+  const [betOutcome, setBetOutcome] = useState<"mild" | "strong" | "explosive">("mild");
   const [betAmount, setBetAmount] = useState("");
 
   // Market data
@@ -167,7 +167,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       if (data && marketData) {
         queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
           ...(old || marketData),
-          pool_decline: data.pools?.decline,
           pool_mild: data.pools?.mild,
           pool_strong: data.pools?.strong,
           pool_explosive: data.pools?.explosive,
@@ -227,18 +226,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     betMutation.mutate({ outcome: betOutcome, amount });
   };
 
-  // Calculate prices from 4-outcome pools
-  const poolDecline = Number(marketData?.pool_decline ?? 100);
-  const poolMild = Number(marketData?.pool_mild ?? 100);
-  const poolStrong = Number(marketData?.pool_strong ?? 100);
-  const poolExplosive = Number(marketData?.pool_explosive ?? 100);
-  const invSum = (1/poolDecline) + (1/poolMild) + (1/poolStrong) + (1/poolExplosive);
+  // Calculate pool distribution for 3 outcomes
+  const poolMild = Number(marketData?.pool_mild ?? 0);
+  const poolStrong = Number(marketData?.pool_strong ?? 0);
+  const poolExplosive = Number(marketData?.pool_explosive ?? 0);
+  const totalPool = poolMild + poolStrong + poolExplosive;
   const prices = {
-    decline: (1/poolDecline) / invSum,
-    mild: (1/poolMild) / invSum,
-    strong: (1/poolStrong) / invSum,
-    explosive: (1/poolExplosive) / invSum,
+    mild: totalPool > 0 ? poolMild / totalPool : 1/3,
+    strong: totalPool > 0 ? poolStrong / totalPool : 1/3,
+    explosive: totalPool > 0 ? poolExplosive / totalPool : 1/3,
   };
+  const MULTIPLIERS = { mild: 1.2, strong: 3.0, explosive: 8.0 };
   const totalVolume = Number(marketData?.total_volume ?? 0);
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
@@ -580,18 +578,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 {t("voteRelevance", language)}
               </p>
 
-              {/* 4-outcome selector */}
-              <div className="grid grid-cols-4 gap-1.5">
+              {/* 3-outcome selector with multipliers */}
+              <div className="grid grid-cols-3 gap-2">
                 {([
-                  { key: "decline" as const, label: language === "ko" ? "하락" : "<10%", emoji: "📉", color: "rose" },
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "10~50%", emoji: "📈", color: "amber" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple" },
-                ]).map(({ key, label, emoji, color }) => (
+                  { key: "mild" as const, label: language === "ko" ? "소폭" : "<50%", emoji: "📈", color: "amber", multi: "1.2x" },
+                  { key: "strong" as const, label: language === "ko" ? "강세" : "50~100%", emoji: "🔥", color: "emerald", multi: "3x" },
+                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "100%+", emoji: "🚀", color: "purple", multi: "8x" },
+                ]).map(({ key, label, emoji, color, multi }) => (
                   <div
                     key={key}
                     className={cn(
-                      "rounded-lg p-2 text-center cursor-pointer transition-all border-2",
+                      "rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
                       betOutcome === key
                         ? `bg-${color}-500/20 border-${color}-500/50`
                         : `bg-${color}-500/5 border-${color}-500/15 hover:border-${color}-500/30`
@@ -600,7 +597,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   >
                     <div className="text-lg">{emoji}</div>
                     <div className="text-[10px] text-muted-foreground">{label}</div>
-                    <div className={cn("text-sm font-bold", `text-${color}-400`)}>{(prices[key] * 100).toFixed(0)}%</div>
+                    <div className={cn("text-sm font-black", `text-${color}-400`)}>{multi}</div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">{(prices[key] * 100).toFixed(0)}% {language === "ko" ? "베팅" : "bets"}</div>
                   </div>
                 ))}
               </div>
@@ -608,24 +606,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* Probability bar */}
               <div className="flex items-center gap-0.5 h-6 rounded-full overflow-hidden">
                 {([
-                  { key: "decline" as const, color: "bg-rose-500" },
                   { key: "mild" as const, color: "bg-amber-500" },
                   { key: "strong" as const, color: "bg-emerald-500" },
                   { key: "explosive" as const, color: "bg-purple-500" },
                 ]).map(({ key, color }, i) => (
                   <div
                     key={key}
-                    className={cn("h-full transition-all duration-500", color, i === 0 && "rounded-l-full", i === 3 && "rounded-r-full")}
-                    style={{ width: `${Math.max(prices[key] * 100, 5)}%` }}
+                    className={cn("h-full transition-all duration-500", color, i === 0 && "rounded-l-full", i === 2 && "rounded-r-full")}
+                    style={{ width: `${Math.max(prices[key] * 100, 8)}%` }}
                   />
                 ))}
               </div>
 
               {/* My Position */}
               {myBets && myBets.length > 0 && (() => {
-                const outcomes = ["decline", "mild", "strong", "explosive"] as const;
-                const outcomeEmoji: Record<string, string> = { decline: "📉", mild: "📈", strong: "🔥", explosive: "🚀" };
-                const outcomeColor: Record<string, string> = { decline: "rose", mild: "amber", strong: "emerald", explosive: "purple" };
+                const outcomes = ["mild", "strong", "explosive"] as const;
+                const outcomeEmoji: Record<string, string> = { mild: "📈", strong: "🔥", explosive: "🚀" };
+                const outcomeColor: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
                 const stakes = Object.fromEntries(outcomes.map(o => [o, {
                   amount: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.amount), 0),
                   shares: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.shares), 0),
@@ -634,7 +631,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 return (
                   <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
                     <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center`)}>
                           <div className="text-[10px] text-muted-foreground">{outcomeEmoji[o]} {o}</div>
@@ -642,7 +639,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
-                              +{Math.round(stakes[o].shares - stakes[o].amount)}T
+                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o])}T
                             </span>
                           </div>
                         </div>
