@@ -60,13 +60,18 @@ interface NaverNewsItem {
 }
 
 // ─── Naver 통합 검색 (News / Blog / Shop) ───
+interface NaverSearchResult {
+  items: any[];
+  total: number;
+}
+
 async function searchNaver(
   clientId: string,
   clientSecret: string,
   endpoint: "news" | "blog" | "shop",
   query: string,
   display: number = 50,
-): Promise<any[]> {
+): Promise<NaverSearchResult> {
   try {
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
@@ -82,14 +87,66 @@ async function searchNaver(
 
     if (!response.ok) {
       console.warn(`[trend-detect] Naver ${endpoint} API failed: ${response.status}`);
-      return [];
+      return { items: [], total: 0 };
     }
 
     const data = await response.json();
-    return data.items || [];
+    return { items: data.items || [], total: data.total || 0 };
   } catch (e) {
     console.warn(`[trend-detect] Naver ${endpoint} search error: ${(e as Error).message}`);
-    return [];
+    return { items: [], total: 0 };
+  }
+}
+
+// ─── Buzz Score 정규화: log10(count+1)/log10(cap)*100 ───
+function normalizeBuzzScore(newsTotal: number, blogTotal: number, globalScore: number = 0): number {
+  const newsCap = 1000;
+  const blogCap = 10000;
+  const newsNorm = newsTotal > 0 ? (Math.log10(newsTotal + 1) / Math.log10(newsCap)) * 100 : 0;
+  const blogNorm = blogTotal > 0 ? (Math.log10(blogTotal + 1) / Math.log10(blogCap)) * 100 : 0;
+  const buzzScore = Math.round(Math.min(newsNorm * 0.5 + blogNorm * 0.3 + globalScore * 0.2, 100));
+  return buzzScore;
+}
+
+// ─── 키워드별 Naver 뉴스/블로그 건수 조회 ───
+async function fetchKeywordBuzzCounts(
+  clientId: string,
+  clientSecret: string,
+  artistName: string,
+  keyword: string,
+): Promise<{ newsTotal: number; blogTotal: number }> {
+  const query = `"${artistName}" "${keyword}"`;
+  const [newsResult, blogResult] = await Promise.all([
+    searchNaverCount(clientId, clientSecret, "news", query),
+    searchNaverCount(clientId, clientSecret, "blog", query),
+  ]);
+  return { newsTotal: newsResult, blogTotal: blogResult };
+}
+
+async function searchNaverCount(
+  clientId: string,
+  clientSecret: string,
+  endpoint: "news" | "blog",
+  query: string,
+): Promise<number> {
+  try {
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", "1");
+    url.searchParams.set("sort", "date");
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+      },
+    });
+
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return data.total || 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -100,7 +157,8 @@ async function searchNaverNews(
   query: string,
   display: number = 50,
 ): Promise<NaverNewsItem[]> {
-  return searchNaver(clientId, clientSecret, "news", query, display) as Promise<NaverNewsItem[]>;
+  const result = await searchNaver(clientId, clientSecret, "news", query, display);
+  return result.items as NaverNewsItem[];
 }
 
 function stripHtml(html: string): string {
@@ -707,11 +765,15 @@ async function detectForMember(
     : `"${searchName}"`;
 
   // ─── 3소스 병렬 검색: News + Blog + Shopping ───
-  const [newsItems, blogItems, shopItems] = await Promise.all([
+  const [newsResult, blogResult, shopResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
     searchNaver(naverClientId, naverClientSecret, "shop", searchName, 30),
   ]);
+
+  const newsItems = newsResult.items;
+  const blogItems = blogResult.items;
+  const shopItems = shopResult.items;
 
   // 24시간 이내 + 일본어 기사 필터링 (News + Blog)
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
@@ -741,7 +803,7 @@ async function detectForMember(
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
-  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length} blog=${filteredBlogs.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
   const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, aiExtracted: 0, shopExtracted: shopKeywords.length };
 
@@ -792,6 +854,21 @@ async function detectForMember(
       })
   );
 
+  // ─── 키워드별 buzz_score 산출 (네이버 뉴스/블로그 건수 기반) ───
+  const keywordBuzzScores = new Map<string, number>();
+  // 키워드별 개별 검색으로 정확한 건수 확보 (최대 7개 키워드이므로 부담 적음)
+  const buzzPromises = keywords.map(async (k) => {
+    const kwQuery = k.keyword_ko || k.keyword;
+    const artistLabel = member.name_ko || member.display_name;
+    const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
+      naverClientId, naverClientSecret, artistLabel, kwQuery
+    );
+    const buzzScore = normalizeBuzzScore(newsTotal, blogTotal, 0);
+    keywordBuzzScores.set(k.keyword.toLowerCase(), buzzScore);
+    console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore}`);
+  });
+  await Promise.all(buzzPromises);
+
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => ({
     extractedKeyword: keywordData,
     row: {
@@ -819,11 +896,14 @@ async function detectForMember(
       brand_intent: keywordData.brand_intent || null,
       fan_sentiment: keywordData.fan_sentiment || null,
       trend_potential: keywordData.trend_potential ?? null,
+      baseline_score: keywordBuzzScores.get(keywordData.keyword.toLowerCase()) || 0,
       status: "pending",
       metadata: {
         article_count: articles.length,
         search_name: searchName,
         group_name: member.group_name,
+        buzz_news_total: 0,
+        buzz_blog_total: 0,
       },
     },
   }));
