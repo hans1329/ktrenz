@@ -100,7 +100,21 @@ Deno.serve(async (req) => {
 
           // postprocess 완료 → 다음 phase 시작 or done
           const isSinglePhaseRun = ppState.run_id.startsWith("single_");
-          const nextPhase = isSinglePhaseRun ? null : getNextPhase(ppState.phase);
+          let nextPhase = isSinglePhaseRun ? null : getNextPhase(ppState.phase);
+
+          // 첫 수집 판별: tracking 레코드가 0건이면 track phase 스킵
+          // (detect에서 baseline만 기록하고 비교 대상이 없으므로)
+          if (nextPhase === "track") {
+            const { count: trackingCount } = await sb
+              .from("ktrenz_trend_tracking")
+              .select("id", { count: "exact", head: true })
+              .limit(1);
+            if (!trackingCount || trackingCount === 0) {
+              console.log(`[cron] First run detected (no tracking records) → skipping track phase`);
+              nextPhase = null; // track 스킵 → 바로 done
+            }
+          }
+
           if (nextPhase) {
             // 현재 phase는 done, 다음 phase를 running으로 생성
             await sb.from("ktrenz_pipeline_state")
@@ -120,6 +134,7 @@ Deno.serve(async (req) => {
               });
             }
 
+            console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
             console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
           } else {
             // 마지막 phase or single-phase → 전부 done
