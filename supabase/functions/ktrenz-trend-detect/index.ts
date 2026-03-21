@@ -392,8 +392,10 @@ CRITICAL RULES — READ CAREFULLY:
    - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
 
 2. WHAT TO EXTRACT (specific named entities ONLY):
-   ✅ GOOD examples: "광화문" (place visited), "프라다" (brand worn), "왕과 사는 남자" (drama title), "Galaxy S25" (product used), "투썸플레이스" (cafe visited), "나이키 에어맥스" (shoes worn)
-   ❌ BAD examples: "카리나" (artist name), "에스파" (group name), "SM엔터" (agency), "브랜드평판" (generic term), "인기" (vague), "팬들" (generic)
+    ✅ GOOD examples: "광화문 교보빌딩" (specific landmark), "프라다" (brand worn), "왕과 사는 남자" (drama title), "Galaxy S25" (product used), "투썸플레이스" (cafe visited), "나이키 에어맥스" (shoes worn)
+    ❌ BAD examples: "카리나" (artist name), "에스파" (group name), "SM엔터" (agency), "브랜드평판" (generic term), "인기" (vague), "팬들" (generic), "서울" (generic city), "강남구" (generic district), "명동" (generic area), "공항" (generic)
+    - NEVER extract generic city/district/country names as keywords (서울, 부산, 강남, 명동, 도쿄, etc.) — these have no trend value
+    - Only extract specific place names that are unique landmarks, venues, or stores (e.g., "고척돔", "올림픽공원", "더현대 서울")
 
 3. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
 4. The keyword must LITERALLY appear in the article text
