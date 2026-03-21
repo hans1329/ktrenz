@@ -294,7 +294,70 @@ function getCategoryContext(category: string): string {
   return labels[category] || labels.other;
 }
 
-// ─── OpenAI 기반 키워드 추출 (기사 텍스트만 분석, 외부 검색 없음) ───
+// ─── Tool Calling 스키마 정의 ───
+const TOOL_EXTRACT_KEYWORDS = {
+  type: "function" as const,
+  function: {
+    name: "extract_keywords",
+    description: "Extract commercial/cultural trend keywords from article texts. Each keyword must be explicitly mentioned in the articles.",
+    parameters: {
+      type: "object",
+      properties: {
+        keywords: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              keyword: { type: "string", description: "Original keyword as it appears in the article (Korean or English)" },
+              keyword_en: { type: "string", description: "English translation/name" },
+              keyword_ko: { type: "string", description: "Korean name" },
+              keyword_ja: { type: "string", description: "Japanese translation" },
+              keyword_zh: { type: "string", description: "Chinese translation" },
+              category: { type: "string", enum: ["brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event"] },
+              confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
+              context: { type: "string", description: "English context sentence" },
+              context_ko: { type: "string", description: "Korean context sentence" },
+              context_ja: { type: "string", description: "Japanese context sentence" },
+              context_zh: { type: "string", description: "Chinese context sentence" },
+              source_article_index: { type: "integer", description: "1-based index of the source article" },
+              commercial_intent: { type: "string", enum: ["ad", "sponsorship", "collaboration", "organic", "rumor"], description: "Nature of the association" },
+              brand_intent: { type: "string", enum: ["awareness", "conversion", "association", "loyalty"], description: "Brand perspective intent" },
+              fan_sentiment: { type: "string", enum: ["positive", "negative", "neutral", "mixed"], description: "Predicted fandom reaction" },
+              trend_potential: { type: "number", description: "0.0-1.0 viral trend likelihood" },
+              ownership_artist: { type: "string", description: "The artist who ACTUALLY OWNS/CREATED this keyword (e.g., the artist who released this song/album). If this is a song title, who sang it? If a brand collab, who is the ambassador? Must be the TRUE OWNER, not just who mentioned it." },
+              ownership_confidence: { type: "number", description: "0.0-1.0 confidence that this keyword truly belongs to the searched artist, not another artist" },
+              ownership_reason: { type: "string", description: "Brief explanation of why this keyword belongs (or doesn't belong) to the searched artist" },
+            },
+            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason"],
+          },
+          description: "Array of extracted keywords. Maximum 7.",
+        },
+      },
+      required: ["keywords"],
+    },
+  },
+};
+
+const TOOL_ANALYZE_INTENT = {
+  type: "function" as const,
+  function: {
+    name: "analyze_trend_intent",
+    description: "Analyze the overall trend intent and market signal from the extracted keywords for the given artist.",
+    parameters: {
+      type: "object",
+      properties: {
+        market_signal: { type: "string", enum: ["strong_momentum", "emerging", "steady", "declining", "noise"], description: "Overall market signal strength" },
+        dominant_sector: { type: "string", description: "Primary industry sector being impacted (fashion, beauty, music, food, etc.)" },
+        audience_overlap: { type: "string", enum: ["core_fandom", "general_public", "niche_community", "cross_fandom"], description: "Who is driving the trend" },
+        monetization_readiness: { type: "number", description: "0.0-1.0 score of how ready this trend is for commercial exploitation" },
+        signal_summary: { type: "string", description: "One-sentence Korean summary of the trend signal for this artist" },
+      },
+      required: ["market_signal", "dominant_sector", "audience_overlap", "monetization_readiness", "signal_summary"],
+    },
+  },
+};
+
+// ─── OpenAI Tool Calling 기반 키워드 추출 ───
 async function extractCommercialKeywords(
   openaiKey: string,
   memberName: string,
@@ -311,56 +374,38 @@ async function extractCommercialKeywords(
 
   const categoryContext = getCategoryContext(starCategory);
 
-  const systemPrompt = `You are a strict text-analysis tool. You MUST only analyze the article texts provided below. You have NO external knowledge. You cannot search the web. If a brand/product/entity is NOT explicitly written in the provided text, you MUST NOT output it. Return ONLY a JSON array.`;
+  const systemPrompt = `You are a strict text-analysis tool with TWO critical responsibilities:
+1. Extract commercial/cultural trend keywords from article texts
+2. VERIFY OWNERSHIP — determine if each keyword TRULY belongs to the searched artist
 
-  const userPrompt = `Below are Korean news article titles and descriptions. Extract commercial entities, music events, AND social/cultural phenomena (brands, products, places, foods, fashion items, beauty products, media appearances, comebacks, albums, tours, concerts, fan gatherings, viral moments, trending locations) ONLY if they are EXPLICITLY WRITTEN in the text AND connected to "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
+You MUST only analyze the provided article texts. You have NO external knowledge about artists' discographies.
+
+OWNERSHIP VERIFICATION IS CRITICAL:
+- If an article about Artist A mentions a song/album/event that actually belongs to Artist B, you must set ownership_artist to "Artist B" and ownership_confidence to LOW.
+- Example: An article about HIGHLIGHT mentions "SWIM" → If SWIM is actually a BTS song, ownership_artist="BTS", ownership_confidence=0.1
+- When unsure about ownership, set ownership_confidence below 0.5 and note the uncertainty.
+- For brands/products/places, ownership is about who has the PRIMARY association (ambassador, sponsor, etc.)`;
+
+  const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""} (${categoryContext}).
 
 Articles:
 ${articleTexts}
 
-RULES:
-1. ONLY extract entities whose name literally appears in the article text above.
-2. "${memberName}" should be mentioned in the article. Articles about the group "${groupName || "N/A"}" are acceptable IF "${memberName}" is specifically mentioned or if the entity is clearly linked to the group's activity.
-3. STRICTLY FORBIDDEN keywords — NEVER extract any of these:
-   - The artist's own name ("${memberName}"), group name ("${groupName || "N/A"}"), other member names, sub-unit names
-   - ANY combination containing the artist/group name (e.g., "${memberName} + descriptor" like "아이브 가을" for artist "가을" is FORBIDDEN)
-   - Agency/label names (SM, JYP, HYBE, YG, etc.)
-   - Brand reputation rankings/indexes (브랜드평판, brand reputation) — these are NOT commercial entities
-   - Platform names (YouTube, Spotify, TikTok, Instagram, Twitter/X, Melon, Genie, Apple Music, Weverse, VLive, Bubble, etc.) — we track what trends ON platforms, not the platforms themselves
-   - Broadcast networks as standalone keywords (KBS, MBC, SBS, JTBC, tvN, Mnet) — UNLESS the specific SHOW NAME is the keyword
-   - Generic standalone words: "컴백", "comeback", "album", "앨범", "tour", "concert" — these are NOT keywords by themselves. But SPECIFIC named events ARE valid (see rule 4).
-4. MUSIC EVENTS (category "music"): Extract SPECIFIC named music releases, tours, concerts, and festivals AS keywords when they have a proper name:
-   - Album/single titles: e.g., "MAP OF THE SOUL: 7", "BORN PINK", "Golden" → category "music"
-   - Named tours/concerts: e.g., "PERMISSION TO DANCE ON STAGE", "BORN PINK WORLD TOUR" → category "music"
-   - Named festivals where the artist performs: e.g., "Coachella 2026", "Lollapalooza" → category "music"
-   - Do NOT extract generic terms like "컴백", "앨범", "콘서트" alone — they must be the SPECIFIC name.
-5. Chart names (Billboard, Hanteo, etc.) are FORBIDDEN as standalone keywords.
-6. Do NOT hallucinate or use prior knowledge about this artist's endorsements.
-7. Maximum 7 keywords. Confidence 0.0-1.0 based on how clearly the text links the entity to "${memberName}".
-8. Categories: brand, product, place, food, fashion, beauty, media, music, event. Category guide:
-   - "music": album titles, single titles, named tours/concerts, named festivals, music releases by the artist
-   - "media": TV shows, dramas, movies, variety shows, interviews, entertainment content
-   - "event": fan meetings, pop-up stores, exhibitions, viral social phenomena, public gatherings, cultural moments, trending locations tied to the artist (e.g., "광화문" when it becomes a gathering spot for fans). If a place becomes newsworthy BECAUSE of the artist, classify as "event" not "place".
-   - "product": physical consumer goods
-8a. CONTEXT-BASED DISAMBIGUATION (CRITICAL): When a keyword is an ordinary word (e.g., "아파트", "Flower", "Pink Venom", "Butter") but the article context discusses charts, streaming, music awards, Billboard, MV views, album sales, or any music-related achievement, it is a SONG/ALBUM TITLE — classify as "music", NEVER as "place", "product", or "food" based on the literal dictionary meaning. Always prioritize the article's context over the word's literal meaning.
-8b. COMPOUND NAMES (CRITICAL): Extract multi-word brand/entity names as a SINGLE keyword. For example: "푸르지오 써밋" NOT "푸르지오" and "써밋" separately; "Samsung Galaxy" NOT "Samsung" and "Galaxy" separately; "나이키 에어맥스" NOT "나이키" and "에어맥스" separately. If a brand, product, or place name consists of multiple words, keep them together as one keyword.
-8c. ONE ENTITY PER KEYWORD (CRITICAL): Each keyword must contain exactly ONE brand/product/entity. If an article mentions multiple items (e.g., "wearing Chanel shoes and a Prada jacket"), extract them as SEPARATE keywords: "Chanel 투톤슈즈" and "Prada 자켓" — NEVER combine them into one keyword like "Chanel투톤슈즈 Prada자켓". Each keyword = one trackable commercial entity.
-9. IMPORTANT: Use the ORIGINAL Korean name as it appears in the article text as "keyword". For internationally known brands (Chanel, Nike, etc.), use the English name directly. For Korean-origin names (이연복, 쇼미더머니, 컴포즈커피, etc.), keep the Korean as "keyword".
-10. Always provide "keyword_en" (English translation/name), "keyword_ko" (Korean), "keyword_ja" (Japanese), "keyword_zh" (Chinese).
-11. Include "source_article_index" (1-based) pointing to the article where the entity appears.
-12. Provide translated context: context, context_ko, context_ja, context_zh. Do NOT include article reference numbers like [1], [2] etc. in the context fields. Write clean, natural sentences.
-13. SKIP articles that are just ranking/reputation lists mentioning many artists. Only extract from articles with SPECIFIC, unique content about "${memberName}" and a commercial entity or music event.
+EXTRACTION RULES:
+1. ONLY extract entities whose name literally appears in the article text
+2. "${memberName}" should be mentioned in the article or linked via group "${groupName || "N/A"}"
+3. FORBIDDEN keywords: artist/group names themselves, agency names, platform names, chart names, generic terms ("컴백", "album", "concert")
+4. ALLOWED: Specific named entities — album titles, brand names, products, places, shows, named tours/festivals
+5. Maximum 7 keywords
+6. Categories: brand, product, place, food, fashion, beauty, media, music, event
+7. CONTEXT-BASED DISAMBIGUATION: When a word is ordinary but article discusses charts/streaming/music, classify as "music"
+8. COMPOUND NAMES: Keep multi-word brand names as one keyword ("푸르지오 써밋", "Samsung Galaxy")
+9. ONE ENTITY PER KEYWORD: Separate "Chanel shoes" and "Prada jacket" into two keywords
+10. Use ORIGINAL Korean name as keyword for Korean-origin names; English for international brands
+11. CRITICAL — OWNERSHIP CHECK: For EVERY keyword, determine who actually OWNS it. Is this song/album by the searched artist? Is this brand deal with the searched artist? If the article merely MENTIONS another artist's work, that keyword does NOT belong to the searched artist.
+12. Do NOT include article reference numbers [1], [2] in context fields.
 
-INTENT ANALYSIS (required for each keyword):
-14. "commercial_intent": Classify the nature of the association — "ad" (paid advertisement), "sponsorship" (official brand deal/ambassador), "collaboration" (creative partnership), "organic" (natural/unpaid mention or usage), "rumor" (unconfirmed association). For music events, use "organic".
-15. "brand_intent": From the brand's perspective — "awareness" (brand name exposure/visibility), "conversion" (driving purchases/sales), "association" (image/identity linking), "loyalty" (deepening existing fan-brand relationship). For music events, use "awareness".
-16. "fan_sentiment": Predicted fandom reaction — "positive" (fans excited/supportive), "negative" (fans upset/boycotting), "neutral" (informational, no strong reaction), "mixed" (divided opinions).
-17. "trend_potential": A 0.0-1.0 score predicting whether this keyword will become a viral trend. For comebacks/new albums, this should be HIGH (0.8+). For tours, also high. Consider: Is this novel/surprising? Is there emotional resonance with fans?
-
-TREND VALUE FILTER: Only extract keywords worth tracking for trend prediction. Ask: "Would a trend forecaster, entertainment strategist, or cultural analyst want to monitor this?" If not, skip it. Music releases, comebacks, and viral social phenomena are ALWAYS worth tracking.
-
-If NO entities are found, return [].
-Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keyword_ja":"シャネル","keyword_zh":"香奈儿","category":"fashion","confidence":0.9,"context":"wore Chanel outfit at airport","context_ko":"공항에서 샤넬 의상 착용","context_ja":"空港でシャネルの衣装を着用","context_zh":"在机场穿着香奈儿服装","source_article_index":1,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.7},{"keyword":"MAP OF THE SOUL: 7","keyword_en":"MAP OF THE SOUL: 7","keyword_ko":"MAP OF THE SOUL: 7","keyword_ja":"MAP OF THE SOUL: 7","keyword_zh":"MAP OF THE SOUL: 7","category":"music","confidence":0.95,"context":"New album comeback announced","context_ko":"새 앨범 컴백 발표","context_ja":"ニューアルバムカムバック発表","context_zh":"新专辑回归发布","source_article_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.95}]`;
+Call extract_keywords first, then call analyze_trend_intent to summarize the overall trend signal.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -375,8 +420,10 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        tools: [TOOL_EXTRACT_KEYWORDS, TOOL_ANALYZE_INTENT],
+        tool_choice: "auto",
         temperature: 0.05,
-        max_tokens: 1500,
+        max_tokens: 2500,
       }),
     });
 
@@ -387,76 +434,121 @@ Example: [{"keyword":"Chanel","keyword_en":"Chanel","keyword_ko":"샤넬","keywo
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const toolCalls = data.choices?.[0]?.message?.tool_calls || [];
 
-    console.log(`[trend-detect] AI raw response for ${memberName}: ${content.slice(0, 500)}`);
-
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      console.warn(`[trend-detect] No JSON array found in AI response for ${memberName}`);
+    if (!toolCalls.length) {
+      console.warn(`[trend-detect] No tool calls in AI response for ${memberName}`);
+      // Fallback: try parsing content directly
+      const content = data.choices?.[0]?.message?.content || "";
+      console.log(`[trend-detect] AI content fallback for ${memberName}: ${content.slice(0, 300)}`);
       return [];
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
-    console.log(`[trend-detect] AI extracted ${parsed.length} keywords for ${memberName}: ${parsed.map(k => k.keyword).join(", ")}`);
+    let extractedKeywords: ExtractedKeyword[] = [];
+    let trendIntent: any = null;
 
-    // 후검증: 완화된 매칭 — 정확 매칭 또는 핵심 단어(2글자+) 중 하나라도 기사에 존재하면 통과
+    for (const tc of toolCalls) {
+      try {
+        const args = JSON.parse(tc.function.arguments);
+        if (tc.function.name === "extract_keywords") {
+          const rawKeywords = args.keywords || [];
+          console.log(`[trend-detect] Tool calling extracted ${rawKeywords.length} keywords for ${memberName}: ${rawKeywords.map((k: any) => `${k.keyword}(own:${k.ownership_artist},${k.ownership_confidence})`).join(", ")}`);
+
+          // ── 귀속 검증 필터 ──
+          for (const k of rawKeywords) {
+            const ownerArtist = (k.ownership_artist || "").toLowerCase();
+            const searchedArtist = memberName.toLowerCase();
+            const searchedGroup = (groupName || "").toLowerCase();
+
+            // 귀속 confidence가 0.5 미만이면 차단
+            if (k.ownership_confidence < 0.5) {
+              console.warn(`[trend-detect] Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+              continue;
+            }
+
+            // ownership_artist가 검색 아티스트/그룹이 아니면 차단
+            if (ownerArtist && ownerArtist !== searchedArtist && ownerArtist !== searchedGroup && !ownerArtist.includes(searchedArtist) && !searchedArtist.includes(ownerArtist)) {
+              console.warn(`[trend-detect] Ownership mismatch: "${k.keyword}" belongs to "${k.ownership_artist}", not "${memberName}" (reason: ${k.ownership_reason})`);
+              continue;
+            }
+
+            extractedKeywords.push({
+              keyword: k.keyword,
+              keyword_en: k.keyword_en,
+              keyword_ko: k.keyword_ko,
+              keyword_ja: k.keyword_ja,
+              keyword_zh: k.keyword_zh,
+              category: k.category,
+              confidence: k.confidence,
+              context: k.context,
+              context_ko: k.context_ko,
+              context_ja: k.context_ja,
+              context_zh: k.context_zh,
+              source_article_index: k.source_article_index,
+              commercial_intent: k.commercial_intent,
+              brand_intent: k.brand_intent,
+              fan_sentiment: k.fan_sentiment,
+              trend_potential: k.trend_potential,
+            });
+          }
+        } else if (tc.function.name === "analyze_trend_intent") {
+          trendIntent = args;
+          console.log(`[trend-detect] Trend intent for ${memberName}: signal=${args.market_signal}, sector=${args.dominant_sector}, audience=${args.audience_overlap}, monetization=${args.monetization_readiness}, summary="${args.signal_summary}"`);
+        }
+      } catch (parseErr) {
+        console.warn(`[trend-detect] Failed to parse tool call for ${memberName}: ${(parseErr as Error).message}`);
+      }
+    }
+
+    // ── 후검증: 플랫폼 블랙리스트 + 아티스트명 필터 ──
     const allText = articles.map(a => `${a.title} ${a.description || ""}`).join(" ").toLowerCase();
-    return parsed.filter((k) => {
+    extractedKeywords = extractedKeywords.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
-      
-      // ── 플랫폼 블랙리스트 필터 ──
+
       const kwLower = k.keyword.toLowerCase();
       const kwKo = k.keyword_ko?.toLowerCase() || "";
       const kwEn = k.keyword_en?.toLowerCase() || "";
-      
+
+      // 플랫폼 블랙리스트
       if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
         console.warn(`[trend-detect] Blocked platform keyword: "${k.keyword}"`);
         return false;
       }
-      
-      // ── 아티스트/그룹 이름 필터 (정확 일치만 차단, 복합 키워드는 통과) ──
+
+      // 아티스트/그룹 이름 정확 일치 차단
       const memberLower = memberName.toLowerCase();
       const groupLower = (groupName || "").toLowerCase();
-      
       const nameBlacklist = [memberLower, groupLower].filter(Boolean);
       for (const blocked of nameBlacklist) {
-        if (!blocked) continue;
-        // 정확 일치만 차단: 키워드가 아티스트명 자체인 경우
         if (kwLower === blocked || kwKo === blocked || kwEn === blocked) {
           console.warn(`[trend-detect] Blocked artist/group name as keyword: "${k.keyword}"`);
           return false;
         }
       }
-      
-      // confidence 0.8 이상이면 후검증 스킵 (AI가 확신하는 경우)
-      if (k.confidence >= 0.8) {
-        console.log(`[trend-detect] High confidence (${k.confidence}), skipping text check: "${k.keyword}"`);
-        return true;
-      }
-      
-      // 1) 정확 매칭 (keyword, keyword_ko, keyword_en 중 하나라도)
+
+      // 2글자 이하 단문 차단
+      if (kwLower.length <= 1 && (!kwKo || kwKo.length <= 1)) return false;
+
+      // confidence 0.8 이상이면 텍스트 검증 스킵
+      if (k.confidence >= 0.8) return true;
+
+      // 텍스트 존재 검증
       if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo)) || (kwEn && allText.includes(kwEn))) return true;
-      
-      // 2) 단어 분리 매칭: keyword_ko를 공백으로 분리 후 2글자 이상 단어 중 하나라도 매칭
+
       if (kwKo) {
         const tokens = kwKo.split(/[\s·,]+/).filter(t => t.length >= 2);
-        if (tokens.length > 0 && tokens.some(t => allText.includes(t))) {
-          console.log(`[trend-detect] Partial match for "${k.keyword_ko}" via token in text`);
-          return true;
-        }
+        if (tokens.length > 0 && tokens.some(t => allText.includes(t))) return true;
       }
-      
-      // 3) 영문 키워드 단어 분리 매칭
+
       const enTokens = kwLower.split(/[\s'']+/).filter(t => t.length >= 3);
-      if (enTokens.length > 1 && enTokens.some(t => allText.includes(t))) {
-        console.log(`[trend-detect] Partial EN match for "${k.keyword}" via token in text`);
-        return true;
-      }
-      
+      if (enTokens.length > 1 && enTokens.some(t => allText.includes(t))) return true;
+
       console.warn(`[trend-detect] Filtered out: "${k.keyword}" / "${k.keyword_ko}" (not in article text, conf=${k.confidence})`);
       return false;
     });
+
+    console.log(`[trend-detect] Final ${extractedKeywords.length} keywords for ${memberName} after ownership+post-validation`);
+    return extractedKeywords;
   } catch (e) {
     console.warn(`[trend-detect] Extraction error: ${(e as Error).message}`);
     return [];
