@@ -184,6 +184,8 @@ async function fetchYouTubeKeywordData(
 }
 
 // 인과관계 지표 업데이트: baseline 설정 + peak/influence 갱신
+// 1회차: baseline + peak 동시 설정 (influence=0 정상)
+// 2회차+: peak만 갱신, influence = (peak - baseline) / baseline * 100
 async function updateCausalMetrics(
   sb: any,
   triggerId: string,
@@ -198,20 +200,30 @@ async function updateCausalMetrics(
   if (!trigger) return;
 
   const updates: any = {};
+  const hasBaseline = trigger.baseline_score != null && trigger.baseline_score > 0;
 
-  if (!trigger.baseline_score && interestScore > 0) {
+  // 1회차: baseline이 없으면 설정
+  if (!hasBaseline && interestScore > 0) {
     updates.baseline_score = interestScore;
-  }
-
-  if (interestScore > (trigger.peak_score || 0)) {
     updates.peak_score = interestScore;
-    updates.peak_at = new Date().toISOString();
-  }
+    // 1회차는 influence=0 (비교 대상 없음)
+  } else if (hasBaseline) {
+    // 2회차+: peak 갱신 (현재 score가 기존 peak보다 높으면)
+    if (interestScore > (trigger.peak_score || 0)) {
+      updates.peak_score = interestScore;
+      updates.peak_at = new Date().toISOString();
+    }
 
-  const baseline = updates.baseline_score ?? trigger.baseline_score ?? 0;
-  const peak = updates.peak_score ?? trigger.peak_score ?? 0;
-  if (baseline > 0 && peak > baseline) {
-    updates.influence_index = Math.round(((peak - baseline) / baseline) * 10000) / 100;
+    // influence_index 계산: 최신 score vs baseline
+    // peak 기반이 아닌 현재 score 기반으로 계산하여 실시간 변동 반영
+    const baseline = trigger.baseline_score;
+    const currentPeak = updates.peak_score ?? trigger.peak_score ?? interestScore;
+    if (baseline > 0 && currentPeak > baseline) {
+      updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
+    } else if (baseline > 0 && interestScore < baseline) {
+      // score가 baseline 아래로 떨어지면 음수 influence (하락 트렌드)
+      updates.influence_index = Math.round(((interestScore - baseline) / baseline) * 10000) / 100;
+    }
   }
 
   if (Object.keys(updates).length > 0) {
