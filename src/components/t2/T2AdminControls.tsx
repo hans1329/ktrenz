@@ -185,7 +185,7 @@ const T2AdminControls = () => {
   const trackMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "track", batchSize: 5 },
+        body: { action: "start", phase: "track", batchSize: 5, singlePhase: true },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
