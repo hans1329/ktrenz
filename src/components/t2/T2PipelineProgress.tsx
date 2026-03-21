@@ -423,6 +423,61 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
             </div>
           )}
 
+          {/* Live star processing log */}
+          {!isTrackPhase && starLogs && starLogs.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground">처리 로그 (최근 {starLogs.length}명)</p>
+              <div className="max-h-28 sm:max-h-36 overflow-y-auto space-y-0.5">
+                {starLogs.slice(0, 15).map((star: any) => {
+                  const r = star.last_detect_result;
+                  const status = r?.status;
+                  const isNoNews = status === "no_news";
+                  const isNoKw = status === "no_keywords";
+                  const isError = status === "error";
+                  const isFound = status === "found";
+                  return (
+                    <div
+                      key={star.id}
+                      className="flex items-center gap-1 text-[10px] sm:text-[11px] py-0.5 px-1.5 rounded bg-background/60"
+                    >
+                      {isFound ? (
+                        <CheckCircle2 className="w-2.5 h-2.5 shrink-0 text-emerald-400" />
+                      ) : isNoNews ? (
+                        <AlertCircle className="w-2.5 h-2.5 shrink-0 text-muted-foreground/50" />
+                      ) : isError ? (
+                        <AlertCircle className="w-2.5 h-2.5 shrink-0 text-destructive" />
+                      ) : (
+                        <Search className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className={`font-medium truncate max-w-[80px] sm:max-w-[120px] ${isNoNews ? "text-muted-foreground/60" : "text-foreground"}`}>
+                        {star.display_name}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground/60 uppercase shrink-0">
+                        {star.star_type}
+                      </span>
+                      {isFound && (
+                        <span className="text-[8px] text-emerald-400 ml-auto shrink-0">
+                          뉴스{r.news} 키워드{r.keywords} 삽입{r.inserted}
+                        </span>
+                      )}
+                      {isNoNews && (
+                        <span className="text-[8px] text-muted-foreground/50 ml-auto shrink-0">뉴스 없음</span>
+                      )}
+                      {isNoKw && (
+                        <span className="text-[8px] text-muted-foreground/50 ml-auto shrink-0">
+                          뉴스{r.news} · 키워드 없음
+                        </span>
+                      )}
+                      {isError && (
+                        <span className="text-[8px] text-destructive ml-auto shrink-0 truncate max-w-[80px]">에러</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Recent keywords with source tag */}
           {recentKeywords && recentKeywords.length > 0 && (
             <div className="space-y-1 max-h-32 sm:max-h-40 overflow-y-auto">
