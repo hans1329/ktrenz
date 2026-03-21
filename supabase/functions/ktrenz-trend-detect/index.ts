@@ -573,6 +573,12 @@ Call extract_keywords with the specific named entities found, then call analyze_
         return false;
       }
 
+      // ownership_confidence 낮으면 차단 (맥락적 관련성 부족)
+      if (k.ownership_confidence !== undefined && k.ownership_confidence < 0.5) {
+        console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, reason=${k.ownership_reason})`);
+        return false;
+      }
+
       // confidence 0.8 이상이면 텍스트 검증 스킵
       if (k.confidence >= 0.8) return true;
 
