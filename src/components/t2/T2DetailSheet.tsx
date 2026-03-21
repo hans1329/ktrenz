@@ -472,7 +472,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
 
           {/* Context body — separate card */}
-          <div className="rounded-xl bg-muted/30 border border-border overflow-hidden">
+          <div className="rounded-xl bg-background border border-border overflow-hidden">
             <div className="p-3 space-y-1.5">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 <Newspaper className="w-4.5 h-4.5 text-primary" />
@@ -526,7 +526,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Ranking explanation: Why this rank? */}
           {rank != null && (
-            <div className="rounded-xl bg-muted/30 border border-border p-3 space-y-2">
+            <div className="rounded-xl bg-background border border-border p-3 space-y-2">
               <h3 className="text-base font-bold text-foreground">
                 {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
               </h3>
@@ -550,19 +550,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Influence metrics */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg bg-muted/30 border border-border p-3">
+            <div className="rounded-lg bg-background border border-border p-3">
               <div className="text-[11px] text-muted-foreground mb-1">{t("influence", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.influenceIndex > 0 ? `+${tile.influenceIndex.toFixed(1)}%` : "—"}
               </div>
             </div>
-            <div className="rounded-lg bg-muted/30 border border-border p-3">
+            <div className="rounded-lg bg-background border border-border p-3">
               <div className="text-[11px] text-muted-foreground mb-1">{t("baseline", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.baselineScore != null ? tile.baselineScore.toLocaleString() : "—"}
               </div>
             </div>
-            <div className="rounded-lg bg-muted/30 border border-border p-3">
+            <div className="rounded-lg bg-background border border-border p-3">
               <div className="text-[11px] text-muted-foreground mb-1">{t("peak", language)}</div>
               <div className="text-xl font-bold text-foreground">
                 {tile.peakScore != null ? tile.peakScore.toLocaleString() : "—"}
@@ -573,7 +573,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
           {/* FPMM Prediction Market */}
-          <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
+          <div className="rounded-xl bg-background border border-border p-4 space-y-4">
             <div className="space-y-3">
               <div className="text-center">
                 <p className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
