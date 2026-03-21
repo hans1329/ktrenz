@@ -573,10 +573,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* FPMM Prediction Market */}
           <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-4">
             <div className="space-y-3">
-              <p className="text-lg font-bold text-foreground text-center flex items-center justify-center gap-2">
-                <Coins className="w-5 h-5 text-primary" />
-                {t("voteRelevance", language)}
-              </p>
+              <div className="text-center">
+                <p className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
+                  <Coins className="w-5 h-5 text-primary" />
+                  {t("voteRelevance", language)}
+                </p>
+                {marketData?.expires_at && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ⏳ {(() => {
+                      const diff = new Date(marketData.expires_at).getTime() - Date.now();
+                      if (diff <= 0) return language === "ko" ? "마감됨" : "Expired";
+                      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                      return language === "ko" ? `${days}일 ${hours}시간 남음` : `${days}d ${hours}h left`;
+                    })()}
+                  </p>
+                )}
+              </div>
 
               {/* 3-outcome selector with multipliers */}
               <div className="grid grid-cols-3 gap-2">
