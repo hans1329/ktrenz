@@ -151,6 +151,43 @@ async function searchNaverTotal(
   }
 }
 
+// ─── 7일 이내 기사 카운트 + API total 반환 ───
+function parseBlogPostdate(pd: string): number {
+  if (!pd || pd.length !== 8) return 0;
+  return new Date(`${pd.slice(0,4)}-${pd.slice(4,6)}-${pd.slice(6,8)}T00:00:00+09:00`).getTime();
+}
+
+async function searchNaverRecent7d(
+  clientId: string, clientSecret: string,
+  endpoint: "news" | "blog", query: string,
+): Promise<{ recent: number; total: number }> {
+  try {
+    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
+    url.searchParams.set("query", query);
+    url.searchParams.set("display", "100");
+    url.searchParams.set("sort", "date");
+    const response = await fetch(url.toString(), {
+      headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
+    });
+    if (!response.ok) return { recent: 0, total: 0 };
+    const data = await response.json();
+    const apiTotal = data.total || 0;
+    const items = data.items || [];
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let count = 0;
+    for (const item of items) {
+      let pubTime: number;
+      if (endpoint === "blog") {
+        pubTime = parseBlogPostdate(item.postdate);
+      } else {
+        pubTime = item.pubDate ? new Date(item.pubDate).getTime() : 0;
+      }
+      if (pubTime >= sevenDaysAgo) count++;
+    }
+    return { recent: count, total: apiTotal };
+  } catch { return { recent: 0, total: 0 }; }
+}
+
 // 하위 호환용 래퍼
 async function searchNaverNews(
   clientId: string,
