@@ -157,7 +157,8 @@ async function searchNaverNews(
   query: string,
   display: number = 50,
 ): Promise<NaverNewsItem[]> {
-  return searchNaver(clientId, clientSecret, "news", query, display) as Promise<NaverNewsItem[]>;
+  const result = await searchNaver(clientId, clientSecret, "news", query, display);
+  return result.items as NaverNewsItem[];
 }
 
 function stripHtml(html: string): string {
