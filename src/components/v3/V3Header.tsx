@@ -114,7 +114,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   };
 
   const handleKeywordClick = (kw: KeywordResult) => {
-    navigate(`/keyword/${kw.id}`);
+    navigate(`/t2/${kw.id}`);
     setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
 

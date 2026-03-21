@@ -134,7 +134,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   };
 
   const handleKeywordClick = (kw: KeywordResult) => {
-    navigate(`/keyword/${kw.id}`);
+    navigate(`/t2/${kw.id}`);
     setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
 
