@@ -346,46 +346,45 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <SheetTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
-            <Badge variant="outline" className={cn("text-[11px] shrink-0", CATEGORY_COLORS[tile.category] || "")}>
-              {tile.category}
-            </Badge>
           </SheetTitle>
-          {/* Artist name row */}
-          <button
-            onClick={() => {
-              if (tile.starId) {
-                onClose();
-                navigate(`/t2/artist/${tile.starId}`);
-              }
-            }}
-            tabIndex={-1}
-            className={cn(
-              "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors w-fit",
-              tile.starId
-                ? "bg-muted-foreground/10 text-primary hover:bg-muted-foreground/20 cursor-pointer"
-                : "bg-muted-foreground/10 text-muted-foreground cursor-default"
-            )}
-          >
-            <span className="text-xs text-muted-foreground">by</span>
-            {getLocalizedArtistName(tile, language)}
-            {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
-          </button>
-        </SheetHeader>
-
-        <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide -mx-6 px-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* Meta */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Artist + meta row */}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                if (tile.starId) {
+                  onClose();
+                  navigate(`/t2/artist/${tile.starId}`);
+                }
+              }}
+              tabIndex={-1}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors",
+                tile.starId
+                  ? "bg-muted-foreground/10 text-primary hover:bg-muted-foreground/20 cursor-pointer"
+                  : "bg-muted-foreground/10 text-muted-foreground cursor-default"
+              )}
+            >
+              <span className="text-xs text-muted-foreground">by</span>
+              {getLocalizedArtistName(tile, language)}
+              {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
             {rank != null && (
               <Badge className="bg-muted-foreground/10 text-primary border-muted-foreground/20 text-[11px] font-black">
                 <Trophy className="w-3 h-3 mr-0.5" />
                 #{rank}
               </Badge>
             )}
+            <Badge variant="outline" className={cn("text-[11px]", CATEGORY_COLORS[tile.category] || "")}>
+              {tile.category}
+            </Badge>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatAge(tile.detectedAt)}
             </span>
           </div>
+        </SheetHeader>
+
+        <div className="space-y-4 overflow-y-auto flex-1 scrollbar-hide -mx-6 px-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
