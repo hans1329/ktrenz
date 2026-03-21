@@ -95,20 +95,17 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
                 const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
                 const imgSrc = safeImg || group.artistImageUrl;
                 return imgSrc ? (
-                <img
-                  src={imgSrc}
-                  alt={displayName(group)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                  alt={displayName(group)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground">
-                  {displayName(group).charAt(0)}
-                </div>
-              )}
+                  <img
+                    src={imgSrc}
+                    alt={displayName(group)}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground">
+                    {displayName(group).charAt(0)}
+                  </div>
+                );
+              })()}
               {/* Rank badge */}
               <span className="absolute top-2 left-2 text-xs font-black text-white bg-black/60 backdrop-blur-sm rounded-full w-7 h-7 flex items-center justify-center">
                 {idx + 1}
