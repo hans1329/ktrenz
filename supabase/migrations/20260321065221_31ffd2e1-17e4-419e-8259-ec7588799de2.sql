@@ -1,0 +1,1 @@
+TRUNCATE ktrenz_trend_triggers, ktrenz_trend_tracking CASCADE;
