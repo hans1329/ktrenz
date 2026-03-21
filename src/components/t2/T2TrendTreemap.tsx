@@ -275,7 +275,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [sortMode, setSortMode] = useState<SortMode>("rate");
   
   const isMobile = useIsMobile();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { user } = useAuth();
 
   // Fetch user's watched artists (including group members)
