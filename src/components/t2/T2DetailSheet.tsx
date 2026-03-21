@@ -602,10 +602,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   <div
                     key={key}
                     className={cn(
-                      "rounded-lg p-2.5 text-center cursor-pointer transition-all border-2",
+                      "rounded-lg p-2.5 text-center cursor-pointer transition-all border",
                       betOutcome === key
-                        ? "bg-teal-500/20 border-teal-400 ring-1 ring-teal-400/50 shadow-[0_0_8px_rgba(45,212,191,0.3)]"
-                        : `bg-${color}-500/5 border-border/30 hover:border-teal-400/40`
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : `bg-${color}-500/5 border-border/30 hover:border-primary/40`
                     )}
                     onClick={() => setBetOutcome(key)}
                   >
