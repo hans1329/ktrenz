@@ -144,8 +144,8 @@ const T2TrendMap = () => {
                       : cat === "all"
                         ? "hsl(var(--border))"
                         : cat === "my"
-                        ? "hsl(45, 90%, 50%)"
-                        : config?.color ?? "hsl(var(--border))",
+                        ? "hsla(45, 90%, 50%, 0.3)"
+                        : config?.color ? `${config.color.replace(")", ", 0.3)").replace("hsl(", "hsla(")}` : "hsl(var(--border))",
                   }}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
