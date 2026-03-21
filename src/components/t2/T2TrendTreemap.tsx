@@ -491,7 +491,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
     }
     if (selectedCategory === "all") {
-      return dedupedTriggers;
+      return dedupedTriggers.filter(t => t.category !== "music");
     }
     return dedupedTriggers.filter(t => t.category === selectedCategory);
   }, [dedupedTriggers, selectedCategory, watchedSet]);
@@ -582,7 +582,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   useEffect(() => {
     if (onCategoryStatsChange && dedupedTriggers.length > 0) {
-      onCategoryStatsChange(categoryStats, dedupedTriggers.length, myKeywords.length);
+      const allCount = dedupedTriggers.filter(t => t.category !== "music").length;
+      onCategoryStatsChange(categoryStats, allCount, myKeywords.length);
     }
   }, [categoryStats, dedupedTriggers.length, myKeywords.length, onCategoryStatsChange]);
 
@@ -633,14 +634,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
       {!hideCategory && (
       <div className={cn(
-        "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
+        "flex items-center gap-2 mb-3 overflow-x-auto pb-1",
         "sticky top-14 z-30 bg-background/80 backdrop-blur-md pt-3 pb-2 -mx-4 px-4"
-      )}>
+      )} style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
           const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
           const allCount = cat === "all"
-            ? dedupedTriggers.length
+            ? dedupedTriggers.filter(t => t.category !== "music").length
             : cat === "my"
             ? myKeywords.length
             : categoryStats[cat] || 0;
