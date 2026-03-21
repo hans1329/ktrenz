@@ -1099,33 +1099,34 @@ async function trackExistingKeywords(
         searchNaverCount(naverClientId, naverClientSecret, "blog", searchQuery),
       ]);
 
+      const rawCount = newsTotal + blogTotal;
       const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
       const baseline = trigger.baseline_score || 0;
       const deltaPct = baseline > 0
-        ? Math.round(((buzzScore - baseline) / baseline) * 10000) / 100
-        : buzzScore > 0 ? 100 : 0;
+        ? Math.round(((rawCount - baseline) / baseline) * 10000) / 100
+        : rawCount > 0 ? 100 : 0;
 
       // tracking 레코드 저장
       await sb.from("ktrenz_trend_tracking").insert({
         trigger_id: trigger.id,
         keyword: trigger.keyword,
-        interest_score: buzzScore,
+        interest_score: rawCount,
         region: "naver",
         delta_pct: deltaPct,
-        raw_response: { news_total: newsTotal, blog_total: blogTotal, search_query: searchQuery },
+        raw_response: { news_total: newsTotal, blog_total: blogTotal, buzz_score_normalized: buzzScore, search_query: searchQuery },
       });
 
       // peak/influence 갱신
       const updates: any = {};
-      if (baseline <= 0 && buzzScore > 0) {
-        updates.baseline_score = buzzScore;
-        updates.peak_score = buzzScore;
+      if (baseline <= 0 && rawCount > 0) {
+        updates.baseline_score = rawCount;
+        updates.peak_score = rawCount;
       } else if (baseline > 0) {
-        if (buzzScore > (trigger.peak_score || 0)) {
-          updates.peak_score = buzzScore;
+        if (rawCount > (trigger.peak_score || 0)) {
+          updates.peak_score = rawCount;
           updates.peak_at = new Date().toISOString();
         }
-        const currentPeak = updates.peak_score ?? trigger.peak_score ?? buzzScore;
+        const currentPeak = updates.peak_score ?? trigger.peak_score ?? rawCount;
         updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
       }
       if (Object.keys(updates).length > 0) {
