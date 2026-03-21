@@ -387,7 +387,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
-          <div className="overflow-hidden">
+          <div className="-mx-6">
             {/* Source thumbnail + title card */}
             {(tile.sourceTitle || tile.sourceImageUrl) && (
               <div className="relative">
