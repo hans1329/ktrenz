@@ -705,6 +705,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             className="relative w-full rounded-none md:rounded-2xl overflow-hidden"
             style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}
           >
+            <div
+              className="absolute inset-0 pointer-events-none z-[5]"
+              style={{
+                borderRadius: 'inherit',
+                boxShadow: 'inset 0 0 0 2px hsl(var(--background))',
+              }}
+            />
             <div className="absolute inset-0">
               {rects.map((rect, rectIndex) => {
                 const left = (rect.x / containerWidth) * 100;
