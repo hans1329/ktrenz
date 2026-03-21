@@ -124,8 +124,12 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]"
-        style={{ backgroundColor: "hsl(var(--background) / 0.6)" }}
+        className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 pt-[env(safe-area-inset-top)]"
+        style={{
+          backgroundColor: "hsl(var(--background) / 0.56)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+        }}
       >
         <div className="relative flex items-center justify-between h-14 px-4 md:max-w-[90%] mx-auto">
           {isSearchOpen ? (
