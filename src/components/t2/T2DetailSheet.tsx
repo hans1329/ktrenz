@@ -358,6 +358,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 navigate(`/t2/artist/${tile.starId}`);
               }
             }}
+            tabIndex={-1}
             className={cn(
               "mt-1 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors w-fit",
               tile.starId
