@@ -863,7 +863,7 @@ async function detectForMember(
     const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
       naverClientId, naverClientSecret, artistLabel, kwQuery
     );
-    const buzzScore = normalizeBuzzScore(newsTotal, blogTotal, 0);
+    const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
     keywordBuzzScores.set(k.keyword.toLowerCase(), buzzScore);
     console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore}`);
   });
