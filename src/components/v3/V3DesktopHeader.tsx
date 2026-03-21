@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell, Globe } from "lucide-react";
+import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell, Globe, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

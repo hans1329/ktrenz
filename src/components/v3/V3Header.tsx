@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, X, Loader2, Star } from "lucide-react";
+import { Search, X, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -18,6 +18,15 @@ interface SearchResult {
   schema_type: string;
 }
 
+interface KeywordResult {
+  id: string;
+  keyword: string;
+  keyword_ko: string | null;
+  artist_name: string;
+  keyword_category: string;
+  star_id: string | null;
+}
+
 const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -25,6 +34,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [keywordResults, setKeywordResults] = useState<KeywordResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -36,7 +46,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]);
+        setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
       }
     };
     if (isSearchOpen) document.addEventListener("mousedown", handleClickOutside);
@@ -49,7 +59,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
         setIsSearching(true);
         try {
           // Search wiki_entries by title/slug
-          const { data: wikiData } = await supabase
+          const wikiPromise = supabase
             .from("wiki_entries")
             .select("id, title, slug, image_url, schema_type")
             .or(`title.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
@@ -57,11 +67,22 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
             .limit(8);
 
           // Also search v3_artist_tiers by name_ko / display_name
-          const { data: tierData } = await (supabase as any)
+          const tierPromise = (supabase as any)
             .from("v3_artist_tiers")
             .select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(id, title, slug, image_url, schema_type)")
             .or(`name_ko.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
             .limit(8);
+
+          // Search keywords from ktrenz_trend_triggers
+          const kwPromise = (supabase as any)
+            .from("ktrenz_trend_triggers")
+            .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
+            .eq("status", "active")
+            .or(`keyword.ilike.%${searchQuery}%,keyword_ko.ilike.%${searchQuery}%,keyword_en.ilike.%${searchQuery}%`)
+            .order("detected_at", { ascending: false })
+            .limit(8);
+
+          const [{ data: wikiData }, { data: tierData }, { data: kwData }] = await Promise.all([wikiPromise, tierPromise, kwPromise]);
 
           const resultMap = new Map<string, SearchResult>();
           (wikiData || []).forEach((r: SearchResult) => resultMap.set(r.id, r));
@@ -71,21 +92,38 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
             }
           });
           setSearchResults(Array.from(resultMap.values()).slice(0, 8));
+
+          // Deduplicate keywords by keyword text
+          const seenKw = new Set<string>();
+          const uniqueKw: KeywordResult[] = [];
+          for (const kw of (kwData || []) as KeywordResult[]) {
+            const key = `${kw.keyword}-${kw.artist_name}`;
+            if (!seenKw.has(key)) { seenKw.add(key); uniqueKw.push(kw); }
+          }
+          setKeywordResults(uniqueKw.slice(0, 6));
         } catch (err) { console.error("Search error:", err); }
         finally { setIsSearching(false); }
-      } else { setSearchResults([]); }
+      } else { setSearchResults([]); setKeywordResults([]); }
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const handleResultClick = (slug: string) => {
     navigate(`/artist/${slug}`);
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]);
+    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
+  };
+
+  const handleKeywordClick = (kw: KeywordResult) => {
+    navigate(`/keyword/${kw.id}`);
+    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
 
   const handleSearchClose = () => {
-    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]);
+    setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
+
+  const hasResults = searchResults.length > 0 || keywordResults.length > 0;
+  const showDropdown = hasResults || (searchQuery.length >= 2 && !isSearching);
 
   return (
     <>
@@ -103,21 +141,46 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
             <Button variant="ghost" size="icon" onClick={handleSearchClose} className="w-10 h-10 rounded-full shrink-0">
               <X className="w-5 h-5 text-muted-foreground" />
             </Button>
-            {(searchResults.length > 0 || (searchQuery.length >= 2 && !isSearching)) && (
-              <div className="absolute top-full left-0 right-10 mt-2 bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto">
-                {searchResults.length > 0 ? searchResults.map((result) => (
-                  <button key={result.id} onClick={() => handleResultClick(result.slug)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
-                    <Avatar className="w-10 h-10 rounded-lg shrink-0">
-                      <AvatarImage src={result.image_url || undefined} className="object-cover" />
-                      <AvatarFallback className="rounded-lg text-xs bg-muted">{result.title.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground truncate">{result.title}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{result.schema_type}</p>
-                    </div>
-                  </button>
-                )) : (
+            {showDropdown && (
+              <div className="absolute top-full left-0 right-10 mt-2 bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-96 overflow-y-auto">
+                {/* Artist results */}
+                {searchResults.length > 0 && (
+                  <>
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Artists</div>
+                    {searchResults.map((result) => (
+                      <button key={result.id} onClick={() => handleResultClick(result.slug)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
+                        <Avatar className="w-10 h-10 rounded-lg shrink-0">
+                          <AvatarImage src={result.image_url || undefined} className="object-cover" />
+                          <AvatarFallback className="rounded-lg text-xs bg-muted">{result.title.slice(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-foreground truncate">{result.title}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{result.schema_type}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {/* Keyword results */}
+                {keywordResults.length > 0 && (
+                  <>
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Keywords</div>
+                    {keywordResults.map((kw) => (
+                      <button key={kw.id} onClick={() => handleKeywordClick(kw)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-foreground truncate">{kw.keyword_ko || kw.keyword}</p>
+                          <p className="text-xs text-muted-foreground truncate">{kw.artist_name} · {kw.keyword_category}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {!hasResults && (
                   <div className="p-4 text-center text-sm text-muted-foreground">{t("search.noResults")}</div>
                 )}
               </div>
