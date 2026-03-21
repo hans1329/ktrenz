@@ -765,11 +765,15 @@ async function detectForMember(
     : `"${searchName}"`;
 
   // ─── 3소스 병렬 검색: News + Blog + Shopping ───
-  const [newsItems, blogItems, shopItems] = await Promise.all([
+  const [newsResult, blogResult, shopResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
     searchNaver(naverClientId, naverClientSecret, "shop", searchName, 30),
   ]);
+
+  const newsItems = newsResult.items;
+  const blogItems = blogResult.items;
+  const shopItems = shopResult.items;
 
   // 24시간 이내 + 일본어 기사 필터링 (News + Blog)
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
@@ -799,7 +803,7 @@ async function detectForMember(
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
-  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length} blog=${filteredBlogs.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
   const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, aiExtracted: 0, shopExtracted: shopKeywords.length };
 
