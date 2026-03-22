@@ -738,8 +738,6 @@ const T2KeywordDetail = () => {
                     : (language === "ko" ? "전문 분석 보기" : "View Expert Analysis")}
                 </Button>
               )
-                </Button>
-              )
             )}
           </div>
 
