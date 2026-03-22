@@ -278,6 +278,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const isMobile = useIsMobile();
   const { language, t } = useLanguage();
   const { user } = useAuth();
+  const { isAdmin } = useAdminAuth();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch user's watched artists (including group members)
   const { data: watchedWikiIds } = useQuery({
