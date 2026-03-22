@@ -122,43 +122,39 @@ const T2TrendMap = () => {
         descriptionKo="K-Pop 스타가 만든 소비 트렌드를 실시간으로 발견하세요."
         path="/t2"
       />
-      <div
-        className="fixed top-0 left-0 right-0 z-50 transition-transform duration-300"
-        style={{ transform: headerCollapsed ? "translateY(-100%)" : "translateY(0)" }}
-      >
-        <V3Header
-          centerSlot={
-            <div
-              className="flex items-center gap-0 rounded-full p-0.5 md:gap-1 md:p-1"
-              style={{ backgroundColor: "hsl(var(--card))" }}
-            >
-              {VIEW_TABS.map(({ key, icon: Icon, label }) => (
-                <button
-                  key={key}
-                  onClick={() => { setViewMode(key); window.scrollTo({ top: 0 }); }}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 rounded-full transition-all",
-                    "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
-                    viewMode === key
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  aria-label={key}
-                >
-                  <Icon className="w-4 h-4 md:w-4 md:h-4" />
-                  <span className="hidden md:inline text-xs font-semibold">{label}</span>
-                </button>
-              ))}
-            </div>
-          }
-        />
-      </div>
+      <V3Header
+        centerSlot={
+          <div
+            className="flex items-center gap-0 rounded-full p-0.5 md:gap-1 md:p-1"
+            style={{ backgroundColor: "hsl(var(--card))" }}
+          >
+            {VIEW_TABS.map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                onClick={() => { setViewMode(key); window.scrollTo({ top: 0 }); }}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 rounded-full transition-all",
+                  "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
+                  viewMode === key
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-label={key}
+              >
+                <Icon className="w-4 h-4 md:w-4 md:h-4" />
+                <span className="hidden md:inline text-xs font-semibold">{label}</span>
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       <div
-        className="fixed left-0 right-0 z-40 pb-2 transition-all duration-300"
+        className="fixed top-14 left-0 right-0 z-40 pb-2 transition-all duration-300 overflow-hidden"
         style={{
-          top: headerCollapsed ? 0 : "3.5rem",
-          paddingTop: headerCollapsed ? 8 : 12,
+          maxHeight: headerCollapsed ? 0 : 200,
+          opacity: headerCollapsed ? 0 : 1,
+          paddingTop: headerCollapsed ? 0 : 12,
           backgroundColor: "hsl(var(--card) / 0.9)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
@@ -288,7 +284,7 @@ const T2TrendMap = () => {
           }}
         >
           {VIEW_ORDER.map((mode) => (
-            <div key={mode} className={cn("h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24 scrollbar-hide transition-all duration-300", headerCollapsed ? "pt-[3.5rem]" : "pt-[9.5rem]")}
+            <div key={mode} className={cn("h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24 scrollbar-hide transition-all duration-300", headerCollapsed ? "pt-[3.75rem]" : "pt-[9.5rem]")}
               onScroll={(e) => {
                 const scrollTop = (e.target as HTMLElement).scrollTop;
                 setHeaderCollapsed(scrollTop > 30);
