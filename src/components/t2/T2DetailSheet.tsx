@@ -873,8 +873,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       key={rk.id}
                       className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-muted hover:bg-primary/10 hover:text-primary border border-border transition-colors"
                       onClick={() => {
-                        onClose();
-                        navigate(`/t2/${rk.id}${window.location.search}`);
+                        const params = new URLSearchParams(window.location.search);
+                        params.set("modal", rk.id);
+                        navigate(`?${params.toString()}`, { replace: true });
                       }}
                     >
                       {language === "ko" && rk.keyword_ko ? rk.keyword_ko : rk.keyword}
