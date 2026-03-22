@@ -283,7 +283,7 @@ const T2KeywordDetail = () => {
     },
   });
 
-
+  const chartData = useMemo(() => {
     if (!trackingHistory?.length) return [];
     return trackingHistory.map((t: any) => ({
       time: formatDateTime(t.tracked_at),
