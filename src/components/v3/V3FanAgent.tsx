@@ -663,14 +663,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   }, [activeSlot?.id]);
 
   useEffect(() => {
-    if (!chatHistory) return;
+    if (!chatHistory || isStreaming) return;
 
-    const messageKey = (msg: ChatMessage) => `${msg.role}|${msg.timestamp}|${msg.content}`;
+    const messageKey = (msg: ChatMessage) => `${msg.role}|${msg.content?.slice(0, 80)}`;
 
     setMessages((prev) => {
       if (chatHistory.length === 0) return prev;
       if (prev.length === 0) return chatHistory;
 
+      // Use DB as source of truth; keep only truly pending (unsaved) local messages
       const historyKeys = new Set(chatHistory.map(messageKey));
       const pendingMessages = prev.filter((msg) => !historyKeys.has(messageKey(msg)));
       return pendingMessages.length > 0 ? [...chatHistory, ...pendingMessages] : chatHistory;
@@ -679,7 +680,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     if (chatHistory.length > 0) {
       setHasStarted(true);
     }
-  }, [chatHistory]);
+  }, [chatHistory, isStreaming]);
 
   const scrollToBottom = useCallback(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
