@@ -135,24 +135,25 @@ const MiniSparkline = ({ data, width, height, color = "rgba(255,255,255,0.5)", e
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; }
 
-function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number, category: EnergyCategory): Rect[] {
+function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number, category: EnergyCategory, isCollecting = false): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
   const lastIdx = items.length - 1;
 
-  // Check if all items have near-zero change (first collection / no differentiation)
-  const allFlat = items.every(i => Math.abs(getCategoryChange(i, category)) < 1);
-
   const tileSize = (i: TreemapItem, idx: number) => {
     const score = getCategoryScore(i, category);
     const base = Math.log1p(Math.max(score, 1));
-    if (allFlat) {
-      // Uniform sizing when no meaningful differentiation exists
-      if (idx === 0) return base * 2.5;
-      if (idx === 1) return base * 2.0;
-      if (idx === 2) return base * 1.8;
-      return base * 1.2;
+
+    if (isCollecting) {
+      if (idx === 0) return base * 3.8;
+      if (idx === 1) return base * 3.0;
+      if (idx === 2) return base * 2.4;
+      if (idx === 3) return base * 1.8;
+      if (idx === 4) return base * 1.5;
+      if (idx === lastIdx) return base * 2.2;
+      return base;
     }
+
     if (idx === 0) return base * 10.0;
     if (idx === 1) return base * 7.0;
     if (idx === 2) return base * 5.0;
@@ -236,6 +237,20 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     },
     enabled: !!user?.id,
     staleTime: 60_000,
+  });
+
+  const { data: isCollecting = false } = useQuery({
+    queryKey: ["treemap-pipeline-running"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("id")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .limit(1);
+      return ((data as any[])?.length ?? 0) > 0;
+    },
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
@@ -474,8 +489,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   const containerHeight = isMobile ? 620 : 520;
   const rects = useMemo(() => {
     if (!sortedItems.length) return [];
-    return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category);
-  }, [sortedItems, containerWidth, containerHeight, category]);
+    return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category, isCollecting);
+  }, [sortedItems, containerWidth, containerHeight, category, isCollecting]);
 
   const track = useTrackEvent();
   const handleTileClick = useCallback((item: TreemapItem) => {
