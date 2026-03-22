@@ -190,15 +190,15 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
       return logBase * 1.3;
     }
 
-    // Rank-based multiplier: #1 is dramatically larger, lower ranks get bigger minimum
-    if (idx === 0) return logBase * 12;
-    if (idx === 1) return logBase * 7;
-    if (idx === 2) return logBase * 5;
-    if (idx < 6) return logBase * 3.5;
-    if (idx < 12) return logBase * 2.8;
-    if (idx < 25) return logBase * 2.2;
-    if (idx < 40) return logBase * 1.8;
-    return logBase * 1.5;
+    // Rank-based multiplier
+    if (idx === 0) return logBase * 6;
+    if (idx === 1) return logBase * 4.5;
+    if (idx === 2) return logBase * 3.5;
+    if (idx < 6) return logBase * 2.8;
+    if (idx < 12) return logBase * 2.3;
+    if (idx < 25) return logBase * 1.9;
+    if (idx < 40) return logBase * 1.6;
+    return logBase * 1.4;
   };
 
   const totalValue = items.reduce((s, item, idx) => s + tileSize(item, idx), 0);
