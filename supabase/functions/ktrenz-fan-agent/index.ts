@@ -1995,6 +1995,7 @@ JSON 구조:
           confidence: t.confidence,
           source: t.trigger_source,
           source_title: t.source_title,
+          source_image_url: t.source_image_url ?? null,
           detected_at: t.detected_at,
           search_volume: tracking?.search_volume ?? null,
           interest_score: tracking?.interest_score ?? null,
