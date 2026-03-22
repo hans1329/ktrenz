@@ -135,24 +135,25 @@ const MiniSparkline = ({ data, width, height, color = "rgba(255,255,255,0.5)", e
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TreemapItem; }
 
-function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number, category: EnergyCategory): Rect[] {
+function squarify(items: TreemapItem[], x: number, y: number, w: number, h: number, category: EnergyCategory, isCollecting = false): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
   const lastIdx = items.length - 1;
 
-  // Check if all items have near-zero change (first collection / no differentiation)
-  const allFlat = items.every(i => Math.abs(getCategoryChange(i, category)) < 1);
-
   const tileSize = (i: TreemapItem, idx: number) => {
     const score = getCategoryScore(i, category);
     const base = Math.log1p(Math.max(score, 1));
-    if (allFlat) {
-      // Uniform sizing when no meaningful differentiation exists
-      if (idx === 0) return base * 2.5;
-      if (idx === 1) return base * 2.0;
-      if (idx === 2) return base * 1.8;
-      return base * 1.2;
+
+    if (isCollecting) {
+      if (idx === 0) return base * 3.8;
+      if (idx === 1) return base * 3.0;
+      if (idx === 2) return base * 2.4;
+      if (idx === 3) return base * 1.8;
+      if (idx === 4) return base * 1.5;
+      if (idx === lastIdx) return base * 2.2;
+      return base;
     }
+
     if (idx === 0) return base * 10.0;
     if (idx === 1) return base * 7.0;
     if (idx === 2) return base * 5.0;
