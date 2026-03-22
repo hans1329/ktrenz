@@ -2423,7 +2423,7 @@ Deno.serve(async (req) => {
     const userId = user.id;
 
     const body = await req.json();
-    const { messages, mode, language, agent_slot_id, quick_action } = body;
+    const { messages, mode, language, agent_slot_id, quick_action, exclude_keywords } = body;
     const userLang = language || "ko";
 
     const quickActionRaw = typeof quick_action === "string" ? quick_action.trim().toLowerCase() : "";
