@@ -826,14 +826,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       >
                         {getLocalizedKeyword(rect.item, language)}
                       </span>
-                      {isMedium && (
-                        <span
-                          className="font-bold text-white truncate w-full text-center drop-shadow-md"
-                          style={{ fontSize: `${Math.max(9, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
-                        >
-                          {getLocalizedArtistName(rect.item, language)}
-                        </span>
-                      )}
+                      <span
+                        className="font-bold text-white truncate w-full text-center drop-shadow-md"
+                        style={{ fontSize: `${Math.max(8, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                      >
+                        {getLocalizedArtistName(rect.item, language)}
+                      </span>
                     </div>
                     {isMedium && (
                       <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
