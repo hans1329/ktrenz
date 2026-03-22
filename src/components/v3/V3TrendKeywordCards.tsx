@@ -14,6 +14,7 @@ export interface TrendKeywordEntry {
   source?: string | null;
   source_title?: string | null;
   source_url?: string | null;
+  source_image_url?: string | null;
   detected_at?: string | null;
   search_volume?: number | null;
   interest_score?: number | null;
