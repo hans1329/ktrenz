@@ -1574,6 +1574,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                   const artistPart = kw.artist ? ` (${kw.artist})` : "";
                   handleSend(`"${displayName}"${artistPart} 키워드에 대해 더 자세히 분석해줘. 왜 이 트렌드가 감지됐고 팬으로서 어떻게 활용할 수 있을까?`);
                 }}
+                onLoadMore={() => {
+                  handleSend("더 많은 트렌드 키워드를 보여줘");
+                }}
               />
             )}
 
