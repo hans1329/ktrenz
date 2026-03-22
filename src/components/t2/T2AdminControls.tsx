@@ -62,7 +62,7 @@ const T2AdminControls = () => {
   };
 
   // DB 기반 상태머신 자동 폴링
-  const { data: pipelineActive } = useQuery({
+  const { data: pipelineActive, isFetched: isPipelineFetched } = useQuery({
     queryKey: ["pipeline-active-check"],
     queryFn: async () => {
       const { data } = await supabase
@@ -102,6 +102,12 @@ const T2AdminControls = () => {
       return { ...prev, [phase]: { startedAt: new Date(), phase } };
     });
   }, [pipelineActive]);
+
+  // 서버에 활성 run이 없으면 localStorage 기반 잔존 UI도 즉시 정리
+  useEffect(() => {
+    if (!isPipelineFetched || pipelineActive) return;
+    setActiveRuns({});
+  }, [isPipelineFetched, pipelineActive]);
 
   const runMutation = useMutation({
     mutationFn: async () => {
