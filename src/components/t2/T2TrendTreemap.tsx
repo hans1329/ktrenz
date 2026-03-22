@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List, Users } from "lucide-react";
+import { TrendingUp, Clock, Star, ChevronRight, LayoutGrid, List, Users, MoreVertical, Zap, Database } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 import BoxParticles from "@/components/v3/BoxParticles";
 import T2AdminControls from "./T2AdminControls";
