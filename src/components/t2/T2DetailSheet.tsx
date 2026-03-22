@@ -212,6 +212,25 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       }
     },
   });
+  // Related keywords for the same artist
+  const { data: relatedKeywords } = useQuery({
+    queryKey: ["t2-related-keywords", tile?.wikiEntryId, tile?.id],
+    queryFn: async () => {
+      if (!tile?.wikiEntryId) return [];
+      const { data } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("id, keyword, keyword_ko, keyword_category, influence_index, status")
+        .eq("wiki_entry_id", tile.wikiEntryId)
+        .neq("id", tile.id)
+        .in("status", ["active", "expired"])
+        .order("detected_at", { ascending: false })
+        .limit(10);
+      return (data ?? []) as any[];
+    },
+    enabled: !!tile?.wikiEntryId,
+    staleTime: 5 * 60_000,
+  });
+
 
   const handlePlaceBet = () => {
     if (!user) {
@@ -798,6 +817,29 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               )}
             </div>
           </div>
+
+          {/* Related keywords */}
+          {relatedKeywords && relatedKeywords.length > 0 && (
+            <div>
+              <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                {language === "ko" ? "연관 키워드" : "Related Keywords"}
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {relatedKeywords.map((rk: any) => (
+                  <button
+                    key={rk.id}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-muted hover:bg-primary/10 hover:text-primary border border-border transition-colors"
+                    onClick={() => {
+                      onClose();
+                      navigate(`/t2/${rk.id}${window.location.search}`);
+                    }}
+                  >
+                    {language === "ko" && rk.keyword_ko ? rk.keyword_ko : rk.keyword}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Detail page button */}
           <Button
