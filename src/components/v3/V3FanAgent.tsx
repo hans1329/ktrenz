@@ -1540,8 +1540,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             </button>
           )}
           <div className={cn("flex flex-col max-w-[85%] min-w-0 overflow-hidden", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
-            {/* Hide text bubble when trendData cards already cover the content */}
-            {!(msg.role === "assistant" && hasTrendCards && !isStreaming) && (
+            {/* Always show text bubble — trend cards appear below */}
+            {(
               <div
                 className={cn(
                   "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
