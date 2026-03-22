@@ -99,7 +99,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
         <div className="flex items-center gap-1.5">
           <TrendingUp className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-            My Trend Bets
+            나의 관심 트렌드
           </span>
         </div>
         <span className="text-[10px] text-muted-foreground">{bets.length} active</span>
