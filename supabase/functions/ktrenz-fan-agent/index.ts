@@ -3025,11 +3025,12 @@ Deno.serve(async (req) => {
             const guideMetaToSave: any = {};
             if (collectedMeta.guideData) guideMetaToSave.guideData = collectedMeta.guideData;
 
-            await adminClient.from("ktrenz_fan_agent_messages").insert({
+            const { data: guideMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId, agent_slot_id: activeSlotId, role: "assistant",
               content: guideContent,
               metadata: Object.keys(guideMetaToSave).length > 0 ? guideMetaToSave : null,
-            });
+            }).select("id").single();
+            if (guideMsgRow?.id) await saveCards(adminClient, guideMsgRow.id, userId, activeSlotId, collectedMeta);
 
             sendStatus(controller, writingLabels[userLang] || writingLabels.en);
             for (let i = 0; i < guideContent.length; i += 20) {
