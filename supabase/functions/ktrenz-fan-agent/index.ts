@@ -2812,13 +2812,14 @@ Deno.serve(async (req) => {
             const rankingMetaToSave: any = {};
             if (collectedMeta.rankingData) rankingMetaToSave.rankingData = collectedMeta.rankingData;
 
-            await adminClient.from("ktrenz_fan_agent_messages").insert({
+            const { data: rankingMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId,
               agent_slot_id: activeSlotId,
               role: "assistant",
               content: rankingContent,
               metadata: Object.keys(rankingMetaToSave).length > 0 ? rankingMetaToSave : null,
-            });
+            }).select("id").single();
+            if (rankingMsgRow?.id) await saveCards(adminClient, rankingMsgRow.id, userId, activeSlotId, collectedMeta);
 
             sendStatus(controller, writingLabels[userLang] || writingLabels.en);
             for (let i = 0; i < rankingContent.length; i += 20) {
