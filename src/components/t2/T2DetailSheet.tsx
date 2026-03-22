@@ -212,20 +212,64 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       }
     },
   });
-  // Related keywords for the same artist
+  // Related keywords: same artist + group members (prioritize same category)
   const { data: relatedKeywords } = useQuery({
-    queryKey: ["t2-related-keywords", tile?.wikiEntryId, tile?.id],
+    queryKey: ["t2-related-keywords", tile?.wikiEntryId, tile?.starId, tile?.id, tile?.category],
     queryFn: async () => {
       if (!tile?.wikiEntryId) return [];
+
+      // 1. Get group family wiki_entry_ids
+      const familyWikiIds = new Set<string>([tile.wikiEntryId]);
+      if (tile.starId) {
+        // Check if this star belongs to a group
+        const { data: star } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("group_star_id")
+          .eq("id", tile.starId)
+          .single();
+        const groupId = (star as any)?.group_star_id;
+        if (groupId) {
+          // Get all members of the same group
+          const { data: members } = await supabase
+            .from("ktrenz_stars" as any)
+            .select("wiki_entry_id")
+            .or(`group_star_id.eq.${groupId},id.eq.${groupId}`)
+            .limit(30);
+          (members ?? []).forEach((m: any) => { if (m.wiki_entry_id) familyWikiIds.add(m.wiki_entry_id); });
+        } else {
+          // This might be a group itself — get its members
+          const { data: members } = await supabase
+            .from("ktrenz_stars" as any)
+            .select("wiki_entry_id")
+            .eq("group_star_id", tile.starId)
+            .limit(30);
+          (members ?? []).forEach((m: any) => { if (m.wiki_entry_id) familyWikiIds.add(m.wiki_entry_id); });
+        }
+      }
+
+      // 2. Fetch triggers from all family members
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_category, influence_index, status")
-        .eq("wiki_entry_id", tile.wikiEntryId)
+        .select("id, keyword, keyword_ko, keyword_category, influence_index, status, wiki_entry_id")
+        .in("wiki_entry_id", Array.from(familyWikiIds))
         .neq("id", tile.id)
         .in("status", ["active", "expired"])
         .order("detected_at", { ascending: false })
-        .limit(10);
-      return (data ?? []) as any[];
+        .limit(20);
+
+      // 3. Sort: same category first, then same artist, then by influence
+      const results = (data ?? []) as any[];
+      results.sort((a: any, b: any) => {
+        const aCat = a.keyword_category === tile.category ? 1 : 0;
+        const bCat = b.keyword_category === tile.category ? 1 : 0;
+        if (aCat !== bCat) return bCat - aCat;
+        const aSame = a.wiki_entry_id === tile.wikiEntryId ? 1 : 0;
+        const bSame = b.wiki_entry_id === tile.wikiEntryId ? 1 : 0;
+        if (aSame !== bSame) return bSame - aSame;
+        return (b.influence_index ?? 0) - (a.influence_index ?? 0);
+      });
+
+      return results.slice(0, 10);
     },
     enabled: !!tile?.wikiEntryId,
     staleTime: 5 * 60_000,
