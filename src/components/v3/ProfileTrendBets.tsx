@@ -91,7 +91,9 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
     staleTime: 1000 * 60 * 2,
   });
 
-  if (isLoading || bets.length === 0) return null;
+  if (!user) return null;
+
+  const isEmpty = !isLoading && bets.length === 0;
 
   return (
     <div className="space-y-2">
