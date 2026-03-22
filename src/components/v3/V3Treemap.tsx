@@ -145,12 +145,12 @@ function squarify(items: TreemapItem[], x: number, y: number, w: number, h: numb
     const base = Math.log1p(Math.max(score, 1));
 
     if (isCollecting) {
-      if (idx === 0) return base * 3.8;
-      if (idx === 1) return base * 3.0;
-      if (idx === 2) return base * 2.4;
+      if (idx === 0) return base * 6.0;
+      if (idx === 1) return base * 4.5;
+      if (idx === 2) return base * 3.5;
       if (idx === 3) return base * 1.8;
       if (idx === 4) return base * 1.5;
-      if (idx === lastIdx) return base * 2.2;
+      if (idx === lastIdx) return base * 2.5;
       return base;
     }
 

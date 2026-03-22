@@ -180,14 +180,14 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     const logBase = Math.log1p(metric);
 
     if (isCollecting) {
-      if (idx === 0) return logBase * 4.2;
-      if (idx === 1) return logBase * 3.4;
-      if (idx === 2) return logBase * 2.8;
-      if (idx < 6) return logBase * 2.3;
-      if (idx < 12) return logBase * 2.0;
-      if (idx < 25) return logBase * 1.7;
-      if (idx < 40) return logBase * 1.5;
-      return logBase * 1.3;
+      if (idx === 0) return logBase * 6;
+      if (idx === 1) return logBase * 4.5;
+      if (idx === 2) return logBase * 3.5;
+      if (idx < 6) return logBase * 2.8;
+      if (idx < 12) return logBase * 2.3;
+      if (idx < 25) return logBase * 1.9;
+      if (idx < 40) return logBase * 1.6;
+      return logBase * 1.4;
     }
 
     // Rank-based multiplier
