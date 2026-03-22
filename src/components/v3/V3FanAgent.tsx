@@ -190,6 +190,7 @@ async function streamChat({
   token,
   agentSlotId,
   quickActionHint,
+  excludeKeywords,
   onDelta,
   onMeta,
   onStatus,
@@ -199,6 +200,7 @@ async function streamChat({
   token: string;
   agentSlotId?: string | null;
   quickActionHint?: QuickActionHint;
+  excludeKeywords?: string[];
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
   onStatus?: (status: string) => void;
