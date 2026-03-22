@@ -324,6 +324,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       // Fetch triggers
       const { data } = await supabase
@@ -419,13 +421,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         };
       });
     },
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   // Separate query for shopping (naver_shop) triggers
   const { data: shopTriggers } = useQuery({
     queryKey: ["t2-trend-triggers-shopping"],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
@@ -467,7 +470,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
       }));
     },
-    staleTime: 60_000,
   });
 
   const dedupedShopTriggers = useMemo(() => {
