@@ -118,6 +118,47 @@ function areTrendItemsNearDuplicate(
   return !!contextA && !!contextB && trendTokenSimilarity(contextA, contextB) >= 0.8;
 }
 
+function defaultTrendBucketKey(trigger: any): string {
+  return normalizeTrendText(trigger.artist_family_key || trigger.artist_name || trigger.wiki_entry_id || trigger.star_id);
+}
+
+async function attachArtistFamilyKeys(adminClient: any, triggers: any[]): Promise<any[]> {
+  if (!Array.isArray(triggers) || triggers.length === 0) return [];
+
+  const starIds = [...new Set(triggers.map((trigger) => trigger.star_id).filter(Boolean))];
+  const starMap = new Map<string, any>();
+
+  if (starIds.length > 0) {
+    const { data: stars } = await adminClient
+      .from("ktrenz_stars")
+      .select("id, star_type, group_star_id, display_name, name_ko")
+      .in("id", starIds);
+
+    for (const star of stars || []) {
+      starMap.set(star.id, star);
+    }
+  }
+
+  return triggers.map((trigger) => {
+    const star = trigger.star_id ? starMap.get(trigger.star_id) : null;
+    const familyKey = star
+      ? star.star_type === "member"
+        ? `group:${star.group_star_id || star.id}`
+        : `group:${star.id}`
+      : trigger.wiki_entry_id
+        ? `wiki:${trigger.wiki_entry_id}`
+        : `artist:${normalizeTrendText(trigger.artist_name)}`;
+
+    return {
+      ...trigger,
+      artist_family_key: familyKey,
+      artist_family_name: star?.star_type === "member"
+        ? (starMap.get(star.group_star_id)?.display_name || starMap.get(star.group_star_id)?.name_ko || trigger.artist_name)
+        : (star?.display_name || star?.name_ko || trigger.artist_name),
+    };
+  });
+}
+
 function selectDiversifiedTrendTriggers(triggers: any[], limit: number, offset: number): any[] {
   const targetCount = offset + limit;
   if (!Array.isArray(triggers) || triggers.length === 0) return [];
@@ -125,15 +166,15 @@ function selectDiversifiedTrendTriggers(triggers: any[], limit: number, offset: 
   const selected: any[] = [];
   const overflow: any[] = [];
   const uniqueArtistCount = new Set(
-    triggers.map((trigger) => normalizeTrendText(trigger.artist_name)).filter(Boolean),
+    triggers.map((trigger) => defaultTrendBucketKey(trigger)).filter(Boolean),
   ).size;
-  const perArtistSoftCap = uniqueArtistCount >= limit ? 1 : uniqueArtistCount > 1 ? 2 : Number.POSITIVE_INFINITY;
+  const perArtistSoftCap = uniqueArtistCount > 1 ? 1 : Number.POSITIVE_INFINITY;
   const artistCounts = new Map<string, number>();
 
   for (const trigger of triggers) {
     if (selected.some((existing) => areTrendItemsNearDuplicate(existing, trigger))) continue;
 
-    const artistKey = normalizeTrendText(trigger.artist_name);
+    const artistKey = defaultTrendBucketKey(trigger);
     const artistCount = artistKey ? (artistCounts.get(artistKey) ?? 0) : 0;
 
     if (artistKey && artistCount >= perArtistSoftCap) {
@@ -2080,7 +2121,7 @@ JSON 구조:
 
       let query = adminClient
         .from("ktrenz_trend_triggers")
-        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
+        .select("id, star_id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
         .eq("status", "active")
         .order("influence_index", { ascending: false, nullsFirst: false })
         .limit(fetchLimit);
@@ -2096,6 +2137,7 @@ JSON 구조:
         const excludeSet = new Set(excludeKeywords.map(k => k.toLowerCase()));
         triggers = triggers.filter((t: any) => !excludeSet.has((t.keyword || "").toLowerCase()) && !excludeSet.has((t.keyword_ko || "").toLowerCase()));
       }
+      triggers = await attachArtistFamilyKeys(adminClient, triggers || []);
       triggers = selectDiversifiedTrendTriggers(triggers || [], limit, offset);
 
       if (!triggers || triggers.length === 0) {
