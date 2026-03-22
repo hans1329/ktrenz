@@ -91,7 +91,9 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
     staleTime: 1000 * 60 * 2,
   });
 
-  if (isLoading || bets.length === 0) return null;
+  if (!user) return null;
+
+  const isEmpty = !isLoading && bets.length === 0;
 
   return (
     <div className="space-y-2">
@@ -105,6 +107,11 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
         <span className="text-[10px] text-muted-foreground">{bets.length} active</span>
       </div>
 
+      {isEmpty ? (
+        <div className="p-3 rounded-lg border border-dashed border-border/60 text-center">
+          <p className="text-xs text-muted-foreground">아직 예측한 트렌드가 없습니다</p>
+        </div>
+      ) : (
       <div className="space-y-1.5">
         {bets.map((bet) => {
           const displayKeyword = language === "ko" && bet.keyword_ko ? bet.keyword_ko : bet.keyword;
@@ -151,6 +158,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
           );
         })}
       </div>
+      )}
     </div>
   );
 };
