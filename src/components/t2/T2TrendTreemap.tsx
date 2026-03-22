@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
