@@ -55,9 +55,14 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Refetch kpass data when drawer opens
+  const queryClient = useQueryClient();
+
+  // Refetch kpass + trend bets data when drawer opens
   useEffect(() => {
-    if (open && user?.id) refetchKpass();
+    if (open && user?.id) {
+      refetchKpass();
+      queryClient.invalidateQueries({ queryKey: ["profile-trend-bets", user.id] });
+    }
   }, [open]);
 
 
