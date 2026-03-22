@@ -428,6 +428,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   // Separate query for shopping (naver_shop) triggers
   const { data: shopTriggers } = useQuery({
     queryKey: ["t2-trend-triggers-shopping"],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
