@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import kTrenzLogo from "@/assets/k-trenz-logo.webp";
+import kTrenzLogo from "@/assets/logo_col2.webp";
 
 const Login = () => {
   const navigate = useNavigate();
