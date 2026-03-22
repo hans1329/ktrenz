@@ -216,7 +216,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 <img
                   src={isMobile ? ktrenzMobileLogo : ktrenzLogo}
                   alt="K-TRENZ"
-                  className={isMobile ? "h-3.5 w-auto" : "h-5 w-auto"}
+                  className={`${isMobile ? "h-3.5 w-auto" : "h-5 w-auto"} ${isPipelineRunning ? "animate-[pulse_3s_ease-in-out_infinite]" : ""}`}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
