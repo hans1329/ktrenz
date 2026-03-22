@@ -9,6 +9,7 @@ import ktrenzLogo from "@/assets/logo_col3.webp";
 import ktrenzMobileLogo from "@/assets/logo_col3.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
 
 interface SearchResult {
   id: string;
@@ -38,6 +39,21 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Check if pipeline is currently running
+  const { data: isPipelineRunning } = useQuery({
+    queryKey: ["pipeline-running-status"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("status")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .limit(1);
+      return (data as any[])?.length > 0;
+    },
+    refetchInterval: 30000,
+    staleTime: 20000,
+  });
 
   useEffect(() => {
     if (isSearchOpen && inputRef.current) inputRef.current.focus();
@@ -200,7 +216,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 <img
                   src={isMobile ? ktrenzMobileLogo : ktrenzLogo}
                   alt="K-TRENZ"
-                  className={isMobile ? "h-3.5 w-auto" : "h-5 w-auto"}
+                  className={`${isMobile ? "h-3.5 w-auto" : "h-5 w-auto"} ${isPipelineRunning ? "animate-[pulse_3s_ease-in-out_infinite]" : ""}`}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
