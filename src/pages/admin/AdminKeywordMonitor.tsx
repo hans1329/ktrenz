@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
@@ -90,6 +90,15 @@ const AdminKeywordMonitor = () => {
   });
 
   const classified = useMemo(() => (triggers ?? []).map(t => ({ ...t, zone: classifyKeyword(t) })), [triggers]);
+
+  // Top 60 non-goods keywords by influence = visible on treemap
+  const visibleIds = useMemo(() => {
+    const sorted = [...classified]
+      .filter(t => t.keyword_category !== "goods")
+      .sort((a, b) => b.influence_index - a.influence_index)
+      .slice(0, 60);
+    return new Set(sorted.map(t => t.id));
+  }, [classified]);
 
   const zoneCounts = useMemo(() => {
     const counts: Record<Zone, number> = { rising: 0, peaked: 0, stable: 0, declining: 0, at_risk: 0 };
@@ -219,6 +228,12 @@ const AdminKeywordMonitor = () => {
                               <span className="text-sm font-medium truncate">
                                 {t.keyword_ko || t.keyword}
                               </span>
+                              {visibleIds.has(t.id) && (
+                                <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary/20 text-primary border-primary/30 gap-0.5">
+                                  <Eye className="w-2.5 h-2.5" />
+                                  노출
+                                </Badge>
+                              )}
                               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${CATEGORY_COLORS[t.keyword_category] ?? "bg-muted text-muted-foreground"}`}>
                                 {t.keyword_category}
                               </Badge>
