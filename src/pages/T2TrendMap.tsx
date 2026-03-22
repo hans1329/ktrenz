@@ -118,19 +118,21 @@ const T2TrendMap = () => {
             className="flex items-center gap-0 rounded-full border border-border p-0.5 md:gap-1 md:p-1"
             style={{ backgroundColor: "hsl(var(--card))" }}
           >
-            {VIEW_TABS.map(({ key, icon: Icon }) => (
+            {VIEW_TABS.map(({ key, icon: Icon, label }) => (
               <button
                 key={key}
                 onClick={() => { setViewMode(key); window.scrollTo({ top: 0 }); }}
                 className={cn(
-                  "flex items-center justify-center w-10 h-10 md:w-12 md:h-8 rounded-full transition-all aspect-square",
+                  "flex items-center justify-center gap-1.5 rounded-full transition-all",
+                  "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
                   viewMode === key
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-label={key}
               >
-                <Icon className="w-4 h-4 md:w-5 md:h-5" />
+                <Icon className="w-4 h-4 md:w-4 md:h-4" />
+                <span className="hidden md:inline text-xs font-semibold">{label}</span>
               </button>
             ))}
           </div>
