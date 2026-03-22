@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins, Diamond } from "lucide-react";
+import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -661,7 +661,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       ))}
                     </div>
                     <div className="text-[10px] text-muted-foreground text-center">
-                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested.toLocaleString()} <Diamond className="inline w-3 h-3 text-purple-400 fill-purple-400/40" /></span>
+                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested.toLocaleString()} 💎</span>
                     </div>
                   </div>
                 );
@@ -704,7 +704,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         onChange={(e) => setBetAmount(e.target.value)}
                         className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-base lg:text-lg font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <Diamond className="w-5 h-5 text-purple-400 fill-purple-400/40" />
+                      <span className="text-lg">💎</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {[10, 50, 100, 500, 1000].map((preset) => (
@@ -724,14 +724,14 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     </div>
                     {user && (
                       <span className="text-[11px] font-bold text-primary whitespace-nowrap">
-                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <Diamond className="inline w-3 h-3 text-purple-400 fill-purple-400/40" />
+                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} 💎
                       </span>
                     )}
                   </div>
                   {/* Expected return display */}
                   {betAmount && Number(betAmount) >= 10 && (
                     <div className="text-center text-teal-400 text-sm font-bold">
-                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} <Diamond className="inline w-3 h-3 text-purple-400 fill-purple-400/40" />
+                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} 💎
                       <span className="text-[10px] text-muted-foreground ml-1">(×{MULTIPLIERS[betOutcome]})</span>
                     </div>
                   )}
