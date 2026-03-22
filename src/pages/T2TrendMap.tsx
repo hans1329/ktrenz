@@ -118,7 +118,7 @@ const T2TrendMap = () => {
         centerSlot={
           <div
             className="flex items-center gap-0 rounded-full border border-border p-0.5 md:gap-1 md:p-1"
-            style={{ backgroundColor: "hsl(var(--muted) / 0.72)" }}
+            style={{ backgroundColor: "hsl(var(--card))" }}
           >
             {VIEW_TABS.map(({ key, icon: Icon }) => (
               <button
