@@ -874,6 +874,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     if (localStorage.getItem(seenKey) === today) return;
 
     setDailyNewsSent(true);
+    // Mark as seen immediately so red dot clears even if no news found
+    localStorage.setItem(seenKey, today);
+    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user?.id] });
     // Fetch latest news snapshot for the bias artist
     (async () => {
       try {
