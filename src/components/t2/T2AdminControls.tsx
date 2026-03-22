@@ -4,9 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Zap, Database } from "lucide-react";
+import { Loader2, Zap, Database, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface PipelineRun {
   startedAt: Date;
@@ -132,36 +139,51 @@ const T2AdminControls = () => {
   const activeRunList = Object.values(activeRuns);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => runMutation.mutate()}
-          disabled={runMutation.isPending}
-          className="gap-1 text-xs h-7 px-2"
-        >
-          {runMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-          트렌드 수집
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => navigate("/admin/stars")}
-          className="gap-1 text-xs h-7 px-2"
-        >
-          <Database className="w-3 h-3" />
-          스타 관리
-        </Button>
-      </div>
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => runMutation.mutate()}
+        disabled={runMutation.isPending}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {runMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+        트렌드 수집
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => navigate("/admin/stars")}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        <Database className="w-3 h-3" />
+        스타 관리
+      </Button>
 
-      {activeRunList.map((run) => (
-        <T2PipelineProgress
-          key={run.phase}
-          run={run}
-          onClose={() => closeRun(run.phase)}
-        />
-      ))}
+      {activeRunList.length > 0 && (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="gap-1 text-xs h-7 px-2 text-primary border-primary/30">
+              <Activity className="w-3 h-3 animate-pulse" />
+              수집 현황
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[80dvh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>수집 모니터링</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {activeRunList.map((run) => (
+                <T2PipelineProgress
+                  key={run.phase}
+                  run={run}
+                  onClose={() => closeRun(run.phase)}
+                />
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
