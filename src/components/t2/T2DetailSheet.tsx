@@ -212,8 +212,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       }
     },
   });
+  // Related keywords for the same artist
+  const { data: relatedKeywords } = useQuery({
+    queryKey: ["t2-related-keywords", tile?.wikiEntryId, tile?.id],
+    queryFn: async () => {
+      if (!tile?.wikiEntryId) return [];
+      const { data } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("id, keyword, keyword_ko, keyword_category, influence_index, status")
+        .eq("wiki_entry_id", tile.wikiEntryId)
+        .neq("id", tile.id)
+        .in("status", ["active", "expired"])
+        .order("detected_at", { ascending: false })
+        .limit(10);
+      return (data ?? []) as any[];
+    },
+    enabled: !!tile?.wikiEntryId,
+    staleTime: 5 * 60_000,
+  });
 
-  const handlePlaceBet = () => {
+
     if (!user) {
       toast.info(t("loginToBet", language));
       return;
