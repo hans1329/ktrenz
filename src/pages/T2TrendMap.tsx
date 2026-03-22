@@ -159,7 +159,7 @@ const T2TrendMap = () => {
         {/* Title + Sort header */}
         <div className="md:max-w-[90%] mx-auto flex items-center justify-between gap-3 px-4 pb-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-xs font-extrabold text-muted-foreground">{t("trend.spectrumTitle")}</h2>
+            <h2 className="text-sm font-black text-muted-foreground">{t("trend.spectrumTitle")}</h2>
             {isAdmin && isMobile && (
               <div className="relative">
                 <button onClick={() => setAdminMenuOpen(v => !v)}
