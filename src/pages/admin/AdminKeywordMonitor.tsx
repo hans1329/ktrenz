@@ -98,15 +98,24 @@ const AdminKeywordMonitor = () => {
   }, [classified]);
 
   const groupedByZone = useMemo(() => {
-    const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    const q = searchQuery.trim().toLowerCase();
+    let base = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    if (q) {
+      base = base.filter(t =>
+        (t.keyword?.toLowerCase().includes(q)) ||
+        (t.keyword_ko?.toLowerCase().includes(q)) ||
+        (t.keyword_en?.toLowerCase().includes(q)) ||
+        (t.artist_name?.toLowerCase().includes(q))
+      );
+    }
     return ZONE_ORDER.reduce((acc, zone) => {
-      const items = filtered.filter(t => t.zone === zone);
+      const items = base.filter(t => t.zone === zone);
       const dir = zoneSortDir[zone];
       items.sort((a, b) => dir === "desc" ? b.influence_index - a.influence_index : a.influence_index - b.influence_index);
       acc[zone] = items;
       return acc;
     }, {} as Record<Zone, typeof classified>);
-  }, [classified, filterZone, zoneSortDir]);
+  }, [classified, filterZone, zoneSortDir, searchQuery]);
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">로딩 중...</div>;
   if (!isAdmin) { navigate("/admin/login"); return null; }
