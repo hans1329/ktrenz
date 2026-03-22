@@ -692,137 +692,73 @@ const T2KeywordDetail = () => {
           </div>
         </div>
 
-        {/* Agency Insight Panel */}
+        {/* AI-Powered Agency & Trend Insight */}
         <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 mt-6 space-y-4">
+          <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" />
-              {t2l("agencyInsight", language)}
+              {t2l("agencyInsight", language)} & AI
             </h2>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl bg-muted/30 border border-border p-4">
-              <div className="text-[10px] text-muted-foreground mb-1">{t2l("commercialPotential", language)}</div>
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "text-lg font-black",
-                  influenceIndex >= 50 ? "text-green-500" :
-                  influenceIndex >= 20 ? "text-amber-500" :
-                  influenceIndex > 0 ? "text-orange-500" : "text-muted-foreground"
-                )}>
-                  {influenceIndex >= 50 ? t2l("high", language) : influenceIndex >= 20 ? t2l("medium", language) : influenceIndex > 0 ? t2l("low", language) : t2l("tracking", language)}
+            {!aiInsightData && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => insightMutation.mutate()}
+                disabled={insightMutation.isPending}
+              >
+                <Sparkles className={cn("w-3 h-3", insightMutation.isPending && "animate-spin")} />
+                {insightMutation.isPending
+                  ? (language === "ko" ? "분석 중..." : "Analyzing...")
+                  : (language === "ko" ? "AI 분석 생성" : "Generate AI Analysis")}
+              </Button>
+            )}
+          </div>
+
+          {insightMutation.isError && (
+            <p className="text-xs text-destructive">{(insightMutation.error as Error).message}</p>
+          )}
+
+          {aiInsightData ? (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-muted/30 border border-border p-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Building2 className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">
+                    {t2l("agencyInsight", language)}
+                  </span>
                 </div>
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
+                  {aiInsightData.agency_insight}
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {influenceIndex >= 50
-                  ? "Strong consumer interest surge. Ideal for brand activation."
-                  : influenceIndex >= 20
-                  ? "Moderate interest growth. Worth monitoring for partnerships."
-                  : influenceIndex > 0
-                  ? "Early signal detected. Watch for momentum buildup."
-                  : "Waiting for search volume data."}
+              <div className="rounded-xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 p-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">AI Insight</span>
+                </div>
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
+                  {aiInsightData.ai_insight}
+                </p>
+              </div>
+              <p className="text-[9px] text-muted-foreground text-right">
+                {language === "ko" ? "생성일" : "Generated"}: {new Date(aiInsightData.created_at).toLocaleString(language === "ko" ? "ko-KR" : "en-US")}
               </p>
             </div>
-            <div className="rounded-xl bg-muted/30 border border-border p-4">
-              <div className="text-[10px] text-muted-foreground mb-1">{t2l("reactionSpeed", language)}</div>
-              <div className="text-lg font-black text-foreground">
-                {trigger.peak_at
-                  ? (() => {
-                      const delay = (new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000;
-                      return delay < 6 ? "⚡ Instant" : delay < 24 ? "🔥 Fast" : delay < 72 ? "📈 Gradual" : "🐢 Slow";
-                    })()
-                  : "⏳ Pending"}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {trigger.peak_at
-                  ? `Search interest peaked ${((new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000).toFixed(1)}h after news mention.`
-                  : "Peak not yet reached. Monitoring in progress."}
+          ) : !insightMutation.isPending ? (
+            <div className="text-center py-6">
+              <Sparkles className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">
+                {language === "ko" ? "AI 분석 생성 버튼을 눌러 실시간 분석을 받아보세요" : "Click 'Generate AI Analysis' for real-time insights"}
               </p>
             </div>
-            <div className="rounded-xl bg-muted/30 border border-border p-4">
-              <div className="text-[10px] text-muted-foreground mb-1">{t2l("detectionSource", language)}</div>
-              <div className="text-lg font-black text-foreground flex items-center gap-1.5">
-                {trigger.trigger_source === "global_news" ? (
-                  <><Globe className="w-4 h-4 text-blue-400" /> Global</>
-                ) : (
-                  <><Newspaper className="w-4 h-4 text-green-400" /> Naver</>
-                )}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {trigger.trigger_source === "global_news"
-                  ? "Detected from global media (Soompi, AllKPop, etc.)"
-                  : "Detected from Korean news articles on Naver."}
-              </p>
+          ) : (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
             </div>
-          </div>
+          )}
         </div>
-
-        {/* AI Trend Insight */}
-        {(baselineScore != null || influenceIndex > 0) && (
-          <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 sm:p-6 mt-6 space-y-3">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              {language === "ko" ? "AI 인사이트" : language === "ja" ? "AIインサイト" : language === "zh" ? "AI洞察" : "AI Insight"}
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {(() => {
-                const peakDelay = trigger.peak_at
-                  ? (new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000
-                  : null;
-                const cat = CATEGORY_LABELS[category] || category;
-                const isViral = influenceIndex >= 50;
-                const isGrowing = influenceIndex >= 20;
-                const isFastReact = peakDelay != null && peakDelay < 6;
-                const isSustained = !isViral && !isGrowing && !isFastReact;
-
-                if (language === "ko") {
-                  if (isViral) {
-                    return `${artistName}의 "${keyword}" 관련 관심이 폭발적으로 증가하고 있습니다. 팬덤과 일반 대중 모두에서 강한 반응이 감지되었으며, ${cat} 분야의 브랜드라면 지금이 콜라보를 제안할 최적의 타이밍입니다. 이 수준의 관심은 보통 1~2주 내에 소비 행동으로 이어집니다.`;
-                  } else if (isGrowing) {
-                    return `${artistName}과 "${keyword}"의 연관 관심도가 꾸준히 상승 중입니다. 아직 대중적 폭발 단계는 아니지만, ${cat} 분야에서 선제적 마케팅을 준비하기에 좋은 시점입니다. 경쟁사보다 먼저 움직일 수 있는 골든 타임에 있습니다.`;
-                  } else if (isFastReact) {
-                    return `"${keyword}" 키워드가 감지 직후 빠르게 확산되고 있습니다. SNS 기반의 바이럴 초기 단계로 보이며, ${cat} 관련 콘텐츠를 빠르게 제작하면 자연스러운 노출 효과를 기대할 수 있습니다.`;
-                  } else {
-                    return `${artistName}과 "${keyword}"는 급등보다는 안정적인 관심을 유지하고 있습니다. 이 패턴은 이미 검증된 ${cat} 연관성을 의미하며, 단기 캠페인보다는 장기 파트너십에 적합한 시그널입니다.`;
-                  }
-                }
-
-                if (language === "ja") {
-                  if (isViral) {
-                    return `${artistName}の「${keyword}」への関心が爆発的に高まっています。ファンダムと一般層の両方から強い反応が検出されており、${cat}分野のブランドにとって今がコラボ提案の最適なタイミングです。`;
-                  } else if (isGrowing) {
-                    return `${artistName}と「${keyword}」の関連性が着実に上昇中です。${cat}分野で先手を打つマーケティング準備に最適な時期です。`;
-                  } else if (isFastReact) {
-                    return `「${keyword}」キーワードが検出直後に急速に拡散しています。SNSバイラルの初期段階と見られ、${cat}関連コンテンツの迅速な制作で自然な露出効果が期待できます。`;
-                  } else {
-                    return `${artistName}と「${keyword}」は安定した関心を維持しています。短期キャンペーンよりも長期パートナーシップに適したシグナルです。`;
-                  }
-                }
-
-                if (language === "zh") {
-                  if (isViral) {
-                    return `${artistName}的"${keyword}"相关关注度正在爆发式增长。粉丝和大众都表现出强烈反应，对于${cat}领域的品牌来说，现在是提出合作的最佳时机。`;
-                  } else if (isGrowing) {
-                    return `${artistName}与"${keyword}"的关联关注度稳步上升。${cat}领域的先发制人营销准备正当其时。`;
-                  } else if (isFastReact) {
-                    return `"${keyword}"关键词在检测后迅速传播，处于社交媒体病毒式传播的早期阶段，快速制作${cat}相关内容可获得自然曝光效果。`;
-                  } else {
-                    return `${artistName}与"${keyword}"保持稳定关注，更适合长期合作而非短期营销活动。`;
-                  }
-                }
-
-                // EN
-                if (isViral) {
-                  return `Interest in ${artistName} × "${keyword}" is surging. Strong reactions detected from both fandom and general audiences — if you're a ${cat} brand, now is the ideal time to propose a collaboration. This level of buzz typically converts to consumer action within 1–2 weeks.`;
-                } else if (isGrowing) {
-                  return `The connection between ${artistName} and "${keyword}" is steadily growing. While not yet mainstream, this is the golden window to prepare proactive marketing in ${cat} — move before your competitors do.`;
-                } else if (isFastReact) {
-                  return `"${keyword}" is spreading rapidly after detection — an early-stage social viral signal. Fast ${cat} content creation can ride the organic wave for maximum exposure.`;
-                } else {
-                  return `${artistName} × "${keyword}" shows stable, sustained interest rather than a spike. This pattern signals a proven ${cat} association, better suited for long-term partnerships than short-term campaigns.`;
-                }
-              })()}
-            </p>
-          </div>
-        )}
 
         {/* Tracking History Table */}
         {trackingHistory && trackingHistory.length > 0 && (
