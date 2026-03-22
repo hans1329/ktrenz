@@ -22,7 +22,7 @@ const VIEW_TABS: { key: ViewMode; icon: typeof LayoutGrid; label: string }[] = [
 ];
 
 const SWIPE_THRESHOLD = 40;
-const HEADER_COLLAPSE_THRESHOLD = 80;
+const HEADER_COLLAPSE_THRESHOLD = 30;
 
 const T2TrendMap = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("treemap");
