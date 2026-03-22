@@ -169,7 +169,7 @@ function dedupeTrendTiles(items: TrendTile[], sortMode: SortMode = "rate"): Tren
 // ── Squarify layout ──
 interface Rect { x: number; y: number; w: number; h: number; item: TrendTile; }
 
-function squarify(items: TrendTile[], x: number, y: number, w: number, h: number, sortMode: SortMode = "rate"): Rect[] {
+function squarify(items: TrendTile[], x: number, y: number, w: number, h: number, sortMode: SortMode = "rate", isCollecting = false): Rect[] {
   if (items.length === 0) return [];
   if (items.length === 1) return [{ x, y, w, h, item: items[0] }];
 
@@ -178,6 +178,18 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
       ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
       : Math.max(item.influenceIndex, 1);
     const logBase = Math.log1p(metric);
+
+    if (isCollecting) {
+      if (idx === 0) return logBase * 4.2;
+      if (idx === 1) return logBase * 3.4;
+      if (idx === 2) return logBase * 2.8;
+      if (idx < 6) return logBase * 2.3;
+      if (idx < 12) return logBase * 2.0;
+      if (idx < 25) return logBase * 1.7;
+      if (idx < 40) return logBase * 1.5;
+      return logBase * 1.3;
+    }
+
     // Rank-based multiplier: #1 is dramatically larger, lower ranks get bigger minimum
     if (idx === 0) return logBase * 12;
     if (idx === 1) return logBase * 7;
