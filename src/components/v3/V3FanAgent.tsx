@@ -234,6 +234,7 @@ async function streamChat({
       language: (window as any).__ktrenz_lang || "ko",
       agent_slot_id: agentSlotId ?? null,
       quick_action: quickActionHint ?? null,
+      ...(excludeKeywords && excludeKeywords.length > 0 ? { exclude_keywords: excludeKeywords } : {}),
     }),
   });
 
