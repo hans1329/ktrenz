@@ -579,8 +579,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const rects = useMemo(() => {
     if (!visibleBoxItems.length) return [];
-    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight, sortMode);
-  }, [visibleBoxItems, containerWidth, containerHeight, sortMode]);
+    return squarify(visibleBoxItems, 0, 0, containerWidth, containerHeight, sortMode, isCollecting);
+  }, [visibleBoxItems, containerWidth, containerHeight, sortMode, isCollecting]);
 
   useEffect(() => {
     const modalId = searchParams.get("modal");
