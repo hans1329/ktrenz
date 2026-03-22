@@ -328,6 +328,7 @@ const V3TrendRankings = () => {
   const [collectingModule, setCollectingModule] = useState<string | null>(null);
   const { data: crawlStatus } = useCrawlStatus();
   const [inspectorItem, setInspectorItem] = useState<InspectorItem | null>(null);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const toInspectorItem = useCallback((item: any): InspectorItem => {
     const entry = item.wiki_entries as any;
