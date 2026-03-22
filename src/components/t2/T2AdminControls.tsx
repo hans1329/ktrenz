@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Zap, Database, Activity } from "lucide-react";
+import { Loader2, Zap, Database, Activity, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
 import {
@@ -158,6 +158,15 @@ const T2AdminControls = () => {
       >
         <Database className="w-3 h-3" />
         스타 관리
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => navigate("/admin/keyword-monitor")}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        <BarChart3 className="w-3 h-3" />
+        키워드 모니터
       </Button>
 
       {activeRunList.length > 0 && (
