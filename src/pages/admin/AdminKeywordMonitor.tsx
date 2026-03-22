@@ -88,22 +88,27 @@ const AdminKeywordMonitor = () => {
     refetchInterval: 30000,
   });
 
+  const classified = useMemo(() => (triggers ?? []).map(t => ({ ...t, zone: classifyKeyword(t) })), [triggers]);
+
+  const zoneCounts = useMemo(() => {
+    const counts: Record<Zone, number> = { rising: 0, peaked: 0, stable: 0, declining: 0, at_risk: 0 };
+    classified.forEach(t => counts[t.zone]++);
+    return counts;
+  }, [classified]);
+
+  const groupedByZone = useMemo(() => {
+    const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    return ZONE_ORDER.reduce((acc, zone) => {
+      const items = filtered.filter(t => t.zone === zone);
+      const dir = zoneSortDir[zone];
+      items.sort((a, b) => dir === "desc" ? b.influence_index - a.influence_index : a.influence_index - b.influence_index);
+      acc[zone] = items;
+      return acc;
+    }, {} as Record<Zone, typeof classified>);
+  }, [classified, filterZone, zoneSortDir]);
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">로딩 중...</div>;
   if (!isAdmin) { navigate("/admin/login"); return null; }
-
-  const classified = (triggers ?? []).map(t => ({ ...t, zone: classifyKeyword(t) }));
-
-  const zoneCounts: Record<Zone, number> = { rising: 0, peaked: 0, stable: 0, declining: 0, at_risk: 0 };
-  classified.forEach(t => zoneCounts[t.zone]++);
-
-  const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
-  const groupedByZone = useMemo(() => ZONE_ORDER.reduce((acc, zone) => {
-    const items = filtered.filter(t => t.zone === zone);
-    const dir = zoneSortDir[zone];
-    items.sort((a, b) => dir === "desc" ? b.influence_index - a.influence_index : a.influence_index - b.influence_index);
-    acc[zone] = items;
-    return acc;
-  }, {} as Record<Zone, typeof classified>), [filtered, zoneSortDir]);
 
   return (
     <div className="min-h-screen bg-background">
