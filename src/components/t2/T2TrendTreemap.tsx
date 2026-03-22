@@ -472,7 +472,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
       }));
     },
-    staleTime: 60_000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const dedupedShopTriggers = useMemo(() => {
