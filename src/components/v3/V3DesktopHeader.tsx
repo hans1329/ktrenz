@@ -152,7 +152,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
           </div>
 
           {/* Center: Tab buttons */}
-          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-secondary rounded-full p-1">
+          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-card rounded-full p-1">
             {navItems.map((item) => {
               const active = activeTab === item.id;
               const Icon = item.icon;
