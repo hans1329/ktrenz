@@ -747,7 +747,14 @@ const V3TrendRankings = () => {
                 {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
               </p>
             )}
-            {isAdmin && <div className="mt-1.5 pl-7"><AdminCollectButtons /></div>}
+            {isAdmin && (
+              <details className="mt-1.5 pl-7 group">
+                <summary className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border border-border bg-muted text-muted-foreground cursor-pointer w-fit list-none hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors">
+                  <Zap className="w-3 h-3" /> Admin
+                </summary>
+                <div className="mt-1"><AdminCollectButtons /></div>
+              </details>
+            )}
           </div>
           <div className="flex items-center rounded-full bg-muted p-1 shrink-0">
             <button onClick={() => setViewMode("list")}
