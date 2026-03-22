@@ -125,12 +125,12 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Coins className="w-5 h-5 text-primary" />
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-lg">
+                  💎
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                    K-Tokens
+                    K·Trend Caches
                   </p>
                   <p className="text-lg font-bold text-foreground leading-tight">
                     {kPoints.toLocaleString()}
