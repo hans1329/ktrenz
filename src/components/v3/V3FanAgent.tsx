@@ -1622,7 +1622,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {/* Rainbow progress bar while waiting for agent response */}
       {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "user" && (
