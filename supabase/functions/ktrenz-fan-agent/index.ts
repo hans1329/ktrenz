@@ -289,8 +289,10 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          limit: { type: "number", description: "Number of trending keywords to return (default 5, max 5). Always use 5 or less." },
+          limit: { type: "number", description: "Number of trending keywords to return (default 5, max 5)." },
+          offset: { type: "number", description: "Number of keywords to skip (for pagination). Use this when user asks to see MORE keywords. Default 0." },
           category: { type: "string", description: "Optional filter by keyword category (e.g., 'brand', 'product', 'media', 'event')" },
+          exclude_keywords: { type: "array", items: { type: "string" }, description: "List of keyword strings to exclude from results (already shown to user). Always pass previously shown keywords here when loading more." },
         },
         required: [],
         additionalProperties: false,
