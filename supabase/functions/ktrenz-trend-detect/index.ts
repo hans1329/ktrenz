@@ -391,6 +391,7 @@ CRITICAL RULES — READ CAREFULLY:
    - Chart names (Billboard, Hanteo, Gaon, etc.)
    - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
    - Generic locations: city names, district names, country names, airports
+   - TV campaign/variety show gimmicks, costumes, or ephemeral entertainment segments (e.g., wearing a costume on a show)
 
 2. CONTEXTUAL RELEVANCE — MOST IMPORTANT RULE:
    - A keyword is valid ONLY if the artist has a DIRECT, ACTIVE relationship with the entity
@@ -402,6 +403,8 @@ CRITICAL RULES — READ CAREFULLY:
    - "하이라이트 멤버들이 BTS 공연 하이라이트를 감상" → "BTS" INVALID (the article mentions BTS but the keyword is about Highlight watching it)
    - Article about Artist A mentions "이 곡은 마치 뉴진스의 Hype Boy 같다" → "Hype Boy" INVALID (metaphorical comparison)
    - "한(Han)이 카르티에 행사에 참석" but the article is actually about Hyunjin → "Cartier" INVALID for Han (misattribution)
+   - "홍진경이 핫도그 탈을 입고 촬영장 입성" → "핫도그" INVALID (costume gimmick, not a commercial relationship)
+   - "코미디언과 아이돌이 MC로 함께하는 캠페인" → campaign name INVALID if it's a one-off TV segment, not the artist's own project
    
    DETAILED EXAMPLES of what to ACCEPT:
    - "카리나가 프라다 2026 S/S 컬렉션 앰버서더로 발탁" → "프라다" VALID (direct endorsement)
@@ -414,17 +417,25 @@ CRITICAL RULES — READ CAREFULLY:
    - If an article uses the word in its general meaning (e.g., "하이라이트 영상" = highlight video), it is NOT about the artist
    - Set ownership_confidence to 0.0 if the article isn't clearly about the searched artist
 
-4. CROSS-ARTIST CONTAMINATION — VERIFY OWNERSHIP:
+4. MEMBER ATTRIBUTION — VERIFY THE ARTICLE SUBJECT:
+   - When searching for a GROUP MEMBER, the article may mention the GROUP but focus on a DIFFERENT MEMBER
+   - You MUST check: is the article's MAIN SUBJECT specifically about "${memberName}"?
+   - If the article says "스트레이 키즈 현진이 까르띠에 행사 참석" and you are analyzing for "Han" (한), this keyword belongs to Hyunjin, NOT Han
+   - Even if the group name appears in the article, the keyword belongs to whichever member is the ACTUAL SUBJECT
+   - Set ownership_confidence to 0.0 if a different member of the same group is the article's subject
+   - RULE: If the article body specifically names a DIFFERENT member (e.g., 현진, Hyunjin) as the subject of the keyword relationship, reject it for the current search target
+
+5. CROSS-ARTIST CONTAMINATION — VERIFY OWNERSHIP:
    - If the article mentions multiple artists, each keyword belongs ONLY to the artist who has the direct relationship
    - "로제 콘서트에서 골든 앨범 언급" → "Golden" belongs to Jungkook, NOT Rosé
    - "P1Harmony 기사에서 AB6IX 멤버 비교" → "AB6IX" does NOT belong to P1Harmony
    - Always ask: "WHO is the true owner of this keyword?" and set ownership_artist accordingly
 
-5. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
-6. The keyword must LITERALLY appear in the article text
-7. OWNERSHIP CHECK: Set ownership_confidence below 0.5 if the relationship is indirect, metaphorical, or just a passing mention
-8. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.
-9. When in doubt, DO NOT extract. False negatives are far better than false positives.`;
+6. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
+7. The keyword must LITERALLY appear in the article text
+8. OWNERSHIP CHECK: Set ownership_confidence below 0.5 if the relationship is indirect, metaphorical, or just a passing mention
+9. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.
+10. When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
   const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
