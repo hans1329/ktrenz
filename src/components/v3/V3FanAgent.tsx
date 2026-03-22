@@ -988,6 +988,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         token: session.access_token,
         agentSlotId: activeSlot?.id,
         quickActionHint,
+        excludeKeywords,
         onDelta: (chunk) => {
           assistantContent += chunk;
           setMessages((prev) => {
