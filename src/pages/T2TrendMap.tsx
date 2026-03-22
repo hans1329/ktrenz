@@ -40,6 +40,7 @@ const T2TrendMap = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
     setCategoryStats(stats);
@@ -220,8 +221,8 @@ const T2TrendMap = () => {
       )}
 
       <div
-        className="fixed left-0 right-0 z-40 py-2 transition-all duration-500 ease-in-out bg-card/90 backdrop-blur-lg"
-        style={{ top: headerCollapsed ? 0 : "6.25rem" }}
+        className="fixed left-0 right-0 z-40 py-2 bg-card/90 backdrop-blur-lg"
+        style={{ top: headerCollapsed ? 0 : `max(0px, ${6.25 * 16 - scrollY}px)` }}
       >
         <div className="md:max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max px-4">
@@ -298,6 +299,7 @@ const T2TrendMap = () => {
               )}
               onScroll={(e) => {
                 const scrollTop = (e.target as HTMLElement).scrollTop;
+                setScrollY(scrollTop);
                 setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
               }}
             >
