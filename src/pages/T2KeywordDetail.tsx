@@ -252,7 +252,38 @@ const T2KeywordDetail = () => {
     enabled: !!marketData?.id && !!user?.id,
   });
 
-  const chartData = useMemo(() => {
+  // AI Insight query + mutation
+  const queryClient = useQueryClient();
+  const { data: aiInsightData } = useQuery({
+    queryKey: ["t2-ai-insight", triggerId, language],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_trend_ai_insights" as any)
+        .select("agency_insight, ai_insight, created_at")
+        .eq("trigger_id", triggerId!)
+        .eq("language", language)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!triggerId,
+    staleTime: 5 * 60_000,
+  });
+
+  const insightMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-insight", {
+        body: { triggerId, language },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["t2-ai-insight", triggerId, language] });
+    },
+  });
+
+
     if (!trackingHistory?.length) return [];
     return trackingHistory.map((t: any) => ({
       time: formatDateTime(t.tracked_at),
