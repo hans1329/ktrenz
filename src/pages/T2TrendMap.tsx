@@ -216,7 +216,7 @@ const T2TrendMap = () => {
       <div
         className="fixed left-0 right-0 z-40 py-2 transition-all duration-300"
         style={{
-          top: headerCollapsed ? 0 : "7.5rem",
+          top: headerCollapsed ? "3.5rem" : "6.25rem",
           backgroundColor: "hsl(var(--card) / 0.9)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
