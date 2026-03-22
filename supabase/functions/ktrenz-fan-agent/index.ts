@@ -1950,20 +1950,35 @@ JSON 구조:
 
     case "get_trending_now": {
       const limit = Math.min(args.limit || 5, 5);
+      const offset = args.offset || 0;
       const category = args.category || null;
+      const excludeKeywords: string[] = args.exclude_keywords || [];
+
+      // Fetch more than needed to allow filtering
+      const fetchLimit = limit + offset + excludeKeywords.length + 5;
 
       let query = adminClient
         .from("ktrenz_trend_triggers")
         .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
         .eq("status", "active")
         .order("influence_index", { ascending: false, nullsFirst: false })
-        .limit(limit);
+        .limit(fetchLimit);
 
       if (category) {
         query = query.eq("keyword_category", category);
       }
 
-      const { data: triggers } = await query;
+      let { data: triggers } = await query;
+
+      // Filter out excluded keywords and apply offset
+      if (triggers && excludeKeywords.length > 0) {
+        const excludeSet = new Set(excludeKeywords.map(k => k.toLowerCase()));
+        triggers = triggers.filter((t: any) => !excludeSet.has((t.keyword || "").toLowerCase()) && !excludeSet.has((t.keyword_ko || "").toLowerCase()));
+      }
+      if (triggers && offset > 0) {
+        triggers = triggers.slice(offset);
+      }
+      triggers = (triggers || []).slice(0, limit);
 
       if (!triggers || triggers.length === 0) {
         return JSON.stringify({
