@@ -3521,6 +3521,7 @@ Deno.serve(async (req) => {
                         source: kw.source ?? null,
                         source_title: kw.source_title ?? null,
                         source_url: kw.source_url ?? null,
+                        source_image_url: kw.source_image_url ?? null,
                         detected_at: kw.detected_at ?? null,
                         search_volume: kw.search_volume ?? null,
                         interest_score: kw.interest_score ?? null,
