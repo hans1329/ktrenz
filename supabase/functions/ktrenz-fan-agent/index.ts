@@ -781,21 +781,46 @@ async function handleTool(
 
   // Helper: find artist by name (fuzzy, supports Korean names)
   async function findArtist(name: string) {
-    const all = await getAllScores();
     const lower = name.toLowerCase().trim();
-    // Direct title match first
-    const directMatch = all.find((a: any) => {
-      const title = (a.wiki_entries as any)?.title?.toLowerCase() ?? "";
-      return title === lower || title.includes(lower) || lower.includes(title);
-    });
-    if (directMatch) return directMatch;
 
-    // Korean name match
-    const koMap = await getKoNameMap();
-    return all.find((a: any) => {
-      const ko = koMap.get(a.wiki_entry_id);
-      return ko && (ko === lower || ko.includes(lower) || lower.includes(ko));
-    });
+    // Try exact match in ktrenz_stars
+    const { data: exactMatches } = await adminClient
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+      .eq("is_active", true)
+      .or(`display_name.ilike.${lower},name_ko.ilike.${lower}`)
+      .limit(1);
+
+    if (exactMatches?.[0]) return exactMatches[0];
+
+    // Try partial match
+    const { data: partialMatches } = await adminClient
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+      .eq("is_active", true)
+      .or(`display_name.ilike.%${lower}%,name_ko.ilike.%${lower}%`)
+      .limit(1);
+
+    if (partialMatches?.[0]) return partialMatches[0];
+
+    // wiki_entries fallback
+    const { data: wikiMatch } = await adminClient
+      .from("wiki_entries")
+      .select("id, title")
+      .ilike("title", `%${lower}%`)
+      .limit(1);
+
+    if (wikiMatch?.[0]) {
+      const { data: starMatch } = await adminClient
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url, social_handles, star_category")
+        .eq("wiki_entry_id", wikiMatch[0].id)
+        .limit(1);
+      if (starMatch?.[0]) return starMatch[0];
+      return { wiki_entry_id: wikiMatch[0].id, display_name: wikiMatch[0].title, name_ko: null, id: null, star_type: null, image_url: null };
+    }
+
+    return null;
   }
 
   // Helper: get tier info
@@ -815,14 +840,10 @@ async function handleTool(
       const top = all.slice(0, limit);
       const result = top.map((a: any) => ({
         rank: a._rank,
-        artist: (a.wiki_entries as any)?.title ?? "Unknown",
-        energy_score: Math.round(a.energy_score ?? 0),
-        energy_change_24h: +(a.energy_change_24h ?? 0).toFixed(1),
-        total_score: Math.round(a.total_score ?? 0),
-        youtube_score: Math.round(a.youtube_score ?? 0),
-        buzz_score: Math.round(a.buzz_score ?? 0),
-        music_score: Math.round(a.music_score ?? 0),
-        album_sales_score: Math.round(a.album_sales_score ?? 0),
+        artist: a.artist_name ?? "Unknown",
+        keyword_count: a.keyword_count ?? 0,
+        total_influence: Math.round(a.total_influence ?? 0),
+        categories: a.categories ?? {},
       }));
       return JSON.stringify({ rankings: result, timestamp: new Date().toISOString(), _ui_hint: "RANKING_CARD_RENDERED: 이 랭킹 데이터는 유저 화면에 이미 시각적 카드로 표시되었습니다. 텍스트로 순위를 다시 나열하지 마세요. 1문장 이내로 핵심 코멘트만 하세요." });
     }
@@ -830,47 +851,59 @@ async function handleTool(
     case "lookup_artist": {
       const found = await findArtist(args.artist_name);
       if (!found) {
-        // Try DB search
         const { data: matches } = await adminClient
-          .from("wiki_entries")
-          .select("id, title")
-          .ilike("title", `%${args.artist_name}%`)
+          .from("ktrenz_stars")
+          .select("id, display_name, name_ko")
+          .eq("is_active", true)
+          .or(`display_name.ilike.%${args.artist_name}%,name_ko.ilike.%${args.artist_name}%`)
           .limit(5);
         if (matches && matches.length > 0) {
-          return JSON.stringify({ error: "not_in_rankings", suggestions: matches.map((m: any) => m.title), message: `"${args.artist_name}" is not currently ranked. Did you mean: ${matches.map((m: any) => m.title).join(", ")}?` });
+          return JSON.stringify({ error: "not_found", suggestions: matches.map((m: any) => m.display_name || m.name_ko), message: `"${args.artist_name}" 을(를) 찾을 수 없어요. 혹시: ${matches.map((m: any) => m.display_name || m.name_ko).join(", ")}?` });
         }
         return JSON.stringify({ error: "not_found", message: `"${args.artist_name}" was not found in the database.` });
       }
 
       const wikiId = found.wiki_entry_id;
-      const tierInfo = await getTierInfo(wikiId);
-      const all = await getAllScores();
-      const totalArtists = all.length;
+      const artistName = found.display_name || found.name_ko || args.artist_name;
+      const starId = found.id;
 
-      // Calculate category-level ranks
-      const ytRank = [...all].sort((a, b) => (b.youtube_score ?? 0) - (a.youtube_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
-      const bzRank = [...all].sort((a, b) => (b.buzz_score ?? 0) - (a.buzz_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
-      const muRank = [...all].sort((a, b) => (b.music_score ?? 0) - (a.music_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
-      const alRank = [...all].sort((a, b) => (b.album_sales_score ?? 0) - (a.album_sales_score ?? 0)).findIndex(a => a.wiki_entry_id === wikiId) + 1;
+      // Get active trend keywords for this artist
+      let triggerQuery = adminClient
+        .from("ktrenz_trend_triggers")
+        .select("id, keyword, keyword_ko, keyword_category, influence_index, context_ko, context, source_title, source_url, source_image_url, detected_at, trigger_source")
+        .eq("status", "active")
+        .order("influence_index", { ascending: false, nullsFirst: false })
+        .limit(10);
 
-      // Find #1 scores for gap analysis
-      const top1 = all[0];
+      if (starId) triggerQuery = triggerQuery.eq("star_id", starId);
+      else if (wikiId) triggerQuery = triggerQuery.eq("wiki_entry_id", wikiId);
+      else triggerQuery = triggerQuery.ilike("artist_name", `%${artistName}%`);
+
+      const { data: artistTriggers } = await triggerQuery;
+
+      const categories: Record<string, number> = {};
+      let totalInfluence = 0;
+      for (const t of artistTriggers || []) {
+        categories[t.keyword_category] = (categories[t.keyword_category] || 0) + 1;
+        totalInfluence += (t.influence_index || 0);
+      }
+
+      const topKeywords = (artistTriggers || []).slice(0, 5).map((t: any) => ({
+        keyword: t.keyword_ko || t.keyword,
+        category: t.keyword_category,
+        influence: t.influence_index,
+        source: t.trigger_source,
+      }));
 
       return JSON.stringify({
-        artist: (found.wiki_entries as any)?.title,
-        rank: found._rank,
-        total_artists: totalArtists,
-        energy_score: Math.round(found.energy_score ?? 0),
-        energy_change_24h: +(found.energy_change_24h ?? 0).toFixed(1),
-        total_score: Math.round(found.total_score ?? 0),
-        youtube: { score: Math.round(found.youtube_score ?? 0), rank: ytRank },
-        buzz: { score: Math.round(found.buzz_score ?? 0), rank: bzRank },
-        music: { score: Math.round(found.music_score ?? 0), rank: muRank },
-        album: { score: Math.round(found.album_sales_score ?? 0), rank: alRank },
-        top1_energy: top1 ? { artist: (top1.wiki_entries as any)?.title, score: Math.round(top1.energy_score ?? 0) } : null,
-        tier: tierInfo?.tier ?? null,
-        latest_video: tierInfo?.latest_video_title ?? null,
-        scored_at: found.scored_at,
+        artist: artistName,
+        star_type: found.star_type ?? null,
+        image_url: found.image_url ?? null,
+        keyword_count: (artistTriggers || []).length,
+        total_influence: Math.round(totalInfluence),
+        categories,
+        top_keywords: topKeywords,
+        message: `${artistName}의 활성 트렌드 키워드 ${(artistTriggers || []).length}건, 총 영향력 ${Math.round(totalInfluence)}`,
       });
     }
 
@@ -880,16 +913,26 @@ async function handleTool(
       for (const n of names) {
         const found = await findArtist(n);
         if (found) {
+          const starId = found.id;
+          const wikiId = found.wiki_entry_id;
+          let cmpQuery = adminClient
+            .from("ktrenz_trend_triggers")
+            .select("influence_index, keyword_category")
+            .eq("status", "active");
+          if (starId) cmpQuery = cmpQuery.eq("star_id", starId);
+          else if (wikiId) cmpQuery = cmpQuery.eq("wiki_entry_id", wikiId);
+          const { data: cmpTriggers } = await cmpQuery;
+          const cmpCategories: Record<string, number> = {};
+          let cmpInfluence = 0;
+          for (const t of cmpTriggers || []) {
+            cmpCategories[t.keyword_category] = (cmpCategories[t.keyword_category] || 0) + 1;
+            cmpInfluence += (t.influence_index || 0);
+          }
           results.push({
-            artist: (found.wiki_entries as any)?.title,
-            rank: found._rank,
-            energy_score: Math.round(found.energy_score ?? 0),
-            energy_change_24h: +(found.energy_change_24h ?? 0).toFixed(1),
-            total_score: Math.round(found.total_score ?? 0),
-            youtube_score: Math.round(found.youtube_score ?? 0),
-            buzz_score: Math.round(found.buzz_score ?? 0),
-            music_score: Math.round(found.music_score ?? 0),
-            album_sales_score: Math.round(found.album_sales_score ?? 0),
+            artist: found.display_name || found.name_ko || n,
+            keyword_count: (cmpTriggers || []).length,
+            total_influence: Math.round(cmpInfluence),
+            categories: cmpCategories,
           });
         } else {
           results.push({ artist: n, error: "not_found" });
@@ -1281,20 +1324,24 @@ async function handleTool(
         return JSON.stringify({ bias_artist: null, message: "No bias artist set yet." });
       }
 
-      const all = await getAllScores();
       const w = watched[0];
-      const found = all.find((a: any) => {
-        const title = (a.wiki_entries as any)?.title?.toLowerCase() ?? "";
-        return title === w.artist_name.toLowerCase();
-      });
+      // Get T2 trend data for watched artist
+      let watchQuery = adminClient
+        .from("ktrenz_trend_triggers")
+        .select("influence_index")
+        .eq("status", "active");
+      if (w.wiki_entry_id) watchQuery = watchQuery.eq("wiki_entry_id", w.wiki_entry_id);
+      else watchQuery = watchQuery.ilike("artist_name", `%${w.artist_name}%`);
+      const { data: watchTriggers } = await watchQuery;
+      const kwCount = (watchTriggers || []).length;
+      const totalInf = (watchTriggers || []).reduce((s: number, t: any) => s + (t.influence_index || 0), 0);
+
       return JSON.stringify({
         bias_artist: {
           artist: w.artist_name,
-          rank: found?._rank ?? null,
-          energy_score: found ? Math.round(found.energy_score ?? 0) : null,
-          energy_change_24h: found ? +(found.energy_change_24h ?? 0).toFixed(1) : null,
-          total_score: found ? Math.round(found.total_score ?? 0) : null,
-          in_rankings: !!found,
+          keyword_count: kwCount,
+          total_influence: Math.round(totalInf),
+          has_trends: kwCount > 0,
         },
       });
     }
