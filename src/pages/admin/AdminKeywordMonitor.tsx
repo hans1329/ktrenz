@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
@@ -71,6 +71,7 @@ const AdminKeywordMonitor = () => {
   const { isAdmin, loading } = useAdminAuth();
   const navigate = useNavigate();
   const [filterZone, setFilterZone] = useState<Zone | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [zoneSortDir, setZoneSortDir] = useState<Record<Zone, "desc" | "asc">>({
     rising: "desc", peaked: "desc", stable: "desc", declining: "desc", at_risk: "desc",
   });
@@ -97,15 +98,24 @@ const AdminKeywordMonitor = () => {
   }, [classified]);
 
   const groupedByZone = useMemo(() => {
-    const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    const q = searchQuery.trim().toLowerCase();
+    let base = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    if (q) {
+      base = base.filter(t =>
+        (t.keyword?.toLowerCase().includes(q)) ||
+        (t.keyword_ko?.toLowerCase().includes(q)) ||
+        (t.keyword_en?.toLowerCase().includes(q)) ||
+        (t.artist_name?.toLowerCase().includes(q))
+      );
+    }
     return ZONE_ORDER.reduce((acc, zone) => {
-      const items = filtered.filter(t => t.zone === zone);
+      const items = base.filter(t => t.zone === zone);
       const dir = zoneSortDir[zone];
       items.sort((a, b) => dir === "desc" ? b.influence_index - a.influence_index : a.influence_index - b.influence_index);
       acc[zone] = items;
       return acc;
     }, {} as Record<Zone, typeof classified>);
-  }, [classified, filterZone, zoneSortDir]);
+  }, [classified, filterZone, zoneSortDir, searchQuery]);
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">로딩 중...</div>;
   if (!isAdmin) { navigate("/admin/login"); return null; }
@@ -132,6 +142,18 @@ const AdminKeywordMonitor = () => {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-4 space-y-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="키워드 / 아티스트 검색..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-muted/30 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+
         {/* Zone summary chips */}
         <div className="flex flex-wrap gap-2">
           <button
