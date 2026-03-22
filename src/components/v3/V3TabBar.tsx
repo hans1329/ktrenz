@@ -120,6 +120,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
       <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-md bg-tabbar-background/95 backdrop-blur-md rounded-full overflow-visible"
         style={{
           transform: 'translate3d(-50%, 0, 0)',
+          boxShadow: '0 -4px 24px 0 hsl(220 10% 50% / 0.12), 0 2px 12px 0 hsl(220 10% 50% / 0.08)',
         }}>
 
         <div className="flex items-center justify-evenly h-16 max-w-md mx-auto">
