@@ -38,6 +38,7 @@ const T2TrendMap = () => {
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
     setCategoryStats(stats);
@@ -149,15 +150,22 @@ const T2TrendMap = () => {
       />
 
       <div
-        className="fixed top-14 left-0 right-0 z-40 pt-3 pb-2"
+        className="fixed top-14 left-0 right-0 z-40 pt-3 pb-2 transition-all duration-300"
         style={{
           backgroundColor: "hsl(var(--card) / 0.9)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
         }}
       >
-        {/* Title + Sort header */}
-        <div className="md:max-w-[90%] mx-auto flex items-center justify-between gap-3 px-4 pb-2">
+        {/* Title + Sort header — collapses on scroll */}
+        <div
+          className="md:max-w-[90%] mx-auto flex items-center justify-between gap-3 px-4 overflow-hidden transition-all duration-300"
+          style={{
+            maxHeight: headerCollapsed ? 0 : 40,
+            opacity: headerCollapsed ? 0 : 1,
+            paddingBottom: headerCollapsed ? 0 : 8,
+          }}
+        >
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-black text-muted-foreground">{t("trend.spectrumTitle")}</h2>
             {isAdmin && isMobile && (
@@ -207,7 +215,7 @@ const T2TrendMap = () => {
           </div>
         </div>
 
-        {/* Category filter */}
+        {/* Category filter — always visible */}
         <div className="md:max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max px-4">
             {ALL_CATEGORIES.map((cat) => {
@@ -273,7 +281,12 @@ const T2TrendMap = () => {
           }}
         >
           {VIEW_ORDER.map((mode) => (
-            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[9.5rem] pb-24 scrollbar-hide">
+            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[9.5rem] pb-24 scrollbar-hide"
+              onScroll={(e) => {
+                const scrollTop = (e.target as HTMLElement).scrollTop;
+                setHeaderCollapsed(scrollTop > 30);
+              }}
+            >
               <div className="md:max-w-[90%] mx-auto">
                 <T2TrendTreemap
                   viewMode={mode}
