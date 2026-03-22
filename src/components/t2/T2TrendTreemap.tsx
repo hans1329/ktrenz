@@ -612,15 +612,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         </div>
         <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
           <button
-            onClick={() => setSortMode("rate")}
-            className={cn(
-              "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
-              sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Trend
-          </button>
-          <button
             onClick={() => setSortMode("volume")}
             className={cn(
               "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
@@ -628,6 +619,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             )}
           >
             Hot
+          </button>
+          <button
+            onClick={() => setSortMode("rate")}
+            className={cn(
+              "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+              sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Trend
           </button>
         </div>
       </div>
