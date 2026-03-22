@@ -164,7 +164,7 @@ const V3EnergyChart = ({ wikiEntryId }: V3EnergyChartProps) => {
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <Card className="p-5 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border-primary/15 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+      <Card className="p-5 bg-gradient-to-br from-primary/10 via-card to-primary/10 border-primary/30 rounded-none sm:rounded-xl border-x-0 sm:border-x">
         <div className="flex flex-col items-center gap-3">
           <EnergyGauge score={Number(energyScore)} />
           <div className="flex items-center gap-2">
