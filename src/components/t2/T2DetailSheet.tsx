@@ -724,7 +724,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     </div>
                     {user && (
                       <span className="text-[11px] font-bold text-primary whitespace-nowrap">
-                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <span className="text-muted-foreground/90 font-normal">T</span>
+                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} <Diamond className="inline w-3 h-3 text-purple-400 fill-purple-400/40" />
                       </span>
                     )}
                   </div>
