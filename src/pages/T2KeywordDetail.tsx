@@ -269,6 +269,25 @@ const T2KeywordDetail = () => {
     staleTime: 5 * 60_000,
   });
 
+  // Check if user already generated any insight today (1/day limit)
+  const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const { data: usedToday } = useQuery({
+    queryKey: ["t2-ai-insight-daily", user?.id, todayStr],
+    queryFn: async () => {
+      const startOfDay = `${todayStr}T00:00:00.000Z`;
+      const endOfDay = `${todayStr}T23:59:59.999Z`;
+      const { count } = await supabase
+        .from("ktrenz_trend_ai_insights" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("generated_by", user!.id)
+        .gte("created_at", startOfDay)
+        .lte("created_at", endOfDay);
+      return (count ?? 0) > 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
   const insightMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-insight", {
@@ -280,6 +299,7 @@ const T2KeywordDetail = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["t2-ai-insight", triggerId, language] });
+      queryClient.invalidateQueries({ queryKey: ["t2-ai-insight-daily", user?.id, todayStr] });
     },
   });
 
@@ -700,18 +720,24 @@ const T2KeywordDetail = () => {
               {t2l("agencyInsight", language)} & AI
             </h2>
             {!aiInsightData && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                onClick={() => insightMutation.mutate()}
-                disabled={insightMutation.isPending}
-              >
-                <Sparkles className={cn("w-3 h-3", insightMutation.isPending && "animate-spin")} />
-                {insightMutation.isPending
-                  ? (language === "ko" ? "분석 중..." : "Analyzing...")
-                  : (language === "ko" ? "AI 분석 생성" : "Generate AI Analysis")}
-              </Button>
+              usedToday ? (
+                <span className="text-[10px] text-muted-foreground">
+                  {language === "ko" ? "오늘 분석 1회 사용 완료" : "Daily limit reached"}
+                </span>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={() => insightMutation.mutate()}
+                  disabled={insightMutation.isPending || !user}
+                >
+                  <Sparkles className={cn("w-3 h-3", insightMutation.isPending && "animate-spin")} />
+                  {insightMutation.isPending
+                    ? (language === "ko" ? "분석 중..." : "Analyzing...")
+                    : (language === "ko" ? "AI 분석 생성" : "Generate AI Analysis")}
+                </Button>
+              )
             )}
           </div>
 
