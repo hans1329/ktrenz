@@ -44,6 +44,7 @@ import AdminStars from "./pages/admin/AdminStars";
 import AdminTrendIntel from "./pages/admin/AdminTrendIntel";
 import AdminShoppingKeywords from "./pages/admin/AdminShoppingKeywords";
 import AdminUserAnalytics from "./pages/admin/AdminUserAnalytics";
+import AdminKeywordMonitor from "./pages/admin/AdminKeywordMonitor";
 import T2TrendMap from "./pages/T2TrendMap";
 import T2MyArtists from "./pages/T2MyArtists";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
