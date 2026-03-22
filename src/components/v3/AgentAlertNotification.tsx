@@ -151,23 +151,17 @@ export default function AgentAlertNotification({
     if (group) {
       const firstAlert = group.alerts[0];
       const seedPrompts: Record<string, Record<string, string>> = {
-        energy_spike: {
-          ko: `${group.artistName}의 에너지가 급등한 이유를 분석해줘. 어떤 이벤트가 있었는지 알려줘.`,
-          en: `Analyze why ${group.artistName}'s energy is surging. What events are driving this?`,
-          ja: `${group.artistName}のエネルギーが急上昇した理由を分析して。何が起きているの？`,
-          zh: `分析一下${group.artistName}能量飙升的原因，发生了什么事？`,
-        },
-        energy_drop: {
-          ko: `${group.artistName}의 에너지가 하락한 이유를 분석해줘. 팬으로서 어떻게 도울 수 있을까?`,
-          en: `Analyze why ${group.artistName}'s energy is dropping. How can fans help?`,
-          ja: `${group.artistName}のエネルギーが下落した理由を分析して。ファンとして何ができる？`,
-          zh: `分析一下${group.artistName}能量下降的原因，粉丝能做什么？`,
+        trend_spike: {
+          ko: `${group.artistName} 관련 트렌드 키워드가 급등했어! 어떤 키워드가 뜨고 있는지 분석해줘.`,
+          en: `${group.artistName}'s trend keywords are surging! Analyze which keywords are trending.`,
+          ja: `${group.artistName}のトレンドキーワードが急上昇！どんなキーワードが注目されているか分析して。`,
+          zh: `${group.artistName}的趋势关键词飙升！分析一下哪些关键词正在流行。`,
         },
         rank_1: {
-          ko: `${group.artistName}이(가) 1위를 달성했어! 어떤 요인이 1위를 이끌었는지 분석해줘.`,
-          en: `${group.artistName} hit #1! Analyze what factors drove them to the top.`,
-          ja: `${group.artistName}が1位を達成！何が1位に導いたか分析して。`,
-          zh: `${group.artistName}达到了第一名！分析是什么因素推动的。`,
+          ko: `${group.artistName}이(가) 트렌드 1위를 달성했어! 어떤 키워드가 1위를 이끌었는지 분석해줘.`,
+          en: `${group.artistName} hit #1 in trends! Analyze what keywords drove them to the top.`,
+          ja: `${group.artistName}がトレンド1位を達成！何が1位に導いたか分析して。`,
+          zh: `${group.artistName}达到了趋势第一名！分析是什么关键词推动的。`,
         },
         milestone: {
           ko: `${group.artistName}의 새로운 마일스톤에 대해 자세히 알려줘.`,
@@ -177,7 +171,7 @@ export default function AgentAlertNotification({
         },
       };
       const lang = localStorage.getItem("ktrenz-language") || "ko";
-      const prompts = seedPrompts[firstAlert.type] || seedPrompts.energy_spike;
+      const prompts = seedPrompts[firstAlert.type] || seedPrompts.trend_spike;
       const message = prompts[lang] || prompts.en;
 
       localStorage.setItem("ktrenz_agent_seed", JSON.stringify({
