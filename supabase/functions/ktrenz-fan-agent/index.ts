@@ -556,18 +556,32 @@ async function handleTool(
     if (rankingCache.data) return rankingCache.data;
 
     const { data: scores } = await adminClient
-      .from("v3_scores_v2")
-      .select("wiki_entry_id, total_score, energy_score, energy_change_24h, youtube_score, buzz_score, album_sales_score, music_score, scored_at, wiki_entries:wiki_entry_id(id, title, image_url)")
-      .order("scored_at", { ascending: false });
+      .from("ktrenz_trend_triggers")
+      .select("artist_name, star_id, wiki_entry_id, influence_index, keyword_category")
+      .eq("status", "active");
 
-    // Deduplicate: keep latest per artist
-    const seen = new Map<string, any>();
-    for (const row of scores ?? []) {
-      if (!seen.has(row.wiki_entry_id)) seen.set(row.wiki_entry_id, row);
+    const artistMap = new Map<string, any>();
+    for (const t of scores || []) {
+      const key = t.wiki_entry_id || t.star_id || t.artist_name;
+      if (!key) continue;
+      const existing = artistMap.get(key);
+      if (existing) {
+        existing.keyword_count++;
+        existing.total_influence += (t.influence_index || 0);
+        existing.categories[t.keyword_category] = (existing.categories[t.keyword_category] || 0) + 1;
+      } else {
+        artistMap.set(key, {
+          wiki_entry_id: t.wiki_entry_id,
+          star_id: t.star_id,
+          artist_name: t.artist_name,
+          keyword_count: 1,
+          total_influence: t.influence_index || 0,
+          categories: { [t.keyword_category]: 1 },
+        });
+      }
     }
 
-    // Sort by energy desc, assign rank
-    const sorted = [...seen.values()].sort((a, b) => (b.energy_score ?? 0) - (a.energy_score ?? 0));
+    const sorted = [...artistMap.values()].sort((a, b) => b.total_influence - a.total_influence);
     sorted.forEach((s, i) => { s._rank = i + 1; });
     rankingCache.data = sorted;
     return sorted;
