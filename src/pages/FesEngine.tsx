@@ -48,7 +48,6 @@ const FesEngine = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  useEffect(() => { document.documentElement.classList.add("v3-theme"); return () => { document.documentElement.classList.remove("v3-theme"); }; }, []);
 
   const PageContent = () => (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 pb-24 space-y-4">

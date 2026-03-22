@@ -48,8 +48,6 @@ const UserDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
   // ── Fetch user's watched artists ──

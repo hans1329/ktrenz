@@ -99,8 +99,6 @@ const T2TrendMap = () => {
   }, [handleSwipe, isDrawerInteraction]);
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
   const translateX = -currentIndex * 100 + (isDragging ? (dragOffset / window.innerWidth) * 100 : 0);

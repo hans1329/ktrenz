@@ -53,8 +53,6 @@ const V3Rankings = () => {
   const [category, setCategory] = useState<EnergyCategory>("all");
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
   // Fetch user's agent slots

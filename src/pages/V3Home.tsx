@@ -21,8 +21,6 @@ const V3Home = () => {
 
   // V3 다크 테마 적용
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
   const renderContent = () => {

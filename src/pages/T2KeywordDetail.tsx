@@ -121,9 +121,7 @@ const T2KeywordDetail = () => {
   const track = useTrackEvent();
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
     if (triggerId) track("t2_keyword_detail_view", { section: triggerId });
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, [triggerId]);
 
   // Fetch trigger data
