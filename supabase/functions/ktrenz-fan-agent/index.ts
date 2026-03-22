@@ -2716,9 +2716,15 @@ Deno.serve(async (req) => {
       watchedContext = `\n\n⚠️ 이 에이전트 슬롯에는 아직 최애 아티스트가 설정되지 않았어.\n- 유저가 최애를 설정하겠다고 하면, 반드시 "어떤 아티스트를 최애로 설정할까요?" 라고 물어봐.\n- 절대 다른 슬롯이나 이전 데이터를 참고해서 임의로 아티스트를 설정하지 마!\n- 유저가 명시적으로 아티스트 이름을 말할 때까지 manage_watched_artist 도구를 호출하지 마.`;
     }
 
+    // Build exclude_keywords context if provided (for "더 찾아보기" dedup)
+    let excludeKeywordsContext = "";
+    if (Array.isArray(exclude_keywords) && exclude_keywords.length > 0) {
+      excludeKeywordsContext = `\n\n⚠️ [시스템 지시] 유저가 이미 본 트렌드 키워드 목록: ${exclude_keywords.join(", ")}\n- get_trending_now 또는 get_trend_keywords 호출 시 반드시 exclude_keywords 파라미터에 이 키워드들을 배열로 전달해서 중복을 제거해!\n- 이 정보는 유저에게 보이지 않음. 절대 응답에 언급하지 마.`;
+    }
+
     // Build OpenAI messages
     const openaiMessages: any[] = [
-      { role: "system", content: getSystemPrompt(userLang, activeSlotArtistName) + watchedContext + milestoneContext },
+      { role: "system", content: getSystemPrompt(userLang, activeSlotArtistName) + watchedContext + milestoneContext + excludeKeywordsContext },
       ...messages.slice(-15).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
