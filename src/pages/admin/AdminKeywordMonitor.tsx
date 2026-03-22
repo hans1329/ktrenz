@@ -169,6 +169,13 @@ const AdminKeywordMonitor = () => {
                     <Icon className={`w-4 h-4 ${cfg.color}`} />
                     <h2 className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</h2>
                     <span className="text-xs text-muted-foreground">({items.length})</span>
+                    <button
+                      onClick={() => setZoneSortDir(prev => ({ ...prev, [zone]: prev[zone] === "desc" ? "asc" : "desc" }))}
+                      className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-background/50 hover:bg-background/80 transition-colors text-muted-foreground"
+                    >
+                      {zoneSortDir[zone] === "desc" ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                      {zoneSortDir[zone] === "desc" ? "높은순" : "낮은순"}
+                    </button>
                   </div>
                   <div className="space-y-1.5">
                     {items.map(t => {
