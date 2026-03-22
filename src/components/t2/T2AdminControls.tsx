@@ -67,7 +67,7 @@ const T2AdminControls = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_pipeline_state" as any)
-        .select("id, run_id, phase, status, current_offset, total_candidates")
+        .select("id, run_id, phase, status, current_offset, total_candidates, created_at")
         .in("status", ["running", "postprocess_requested", "postprocess_running"])
         .order("created_at", { ascending: false })
         .limit(1);
