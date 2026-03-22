@@ -324,6 +324,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       // Fetch triggers
       const { data } = await supabase
