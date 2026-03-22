@@ -67,7 +67,7 @@ const T2AdminControls = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_pipeline_state" as any)
-        .select("id, run_id, phase, status, current_offset, total_candidates")
+        .select("id, run_id, phase, status, current_offset, total_candidates, created_at")
         .in("status", ["running", "postprocess_requested", "postprocess_running"])
         .order("created_at", { ascending: false })
         .limit(1);
@@ -97,9 +97,10 @@ const T2AdminControls = () => {
   useEffect(() => {
     if (!pipelineActive) return;
     const phase = pipelineActive.phase as PipelineRun["phase"];
+    const dbStartedAt = pipelineActive.created_at ? new Date(pipelineActive.created_at) : new Date();
     setActiveRuns((prev) => {
       if (prev[phase]) return prev;
-      return { ...prev, [phase]: { startedAt: new Date(), phase } };
+      return { ...prev, [phase]: { startedAt: dbStartedAt, phase } };
     });
   }, [pipelineActive]);
 
