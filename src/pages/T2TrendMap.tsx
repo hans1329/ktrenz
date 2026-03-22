@@ -21,7 +21,9 @@ const VIEW_TABS: { key: ViewMode; icon: typeof LayoutGrid; label: string }[] = [
   { key: "artist", icon: Users, label: "Artist" },
 ];
 
-const SWIPE_THRESHOLD = 40;
+const SWIPE_THRESHOLD = 50;
+const SWIPE_VELOCITY_THRESHOLD = 0.3;
+const DIRECTION_LOCK_THRESHOLD = 10;
 const HEADER_COLLAPSE_THRESHOLD = 60;
 
 const T2TrendMap = () => {
@@ -33,7 +35,6 @@ const T2TrendMap = () => {
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const touchRef = useRef<{ startX: number; startY: number } | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
@@ -41,6 +42,13 @@ const T2TrendMap = () => {
   const [myCount, setMyCount] = useState(0);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+
+  const touchRef = useRef<{
+    startX: number;
+    startY: number;
+    startTime: number;
+    locked: "horizontal" | "vertical" | null;
+  } | null>(null);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
     setCategoryStats(stats);
@@ -55,63 +63,79 @@ const T2TrendMap = () => {
     return Boolean(target.closest('[data-vaul-drawer], [data-vaul-overlay], [role="dialog"]'));
   }, []);
 
-  const handleSwipe = useCallback((deltaX: number) => {
-    const idx = VIEW_ORDER.indexOf(viewMode);
-    if (deltaX < -SWIPE_THRESHOLD && idx < VIEW_ORDER.length - 1) {
-      setViewMode(VIEW_ORDER[idx + 1]);
-    } else if (deltaX > SWIPE_THRESHOLD && idx > 0) {
-      setViewMode(VIEW_ORDER[idx - 1]);
-    }
-  }, [viewMode]);
-
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (isDrawerInteraction(e.target)) {
       touchRef.current = null;
-      setIsDragging(false);
-      setDragOffset(0);
       return;
     }
-
-    const t = e.touches[0];
-    touchRef.current = { startX: t.clientX, startY: t.clientY };
-    setIsDragging(true);
+    const touch = e.touches[0];
+    touchRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: Date.now(),
+      locked: null,
+    };
+    setIsDragging(false);
+    setDragOffset(0);
   }, [isDrawerInteraction]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (isDrawerInteraction(e.target) || !touchRef.current) return;
+    if (!touchRef.current || isDrawerInteraction(e.target)) return;
 
-    const t = e.touches[0];
-    const dx = t.clientX - touchRef.current.startX;
-    const dy = t.clientY - touchRef.current.startY;
-    if (Math.abs(dx) > Math.abs(dy) * 1.2) {
-      const idx = VIEW_ORDER.indexOf(viewMode);
-      const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
-      setDragOffset(atEdge ? dx * 0.2 : dx);
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchRef.current.startX;
+    const dy = touch.clientY - touchRef.current.startY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    // Direction lock: decide once
+    if (!touchRef.current.locked) {
+      if (absDx < DIRECTION_LOCK_THRESHOLD && absDy < DIRECTION_LOCK_THRESHOLD) return;
+      touchRef.current.locked = absDx > absDy ? "horizontal" : "vertical";
     }
+
+    if (touchRef.current.locked === "vertical") return;
+
+    // Horizontal swipe — prevent vertical scroll
+    e.preventDefault();
+    setIsDragging(true);
+
+    const idx = VIEW_ORDER.indexOf(viewMode);
+    const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
+    setDragOffset(atEdge ? dx * 0.15 : dx);
   }, [isDrawerInteraction, viewMode]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (isDrawerInteraction(e.target)) {
+    if (!touchRef.current || isDrawerInteraction(e.target)) {
       touchRef.current = null;
       setIsDragging(false);
       setDragOffset(0);
       return;
     }
 
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchRef.current.startX;
+    const elapsed = Date.now() - touchRef.current.startTime;
+    const velocity = Math.abs(dx) / elapsed; // px/ms
+    const wasHorizontal = touchRef.current.locked === "horizontal";
+
+    touchRef.current = null;
     setIsDragging(false);
     setDragOffset(0);
-    if (!touchRef.current) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchRef.current.startX;
-    const dy = t.clientY - touchRef.current.startY;
-    touchRef.current = null;
-    if (Math.abs(dx) > Math.abs(dy) * 1.5) {
-      handleSwipe(dx);
-    }
-  }, [handleSwipe, isDrawerInteraction]);
 
-  useEffect(() => {
-  }, []);
+    if (!wasHorizontal) return;
+
+    const idx = VIEW_ORDER.indexOf(viewMode);
+    const shouldSwipe = Math.abs(dx) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
+
+    if (shouldSwipe) {
+      if (dx < 0 && idx < VIEW_ORDER.length - 1) {
+        setViewMode(VIEW_ORDER[idx + 1]);
+      } else if (dx > 0 && idx > 0) {
+        setViewMode(VIEW_ORDER[idx - 1]);
+      }
+    }
+  }, [viewMode, isDrawerInteraction]);
 
   const translateX = -currentIndex * 100 + (isDragging ? (dragOffset / window.innerWidth) * 100 : 0);
 
