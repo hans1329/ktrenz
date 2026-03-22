@@ -117,7 +117,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
           </span>
         </div>
         <button
-          onClick={() => { onClose(); navigate("/t2"); }}
+          onClick={() => { onClose(); navigate("/dashboard"); }}
           className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
         >
           <span>{totalCount > 5 ? "5+" : bets.length} active</span>
