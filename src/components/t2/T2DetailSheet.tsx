@@ -232,6 +232,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   });
 
 
+  const handlePlaceBet = () => {
     if (!user) {
       toast.info(t("loginToBet", language));
       return;
