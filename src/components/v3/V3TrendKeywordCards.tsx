@@ -50,7 +50,7 @@ const categoryEmoji: Record<string, string> = {
   food: "🍽️",
 };
 
-const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore }) => {
+const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore, loadMoreLabel }) => {
   if (!keywords || keywords.length === 0) return null;
 
   const displayed = keywords.slice(0, 5);
