@@ -6,7 +6,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface TrendTrigger {
   id: string;
@@ -71,6 +71,9 @@ const AdminKeywordMonitor = () => {
   const { isAdmin, loading } = useAdminAuth();
   const navigate = useNavigate();
   const [filterZone, setFilterZone] = useState<Zone | "all">("all");
+  const [zoneSortDir, setZoneSortDir] = useState<Record<Zone, "desc" | "asc">>({
+    rising: "desc", peaked: "desc", stable: "desc", declining: "desc", at_risk: "desc",
+  });
 
   const { data: triggers, isLoading, refetch } = useQuery({
     queryKey: ["admin-keyword-monitor"],
@@ -85,19 +88,27 @@ const AdminKeywordMonitor = () => {
     refetchInterval: 30000,
   });
 
+  const classified = useMemo(() => (triggers ?? []).map(t => ({ ...t, zone: classifyKeyword(t) })), [triggers]);
+
+  const zoneCounts = useMemo(() => {
+    const counts: Record<Zone, number> = { rising: 0, peaked: 0, stable: 0, declining: 0, at_risk: 0 };
+    classified.forEach(t => counts[t.zone]++);
+    return counts;
+  }, [classified]);
+
+  const groupedByZone = useMemo(() => {
+    const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    return ZONE_ORDER.reduce((acc, zone) => {
+      const items = filtered.filter(t => t.zone === zone);
+      const dir = zoneSortDir[zone];
+      items.sort((a, b) => dir === "desc" ? b.influence_index - a.influence_index : a.influence_index - b.influence_index);
+      acc[zone] = items;
+      return acc;
+    }, {} as Record<Zone, typeof classified>);
+  }, [classified, filterZone, zoneSortDir]);
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">로딩 중...</div>;
   if (!isAdmin) { navigate("/admin/login"); return null; }
-
-  const classified = (triggers ?? []).map(t => ({ ...t, zone: classifyKeyword(t) }));
-
-  const zoneCounts: Record<Zone, number> = { rising: 0, peaked: 0, stable: 0, declining: 0, at_risk: 0 };
-  classified.forEach(t => zoneCounts[t.zone]++);
-
-  const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
-  const groupedByZone = ZONE_ORDER.reduce((acc, zone) => {
-    acc[zone] = filtered.filter(t => t.zone === zone);
-    return acc;
-  }, {} as Record<Zone, typeof classified>);
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,6 +174,13 @@ const AdminKeywordMonitor = () => {
                     <Icon className={`w-4 h-4 ${cfg.color}`} />
                     <h2 className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</h2>
                     <span className="text-xs text-muted-foreground">({items.length})</span>
+                    <button
+                      onClick={() => setZoneSortDir(prev => ({ ...prev, [zone]: prev[zone] === "desc" ? "asc" : "desc" }))}
+                      className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-background/50 hover:bg-background/80 transition-colors text-muted-foreground"
+                    >
+                      {zoneSortDir[zone] === "desc" ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                      {zoneSortDir[zone] === "desc" ? "높은순" : "낮은순"}
+                    </button>
                   </div>
                   <div className="space-y-1.5">
                     {items.map(t => {
