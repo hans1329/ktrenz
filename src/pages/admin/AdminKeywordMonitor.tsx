@@ -70,6 +70,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const AdminKeywordMonitor = () => {
   const { isAdmin, loading } = useAdminAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [filterZone, setFilterZone] = useState<Zone | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
