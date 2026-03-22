@@ -1,11 +1,15 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { LayoutGrid, List, Users } from "lucide-react";
+import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
-import T2TrendTreemap, { type TrendCategory, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import T2TrendTreemap, { type TrendCategory, type SortMode, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import T2AdminControls from "@/components/t2/T2AdminControls";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 type ViewMode = "treemap" | "list" | "artist";
 
@@ -22,7 +26,12 @@ const SWIPE_THRESHOLD = 40;
 const T2TrendMap = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("treemap");
   const [category, setCategory] = useState<TrendCategory>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("volume");
   const isMobile = useIsMobile();
+  const { t } = useLanguage();
+  const { isAdmin } = useAdminAuth();
+  const navigate = useNavigate();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const touchRef = useRef<{ startX: number; startY: number } | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -195,6 +204,57 @@ const T2TrendMap = () => {
             })}
           </div>
         </div>
+
+        {/* Title + Sort header (fixed, outside swipe) */}
+        <div className="md:max-w-[90%] mx-auto flex items-center justify-between gap-3 px-4 pt-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-extrabold text-muted-foreground">{t("trend.spectrumTitle")}</h2>
+            {isAdmin && isMobile && (
+              <div className="relative">
+                <button onClick={() => setAdminMenuOpen(v => !v)}
+                  className="p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors">
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+                {adminMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setAdminMenuOpen(false)} />
+                    <div className="absolute left-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-lg p-3 min-w-[220px]">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Admin Tools</p>
+                      <T2AdminControls />
+                      <div className="border-t border-border mt-2 pt-2">
+                        <button onClick={() => { navigate("/admin"); setAdminMenuOpen(false); }}
+                          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                          <Zap className="w-3 h-3" /> 관리자 대시보드
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {isAdmin && !isMobile && <T2AdminControls />}
+          </div>
+          <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
+            <button
+              onClick={() => setSortMode("volume")}
+              className={cn(
+                "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                sortMode === "volume" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Hot
+            </button>
+            <button
+              onClick={() => setSortMode("rate")}
+              className={cn(
+                "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Trend
+            </button>
+          </div>
+        </div>
       </div>
 
       <div
@@ -212,7 +272,7 @@ const T2TrendMap = () => {
           }}
         >
           {VIEW_ORDER.map((mode) => (
-            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[6.75rem] pb-24 scrollbar-hide">
+            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[9.5rem] pb-24 scrollbar-hide">
               <div className="md:max-w-[90%] mx-auto">
                 <T2TrendTreemap
                   viewMode={mode}
@@ -220,6 +280,9 @@ const T2TrendMap = () => {
                   selectedCategory={category}
                   onCategoryChange={setCategory}
                   hideCategory
+                  hideHeader
+                  sortMode={sortMode}
+                  onSortModeChange={setSortMode}
                   onCategoryStatsChange={handleCategoryStatsChange}
                 />
               </div>

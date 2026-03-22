@@ -276,7 +276,7 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, onCategoryStatsChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void }) => {
+const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void }) => {
   const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
   const selectedCategory = externalCategory ?? internalCategory;
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
@@ -285,7 +285,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
   const setViewMode = onViewModeChange ?? setInternalViewMode;
-  const [sortMode, setSortMode] = useState<SortMode>("volume");
+  const [internalSortMode, setInternalSortMode] = useState<SortMode>("volume");
+  const sortMode = externalSortMode ?? internalSortMode;
+  const setSortMode = onSortModeChange ?? setInternalSortMode;
   
   const isMobile = useIsMobile();
   const { language, t } = useLanguage();
@@ -641,6 +643,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   return (
     <div className="px-0 md:px-4 pb-4">
       {/* Header */}
+      {!hideHeader && (
       <div className="pt-4 pb-3 flex items-center justify-between gap-3 px-4 md:px-0">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-extrabold text-muted-foreground">{t("trend.spectrumTitle")}</h2>
@@ -690,6 +693,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           </button>
         </div>
       </div>
+      )}
 
       {!hideCategory && (
       <div className={cn(
