@@ -784,8 +784,10 @@ const V3TrendRankings = () => {
               className={cn("p-2.5 rounded-full transition-colors", viewMode === "treemap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
               <LayoutGrid className="w-5 h-5" />
             </button>
+            </div>
           </div>
         </div>
+      </div>
       </div>
 
       {viewMode === "treemap" ? (
