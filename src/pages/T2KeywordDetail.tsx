@@ -720,18 +720,24 @@ const T2KeywordDetail = () => {
               {t2l("agencyInsight", language)} & AI
             </h2>
             {!aiInsightData && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                onClick={() => insightMutation.mutate()}
-                disabled={insightMutation.isPending}
-              >
-                <Sparkles className={cn("w-3 h-3", insightMutation.isPending && "animate-spin")} />
-                {insightMutation.isPending
-                  ? (language === "ko" ? "분석 중..." : "Analyzing...")
-                  : (language === "ko" ? "AI 분석 생성" : "Generate AI Analysis")}
-              </Button>
+              usedToday ? (
+                <span className="text-[10px] text-muted-foreground">
+                  {language === "ko" ? "오늘 분석 1회 사용 완료" : "Daily limit reached"}
+                </span>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={() => insightMutation.mutate()}
+                  disabled={insightMutation.isPending || !user}
+                >
+                  <Sparkles className={cn("w-3 h-3", insightMutation.isPending && "animate-spin")} />
+                  {insightMutation.isPending
+                    ? (language === "ko" ? "분석 중..." : "Analyzing...")
+                    : (language === "ko" ? "AI 분석 생성" : "Generate AI Analysis")}
+                </Button>
+              )
             )}
           </div>
 
