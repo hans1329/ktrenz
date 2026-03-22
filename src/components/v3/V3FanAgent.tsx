@@ -190,6 +190,7 @@ async function streamChat({
   token,
   agentSlotId,
   quickActionHint,
+  excludeKeywords,
   onDelta,
   onMeta,
   onStatus,
@@ -199,6 +200,7 @@ async function streamChat({
   token: string;
   agentSlotId?: string | null;
   quickActionHint?: QuickActionHint;
+  excludeKeywords?: string[];
   onDelta: (text: string) => void;
   onMeta?: (meta: any) => void;
   onStatus?: (status: string) => void;
@@ -232,6 +234,7 @@ async function streamChat({
       language: (window as any).__ktrenz_lang || "ko",
       agent_slot_id: agentSlotId ?? null,
       quick_action: quickActionHint ?? null,
+      ...(excludeKeywords && excludeKeywords.length > 0 ? { exclude_keywords: excludeKeywords } : {}),
     }),
   });
 
@@ -953,7 +956,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
   const handleSend = useCallback(async (
     overrideText?: string,
     bypassPurchaseConfirm = false,
-    quickActionHint?: QuickActionHint
+    quickActionHint?: QuickActionHint,
+    excludeKeywords?: string[]
   ) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
@@ -984,6 +988,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         token: session.access_token,
         agentSlotId: activeSlot?.id,
         quickActionHint,
+        excludeKeywords,
         onDelta: (chunk) => {
           assistantContent += chunk;
           setMessages((prev) => {
@@ -1575,10 +1580,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 : cats.length === 1
                   ? `${cats[0]} 카테고리 더보기`
                   : "트렌드 더 찾아보기";
-              const shownKeywords = effectiveTrendData.map(k => k.keyword_ko || k.keyword).join(", ");
+              const shownKwList = effectiveTrendData.map(k => k.keyword_ko || k.keyword);
               const prompt = hasOneArtist
-                ? `${artists[0]}의 다른 트렌드 키워드도 보여줘. 이미 본 키워드: ${shownKeywords}`
-                : `다른 트렌드 키워드도 더 보여줘. 이미 본 키워드: ${shownKeywords}`;
+                ? `${artists[0]}의 다른 트렌드 키워드도 보여줘`
+                : "다른 트렌드 키워드도 더 보여줘";
               return (
                 <V3TrendKeywordCards
                   keywords={effectiveTrendData}
@@ -1587,7 +1592,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                     const artistPart = kw.artist ? ` (${kw.artist})` : "";
                     handleSend(`"${displayName}"${artistPart} 키워드에 대해 더 자세히 분석해줘. 왜 이 트렌드가 감지됐고 팬으로서 어떻게 활용할 수 있을까?`);
                   }}
-                  onLoadMore={() => handleSend(prompt)}
+                  onLoadMore={() => handleSend(prompt, false, undefined, shownKwList)}
                   loadMoreLabel={label}
                 />
               );
