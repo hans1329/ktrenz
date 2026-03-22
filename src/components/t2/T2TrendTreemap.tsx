@@ -113,7 +113,7 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 10%, 38%, 0.72)" },
 };
 
-export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "shopping"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "food", "fashion", "beauty", "media", "event", "shopping"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
