@@ -97,10 +97,13 @@ const AdminKeywordMonitor = () => {
   classified.forEach(t => zoneCounts[t.zone]++);
 
   const filtered = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
-  const groupedByZone = ZONE_ORDER.reduce((acc, zone) => {
-    acc[zone] = filtered.filter(t => t.zone === zone);
+  const groupedByZone = useMemo(() => ZONE_ORDER.reduce((acc, zone) => {
+    const items = filtered.filter(t => t.zone === zone);
+    const dir = zoneSortDir[zone];
+    items.sort((a, b) => dir === "desc" ? b.influence_index - a.influence_index : a.influence_index - b.influence_index);
+    acc[zone] = items;
     return acc;
-  }, {} as Record<Zone, typeof classified>);
+  }, {} as Record<Zone, typeof classified>), [filtered, zoneSortDir]);
 
   return (
     <div className="min-h-screen bg-background">
