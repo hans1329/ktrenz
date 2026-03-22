@@ -142,6 +142,18 @@ const AdminKeywordMonitor = () => {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-4 space-y-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="키워드 / 아티스트 검색..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-muted/30 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+
         {/* Zone summary chips */}
         <div className="flex flex-wrap gap-2">
           <button
