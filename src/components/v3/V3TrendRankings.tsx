@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2, Star, Zap } from "lucide-react";
+import { TrendingUp, ChevronUp, ChevronDown, ChevronRight, Flame, LayoutGrid, List, Crown, Medal, Youtube, Twitter, Music, Disc3, Loader2, Star, Zap, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ArtistListingRequestDialog from "@/components/v3/ArtistListingRequestDialog";
@@ -328,6 +328,7 @@ const V3TrendRankings = () => {
   const [collectingModule, setCollectingModule] = useState<string | null>(null);
   const { data: crawlStatus } = useCrawlStatus();
   const [inspectorItem, setInspectorItem] = useState<InspectorItem | null>(null);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const toInspectorItem = useCallback((item: any): InspectorItem => {
     const entry = item.wiki_entries as any;
@@ -747,16 +748,34 @@ const V3TrendRankings = () => {
                 {t("rankings.updating")} {(crawlStatus?.metadata as any)?.processed || 0}/{(crawlStatus?.metadata as any)?.total || '...'} {t("rankings.artists")}...
               </p>
             )}
-            {isAdmin && (
-              <details className="mt-1.5 pl-7 group">
-                <summary className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border border-border bg-muted text-muted-foreground cursor-pointer w-fit list-none hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors">
-                  <Zap className="w-3 h-3" /> Admin
-                </summary>
-                <div className="mt-1"><AdminCollectButtons /></div>
-              </details>
-            )}
           </div>
-          <div className="flex items-center rounded-full bg-muted p-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
+            {isAdmin && (
+              <div className="relative">
+                <button
+                  onClick={() => setAdminMenuOpen(v => !v)}
+                  className="p-2 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+                {adminMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setAdminMenuOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-lg p-3 min-w-[200px]">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Admin Tools</p>
+                      <AdminCollectButtons />
+                      <div className="border-t border-border mt-2 pt-2">
+                        <button onClick={() => { navigate("/admin"); setAdminMenuOpen(false); }}
+                          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                          <Zap className="w-3 h-3" /> 관리자 대시보드
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="flex items-center rounded-full bg-muted p-1 shrink-0">
             <button onClick={() => setViewMode("list")}
               className={cn("p-2.5 rounded-full transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
               <List className="w-5 h-5" />
@@ -765,6 +784,7 @@ const V3TrendRankings = () => {
               className={cn("p-2.5 rounded-full transition-colors", viewMode === "treemap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
               <LayoutGrid className="w-5 h-5" />
             </button>
+            </div>
           </div>
         </div>
       </div>
