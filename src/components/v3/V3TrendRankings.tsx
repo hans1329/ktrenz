@@ -775,7 +775,7 @@ const V3TrendRankings = () => {
                 )}
               </div>
             )}
-          <div className="flex items-center rounded-full bg-muted p-1 shrink-0">
+            <div className="flex items-center rounded-full bg-muted p-1 shrink-0">
             <button onClick={() => setViewMode("list")}
               className={cn("p-2.5 rounded-full transition-colors", viewMode === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
               <List className="w-5 h-5" />
