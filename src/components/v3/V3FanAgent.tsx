@@ -1021,6 +1021,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] }),
             queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user?.id] }),
             queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id] }),
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-cards", user?.id, activeSlot?.id] }),
           ]);
           refetchUsage();
         },
