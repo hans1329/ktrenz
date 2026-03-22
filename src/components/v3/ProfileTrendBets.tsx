@@ -158,6 +158,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
           );
         })}
       </div>
+      )}
     </div>
   );
 };
