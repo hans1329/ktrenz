@@ -780,7 +780,7 @@ const T2KeywordDetail = () => {
             <div className="text-center py-6">
               <Sparkles className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">
-                {language === "ko" ? "AI 분석 생성 버튼을 눌러 실시간 분석을 받아보세요" : "Click 'Generate AI Analysis' for real-time insights"}
+                {language === "ko" ? "'전문 분석 보기' 버튼을 눌러 AI 기반 인사이트를 확인하세요" : "Click 'View Expert Analysis' for AI-powered insights"}
               </p>
             </div>
           ) : (
