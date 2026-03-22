@@ -865,7 +865,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             {relatedKeywords && relatedKeywords.length > 0 && (
               <div className="border-t border-border/50 pt-3">
                 <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                  {language === "ko" ? "연관 키워드" : "Related Keywords"}
+                  {language === "ko" ? "연관된 트렌드" : "Related Trends"}
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                   {relatedKeywords.map((rk: any) => (
