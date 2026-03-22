@@ -239,6 +239,20 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
     staleTime: 60_000,
   });
 
+  const { data: isCollecting = false } = useQuery({
+    queryKey: ["treemap-pipeline-running"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("id")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .limit(1);
+      return ((data as any[])?.length ?? 0) > 0;
+    },
+    refetchInterval: 30000,
+    staleTime: 20000,
+  });
+
   const agentWikiIds = useMemo(() => new Set((agentSlots || []).map((s: any) => s.wiki_entry_id).filter(Boolean)), [agentSlots]);
 
   const { data: items, isLoading } = useQuery({
