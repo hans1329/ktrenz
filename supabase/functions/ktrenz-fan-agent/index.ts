@@ -2434,6 +2434,21 @@ Deno.serve(async (req) => {
     const { messages, mode, language, agent_slot_id, quick_action, exclude_keywords } = body;
     const userLang = language || "ko";
 
+    // Auto-extract previously shown trend keywords from conversation history for dedup
+    const autoExcludeKeywords: string[] = Array.isArray(exclude_keywords) ? [...exclude_keywords] : [];
+    if (Array.isArray(messages)) {
+      for (const msg of messages) {
+        if (msg.trendData && Array.isArray(msg.trendData)) {
+          for (const kw of msg.trendData) {
+            const kwName = kw.keyword_ko || kw.keyword;
+            if (kwName && !autoExcludeKeywords.includes(kwName)) {
+              autoExcludeKeywords.push(kwName);
+            }
+          }
+        }
+      }
+    }
+
     const quickActionRaw = typeof quick_action === "string" ? quick_action.trim().toLowerCase() : "";
     const quickActionHintMap: Record<string, "live_rankings" | "trend_analysis" | "streaming_guide" | "fan_activity"> = {
       live_rankings: "live_rankings",
@@ -2726,8 +2741,8 @@ Deno.serve(async (req) => {
 
     // Build exclude_keywords context if provided (for "더 찾아보기" dedup)
     let excludeKeywordsContext = "";
-    if (Array.isArray(exclude_keywords) && exclude_keywords.length > 0) {
-      excludeKeywordsContext = `\n\n⚠️ [시스템 지시] 유저가 이미 본 트렌드 키워드 목록: ${exclude_keywords.join(", ")}\n- get_trending_now 또는 get_trend_keywords 호출 시 반드시 exclude_keywords 파라미터에 이 키워드들을 배열로 전달해서 중복을 제거해!\n- 이 정보는 유저에게 보이지 않음. 절대 응답에 언급하지 마.`;
+    if (autoExcludeKeywords.length > 0) {
+      excludeKeywordsContext = `\n\n[시스템] 이미 표시된 트렌드 키워드: ${autoExcludeKeywords.join(", ")}\nget_trending_now/get_trend_keywords 호출 시 exclude_keywords에 반드시 전달. 응답에 언급 금지.`;
     }
 
     // Build OpenAI messages
