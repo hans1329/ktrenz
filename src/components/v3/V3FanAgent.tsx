@@ -41,6 +41,7 @@ type QuickActionCard = {
 };
 
 type ChatMessage = {
+  id?: string;
   role: "user" | "assistant";
   content: string;
   timestamp?: string;
@@ -548,7 +549,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       if (!user?.id) return [];
       const queryBuilder = (supabase as any)
         .from("ktrenz_fan_agent_messages")
-        .select("role, content, created_at, metadata")
+        .select("id, role, content, created_at, metadata")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -565,6 +566,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         return [];
       }
       return (data || []).map((d: any) => ({
+        id: d.id,
         role: d.role as "user" | "assistant",
         content: d.content,
         timestamp: d.created_at,
@@ -576,6 +578,46 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     staleTime: 1000 * 10,
     refetchOnWindowFocus: true,
   });
+
+  // Fetch persistent cards from ktrenz_agent_cards
+  const { data: persistentCards } = useQuery({
+    queryKey: ["ktrenz-agent-cards", user?.id, activeSlot?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const queryBuilder = (supabase as any)
+        .from("ktrenz_agent_cards")
+        .select("message_id, card_type, card_data")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+      if (activeSlot?.id) {
+        queryBuilder.eq("agent_slot_id", activeSlot.id);
+      }
+      const { data, error } = await queryBuilder;
+      if (error) {
+        console.warn("Cards load failed:", error.message);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!user?.id && !slotsLoading,
+    staleTime: 1000 * 10,
+    refetchOnWindowFocus: true,
+  });
+
+  // Build a map from message_id -> merged card data
+  const cardsByMessageId = useMemo(() => {
+    const map: Record<string, { reportCards?: any; trendData?: any; rankingData?: any; guideData?: any; briefing?: any }> = {};
+    for (const card of persistentCards ?? []) {
+      if (!map[card.message_id]) map[card.message_id] = {};
+      const m = map[card.message_id];
+      if (card.card_type === "report" && card.card_data?.reportCards) m.reportCards = card.card_data.reportCards;
+      if (card.card_type === "trend" && card.card_data?.trendData) m.trendData = card.card_data.trendData;
+      if (card.card_type === "ranking" && card.card_data?.rankingData) m.rankingData = card.card_data.rankingData;
+      if (card.card_type === "guide" && card.card_data?.guideData) m.guideData = card.card_data.guideData;
+      if (card.card_type === "briefing" && card.card_data?.briefing) m.briefing = card.card_data.briefing;
+    }
+    return map;
+  }, [persistentCards]);
 
   // Dates that have chat data (for calendar)
   const chatDatesSet = useMemo(() => {
@@ -979,6 +1021,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user?.id] }),
             queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user?.id] }),
             queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user?.id, activeSlot?.id] }),
+            queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-cards", user?.id, activeSlot?.id] }),
           ]);
           refetchUsage();
         },
@@ -1478,8 +1521,16 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </button>
         </div>
       )}
-      {filteredMessages.map((msg, i) => (
-        <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+      {filteredMessages.map((msg, i) => {
+        // Merge persistent cards from DB with in-memory card data
+        const persistedCards = msg.id ? cardsByMessageId[msg.id] : undefined;
+        const effectiveReportCards = msg.reportCards ?? persistedCards?.reportCards ?? null;
+        const effectiveTrendData = msg.trendData ?? persistedCards?.trendData ?? null;
+        const effectiveBriefing = msg.briefingData ?? (persistedCards?.briefing ? persistedCards.briefing : null);
+        const hasTrendCards = effectiveTrendData && effectiveTrendData.length > 0;
+
+        return (
+        <div key={msg.id || i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
             <button type="button" onClick={() => setShowAgentProfileModal(true)} className="shrink-0 hover:opacity-80 transition-opacity">
               <AgentAvatar avatarUrl={avatarUrl} size="sm" />
@@ -1487,7 +1538,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           )}
           <div className={cn("flex flex-col max-w-[85%] min-w-0 overflow-hidden", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
             {/* Hide text bubble when trendData cards already cover the content */}
-            {!(msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && !isStreaming) && (
+            {!(msg.role === "assistant" && hasTrendCards && !isStreaming) && (
               <div
                 className={cn(
                   "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
@@ -1504,18 +1555,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               </div>
             )}
 
-            {msg.role === "assistant" && msg.briefingData && (
-              <V3BriefingCard data={msg.briefingData} />
+            {msg.role === "assistant" && effectiveBriefing && (
+              <V3BriefingCard data={effectiveBriefing} />
             )}
 
-            {msg.role === "assistant" && msg.reportCards && msg.reportCards.length > 0 && (
-              <V3ReportCards cards={msg.reportCards} />
+            {msg.role === "assistant" && effectiveReportCards && effectiveReportCards.length > 0 && (
+              <V3ReportCards cards={effectiveReportCards} />
             )}
 
-
-            {msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && (
+            {msg.role === "assistant" && hasTrendCards && (
               <V3TrendKeywordCards
-                keywords={msg.trendData}
+                keywords={effectiveTrendData}
                 onKeywordClick={(kw) => {
                   const displayName = kw.keyword_ko || kw.keyword;
                   const artistPart = kw.artist ? ` (${kw.artist})` : "";
@@ -1573,7 +1623,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {/* Rainbow progress bar while waiting for agent response */}
       {isStreaming && messages.length > 0 && messages[messages.length - 1].role === "user" && (

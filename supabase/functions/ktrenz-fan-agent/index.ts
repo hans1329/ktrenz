@@ -2719,6 +2719,35 @@ Deno.serve(async (req) => {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: label })}\n\n`));
     }
 
+    // Helper to save card data to ktrenz_agent_cards table
+    async function saveCards(
+      client: any,
+      messageId: string,
+      uid: string,
+      slotId: string | null,
+      meta: any,
+    ) {
+      const cards: { message_id: string; user_id: string; agent_slot_id: string | null; card_type: string; card_data: any }[] = [];
+      if (meta.reportCards && meta.reportCards.length > 0) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "report", card_data: { reportCards: meta.reportCards } });
+      }
+      if (meta.trendData && meta.trendData.length > 0) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "trend", card_data: { trendData: meta.trendData } });
+      }
+      if (meta.rankingData) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "ranking", card_data: { rankingData: meta.rankingData } });
+      }
+      if (meta.guideData) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "guide", card_data: { guideData: meta.guideData } });
+      }
+      if (meta.briefing) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "briefing", card_data: { briefing: meta.briefing } });
+      }
+      if (cards.length > 0) {
+        await client.from("ktrenz_agent_cards").insert(cards).catch((e: any) => console.error("[saveCards]", e));
+      }
+    }
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -2783,13 +2812,14 @@ Deno.serve(async (req) => {
             const rankingMetaToSave: any = {};
             if (collectedMeta.rankingData) rankingMetaToSave.rankingData = collectedMeta.rankingData;
 
-            await adminClient.from("ktrenz_fan_agent_messages").insert({
+            const { data: rankingMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId,
               agent_slot_id: activeSlotId,
               role: "assistant",
               content: rankingContent,
               metadata: Object.keys(rankingMetaToSave).length > 0 ? rankingMetaToSave : null,
-            });
+            }).select("id").single();
+            if (rankingMsgRow?.id) await saveCards(adminClient, rankingMsgRow.id, userId, activeSlotId, collectedMeta);
 
             sendStatus(controller, writingLabels[userLang] || writingLabels.en);
             for (let i = 0; i < rankingContent.length; i += 20) {
@@ -2903,13 +2933,14 @@ Deno.serve(async (req) => {
             const trendMetaToSave: any = {};
             if (collectedMeta.reportCards) trendMetaToSave.reportCards = collectedMeta.reportCards;
 
-            await adminClient.from("ktrenz_fan_agent_messages").insert({
+            const { data: trendMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId,
               agent_slot_id: activeSlotId,
               role: "assistant",
               content: trendContent,
               metadata: Object.keys(trendMetaToSave).length > 0 ? trendMetaToSave : null,
-            });
+            }).select("id").single();
+            if (trendMsgRow?.id) await saveCards(adminClient, trendMsgRow.id, userId, activeSlotId, collectedMeta);
 
             sendStatus(controller, writingLabels[userLang] || writingLabels.en);
             for (let i = 0; i < trendContent.length; i += 20) {
@@ -2994,11 +3025,12 @@ Deno.serve(async (req) => {
             const guideMetaToSave: any = {};
             if (collectedMeta.guideData) guideMetaToSave.guideData = collectedMeta.guideData;
 
-            await adminClient.from("ktrenz_fan_agent_messages").insert({
+            const { data: guideMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId, agent_slot_id: activeSlotId, role: "assistant",
               content: guideContent,
               metadata: Object.keys(guideMetaToSave).length > 0 ? guideMetaToSave : null,
-            });
+            }).select("id").single();
+            if (guideMsgRow?.id) await saveCards(adminClient, guideMsgRow.id, userId, activeSlotId, collectedMeta);
 
             sendStatus(controller, writingLabels[userLang] || writingLabels.en);
             for (let i = 0; i < guideContent.length; i += 20) {
@@ -3300,13 +3332,14 @@ Deno.serve(async (req) => {
                 if (collectedMeta.reportCards) metaToSave.reportCards = collectedMeta.reportCards;
                 if (collectedMeta.trendData) metaToSave.trendData = collectedMeta.trendData;
                 
-                await adminClient.from("ktrenz_fan_agent_messages").insert({
+                const { data: chatMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
                   user_id: userId,
                   agent_slot_id: activeSlotId,
                   role: "assistant",
                   content: finalContent,
                   metadata: Object.keys(metaToSave).length > 0 ? metaToSave : null,
-                });
+                }).select("id").single();
+                if (chatMsgRow?.id) await saveCards(adminClient, chatMsgRow.id, userId, activeSlotId, collectedMeta);
               }
 
               // Signal writing phase
