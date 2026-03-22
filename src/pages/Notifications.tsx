@@ -27,8 +27,6 @@ const Notifications = () => {
   const { t } = useLanguage();
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
   // Fetch watched artists

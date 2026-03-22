@@ -45,9 +45,7 @@ const T2ArtistPage = () => {
   const track = useTrackEvent();
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
     if (starId) track("t2_artist_view", { artist_slug: starId });
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, [starId]);
 
   // Fetch star info

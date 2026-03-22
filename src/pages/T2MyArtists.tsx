@@ -66,8 +66,6 @@ const T2MyArtists = () => {
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
 
   useEffect(() => {
-    document.documentElement.classList.add("v3-theme");
-    return () => { document.documentElement.classList.remove("v3-theme"); };
   }, []);
 
   // Fetch watched wiki ids

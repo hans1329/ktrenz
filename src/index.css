@@ -71,30 +71,6 @@ html {
     --tabbar-background: 0 0% 100%;
   }
 
-  /* V3 theme — light + magenta accent */
-  .v3-theme {
-    --background: 220 8% 99%;
-    --foreground: 0 0% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 15%;
-    --primary: 290 65% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 15% 25%;
-    --muted: 220 14% 94%;
-    --muted-foreground: 215 12% 45%;
-    --accent: 290 65% 45%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
-    --ring: 290 65% 45%;
-    --shadow-card: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
-    --shadow-card-hover: 0 6px 20px 0 hsl(290 65% 45% / 0.1);
-  }
 }
 
 @layer base {

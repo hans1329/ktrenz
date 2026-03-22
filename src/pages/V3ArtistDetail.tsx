@@ -109,7 +109,6 @@ const V3ArtistDetail = () => {
   const isCrawling = crawlStatus?.status === "running";
 
   const track = useTrackEvent();
-  useEffect(() => { document.documentElement.classList.add("v3-theme"); return () => { document.documentElement.classList.remove("v3-theme"); }; }, []);
 
 
   const { data: entry, isLoading: entryLoading } = useQuery({
