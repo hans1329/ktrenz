@@ -1,11 +1,15 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { LayoutGrid, List, Users } from "lucide-react";
+import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
-import T2TrendTreemap, { type TrendCategory, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import T2TrendTreemap, { type TrendCategory, type SortMode, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import T2AdminControls from "@/components/t2/T2AdminControls";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 type ViewMode = "treemap" | "list" | "artist";
 
