@@ -803,11 +803,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         +{rect.item.influenceIndex.toFixed(0)}%
                       </span>
                     )}
-                    {isMedium && sortMode === "volume" && (
-                      <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
-                        +{((rect.item.peakScore ?? 0) - (rect.item.baselineScore ?? 0)).toLocaleString()}
-                      </span>
-                    )}
+                    {isMedium && sortMode === "volume" && (() => {
+                      const diff = (rect.item.peakScore ?? 0) - (rect.item.baselineScore ?? 0);
+                      if (diff === 0) return null;
+                      return (
+                        <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
+                          {diff > 0 ? "+" : ""}{diff.toLocaleString()}
+                        </span>
+                      );
+                    })()}
                     {isMedium && (
                       <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/60">
                         {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
