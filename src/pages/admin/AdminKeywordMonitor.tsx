@@ -91,6 +91,15 @@ const AdminKeywordMonitor = () => {
 
   const classified = useMemo(() => (triggers ?? []).map(t => ({ ...t, zone: classifyKeyword(t) })), [triggers]);
 
+  // Top 60 non-goods keywords by influence = visible on treemap
+  const visibleIds = useMemo(() => {
+    const sorted = [...classified]
+      .filter(t => t.keyword_category !== "goods")
+      .sort((a, b) => b.influence_index - a.influence_index)
+      .slice(0, 60);
+    return new Set(sorted.map(t => t.id));
+  }, [classified]);
+
   const zoneCounts = useMemo(() => {
     const counts: Record<Zone, number> = { rising: 0, peaked: 0, stable: 0, declining: 0, at_risk: 0 };
     classified.forEach(t => counts[t.zone]++);
