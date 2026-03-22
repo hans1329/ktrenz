@@ -9,6 +9,7 @@ import ktrenzLogo from "@/assets/logo_col3.webp";
 import ktrenzMobileLogo from "@/assets/logo_col3.webp";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
 
 interface SearchResult {
   id: string;
