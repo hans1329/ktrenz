@@ -9,7 +9,7 @@ import type { Language } from "@/i18n/translations";
 // ── Types ──
 export interface AgentAlert {
   id: string;
-  type: "rank_1" | "energy_spike" | "energy_drop" | "milestone";
+  type: "rank_1" | "trend_spike" | "milestone";
   artistName: string;
   wikiEntryId: string;
   title: string;
@@ -26,40 +26,34 @@ export interface GroupedAgentAlert {
   alerts: AgentAlert[];
 }
 
-// ── Alert message templates ──
+// ── Alert message templates (T2-based) ──
 function buildAlertMessages(
   type: AgentAlert["type"],
   artistName: string,
   lang: Language,
-  extra?: { change?: number; category?: string; milestoneType?: string; milestoneData?: any },
+  extra?: { keywordCount?: number; topKeyword?: string; milestoneType?: string; milestoneData?: any },
 ): { title: string; body: string; emoji: string } {
-  const abs = Math.abs(extra?.change ?? 0).toFixed(1);
-  const cat = extra?.category ?? "";
+  const count = extra?.keywordCount ?? 0;
+  const topKw = extra?.topKeyword ?? "";
 
   const templates: Record<string, Record<Language, { title: string; body: string; emoji: string }>> = {
     rank_1: {
-      ko: { title: `🏆 ${artistName} 1위 달성!`, body: `${artistName}이(가) 트렌드 랭킹 1위를 차지했어요! 지금 가장 뜨거운 아티스트예요!`, emoji: "🏆" },
+      ko: { title: `🏆 ${artistName} 트렌드 1위!`, body: `${artistName}이(가) 트렌드 키워드 랭킹 1위를 차지했어요! 지금 가장 화제인 아티스트예요!`, emoji: "🏆" },
       en: { title: `🏆 ${artistName} hits #1!`, body: `${artistName} is now #1 in Trend Rankings! The hottest artist right now!`, emoji: "🏆" },
-      ja: { title: `🏆 ${artistName}が1位に!`, body: `${artistName}がトレンドランキング1位を獲得しました！今一番ホットなアーティストです！`, emoji: "🏆" },
-      zh: { title: `🏆 ${artistName}登顶第一!`, body: `${artistName}在趋势排行榜中夺得第一！现在最火的艺人！`, emoji: "🏆" },
+      ja: { title: `🏆 ${artistName}がトレンド1位に!`, body: `${artistName}がトレンドキーワードランキング1位を獲得！今一番話題のアーティストです！`, emoji: "🏆" },
+      zh: { title: `🏆 ${artistName}登顶趋势第一!`, body: `${artistName}在趋势关键词排行榜中夺得第一！现在最火的艺人！`, emoji: "🏆" },
     },
-    energy_spike: {
-      ko: { title: `🔥 ${artistName} ${cat} 급등!`, body: `${artistName}의 ${cat} 에너지가 24시간 동안 +${abs}% 급등했어요! 무슨 일이 일어나고 있는지 확인해보세요!`, emoji: "🔥" },
-      en: { title: `🔥 ${artistName} ${cat} surging!`, body: `${artistName}'s ${cat} energy surged +${abs}% in 24h! Check what's happening!`, emoji: "🔥" },
-      ja: { title: `🔥 ${artistName} ${cat}が急上昇!`, body: `${artistName}の${cat}エネルギーが24時間で+${abs}%急上昇しました！`, emoji: "🔥" },
-      zh: { title: `🔥 ${artistName} ${cat}飙升!`, body: `${artistName}的${cat}能量在24小时内飙升+${abs}%！看看发生了什么！`, emoji: "🔥" },
-    },
-    energy_drop: {
-      ko: { title: `📉 ${artistName} ${cat} 급락!`, body: `${artistName}의 ${cat} 에너지가 24시간 동안 ${abs}% 하락했어요. 지금 응원이 필요해요!`, emoji: "📉" },
-      en: { title: `📉 ${artistName} ${cat} dropping!`, body: `${artistName}'s ${cat} energy dropped ${abs}% in 24h. They need your support!`, emoji: "📉" },
-      ja: { title: `📉 ${artistName} ${cat}が急落!`, body: `${artistName}の${cat}エネルギーが24時間で${abs}%下落しました。応援が必要です！`, emoji: "📉" },
-      zh: { title: `📉 ${artistName} ${cat}急跌!`, body: `${artistName}的${cat}能量在24小时内下跌${abs}%。现在需要你的支持！`, emoji: "📉" },
+    trend_spike: {
+      ko: { title: `🔥 ${artistName} 트렌드 급등!`, body: `${artistName} 관련 트렌드 키워드가 ${count}개 활성화됐어요!${topKw ? ` "${topKw}" 등이 화제예요!` : ""} 지금 확인해보세요!`, emoji: "🔥" },
+      en: { title: `🔥 ${artistName} trending!`, body: `${count} trend keywords active for ${artistName}!${topKw ? ` "${topKw}" is trending!` : ""} Check it out!`, emoji: "🔥" },
+      ja: { title: `🔥 ${artistName}がトレンド急上昇!`, body: `${artistName}関連のトレンドキーワードが${count}個アクティブ！${topKw ? `「${topKw}」などが話題！` : ""}チェックしてみて！`, emoji: "🔥" },
+      zh: { title: `🔥 ${artistName}趋势飙升!`, body: `${artistName}有${count}个趋势关键词活跃！${topKw ? `"${topKw}"等正在热议！` : ""}快来看看！`, emoji: "🔥" },
     },
     milestone: {
-      ko: { title: `🎉 ${artistName} 빌보드 첫 진입!`, body: `${artistName}이(가) 빌보드 차트에 처음으로 진입했어요! 역사적인 순간이에요! 🇺🇸`, emoji: "🎉" },
-      en: { title: `🎉 ${artistName} Billboard debut!`, body: `${artistName} entered the Billboard chart for the first time! A historic moment! 🇺🇸`, emoji: "🎉" },
-      ja: { title: `🎉 ${artistName} ビルボード初登場!`, body: `${artistName}がビルボードチャートに初めて登場しました！歴史的な瞬間です！ 🇺🇸`, emoji: "🎉" },
-      zh: { title: `🎉 ${artistName} 首登Billboard!`, body: `${artistName}首次登上Billboard排行榜！历史性的时刻！ 🇺🇸`, emoji: "🎉" },
+      ko: { title: `🎉 ${artistName} 마일스톤 달성!`, body: `${artistName}이(가) 새로운 마일스톤을 달성했어요! 역사적인 순간이에요!`, emoji: "🎉" },
+      en: { title: `🎉 ${artistName} milestone!`, body: `${artistName} achieved a new milestone! A historic moment!`, emoji: "🎉" },
+      ja: { title: `🎉 ${artistName}マイルストーン達成!`, body: `${artistName}が新しいマイルストーンを達成しました！歴史的な瞬間です！`, emoji: "🎉" },
+      zh: { title: `🎉 ${artistName}里程碑!`, body: `${artistName}达成了新的里程碑！历史性的时刻！`, emoji: "🎉" },
     },
   };
 
@@ -67,8 +61,8 @@ function buildAlertMessages(
 }
 
 // ── Threshold constants ──
-const SPIKE_THRESHOLD = 15;
-const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h cooldown — once per day
+const TREND_SPIKE_THRESHOLD = 3; // alert when 3+ active keywords
+const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 function getAlertCooldownKey(wikiEntryId: string, type: string) {
   return `ktrenz_alert_${type}_${wikiEntryId}`;
@@ -121,19 +115,43 @@ export function useAgentAlerts() {
   const registeredSlots = slots.filter(s => s.wiki_entry_id);
   const wikiEntryIds = registeredSlots.map(s => s.wiki_entry_id!);
 
-  const { data: scores } = useQuery({
-    queryKey: ["agent-alert-scores", ...wikiEntryIds],
+  // T2-based: fetch active trend triggers for registered artists
+  const { data: trendData } = useQuery({
+    queryKey: ["agent-alert-trends", ...wikiEntryIds],
     queryFn: async () => {
       if (wikiEntryIds.length === 0) return [];
-      const { data } = await supabase
-        .from("v3_scores_v2" as any)
-        .select("wiki_entry_id, energy_score, energy_change_24h, energy_rank, youtube_change_24h, buzz_change_24h, music_change_24h, album_change_24h")
-        .in("wiki_entry_id", wikiEntryIds);
+      const { data } = await (supabase as any)
+        .from("ktrenz_trend_triggers")
+        .select("wiki_entry_id, keyword, influence_index, keyword_category")
+        .in("wiki_entry_id", wikiEntryIds)
+        .eq("status", "active")
+        .order("influence_index", { ascending: false });
       return (data ?? []) as any[];
     },
     enabled: !!user?.id && wikiEntryIds.length > 0,
     staleTime: 1000 * 60 * 5,
     refetchInterval: 1000 * 60 * 10,
+  });
+
+  // T2-based: check if any artist is rank #1 by keyword count
+  const { data: allTrendCounts } = useQuery({
+    queryKey: ["agent-alert-rank-check"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("ktrenz_trend_triggers")
+        .select("wiki_entry_id")
+        .eq("status", "active");
+      if (!data) return {};
+      const counts: Record<string, number> = {};
+      for (const t of data) {
+        if (t.wiki_entry_id) {
+          counts[t.wiki_entry_id] = (counts[t.wiki_entry_id] || 0) + 1;
+        }
+      }
+      return counts;
+    },
+    enabled: !!user?.id && wikiEntryIds.length > 0,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: milestones } = useQuery({
@@ -152,46 +170,59 @@ export function useAgentAlerts() {
   });
 
   const processAlerts = useCallback(() => {
-    if (!user?.id || !scores || pendingGroup) return;
+    if (!user?.id || !trendData || pendingGroup) return;
 
     const allAlerts: AgentAlert[] = [];
 
-    for (const score of scores) {
-      const slot = registeredSlots.find(s => s.wiki_entry_id === score.wiki_entry_id);
-      if (!slot) continue;
-      const artistName = slot.artist_name ?? "Artist";
+    // Group trend triggers by wiki_entry_id
+    const triggersByArtist = new Map<string, any[]>();
+    for (const t of trendData) {
+      if (!t.wiki_entry_id) continue;
+      if (!triggersByArtist.has(t.wiki_entry_id)) triggersByArtist.set(t.wiki_entry_id, []);
+      triggersByArtist.get(t.wiki_entry_id)!.push(t);
+    }
 
-      if (score.energy_rank === 1 && !isAlertCoolingDown(score.wiki_entry_id, "rank_1")) {
-        const msg = buildAlertMessages("rank_1", artistName, language);
-        allAlerts.push({
-          id: `rank_1_${score.wiki_entry_id}`, type: "rank_1", artistName,
-          wikiEntryId: score.wiki_entry_id, ...msg, slot, timestamp: Date.now(),
-        });
-      }
-
-      const categories = [
-        { key: "YouTube", change: score.youtube_change_24h },
-        { key: "Buzz", change: score.buzz_change_24h },
-        { key: "Music", change: score.music_change_24h },
-        { key: "Album", change: score.album_change_24h },
-      ];
-
-      for (const cat of categories) {
-        const change = cat.change ?? 0;
-        if (Math.abs(change) >= SPIKE_THRESHOLD) {
-          const type = change > 0 ? "energy_spike" : "energy_drop";
-          const alertKey = `${type}_${cat.key}`;
-          if (!isAlertCoolingDown(score.wiki_entry_id, alertKey)) {
-            const msg = buildAlertMessages(type, artistName, language, { change, category: cat.key });
-            allAlerts.push({
-              id: `${alertKey}_${score.wiki_entry_id}`, type, artistName,
-              wikiEntryId: score.wiki_entry_id, ...msg, slot, timestamp: Date.now(),
-            });
-          }
+    // Determine rank #1
+    let rank1WikiEntryId: string | null = null;
+    if (allTrendCounts) {
+      let maxCount = 0;
+      for (const [weid, count] of Object.entries(allTrendCounts as Record<string, number>)) {
+        if (count > maxCount) {
+          maxCount = count;
+          rank1WikiEntryId = weid;
         }
       }
     }
 
+    for (const slot of registeredSlots) {
+      const weid = slot.wiki_entry_id!;
+      const artistName = slot.artist_name ?? "Artist";
+      const triggers = triggersByArtist.get(weid) ?? [];
+
+      // Rank #1 alert
+      if (rank1WikiEntryId === weid && !isAlertCoolingDown(weid, "rank_1")) {
+        const msg = buildAlertMessages("rank_1", artistName, language);
+        allAlerts.push({
+          id: `rank_1_${weid}`, type: "rank_1", artistName,
+          wikiEntryId: weid, ...msg, slot, timestamp: Date.now(),
+        });
+      }
+
+      // Trend spike alert (3+ active keywords)
+      if (triggers.length >= TREND_SPIKE_THRESHOLD && !isAlertCoolingDown(weid, "trend_spike")) {
+        const topKeyword = triggers[0]?.keyword ?? "";
+        const msg = buildAlertMessages("trend_spike", artistName, language, {
+          keywordCount: triggers.length,
+          topKeyword,
+        });
+        allAlerts.push({
+          id: `trend_spike_${weid}`, type: "trend_spike", artistName,
+          wikiEntryId: weid, ...msg, slot, timestamp: Date.now(),
+        });
+      }
+    }
+
+    // Milestones
     if (milestones) {
       for (const m of milestones) {
         const slot = registeredSlots.find(s => s.wiki_entry_id === m.wiki_entry_id);
@@ -210,7 +241,6 @@ export function useAgentAlerts() {
 
     if (allAlerts.length === 0) return;
 
-    // Group alerts by artist (wikiEntryId)
     const grouped = new Map<string, GroupedAgentAlert>();
     for (const alert of allAlerts) {
       if (!grouped.has(alert.wikiEntryId)) {
@@ -224,11 +254,9 @@ export function useAgentAlerts() {
       grouped.get(alert.wikiEntryId)!.alerts.push(alert);
     }
 
-    // Pick the first artist group to show
     const firstGroup = [...grouped.values()][0];
     if (!firstGroup || firstGroup.alerts.length === 0) return;
 
-    // Mark all alerts in this group as sent & save to chat
     for (const alert of firstGroup.alerts) {
       const cooldownKey = alert.id.split(`_${alert.wikiEntryId}`)[0];
       markAlertSent(alert.wikiEntryId, cooldownKey);
@@ -247,7 +275,7 @@ export function useAgentAlerts() {
     }
 
     setPendingGroup(firstGroup);
-  }, [user?.id, scores, milestones, registeredSlots, language, pendingGroup]);
+  }, [user?.id, trendData, allTrendCounts, milestones, registeredSlots, language, pendingGroup]);
 
   useEffect(() => {
     const timer = setTimeout(processAlerts, 3000);
