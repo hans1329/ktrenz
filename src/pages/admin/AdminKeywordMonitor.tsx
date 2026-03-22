@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search, Eye } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 
 interface TrendTrigger {
   id: string;
@@ -69,6 +70,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const AdminKeywordMonitor = () => {
   const { isAdmin, loading } = useAdminAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [filterZone, setFilterZone] = useState<Zone | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,6 +127,19 @@ const AdminKeywordMonitor = () => {
       return acc;
     }, {} as Record<Zone, typeof classified>);
   }, [classified, filterZone, zoneSortDir, searchQuery]);
+
+  const handleRemove = useCallback(async (id: string, label: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("admin-update-field", {
+        body: { table: "ktrenz_trend_triggers", match: { id }, update: { status: "removed" } },
+      });
+      if (error) throw error;
+      toast.success(`"${label}" 제거 완료`);
+      queryClient.invalidateQueries({ queryKey: ["admin-keyword-monitor"] });
+    } catch (e: any) {
+      toast.error(`제거 실패: ${e.message}`);
+    }
+  }, [queryClient]);
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">로딩 중...</div>;
   if (!isAdmin) { navigate("/admin/login"); return null; }
@@ -242,7 +257,7 @@ const AdminKeywordMonitor = () => {
                               {t.artist_name}
                             </p>
                           </div>
-                          <div className="flex items-center gap-3 text-right shrink-0">
+                          <div className="flex items-center gap-2 text-right shrink-0">
                             <div>
                               <p className="text-xs font-mono font-bold">{Number(t.influence_index).toFixed(0)}</p>
                               <p className="text-[10px] text-muted-foreground">영향력</p>
@@ -255,6 +270,17 @@ const AdminKeywordMonitor = () => {
                               <Clock className="w-3 h-3 text-muted-foreground" />
                               <span className="text-[10px] text-muted-foreground">{hoursAlive}h</span>
                             </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!confirm(`"${t.keyword_ko || t.keyword}" 키워드를 제거할까요?`)) return;
+                                handleRemove(t.id, t.keyword_ko || t.keyword);
+                              }}
+                              className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                              title="제거"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
                       );
