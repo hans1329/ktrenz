@@ -109,6 +109,7 @@ const App = () => (
               <Route path="trend-intel" element={<AdminTrendIntel />} />
               <Route path="shopping-keywords" element={<AdminShoppingKeywords />} />
               <Route path="user-analytics" element={<AdminUserAnalytics />} />
+              <Route path="keyword-monitor" element={<AdminKeywordMonitor />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
             <Route path="*" element={<NotFound />} />

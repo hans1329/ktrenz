@@ -159,6 +159,15 @@ const T2AdminControls = () => {
         <Database className="w-3 h-3" />
         스타 관리
       </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => navigate("/admin/keyword-monitor")}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        <BarChart3 className="w-3 h-3" />
+        키워드 모니터
+      </Button>
 
       {activeRunList.length > 0 && (
         <Dialog>
