@@ -145,23 +145,23 @@ function squarify(items: TreemapItem[], x: number, y: number, w: number, h: numb
     const base = Math.log1p(Math.max(score, 1));
 
     if (isCollecting) {
-      if (idx === 0) return base * 3.6;
-      if (idx === 1) return base * 3.0;
-      if (idx === 2) return base * 2.6;
+      if (idx === 0) return base * 2.4;
+      if (idx === 1) return base * 2.15;
+      if (idx === 2) return base * 1.95;
       if (idx === 3) return base * 1.8;
-      if (idx === 4) return base * 1.5;
-      if (idx === lastIdx) return base * 2.1;
-      return base;
+      if (idx === 4) return base * 1.65;
+      if (idx === lastIdx) return base * 1.8;
+      return base * 1.3;
     }
 
-    if (idx === 0) return base * 3.6;
-    if (idx === 1) return base * 3.0;
-    if (idx === 2) return base * 2.6;
+    if (idx === 0) return base * 2.4;
+    if (idx === 1) return base * 2.15;
+    if (idx === 2) return base * 1.95;
     if (idx === 3) return base * 1.8;
-    if (idx === 4) return base * 1.5;
+    if (idx === 4) return base * 1.65;
     // 가장 하락폭이 큰 아티스트(마지막)는 눈 아이콘이 잘 보이도록 크기 부스트
-    if (idx === lastIdx) return base * 2.1;
-    return base;
+    if (idx === lastIdx) return base * 1.8;
+    return base * 1.3;
   };
   const totalValue = items.reduce((s, i, idx) => s + tileSize(i, idx), 0);
   const totalArea = w * h;
