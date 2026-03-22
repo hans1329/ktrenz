@@ -858,7 +858,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       </span>
                       <span
                         className="font-bold text-white truncate w-full text-center drop-shadow-md"
-                        style={{ fontSize: `${Math.max(8, keywordSize * 0.55)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                        style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
                       >
                         {getLocalizedArtistName(rect.item, language)}
                       </span>
