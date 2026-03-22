@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell, Globe, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
