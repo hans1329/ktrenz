@@ -963,9 +963,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         setMessages((prev) => [...prev, newsMsg]);
         setHasStarted(true);
 
-        // Mark as seen
-        localStorage.setItem(seenKey, today);
-        queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
+        // (seen already marked above)
       } catch (e) {
         console.error("Daily news fetch error:", e);
       }
