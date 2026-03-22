@@ -82,8 +82,8 @@ const V3InlineLinkCard = React.forwardRef<HTMLAnchorElement, V3InlineLinkCardPro
         rel="noopener noreferrer"
         {...rest}
         className={cn(
-          "not-prose flex overflow-hidden rounded-xl my-2 border transition-all",
-          "hover:scale-[1.01] hover:shadow-lg active:scale-[0.99]",
+          "not-prose flex overflow-hidden rounded-lg my-1 border transition-colors",
+          "hover:bg-muted/30 active:scale-[0.99]",
           "no-underline cursor-pointer",
           platform.gradient,
           "bg-gradient-to-r",
@@ -94,7 +94,7 @@ const V3InlineLinkCard = React.forwardRef<HTMLAnchorElement, V3InlineLinkCardPro
           onClick?.(e);
         }}
       >
-        <span className="relative block w-[120px] h-[80px] shrink-0 bg-muted overflow-hidden">
+        <span className="relative block w-[72px] h-[52px] shrink-0 bg-muted overflow-hidden rounded-l-lg">
           <img
             src={imageData.imgSrc}
             alt={imageData.imgAlt}
@@ -104,21 +104,21 @@ const V3InlineLinkCard = React.forwardRef<HTMLAnchorElement, V3InlineLinkCardPro
           />
           {isYouTube && (
             <span className="absolute inset-0 flex items-center justify-center bg-black/20">
-              <span className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+              <span className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center">
+                <Play className="w-2.5 h-2.5 text-white fill-white ml-px" />
               </span>
             </span>
           )}
         </span>
 
-        <span className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-0.5">
-          <span className="block text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">
+        <span className="flex-1 min-w-0 px-2 py-1.5 flex flex-col justify-center gap-0">
+          <span className="block text-[11px] font-medium text-foreground line-clamp-1 leading-snug">
             {imageData.imgAlt || imageData.textContent || `${platform.label} 콘텐츠`}
           </span>
-          <span className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-xs">{platform.emoji}</span>
-            <span className="text-[11px] text-muted-foreground">{platform.label}</span>
-            <ExternalLink className="w-3 h-3 text-muted-foreground/50 ml-auto" />
+          <span className="flex items-center gap-1 mt-0">
+            <span className="text-[10px]">{platform.emoji}</span>
+            <span className="text-[10px] text-muted-foreground">{platform.label}</span>
+            <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/50 ml-auto" />
           </span>
         </span>
       </a>
@@ -139,9 +139,9 @@ const V3InlineLinkCard = React.forwardRef<HTMLAnchorElement, V3InlineLinkCardPro
       rel="noopener noreferrer"
       {...rest}
       className={cn(
-        "not-prose flex items-center gap-2.5 my-1.5 px-3 py-2.5 rounded-xl",
-        "bg-gradient-to-r border transition-all",
-        "hover:scale-[1.02] hover:shadow-md active:scale-[0.98]",
+        "not-prose flex items-center gap-2 my-1 px-2.5 py-1.5 rounded-lg",
+        "bg-gradient-to-r border transition-colors",
+        "hover:bg-muted/30 active:scale-[0.99]",
         "no-underline cursor-pointer",
         platform.gradient,
         className,
@@ -151,14 +151,14 @@ const V3InlineLinkCard = React.forwardRef<HTMLAnchorElement, V3InlineLinkCardPro
         onClick?.(e);
       }}
     >
-      <span className="text-lg shrink-0">{platform.emoji}</span>
+      <span className="text-sm shrink-0">{platform.emoji}</span>
       <span className="flex-1 min-w-0">
-        <span className="block text-[13px] font-semibold text-foreground truncate">
+        <span className="block text-[11px] font-medium text-foreground truncate">
           {text || `${platform.label} 바로가기`}
         </span>
-        <span className="block text-[11px] text-muted-foreground truncate">{platform.label}</span>
+        <span className="block text-[10px] text-muted-foreground truncate">{platform.label}</span>
       </span>
-      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      <ExternalLink className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
     </a>
   );
 });
