@@ -299,6 +299,7 @@ const T2TrendMap = () => {
               )}
               onScroll={(e) => {
                 const scrollTop = (e.target as HTMLElement).scrollTop;
+                setScrollY(scrollTop);
                 setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
               }}
             >
