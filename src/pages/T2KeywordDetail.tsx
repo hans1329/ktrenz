@@ -766,7 +766,7 @@ const T2KeywordDetail = () => {
               <div className="rounded-xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 p-4">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">AI Insight</span>
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Trend Insight</span>
                 </div>
                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
                   {aiInsightData.ai_insight}
@@ -780,7 +780,7 @@ const T2KeywordDetail = () => {
             <div className="text-center py-6">
               <Sparkles className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">
-                {language === "ko" ? "'전문 분석 보기' 버튼을 눌러 AI 기반 인사이트를 확인하세요" : "Click 'View Expert Analysis' for AI-powered insights"}
+                {language === "ko" ? "'전문 분석 보기' 버튼을 눌러 전문 인사이트를 확인하세요" : "Click 'View Expert Analysis' for expert insights"}
               </p>
             </div>
           ) : (
