@@ -501,6 +501,7 @@ Call extract_keywords with the specific named entities found, then call analyze_
             const ownerArtist = (k.ownership_artist || "").toLowerCase();
             const searchedArtist = memberName.toLowerCase();
             const searchedGroup = (groupName || "").toLowerCase();
+            const searchedNameKo = (nameKo || "").toLowerCase();
 
             // 귀속 confidence가 0.5 미만이면 차단
             if (k.ownership_confidence < 0.5) {
@@ -508,8 +509,11 @@ Call extract_keywords with the specific named entities found, then call analyze_
               continue;
             }
 
-            // ownership_artist가 검색 아티스트/그룹이 아니면 차단
-            if (ownerArtist && ownerArtist !== searchedArtist && ownerArtist !== searchedGroup && !ownerArtist.includes(searchedArtist) && !searchedArtist.includes(ownerArtist)) {
+            // ownership_artist가 같은 그룹의 다른 멤버인 경우 차단
+            // (e.g., 검색 대상: Han, ownership_artist: Hyunjin → 차단)
+            if (ownerArtist && ownerArtist !== searchedArtist && ownerArtist !== searchedGroup 
+                && (!searchedNameKo || ownerArtist !== searchedNameKo)
+                && !ownerArtist.includes(searchedArtist) && !searchedArtist.includes(ownerArtist)) {
               console.warn(`[trend-detect] Ownership mismatch: "${k.keyword}" belongs to "${k.ownership_artist}", not "${memberName}" (reason: ${k.ownership_reason})`);
               continue;
             }
