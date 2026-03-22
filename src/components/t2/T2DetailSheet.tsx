@@ -650,11 +650,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       {outcomes.filter(o => stakes[o].amount > 0).map(o => (
                         <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center min-w-[100px]`)}>
                           <div className={cn("text-xs font-semibold", o === "mild" ? "text-foreground" : `text-${outcomeColor[o]}-400`)}>{outcomeEmoji[o]} {outcomeLabel[o]}</div>
-                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-muted-foreground/90">T</span></div>
+                          <div className={cn("text-sm font-bold", `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-primary" style={{ filter: "hue-rotate(-10deg) saturate(1.3)" }}>💎</span></div>
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
-                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-muted-foreground/90">T</span>
+                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-primary" style={{ filter: "hue-rotate(-10deg) saturate(1.3)" }}>💎</span>
                             </span>
                           </div>
                         </div>
