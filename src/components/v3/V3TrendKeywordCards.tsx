@@ -25,6 +25,7 @@ interface V3TrendKeywordCardsProps {
   keywords: TrendKeywordEntry[];
   onKeywordClick?: (keyword: TrendKeywordEntry) => void;
   onLoadMore?: () => void;
+  loadMoreLabel?: string;
 }
 
 const categoryColors: Record<string, string> = {
