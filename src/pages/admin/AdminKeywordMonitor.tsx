@@ -244,7 +244,7 @@ const AdminKeywordMonitor = () => {
                               {t.artist_name}
                             </p>
                           </div>
-                          <div className="flex items-center gap-3 text-right shrink-0">
+                          <div className="flex items-center gap-2 text-right shrink-0">
                             <div>
                               <p className="text-xs font-mono font-bold">{Number(t.influence_index).toFixed(0)}</p>
                               <p className="text-[10px] text-muted-foreground">영향력</p>
@@ -257,6 +257,17 @@ const AdminKeywordMonitor = () => {
                               <Clock className="w-3 h-3 text-muted-foreground" />
                               <span className="text-[10px] text-muted-foreground">{hoursAlive}h</span>
                             </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!confirm(`"${t.keyword_ko || t.keyword}" 키워드를 제거할까요?`)) return;
+                                handleRemove(t.id, t.keyword_ko || t.keyword);
+                              }}
+                              className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                              title="제거"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
                       );
