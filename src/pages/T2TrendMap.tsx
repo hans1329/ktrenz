@@ -281,7 +281,12 @@ const T2TrendMap = () => {
           }}
         >
           {VIEW_ORDER.map((mode) => (
-            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[9.5rem] pb-24 scrollbar-hide">
+            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[9.5rem] pb-24 scrollbar-hide"
+              onScroll={(e) => {
+                const scrollTop = (e.target as HTMLElement).scrollTop;
+                setHeaderCollapsed(scrollTop > 30);
+              }}
+            >
               <div className="md:max-w-[90%] mx-auto">
                 <T2TrendTreemap
                   viewMode={mode}
