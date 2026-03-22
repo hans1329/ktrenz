@@ -439,7 +439,10 @@ CRITICAL RULES — READ CAREFULLY:
 
   const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
-REMEMBER: Do NOT extract ${nameListStr} or any artist/group names as keywords. Only extract specific brands, products, places, show titles, etc.
+REMEMBER: 
+- Do NOT extract ${nameListStr} or any artist/group names as keywords. Only extract specific brands, products, places, show titles, etc.
+- CRITICAL: For each article, verify that the article's MAIN SUBJECT is "${memberName}"${nameKo ? ` (${nameKo})` : ""}. If the article is about a DIFFERENT member of the same group, set ownership_confidence to 0.0.
+- If the article mentions "${memberName}" only in a list or passing reference while focusing on another person, reject the keyword.
 
 Articles:
 ${articleTexts}
