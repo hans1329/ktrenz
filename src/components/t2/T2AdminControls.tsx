@@ -185,7 +185,6 @@ const T2AdminControls = () => {
         </Dialog>
       )}
     </div>
-    </div>
   );
 };
 
