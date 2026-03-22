@@ -6,7 +6,8 @@ import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 
 interface TrendTrigger {
   id: string;
