@@ -221,8 +221,8 @@ const T2TrendMap = () => {
       )}
 
       <div
-        className="fixed left-0 right-0 z-40 py-2 bg-card/90 backdrop-blur-lg"
-        style={{ top: headerCollapsed ? 0 : `max(0px, ${6.25 * 16 - scrollY}px)` }}
+        className="fixed left-0 right-0 z-40 py-2 bg-card/90 backdrop-blur-lg transition-[top] duration-500 ease-in-out"
+        style={{ top: headerCollapsed ? 0 : "6.25rem" }}
       >
         <div className="md:max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max px-4">
