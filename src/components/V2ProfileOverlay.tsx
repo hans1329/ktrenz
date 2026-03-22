@@ -206,7 +206,8 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </button>
 
-
+          {/* My Trend Bets */}
+          <ProfileTrendBets onClose={() => onOpenChange(false)} />
 
 
           {/* Menu items */}
