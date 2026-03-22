@@ -262,7 +262,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "get_rankings",
-      description: "Get current FES trend rankings. Returns top N artists with energy scores, total scores, YouTube/Buzz/Music/Album scores, and 24h change percentage.",
+      description: "Get current trend rankings based on active trend keyword activity. Returns top N artists ranked by total influence index and keyword count.",
       parameters: {
         type: "object",
         properties: {
@@ -277,7 +277,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "lookup_artist",
-      description: "Look up detailed score data for a specific artist by name. Returns current rank, energy score, total score, YouTube/Buzz/Music/Album scores, 24h energy change, and tier info.",
+      description: "Look up an artist's current trend activity. Returns active trend keyword count, influence index, top keywords, and category breakdown.",
       parameters: {
         type: "object",
         properties: {
@@ -292,7 +292,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "compare_artists",
-      description: "Compare 2-3 artists side by side across all metrics. Returns each artist's scores for direct comparison.",
+      description: "Compare 2-3 artists side by side on trend keyword activity. Returns each artist's keyword count, influence index, and top keywords.",
       parameters: {
         type: "object",
         properties: {
@@ -592,9 +592,9 @@ async function handleTool(
 
     while (true) {
       const { data, error } = await adminClient
-        .from("v3_artist_tiers")
+        .from("ktrenz_stars")
         .select("wiki_entry_id, display_name, name_ko")
-        .not("wiki_entry_id", "is", null)
+        .eq("is_active", true)
         .range(from, from + pageSize - 1);
 
       if (error) {
@@ -787,11 +787,11 @@ async function handleTool(
   // Helper: get tier info
   async function getTierInfo(wikiId: string) {
     const { data } = await adminClient
-      .from("v3_artist_tiers")
-      .select("tier, latest_youtube_video_title, latest_youtube_video_id")
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, image_url, star_type, star_category, social_handles")
       .eq("wiki_entry_id", wikiId)
       .maybeSingle();
-    return data ? { ...data, latest_video_title: data.latest_youtube_video_title, latest_video_id: data.latest_youtube_video_id } : data;
+    return data;
   }
 
   switch (name) {
@@ -894,7 +894,7 @@ async function handleTool(
 
       // Search by Korean/English aliases in tier table
       const { data: koMatches } = await adminClient
-        .from("v3_artist_tiers")
+        .from("ktrenz_stars")
         .select("wiki_entry_id, display_name, name_ko")
         .or(`name_ko.ilike.%${args.query}%,display_name.ilike.%${args.query}%`)
         .limit(10);
@@ -958,10 +958,10 @@ async function handleTool(
         // Step 2: Try exact Korean/alias name match in tier table (no relation join dependency)
         if (!wikiMatch || wikiMatch.length === 0) {
           const [koEqRes, displayEqRes, koIlikeRes, displayIlikeRes] = await Promise.all([
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").eq("name_ko", targetArtistName).limit(1),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").eq("display_name", targetArtistName).limit(1),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", targetArtistName).limit(1),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("display_name", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").eq("name_ko", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").eq("display_name", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", targetArtistName).limit(1),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("display_name", targetArtistName).limit(1),
           ]);
 
           const tierExactError = koEqRes.error || displayEqRes.error || koIlikeRes.error || displayIlikeRes.error;
@@ -1038,8 +1038,8 @@ async function handleTool(
         // Step 5: Try partial Korean/alias match (safe queries, no .or parsing)
         if (!wikiMatch || wikiMatch.length === 0) {
           const [koPartialRes, displayPartialRes] = await Promise.all([
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
           ]);
 
           if (koPartialRes.error || displayPartialRes.error) {
@@ -1085,8 +1085,8 @@ async function handleTool(
             .limit(5);
 
           const [koAliasMatchesRes, displayAliasMatchesRes] = await Promise.all([
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
-            adminClient.from("v3_artist_tiers").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("name_ko", `%${targetArtistName}%`).limit(5),
+            adminClient.from("ktrenz_stars").select("wiki_entry_id, display_name, name_ko").ilike("display_name", `%${targetArtistName}%`).limit(5),
           ]);
 
           if (fuzzyTitleErr || koAliasMatchesRes.error || displayAliasMatchesRes.error) {
@@ -1141,7 +1141,7 @@ async function handleTool(
 
         // Tier gate: only allow Tier 1 or Tier 2 artists
         const { data: tierRow } = await adminClient
-          .from("v3_artist_tiers")
+          .from("ktrenz_stars")
           .select("tier")
           .eq("wiki_entry_id", wikiId)
           .maybeSingle();
@@ -1213,13 +1213,13 @@ async function handleTool(
         // Auto-promote T2 artist to T1 when a user registers them
         try {
           const { data: tierRow } = await adminClient
-            .from("v3_artist_tiers")
+            .from("ktrenz_stars")
             .select("id, tier")
             .eq("wiki_entry_id", wikiId)
             .maybeSingle();
           if (tierRow && tierRow.tier === 2) {
             await adminClient
-              .from("v3_artist_tiers")
+              .from("ktrenz_stars")
               .update({ tier: 1, manual_override: true })
               .eq("id", tierRow.id);
             console.log(`[FanAgent] Auto-promoted artist ${resolvedName} from T2 to T1`);
@@ -1318,26 +1318,22 @@ async function handleTool(
       }
 
       // Gather data for AI analysis
-      const [fesRes, salesRes, tierRes] = await Promise.all([
-        adminClient.from("v3_scores_v2")
-          .select("total_score, energy_score, energy_change_24h, youtube_score, buzz_score, music_score, album_sales_score, scored_at")
-          .eq("wiki_entry_id", wikiId).order("scored_at", { ascending: false }).limit(1).maybeSingle(),
+      const [trendKwRes, salesRes, tierRes] = await Promise.all([
+        adminClient.from("ktrenz_trend_triggers")
+          .select("keyword, keyword_ko, keyword_category, influence_index, trigger_source")
+          .eq("status", "active").eq("wiki_entry_id", wikiId)
+          .order("influence_index", { ascending: false, nullsFirst: false }).limit(10),
         adminClient.from("ktrenz_data_snapshots")
           .select("metrics, platform")
           .eq("wiki_entry_id", wikiId).in("platform", ["circle_chart", "hanteo"])
           .order("collected_at", { ascending: false }).limit(5),
-        adminClient.from("v3_artist_tiers")
-          .select("tier, latest_video_title").eq("wiki_entry_id", wikiId).maybeSingle(),
+        adminClient.from("ktrenz_stars")
+          .select("display_name, star_type, star_category, image_url").eq("wiki_entry_id", wikiId).eq("is_active", true).maybeSingle(),
       ]);
 
-      const fes = fesRes.data;
+      const trendKws = trendKwRes.data || [];
       const sales = salesRes.data ?? [];
-      const tier = tierRes.data;
-
-      // Get rankings for context
-      const allScores = await getAllScores();
-      const artistRank = allScores.findIndex((a: any) => a.wiki_entry_id === wikiId) + 1;
-      const top5 = allScores.slice(0, 5).map((a: any, i: number) => `${i + 1}. ${(a.wiki_entries as any)?.title} (Energy: ${Math.round(a.energy_score)})`);
+      const starInfo = tierRes.data;
 
       // Get music data for track names
       const { data: musicSnap } = await adminClient
@@ -1364,11 +1360,10 @@ async function handleTool(
 
       const contextParts = [
         `아티스트: ${resolvedName}`,
-        fes ? `FES: Energy ${Math.round(fes.energy_score)} (24h: ${(fes.energy_change_24h ?? 0).toFixed(1)}%), 순위 ${artistRank || "N/A"}, Total ${Math.round(fes.total_score)}, YT ${Math.round(fes.youtube_score)}, Buzz ${Math.round(fes.buzz_score ?? 0)}, Music ${Math.round(fes.music_score ?? 0)}, Album ${Math.round(fes.album_sales_score ?? 0)}` : "FES: 없음",
-        tier ? `티어: ${tier.tier}, 최신 영상: ${tier.latest_video_title ?? "N/A"}` : "",
+        trendKws.length > 0 ? `활성 트렌드 ${trendKws.length}건: ${trendKws.map((t: any) => `${t.keyword_ko || t.keyword}(${t.keyword_category})`).join(", ")}` : "트렌드: 없음",
+        starInfo ? `카테고리: ${starInfo.star_category || "K-Pop"}` : "",
         uniqueTracks.length > 0 ? `인기곡: ${uniqueTracks.join(", ")}` : "",
         sales.length > 0 ? `판매량:\n${sales.map((s: any) => `- [${s.platform}] ${(s.metrics as any).album}: ${(s.metrics as any).weekly_sales ?? (s.metrics as any).first_week_sales ?? "N/A"}장`).join("\n")}` : "",
-        `현재 Top 5:\n${top5.join("\n")}`,
       ].filter(Boolean);
 
       const guidePrompt = `너는 K-Pop 스트리밍 전략 분석 AI야. 아래 데이터를 분석해서 팬이 실행할 수 있는 구체적인 스트리밍/차트 전략을 JSON으로 제공해.
@@ -1551,30 +1546,29 @@ JSON 구조:
       const artistName = artist.artist_name;
       const wikiId = artist.wiki_entry_id;
 
-      // Get artist data for context
-      const allScores = await getAllScores();
-      const found = allScores.find((a: any) => a.wiki_entry_id === wikiId);
-      const rank = found?._rank ?? null;
-      const energyScore = found ? Math.round(found.energy_score ?? 0) : null;
-      const energyChange = found ? +(found.energy_change_24h ?? 0).toFixed(1) : null;
+      // Get T2 trend count for context
+      const { count: trendCount } = await adminClient
+        .from("ktrenz_trend_triggers")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active")
+        .eq("wiki_entry_id", wikiId);
 
-      // Get tier info for latest video + social handles
+      // Get star info for social handles
       let latestVideoTitle: string | null = null;
       let latestVideoId: string | null = null;
       let youtubeChannelId: string | null = null;
       let instagramHandle: string | null = null;
       let xHandle: string | null = null;
       if (wikiId) {
-        const { data: tierData } = await adminClient
-          .from("v3_artist_tiers")
-          .select("latest_youtube_video_title, latest_youtube_video_id, youtube_channel_id, instagram_handle, x_handle")
+        const { data: starData } = await adminClient
+          .from("ktrenz_stars")
+          .select("social_handles, display_name")
           .eq("wiki_entry_id", wikiId)
           .maybeSingle();
-        latestVideoTitle = tierData?.latest_youtube_video_title ?? null;
-        latestVideoId = tierData?.latest_youtube_video_id ?? null;
-        youtubeChannelId = tierData?.youtube_channel_id ?? null;
-        instagramHandle = tierData?.instagram_handle ?? null;
-        xHandle = tierData?.x_handle ?? null;
+        const handles = starData?.social_handles as any;
+        youtubeChannelId = handles?.youtube ?? null;
+        instagramHandle = handles?.instagram ?? null;
+        xHandle = handles?.x ?? handles?.twitter ?? null;
       }
 
       // Get music data for track names
@@ -1821,9 +1815,7 @@ JSON 구조:
 
       return JSON.stringify({
         artist: artistName,
-        rank,
-        energy_score: energyScore,
-        energy_change_24h: energyChange,
+        trend_count: trendCount ?? 0,
         activity: act,
         previous_activity: previousActivity,
         completed_today: doneActivities.length,
@@ -1873,7 +1865,7 @@ JSON 구조:
       } else {
         // Try Korean name
         const { data: koMatch } = await adminClient
-          .from("v3_artist_tiers")
+          .from("ktrenz_stars")
           .select("wiki_entry_id, display_name")
           .ilike("name_ko", artistName)
           .limit(1);
@@ -1979,7 +1971,7 @@ JSON 구조:
         resolvedName = wikiMatch[0].title;
       } else {
         const { data: koMatch } = await adminClient
-          .from("v3_artist_tiers")
+          .from("ktrenz_stars")
           .select("wiki_entry_id, display_name")
           .ilike("name_ko", artistName)
           .limit(1);
@@ -2610,7 +2602,7 @@ Deno.serve(async (req) => {
 
         if (w.wiki_entry_id) {
           const [tierRes, buzzRes, entryRes] = await Promise.all([
-            adminClient.from("v3_artist_tiers").select("latest_video_title").eq("wiki_entry_id", w.wiki_entry_id).maybeSingle(),
+            adminClient.from("ktrenz_stars").select("latest_video_title").eq("wiki_entry_id", w.wiki_entry_id).maybeSingle(),
             adminClient.from("ktrenz_data_snapshots").select("metrics").eq("wiki_entry_id", w.wiki_entry_id).eq("platform", "buzz_multi").order("collected_at", { ascending: false }).limit(1).maybeSingle(),
             adminClient.from("wiki_entries").select("image_url").eq("id", w.wiki_entry_id).maybeSingle(),
           ]);
