@@ -26,7 +26,12 @@ const SWIPE_THRESHOLD = 40;
 const T2TrendMap = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("treemap");
   const [category, setCategory] = useState<TrendCategory>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("volume");
   const isMobile = useIsMobile();
+  const { t } = useLanguage();
+  const { isAdmin } = useAdminAuth();
+  const navigate = useNavigate();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const touchRef = useRef<{ startX: number; startY: number } | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
