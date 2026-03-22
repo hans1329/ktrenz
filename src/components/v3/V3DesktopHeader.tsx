@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import ktrenzLogo from "@/assets/logo_col.webp";
+import ktrenzLogo from "@/assets/logo_col3.webp";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
 interface SearchResult {
