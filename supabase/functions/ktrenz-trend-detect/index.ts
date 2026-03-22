@@ -299,7 +299,7 @@ const TOOL_EXTRACT_KEYWORDS = {
   type: "function" as const,
   function: {
     name: "extract_keywords",
-    description: "Extract commercial/cultural trend keywords from article texts. Each keyword must be explicitly mentioned in the articles.",
+    description: "Extract commercial/cultural trend keywords from article texts. Each keyword must be explicitly mentioned in the articles. You MUST verify article subject attribution for each keyword.",
     parameters: {
       type: "object",
       properties: {
@@ -324,13 +324,35 @@ const TOOL_EXTRACT_KEYWORDS = {
               brand_intent: { type: "string", enum: ["awareness", "conversion", "association", "loyalty"], description: "Brand perspective intent" },
               fan_sentiment: { type: "string", enum: ["positive", "negative", "neutral", "mixed"], description: "Predicted fandom reaction" },
               trend_potential: { type: "number", description: "0.0-1.0 viral trend likelihood" },
+              // ── Attribution verification fields ──
               ownership_artist: { type: "string", description: "The artist who ACTUALLY OWNS/CREATED this keyword (e.g., the artist who released this song/album). If this is a song title, who sang it? If a brand collab, who is the ambassador? Must be the TRUE OWNER, not just who mentioned it." },
               ownership_confidence: { type: "number", description: "0.0-1.0 confidence that this keyword truly belongs to the searched artist, not another artist" },
               ownership_reason: { type: "string", description: "Brief explanation of why this keyword belongs (or doesn't belong) to the searched artist" },
+              // ── Member attribution fields (NEW) ──
+              article_subject_name: { type: "string", description: "The ACTUAL person who is the main subject of the article where this keyword was found. Write the name as it appears in the article (e.g., '현진', 'Hyunjin', '원진'). If the article is about a group activity with no specific member focus, write the group name." },
+              article_subject_match: { type: "boolean", description: "true ONLY if the article's main subject is the SEARCHED artist. false if the article focuses on a different member of the same group, or a different person entirely." },
+              // ── Rejection classification (NEW) ──
+              rejection_flags: {
+                type: "array",
+                items: {
+                  type: "string",
+                  enum: [
+                    "wrong_member",       // Article is about a different member of the same group
+                    "wrong_artist",       // Article is about a completely different artist
+                    "generic_word",       // Keyword is a common/generic word, not a proper noun
+                    "passing_mention",    // Entity only mentioned in passing, no direct relationship
+                    "metaphor_comparison",// Entity used as metaphor or comparison
+                    "tv_gimmick",         // TV show costume, prop, or ephemeral segment
+                    "ambiguous_name",     // Artist name matches a common word in the article
+                    "noise"              // General noise that doesn't represent a meaningful trend
+                  ],
+                },
+                description: "List of reasons why this keyword SHOULD be rejected. Empty array [] if the keyword is valid. Be honest — flag ALL applicable issues."
+              },
             },
-            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason"],
+            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason", "article_subject_name", "article_subject_match", "rejection_flags"],
           },
-          description: "Array of extracted keywords. Maximum 7.",
+          description: "Array of extracted keywords. Maximum 7. Include ALL candidates even if you think they should be rejected — use rejection_flags to mark issues.",
         },
       },
       required: ["keywords"],
@@ -494,30 +516,59 @@ Call extract_keywords with the specific named entities found, then call analyze_
         const args = JSON.parse(tc.function.arguments);
         if (tc.function.name === "extract_keywords") {
           const rawKeywords = args.keywords || [];
-          console.log(`[trend-detect] Tool calling extracted ${rawKeywords.length} keywords for ${memberName}: ${rawKeywords.map((k: any) => `${k.keyword}(own:${k.ownership_artist},${k.ownership_confidence})`).join(", ")}`);
+          console.log(`[trend-detect] Tool calling extracted ${rawKeywords.length} keywords for ${memberName}: ${rawKeywords.map((k: any) => `${k.keyword}(subj:${k.article_subject_name},match:${k.article_subject_match},flags:${(k.rejection_flags||[]).join("|")},own:${k.ownership_artist},${k.ownership_confidence})`).join(", ")}`);
 
-          // ── 귀속 검증 필터 ──
+          // ── 구조적 검증 필터 (Tool Calling 출력 기반) ──
           for (const k of rawKeywords) {
             const ownerArtist = (k.ownership_artist || "").toLowerCase();
             const searchedArtist = memberName.toLowerCase();
             const searchedGroup = (groupName || "").toLowerCase();
             const searchedNameKo = (nameKo || "").toLowerCase();
+            const rejectionFlags: string[] = k.rejection_flags || [];
 
-            // 귀속 confidence가 0.5 미만이면 차단
-            if (k.ownership_confidence < 0.5) {
-              console.warn(`[trend-detect] Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+            // ── 1단계: rejection_flags 기반 자동 차단 ──
+            const hardRejectFlags = ["wrong_member", "wrong_artist", "generic_word", "tv_gimmick", "ambiguous_name"];
+            const activeHardRejects = rejectionFlags.filter((f: string) => hardRejectFlags.includes(f));
+            if (activeHardRejects.length > 0) {
+              console.warn(`[trend-detect] ⛔ Rejected by flags: "${k.keyword}" → [${activeHardRejects.join(",")}] (subject: ${k.article_subject_name})`);
               continue;
             }
 
-            // ownership_artist가 같은 그룹의 다른 멤버인 경우 차단
-            // (e.g., 검색 대상: Han, ownership_artist: Hyunjin → 차단)
+            // soft reject flags: passing_mention, metaphor_comparison, noise
+            // 2개 이상이면 차단
+            const softRejectFlags = rejectionFlags.filter((f: string) => ["passing_mention", "metaphor_comparison", "noise"].includes(f));
+            if (softRejectFlags.length >= 2) {
+              console.warn(`[trend-detect] ⚠️ Rejected by multiple soft flags: "${k.keyword}" → [${softRejectFlags.join(",")}]`);
+              continue;
+            }
+
+            // ── 2단계: article_subject_match 기반 차단 ──
+            if (k.article_subject_match === false) {
+              const subjectName = (k.article_subject_name || "").toLowerCase();
+              // 기사 주체가 다른 사람이고, 그게 검색 대상도 아니고 그룹도 아닌 경우 → 차단
+              if (subjectName && subjectName !== searchedArtist && subjectName !== searchedGroup
+                  && (!searchedNameKo || subjectName !== searchedNameKo)) {
+                console.warn(`[trend-detect] ⛔ Subject mismatch: "${k.keyword}" → article about "${k.article_subject_name}", not "${memberName}"`);
+                continue;
+              }
+            }
+
+            // ── 3단계: ownership_confidence 기반 차단 ──
+            if (k.ownership_confidence < 0.5) {
+              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+              continue;
+            }
+
+            // ── 4단계: ownership_artist 불일치 차단 ──
             if (ownerArtist && ownerArtist !== searchedArtist && ownerArtist !== searchedGroup 
                 && (!searchedNameKo || ownerArtist !== searchedNameKo)
                 && !ownerArtist.includes(searchedArtist) && !searchedArtist.includes(ownerArtist)) {
-              console.warn(`[trend-detect] Ownership mismatch: "${k.keyword}" belongs to "${k.ownership_artist}", not "${memberName}" (reason: ${k.ownership_reason})`);
+              console.warn(`[trend-detect] ⛔ Ownership mismatch: "${k.keyword}" belongs to "${k.ownership_artist}", not "${memberName}" (reason: ${k.ownership_reason})`);
               continue;
             }
 
+            // ✅ 모든 검증 통과
+            console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence})`);
             extractedKeywords.push({
               keyword: k.keyword,
               keyword_en: k.keyword_en,
