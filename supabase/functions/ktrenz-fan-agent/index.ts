@@ -2744,7 +2744,12 @@ Deno.serve(async (req) => {
         cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "briefing", card_data: { briefing: meta.briefing } });
       }
       if (cards.length > 0) {
-        await client.from("ktrenz_agent_cards").insert(cards).catch((e: any) => console.error("[saveCards]", e));
+        try {
+          const { error } = await client.from("ktrenz_agent_cards").insert(cards);
+          if (error) console.error("[saveCards]", error);
+        } catch (e: any) {
+          console.error("[saveCards]", e);
+        }
       }
     }
 
