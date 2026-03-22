@@ -71,6 +71,7 @@ const AdminKeywordMonitor = () => {
   const { isAdmin, loading } = useAdminAuth();
   const navigate = useNavigate();
   const [filterZone, setFilterZone] = useState<Zone | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [zoneSortDir, setZoneSortDir] = useState<Record<Zone, "desc" | "asc">>({
     rising: "desc", peaked: "desc", stable: "desc", declining: "desc", at_risk: "desc",
   });
