@@ -2933,13 +2933,14 @@ Deno.serve(async (req) => {
             const trendMetaToSave: any = {};
             if (collectedMeta.reportCards) trendMetaToSave.reportCards = collectedMeta.reportCards;
 
-            await adminClient.from("ktrenz_fan_agent_messages").insert({
+            const { data: trendMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId,
               agent_slot_id: activeSlotId,
               role: "assistant",
               content: trendContent,
               metadata: Object.keys(trendMetaToSave).length > 0 ? trendMetaToSave : null,
-            });
+            }).select("id").single();
+            if (trendMsgRow?.id) await saveCards(adminClient, trendMsgRow.id, userId, activeSlotId, collectedMeta);
 
             sendStatus(controller, writingLabels[userLang] || writingLabels.en);
             for (let i = 0; i < trendContent.length; i += 20) {
