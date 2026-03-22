@@ -1947,7 +1947,7 @@ JSON 구조:
     }
 
     case "get_trending_now": {
-      const limit = Math.min(args.limit || 5, 30);
+      const limit = Math.min(args.limit || 5, 5);
       const category = args.category || null;
 
       let query = adminClient
