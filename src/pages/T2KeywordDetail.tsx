@@ -766,7 +766,7 @@ const T2KeywordDetail = () => {
               <div className="rounded-xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-primary/20 p-4">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">AI Insight</span>
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Trend Insight</span>
                 </div>
                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
                   {aiInsightData.ai_insight}
