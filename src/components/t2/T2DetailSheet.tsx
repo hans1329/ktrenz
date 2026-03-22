@@ -704,7 +704,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         onChange={(e) => setBetAmount(e.target.value)}
                         className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-base lg:text-lg font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-lg font-bold text-muted-foreground/90">T</span>
+                      <Diamond className="w-5 h-5 text-purple-400 fill-purple-400/40" />
                     </div>
                     <div className="flex items-center gap-1.5">
                       {[10, 50, 100, 500, 1000].map((preset) => (
