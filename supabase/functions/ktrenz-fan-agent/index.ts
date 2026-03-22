@@ -289,7 +289,7 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          limit: { type: "number", description: "Number of trending keywords to return (default 10, max 30)" },
+          limit: { type: "number", description: "Number of trending keywords to return (default 5, max 5). Always use 5 or less." },
           category: { type: "string", description: "Optional filter by keyword category (e.g., 'brand', 'product', 'media', 'event')" },
         },
         required: [],
