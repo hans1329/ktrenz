@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
+import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
 import {
   Drawer,
   DrawerContent,
