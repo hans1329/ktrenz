@@ -97,9 +97,10 @@ const T2AdminControls = () => {
   useEffect(() => {
     if (!pipelineActive) return;
     const phase = pipelineActive.phase as PipelineRun["phase"];
+    const dbStartedAt = pipelineActive.created_at ? new Date(pipelineActive.created_at) : new Date();
     setActiveRuns((prev) => {
       if (prev[phase]) return prev;
-      return { ...prev, [phase]: { startedAt: new Date(), phase } };
+      return { ...prev, [phase]: { startedAt: dbStartedAt, phase } };
     });
   }, [pipelineActive]);
 
