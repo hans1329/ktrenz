@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, Bot, Search, X, Loader2, ChevronRight, Activity, Bell, Globe, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -78,20 +78,27 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
   });
   const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
 
-  const { data: hasUnread } = useQuery({
-    queryKey: ["ktrenz-agent-has-unread", user?.id],
-    queryFn: () => {
-      if (!user?.id) return false;
-      if (hasAlertOn) {
-        const today = new Date().toISOString().slice(0, 10);
-        const seen = localStorage.getItem(`ktrenz-daily-news-seen-${user.id}`);
-        return seen !== today;
-      }
-      return false;
-    },
-    enabled: !!user?.id,
-    staleTime: 1000 * 30,
-  });
+  const hasUnread = useMemo(() => {
+    if (!user?.id) return false;
+    if (hasAlertOn) {
+      const today = new Date().toISOString().slice(0, 10);
+      const seen = localStorage.getItem(`ktrenz-daily-news-seen-${user.id}`);
+      return seen !== today;
+    }
+    return false;
+  }, [user?.id, hasAlertOn]);
+
+  const [, forceUpdateDesktop] = useState(0);
+  useEffect(() => {
+    const handler = () => forceUpdateDesktop(n => n + 1);
+    document.addEventListener("visibilitychange", handler);
+    window.addEventListener("focus", handler);
+    return () => {
+      document.removeEventListener("visibilitychange", handler);
+      window.removeEventListener("focus", handler);
+    };
+  }, []);
+
   const showAgentBadge = user && hasUnread;
 
   const handleSearch = async (query: string) => {

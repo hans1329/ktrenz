@@ -515,8 +515,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     const today = new Date().toISOString().slice(0, 10);
     const seenKey = `ktrenz-daily-news-seen-${user.id}`;
     localStorage.setItem(seenKey, today);
-    queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-has-unread", user.id] });
-  }, [user?.id, queryClient]);
+    // Force tab bar to re-evaluate by dispatching a storage event
+    window.dispatchEvent(new Event("focus"));
+  }, [user?.id]);
   const [showSlotList, setShowSlotList] = useState(false);
   const [showAgentProfileModal, setShowAgentProfileModal] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
