@@ -2975,12 +2975,12 @@ Deno.serve(async (req) => {
               return;
             }
 
-            const lookupLabel = toolStatusMap.lookup_artist?.[userLang] || toolStatusMap.lookup_artist?.en || "Looking up artist data…";
-            sendStatus(controller, lookupLabel);
+            const trendLabel = toolStatusMap.get_trend_keywords?.[userLang] || toolStatusMap.get_trend_keywords?.en || "Analyzing trend keywords…";
+            sendStatus(controller, trendLabel);
 
-            const trendResult = await handleTool(
-              "lookup_artist",
-              { artist_name: activeSlotArtistName },
+            const trendKwResult = await handleTool(
+              "get_trend_keywords",
+              { artist_name: activeSlotArtistName, limit: 5 },
               adminClient,
               userId,
               rankingCache,
@@ -2989,52 +2989,44 @@ Deno.serve(async (req) => {
             );
 
             let trendContent = userLang === "ko"
-              ? `우리 ${activeSlotArtistName} 상세 트렌드 분석 카드를 준비했어요!`
-              : `I prepared a detailed trend analysis card for ${activeSlotArtistName}.`;
+              ? `${activeSlotArtistName}의 트렌드 키워드를 분석했어! 🔍`
+              : `Here's the trend keyword analysis for ${activeSlotArtistName}! 🔍`;
 
             try {
-              const parsed = JSON.parse(trendResult);
-              if (parsed.artist && !parsed.error) {
-                const categories = [
-                  { key: "youtube", label: "YouTube", score: parsed.youtube?.score ?? 0, rank: parsed.youtube?.rank ?? 0 },
-                  { key: "buzz", label: "Buzz", score: parsed.buzz?.score ?? 0, rank: parsed.buzz?.rank ?? 0 },
-                  { key: "music", label: "Music", score: parsed.music?.score ?? 0, rank: parsed.music?.rank ?? 0 },
-                  { key: "album", label: "Album", score: parsed.album?.score ?? 0, rank: parsed.album?.rank ?? 0 },
-                ];
-                const strongest = [...categories].sort((a, b) => a.rank - b.rank)[0];
-                const weakest = [...categories].sort((a, b) => b.rank - a.rank)[0];
+              const parsed = JSON.parse(trendKwResult);
+              if (parsed.keywords && parsed.keywords.length > 0) {
+                // Build trendData for inline card rendering
+                collectedMeta.trendData = parsed.keywords.map((kw: any) => ({
+                  keyword: kw.keyword,
+                  keyword_ko: kw.keyword_ko,
+                  category: kw.category,
+                  artist: parsed.artist || activeSlotArtistName,
+                  context: kw.context,
+                  influence_index: kw.influence_index,
+                  source: kw.source,
+                  source_title: kw.source_title,
+                  source_url: kw.source_url,
+                  source_image_url: kw.source_image_url ?? null,
+                  detected_at: kw.detected_at,
+                }));
 
-                collectedMeta.reportCards = [{
-                  type: "artist_report",
-                  artist: parsed.artist,
-                  rank: parsed.rank,
-                  totalArtists: parsed.total_artists ?? 50,
-                  energy: {
-                    score: parsed.energy_score ?? 0,
-                    change24h: parsed.energy_change_24h ?? 0,
-                  },
-                  categories,
-                  strongest,
-                  weakest,
-                  tier: parsed.tier ?? null,
-                }];
-
+                const count = parsed.keywords.length;
                 if (userLang === "ko") {
-                  trendContent = `우리 ${parsed.artist}${eunNeun(parsed.artist)} 현재 #${parsed.rank}예요. 강점은 ${strongest.label}, 보완 포인트는 ${weakest.label}예요.`;
-                } else if (userLang === "ja") {
-                  trendContent = `${parsed.artist} は現在 #${parsed.rank}。強みは ${strongest.label}、改善ポイントは ${weakest.label} です。`;
-                } else if (userLang === "zh") {
-                  trendContent = `${parsed.artist} 当前排名 #${parsed.rank}，优势是 ${strongest.label}，补强点是 ${weakest.label}。`;
+                  trendContent = `${parsed.artist || activeSlotArtistName}에서 ${count}개의 트렌드 키워드를 찾았어! 🔍`;
                 } else {
-                  trendContent = `${parsed.artist} is now #${parsed.rank}. Strongest is ${strongest.label}, and the main gap is ${weakest.label}.`;
+                  trendContent = `Found ${count} trend keywords for ${parsed.artist || activeSlotArtistName}! 🔍`;
                 }
+              } else {
+                trendContent = userLang === "ko"
+                  ? `${activeSlotArtistName}에 현재 감지된 트렌드 키워드가 없어. 나중에 다시 확인해볼까?`
+                  : `No trend keywords detected for ${activeSlotArtistName} right now. Check back later?`;
               }
             } catch {
               // keep fallback content
             }
 
             const trendMetaToSave: any = {};
-            if (collectedMeta.reportCards) trendMetaToSave.reportCards = collectedMeta.reportCards;
+            if (collectedMeta.trendData) trendMetaToSave.trendData = collectedMeta.trendData;
 
             const { data: trendMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
               user_id: userId,
@@ -3051,8 +3043,8 @@ Deno.serve(async (req) => {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
             }
 
-            if (collectedMeta.reportCards) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: { reportCards: collectedMeta.reportCards } })}\n\n`));
+            if (collectedMeta.trendData) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: { trendData: collectedMeta.trendData } })}\n\n`));
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -3065,7 +3057,7 @@ Deno.serve(async (req) => {
               lastUserMsg?.content || "",
               activeSlotWikiEntryId,
               activeSlotId,
-              ["lookup_artist"],
+              ["get_trend_keywords"],
               collectedMeta.knowledgeArchiveIds,
             ).catch((e: any) => console.error("[IntentExtract] Error:", e));
 
