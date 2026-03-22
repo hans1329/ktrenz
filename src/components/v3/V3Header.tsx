@@ -40,6 +40,21 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
+  // Check if pipeline is currently running
+  const { data: isPipelineRunning } = useQuery({
+    queryKey: ["pipeline-running-status"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("status")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .limit(1);
+      return (data as any[])?.length > 0;
+    },
+    refetchInterval: 30000,
+    staleTime: 20000,
+  });
+
   useEffect(() => {
     if (isSearchOpen && inputRef.current) inputRef.current.focus();
   }, [isSearchOpen]);
