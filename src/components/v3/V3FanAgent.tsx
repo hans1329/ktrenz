@@ -698,10 +698,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       if (!trendData || trendData.length === 0) continue;
 
       return Array.from(
-        new Set(
+        new Set<string>(
           trendData
             .map((item: any) => item.keyword_ko || item.keyword)
-            .filter(Boolean),
+            .filter((value: unknown): value is string => typeof value === "string" && value.length > 0),
         ),
       );
     }
