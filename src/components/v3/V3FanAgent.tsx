@@ -1566,19 +1566,31 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               <V3ReportCards cards={effectiveReportCards} />
             )}
 
-            {msg.role === "assistant" && hasTrendCards && (
-              <V3TrendKeywordCards
-                keywords={effectiveTrendData}
-                onKeywordClick={(kw) => {
-                  const displayName = kw.keyword_ko || kw.keyword;
-                  const artistPart = kw.artist ? ` (${kw.artist})` : "";
-                  handleSend(`"${displayName}"${artistPart} 키워드에 대해 더 자세히 분석해줘. 왜 이 트렌드가 감지됐고 팬으로서 어떻게 활용할 수 있을까?`);
-                }}
-                onLoadMore={() => {
-                  handleSend("더 많은 트렌드 키워드를 보여줘");
-                }}
-              />
-            )}
+            {msg.role === "assistant" && hasTrendCards && (() => {
+              const cats = [...new Set(effectiveTrendData.map(k => k.category).filter(Boolean))];
+              const artists = [...new Set(effectiveTrendData.map(k => k.artist).filter(Boolean))];
+              const hasOneArtist = artists.length === 1;
+              const label = hasOneArtist
+                ? `${artists[0]} 트렌드 더보기`
+                : cats.length === 1
+                  ? `${cats[0]} 카테고리 더보기`
+                  : "트렌드 더 찾아보기";
+              const prompt = hasOneArtist
+                ? `${artists[0]}의 다른 트렌드 키워드도 보여줘`
+                : "다른 트렌드 키워드도 더 보여줘";
+              return (
+                <V3TrendKeywordCards
+                  keywords={effectiveTrendData}
+                  onKeywordClick={(kw) => {
+                    const displayName = kw.keyword_ko || kw.keyword;
+                    const artistPart = kw.artist ? ` (${kw.artist})` : "";
+                    handleSend(`"${displayName}"${artistPart} 키워드에 대해 더 자세히 분석해줘. 왜 이 트렌드가 감지됐고 팬으로서 어떻게 활용할 수 있을까?`);
+                  }}
+                  onLoadMore={() => handleSend(prompt)}
+                  loadMoreLabel={label}
+                />
+              );
+            })()}
 
             {msg.role === "assistant" && msg.quickActions && msg.quickActions.length > 0 && (
               <div className="grid grid-cols-1 gap-2 mt-2 w-full">

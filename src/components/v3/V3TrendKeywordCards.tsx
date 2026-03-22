@@ -25,6 +25,7 @@ interface V3TrendKeywordCardsProps {
   keywords: TrendKeywordEntry[];
   onKeywordClick?: (keyword: TrendKeywordEntry) => void;
   onLoadMore?: () => void;
+  loadMoreLabel?: string;
 }
 
 const categoryColors: Record<string, string> = {
@@ -49,7 +50,7 @@ const categoryEmoji: Record<string, string> = {
   food: "🍽️",
 };
 
-const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore }) => {
+const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore, loadMoreLabel }) => {
   if (!keywords || keywords.length === 0) return null;
 
   const displayed = keywords.slice(0, 5);
@@ -135,7 +136,7 @@ const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onK
           className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/30 transition-all text-sm font-medium text-primary active:scale-[0.98]"
         >
           <Search className="w-3.5 h-3.5" />
-          더 찾아보기
+          {loadMoreLabel || "더 찾아보기"}
         </button>
       )}
     </div>
