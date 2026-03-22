@@ -177,26 +177,27 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     const metric = sortMode === "volume"
       ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
       : Math.max(item.influenceIndex, 1);
-    const logBase = Math.log1p(metric);
+    // Cap the log value to prevent extreme size differences
+    const logBase = Math.min(Math.log1p(metric), 8);
 
     if (isCollecting) {
-      if (idx === 0) return logBase * 1.9;
-      if (idx === 1) return logBase * 1.8;
-      if (idx === 2) return logBase * 1.7;
-      if (idx < 6) return logBase * 1.6;
-      if (idx < 12) return logBase * 1.5;
-      if (idx < 25) return logBase * 1.4;
+      if (idx === 0) return logBase * 1.7;
+      if (idx === 1) return logBase * 1.6;
+      if (idx === 2) return logBase * 1.55;
+      if (idx < 6) return logBase * 1.45;
+      if (idx < 12) return logBase * 1.4;
+      if (idx < 25) return logBase * 1.35;
       if (idx < 40) return logBase * 1.3;
       return logBase * 1.25;
     }
 
     // Rank-based multiplier
-    if (idx === 0) return logBase * 1.9;
-    if (idx === 1) return logBase * 1.8;
-    if (idx === 2) return logBase * 1.7;
-    if (idx < 6) return logBase * 1.6;
-    if (idx < 12) return logBase * 1.5;
-    if (idx < 25) return logBase * 1.4;
+    if (idx === 0) return logBase * 1.7;
+    if (idx === 1) return logBase * 1.6;
+    if (idx === 2) return logBase * 1.55;
+    if (idx < 6) return logBase * 1.45;
+    if (idx < 12) return logBase * 1.4;
+    if (idx < 25) return logBase * 1.35;
     if (idx < 40) return logBase * 1.3;
     return logBase * 1.25;
   };
