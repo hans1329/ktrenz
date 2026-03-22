@@ -489,8 +489,8 @@ const V3Treemap = ({ category: externalCategory, onCategoryChange }: { category?
   const containerHeight = isMobile ? 620 : 520;
   const rects = useMemo(() => {
     if (!sortedItems.length) return [];
-    return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category);
-  }, [sortedItems, containerWidth, containerHeight, category]);
+    return squarify(sortedItems, 0, 0, containerWidth, containerHeight, category, isCollecting);
+  }, [sortedItems, containerWidth, containerHeight, category, isCollecting]);
 
   const track = useTrackEvent();
   const handleTileClick = useCallback((item: TreemapItem) => {
