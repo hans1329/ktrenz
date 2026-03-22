@@ -654,7 +654,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           <div className="text-[10px] text-muted-foreground">
                             {language === "ko" ? "성공시" : "If win"}{" "}
                             <span className={cn("font-semibold", `text-${outcomeColor[o]}-400`)}>
-                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-muted-foreground/90">T</span>
+                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-primary" style={{ filter: "hue-rotate(-10deg) saturate(1.3)" }}>💎</span>
                             </span>
                           </div>
                         </div>
