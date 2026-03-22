@@ -1575,9 +1575,10 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                 : cats.length === 1
                   ? `${cats[0]} 카테고리 더보기`
                   : "트렌드 더 찾아보기";
+              const shownKeywords = effectiveTrendData.map(k => k.keyword_ko || k.keyword).join(", ");
               const prompt = hasOneArtist
-                ? `${artists[0]}의 다른 트렌드 키워드도 보여줘`
-                : "다른 트렌드 키워드도 더 보여줘";
+                ? `${artists[0]}의 다른 트렌드 키워드도 보여줘. 이미 본 키워드: ${shownKeywords}`
+                : `다른 트렌드 키워드도 더 보여줘. 이미 본 키워드: ${shownKeywords}`;
               return (
                 <V3TrendKeywordCards
                   keywords={effectiveTrendData}

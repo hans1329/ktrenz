@@ -289,8 +289,10 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          limit: { type: "number", description: "Number of trending keywords to return (default 5, max 5). Always use 5 or less." },
+          limit: { type: "number", description: "Number of trending keywords to return (default 5, max 5)." },
+          offset: { type: "number", description: "Number of keywords to skip (for pagination). Use this when user asks to see MORE keywords. Default 0." },
           category: { type: "string", description: "Optional filter by keyword category (e.g., 'brand', 'product', 'media', 'event')" },
+          exclude_keywords: { type: "array", items: { type: "string" }, description: "List of keyword strings to exclude from results (already shown to user). Always pass previously shown keywords here when loading more." },
         },
         required: [],
         additionalProperties: false,
@@ -1948,20 +1950,35 @@ JSON 구조:
 
     case "get_trending_now": {
       const limit = Math.min(args.limit || 5, 5);
+      const offset = args.offset || 0;
       const category = args.category || null;
+      const excludeKeywords: string[] = args.exclude_keywords || [];
+
+      // Fetch more than needed to allow filtering
+      const fetchLimit = limit + offset + excludeKeywords.length + 5;
 
       let query = adminClient
         .from("ktrenz_trend_triggers")
         .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, wiki_entry_id, context, context_ko, influence_index, confidence, source_url, source_title, source_image_url, trigger_source, detected_at, peak_score, baseline_score")
         .eq("status", "active")
         .order("influence_index", { ascending: false, nullsFirst: false })
-        .limit(limit);
+        .limit(fetchLimit);
 
       if (category) {
         query = query.eq("keyword_category", category);
       }
 
-      const { data: triggers } = await query;
+      let { data: triggers } = await query;
+
+      // Filter out excluded keywords and apply offset
+      if (triggers && excludeKeywords.length > 0) {
+        const excludeSet = new Set(excludeKeywords.map(k => k.toLowerCase()));
+        triggers = triggers.filter((t: any) => !excludeSet.has((t.keyword || "").toLowerCase()) && !excludeSet.has((t.keyword_ko || "").toLowerCase()));
+      }
+      if (triggers && offset > 0) {
+        triggers = triggers.slice(offset);
+      }
+      triggers = (triggers || []).slice(0, limit);
 
       if (!triggers || triggers.length === 0) {
         return JSON.stringify({
@@ -2299,6 +2316,7 @@ ${artistName}에 대한 모든 질문에 자신 있게, 애정을 담아 답변�
 - 그 뒤에 키워드 내용을 텍스트로 언급하거나 부연하지 마. FOLLOW_UPS만 붙여!
 - ❌ 나쁜 예: "다양한 아티스트와 이슈가 가득하네요. 이 외에도 여러 매력적인 키워드가..."
 - ✅ 좋은 예: "지금 뜨는 트렌드예요! 🔥\n<!--FOLLOW_UPS:[...]-->"
+- 🔄 "더 보여줘" / "더 찾아보기" 요청 시: 유저 메시지에 "이미 본 키워드: A, B, C" 가 포함되어 있으면 반드시 exclude_keywords 파라미터에 해당 키워드들을 배열로 전달해서 중복 없이 새로운 키워드만 보여줘!
 
 ⚠️ 단계적 대화 규칙 (매우 중요):
 - 절대로 한 번에 모든 정보를 쏟아내지 마!
