@@ -14,6 +14,7 @@ export interface TrendKeywordEntry {
   source?: string | null;
   source_title?: string | null;
   source_url?: string | null;
+  source_image_url?: string | null;
   detected_at?: string | null;
   search_volume?: number | null;
   interest_score?: number | null;
@@ -72,9 +73,11 @@ function InfluenceGauge({ value }: { value: number }) {
 const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick }) => {
   if (!keywords || keywords.length === 0) return null;
 
+  const displayed = keywords.slice(0, 5);
+
   return (
     <div className="flex flex-col gap-2 mt-2 w-full">
-      {keywords.map((kw, idx) => {
+      {displayed.map((kw, idx) => {
         const catClass = categoryColors[kw.category] || "bg-muted text-muted-foreground border-border";
         const emoji = categoryEmoji[kw.category] || "📊";
         const delta = kw.delta_pct ?? 0;
@@ -86,81 +89,92 @@ const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onK
             key={`${kw.keyword}-${idx}`}
             type="button"
             onClick={() => onKeywordClick?.(kw)}
-            className="w-full text-left p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all group active:scale-[0.98]"
+            className="w-full text-left rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all group active:scale-[0.98] overflow-hidden"
           >
-            {/* Row 1: Keyword + Category badge */}
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <span className="text-sm shrink-0">{emoji}</span>
-                <span className="text-sm font-bold text-foreground truncate">
-                  {displayKeyword}
-                </span>
-              </div>
-              <Badge
-                variant="outline"
-                className={cn("text-[10px] px-1.5 py-0 h-4 shrink-0 capitalize", catClass)}
-              >
-                {kw.category}
-              </Badge>
-            </div>
-
-            {/* Row 2: Artist/Member + Source */}
-            {(kw.artist || kw.source_title) && (
-              <div className="flex items-center gap-1.5 mb-1.5 text-xs text-muted-foreground">
-                {kw.artist && (
-                  <span className="font-medium text-foreground/70">by {kw.artist}</span>
-                )}
-                {kw.artist && kw.source_title && <span>·</span>}
-                {kw.source_title && (
-                  <span className="truncate flex items-center gap-0.5">
-                    {kw.source_url ? (
-                      <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-50" />
-                    ) : null}
-                    {kw.source_title}
-                  </span>
-                )}
+            {/* Hero image */}
+            {kw.source_image_url && (
+              <div className="w-full aspect-[16/9] bg-muted overflow-hidden">
+                <img
+                  src={kw.source_image_url}
+                  alt={displayKeyword}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
               </div>
             )}
 
-            {/* Row 3: Influence Index gauge + Search metrics */}
-            <div className="flex items-center justify-between gap-3">
-              {/* Influence Index */}
-              <div className="flex-1">
-                <div className="text-[10px] text-muted-foreground mb-0.5">Influence</div>
-                <InfluenceGauge value={kw.influence_index ?? 0} />
+            <div className="p-3">
+              {/* Row 1: Keyword + Category badge */}
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className="text-sm shrink-0">{emoji}</span>
+                  <span className="text-sm font-bold text-foreground truncate">
+                    {displayKeyword}
+                  </span>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={cn("text-[10px] px-1.5 py-0 h-4 shrink-0 capitalize", catClass)}
+                >
+                  {kw.category}
+                </Badge>
               </div>
 
-              {/* Search Volume / Interest */}
-              <div className="flex items-center gap-2 shrink-0">
-                {kw.interest_score != null && (
-                  <div className="text-center">
-                    <div className="text-[10px] text-muted-foreground">Interest</div>
-                    <div className="text-xs font-bold text-foreground">{kw.interest_score}</div>
-                  </div>
-                )}
-                {hasDelta && (
-                  <div className="text-center">
-                    <div className="text-[10px] text-muted-foreground">24h</div>
-                    <div className={cn(
-                      "text-xs font-bold flex items-center gap-0.5",
-                      delta > 0 ? "text-emerald-400" : "text-red-400"
-                    )}>
-                      {delta > 0 ? (
-                        <TrendingUp className="w-3 h-3" />
-                      ) : (
-                        <TrendingDown className="w-3 h-3" />
-                      )}
-                      {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
+              {/* Row 2: Artist/Member + Source */}
+              {(kw.artist || kw.source_title) && (
+                <div className="flex items-center gap-1.5 mb-1.5 text-xs text-muted-foreground">
+                  {kw.artist && (
+                    <span className="font-medium text-foreground/70">by {kw.artist}</span>
+                  )}
+                  {kw.artist && kw.source_title && <span>·</span>}
+                  {kw.source_title && (
+                    <span className="truncate flex items-center gap-0.5">
+                      {kw.source_url ? (
+                        <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-50" />
+                      ) : null}
+                      {kw.source_title}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Row 3: Influence Index gauge + Search metrics */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1">
+                  <div className="text-[10px] text-muted-foreground mb-0.5">Influence</div>
+                  <InfluenceGauge value={kw.influence_index ?? 0} />
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {kw.interest_score != null && (
+                    <div className="text-center">
+                      <div className="text-[10px] text-muted-foreground">Interest</div>
+                      <div className="text-xs font-bold text-foreground">{kw.interest_score}</div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {hasDelta && (
+                    <div className="text-center">
+                      <div className="text-[10px] text-muted-foreground">24h</div>
+                      <div className={cn(
+                        "text-xs font-bold flex items-center gap-0.5",
+                        delta > 0 ? "text-emerald-400" : "text-red-400"
+                      )}>
+                        {delta > 0 ? (
+                          <TrendingUp className="w-3 h-3" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3" />
+                        )}
+                        {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Tap hint */}
-            <div className="flex items-center gap-1 mt-1.5 text-[10px] text-primary/50 group-hover:text-primary/70 transition-colors">
-              <Sparkles className="w-2.5 h-2.5" />
-              <span>Tap to ask more</span>
+              {/* Tap hint */}
+              <div className="flex items-center gap-1 mt-1.5 text-[10px] text-primary/50 group-hover:text-primary/70 transition-colors">
+                <Sparkles className="w-2.5 h-2.5" />
+                <span>Tap to ask more</span>
+              </div>
             </div>
           </button>
         );

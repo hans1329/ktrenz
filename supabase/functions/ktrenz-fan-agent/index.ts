@@ -1947,7 +1947,7 @@ JSON 구조:
     }
 
     case "get_trending_now": {
-      const limit = Math.min(args.limit || 10, 30);
+      const limit = Math.min(args.limit || 5, 30);
       const category = args.category || null;
 
       let query = adminClient
@@ -1995,6 +1995,7 @@ JSON 구조:
           confidence: t.confidence,
           source: t.trigger_source,
           source_title: t.source_title,
+          source_image_url: t.source_image_url ?? null,
           detected_at: t.detected_at,
           search_volume: tracking?.search_volume ?? null,
           interest_score: tracking?.interest_score ?? null,
@@ -3521,6 +3522,7 @@ Deno.serve(async (req) => {
                         source: kw.source ?? null,
                         source_title: kw.source_title ?? null,
                         source_url: kw.source_url ?? null,
+                        source_image_url: kw.source_image_url ?? null,
                         detected_at: kw.detected_at ?? null,
                         search_volume: kw.search_volume ?? null,
                         interest_score: kw.interest_score ?? null,
