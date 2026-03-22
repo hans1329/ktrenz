@@ -529,7 +529,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [dedupedTriggers, selectedCategory, watchedSet]);
 
   const containerWidth = isMobile ? 390 : 1000;
-  const containerHeight = isMobile ? 3600 : 2400;
+  const containerHeight = isMobile ? 4200 : 2800;
 
 
 
