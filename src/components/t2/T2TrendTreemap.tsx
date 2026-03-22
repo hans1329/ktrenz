@@ -421,8 +421,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         };
       });
     },
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 
   // Separate query for shopping (naver_shop) triggers
