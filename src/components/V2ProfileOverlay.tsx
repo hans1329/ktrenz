@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -55,9 +55,14 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Refetch kpass data when drawer opens
+  const queryClient = useQueryClient();
+
+  // Refetch kpass + trend bets data when drawer opens
   useEffect(() => {
-    if (open && user?.id) refetchKpass();
+    if (open && user?.id) {
+      refetchKpass();
+      queryClient.invalidateQueries({ queryKey: ["profile-trend-bets", user.id] });
+    }
   }, [open]);
 
 
