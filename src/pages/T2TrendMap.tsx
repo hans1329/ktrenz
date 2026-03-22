@@ -38,6 +38,7 @@ const T2TrendMap = () => {
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
     setCategoryStats(stats);
