@@ -107,6 +107,11 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
         <span className="text-[10px] text-muted-foreground">{bets.length} active</span>
       </div>
 
+      {isEmpty ? (
+        <div className="p-3 rounded-lg border border-dashed border-border/60 text-center">
+          <p className="text-xs text-muted-foreground">아직 예측한 트렌드가 없습니다</p>
+        </div>
+      ) : (
       <div className="space-y-1.5">
         {bets.map((bet) => {
           const displayKeyword = language === "ko" && bet.keyword_ko ? bet.keyword_ko : bet.keyword;
