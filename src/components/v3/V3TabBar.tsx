@@ -117,7 +117,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
   return (
     <>
-      <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-md bg-tabbar-background/50 backdrop-blur-xl rounded-full overflow-visible"
+      <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-md bg-tabbar-background backdrop-blur-none rounded-full overflow-visible"
         style={{
           transform: 'translate3d(-50%, 0, 0)',
           boxShadow: '0 -4px 24px 0 hsl(220 10% 50% / 0.12), 0 2px 12px 0 hsl(220 10% 50% / 0.08)',
@@ -147,7 +147,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
               return (
                 <button key={tab.id} onClick={() => navigate("/agent")}
                   className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
-                    isActive ? "text-white" : "text-muted-foreground/60 hover:text-foreground")}>
+                    isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
                   {showAgentBadge && (
                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
                   )}
@@ -162,7 +162,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
             return (
               <button key={tab.id} onClick={() => (tab.id === "rankings" ? navigate("/") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : onTabChange(tab.id as V3Tab))}
                 className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
-                  isActive ? "text-white" : "text-muted-foreground/60 hover:text-foreground")}>
+                  isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
                 <span className={cn("text-[10px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
               </button>
