@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Badge } from "@/components/ui/badge";
