@@ -364,7 +364,7 @@ const UserDashboard = () => {
       <SEO title="My Activity – KTrenZ" description="Your trend activity and contribution" path="/dashboard" />
       
       {/* Sub-header: back + title */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-card backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center h-14 px-4 max-w-screen-lg mx-auto">
           <button onClick={() => navigate(-1)} className="p-1 -ml-1 mr-2">
             <ChevronLeft className="w-5 h-5 text-foreground" />
