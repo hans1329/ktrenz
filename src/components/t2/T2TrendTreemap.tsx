@@ -180,25 +180,25 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     const logBase = Math.log1p(metric);
 
     if (isCollecting) {
-      if (idx === 0) return logBase * 3.6;
-      if (idx === 1) return logBase * 3.0;
-      if (idx === 2) return logBase * 2.6;
-      if (idx < 6) return logBase * 2.2;
-      if (idx < 12) return logBase * 1.95;
-      if (idx < 25) return logBase * 1.7;
-      if (idx < 40) return logBase * 1.5;
-      return logBase * 1.35;
+      if (idx === 0) return logBase * 2.4;
+      if (idx === 1) return logBase * 2.15;
+      if (idx === 2) return logBase * 1.95;
+      if (idx < 6) return logBase * 1.8;
+      if (idx < 12) return logBase * 1.65;
+      if (idx < 25) return logBase * 1.5;
+      if (idx < 40) return logBase * 1.4;
+      return logBase * 1.3;
     }
 
     // Rank-based multiplier
-    if (idx === 0) return logBase * 3.6;
-    if (idx === 1) return logBase * 3.0;
-    if (idx === 2) return logBase * 2.6;
-    if (idx < 6) return logBase * 2.2;
-    if (idx < 12) return logBase * 1.95;
-    if (idx < 25) return logBase * 1.7;
-    if (idx < 40) return logBase * 1.5;
-    return logBase * 1.35;
+    if (idx === 0) return logBase * 2.4;
+    if (idx === 1) return logBase * 2.15;
+    if (idx === 2) return logBase * 1.95;
+    if (idx < 6) return logBase * 1.8;
+    if (idx < 12) return logBase * 1.65;
+    if (idx < 25) return logBase * 1.5;
+    if (idx < 40) return logBase * 1.4;
+    return logBase * 1.3;
   };
 
   const totalValue = items.reduce((s, item, idx) => s + tileSize(item, idx), 0);
