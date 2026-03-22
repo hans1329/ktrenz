@@ -614,7 +614,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           <button
             onClick={() => setSortMode("rate")}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+              "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
               sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -623,7 +623,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           <button
             onClick={() => setSortMode("volume")}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+              "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
               sortMode === "volume" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
