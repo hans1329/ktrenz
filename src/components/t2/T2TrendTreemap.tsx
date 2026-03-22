@@ -635,7 +635,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       {!hideCategory && (
       <div className={cn(
         "flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide",
-        "sticky top-14 z-30 bg-background/60 backdrop-blur-md pt-3 pb-2 -mx-4 px-4"
+        "sticky top-14 z-30 bg-card/85 backdrop-blur-md pt-3 pb-2 -mx-4 px-4"
       )}>
         {ALL_CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat;
