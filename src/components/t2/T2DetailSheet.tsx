@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins } from "lucide-react";
+import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins, Diamond } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
