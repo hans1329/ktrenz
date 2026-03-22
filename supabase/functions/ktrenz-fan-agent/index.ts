@@ -36,6 +36,127 @@ function sanitizeArtistCandidate(value: string): string {
     .trim();
 }
 
+function normalizeTrendText(value?: string | null): string {
+  return (value || "")
+    .toLowerCase()
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/[^a-z0-9가-힣\s]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function trendTokenSimilarity(a?: string | null, b?: string | null): number {
+  const tokensA = new Set(normalizeTrendText(a).split(/\s+/).filter((token) => token.length > 1));
+  const tokensB = new Set(normalizeTrendText(b).split(/\s+/).filter((token) => token.length > 1));
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+
+  let overlap = 0;
+  for (const token of tokensA) {
+    if (tokensB.has(token)) overlap += 1;
+  }
+  return overlap / Math.min(tokensA.size, tokensB.size);
+}
+
+function buildTrendFingerprint(item: {
+  keyword?: string | null;
+  keyword_ko?: string | null;
+  source_title?: string | null;
+  source_url?: string | null;
+  context?: string | null;
+}): string {
+  const keyword = normalizeTrendText(item.keyword_ko || item.keyword);
+  const sourceUrl = normalizeTrendText(item.source_url);
+  const sourceTitle = normalizeTrendText(item.source_title);
+  const context = normalizeTrendText(item.context);
+  return [keyword, sourceUrl || sourceTitle || context].filter(Boolean).join("|");
+}
+
+function areTrendItemsNearDuplicate(
+  a: {
+    keyword?: string | null;
+    keyword_ko?: string | null;
+    source_title?: string | null;
+    source_url?: string | null;
+    context?: string | null;
+  },
+  b: {
+    keyword?: string | null;
+    keyword_ko?: string | null;
+    source_title?: string | null;
+    source_url?: string | null;
+    context?: string | null;
+  },
+): boolean {
+  const fingerprintA = buildTrendFingerprint(a);
+  const fingerprintB = buildTrendFingerprint(b);
+  if (fingerprintA && fingerprintA === fingerprintB) return true;
+
+  const keywordA = normalizeTrendText(a.keyword_ko || a.keyword);
+  const keywordB = normalizeTrendText(b.keyword_ko || b.keyword);
+  if (keywordA && keywordA === keywordB) return true;
+
+  const urlA = normalizeTrendText(a.source_url);
+  const urlB = normalizeTrendText(b.source_url);
+  if (urlA && urlB && urlA === urlB) return true;
+
+  const titleA = normalizeTrendText(a.source_title);
+  const titleB = normalizeTrendText(b.source_title);
+  if (
+    titleA &&
+    titleB &&
+    (titleA === titleB ||
+      titleA.includes(titleB) ||
+      titleB.includes(titleA) ||
+      trendTokenSimilarity(titleA, titleB) >= 0.72)
+  ) {
+    return true;
+  }
+
+  const contextA = normalizeTrendText(a.context);
+  const contextB = normalizeTrendText(b.context);
+  return !!contextA && !!contextB && trendTokenSimilarity(contextA, contextB) >= 0.8;
+}
+
+function selectDiversifiedTrendTriggers(triggers: any[], limit: number, offset: number): any[] {
+  const targetCount = offset + limit;
+  if (!Array.isArray(triggers) || triggers.length === 0) return [];
+
+  const selected: any[] = [];
+  const overflow: any[] = [];
+  const uniqueArtistCount = new Set(
+    triggers.map((trigger) => normalizeTrendText(trigger.artist_name)).filter(Boolean),
+  ).size;
+  const perArtistSoftCap = uniqueArtistCount >= limit ? 1 : uniqueArtistCount > 1 ? 2 : Number.POSITIVE_INFINITY;
+  const artistCounts = new Map<string, number>();
+
+  for (const trigger of triggers) {
+    if (selected.some((existing) => areTrendItemsNearDuplicate(existing, trigger))) continue;
+
+    const artistKey = normalizeTrendText(trigger.artist_name);
+    const artistCount = artistKey ? (artistCounts.get(artistKey) ?? 0) : 0;
+
+    if (artistKey && artistCount >= perArtistSoftCap) {
+      overflow.push(trigger);
+      continue;
+    }
+
+    selected.push(trigger);
+    if (artistKey) artistCounts.set(artistKey, artistCount + 1);
+    if (selected.length >= targetCount) break;
+  }
+
+  if (selected.length < targetCount) {
+    for (const trigger of overflow) {
+      if (selected.some((existing) => areTrendItemsNearDuplicate(existing, trigger))) continue;
+      selected.push(trigger);
+      if (selected.length >= targetCount) break;
+    }
+  }
+
+  return selected.slice(offset, targetCount);
+}
+
 function isLikelyBareArtistInput(userText: string): boolean {
   const text = (userText || "").trim();
   if (!text || text.length < 2 || text.length > 40) return false;
@@ -1954,8 +2075,8 @@ JSON 구조:
       const category = args.category || null;
       const excludeKeywords: string[] = args.exclude_keywords || [];
 
-      // Fetch more than needed to allow filtering
-      const fetchLimit = limit + offset + excludeKeywords.length + 5;
+      // Fetch extra rows so we can deduplicate repeated article/topic clusters and diversify artists.
+      const fetchLimit = Math.min(Math.max(limit + offset + excludeKeywords.length + 20, 20), 50);
 
       let query = adminClient
         .from("ktrenz_trend_triggers")
@@ -1970,15 +2091,12 @@ JSON 구조:
 
       let { data: triggers } = await query;
 
-      // Filter out excluded keywords and apply offset
+      // Filter out excluded keywords.
       if (triggers && excludeKeywords.length > 0) {
         const excludeSet = new Set(excludeKeywords.map(k => k.toLowerCase()));
         triggers = triggers.filter((t: any) => !excludeSet.has((t.keyword || "").toLowerCase()) && !excludeSet.has((t.keyword_ko || "").toLowerCase()));
       }
-      if (triggers && offset > 0) {
-        triggers = triggers.slice(offset);
-      }
-      triggers = (triggers || []).slice(0, limit);
+      triggers = selectDiversifiedTrendTriggers(triggers || [], limit, offset);
 
       if (!triggers || triggers.length === 0) {
         return JSON.stringify({
@@ -3543,7 +3661,7 @@ Deno.serve(async (req) => {
                   if (parsed.keywords && parsed.keywords.length > 0) {
                     if (!collectedMeta.trendData) collectedMeta.trendData = [];
                     for (const kw of parsed.keywords) {
-                      collectedMeta.trendData.push({
+                      const nextTrendItem = {
                         keyword: kw.keyword,
                         keyword_ko: kw.keyword_ko ?? null,
                         category: kw.category,
@@ -3559,7 +3677,13 @@ Deno.serve(async (req) => {
                         search_volume: kw.search_volume ?? null,
                         interest_score: kw.interest_score ?? null,
                         delta_pct: kw.delta_pct ?? null,
-                      });
+                      };
+
+                      if (collectedMeta.trendData.some((existing: any) => areTrendItemsNearDuplicate(existing, nextTrendItem))) {
+                        continue;
+                      }
+
+                      collectedMeta.trendData.push(nextTrendItem);
                     }
                   }
                 } catch {}
