@@ -334,6 +334,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
 
+  const { data: isCollecting = false } = useQuery({
+    queryKey: ["t2-pipeline-running"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_pipeline_state" as any)
+        .select("id")
+        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .limit(1);
+      return ((data as any[])?.length ?? 0) > 0;
+    },
+    refetchInterval: 30000,
+    staleTime: 20000,
+  });
+
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers"],
     staleTime: 30 * 60 * 1000,
