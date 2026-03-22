@@ -147,7 +147,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
               return (
                 <button key={tab.id} onClick={() => navigate("/agent")}
                   className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
-                    isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
+                    isActive ? "text-white" : "text-muted-foreground/60 hover:text-foreground")}>
                   {showAgentBadge && (
                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-background z-10" />
                   )}
