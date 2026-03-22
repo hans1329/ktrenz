@@ -124,7 +124,7 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 pt-[env(safe-area-inset-top)] bg-background"
+        className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 pt-[env(safe-area-inset-top)] bg-card"
       >
         <div className="relative flex items-center justify-between h-14 px-4 md:max-w-[90%] mx-auto">
           {isSearchOpen ? (
