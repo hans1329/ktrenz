@@ -128,6 +128,19 @@ const AdminKeywordMonitor = () => {
     }, {} as Record<Zone, typeof classified>);
   }, [classified, filterZone, zoneSortDir, searchQuery]);
 
+  const handleRemove = useCallback(async (id: string, label: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("admin-update-field", {
+        body: { table: "ktrenz_trend_triggers", match: { id }, update: { status: "removed" } },
+      });
+      if (error) throw error;
+      toast.success(`"${label}" 제거 완료`);
+      queryClient.invalidateQueries({ queryKey: ["admin-keyword-monitor"] });
+    } catch (e: any) {
+      toast.error(`제거 실패: ${e.message}`);
+    }
+  }, [queryClient]);
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">로딩 중...</div>;
   if (!isAdmin) { navigate("/admin/login"); return null; }
 
