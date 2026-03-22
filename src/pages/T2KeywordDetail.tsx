@@ -337,8 +337,8 @@ const T2KeywordDetail = () => {
             className="absolute inset-0"
             style={{
               background: artistInfo?.imageUrl
-                ? `linear-gradient(to bottom, hsla(220, 30%, 15%, 0.7), hsla(220, 30%, 10%, 0.95)), url(${artistInfo.imageUrl}) center/cover no-repeat`
-                : "linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--muted)))",
+                ? `linear-gradient(to bottom, hsla(220, 30%, 15%, 0.85), hsla(220, 30%, 10%, 0.95)), url(${artistInfo.imageUrl}) center/cover no-repeat`
+                : "linear-gradient(135deg, hsl(220, 30%, 20%), hsl(220, 25%, 15%))",
             }}
           />
           <div className="relative z-10 p-5 sm:p-8">
@@ -384,20 +384,20 @@ const T2KeywordDetail = () => {
 
             {/* Key metrics row */}
             <div className="grid grid-cols-3 gap-3 mt-5">
-              <div className="rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3 text-center">
-                <div className="text-[10px] text-white/50 mb-0.5">{t2l("influence", language)}</div>
+              <div className="rounded-xl bg-white/10 backdrop-blur border border-white/15 p-3 text-center">
+                <div className="text-[10px] text-white/60 mb-0.5">{t2l("influence", language)}</div>
                 <div className="text-xl font-black text-white">
                   {influenceIndex > 0 ? `+${influenceIndex.toFixed(1)}%` : "—"}
                 </div>
               </div>
-              <div className="rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3 text-center">
-                <div className="text-[10px] text-white/50 mb-0.5">{t2l("baseline", language)}</div>
+              <div className="rounded-xl bg-white/10 backdrop-blur border border-white/15 p-3 text-center">
+                <div className="text-[10px] text-white/60 mb-0.5">{t2l("baseline", language)}</div>
                 <div className="text-xl font-black text-white">
                   {baselineScore ?? "—"}
                 </div>
               </div>
-              <div className="rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3 text-center">
-                <div className="text-[10px] text-white/50 mb-0.5">{t2l("peak", language)}</div>
+              <div className="rounded-xl bg-white/10 backdrop-blur border border-white/15 p-3 text-center">
+                <div className="text-[10px] text-white/60 mb-0.5">{t2l("peak", language)}</div>
                 <div className="text-xl font-black text-white">
                   {peakScore ?? "—"}
                 </div>
