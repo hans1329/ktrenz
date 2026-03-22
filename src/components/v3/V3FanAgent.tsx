@@ -1467,7 +1467,8 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         {t("agent.subtitle")}
       </p>
 
-      {/* Register bias artist — prominent CTA */}
+      {/* Register bias artist — only show if no bias registered */}
+      {!hasBiasRegistered && (
       <button
         onClick={() => handleSend(t("agent.prompt.alertSetup"))}
         disabled={isStreaming}
@@ -1482,6 +1483,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         </div>
         <Sparkles className="w-4 h-4 text-primary/50 group-hover:text-primary/80 transition-colors shrink-0" />
       </button>
+      )}
 
       <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
         {QUICK_ACTIONS.map((action) => {

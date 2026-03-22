@@ -70,7 +70,7 @@ const translations: Record<string, Record<Language, string>> = {
   "agent.signInDesc": { en: "Please sign in to use Fan Agent.", ko: "팬 에이전트를 사용하려면 로그인하세요.", ja: "ファンエージェントを使用するにはログインしてください。", zh: "请登录以使用粉丝助手。" },
   "agent.goBack": { en: "← Go Back", ko: "← 돌아가기", ja: "← 戻る", zh: "← 返回" },
   "agent.title": { en: "Fan Agent", ko: "팬 에이전트", ja: "ファンエージェント", zh: "粉丝助手" },
-  "agent.subtitle": { en: "Helps with streaming strategy, trend analysis, and fan activities based on real-time data", ko: "실시간 데이터 기반 스트리밍 전략, 트렌드 분석, 팬 활동을 도와드려요", ja: "リアルタイムデータに基づくストリーミング戦略、トレンド分析、ファン活動をサポート", zh: "基于实时数据的流媒体策略、趋势分析和粉丝活动支持" },
+  "agent.subtitle": { en: "Discover trending keywords, predict market movements, and stay ahead of K-Pop trends", ko: "트렌드 키워드 발굴, 시장 예측, K-Pop 트렌드를 선도하세요", ja: "トレンドキーワード発掘、市場予測、K-Popトレンドをリード", zh: "发现趋势关键词、预测市场走向、引领K-Pop潮流" },
   "agent.liveRankings": { en: "Live Rankings", ko: "실시간 랭킹", ja: "ライブランキング", zh: "实时排名" },
   "agent.trendAnalysis": { en: "Trend Analysis", ko: "트렌드 분석", ja: "トレンド分析", zh: "趋势分析" },
   "agent.streamingGuide": { en: "Streaming Guide", ko: "스밍 가이드", ja: "ストリーミングガイド", zh: "流媒体指南" },
