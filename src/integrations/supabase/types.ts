@@ -2044,6 +2044,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_agent_cards: {
+        Row: {
+          agent_slot_id: string | null
+          card_data: Json
+          card_type: string
+          created_at: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          agent_slot_id?: string | null
+          card_data?: Json
+          card_type: string
+          created_at?: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          agent_slot_id?: string | null
+          card_data?: Json
+          card_type?: string
+          created_at?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_agent_daily_usage: {
         Row: {
           bonus_remaining: number
