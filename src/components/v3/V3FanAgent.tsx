@@ -689,6 +689,25 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  const lastTrendKeywords = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const msg = messages[i];
+      if (msg.role !== "assistant") continue;
+      const persistedCards = msg.id ? cardsByMessageId[msg.id] : undefined;
+      const trendData = msg.trendData ?? persistedCards?.trendData ?? null;
+      if (!trendData || trendData.length === 0) continue;
+
+      return Array.from(
+        new Set<string>(
+          trendData
+            .map((item: any) => item.keyword_ko || item.keyword)
+            .filter((value: unknown): value is string => typeof value === "string" && value.length > 0),
+        ),
+      );
+    }
+    return [] as string[];
+  }, [messages, cardsByMessageId]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
@@ -962,6 +981,15 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
     const text = (overrideText || chatInput).trim();
     if (!text || isStreaming || !session?.access_token) return;
 
+    const isTrendLoadMoreRequest =
+      !excludeKeywords?.length &&
+      lastTrendKeywords.length > 0 &&
+      /(트렌드|키워드)/i.test(text) &&
+      /(더|다른|계속|추가|more)/i.test(text);
+
+    const effectiveExcludeKeywords =
+      excludeKeywords?.length ? excludeKeywords : isTrendLoadMoreRequest ? lastTrendKeywords : undefined;
+
     if (!bypassPurchaseConfirm && (agentUsage?.remaining ?? 0) === 0) {
       setPendingPurchaseText(text);
       setShowPointPurchaseDialog(true);
@@ -988,7 +1016,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         token: session.access_token,
         agentSlotId: activeSlot?.id,
         quickActionHint,
-        excludeKeywords,
+        excludeKeywords: effectiveExcludeKeywords,
         onDelta: (chunk) => {
           assistantContent += chunk;
           setMessages((prev) => {
@@ -1042,7 +1070,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       }
       setMessages((prev) => prev.slice(0, -1));
     }
-  }, [chatInput, isStreaming, session, messages, user?.id, activeSlot?.id, queryClient, refetchUsage, agentUsage, t]);
+  }, [chatInput, isStreaming, session, messages, user?.id, activeSlot?.id, queryClient, refetchUsage, agentUsage, t, lastTrendKeywords]);
 
   const handleBundlePurchase = useCallback(async (bundle: number) => {
     if (!user?.id || isPurchasing) return;
