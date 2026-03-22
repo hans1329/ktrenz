@@ -100,8 +100,8 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
     staleTime: 0,
   });
 
-  const bets = betsData.bets;
-  const totalCount = betsData.totalCount;
+  const bets = betsData?.bets ?? [];
+  const totalCount = betsData?.totalCount ?? 0;
 
   if (!user) return null;
 
