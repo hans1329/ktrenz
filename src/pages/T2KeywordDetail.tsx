@@ -455,6 +455,55 @@ const T2KeywordDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* 14-day Kinterest Score chart inside hero */}
+            {chartData.length > 0 && (
+              <div className="mt-5 rounded-xl bg-white/5 backdrop-blur border border-white/10 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-white/80 flex items-center gap-1.5">
+                    <BarChart3 className="w-3.5 h-3.5 text-white/60" />
+                    Kinterest Score
+                  </span>
+                  <span className="text-[10px] text-white/40">14d</span>
+                </div>
+                <div className="h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 2, right: 2, left: -25, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="heroScoreGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="rgba(255,255,255,0.3)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="rgba(255,255,255,0)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="time" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }} stroke="transparent" tickLine={false} />
+                      <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.4)" }} stroke="transparent" tickLine={false} domain={[0, 100]} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "11px",
+                        }}
+                      />
+                      {baselineScore != null && (
+                        <ReferenceLine y={baselineScore} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4" />
+                      )}
+                      {peakScore != null && (
+                        <ReferenceLine y={peakScore} stroke="rgba(239,68,68,0.5)" strokeDasharray="4 4" />
+                      )}
+                      <Area
+                        type="monotone"
+                        dataKey="score"
+                        stroke="rgba(255,255,255,0.8)"
+                        strokeWidth={1.5}
+                        fill="url(#heroScoreGradient)"
+                        dot={false}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
