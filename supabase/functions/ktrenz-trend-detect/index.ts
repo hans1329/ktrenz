@@ -516,30 +516,59 @@ Call extract_keywords with the specific named entities found, then call analyze_
         const args = JSON.parse(tc.function.arguments);
         if (tc.function.name === "extract_keywords") {
           const rawKeywords = args.keywords || [];
-          console.log(`[trend-detect] Tool calling extracted ${rawKeywords.length} keywords for ${memberName}: ${rawKeywords.map((k: any) => `${k.keyword}(own:${k.ownership_artist},${k.ownership_confidence})`).join(", ")}`);
+          console.log(`[trend-detect] Tool calling extracted ${rawKeywords.length} keywords for ${memberName}: ${rawKeywords.map((k: any) => `${k.keyword}(subj:${k.article_subject_name},match:${k.article_subject_match},flags:${(k.rejection_flags||[]).join("|")},own:${k.ownership_artist},${k.ownership_confidence})`).join(", ")}`);
 
-          // ── 귀속 검증 필터 ──
+          // ── 구조적 검증 필터 (Tool Calling 출력 기반) ──
           for (const k of rawKeywords) {
             const ownerArtist = (k.ownership_artist || "").toLowerCase();
             const searchedArtist = memberName.toLowerCase();
             const searchedGroup = (groupName || "").toLowerCase();
             const searchedNameKo = (nameKo || "").toLowerCase();
+            const rejectionFlags: string[] = k.rejection_flags || [];
 
-            // 귀속 confidence가 0.5 미만이면 차단
-            if (k.ownership_confidence < 0.5) {
-              console.warn(`[trend-detect] Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+            // ── 1단계: rejection_flags 기반 자동 차단 ──
+            const hardRejectFlags = ["wrong_member", "wrong_artist", "generic_word", "tv_gimmick", "ambiguous_name"];
+            const activeHardRejects = rejectionFlags.filter((f: string) => hardRejectFlags.includes(f));
+            if (activeHardRejects.length > 0) {
+              console.warn(`[trend-detect] ⛔ Rejected by flags: "${k.keyword}" → [${activeHardRejects.join(",")}] (subject: ${k.article_subject_name})`);
               continue;
             }
 
-            // ownership_artist가 같은 그룹의 다른 멤버인 경우 차단
-            // (e.g., 검색 대상: Han, ownership_artist: Hyunjin → 차단)
+            // soft reject flags: passing_mention, metaphor_comparison, noise
+            // 2개 이상이면 차단
+            const softRejectFlags = rejectionFlags.filter((f: string) => ["passing_mention", "metaphor_comparison", "noise"].includes(f));
+            if (softRejectFlags.length >= 2) {
+              console.warn(`[trend-detect] ⚠️ Rejected by multiple soft flags: "${k.keyword}" → [${softRejectFlags.join(",")}]`);
+              continue;
+            }
+
+            // ── 2단계: article_subject_match 기반 차단 ──
+            if (k.article_subject_match === false) {
+              const subjectName = (k.article_subject_name || "").toLowerCase();
+              // 기사 주체가 다른 사람이고, 그게 검색 대상도 아니고 그룹도 아닌 경우 → 차단
+              if (subjectName && subjectName !== searchedArtist && subjectName !== searchedGroup
+                  && (!searchedNameKo || subjectName !== searchedNameKo)) {
+                console.warn(`[trend-detect] ⛔ Subject mismatch: "${k.keyword}" → article about "${k.article_subject_name}", not "${memberName}"`);
+                continue;
+              }
+            }
+
+            // ── 3단계: ownership_confidence 기반 차단 ──
+            if (k.ownership_confidence < 0.5) {
+              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+              continue;
+            }
+
+            // ── 4단계: ownership_artist 불일치 차단 ──
             if (ownerArtist && ownerArtist !== searchedArtist && ownerArtist !== searchedGroup 
                 && (!searchedNameKo || ownerArtist !== searchedNameKo)
                 && !ownerArtist.includes(searchedArtist) && !searchedArtist.includes(ownerArtist)) {
-              console.warn(`[trend-detect] Ownership mismatch: "${k.keyword}" belongs to "${k.ownership_artist}", not "${memberName}" (reason: ${k.ownership_reason})`);
+              console.warn(`[trend-detect] ⛔ Ownership mismatch: "${k.keyword}" belongs to "${k.ownership_artist}", not "${memberName}" (reason: ${k.ownership_reason})`);
               continue;
             }
 
+            // ✅ 모든 검증 통과
+            console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence})`);
             extractedKeywords.push({
               keyword: k.keyword,
               keyword_en: k.keyword_en,
