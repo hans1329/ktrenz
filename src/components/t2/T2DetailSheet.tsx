@@ -691,7 +691,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               ) : (
                 <>
                   {/* Bet input */}
-                  <div className="flex flex-col items-center gap-2">
+                   <div className="flex flex-col items-center gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">{language === "ko" ? "배팅:" : "Bet:"}</span>
                       <Input
@@ -705,6 +705,22 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-base lg:text-lg font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <span className="text-lg font-bold text-muted-foreground/90">T</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {[10, 50, 100, 500, 1000].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setBetAmount(String(preset))}
+                          className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${
+                            betAmount === String(preset)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                          }`}
+                        >
+                          {preset >= 1000 ? `${preset / 1000}K` : preset}
+                        </button>
+                      ))}
                     </div>
                     {user && (
                       <span className="text-[11px] font-bold text-primary whitespace-nowrap">
