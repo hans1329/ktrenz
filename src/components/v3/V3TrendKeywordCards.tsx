@@ -1,5 +1,5 @@
 import React from "react";
-import { TrendingUp, TrendingDown, ExternalLink, Sparkles } from "lucide-react";
+import { TrendingUp, TrendingDown, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ export interface TrendKeywordEntry {
 interface V3TrendKeywordCardsProps {
   keywords: TrendKeywordEntry[];
   onKeywordClick?: (keyword: TrendKeywordEntry) => void;
+  onLoadMore?: () => void;
 }
 
 const categoryColors: Record<string, string> = {
@@ -48,29 +49,7 @@ const categoryEmoji: Record<string, string> = {
   food: "🍽️",
 };
 
-function InfluenceGauge({ value }: { value: number }) {
-  const clamped = Math.min(100, Math.max(0, value));
-  const color =
-    clamped >= 70 ? "bg-red-500" :
-    clamped >= 40 ? "bg-amber-500" :
-    "bg-emerald-500";
-
-  return (
-    <div className="flex items-center gap-1.5 min-w-[80px]">
-      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-all", color)}
-          style={{ width: `${clamped}%` }}
-        />
-      </div>
-      <span className="text-[10px] font-mono font-bold text-foreground/70 w-7 text-right">
-        {Math.round(clamped)}
-      </span>
-    </div>
-  );
-}
-
-const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick }) => {
+const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore }) => {
   if (!keywords || keywords.length === 0) return null;
 
   const displayed = keywords.slice(0, 5);
@@ -89,96 +68,76 @@ const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onK
             key={`${kw.keyword}-${idx}`}
             type="button"
             onClick={() => onKeywordClick?.(kw)}
-            className="w-full text-left rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all group active:scale-[0.98] overflow-hidden"
+            className="w-full text-left rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all group active:scale-[0.98] overflow-hidden flex"
           >
-            {/* Hero image */}
+            {/* Thumbnail */}
             {kw.source_image_url && (
-              <div className="w-full aspect-[16/9] bg-muted overflow-hidden">
+              <div className="w-24 h-24 shrink-0 bg-muted overflow-hidden">
                 <img
                   src={kw.source_image_url}
                   alt={displayKeyword}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
               </div>
             )}
 
-            <div className="p-3">
-              {/* Row 1: Keyword + Category badge */}
-              <div className="flex items-start justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  <span className="text-sm shrink-0">{emoji}</span>
-                  <span className="text-sm font-bold text-foreground truncate">
-                    {displayKeyword}
-                  </span>
-                </div>
+            <div className="flex-1 p-2.5 min-w-0 flex flex-col justify-center gap-1">
+              {/* Row 1: Keyword + Category */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs shrink-0">{emoji}</span>
+                <span className="text-sm font-bold text-foreground truncate">{displayKeyword}</span>
                 <Badge
                   variant="outline"
-                  className={cn("text-[10px] px-1.5 py-0 h-4 shrink-0 capitalize", catClass)}
+                  className={cn("text-[9px] px-1 py-0 h-3.5 shrink-0 capitalize ml-auto", catClass)}
                 >
                   {kw.category}
                 </Badge>
               </div>
 
-              {/* Row 2: Artist/Member + Source */}
-              {(kw.artist || kw.source_title) && (
-                <div className="flex items-center gap-1.5 mb-1.5 text-xs text-muted-foreground">
-                  {kw.artist && (
-                    <span className="font-medium text-foreground/70">by {kw.artist}</span>
-                  )}
-                  {kw.artist && kw.source_title && <span>·</span>}
-                  {kw.source_title && (
-                    <span className="truncate flex items-center gap-0.5">
-                      {kw.source_url ? (
-                        <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-50" />
-                      ) : null}
-                      {kw.source_title}
-                    </span>
-                  )}
-                </div>
+              {/* Row 2: Artist + metrics */}
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                {kw.artist && (
+                  <span className="font-medium text-foreground/60 truncate">{kw.artist}</span>
+                )}
+                {kw.influence_index != null && (
+                  <span className="shrink-0">
+                    🔥 {Math.round(kw.influence_index)}
+                  </span>
+                )}
+                {hasDelta && (
+                  <span className={cn(
+                    "flex items-center gap-0.5 font-bold shrink-0",
+                    delta > 0 ? "text-emerald-400" : "text-red-400"
+                  )}>
+                    {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
+                  </span>
+                )}
+              </div>
+
+              {/* Row 3: Context snippet */}
+              {kw.context && (
+                <p className="text-[11px] text-muted-foreground/80 line-clamp-1 leading-tight">
+                  {kw.context}
+                </p>
               )}
-
-              {/* Row 3: Influence Index gauge + Search metrics */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1">
-                  <div className="text-[10px] text-muted-foreground mb-0.5">Influence</div>
-                  <InfluenceGauge value={kw.influence_index ?? 0} />
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {kw.interest_score != null && (
-                    <div className="text-center">
-                      <div className="text-[10px] text-muted-foreground">Interest</div>
-                      <div className="text-xs font-bold text-foreground">{kw.interest_score}</div>
-                    </div>
-                  )}
-                  {hasDelta && (
-                    <div className="text-center">
-                      <div className="text-[10px] text-muted-foreground">24h</div>
-                      <div className={cn(
-                        "text-xs font-bold flex items-center gap-0.5",
-                        delta > 0 ? "text-emerald-400" : "text-red-400"
-                      )}>
-                        {delta > 0 ? (
-                          <TrendingUp className="w-3 h-3" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3" />
-                        )}
-                        {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Tap hint */}
-              <div className="flex items-center gap-1 mt-1.5 text-[10px] text-primary/50 group-hover:text-primary/70 transition-colors">
-                <Sparkles className="w-2.5 h-2.5" />
-                <span>Tap to ask more</span>
-              </div>
             </div>
           </button>
         );
       })}
+
+      {/* Load more button */}
+      {onLoadMore && (
+        <button
+          type="button"
+          onClick={onLoadMore}
+          className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/30 transition-all text-sm font-medium text-primary active:scale-[0.98]"
+        >
+          <Search className="w-3.5 h-3.5" />
+          더 찾아보기
+        </button>
+      )}
     </div>
   );
 };
