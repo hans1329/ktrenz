@@ -3749,6 +3749,39 @@ export type Database = {
           },
         ]
       }
+      ktrenz_trend_ai_insights: {
+        Row: {
+          agency_insight: string
+          ai_insight: string
+          created_at: string
+          generated_by: string | null
+          id: string
+          language: string
+          model_used: string | null
+          trigger_id: string
+        }
+        Insert: {
+          agency_insight: string
+          ai_insight: string
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          language?: string
+          model_used?: string | null
+          trigger_id: string
+        }
+        Update: {
+          agency_insight?: string
+          ai_insight?: string
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          language?: string
+          model_used?: string | null
+          trigger_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_trend_bets: {
         Row: {
           amount: number
