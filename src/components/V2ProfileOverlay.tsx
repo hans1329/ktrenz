@@ -94,7 +94,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
   return (
     <>
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-background border-border max-h-[80vh] mx-auto md:max-w-md">
+      <DrawerContent className="bg-background border-border mx-auto md:max-w-md max-h-[80dvh] overflow-hidden">
         <DrawerHeader className="pb-1">
           <DrawerTitle className="sr-only">Profile</DrawerTitle>
         </DrawerHeader>
