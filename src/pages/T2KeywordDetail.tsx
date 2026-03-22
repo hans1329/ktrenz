@@ -608,50 +608,6 @@ const T2KeywordDetail = () => {
         )}
 
 
-        {chartData.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 mb-6">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              Kinterest Score
-            </h2>
-            <div className="h-56 sm:h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} domain={[0, 100]} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  {baselineScore != null && (
-                    <ReferenceLine y={baselineScore} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: "Baseline", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                  )}
-                  {peakScore != null && (
-                    <ReferenceLine y={peakScore} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: "Peak", fontSize: 10, fill: "hsl(var(--destructive))" }} />
-                  )}
-                  <Area
-                    type="monotone"
-                    dataKey="score"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    fill="url(#scoreGradient)"
-                    dot={chartData.length < 30}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
 
         <div className="grid gap-6 sm:grid-cols-2">
           {/* Evidence: Why this trend? */}
