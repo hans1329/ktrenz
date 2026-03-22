@@ -99,7 +99,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
           <DrawerTitle className="sr-only">Profile</DrawerTitle>
         </DrawerHeader>
 
-        <div className="px-5 pb-6 space-y-5">
+        <div className="px-5 pb-6 space-y-5 overflow-y-auto">
           {/* Profile */}
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12 border-2 border-border">
