@@ -5,7 +5,7 @@
 html, body {
   overscroll-behavior: none;
   overflow-x: hidden;
-  background-color: hsl(220, 8%, 99%);
+  background-color: hsl(220, 10%, 95%);
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
