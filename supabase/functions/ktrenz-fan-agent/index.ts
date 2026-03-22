@@ -2719,6 +2719,35 @@ Deno.serve(async (req) => {
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: label })}\n\n`));
     }
 
+    // Helper to save card data to ktrenz_agent_cards table
+    async function saveCards(
+      client: any,
+      messageId: string,
+      uid: string,
+      slotId: string | null,
+      meta: any,
+    ) {
+      const cards: { message_id: string; user_id: string; agent_slot_id: string | null; card_type: string; card_data: any }[] = [];
+      if (meta.reportCards && meta.reportCards.length > 0) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "report", card_data: { reportCards: meta.reportCards } });
+      }
+      if (meta.trendData && meta.trendData.length > 0) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "trend", card_data: { trendData: meta.trendData } });
+      }
+      if (meta.rankingData) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "ranking", card_data: { rankingData: meta.rankingData } });
+      }
+      if (meta.guideData) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "guide", card_data: { guideData: meta.guideData } });
+      }
+      if (meta.briefing) {
+        cards.push({ message_id: messageId, user_id: uid, agent_slot_id: slotId, card_type: "briefing", card_data: { briefing: meta.briefing } });
+      }
+      if (cards.length > 0) {
+        await client.from("ktrenz_agent_cards").insert(cards).catch((e: any) => console.error("[saveCards]", e));
+      }
+    }
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
