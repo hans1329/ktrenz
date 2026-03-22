@@ -3332,13 +3332,14 @@ Deno.serve(async (req) => {
                 if (collectedMeta.reportCards) metaToSave.reportCards = collectedMeta.reportCards;
                 if (collectedMeta.trendData) metaToSave.trendData = collectedMeta.trendData;
                 
-                await adminClient.from("ktrenz_fan_agent_messages").insert({
+                const { data: chatMsgRow } = await adminClient.from("ktrenz_fan_agent_messages").insert({
                   user_id: userId,
                   agent_slot_id: activeSlotId,
                   role: "assistant",
                   content: finalContent,
                   metadata: Object.keys(metaToSave).length > 0 ? metaToSave : null,
-                });
+                }).select("id").single();
+                if (chatMsgRow?.id) await saveCards(adminClient, chatMsgRow.id, userId, activeSlotId, collectedMeta);
               }
 
               // Signal writing phase
