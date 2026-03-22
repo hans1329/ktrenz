@@ -588,8 +588,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       setSelectedTile(null);
       return;
     }
-    setSelectedTile(filteredItems.find((item) => item.id === modalId) ?? null);
-  }, [filteredItems, searchParams]);
+    // Try filtered first, then fall back to all triggers (for related keywords from other categories)
+    const found = filteredItems.find((item) => item.id === modalId)
+      ?? dedupedTriggers.find((item) => item.id === modalId)
+      ?? null;
+    setSelectedTile(found);
+  }, [filteredItems, dedupedTriggers, searchParams]);
 
   const track = useTrackEvent();
   const handleTileClick = useCallback((item: TrendTile) => {
