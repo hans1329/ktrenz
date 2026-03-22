@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search, Eye } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Clock, Flame, Minus, RefreshCw, Search, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
