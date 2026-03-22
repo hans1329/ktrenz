@@ -1520,8 +1520,16 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           </button>
         </div>
       )}
-      {filteredMessages.map((msg, i) => (
-        <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+      {filteredMessages.map((msg, i) => {
+        // Merge persistent cards from DB with in-memory card data
+        const persistedCards = msg.id ? cardsByMessageId[msg.id] : undefined;
+        const effectiveReportCards = msg.reportCards ?? persistedCards?.reportCards ?? null;
+        const effectiveTrendData = msg.trendData ?? persistedCards?.trendData ?? null;
+        const effectiveBriefing = msg.briefingData ?? (persistedCards?.briefing ? persistedCards.briefing : null);
+        const hasTrendCards = effectiveTrendData && effectiveTrendData.length > 0;
+
+        return (
+        <div key={msg.id || i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
           {msg.role === "assistant" && (
             <button type="button" onClick={() => setShowAgentProfileModal(true)} className="shrink-0 hover:opacity-80 transition-opacity">
               <AgentAvatar avatarUrl={avatarUrl} size="sm" />
@@ -1529,7 +1537,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
           )}
           <div className={cn("flex flex-col max-w-[85%] min-w-0 overflow-hidden", msg.role === "user" ? "items-end" : "items-start", msg.role === "assistant" && "ml-2")}>
             {/* Hide text bubble when trendData cards already cover the content */}
-            {!(msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && !isStreaming) && (
+            {!(msg.role === "assistant" && hasTrendCards && !isStreaming) && (
               <div
                 className={cn(
                   "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
@@ -1546,18 +1554,17 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
               </div>
             )}
 
-            {msg.role === "assistant" && msg.briefingData && (
-              <V3BriefingCard data={msg.briefingData} />
+            {msg.role === "assistant" && effectiveBriefing && (
+              <V3BriefingCard data={effectiveBriefing} />
             )}
 
-            {msg.role === "assistant" && msg.reportCards && msg.reportCards.length > 0 && (
-              <V3ReportCards cards={msg.reportCards} />
+            {msg.role === "assistant" && effectiveReportCards && effectiveReportCards.length > 0 && (
+              <V3ReportCards cards={effectiveReportCards} />
             )}
 
-
-            {msg.role === "assistant" && msg.trendData && msg.trendData.length > 0 && (
+            {msg.role === "assistant" && hasTrendCards && (
               <V3TrendKeywordCards
-                keywords={msg.trendData}
+                keywords={effectiveTrendData}
                 onKeywordClick={(kw) => {
                   const displayName = kw.keyword_ko || kw.keyword;
                   const artistPart = kw.artist ? ` (${kw.artist})` : "";
