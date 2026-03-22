@@ -1,0 +1,2 @@
+-- Stop duplicate run, keep only the first one (run_1774153692162) which is further along
+UPDATE ktrenz_pipeline_state SET status = 'done', updated_at = now() WHERE run_id = 'run_1774153723927' AND status = 'running';
