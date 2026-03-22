@@ -288,7 +288,7 @@ const T2TrendMap = () => {
           }}
         >
           {VIEW_ORDER.map((mode) => (
-            <div key={mode} className="h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pt-[9.5rem] pb-24 scrollbar-hide"
+            <div key={mode} className={cn("h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24 scrollbar-hide transition-all duration-300", headerCollapsed ? "pt-[3.5rem]" : "pt-[9.5rem]")}
               onScroll={(e) => {
                 const scrollTop = (e.target as HTMLElement).scrollTop;
                 setHeaderCollapsed(scrollTop > 30);
