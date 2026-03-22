@@ -788,7 +788,6 @@ const V3TrendRankings = () => {
           </div>
         </div>
       </div>
-      </div>
 
       {viewMode === "treemap" ? (
         <>
