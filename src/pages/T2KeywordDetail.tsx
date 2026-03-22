@@ -717,7 +717,7 @@ const T2KeywordDetail = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" />
-              {t2l("agencyInsight", language)} & AI
+              {t2l("agencyInsight", language)}
             </h2>
             {!aiInsightData && (
               usedToday ? (
@@ -735,7 +735,9 @@ const T2KeywordDetail = () => {
                   <Sparkles className={cn("w-3 h-3", insightMutation.isPending && "animate-spin")} />
                   {insightMutation.isPending
                     ? (language === "ko" ? "분석 중..." : "Analyzing...")
-                    : (language === "ko" ? "AI 분석 생성" : "Generate AI Analysis")}
+                    : (language === "ko" ? "전문 분석 보기" : "View Expert Analysis")}
+                </Button>
+              )
                 </Button>
               )
             )}
