@@ -40,10 +40,17 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
 
-  const { data: bets = [], isLoading } = useQuery({
+  const { data: betsData = { bets: [], totalCount: 0 }, isLoading } = useQuery({
     queryKey: ["profile-trend-bets", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) return { bets: [], totalCount: 0 };
+
+      // Get total count
+      const { count } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
       // Get user's bets with market + trigger info
       const { data: userBets } = await supabase
         .from("ktrenz_trend_bets" as any)
@@ -52,7 +59,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      if (!userBets || userBets.length === 0) return [];
+      if (!userBets || userBets.length === 0) return { bets: [], totalCount: 0 };
 
       const marketIds = [...new Set((userBets as any[]).map((b: any) => b.market_id))];
       const { data: markets } = await supabase
@@ -60,7 +67,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
         .select("id, trigger_id, status")
         .in("id", marketIds);
 
-      if (!markets) return [];
+      if (!markets) return { bets: [], totalCount: 0 };
 
       const triggerIds = [...new Set((markets as any[]).map((m: any) => m.trigger_id))];
       const { data: triggers } = await supabase
@@ -71,7 +78,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
       const marketMap = new Map((markets as any[]).map((m: any) => [m.id, m]));
       const triggerMap = new Map((triggers as any[] || []).map((t: any) => [t.id, t]));
 
-      return (userBets as any[]).map((bet: any) => {
+      const mapped = (userBets as any[]).map((bet: any) => {
         const market = marketMap.get(bet.market_id);
         const trigger = market ? triggerMap.get(market.trigger_id) : null;
         return {
@@ -86,10 +93,15 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
           market_status: market?.status || "open",
         } as BetWithKeyword;
       });
+
+      return { bets: mapped, totalCount: count ?? mapped.length };
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
   });
+
+  const bets = betsData.bets;
+  const totalCount = betsData.totalCount;
 
   if (!user) return null;
 
