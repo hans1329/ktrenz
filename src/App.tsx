@@ -50,6 +50,7 @@ import T2MyArtists from "./pages/T2MyArtists";
 import T2KeywordDetail from "./pages/T2KeywordDetail";
 import T2PitchDeck from "./pages/T2PitchDeck";
 import T2ArtistPage from "./pages/T2ArtistPage";
+import T2TrendGrades from "./pages/T2TrendGrades";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
