@@ -520,16 +520,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return dedupedTriggers.filter(t => t.category === selectedCategory);
   }, [dedupedTriggers, selectedCategory, watchedSet]);
 
-  const containerWidth = isMobile ? 390 : 1000;
-  const containerHeight = useMemo(() => {
-    if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
-
-    const itemCount = filteredItems.length;
-    return isMobile
-      ? Math.max(1400, Math.min(2400, itemCount * 36))
-      : Math.max(1600, Math.min(2400, itemCount * 30));
-  }, [currentViewMode, isMobile, filteredItems.length]);
-
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
     const TARGET = 60;
@@ -560,6 +550,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
     return deduped;
   }, [filteredItems]);
+
+  const containerWidth = isMobile ? 390 : 1000;
+  const containerHeight = useMemo(() => {
+    if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
+
+    const itemCount = visibleBoxItems.length;
+    if (itemCount <= 0) {
+      return isMobile ? 780 : 960;
+    }
+
+    return isMobile
+      ? Math.max(780, Math.min(1600, itemCount * 22))
+      : Math.max(960, Math.min(1800, itemCount * 24));
+  }, [currentViewMode, isMobile, visibleBoxItems.length]);
 
   const [listVisibleCount, setListVisibleCount] = useState(20);
 
