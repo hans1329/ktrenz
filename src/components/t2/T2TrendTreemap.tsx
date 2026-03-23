@@ -810,9 +810,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
                         const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
-                        return quotedBgImg
-                          ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${quotedBgImg})`
-                          : undefined;
+                        return quotedBgImg ? `url(${quotedBgImg})` : undefined;
                       })(),
                       backgroundSize: 'cover',
                       backgroundPosition: 'center center',
@@ -851,14 +849,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       </span>
                     )}
                     <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
+                      <div
+                        className="absolute inset-0 rounded-md -mx-1"
+                        style={{
+                          background: `radial-gradient(ellipse at center, ${tileColor.replace('0.85', '0.75')} 0%, transparent 80%)`,
+                        }}
+                      />
                       <span
-                        className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
+                        className="relative font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
                         style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
                       >
                         {getLocalizedKeyword(rect.item, language)}
                       </span>
                       <span
-                        className="font-bold text-white truncate w-full text-center drop-shadow-md"
+                        className="relative font-bold text-white truncate w-full text-center drop-shadow-md"
                         style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
                       >
                         {getLocalizedArtistName(rect.item, language)}
