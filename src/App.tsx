@@ -55,6 +55,7 @@ import B2BLogin from "./pages/b2b/B2BLogin";
 import B2BOnboarding from "./pages/b2b/B2BOnboarding";
 import B2BLayout from "./pages/b2b/B2BLayout";
 import B2BDashboard from "./pages/b2b/B2BDashboard";
+import B2BArtistDetail from "./pages/b2b/B2BArtistDetail";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
