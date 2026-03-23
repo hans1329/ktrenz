@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { Zap, Eye, Crosshair, Share2, TrendingUp, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -10,15 +11,13 @@ import { toast } from "sonner";
 interface DailyMission {
   key: string;
   icon: React.ReactNode;
-  label: string;
-  desc: string;
+  labelKey: string;
+  descKey: string;
   points: number;
   exp: number;
   route?: string;
   bonus?: boolean;
-  /** event types that count toward this mission */
   trackEvents: string[];
-  /** how many events needed to complete */
   threshold: number;
 }
 
@@ -26,8 +25,8 @@ const MISSIONS: DailyMission[] = [
   {
     key: "view_trends",
     icon: <Eye className="w-4 h-4" />,
-    label: "View 5 Trends",
-    desc: "Browse trending keywords",
+    labelKey: "profileMission.viewTrends",
+    descKey: "profileMission.viewTrendsDesc",
     points: 10,
     exp: 5,
     route: "/t2",
@@ -37,8 +36,8 @@ const MISSIONS: DailyMission[] = [
   {
     key: "follow_keyword",
     icon: <Crosshair className="w-4 h-4" />,
-    label: "Track a Keyword",
-    desc: "Open & explore a keyword detail",
+    labelKey: "profileMission.trackKeyword",
+    descKey: "profileMission.trackKeywordDesc",
     points: 15,
     exp: 8,
     route: "/t2",
@@ -48,8 +47,8 @@ const MISSIONS: DailyMission[] = [
   {
     key: "spread_trend",
     icon: <Share2 className="w-4 h-4" />,
-    label: "Spread a Trend",
-    desc: "Share a trend on social media",
+    labelKey: "profileMission.spreadTrend",
+    descKey: "profileMission.spreadTrendDesc",
     points: 12,
     exp: 6,
     route: "/t2",
@@ -59,8 +58,8 @@ const MISSIONS: DailyMission[] = [
   {
     key: "predict_trend",
     icon: <TrendingUp className="w-4 h-4" />,
-    label: "Predict a Trend",
-    desc: "Place a prediction bet",
+    labelKey: "profileMission.predictTrend",
+    descKey: "profileMission.predictTrendDesc",
     points: 20,
     exp: 15,
     bonus: true,
@@ -70,7 +69,6 @@ const MISSIONS: DailyMission[] = [
   },
 ];
 
-// Sentinel wiki_entry_id for profile-level missions
 const PROFILE_MISSION_ENTRY = "00000000-0000-0000-0000-000000000000";
 
 interface ProfileDailyMissionsProps {
@@ -80,11 +78,11 @@ interface ProfileDailyMissionsProps {
 const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
   const todayStart = `${today}T00:00:00.000Z`;
 
-  // 1. Fetch today's event counts by type from ktrenz_user_events
   const { data: eventCounts = {} } = useQuery({
     queryKey: ["profile-mission-events", user?.id, today],
     queryFn: async () => {
@@ -96,7 +94,6 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         .eq("user_id", user.id)
         .gte("created_at", todayStart)
         .in("event_type", allEventTypes);
-
       const counts: Record<string, number> = {};
       (data || []).forEach((row: any) => {
         counts[row.event_type] = (counts[row.event_type] || 0) + 1;
@@ -107,7 +104,6 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
     staleTime: 1000 * 30,
   });
 
-  // 2. Fetch already-claimed missions today
   const { data: claimedKeys = [] } = useQuery({
     queryKey: ["profile-mission-claimed", user?.id, today],
     queryFn: async () => {
@@ -126,17 +122,14 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
 
   const claimedSet = new Set(claimedKeys);
 
-  // Check if a mission's event threshold is met
   const isMet = (m: DailyMission): boolean => {
     const total = m.trackEvents.reduce((sum, et) => sum + ((eventCounts as Record<string, number>)[et] || 0), 0);
     return total >= m.threshold;
   };
 
-  // Claim reward for a completed mission
   const claimReward = useCallback(async (mission: DailyMission) => {
     if (!user?.id) return;
     try {
-      // Insert mission completion
       const { error } = await supabase.from("ktrenz_daily_missions" as any).insert({
         user_id: user.id,
         wiki_entry_id: PROFILE_MISSION_ENTRY,
@@ -144,33 +137,26 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         points_awarded: mission.points,
       });
       if (error) {
-        if (error.code === "23505") return; // already claimed
+        if (error.code === "23505") return;
         throw error;
       }
-
-      // Award K-Points
       await supabase.from("ktrenz_point_transactions" as any).insert({
         user_id: user.id,
         amount: mission.points,
         reason: "daily_mission",
-        description: `Daily Mission: ${mission.label}`,
+        description: `Daily Mission: ${t(mission.labelKey)}`,
       });
-
-      // Invalidate caches
       queryClient.invalidateQueries({ queryKey: ["profile-mission-claimed", user.id, today] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points", user.id] });
-
       toast.success(`+${mission.points}P · +${mission.exp} EXP`, {
-        description: `${mission.label} completed!`,
+        description: `${t(mission.labelKey)} ${t("profileMission.completed")}`,
         duration: 2500,
       });
     } catch (e) {
       console.error("Claim mission error:", e);
     }
-  }, [user?.id, today, queryClient]);
+  }, [user?.id, today, queryClient, t]);
 
-  // Calculate progress
-  const completedMissions = MISSIONS.filter((m) => claimedSet.has(m.key) || isMet(m));
   const doneCount = MISSIONS.filter((m) => claimedSet.has(m.key)).length;
   const totalMissions = MISSIONS.length;
   const progress = totalMissions > 0 ? (doneCount / totalMissions) * 100 : 0;
@@ -181,15 +167,11 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
   const handleMission = async (mission: DailyMission) => {
     const met = isMet(mission);
     const claimed = claimedSet.has(mission.key);
-
     if (met && !claimed) {
-      // Auto-claim then navigate
       await claimReward(mission);
       return;
     }
-
     if (!claimed) {
-      // Not yet completed — navigate to do it
       onClose();
       if (mission.route) navigate(mission.route);
     }
@@ -200,15 +182,15 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400" />
+          <Zap className="w-4 h-4 text-primary" />
           <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-            Daily Missions
+            {t("profileMission.title")}
           </span>
         </div>
         <span className="text-xs text-muted-foreground font-medium">
           {doneCount}/{totalMissions}
           {earnedPoints > 0 && (
-            <span className="ml-1 font-bold" style={{ color: "hsl(var(--primary))" }}>+{earnedPoints}P</span>
+            <span className="ml-1 font-bold text-primary">+{earnedPoints}P</span>
           )}
         </span>
       </div>
@@ -231,7 +213,6 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
           const met = isMet(mission);
           const readyToClaim = met && !claimed;
 
-          // Progress text for view_trends (threshold > 1)
           let progressText = "";
           if (!claimed && mission.threshold > 1) {
             const current = mission.trackEvents.reduce(
@@ -253,7 +234,6 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
                   : "hover:bg-primary/5 active:scale-[0.98]"
               )}
             >
-              {/* Icon */}
               <div
                 className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
@@ -267,34 +247,27 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
                 {claimed ? <Check className="w-4 h-4" /> : mission.icon}
               </div>
 
-              {/* Label + desc */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p
-                    className={cn(
-                      "text-xs font-bold truncate",
-                      claimed ? "text-muted-foreground line-through" : "text-foreground"
-                    )}
-                  >
-                    {mission.label}
+                  <p className={cn("text-xs font-bold truncate", claimed ? "text-muted-foreground line-through" : "text-foreground")}>
+                    {t(mission.labelKey)}
                   </p>
                   {mission.bonus && !claimed && (
                     <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase">
-                      Bonus
+                      {t("profileMission.bonus")}
                     </span>
                   )}
                   {readyToClaim && (
                     <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full animate-pulse">
-                      Claim!
+                      {t("profileMission.claim")}
                     </span>
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground truncate">
-                  {progressText && !claimed ? `${progressText} · ` : ""}{mission.desc}
+                  {progressText && !claimed ? `${progressText} · ` : ""}{t(mission.descKey)}
                 </p>
               </div>
 
-              {/* Reward */}
               <div className="text-right shrink-0">
                 <p className={cn("text-[10px] font-bold", claimed ? "text-muted-foreground" : "text-primary")}>
                   +{mission.points}P

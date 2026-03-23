@@ -235,7 +235,21 @@ const translations: Record<string, Record<Language, string>> = {
   "mission.reminder": { en: "Reminder", ko: "리마인더", ja: "リマインダー", zh: "提醒" },
   "mission.weakCategoryHint": { en: "Try some missions in this category!", ko: "이 카테고리 미션도 도전해보세요!", ja: "このカテゴリのミッションも挑戦してみましょう！", zh: "试试这个类别的任务吧！" },
 
-  // ── Deck Page ──
+  // ── Profile Daily Missions ──
+  "profileMission.title": { en: "Daily Missions", ko: "오늘의 미션", ja: "デイリーミッション", zh: "每日任务" },
+  "profileMission.viewTrends": { en: "View 5 Trends", ko: "트렌드 5개 보기", ja: "トレンド5件閲覧", zh: "查看5个趋势" },
+  "profileMission.viewTrendsDesc": { en: "Browse trending keywords", ko: "트렌드 키워드 둘러보기", ja: "トレンドキーワードを見る", zh: "浏览趋势关键词" },
+  "profileMission.trackKeyword": { en: "Track a Keyword", ko: "키워드 추적하기", ja: "キーワードを追跡", zh: "追踪关键词" },
+  "profileMission.trackKeywordDesc": { en: "Open & explore a keyword detail", ko: "키워드 상세 열어보기", ja: "キーワード詳細を開く", zh: "打开并探索关键词详情" },
+  "profileMission.spreadTrend": { en: "Spread a Trend", ko: "트렌드 확산하기", ja: "トレンドを拡散", zh: "传播趋势" },
+  "profileMission.spreadTrendDesc": { en: "Share a trend on social media", ko: "소셜 미디어에 트렌드 공유", ja: "SNSでトレンドを共有", zh: "在社交媒体分享趋势" },
+  "profileMission.predictTrend": { en: "Predict a Trend", ko: "트렌드 예측하기", ja: "トレンドを予測", zh: "预测趋势" },
+  "profileMission.predictTrendDesc": { en: "Place a prediction bet", ko: "예측 베팅 참여하기", ja: "予測ベットを置く", zh: "参与预测投注" },
+  "profileMission.bonus": { en: "Bonus", ko: "보너스", ja: "ボーナス", zh: "奖励" },
+  "profileMission.claim": { en: "Claim!", ko: "받기!", ja: "受取!", zh: "领取!" },
+  "profileMission.completed": { en: "completed!", ko: "완료!", ja: "完了！", zh: "完成！" },
+
+
   "deck.subtitle": { en: "AI-Powered Fan Energy Intelligence Platform", ko: "AI 기반 팬 에너지 인텔리전스 플랫폼", ja: "AI搭載ファンエネルギーインテリジェンスプラットフォーム", zh: "AI驱动的粉丝能量情报平台" },
   "deck.heroTitle1": { en: "Turn Fandom Energy into", ko: "팬덤 에너지를", ja: "ファンダムエネルギーを", zh: "将粉丝能量转化为" },
   "deck.heroTitle2": { en: "Measurable Impact", ko: "측정 가능한 임팩트로", ja: "測定可能なインパクトに", zh: "可衡量的影响力" },
