@@ -65,7 +65,19 @@ async function searchTikTok(
       return [];
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    if (!text || text.trim().length === 0) {
+      console.warn(`[tiktok] Empty response for "${keyword}"`);
+      return [];
+    }
+
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.warn(`[tiktok] Invalid JSON for "${keyword}": ${text.slice(0, 100)}`);
+      return [];
+    }
     const items = data.data || [];
 
     return items
