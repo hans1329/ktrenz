@@ -101,10 +101,31 @@ export const useAuth = () => {
         // 일일 로그인 K-Points 보상
         supabase.rpc('ktrenz_daily_login_reward' as any, { _user_id: uid }).then(({ data }) => {
           if (data && data > 0) {
-            // 포인트 캐시 갱신
             queryClient.invalidateQueries({ queryKey: ['ktrenz-points', uid] });
           }
         });
+
+        // Browser locale 자동 감지 → ktrenz_user_locales upsert
+        try {
+          const lang = navigator.language || 'en';
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+          // Extract country code from locale (e.g. ko-KR → KR, en-US → US, ja → JP)
+          const LANG_TO_COUNTRY: Record<string, string> = {
+            ko: 'KR', ja: 'JP', zh: 'CN', en: 'US', fr: 'FR', de: 'DE', es: 'ES', pt: 'BR', it: 'IT', ru: 'RU',
+            th: 'TH', vi: 'VN', id: 'ID', ms: 'MY', hi: 'IN', ar: 'SA', tr: 'TR', pl: 'PL', nl: 'NL', sv: 'SE',
+          };
+          const parts = lang.split('-');
+          const countryCode = parts[1]?.toUpperCase() || LANG_TO_COUNTRY[parts[0]] || null;
+
+          (supabase as any)
+            .from('ktrenz_user_locales')
+            .upsert(
+              { user_id: uid, browser_language: lang, browser_timezone: tz, country_code: countryCode, updated_at: new Date().toISOString() },
+              { onConflict: 'user_id' }
+            )
+            .then(() => {});
+        } catch {}
+
       }
     });
 

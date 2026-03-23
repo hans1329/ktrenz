@@ -4215,6 +4215,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_user_locales: {
+        Row: {
+          browser_language: string
+          browser_timezone: string | null
+          country_code: string | null
+          detected_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser_language?: string
+          browser_timezone?: string | null
+          country_code?: string | null
+          detected_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser_language?: string
+          browser_timezone?: string | null
+          country_code?: string | null
+          detected_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_user_logins: {
         Row: {
           first_login_at: string
