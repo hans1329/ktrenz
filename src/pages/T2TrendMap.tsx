@@ -326,7 +326,7 @@ const T2TrendMap = () => {
                     backgroundColor: isActive
                       ? (cat === "my" ? "hsl(45 90% 50%)" : config?.color ?? "hsl(var(--primary))")
                       : "transparent",
-                    color: isActive ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+                    color: isActive ? "hsl(var(--primary-foreground))" : "hsl(0 0% 100%)",
                     borderColor: isActive
                       ? "transparent"
                       : cat === "all"
