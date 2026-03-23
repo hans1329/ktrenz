@@ -53,8 +53,6 @@ const T2TrendMap = () => {
     setMyCount(my);
   }, []);
 
-  const currentIndex = VIEW_ORDER.indexOf(viewMode);
-
   const isDrawerInteraction = useCallback((target: EventTarget | null) => {
     if (!(target instanceof HTMLElement)) return false;
     return Boolean(target.closest('[data-vaul-drawer], [data-vaul-overlay], [role="dialog"]'));
@@ -72,8 +70,6 @@ const T2TrendMap = () => {
       startTime: Date.now(),
       locked: null,
     };
-    setIsDragging(false);
-    setDragOffset(0);
   }, [isDrawerInteraction]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
@@ -85,40 +81,25 @@ const T2TrendMap = () => {
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // Direction lock: decide once
     if (!touchRef.current.locked) {
       if (absDx < DIRECTION_LOCK_THRESHOLD && absDy < DIRECTION_LOCK_THRESHOLD) return;
       touchRef.current.locked = absDx > absDy ? "horizontal" : "vertical";
     }
-
-    if (touchRef.current.locked === "vertical") return;
-
-    // Horizontal swipe — prevent vertical scroll
-    e.preventDefault();
-    setIsDragging(true);
-
-    const idx = VIEW_ORDER.indexOf(viewMode);
-    const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
-    setDragOffset(atEdge ? dx * 0.15 : dx);
-  }, [isDrawerInteraction, viewMode]);
+  }, [isDrawerInteraction]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchRef.current || isDrawerInteraction(e.target)) {
       touchRef.current = null;
-      setIsDragging(false);
-      setDragOffset(0);
       return;
     }
 
     const touch = e.changedTouches[0];
     const dx = touch.clientX - touchRef.current.startX;
     const elapsed = Date.now() - touchRef.current.startTime;
-    const velocity = Math.abs(dx) / elapsed; // px/ms
+    const velocity = Math.abs(dx) / elapsed;
     const wasHorizontal = touchRef.current.locked === "horizontal";
 
     touchRef.current = null;
-    setIsDragging(false);
-    setDragOffset(0);
 
     if (!wasHorizontal) return;
 
@@ -133,8 +114,6 @@ const T2TrendMap = () => {
       }
     }
   }, [viewMode, isDrawerInteraction]);
-
-  const translateX = -currentIndex * 100 + (isDragging ? (dragOffset / window.innerWidth) * 100 : 0);
 
   return (
     <>
