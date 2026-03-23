@@ -262,28 +262,28 @@ const B2BArtistDetail = () => {
         )}
       </div>
 
-      {/* 우측: AI 인사이트 패널 */}
-      <div className="w-[360px] border-l border-[hsl(220,15%,15%)] bg-[hsl(220,18%,9%)] flex flex-col shrink-0 sticky top-14 h-[calc(100vh-56px)]">
+      {/* 우측: AI 인사이트 */}
+      <aside className="w-[340px] shrink-0 border-l border-[hsl(220,15%,15%)] bg-[hsl(220,18%,9%)] sticky top-14 h-[calc(100vh-56px)] overflow-y-auto">
         <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)]">
           <div className="flex items-center gap-2">
             <Brain className="w-4 h-4 text-[hsl(270,80%,60%)]" />
             <h3 className="text-sm font-bold text-white">AI 인사이트</h3>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">
-              {trends.length > 0 ? `${trends.length}건 분석` : '대기'}
+              {trends.length > 0 ? `${trends.length}건` : '대기'}
             </span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 space-y-4">
-          {/* 요약 스탯 */}
+        <div className="p-4 space-y-3">
+          {/* 요약 스탯 2×2 */}
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: '활성', value: activeTrends.length, color: 'hsl(150,60%,55%)' },
+              { label: '활성 트렌드', value: activeTrends.length, color: 'hsl(150,60%,55%)' },
               { label: '평균 영향력', value: avgInfluence > 0 ? avgInfluence.toFixed(0) : '-', color: 'hsl(270,80%,65%)' },
               { label: '상업 의도', value: commerceCount || '-', color: 'hsl(45,90%,55%)' },
-              { label: '전체', value: trends.length, color: 'hsl(200,80%,55%)' },
+              { label: '전체 트렌드', value: trends.length, color: 'hsl(200,80%,55%)' },
             ].map(s => (
-              <div key={s.label} className="bg-[hsl(220,15%,12%)] rounded-lg p-2.5 border border-[hsl(220,15%,16%)]">
+              <div key={s.label} className="rounded-lg p-2.5 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)]">
                 <p className="text-[10px] text-[hsl(220,10%,42%)] mb-0.5">{s.label}</p>
                 <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
               </div>
@@ -291,51 +291,44 @@ const B2BArtistDetail = () => {
           </div>
 
           {/* 종합 평가 */}
-          <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
+          <div className="rounded-lg bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-[hsl(45,90%,55%)]" />
               <span className="text-xs font-semibold text-white">종합 평가</span>
             </div>
             <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">
               {activeTrends.length > 0
-                ? `${star.display_name}은(는) ${activeTrends.length}개 활성 트렌드 보유. 평균 영향력 ${avgInfluence.toFixed(0)}${avgInfluence > 60 ? ' — 시장 관심이 높은 구간입니다.' : ' — 일반적인 노출 수준입니다.'}`
-                : `${star.display_name}의 현재 활성 트렌드가 없습니다. 수집 주기에 따라 자동 갱신됩니다.`}
+                ? `${star.display_name} — ${activeTrends.length}개 활성 트렌드, 평균 영향력 ${avgInfluence.toFixed(0)}. ${avgInfluence > 60 ? '시장 관심이 높은 구간.' : '일반적인 노출 수준.'} 상업 의도 감지 ${commerceCount}건.`
+                : `${star.display_name}의 현재 활성 트렌드 없음. 수집 주기에 따라 자동 갱신됩니다.`}
             </p>
           </div>
 
-          {/* 등급 분포 — 트렌드가 있을 때만 */}
+          {/* 등급 분포 */}
           {trends.length > 0 && (
-            <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
+            <div className="rounded-lg bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="w-3.5 h-3.5 text-[hsl(200,80%,55%)]" />
                 <span className="text-xs font-semibold text-white">등급 분포</span>
               </div>
-              {['Explosive', 'Commerce', 'Intent', 'Spark'].map(grade => {
-                const count = trends.filter((t: any) => (t.trend_grade || 'Spark') === grade).length;
+              {['explosive', 'commerce', 'intent', 'spread', 'react', 'spark'].map(grade => {
+                const count = trends.filter((t: any) => (t.trend_grade || 'spark').toLowerCase() === grade).length;
                 const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
                 if (count === 0) return null;
+                const colorMap: Record<string, string> = {
+                  explosive: 'hsl(0,80%,55%)', commerce: 'hsl(270,80%,60%)', intent: 'hsl(45,80%,55%)',
+                  spread: 'hsl(200,70%,55%)', react: 'hsl(150,60%,55%)', spark: 'hsl(220,10%,35%)',
+                };
+                const labelMap: Record<string, string> = {
+                  explosive: 'Explosive', commerce: 'Commerce', intent: 'Intent',
+                  spread: 'Spread', react: 'React', spark: 'Spark',
+                };
                 return (
                   <div key={grade} className="flex items-center gap-2 mb-2">
-                    <span className={`text-[10px] font-medium w-16 ${
-                      grade === 'Explosive' ? 'text-[hsl(0,80%,65%)]' :
-                      grade === 'Commerce' ? 'text-[hsl(270,80%,70%)]' :
-                      grade === 'Intent' ? 'text-[hsl(45,80%,60%)]' :
-                      'text-[hsl(220,10%,50%)]'
-                    }`}>{grade}</span>
+                    <span className="text-[10px] font-medium w-16" style={{ color: colorMap[grade] }}>{labelMap[grade]}</span>
                     <div className="flex-1 h-2 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor:
-                            grade === 'Explosive' ? 'hsl(0,80%,55%)' :
-                            grade === 'Commerce' ? 'hsl(270,80%,60%)' :
-                            grade === 'Intent' ? 'hsl(45,80%,55%)' :
-                            'hsl(220,10%,35%)',
-                        }}
-                      />
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: colorMap[grade] }} />
                     </div>
-                    <span className="text-[10px] text-[hsl(220,10%,50%)] w-8 text-right font-mono">{count}</span>
+                    <span className="text-[10px] text-[hsl(220,10%,50%)] w-6 text-right font-mono">{count}</span>
                   </div>
                 );
               })}
@@ -363,8 +356,7 @@ const B2BArtistDetail = () => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </aside>
   );
 };
 
