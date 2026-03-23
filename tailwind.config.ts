@@ -88,6 +88,14 @@ export default {
           "15%, 45%, 75%": { transform: "translateX(-2px)" },
           "30%, 60%, 90%": { transform: "translateX(2px)" },
         },
+        "wiggle": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "15%": { transform: "rotate(-12deg)" },
+          "30%": { transform: "rotate(10deg)" },
+          "45%": { transform: "rotate(-8deg)" },
+          "60%": { transform: "rotate(6deg)" },
+          "75%": { transform: "rotate(-3deg)" },
+        },
         "flip-in": {
           "0%": {
             opacity: "0",
@@ -117,6 +125,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "shake": "shake 0.5s ease-in-out",
+        "wiggle": "wiggle 0.8s ease-in-out infinite",
         "flip-in": "flip-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
         "flip-out": "flip-out 0.3s ease-in both",
       },
