@@ -168,7 +168,9 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               {/* Perforation + bottom */}
               <div className="relative h-0 flex items-center overflow-visible">
                 <div className="absolute -left-1.5 w-3 h-3 rounded-full z-10" style={{ backgroundColor: 'hsl(var(--background))' }} />
-                <div className="mx-2 h-0" style={{ borderTop: '2px dashed rgba(255,255,255,0.6)', backgroundSize: '6px 1px' }} />
+                <svg className="mx-2 flex-1" height="2" style={{ overflow: 'visible' }}>
+                  <line x1="0" y1="1" x2="100%" y2="1" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeDasharray="4 3" />
+                </svg>
                 <div className="absolute -right-1.5 w-3 h-3 rounded-full z-10" style={{ backgroundColor: 'hsl(var(--background))' }} />
               </div>
               <div className="px-3 py-1.5 flex items-center justify-between" style={{ background: g.bottom }}>
