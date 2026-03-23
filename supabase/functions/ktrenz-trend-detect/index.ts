@@ -1353,7 +1353,9 @@ async function detectForMember(
 
   // ─── 키워드별 buzz raw counts + normalized score ───
   const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
-  const buzzPromises = keywords.map(async (k) => {
+  const buzzPromises = keywords
+    .filter(k => k.category !== "social") // 소셜 키워드는 Naver buzz 조회 불필요
+    .map(async (k) => {
     const kwQuery = k.keyword_ko || k.keyword;
     const artistLabel = member.name_ko || member.display_name;
     const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
