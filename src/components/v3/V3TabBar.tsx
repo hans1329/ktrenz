@@ -67,34 +67,31 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
   });
   const agentAvatarUrl = activeSlot?.avatar_url || (activeSlot?.slot_index === 0 ? legacyAgentAvatarUrl : null) || null;
 
-  // Check for unread daily news notification (red dot)
-  const { data: watchedArtists } = useQuery({
-    queryKey: ["ktrenz-watched-artists", user?.id],
+  // Check for actual alert conditions (trend spike / rank #1) before showing red dot
+  const { data: activeKeywordCount } = useQuery({
+    queryKey: ["ktrenz-agent-badge-keywords", activeSlot?.wiki_entry_id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const { data } = await supabase
-        .from("ktrenz_watched_artists")
-        .select("id")
-        .eq("user_id", user.id);
-      return data ?? [];
+      if (!activeSlot?.wiki_entry_id) return 0;
+      const { count } = await (supabase as any)
+        .from("ktrenz_trend_triggers")
+        .select("id", { count: "exact", head: true })
+        .eq("wiki_entry_id", activeSlot.wiki_entry_id)
+        .eq("status", "active");
+      return count ?? 0;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!activeSlot?.wiki_entry_id,
+    staleTime: 1000 * 60 * 5,
   });
-  const hasAlertOn = (watchedArtists?.length ?? 0) > 0;
 
-  // Show red dot when: alerts on but daily news not yet seen today
+  // Show red dot only when there's a real alert condition AND not yet seen today
   const hasUnread = useMemo(() => {
-    if (!user?.id) return false;
-    // No bias registered at all — don't show persistent red dot for this
-    if (!activeSlot?.wiki_entry_id) return false;
-    // Alerts on but daily news not seen today
-    if (hasAlertOn) {
-      const today = new Date().toISOString().slice(0, 10);
-      const seen = localStorage.getItem(`ktrenz-daily-news-seen-${user.id}`);
-      return seen !== today;
-    }
-    return false;
-  }, [user?.id, activeSlot?.wiki_entry_id, hasAlertOn]);
+    if (!user?.id || !activeSlot?.wiki_entry_id) return false;
+    // Only show if 3+ active keywords (trend spike threshold)
+    if ((activeKeywordCount ?? 0) < 3) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    const seen = localStorage.getItem(`ktrenz-daily-news-seen-${user.id}`);
+    return seen !== today;
+  }, [user?.id, activeSlot?.wiki_entry_id, activeKeywordCount]);
 
   // Re-evaluate when returning from agent page (focus/visibility change)
   const [, forceUpdate] = useState(0);
