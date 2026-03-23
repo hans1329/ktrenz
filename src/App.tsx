@@ -51,6 +51,10 @@ import T2KeywordDetail from "./pages/T2KeywordDetail";
 import T2PitchDeck from "./pages/T2PitchDeck";
 import T2ArtistPage from "./pages/T2ArtistPage";
 import T2TrendGrades from "./pages/T2TrendGrades";
+import B2BLogin from "./pages/b2b/B2BLogin";
+import B2BOnboarding from "./pages/b2b/B2BOnboarding";
+import B2BLayout from "./pages/b2b/B2BLayout";
+import B2BDashboard from "./pages/b2b/B2BDashboard";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -114,6 +118,11 @@ const App = () => (
               <Route path="keyword-monitor" element={<AdminKeywordMonitor />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
+            <Route path="/b2b/login" element={<B2BLogin />} />
+            <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
+            <Route path="/b2b" element={<B2BLayout />}>
+              <Route index element={<B2BDashboard />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
