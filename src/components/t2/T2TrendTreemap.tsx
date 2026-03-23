@@ -184,11 +184,11 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
 
     // Rank-based multiplier with steep decay for lower ranks
     const rankMultiplier = idx === 0 ? 1.4
-      : idx === 1 ? 1.3
-      : idx === 2 ? 1.2
-      : idx < 6 ? 1.0
-      : idx < 12 ? 0.75
-      : idx < 25 ? 0.5
+      : idx === 1 ? 1.25
+      : idx === 2 ? 1.1
+      : idx < 6 ? 0.85
+      : idx < 12 ? 0.65
+      : idx < 25 ? 0.45
       : idx < 40 ? 0.3
       : 0.2;
     return logBase * rankMultiplier;
@@ -196,23 +196,16 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
 
   const totalValue = items.reduce((s, item, idx) => s + tileSize(item, idx), 0);
   const totalArea = w * h;
-  const maxAreaPerTile = totalArea * 0.08; // Cap: no single tile exceeds 8% of total area
   const rawAreas = items.map((item, idx) => (tileSize(item, idx) / totalValue) * totalArea);
-  // Clamp and redistribute excess
-  let excess = 0;
-  let uncappedCount = 0;
-  const capped = rawAreas.map(a => {
-    if (a > maxAreaPerTile) { excess += a - maxAreaPerTile; return maxAreaPerTile; }
-    uncappedCount++;
-    return a;
+  // Cap per-tile area: top-5 get 6%, rest get 4%
+  const areas = rawAreas.map((a, i) => {
+    const cap = i < 5 ? totalArea * 0.06 : totalArea * 0.04;
+    return Math.min(a, cap);
   });
-  let areas: number[];
-  if (excess > 0 && uncappedCount > 0) {
-    const uncappedTotal = capped.reduce((s, a) => a < maxAreaPerTile ? s + a : s, 0);
-    areas = capped.map(a => a < maxAreaPerTile ? a + (a / uncappedTotal) * excess : a);
-  } else {
-    areas = capped;
-  }
+  // Normalize to fill total area
+  const areaSum = areas.reduce((s, a) => s + a, 0);
+  const scale = totalArea / areaSum;
+  for (let i = 0; i < areas.length; i++) areas[i] *= scale;
   const rects: Rect[] = [];
   let cx = x, cy = y, cw = w, ch = h, idx = 0;
 
