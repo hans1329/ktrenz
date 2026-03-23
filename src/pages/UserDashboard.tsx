@@ -401,15 +401,15 @@ const UserDashboard = () => {
 
             <div className="grid grid-cols-3 gap-2 mb-3">
               <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-green-400">{betStats.won}</p>
+                <p className="text-lg font-black text-foreground">{betStats.won}</p>
                 <p className="text-[9px] text-muted-foreground">{t("dash.won")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-red-400">{betStats.lost}</p>
+                <p className="text-lg font-black text-foreground">{betStats.lost}</p>
                 <p className="text-[9px] text-muted-foreground">{t("dash.lost")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-yellow-400">{betStats.pending}</p>
+                <p className="text-lg font-black text-foreground">{betStats.pending}</p>
                 <p className="text-[9px] text-muted-foreground">{t("dash.pending")}</p>
               </Card>
             </div>
