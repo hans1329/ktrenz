@@ -118,6 +118,11 @@ const App = () => (
               <Route path="keyword-monitor" element={<AdminKeywordMonitor />} />
             </Route>
             <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
+            <Route path="/b2b/login" element={<B2BLogin />} />
+            <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
+            <Route path="/b2b" element={<B2BLayout />}>
+              <Route index element={<B2BDashboard />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
