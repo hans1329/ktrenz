@@ -342,12 +342,11 @@ const T2TrendMap = () => {
             headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
           )}
         >
-          {/* Carousel container: all 3 views side by side */}
+          {/* Carousel container: views side by side, each 100% viewport width */}
           <div
             className="flex"
             style={{
-              width: `${VIEW_ORDER.length * 100}%`,
-              transform: `translateX(${containerTranslateX})`,
+              transform: `translateX(calc(-${viewIndex * 100}vw + ${dragOffsetX}px))`,
               transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
               willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
             }}
@@ -357,24 +356,25 @@ const T2TrendMap = () => {
               return (
                 <div
                   key={mode}
-                  className="md:max-w-[90%] mx-auto"
-                  style={{ width: `${100 / VIEW_ORDER.length}%`, flexShrink: 0 }}
+                  style={{ width: '100vw', flexShrink: 0 }}
                 >
-                  {isVisible ? (
-                    <T2TrendTreemap
-                      viewMode={mode}
-                      onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
-                      selectedCategory={category}
-                      onCategoryChange={setCategory}
-                      hideCategory
-                      hideHeader
-                      sortMode={sortMode}
-                      onSortModeChange={setSortMode}
-                      onCategoryStatsChange={i === viewIndex ? handleCategoryStatsChange : undefined}
-                    />
-                  ) : (
-                    <div style={{ minHeight: '50vh' }} />
-                  )}
+                  <div className="md:max-w-[90%] mx-auto">
+                    {isVisible ? (
+                      <T2TrendTreemap
+                        viewMode={mode}
+                        onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                        selectedCategory={category}
+                        onCategoryChange={setCategory}
+                        hideCategory
+                        hideHeader
+                        sortMode={sortMode}
+                        onSortModeChange={setSortMode}
+                        onCategoryStatsChange={i === viewIndex ? handleCategoryStatsChange : undefined}
+                      />
+                    ) : (
+                      <div style={{ minHeight: '50vh' }} />
+                    )}
+                  </div>
                 </div>
               );
             })}
