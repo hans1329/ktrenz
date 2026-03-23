@@ -330,7 +330,7 @@ const T2TrendGrades = () => {
         )}
       </main>
 
-      <V3TabBar />
+      <V3TabBar activeTab="rankings" onTabChange={() => {}} />
     </div>
   );
 };
