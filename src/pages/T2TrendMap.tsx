@@ -349,7 +349,7 @@ const T2TrendMap = () => {
           )}
         >
           {/* Carousel viewport: active panel sets height, adjacent panel slides in without inflating scroll */}
-          <div className="relative overflow-hidden">
+          <div className="relative overflow-x-hidden overflow-y-visible">
             {VIEW_ORDER.map((mode, i) => {
               const isVisible = visibleViews.some(v => v.index === i);
               const isActive = i === viewIndex;
