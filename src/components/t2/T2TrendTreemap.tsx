@@ -833,11 +833,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       </span>
                     )}
                     {isMedium && sortMode === "volume" && (() => {
-                      const peak = rect.item.peakScore ?? 0;
+                      const current = rect.item.prevApiTotal ?? rect.item.peakScore ?? 0;
                       const base = rect.item.baselineScore ?? 0;
-                      // 피크가 0이면 아직 2차 수집 전이므로 표시하지 않음
-                      if (peak === 0 || base === 0) return null;
-                      const diff = peak - base;
+                      if (current === 0 || base === 0) return null;
+                      const diff = current - base;
                       if (diff === 0) return null;
                       return (
                         <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
