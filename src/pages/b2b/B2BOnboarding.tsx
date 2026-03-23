@@ -39,9 +39,10 @@ const B2BOnboarding = () => {
         .insert({ user_id: user.id, org_id: orgId, role: 'owner', job_title: jobTitle || null });
       if (memErr) throw memErr;
 
+      // Remove stale cache so B2BLayout refetches fresh
+      queryClient.removeQueries({ queryKey: ['b2b-membership'] });
       toast({ title: '워크스페이스 생성 완료!', description: '대시보드로 이동합니다.' });
-      await queryClient.invalidateQueries({ queryKey: ['b2b-membership'] });
-      navigate('/b2b');
+      navigate('/b2b', { replace: true });
     } catch (err: any) {
       toast({ title: '오류', description: err.message, variant: 'destructive' });
     } finally {
