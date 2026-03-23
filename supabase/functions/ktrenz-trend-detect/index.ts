@@ -339,7 +339,7 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_ko: { type: "string", description: "Korean name" },
               keyword_ja: { type: "string", description: "Japanese translation" },
               keyword_zh: { type: "string", description: "Chinese translation" },
-              category: { type: "string", enum: ["brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event"] },
+              category: { type: "string", enum: ["brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "social"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
               context: { type: "string", description: "English context sentence" },
               context_ko: { type: "string", description: "Korean context sentence" },
