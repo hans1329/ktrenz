@@ -294,26 +294,24 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
     {/* Fullscreen Celebration Overlay */}
     {celebration && (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200"
+        className="fixed inset-0 z-[200] flex items-center justify-center animate-in fade-in duration-300"
         onClick={() => setCelebration(null)}
       >
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl animate-in zoom-in-95 duration-200"
-          style={{
-            maskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
-          }}
-        >
+        {/* Blurred backdrop */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+
+        {/* Centered card */}
+        <div className="relative z-10 flex flex-col items-center gap-5 mx-8 px-10 py-10 rounded-3xl bg-background/95 shadow-2xl animate-in zoom-in-90 duration-300">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
             <PartyPopper className="w-8 h-8 text-primary" />
           </div>
           <p className="text-lg font-bold text-foreground">
             {t("mission.complete")}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground text-center">
             {celebration.label}
           </p>
-          <div className="flex items-center gap-4 mt-1">
+          <div className="flex items-center gap-4">
             <span className="text-2xl font-black text-primary">+{celebration.points}P</span>
             <span className="text-sm font-semibold text-muted-foreground">+{celebration.exp} EXP</span>
           </div>
