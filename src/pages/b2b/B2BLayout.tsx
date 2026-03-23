@@ -225,7 +225,7 @@ const B2BLayout = () => {
                       setSearchOpen(false);
                       setSearchQuery('');
                       // Navigate to star detail or add to tracked
-                      navigate(`/t2/artist/${star.id}`);
+                      navigate(`/b2b/artist/${star.id}`);
                     }}
                   >
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
