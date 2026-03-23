@@ -39,7 +39,7 @@ const B2BLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const { data: membership, isLoading: memLoading } = useQuery({
+  const { data: membership, isLoading: memLoading, isFetched } = useQuery({
     queryKey: ['b2b-membership', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -51,16 +51,17 @@ const B2BLayout = () => {
       return data;
     },
     enabled: !!user?.id,
+    refetchOnMount: 'always',
   });
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/b2b/login', { replace: true });
     }
-    if (!authLoading && !memLoading && user && !membership) {
+    if (!authLoading && user && isFetched && !memLoading && !membership) {
       navigate('/b2b/onboarding', { replace: true });
     }
-  }, [authLoading, memLoading, user, membership, navigate]);
+  }, [authLoading, memLoading, isFetched, user, membership, navigate]);
 
   if (authLoading || memLoading) {
     return (
