@@ -254,138 +254,158 @@ const B2BArtistDetail = () => {
         )}
       </div>
 
-      {/* 우측 AI 패널 */}
+      {/* 우측: AI 인사이트 패널 */}
       <div className="w-[360px] border-l border-[hsl(220,15%,15%)] bg-[hsl(220,18%,9%)] flex flex-col shrink-0 sticky top-14 h-[calc(100vh-56px)]">
         <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)]">
           <div className="flex items-center gap-2">
             <Brain className="w-4 h-4 text-[hsl(270,80%,60%)]" />
-            <h3 className="text-sm font-bold text-white">AI 아티스트 분석</h3>
+            <h3 className="text-sm font-bold text-white">AI 인사이트</h3>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">
+              {trends.length > 0 ? `${trends.length}건 분석` : '대기'}
+            </span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4 space-y-3">
+        <div className="flex-1 overflow-auto p-4 space-y-4">
+          {/* 요약 스탯 */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: '활성', value: activeTrends.length, color: 'hsl(150,60%,55%)' },
+              { label: '평균 영향력', value: avgInfluence > 0 ? avgInfluence.toFixed(0) : '-', color: 'hsl(270,80%,65%)' },
+              { label: '상업 의도', value: commerceCount || '-', color: 'hsl(45,90%,55%)' },
+              { label: '전체', value: trends.length, color: 'hsl(200,80%,55%)' },
+            ].map(s => (
+              <div key={s.label} className="bg-[hsl(220,15%,12%)] rounded-lg p-2.5 border border-[hsl(220,15%,16%)]">
+                <p className="text-[10px] text-[hsl(220,10%,42%)] mb-0.5">{s.label}</p>
+                <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
           {/* 종합 평가 */}
-          <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
+          <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-[hsl(45,90%,55%)]" />
               <span className="text-xs font-semibold text-white">종합 평가</span>
             </div>
             <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">
               {activeTrends.length > 0
-                ? `${star.display_name}은(는) 현재 ${activeTrends.length}개의 활성 트렌드에 연결되어 있습니다. 평균 영향력 ${avgInfluence.toFixed(1)}로 ${avgInfluence > 60 ? '높은 시장 관심도' : '보통 수준의 노출도'}를 보이고 있습니다.`
-                : `${star.display_name}에 대한 활성 트렌드가 없어 현재 시장 노출도가 낮은 상태입니다.`}
+                ? `${star.display_name}은(는) ${activeTrends.length}개 활성 트렌드 보유. 평균 영향력 ${avgInfluence.toFixed(0)}${avgInfluence > 60 ? ' — 시장 관심이 높은 구간입니다.' : ' — 일반적인 노출 수준입니다.'}`
+                : `${star.display_name}의 현재 활성 트렌드가 없습니다. 수집 주기에 따라 자동 갱신됩니다.`}
             </p>
           </div>
 
-          {/* 트렌드 분포 */}
-          <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart3 className="w-3.5 h-3.5 text-[hsl(200,80%,55%)]" />
-              <span className="text-xs font-semibold text-white">트렌드 등급 분포</span>
-            </div>
-            {['Explosive', 'Commerce', 'Intent', 'Spark'].map(grade => {
-              const count = trends.filter((t: any) => (t.trend_grade || 'Spark') === grade).length;
-              const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
-              return (
-                <div key={grade} className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[10px] text-[hsl(220,10%,50%)] w-16">{grade}</span>
-                  <div className="flex-1 h-1.5 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${pct}%`,
-                        backgroundColor:
-                          grade === 'Explosive' ? 'hsl(0,80%,55%)' :
-                          grade === 'Commerce' ? 'hsl(270,80%,60%)' :
-                          grade === 'Intent' ? 'hsl(45,80%,55%)' :
-                          'hsl(220,10%,40%)',
-                      }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-[hsl(220,10%,45%)] w-6 text-right">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 상업적 신호 */}
-          {trends.some((t: any) => t.commercial_intent || t.fan_sentiment) && (
-            <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
-              <div className="flex items-center gap-2 mb-2">
-                <ShoppingBag className="w-3.5 h-3.5 text-[hsl(270,80%,60%)]" />
-                <span className="text-xs font-semibold text-white">상업적 신호</span>
+          {/* 등급 분포 — 트렌드가 있을 때만 */}
+          {trends.length > 0 && (
+            <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart3 className="w-3.5 h-3.5 text-[hsl(200,80%,55%)]" />
+                <span className="text-xs font-semibold text-white">등급 분포</span>
               </div>
-              <div className="space-y-1.5 text-xs text-[hsl(220,10%,55%)]">
-                {(() => {
-                  const withIntent = trends.filter((t: any) => t.commercial_intent);
-                  const avgSentiment = trends.filter((t: any) => t.fan_sentiment != null);
-                  return (
-                    <>
-                      <p>상업적 의도 감지: {withIntent.length}건</p>
-                      {avgSentiment.length > 0 && (
-                        <p>팬 감정 분석: 평균 {(avgSentiment.reduce((s: number, t: any) => s + (t.fan_sentiment ?? 0), 0) / avgSentiment.length).toFixed(1)}</p>
-                      )}
-                    </>
-                  );
-                })()}
+              {['Explosive', 'Commerce', 'Intent', 'Spark'].map(grade => {
+                const count = trends.filter((t: any) => (t.trend_grade || 'Spark') === grade).length;
+                const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
+                if (count === 0) return null;
+                return (
+                  <div key={grade} className="flex items-center gap-2 mb-2">
+                    <span className={`text-[10px] font-medium w-16 ${
+                      grade === 'Explosive' ? 'text-[hsl(0,80%,65%)]' :
+                      grade === 'Commerce' ? 'text-[hsl(270,80%,70%)]' :
+                      grade === 'Intent' ? 'text-[hsl(45,80%,60%)]' :
+                      'text-[hsl(220,10%,50%)]'
+                    }`}>{grade}</span>
+                    <div className="flex-1 h-2 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor:
+                            grade === 'Explosive' ? 'hsl(0,80%,55%)' :
+                            grade === 'Commerce' ? 'hsl(270,80%,60%)' :
+                            grade === 'Intent' ? 'hsl(45,80%,55%)' :
+                            'hsl(220,10%,35%)',
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-[hsl(220,10%,50%)] w-8 text-right font-mono">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 감지 현황 */}
+          {star.last_detect_result && (
+            <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
+              <div className="flex items-center gap-2 mb-3">
+                <Eye className="w-3.5 h-3.5 text-[hsl(150,60%,55%)]" />
+                <span className="text-xs font-semibold text-white">최근 감지 현황</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: '뉴스', value: star.last_detect_result.news ?? 0 },
+                  { label: '블로그', value: star.last_detect_result.blog ?? 0 },
+                  { label: '쇼핑', value: star.last_detect_result.shop ?? 0 },
+                  { label: '키워드', value: star.last_detect_result.keywords ?? 0 },
+                ].map(d => (
+                  <div key={d.label} className="flex items-center justify-between px-2 py-1.5 rounded bg-[hsl(220,15%,15%)]">
+                    <span className="text-[10px] text-[hsl(220,10%,45%)]">{d.label}</span>
+                    <span className="text-xs text-white font-mono font-medium">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+              {star.last_detected_at && (
+                <p className="text-[10px] text-[hsl(220,10%,35%)] mt-2">
+                  {new Date(star.last_detected_at).toLocaleString('ko-KR')}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* 외부 채널 */}
+          {(star.social_handles?.youtube || star.spotify_id) && (
+            <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <ExternalLink className="w-3.5 h-3.5 text-[hsl(220,10%,50%)]" />
+                <span className="text-xs font-semibold text-white">채널</span>
+              </div>
+              <div className="space-y-1.5">
+                {star.social_handles?.youtube && (
+                  <a href={`https://youtube.com/${star.social_handles.youtube}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-[hsl(220,10%,55%)] hover:text-white transition-colors px-2 py-1.5 rounded hover:bg-[hsl(220,15%,15%)]">
+                    <span className="text-red-500 text-[10px]">▶</span> {star.social_handles.youtube}
+                  </a>
+                )}
+                {star.spotify_id && (
+                  <a href={`https://open.spotify.com/artist/${star.spotify_id}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-[hsl(220,10%,55%)] hover:text-white transition-colors px-2 py-1.5 rounded hover:bg-[hsl(220,15%,15%)]">
+                    <span className="text-green-500 text-[10px]">●</span> Spotify
+                  </a>
+                )}
               </div>
             </div>
           )}
 
-          {/* 추천 액션 */}
-          <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-3.5 h-3.5 text-[hsl(15,90%,55%)]" />
-              <span className="text-xs font-semibold text-white">추천 액션</span>
-            </div>
-            <div className="space-y-2">
+          {/* 빠른 액션 */}
+          <div className="pt-1">
+            <p className="text-[10px] text-[hsl(220,10%,30%)] font-medium uppercase tracking-wider mb-2">빠른 실행</p>
+            <div className="space-y-1.5">
               {[
-                { label: 'Pre/Post 분석 실행', desc: '관여 전후 검색량 변화 비교' },
-                { label: '경쟁사 대비 벤치마크', desc: '동종 아티스트 성과 비교' },
-                { label: '캠페인 시뮬레이션', desc: '트렌드 기반 예상 성과 추정' },
+                { label: 'Pre/Post 분석', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                { label: '경쟁사 벤치마크', icon: <Eye className="w-3.5 h-3.5" /> },
+                { label: '캠페인 시뮬레이션', icon: <Zap className="w-3.5 h-3.5" /> },
               ].map(action => (
                 <button
                   key={action.label}
-                  className="w-full text-left px-3 py-2 rounded-lg border border-[hsl(220,15%,18%)] hover:border-[hsl(270,80%,55%,0.3)] transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[hsl(220,15%,18%)] bg-[hsl(220,15%,12%)] text-xs text-[hsl(220,10%,55%)] hover:border-[hsl(270,80%,55%,0.3)] hover:text-white transition-colors"
                 >
-                  <p className="text-xs text-white font-medium">{action.label}</p>
-                  <p className="text-[10px] text-[hsl(220,10%,40%)]">{action.desc}</p>
+                  <span className="text-[hsl(270,80%,60%)]">{action.icon}</span>
+                  {action.label}
+                  <ChevronRight className="w-3 h-3 ml-auto opacity-30" />
                 </button>
               ))}
             </div>
           </div>
-
-          {/* 외부 채널 */}
-          {(star.youtube_channel_id || star.spotify_id || star.social_handles) && (
-            <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
-              <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-3.5 h-3.5 text-[hsl(220,10%,50%)]" />
-                <span className="text-xs font-semibold text-white">외부 채널</span>
-              </div>
-              <div className="space-y-1.5">
-                {star.social_handles?.youtube && (
-                  <a
-                    href={`https://youtube.com/${star.social_handles.youtube}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-[hsl(220,10%,55%)] hover:text-white transition-colors"
-                  >
-                    <span className="text-red-500">▶</span> YouTube {star.social_handles.youtube}
-                  </a>
-                )}
-                {star.spotify_id && (
-                  <a
-                    href={`https://open.spotify.com/artist/${star.spotify_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-[hsl(220,10%,55%)] hover:text-white transition-colors"
-                  >
-                    <span className="text-green-500">●</span> Spotify
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
