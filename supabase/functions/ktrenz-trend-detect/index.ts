@@ -870,30 +870,82 @@ async function extractSocialKeywordsFromTikTok(
     .map((a: any, i: number) => `[${i + 1}] ${a.title} - ${a.description}`)
     .join("\n");
 
+  // 아티스트/멤버/팬덤명 변형 목록 생성 (부분일치 필터용)
+  const artistAliases = new Set<string>();
+  const addAlias = (n: string | null | undefined) => {
+    if (!n) return;
+    const lower = n.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+    if (lower.length >= 2) artistAliases.add(lower);
+  };
+  addAlias(memberName);
+  addAlias(groupName);
+  // 흔한 팬덤명 패턴: 멤버명+fyp, 멤버명+edit, 그룹명+fan 등
+  const FANDOM_SUFFIXES = ["fyp", "edit", "edits", "fan", "fans", "stan", "stans", "lover", "lovers", "bestleader", "best", "era", "challenge"];
+  const baseNames = [memberName, groupName].filter(Boolean).map(n => n!.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  for (const base of baseNames) {
+    if (base.length < 2) continue;
+    artistAliases.add(base);
+    for (const suffix of FANDOM_SUFFIXES) {
+      artistAliases.add(base + suffix);
+    }
+  }
+  // 알려진 팬덤명 매핑
+  const KNOWN_FANDOMS: Record<string, string[]> = {
+    "aespa": ["my", "mys"],
+    "ateez": ["atiny"],
+    "bts": ["army"],
+    "blackpink": ["blink"],
+    "twice": ["once"],
+    "stray kids": ["stay"],
+    "seventeen": ["carat"],
+    "nct": ["nctzen"],
+    "enhypen": ["engene"],
+    "txt": ["moa"],
+    "itzy": ["midzy"],
+    "ive": ["dive"],
+    "le sserafim": ["fearnot"],
+    "newjeans": ["bunnies"],
+    "stayc": ["swith"],
+    "ab6ix": ["abnew"],
+    "the boyz": ["deobi"],
+    "treasure": ["teume"],
+    "nmixx": ["nswer"],
+    "riize": ["briize"],
+    "(g)i-dle": ["neverland"],
+    "gidle": ["neverland"],
+  };
+  for (const base of baseNames) {
+    const fandoms = KNOWN_FANDOMS[base] || [];
+    for (const f of fandoms) artistAliases.add(f);
+  }
+
   const systemPrompt = `You are a K-Pop social media trend analyst specializing in TikTok viral content.
-Analyze the TikTok video descriptions below to extract SOCIAL TREND keywords related to the artist.
+Analyze the TikTok video descriptions below to extract SOCIAL TREND keywords related to the artist "${memberName}".
 
-WHAT TO EXTRACT:
-- Viral challenge names (e.g., "Supernova Challenge", "Drama Dance Challenge")
-- Trending hashtag topics (not generic tags like #kpop #fyp, but specific ones like #AESPASupernova)
-- Specific dance/choreo trends (e.g., "Magnetic dance", "HEYA challenge")
-- Fan-created content trends (e.g., "fancam edit", specific meme names)
-- Collaboration or crossover content topics
+WHAT TO EXTRACT (specific, actionable trends only):
+- Named viral challenges (e.g., "Supernova Challenge", "BOTTOMS UP Challenge")
+- Specific choreography/performance trends (e.g., "LOOK AT ME performance", "Magnetic dance break")
+- Unique fan-created content formats with specific names
+- Collaboration or crossover content with identifiable names
+- Product/brand mentions appearing in videos (e.g., specific makeup, fashion items)
 
-WHAT NOT TO EXTRACT:
-- Generic hashtags (#fyp, #kpop, #foryou, #viral, #dance)
-- The artist name itself
+STRICT REJECTION RULES — DO NOT EXTRACT:
+- Artist names, member names, or any variation/abbreviation (${memberName}${groupName ? `, ${groupName}` : ""})
+- Fandom names or fan identity tags (e.g., ARMY, BLINK, ATINY, MY, STAY, etc.)
+- Any hashtag that is just the artist/member/group name with or without suffixes like "fyp", "edit", "fan", "stan", "era", "best", "lover"
+- Generic hashtags (#fyp, #kpop, #foryou, #viral, #dance, #trending)
 - Platform names (TikTok, YouTube, Instagram)
-- Generic terms (dance, music, cover, reaction)
+- Generic activity words (dance, music, cover, reaction, fancam, edit)
+- Song titles alone without a specific trend context (a song name is NOT a trend; "Song Name Challenge" IS a trend)
 
 Set category to "social" for ALL extracted keywords.
-Maximum 5 keywords. Quality over quantity. Return EMPTY array if nothing meaningful found.`;
+Maximum 3 keywords. QUALITY OVER QUANTITY. Return EMPTY array if nothing meaningful found — most videos will NOT contain extractable trends.`;
 
   const userPrompt = `TikTok videos related to "${memberName}"${groupName ? ` (${groupName})` : ""}:
 
 ${articleTexts}
 
-Extract specific viral/trending social keywords from these TikTok descriptions. Call extract_keywords.`;
+Extract ONLY specific viral/trending social keywords. Reject artist names, fandom names, and generic tags. Call extract_keywords.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -929,15 +981,33 @@ Extract specific viral/trending social keywords from these TikTok descriptions. 
         const args = JSON.parse(tc.function.arguments);
         const rawKws = args.keywords || [];
         for (const k of rawKws) {
-          // 기본 검증만 수행 (소셜 키워드는 기사 텍스트 기반 검증 불필요)
+          // 강화된 아티스트/팬덤명 필터
           if (!k.keyword || k.keyword.length < 2) continue;
-          const kwLower = k.keyword.toLowerCase();
+          const kwLower = k.keyword.toLowerCase().replace(/^#/, "");
+          const kwNorm = kwLower.replace(/[^a-z0-9가-힣]/g, "");
           if (PLATFORM_BLACKLIST.has(kwLower)) continue;
-          if (kwLower === memberName.toLowerCase() || kwLower === (groupName || "").toLowerCase()) continue;
 
-          // 제네릭 해시태그 필터
-          const genericTags = new Set(["fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction", "fancam", "edit", "trend", "trending"]);
-          if (genericTags.has(kwLower.replace(/^#/, ""))) continue;
+          // 정확 일치 또는 부분 일치 필터: 키워드가 아티스트/팬덤명이거나 포함하면 차단
+          let isArtistRelated = false;
+          for (const alias of artistAliases) {
+            if (kwNorm === alias || kwNorm.includes(alias) || alias.includes(kwNorm)) {
+              isArtistRelated = true;
+              break;
+            }
+          }
+          if (isArtistRelated) {
+            console.log(`[trend-detect] TikTok filter: rejected "${k.keyword}" (artist/fandom match)`);
+            continue;
+          }
+
+          // 제네릭 해시태그 필터 (확장)
+          const genericTags = new Set([
+            "fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction",
+            "fancam", "edit", "trend", "trending", "stan", "bias", "idol", "concert",
+            "performance", "live", "shorts", "reels", "xyzbca", "fypシ", "parati",
+            "korean", "korea", "seoul", "hallyu", "kdrama", "oppa",
+          ]);
+          if (genericTags.has(kwNorm)) continue;
 
           results.push({
             keyword: k.keyword,
