@@ -134,6 +134,61 @@ const T2ArtistPage = () => {
     enabled: !!star?.wiki_entry_id,
   });
 
+  // Watch status
+  const { data: isWatched } = useQuery({
+    queryKey: ["t2-watched-check", user?.id, star?.wiki_entry_id],
+    queryFn: async () => {
+      if (!user?.id || !star?.wiki_entry_id) return false;
+      const { data } = await supabase
+        .from("ktrenz_watched_artists")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("wiki_entry_id", star.wiki_entry_id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user?.id && !!star?.wiki_entry_id,
+  });
+
+  const toggleWatch = useCallback(async () => {
+    if (!user?.id || !star) return;
+    if (!star.wiki_entry_id) {
+      toast.error(language === "ko" ? "이 아티스트는 아직 연동되지 않았습니다" : "This artist is not linked yet");
+      return;
+    }
+    setWatchLoading(true);
+    try {
+      if (isWatched) {
+        await supabase
+          .from("ktrenz_watched_artists")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("wiki_entry_id", star.wiki_entry_id);
+        toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
+      } else {
+        // Delete existing then insert to avoid duplicates
+        await supabase
+          .from("ktrenz_watched_artists")
+          .delete()
+          .eq("user_id", user.id);
+        await supabase
+          .from("ktrenz_watched_artists")
+          .insert({
+            user_id: user.id,
+            artist_name: star.display_name,
+            wiki_entry_id: star.wiki_entry_id,
+          });
+        toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
+      }
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-check"] });
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-artists"] });
+    } catch {
+      toast.error("Error");
+    } finally {
+      setWatchLoading(false);
+    }
+  }, [user?.id, star, isWatched, language]);
+
   const displayName = language === "ko" && star?.name_ko ? star.name_ko : star?.display_name ?? "";
 
   const subHeader = (
