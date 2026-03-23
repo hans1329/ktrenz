@@ -95,6 +95,10 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   shareBoostReward: { en: "Share & earn +5 K-Token", ko: "공유하고 +5 K-Token 받기", ja: "共有して +5 K-Token獲得", zh: "分享获得+5 K-Token" },
   alreadyShareBoostedDone: { en: "✓ Already earned +5T", ko: "✓ 이미 +5T 획득 완료", ja: "✓ 獲得済み +5T", zh: "✓ 已获得 +5T" },
   viewFullAnalysis: { en: "View Full Analysis", ko: "상세 분석 보기", ja: "詳細分析を見る", zh: "查看完整分析" },
+  followKeyword: { en: "Track", ko: "추적", ja: "追跡", zh: "追踪" },
+  unfollowKeyword: { en: "Tracking", ko: "추적중", ja: "追跡中", zh: "追踪中" },
+  followedToast: { en: "Tracking this keyword! 🎯", ko: "키워드 추적 시작! 🎯", ja: "キーワード追跡開始！🎯", zh: "开始追踪关键词！🎯" },
+  unfollowedToast: { en: "Stopped tracking", ko: "추적 해제", ja: "追跡解除", zh: "已取消追踪" },
 };
 
 function t(key: string, lang: string): string {
