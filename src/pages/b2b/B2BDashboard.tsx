@@ -17,7 +17,7 @@ const B2BDashboard = () => {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('ktrenz_b2b_tracked_stars')
-        .select('*, star:ktrenz_stars(id, name_en, name_ko, image_url)')
+        .select('*, star:ktrenz_stars(id, display_name, name_ko, image_url)')
         .eq('org_id', org.id);
       return data || [];
     },
