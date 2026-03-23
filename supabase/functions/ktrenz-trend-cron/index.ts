@@ -383,7 +383,38 @@ async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Pro
   }
 }
 
-function getNextPhase(currentPhase: string): string | null {
+// ── 파이프라인 완료 후 실행할 작업들 ──
+async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || supabaseKey;
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${anonKey}`,
+  };
+
+  // 1. Settle expired prediction markets
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-settle`, {
+      method: "POST", headers, body: JSON.stringify({}),
+    });
+    const result = await resp.json();
+    console.log(`[cron] Auto-settle result:`, result);
+  } catch (e) {
+    console.error(`[cron] Auto-settle failed:`, e);
+  }
+
+  // 2. Crawl blip.kr schedules
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/crawl-blip-schedule`, {
+      method: "POST", headers, body: JSON.stringify({}),
+    });
+    const result = await resp.json();
+    console.log(`[cron] Blip schedule crawl result:`, result);
+  } catch (e) {
+    console.error(`[cron] Blip crawl failed:`, e);
+  }
+}
+
+
   const idx = PHASE_ORDER.indexOf(currentPhase as any);
   return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
 }
