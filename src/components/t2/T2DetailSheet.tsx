@@ -384,7 +384,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         await supabase
           .from("ktrenz_keyword_boosts" as any)
           .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
-        await supabase.rpc("ktrenz_increment_points" as any, { p_user_id: user.id, p_amount: 5 });
         queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
         queryClient.invalidateQueries({ queryKey: ["t2-share-boost", tile.id, user.id] });
         toast.success(t("boosted", language));
