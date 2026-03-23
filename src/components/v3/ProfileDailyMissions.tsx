@@ -108,7 +108,8 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
       return counts;
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 30,
+    staleTime: 0,
+    refetchInterval: 5000,
   });
 
   const { data: claimedKeys = [] } = useQuery({
