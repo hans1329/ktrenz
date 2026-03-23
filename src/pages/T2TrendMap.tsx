@@ -332,10 +332,16 @@ const T2TrendMap = () => {
         }}
       >
         <div
+          ref={contentRef}
           className={cn(
-            "pb-24 scrollbar-hide transition-all duration-500 ease-in-out",
+            "pb-24 scrollbar-hide",
             headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
           )}
+          style={{
+            transform: `translateX(${dragOffsetX}px)`,
+            transition: isAnimating ? 'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+            willChange: dragOffsetX !== 0 ? 'transform' : 'auto',
+          }}
         >
           <div className="md:max-w-[90%] mx-auto">
             <T2TrendTreemap
