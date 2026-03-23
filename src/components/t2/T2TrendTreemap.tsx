@@ -848,22 +848,25 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         {formatAge(rect.item.detectedAt)}
                       </span>
                     )}
-                    <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
+                    <div className="relative z-10 flex flex-col items-center w-full px-2" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
                       <div
-                        className="absolute inset-0 rounded-md -mx-1"
+                        className="absolute inset-x-0 rounded-md"
                         style={{
-                          background: `radial-gradient(ellipse at center, ${tileColor.replace('0.85', '0.75')} 0%, transparent 80%)`,
+                          top: '-4px',
+                          bottom: '-4px',
+                          background: tileColor.replace('0.85', '0.7'),
+                          backdropFilter: 'blur(4px)',
                         }}
                       />
                       <span
-                        className="relative font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                        style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                        className="relative font-black text-white truncate w-full text-center leading-tight"
+                        style={{ fontSize: `${keywordSize}px` }}
                       >
                         {getLocalizedKeyword(rect.item, language)}
                       </span>
                       <span
-                        className="relative font-bold text-white truncate w-full text-center drop-shadow-md"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                        className="relative font-bold text-white truncate w-full text-center"
+                        style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px` }}
                       >
                         {getLocalizedArtistName(rect.item, language)}
                       </span>
