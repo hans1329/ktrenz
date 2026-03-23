@@ -141,7 +141,7 @@ const B2BDashboard = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-white font-semibold">{ts.star?.name_en}</p>
+                      <p className="text-sm text-white font-semibold">{ts.star?.display_name}</p>
                       <p className="text-xs text-[hsl(220,10%,45%)]">
                         {ts.relationship === 'owned' ? '소속' : '경쟁사'}
                       </p>
