@@ -334,58 +334,6 @@ const B2BArtistDetail = () => {
             </div>
           )}
 
-          {/* 감지 현황 */}
-          {star.last_detect_result && (
-            <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
-              <div className="flex items-center gap-2 mb-3">
-                <Eye className="w-3.5 h-3.5 text-[hsl(150,60%,55%)]" />
-                <span className="text-xs font-semibold text-white">최근 감지 현황</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: '뉴스', value: star.last_detect_result.news ?? 0 },
-                  { label: '블로그', value: star.last_detect_result.blog ?? 0 },
-                  { label: '쇼핑', value: star.last_detect_result.shop ?? 0 },
-                  { label: '키워드', value: star.last_detect_result.keywords ?? 0 },
-                ].map(d => (
-                  <div key={d.label} className="flex items-center justify-between px-2 py-1.5 rounded bg-[hsl(220,15%,15%)]">
-                    <span className="text-[10px] text-[hsl(220,10%,45%)]">{d.label}</span>
-                    <span className="text-xs text-white font-mono font-medium">{d.value}</span>
-                  </div>
-                ))}
-              </div>
-              {star.last_detected_at && (
-                <p className="text-[10px] text-[hsl(220,10%,35%)] mt-2">
-                  {new Date(star.last_detected_at).toLocaleString('ko-KR')}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* 외부 채널 */}
-          {(star.social_handles?.youtube || star.spotify_id) && (
-            <div className="rounded-xl border border-[hsl(220,15%,16%)] bg-[hsl(220,15%,12%)] p-3.5">
-              <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-3.5 h-3.5 text-[hsl(220,10%,50%)]" />
-                <span className="text-xs font-semibold text-white">채널</span>
-              </div>
-              <div className="space-y-1.5">
-                {star.social_handles?.youtube && (
-                  <a href={`https://youtube.com/${star.social_handles.youtube}`} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-[hsl(220,10%,55%)] hover:text-white transition-colors px-2 py-1.5 rounded hover:bg-[hsl(220,15%,15%)]">
-                    <span className="text-red-500 text-[10px]">▶</span> {star.social_handles.youtube}
-                  </a>
-                )}
-                {star.spotify_id && (
-                  <a href={`https://open.spotify.com/artist/${star.spotify_id}`} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-xs text-[hsl(220,10%,55%)] hover:text-white transition-colors px-2 py-1.5 rounded hover:bg-[hsl(220,15%,15%)]">
-                    <span className="text-green-500 text-[10px]">●</span> Spotify
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* 빠른 액션 */}
           <div className="pt-1">
             <p className="text-[10px] text-[hsl(220,10%,30%)] font-medium uppercase tracking-wider mb-2">빠른 실행</p>
