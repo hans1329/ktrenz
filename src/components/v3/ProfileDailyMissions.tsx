@@ -291,26 +291,35 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
       </div>
     </div>
 
-    {/* Celebration modal */}
-    <Drawer open={!!celebration} onOpenChange={(open) => !open && setCelebration(null)}>
-      <DrawerContent className="bg-background border-border mx-auto md:max-w-sm">
-        <div className="flex flex-col items-center gap-3 py-8 px-6 text-center">
-          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-            <PartyPopper className="w-7 h-7 text-primary" />
+    {/* Fullscreen Celebration Overlay */}
+    {celebration && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-200"
+        onClick={() => setCelebration(null)}
+      >
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 bg-gradient-to-b from-background/95 to-background/80 backdrop-blur-xl animate-in zoom-in-95 duration-200"
+          style={{
+            maskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 90% 80% at 50% 50%, black 50%, transparent 100%)",
+          }}
+        >
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <PartyPopper className="w-8 h-8 text-primary" />
           </div>
           <p className="text-lg font-bold text-foreground">
             {t("mission.complete")}
           </p>
           <p className="text-sm text-muted-foreground">
-            {celebration?.label}
+            {celebration.label}
           </p>
           <div className="flex items-center gap-4 mt-1">
-            <span className="text-base font-bold text-primary">+{celebration?.points}P</span>
-            <span className="text-sm font-semibold text-muted-foreground">+{celebration?.exp} EXP</span>
+            <span className="text-2xl font-black text-primary">+{celebration.points}P</span>
+            <span className="text-sm font-semibold text-muted-foreground">+{celebration.exp} EXP</span>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </div>
+    )}
     </>
   );
 };
