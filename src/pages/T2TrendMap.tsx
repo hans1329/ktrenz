@@ -302,7 +302,7 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className="fixed left-0 right-0 z-50 py-2 bg-card/50 backdrop-blur-lg"
+        className="fixed left-0 right-0 z-50 py-2 bg-card/30 backdrop-blur-lg"
         style={{ top: headerCollapsed ? 0 : `${Math.max(0, 6.25 * 16 - Math.max(0, scrollY))}px` }}
       >
         <div className="md:max-w-[90%] mx-auto overflow-x-auto pb-1 scrollbar-hide">
@@ -325,7 +325,7 @@ const T2TrendMap = () => {
                   style={{
                     backgroundColor: isActive
                       ? (cat === "my" ? "hsl(45 90% 50%)" : config?.color ?? "hsl(var(--primary))")
-                      : "hsl(var(--secondary))",
+                      : "hsl(var(--background))",
                     color: isActive ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
                     borderColor: isActive
                       ? "transparent"
