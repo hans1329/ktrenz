@@ -11,9 +11,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["detect", "track"] as const;
+const PHASE_ORDER = ["detect", "grade", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
+  grade: "ktrenz-trend-grade",
   track: "ktrenz-trend-track",
 };
 const DETECT_PHASES = new Set(["detect"]);
