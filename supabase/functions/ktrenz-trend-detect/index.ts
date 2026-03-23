@@ -956,7 +956,8 @@ Extract specific viral/trending social keywords from these TikTok descriptions. 
   }
 }
 
-
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
