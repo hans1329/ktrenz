@@ -125,18 +125,18 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
-          {/* K-Tokens + K-Pass compact row */}
+          {/* K-Tokens + K-Pass row with ticket styling */}
           <div className="flex gap-2">
-            {/* K-Tokens mini */}
+            {/* K·Trend Caches */}
             <button
               onClick={() => setShowPointsDrawer(true)}
               className="flex-1 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
             >
               <div className="flex items-center gap-2">
-                <span className="text-base">💎</span>
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm">💎</div>
                 <div>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    Caches
+                    K·Trend Caches
                   </p>
                   <p className="text-sm font-bold text-foreground leading-tight">
                     {kPoints.toLocaleString()}
@@ -145,23 +145,38 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </div>
             </button>
 
-            {/* K-Pass mini */}
+            {/* K-Pass ticket mini */}
             <button
               onClick={() => { onOpenChange(false); navigate("/k-pass", { state: { fromProfile: true } }); }}
-              className="flex-1 rounded-xl border border-border p-3 hover:border-primary/40 transition-all text-left"
-              style={{ background: g.top }}
+              className="flex-1 rounded-xl overflow-hidden transition-all text-left group"
             >
-              <div className="flex items-center gap-2">
-                <span className="text-base">{tierIcon}</span>
-                <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em]"
-                    style={{ background: g.label, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    K-Pass
-                  </p>
-                  <p className="text-sm font-bold text-foreground leading-tight">
-                    {tierName}
-                  </p>
+              {/* Top */}
+              <div className="relative px-3 py-2.5" style={{ background: g.top }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: g.accent }}>
+                    <span className="text-foreground">{tierIcon}</span>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em]"
+                      style={{ background: g.label, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      K-Pass
+                    </p>
+                    <p className="text-sm font-bold text-foreground leading-tight">{tierName}</p>
+                  </div>
                 </div>
+              </div>
+              {/* Perforation + bottom */}
+              <div className="relative h-0 flex items-center overflow-visible">
+                <div className="absolute -left-1.5 w-3 h-3 rounded-full z-10" style={{ backgroundColor: 'hsl(var(--background))' }} />
+                <div className="w-full border-t border-dashed border-border/60 mx-2" />
+                <div className="absolute -right-1.5 w-3 h-3 rounded-full z-10" style={{ backgroundColor: 'hsl(var(--background))' }} />
+              </div>
+              <div className="px-3 py-1.5 flex items-center justify-between" style={{ background: g.bottom }}>
+                <span className="text-[9px] text-muted-foreground">View plans →</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border"
+                  style={{ background: g.badge, borderColor: g.badgeBorder, color: g.badgeText }}>
+                  {t("common.active")}
+                </span>
               </div>
             </button>
           </div>
