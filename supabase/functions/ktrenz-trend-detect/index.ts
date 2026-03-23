@@ -469,17 +469,19 @@ OWNERSHIP VERIFICATION:
 Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
 When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
-  const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
+  const userPrompt = `Below are Korean news article titles and descriptions found by searching for "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
-REMEMBER: 
-- Do NOT extract ${nameListStr} or any artist/group names as keywords. Only extract specific brands, products, places, show titles, etc.
-- CRITICAL: For each article, verify that the article's MAIN SUBJECT is "${memberName}"${nameKo ? ` (${nameKo})` : ""}. If the article is about a DIFFERENT member of the same group, set ownership_confidence to 0.0.
-- If the article mentions "${memberName}" only in a list or passing reference while focusing on another person, reject the keyword.
+★ CRITICAL REMINDER:
+- ONLY extract keywords that LITERALLY APPEAR in the article texts below.
+- Do NOT use your general knowledge about this artist to generate keywords.
+- The context_ko field must be a direct summary of the SPECIFIC ARTICLE (cite what the article says), not general knowledge about the artist.
+- If no article contains a valid extractable entity, call extract_keywords with an empty array.
+- source_article_index MUST point to the exact article [number] where the keyword appears.
 
 Articles:
 ${articleTexts}
 
-Call extract_keywords with the specific named entities found, then call analyze_trend_intent.`;
+Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, then call analyze_trend_intent.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
