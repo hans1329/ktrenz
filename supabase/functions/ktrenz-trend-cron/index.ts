@@ -306,22 +306,9 @@ async function executeBatch(
       }
       console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
 
-      // Pipeline complete → settle expired prediction markets
+      // Pipeline complete → run end-of-pipeline jobs
       if (!nextPhase) {
-        try {
-          const settleResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ktrenz-trend-settle`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-            },
-            body: JSON.stringify({}),
-          });
-          const settleResult = await settleResp.json();
-          console.log(`[cron] Auto-settle result:`, settleResult);
-        } catch (e) {
-          console.error(`[cron] Auto-settle failed:`, e);
-        }
+        await runEndOfPipelineJobs(supabaseUrl, supabaseKey);
       }
     }
   } else {
