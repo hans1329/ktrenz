@@ -263,7 +263,7 @@ const B2BArtistDetail = () => {
       </div>
 
       {/* 우측: AI 인사이트 */}
-      <aside className="w-[340px] shrink-0 p-4 pl-0 sticky top-14 h-[calc(100vh-56px)]">
+      <aside className="w-[340px] shrink-0 p-6 pl-0 sticky top-14 h-[calc(100vh-56px)]">
         <div className="h-full overflow-hidden rounded-2xl border border-[hsl(220,15%,16%)] bg-[hsl(220,18%,9%)] shadow-[0_20px_60px_-24px_hsl(220_40%_2%_/_0.65)]">
           <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)] bg-[hsl(220,18%,10%)]">
             <div className="flex items-center gap-2">
