@@ -134,22 +134,9 @@ Deno.serve(async (req) => {
               .eq("id", ppState.id);
             console.log(`[cron] ${isSinglePhaseRun ? "Single-phase" : "Pipeline"} run=${ppState.run_id} completed`);
 
-            // Pipeline complete → settle expired prediction markets
+            // Pipeline complete → run end-of-pipeline jobs
             if (!isSinglePhaseRun) {
-              try {
-                const settleResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ktrenz-trend-settle`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-                  },
-                  body: JSON.stringify({}),
-                });
-                const settleResult = await settleResp.json();
-                console.log(`[cron] Auto-settle result:`, settleResult);
-              } catch (e) {
-                console.error(`[cron] Auto-settle failed:`, e);
-              }
+              await runEndOfPipelineJobs(supabaseUrl, supabaseKey);
             }
           }
 
@@ -319,22 +306,9 @@ async function executeBatch(
       }
       console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
 
-      // Pipeline complete → settle expired prediction markets
+      // Pipeline complete → run end-of-pipeline jobs
       if (!nextPhase) {
-        try {
-          const settleResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ktrenz-trend-settle`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-            },
-            body: JSON.stringify({}),
-          });
-          const settleResult = await settleResp.json();
-          console.log(`[cron] Auto-settle result:`, settleResult);
-        } catch (e) {
-          console.error(`[cron] Auto-settle failed:`, e);
-        }
+        await runEndOfPipelineJobs(supabaseUrl, supabaseKey);
       }
     }
   } else {
@@ -406,6 +380,37 @@ async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Pro
     clearTimeout(timeout);
     console.error(`[cron] Grade inline error: ${(e as Error).message}`);
     return { error: (e as Error).message };
+  }
+}
+
+// ── 파이프라인 완료 후 실행할 작업들 ──
+async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || supabaseKey;
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${anonKey}`,
+  };
+
+  // 1. Settle expired prediction markets
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-settle`, {
+      method: "POST", headers, body: JSON.stringify({}),
+    });
+    const result = await resp.json();
+    console.log(`[cron] Auto-settle result:`, result);
+  } catch (e) {
+    console.error(`[cron] Auto-settle failed:`, e);
+  }
+
+  // 2. Crawl blip.kr schedules
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/crawl-blip-schedule`, {
+      method: "POST", headers, body: JSON.stringify({}),
+    });
+    const result = await resp.json();
+    console.log(`[cron] Blip schedule crawl result:`, result);
+  } catch (e) {
+    console.error(`[cron] Blip crawl failed:`, e);
   }
 }
 
