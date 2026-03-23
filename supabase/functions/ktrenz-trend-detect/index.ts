@@ -350,8 +350,13 @@ const TOOL_EXTRACT_KEYWORDS = {
                 },
                 description: "List of reasons why this keyword SHOULD be rejected. Empty array [] if the keyword is valid. Be honest — flag ALL applicable issues."
               },
+              purchase_stage: {
+                type: "string",
+                enum: ["awareness", "interest", "consideration", "purchase", "review"],
+                description: "Consumer purchase funnel stage: awareness = first exposure via star, interest = active search/curiosity, consideration = comparing options/prices, purchase = buying intent/action, review = post-purchase reviews/unboxing"
+              },
             },
-            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason", "article_subject_name", "article_subject_match", "rejection_flags"],
+            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason", "article_subject_name", "article_subject_match", "rejection_flags", "purchase_stage"],
           },
           description: "Array of extracted keywords. Maximum 7. Include ALL candidates even if you think they should be rejected — use rejection_flags to mark issues.",
         },
