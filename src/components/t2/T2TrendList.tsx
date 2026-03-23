@@ -142,7 +142,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         .delete()
         .eq("trigger_id", item.id)
         .eq("user_id", user.id);
-      toast.info("Unfollowed");
+      toast.info(t("trend.trackUnfollowed"));
     } else {
       await supabase.from("ktrenz_keyword_follows" as any).insert({
         user_id: user.id,
