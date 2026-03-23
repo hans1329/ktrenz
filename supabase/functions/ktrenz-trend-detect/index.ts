@@ -1247,9 +1247,21 @@ async function detectForMember(
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
   console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
-  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, aiExtracted: 0, shopExtracted: shopKeywords.length };
+  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
 
-  if (!articles.length && !shopKeywords.length) {
+  // ─── TikTok 소셜 키워드 추출 (AI 분류) ───
+  let socialKeywords: ExtractedKeyword[] = [];
+  try {
+    socialKeywords = await extractSocialKeywordsFromTikTok(
+      openaiKey, sb, member.id, member.display_name, member.group_name
+    );
+    srcStats.socialExtracted = socialKeywords.length;
+    srcStats.tiktok = socialKeywords.length > 0 ? 1 : 0;
+  } catch (e) {
+    console.warn(`[trend-detect] TikTok social error for ${member.display_name}: ${(e as Error).message}`);
+  }
+
+  if (!articles.length && !shopKeywords.length && !socialKeywords.length) {
     return { keywordsFound: 0, articlesFound: 0, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
@@ -1263,8 +1275,8 @@ async function detectForMember(
 
   srcStats.aiExtracted = aiKeywords.length;
 
-  // Shop 키워드 + AI 키워드 병합 (중복 제거)
-  const mergedKeywords = mergeKeywords(aiKeywords, shopKeywords);
+  // Shop 키워드 + AI 키워드 + Social 키워드 병합 (중복 제거)
+  const mergedKeywords = mergeKeywords(mergeKeywords(aiKeywords, shopKeywords), socialKeywords);
 
   if (!mergedKeywords.length) {
     return { keywordsFound: 0, articlesFound: articles.length, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
