@@ -226,8 +226,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   // 스타 로그 기반 processed 보정 (DB에 기록된 실제 처리 수)
   const starLogCount = starLogs?.length ?? 0;
   
-  const total = isTrackPhase ? trackTotal : (totalCount ?? 0);
-  const rawProcessed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
+  // DB pipeline_state의 offset이 가장 정확한 진행 지표
+  const dbOffset = dbPipelineState?.current_offset ?? 0;
+  const dbTotal = dbPipelineState?.total_candidates ?? 0;
+  
+  const total = isTrackPhase ? trackTotal : (dbTotal > 0 ? dbTotal : (totalCount ?? 0));
+  const rawProcessed = isTrackPhase ? trackOffset : (dbOffset > 0 ? dbOffset : (phaseState?.processed ?? 0));
   const processed = isTrackPhase ? rawProcessed : Math.max(rawProcessed, starLogCount);
   const pending = phaseState?.pending ?? 0;
   const active = phaseState?.active ?? 0;
@@ -236,17 +240,8 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const bySource = phaseState?.bySource ?? {};
   const batchSize = dbPipelineState?.batch_size ?? 5;
 
-  // Track: offset 기반 정확한 진행률
-  const progress = isTrackPhase
-    ? (total > 0 ? Math.min((processed / total) * 100, 99) : 0)
-    : (() => {
-        const batchesDone = Math.ceil(processed / batchSize);
-        const totalBatches = Math.ceil(total / batchSize);
-        const batchTime = 30;
-        const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
-        const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
-        return totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
-      })();
+  // DB offset 기반 정확한 진행률 (detect/track 모두)
+  const progress = total > 0 ? Math.min((processed / total) * 100, 99) : 0;
 
   const totalBatches = isTrackPhase ? Math.ceil(total / batchSize) : Math.ceil(total / batchSize);
   const batchesDone = Math.ceil(processed / batchSize);
