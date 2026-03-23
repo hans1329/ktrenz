@@ -20,6 +20,7 @@ const B2BOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
