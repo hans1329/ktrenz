@@ -2523,6 +2523,161 @@ export type Database = {
           },
         ]
       }
+      ktrenz_b2b_ai_insights: {
+        Row: {
+          content: Json
+          expires_at: string
+          generated_at: string
+          id: string
+          insight_type: string
+          org_id: string
+          star_id: string | null
+          trigger_id: string | null
+        }
+        Insert: {
+          content?: Json
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          insight_type: string
+          org_id: string
+          star_id?: string | null
+          trigger_id?: string | null
+        }
+        Update: {
+          content?: Json
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          insight_type?: string
+          org_id?: string
+          star_id?: string | null
+          trigger_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_b2b_ai_insights_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_b2b_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_b2b_ai_insights_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_b2b_members: {
+        Row: {
+          created_at: string
+          id: string
+          job_title: string | null
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_title?: string | null
+          org_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_title?: string | null
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_b2b_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_b2b_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ktrenz_b2b_organizations: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          name: string
+          org_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name: string
+          org_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name?: string
+          org_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ktrenz_b2b_tracked_stars: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          relationship: string
+          star_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          relationship?: string
+          star_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          relationship?: string
+          star_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_b2b_tracked_stars_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_b2b_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_b2b_tracked_stars_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_category_trends: {
         Row: {
           avg_30d: number | null
