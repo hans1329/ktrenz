@@ -21,13 +21,12 @@ const B2BLogin = () => {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        toast({ title: 'Check your email', description: 'We sent a confirmation link.' });
+        toast({ title: '이메일을 확인해주세요', description: '인증 링크를 발송했습니다.' });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Admin users are treated as enterprise members automatically
           const { data: isAdmin } = await supabase.rpc('is_admin', { user_id: user.id });
           if (isAdmin) {
             navigate('/b2b');
@@ -46,7 +45,7 @@ const B2BLogin = () => {
         }
       }
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast({ title: '오류', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -54,7 +53,7 @@ const B2BLogin = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(220,20%,8%)] flex">
-      {/* Left branding */}
+      {/* 좌측 브랜딩 */}
       <div className="hidden lg:flex flex-1 items-center justify-center p-12 bg-gradient-to-br from-[hsl(220,20%,8%)] to-[hsl(250,30%,15%)]">
         <div className="max-w-md space-y-8">
           <div className="flex items-center gap-3">
@@ -65,15 +64,15 @@ const B2BLogin = () => {
             <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[hsl(270,80%,60%)] text-white">B2B</span>
           </div>
           <h1 className="text-4xl font-bold text-white leading-tight">
-            Star × Trend<br />Intelligence Platform
+            스타 × 트렌드<br />인텔리전스 플랫폼
           </h1>
           <p className="text-[hsl(220,10%,60%)] text-lg leading-relaxed">
-            Discover, verify, and interpret the commercial impact of K-Pop trends before the market does.
+            K-Pop 트렌드의 상업적 영향력을 시장보다 먼저 발견하고, 검증하고, 해석합니다.
           </p>
           <div className="grid grid-cols-2 gap-4 pt-4">
             {[
-              { icon: '🏢', label: 'Entertainment', desc: 'Manage & monetize your stars' },
-              { icon: '🏷️', label: 'Brand', desc: 'Find & leverage star power' },
+              { icon: '🏢', label: '엔터테인먼트', desc: '스타 관리 & 수익화' },
+              { icon: '🏷️', label: '브랜드', desc: '스타 파워 발굴 & 활용' },
             ].map(item => (
               <div key={item.label} className="p-4 rounded-xl border border-[hsl(220,15%,20%)] bg-[hsl(220,15%,12%)]">
                 <span className="text-2xl">{item.icon}</span>
@@ -85,7 +84,7 @@ const B2BLogin = () => {
         </div>
       </div>
 
-      {/* Right login form */}
+      {/* 우측 로그인 폼 */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="lg:hidden flex items-center gap-2 mb-8">
@@ -96,9 +95,9 @@ const B2BLogin = () => {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-white">{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
+            <h2 className="text-2xl font-bold text-white">{isSignUp ? '계정 만들기' : '다시 오신 것을 환영합니다'}</h2>
             <p className="text-[hsl(220,10%,50%)] mt-1">
-              {isSignUp ? 'Sign up with your company email' : 'Sign in to your workspace'}
+              {isSignUp ? '기업 이메일로 가입하세요' : '워크스페이스에 로그인하세요'}
             </p>
           </div>
 
@@ -119,7 +118,7 @@ const B2BLogin = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(220,10%,40%)]" />
                 <Input
                   type="password"
-                  placeholder="Password"
+                  placeholder="비밀번호"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="pl-10 bg-[hsl(220,15%,12%)] border-[hsl(220,15%,20%)] text-white placeholder:text-[hsl(220,10%,35%)] h-11"
@@ -133,7 +132,7 @@ const B2BLogin = () => {
               disabled={loading}
               className="w-full h-11 bg-gradient-to-r from-[hsl(270,80%,55%)] to-[hsl(200,80%,50%)] hover:opacity-90 text-white font-semibold"
             >
-              {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In'}
+              {loading ? '처리 중...' : isSignUp ? '계정 만들기' : '로그인'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </form>
@@ -143,7 +142,7 @@ const B2BLogin = () => {
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-sm text-[hsl(220,10%,50%)] hover:text-[hsl(270,80%,60%)] transition-colors"
             >
-              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+              {isSignUp ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입'}
             </button>
           </div>
         </div>

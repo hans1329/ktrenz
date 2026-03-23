@@ -25,7 +25,6 @@ const B2BOnboarding = () => {
     if (!user || !orgType) return;
     setLoading(true);
     try {
-      // Create org
       const { data: org, error: orgErr } = await (supabase as any)
         .from('ktrenz_b2b_organizations')
         .insert({ name: orgName, org_type: orgType, industry: orgType === 'brand' ? industry : null })
@@ -33,16 +32,15 @@ const B2BOnboarding = () => {
         .single();
       if (orgErr) throw orgErr;
 
-      // Create membership
       const { error: memErr } = await (supabase as any)
         .from('ktrenz_b2b_members')
         .insert({ user_id: user.id, org_id: org.id, role: 'owner', job_title: jobTitle || null });
       if (memErr) throw memErr;
 
-      toast({ title: 'Workspace created!', description: 'Setting up your dashboard...' });
+      toast({ title: '워크스페이스 생성 완료!', description: '대시보드를 설정하고 있습니다...' });
       navigate('/b2b');
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast({ title: '오류', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -52,21 +50,21 @@ const B2BOnboarding = () => {
     {
       type: 'entertainment',
       icon: <Building2 className="w-8 h-8" />,
-      title: 'Entertainment Company',
-      desc: 'I manage artists and need to track their trend performance, market value, and brand collaboration opportunities.',
+      title: '엔터테인먼트 기업',
+      desc: '아티스트를 관리하고 트렌드 성과, 시장 가치, 브랜드 협업 기회를 추적합니다.',
     },
     {
       type: 'brand',
       icon: <ShoppingBag className="w-8 h-8" />,
-      title: 'Brand / Agency',
-      desc: 'I want to leverage star power for marketing campaigns and benchmark against competitor campaigns.',
+      title: '브랜드 / 에이전시',
+      desc: '마케팅 캠페인에 스타 파워를 활용하고 경쟁사 캠페인을 벤치마킹합니다.',
     },
   ];
 
   return (
     <div className="min-h-screen bg-[hsl(220,20%,8%)] flex items-center justify-center p-6">
       <div className="w-full max-w-lg space-y-8">
-        {/* Progress */}
+        {/* 진행 표시 */}
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 'type' ? 'bg-[hsl(270,80%,55%)] text-white' : 'bg-[hsl(150,60%,40%)] text-white'}`}>
             {step === 'info' ? <Check className="w-4 h-4" /> : '1'}
@@ -82,8 +80,8 @@ const B2BOnboarding = () => {
         {step === 'type' ? (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-white">Choose Your Profile</h1>
-              <p className="text-[hsl(220,10%,50%)] mt-1">Select how you use star × trend intelligence</p>
+              <h1 className="text-2xl font-bold text-white">프로필 선택</h1>
+              <p className="text-[hsl(220,10%,50%)] mt-1">스타 × 트렌드 인텔리전스 활용 방식을 선택하세요</p>
             </div>
             <div className="space-y-4">
               {typeCards.map(card => (
@@ -111,53 +109,53 @@ const B2BOnboarding = () => {
         ) : (
           <form onSubmit={handleCreateOrg} className="space-y-6">
             <div>
-              <h1 className="text-2xl font-bold text-white">Set Up Workspace</h1>
+              <h1 className="text-2xl font-bold text-white">워크스페이스 설정</h1>
               <p className="text-[hsl(220,10%,50%)] mt-1">
-                {orgType === 'entertainment' ? 'Tell us about your entertainment company' : 'Tell us about your brand or agency'}
+                {orgType === 'entertainment' ? '엔터테인먼트 기업 정보를 입력해주세요' : '브랜드 또는 에이전시 정보를 입력해주세요'}
               </p>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-[hsl(220,10%,60%)] mb-1.5 block">Company Name</label>
+                <label className="text-sm text-[hsl(220,10%,60%)] mb-1.5 block">회사명</label>
                 <Input
                   value={orgName}
                   onChange={e => setOrgName(e.target.value)}
-                  placeholder={orgType === 'entertainment' ? 'e.g. SM Entertainment' : 'e.g. Samsung Electronics'}
+                  placeholder={orgType === 'entertainment' ? '예: SM엔터테인먼트' : '예: 삼성전자'}
                   className="bg-[hsl(220,15%,12%)] border-[hsl(220,15%,20%)] text-white h-11"
                   required
                 />
               </div>
               {orgType === 'brand' && (
                 <div>
-                  <label className="text-sm text-[hsl(220,10%,60%)] mb-1.5 block">Industry</label>
+                  <label className="text-sm text-[hsl(220,10%,60%)] mb-1.5 block">업종</label>
                   <Input
                     value={industry}
                     onChange={e => setIndustry(e.target.value)}
-                    placeholder="e.g. Fashion, F&B, Cosmetics"
+                    placeholder="예: 패션, 식음료, 화장품"
                     className="bg-[hsl(220,15%,12%)] border-[hsl(220,15%,20%)] text-white h-11"
                   />
                 </div>
               )}
               <div>
-                <label className="text-sm text-[hsl(220,10%,60%)] mb-1.5 block">Your Title</label>
+                <label className="text-sm text-[hsl(220,10%,60%)] mb-1.5 block">직함</label>
                 <Input
                   value={jobTitle}
                   onChange={e => setJobTitle(e.target.value)}
-                  placeholder="e.g. Marketing Director"
+                  placeholder="예: 마케팅 디렉터"
                   className="bg-[hsl(220,15%,12%)] border-[hsl(220,15%,20%)] text-white h-11"
                 />
               </div>
             </div>
             <div className="flex gap-3">
               <Button type="button" variant="ghost" onClick={() => setStep('type')} className="text-[hsl(220,10%,50%)]">
-                Back
+                이전
               </Button>
               <Button
                 type="submit"
                 disabled={loading || !orgName}
                 className="flex-1 h-11 bg-gradient-to-r from-[hsl(270,80%,55%)] to-[hsl(200,80%,50%)] hover:opacity-90 text-white font-semibold"
               >
-                {loading ? 'Creating...' : 'Create Workspace'}
+                {loading ? '생성 중...' : '워크스페이스 만들기'}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
