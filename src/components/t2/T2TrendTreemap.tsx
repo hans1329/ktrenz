@@ -182,15 +182,16 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     // Single-log to preserve natural variance between scores
     const logBase = Math.log1p(metric);
 
-    // Flattened rank-based multiplier (same for collecting and idle)
-    if (idx === 0) return logBase * 1.15;
-    if (idx === 1) return logBase * 1.1;
-    if (idx === 2) return logBase * 1.05;
-    if (idx < 6) return logBase * 0.95;
-    if (idx < 12) return logBase * 0.85;
-    if (idx < 25) return logBase * 0.75;
-    if (idx < 40) return logBase * 0.65;
-    return logBase * 0.55;
+    // Rank-based multiplier with steep decay for lower ranks
+    const rankMultiplier = idx === 0 ? 2.0
+      : idx === 1 ? 1.8
+      : idx === 2 ? 1.6
+      : idx < 6 ? 1.2
+      : idx < 12 ? 0.8
+      : idx < 25 ? 0.5
+      : idx < 40 ? 0.3
+      : 0.2;
+    return logBase * rankMultiplier;
   };
 
   const totalValue = items.reduce((s, item, idx) => s + tileSize(item, idx), 0);
