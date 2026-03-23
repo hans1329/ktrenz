@@ -1,17 +1,4 @@
 # Memory: features/t2/social-media-integration
 Updated: now
 
-## TikTok 수집 구현 완료
-- Edge Function: `collect-tiktok-trends` — RapidAPI `tiktok-api23`의 `/api/search/general` 엔드포인트 사용
-- 수집 데이터: 아티스트명 키워드 검색 → 영상별 조회수/좋아요/댓글/공유 + 상위 5개 콘텐츠 상세
-- 저장 테이블: `ktrenz_social_snapshots` (star_id, wiki_entry_id, platform, keyword, metrics, top_posts)
-- 점수 반영: `v3_scores_v2.social_score`에 TikTok activity score를 기존 팔로워 점수에 합산
-- 파이프라인 통합: `data-engine`의 PIPELINE 배열에 `tiktok` 스텝 추가 (social 바로 뒤)
-- API 키: `RAPIDAPI_KEY` (시크릿에 등록 완료)
-- Rate limit: 아티스트 간 500ms 딜레이
-
-## 인스타그램 (미구현)
-RapidAPI에서 해시태그 게시물 수를 안정적으로 제공하는 API를 찾지 못함. 향후 Apify 등 대안 서비스로 추가 예정.
-
-## UI
-트리맵에 Social 카테고리(파란색 버튼)가 이미 존재하며, socialScore/socialChange24h 데이터가 자동 반영됨.
+인스타그램 및 틱톡 데이터 수집은 RapidAPI를 활용함. 틱톡은 `tiktok-api23` 서비스로 `collect-tiktok-trends`에서 데이터를 수집한 뒤, `ktrenz-trend-detect` 파이프라인에서 AI 분류를 통해 소셜 트렌드 키워드를 추출하여 `keyword_category='social'`, `trigger_source='tiktok'`으로 저장함. AI는 TikTok 영상 설명에서 바이럴 챌린지, 트렌딩 해시태그, 댄스 트렌드, 팬 콘텐츠 트렌드를 식별하며, 제네릭 태그(#fyp, #kpop 등)는 필터링함. 소셜 키워드는 Naver buzz 조회를 건너뛰고 baseline_score=10으로 설정됨. 인스타그램은 적합한 해시태그 검색 API 추가 선정 중.
