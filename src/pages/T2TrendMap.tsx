@@ -131,24 +131,42 @@ const T2TrendMap = () => {
 
     if (shouldSwipe) {
       if (dx < 0 && idx < VIEW_ORDER.length - 1) {
-        // Animate out to left, then switch
+        // Slide out to left
         setIsAnimating(true);
         setDragOffsetX(-window.innerWidth);
         setTimeout(() => {
-          setViewMode(VIEW_ORDER[idx + 1]);
-          setDragOffsetX(0);
+          // Switch view, position new content off-screen right
           setIsAnimating(false);
-        }, 250);
+          setViewMode(VIEW_ORDER[idx + 1]);
+          setDragOffsetX(window.innerWidth);
+          // Next frame: slide in from right
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setIsAnimating(true);
+              setDragOffsetX(0);
+              setTimeout(() => setIsAnimating(false), 250);
+            });
+          });
+        }, 200);
         return;
       } else if (dx > 0 && idx > 0) {
-        // Animate out to right, then switch
+        // Slide out to right
         setIsAnimating(true);
         setDragOffsetX(window.innerWidth);
         setTimeout(() => {
-          setViewMode(VIEW_ORDER[idx - 1]);
-          setDragOffsetX(0);
+          // Switch view, position new content off-screen left
           setIsAnimating(false);
-        }, 250);
+          setViewMode(VIEW_ORDER[idx - 1]);
+          setDragOffsetX(-window.innerWidth);
+          // Next frame: slide in from left
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setIsAnimating(true);
+              setDragOffsetX(0);
+              setTimeout(() => setIsAnimating(false), 250);
+            });
+          });
+        }, 200);
         return;
       }
     }
