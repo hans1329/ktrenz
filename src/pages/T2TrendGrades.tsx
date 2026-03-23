@@ -216,7 +216,6 @@ const T2TrendGrades = () => {
                         src={kw.source_image_url}
                         alt={kw.keyword}
                         className="w-full h-full object-cover"
-                        triggerId={kw.id}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
