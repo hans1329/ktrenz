@@ -503,8 +503,8 @@ export default function V3MissionCards({
                   className={cn(
                     "relative flex flex-col gap-2 p-3 rounded-xl border text-left transition-all duration-200 w-full",
                     completed
-                      ? "bg-muted/30 border-border/60 opacity-60"
-                      : `border-border/40 hover:scale-[1.01] active:scale-[0.99]`,
+                      ? "bg-card border-border/50 opacity-60"
+                      : "bg-card border-border/50 hover:scale-[1.01] active:scale-[0.99] hover:border-border",
                     isCompleting && "animate-pulse"
                   )}
                 >
