@@ -81,7 +81,7 @@ interface T2TrendListProps {
 }
 
 const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, onLoadMore }: T2TrendListProps) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const track = useTrackEvent();
   const { user } = useAuth();
@@ -142,7 +142,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         .delete()
         .eq("trigger_id", item.id)
         .eq("user_id", user.id);
-      toast.info("Unfollowed");
+      toast.info(t("trend.trackUnfollowed"));
     } else {
       await supabase.from("ktrenz_keyword_follows" as any).insert({
         user_id: user.id,
@@ -154,7 +154,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         last_influence_index: item.influenceIndex || 0,
       } as any);
       track("t2_keyword_follow", { artist_name: item.artistName, section: item.keyword });
-      toast.success("Following");
+      toast.success(t("trend.trackFollowed"));
     }
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", item.id, user.id] });
@@ -234,7 +234,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   aria-label="Track keyword"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? "Tracking" : "Track"}</span>
+                  <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? t("trend.tracking") : t("trend.track")}</span>
                 </button>
               </div>
             </div>

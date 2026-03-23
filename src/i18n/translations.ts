@@ -552,6 +552,10 @@ const translations: Record<string, Record<Language, string>> = {
   "notif.title": { en: "Alerts", ko: "알림", ja: "通知", zh: "通知" },
   "notif.loginRequired": { en: "Sign in required", ko: "로그인이 필요합니다", ja: "ログインが必要です", zh: "需要登录" },
   "notif.loginDesc": { en: "Sign in to view your alerts", ko: "알림을 보려면 로그인해주세요", ja: "通知を見るにはログインしてください", zh: "登录查看您的通知" },
+  "trend.track": { en: "Track", ko: "추적", ja: "追跡", zh: "追踪" },
+  "trend.tracking": { en: "Tracking", ko: "추적 중", ja: "追跡中", zh: "追踪中" },
+  "trend.trackFollowed": { en: "Following", ko: "추적 시작", ja: "フォロー中", zh: "已关注" },
+  "trend.trackUnfollowed": { en: "Unfollowed", ko: "추적 해제", ja: "フォロー解除", zh: "已取消关注" },
 };
 
 export default translations;
