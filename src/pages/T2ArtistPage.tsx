@@ -71,19 +71,23 @@ const T2ArtistPage = () => {
       }
 
       // fallback: use first keyword's source_image_url
-      if (!imageUrl) {
-        const { data: kwData } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("source_image_url")
-          .eq("star_id", starId!)
-          .not("source_image_url", "is", null)
-          .limit(1);
-        if (kwData && kwData.length > 0) {
-          imageUrl = (kwData[0] as any).source_image_url;
-        }
+      let contentImageUrl: string | null = null;
+      const { data: kwData } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("source_image_url")
+        .eq("star_id", starId!)
+        .not("source_image_url", "is", null)
+        .order("detected_at", { ascending: false })
+        .limit(1);
+      if (kwData && kwData.length > 0) {
+        contentImageUrl = (kwData[0] as any).source_image_url;
       }
 
-      return { ...(data as any), imageUrl };
+      if (!imageUrl) {
+        imageUrl = contentImageUrl;
+      }
+
+      return { ...(data as any), imageUrl, contentImageUrl };
     },
     enabled: !!starId,
   });
