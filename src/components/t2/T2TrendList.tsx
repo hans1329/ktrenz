@@ -154,7 +154,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
         last_influence_index: item.influenceIndex || 0,
       } as any);
       track("t2_keyword_follow", { artist_name: item.artistName, section: item.keyword });
-      toast.success("Following");
+      toast.success(t("trend.trackFollowed"));
     }
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", item.id, user.id] });
