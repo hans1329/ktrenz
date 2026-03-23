@@ -340,24 +340,25 @@ const T2TrendMap = () => {
             headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
           )}
         >
-          {/* Carousel container: views side by side, each 100% viewport width */}
-          <div
-            className="flex"
-            style={{
-              transform: `translateX(calc(-${viewIndex * 100}vw + ${dragOffsetX}px))`,
-              transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-              willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
-            }}
-          >
+          {/* Carousel viewport: active panel sets height, adjacent panel slides in without inflating scroll */}
+          <div className="relative overflow-x-hidden">
             {VIEW_ORDER.map((mode, i) => {
               const isVisible = visibleViews.some(v => v.index === i);
-              const isAdjacentOrActive = Math.abs(i - viewIndex) <= 1;
-              // Only clamp far-away panels; adjacent ones must be fully visible for swipe
+              const isActive = i === viewIndex;
+              const offsetPercent = (i - viewIndex) * 100;
               const panelStyle: React.CSSProperties = {
-                width: '100vw',
-                flexShrink: 0,
-                ...(!isAdjacentOrActive ? { maxHeight: '1px', overflow: 'hidden' } : {}),
+                width: '100%',
+                position: isActive ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                transform: `translate3d(calc(${offsetPercent}% + ${dragOffsetX}px), 0, 0)`,
+                transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+                willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
+                visibility: isVisible ? 'visible' : 'hidden',
+                pointerEvents: isActive ? 'auto' : 'none',
+                zIndex: isActive ? 2 : 1,
               };
+
               return (
                 <div
                   key={mode}
@@ -374,7 +375,7 @@ const T2TrendMap = () => {
                         hideHeader
                         sortMode={sortMode}
                         onSortModeChange={setSortMode}
-                        onCategoryStatsChange={isAdjacentOrActive ? handleCategoryStatsChange : undefined}
+                        onCategoryStatsChange={isActive ? handleCategoryStatsChange : undefined}
                       />
                     ) : (
                       <div style={{ minHeight: '50vh' }} />
