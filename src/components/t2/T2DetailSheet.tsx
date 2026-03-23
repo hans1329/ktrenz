@@ -629,7 +629,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors"
-                  onClick={() => track("t2_read_original_click", { trigger_id: tile.id })}
+                  onClick={() => track("t2_external_link_click", { trigger_id: tile.id })}
                 >
                   {t("readOriginal", language)}
                   <ExternalLink className="h-3 w-3" />
