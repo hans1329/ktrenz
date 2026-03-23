@@ -176,10 +176,14 @@ const B2BArtistDetail = () => {
                   </p>
                 </div>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                  trend.trend_grade === 'Explosive' ? 'bg-[hsl(0,80%,50%,0.2)] text-[hsl(0,80%,65%)]' :
-                  trend.trend_grade === 'Commerce' ? 'bg-[hsl(270,80%,50%,0.2)] text-[hsl(270,80%,70%)]' :
-                  trend.trend_grade === 'Intent' ? 'bg-[hsl(45,80%,50%,0.2)] text-[hsl(45,80%,65%)]' :
-                  'bg-[hsl(220,15%,20%)] text-[hsl(220,10%,55%)]'
+                  (() => { const g = (trend.trend_grade || 'spark').toLowerCase(); return (
+                    g === 'explosive' ? 'bg-[hsl(0,80%,50%,0.2)] text-[hsl(0,80%,65%)]' :
+                    g === 'commerce' ? 'bg-[hsl(270,80%,50%,0.2)] text-[hsl(270,80%,70%)]' :
+                    g === 'intent' ? 'bg-[hsl(45,80%,50%,0.2)] text-[hsl(45,80%,65%)]' :
+                    g === 'spread' ? 'bg-[hsl(200,70%,50%,0.2)] text-[hsl(200,70%,65%)]' :
+                    g === 'react' ? 'bg-[hsl(150,60%,50%,0.2)] text-[hsl(150,60%,65%)]' :
+                    'bg-[hsl(220,15%,20%)] text-[hsl(220,10%,55%)]'
+                  )})()
                 }`}>
                   {trend.trend_grade || 'Spark'}
                 </span>
