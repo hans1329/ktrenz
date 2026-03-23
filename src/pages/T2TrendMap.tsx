@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,19 @@ const T2TrendMap = () => {
     if (viewIndex < VIEW_ORDER.length - 1) views.push({ mode: VIEW_ORDER[viewIndex + 1], index: viewIndex + 1 });
     return views;
   }, [viewIndex]);
+
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      const nextScrollY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+      setScrollY(nextScrollY);
+      setHeaderCollapsed(nextScrollY > HEADER_COLLAPSE_THRESHOLD);
+    };
+
+    handleWindowScroll();
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, []);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
     setCategoryStats(stats);
@@ -324,15 +337,10 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className="h-[100dvh] overflow-y-auto overscroll-contain overflow-x-hidden"
+        className="overflow-x-hidden overscroll-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        onScroll={(e) => {
-          const scrollTop = (e.target as HTMLElement).scrollTop;
-          setScrollY(scrollTop);
-          setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
-        }}
       >
         <div
           className={cn(
