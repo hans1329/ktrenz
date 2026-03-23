@@ -263,96 +263,99 @@ const B2BArtistDetail = () => {
       </div>
 
       {/* 우측: AI 인사이트 */}
-      <aside className="w-[340px] shrink-0 border-l border-[hsl(220,15%,15%)] bg-[hsl(220,18%,9%)] sticky top-14 h-[calc(100vh-56px)] overflow-y-auto">
-        <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)]">
-          <div className="flex items-center gap-2">
-            <Brain className="w-4 h-4 text-[hsl(270,80%,60%)]" />
-            <h3 className="text-sm font-bold text-white">AI 인사이트</h3>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">
-              {trends.length > 0 ? `${trends.length}건` : '대기'}
-            </span>
-          </div>
-        </div>
-
-        <div className="p-4 space-y-3">
-          {/* 요약 스탯 2×2 */}
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: '활성 트렌드', value: activeTrends.length, color: 'hsl(150,60%,55%)' },
-              { label: '평균 영향력', value: avgInfluence > 0 ? avgInfluence.toFixed(0) : '-', color: 'hsl(270,80%,65%)' },
-              { label: '상업 의도', value: commerceCount || '-', color: 'hsl(45,90%,55%)' },
-              { label: '전체 트렌드', value: trends.length, color: 'hsl(200,80%,55%)' },
-            ].map(s => (
-              <div key={s.label} className="rounded-lg p-2.5 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)]">
-                <p className="text-[10px] text-[hsl(220,10%,42%)] mb-0.5">{s.label}</p>
-                <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
+      <aside className="w-[340px] shrink-0 p-4 pl-0 sticky top-14 h-[calc(100vh-56px)]">
+        <div className="h-full overflow-hidden rounded-2xl border border-[hsl(220,15%,16%)] bg-[hsl(220,18%,9%)] shadow-[0_20px_60px_-24px_hsl(220_40%_2%_/_0.65)]">
+          <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)] bg-[hsl(220,18%,10%)]">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(270,80%,55%,0.16)] text-[hsl(270,80%,68%)]">
+                <Brain className="w-4 h-4" />
               </div>
-            ))}
-          </div>
-
-          {/* 종합 평가 */}
-          <div className="rounded-lg bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-[hsl(45,90%,55%)]" />
-              <span className="text-xs font-semibold text-white">종합 평가</span>
-            </div>
-            <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">
-              {activeTrends.length > 0
-                ? `${star.display_name} — ${activeTrends.length}개 활성 트렌드, 평균 영향력 ${avgInfluence.toFixed(0)}. ${avgInfluence > 60 ? '시장 관심이 높은 구간.' : '일반적인 노출 수준.'} 상업 의도 감지 ${commerceCount}건.`
-                : `${star.display_name}의 현재 활성 트렌드 없음. 수집 주기에 따라 자동 갱신됩니다.`}
-            </p>
-          </div>
-
-          {/* 등급 분포 */}
-          {trends.length > 0 && (
-            <div className="rounded-lg bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="w-3.5 h-3.5 text-[hsl(200,80%,55%)]" />
-                <span className="text-xs font-semibold text-white">등급 분포</span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-white">AI 인사이트</h3>
+                <p className="text-[10px] text-[hsl(220,10%,42%)]">B2B decision summary</p>
               </div>
-              {['explosive', 'commerce', 'intent', 'spread', 'react', 'spark'].map(grade => {
-                const count = trends.filter((t: any) => (t.trend_grade || 'spark').toLowerCase() === grade).length;
-                const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
-                if (count === 0) return null;
-                const colorMap: Record<string, string> = {
-                  explosive: 'hsl(0,80%,55%)', commerce: 'hsl(270,80%,60%)', intent: 'hsl(45,80%,55%)',
-                  spread: 'hsl(200,70%,55%)', react: 'hsl(150,60%,55%)', spark: 'hsl(220,10%,35%)',
-                };
-                const labelMap: Record<string, string> = {
-                  explosive: 'Explosive', commerce: 'Commerce', intent: 'Intent',
-                  spread: 'Spread', react: 'React', spark: 'Spark',
-                };
-                return (
-                  <div key={grade} className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-medium w-16" style={{ color: colorMap[grade] }}>{labelMap[grade]}</span>
-                    <div className="flex-1 h-2 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: colorMap[grade] }} />
-                    </div>
-                    <span className="text-[10px] text-[hsl(220,10%,50%)] w-6 text-right font-mono">{count}</span>
-                  </div>
-                );
-              })}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">
+                {trends.length > 0 ? `${trends.length}건` : '대기'}
+              </span>
             </div>
-          )}
+          </div>
 
-          {/* 빠른 액션 */}
-          <div className="pt-1">
-            <p className="text-[10px] text-[hsl(220,10%,30%)] font-medium uppercase tracking-wider mb-2">빠른 실행</p>
-            <div className="space-y-1.5">
+          <div className="h-[calc(100%-57px)] overflow-y-auto p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               {[
-                { label: 'Pre/Post 분석', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-                { label: '경쟁사 벤치마크', icon: <Eye className="w-3.5 h-3.5" /> },
-                { label: '캠페인 시뮬레이션', icon: <Zap className="w-3.5 h-3.5" /> },
-              ].map(action => (
-                <button
-                  key={action.label}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[hsl(220,15%,18%)] bg-[hsl(220,15%,12%)] text-xs text-[hsl(220,10%,55%)] hover:border-[hsl(270,80%,55%,0.3)] hover:text-white transition-colors"
-                >
-                  <span className="text-[hsl(270,80%,60%)]">{action.icon}</span>
-                  {action.label}
-                  <ChevronRight className="w-3 h-3 ml-auto opacity-30" />
-                </button>
+                { label: '활성 트렌드', value: activeTrends.length, color: 'hsl(150,60%,55%)' },
+                { label: '평균 영향력', value: avgInfluence > 0 ? avgInfluence.toFixed(0) : '-', color: 'hsl(270,80%,65%)' },
+                { label: '상업 의도', value: commerceCount || '-', color: 'hsl(45,90%,55%)' },
+                { label: '전체 트렌드', value: trends.length, color: 'hsl(200,80%,55%)' },
+              ].map(s => (
+                <div key={s.label} className="rounded-xl p-2.5 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)]">
+                  <p className="text-[10px] text-[hsl(220,10%,42%)] mb-0.5">{s.label}</p>
+                  <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
+                </div>
               ))}
+            </div>
+
+            <div className="rounded-xl bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-[hsl(45,90%,55%)]" />
+                <span className="text-xs font-semibold text-white">종합 평가</span>
+              </div>
+              <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">
+                {activeTrends.length > 0
+                  ? `${star.display_name} — ${activeTrends.length}개 활성 트렌드, 평균 영향력 ${avgInfluence.toFixed(0)}. ${avgInfluence > 60 ? '시장 관심이 높은 구간.' : '일반적인 노출 수준.'} 상업 의도 감지 ${commerceCount}건.`
+                  : `${star.display_name}의 현재 활성 트렌드 없음. 수집 주기에 따라 자동 갱신됩니다.`}
+              </p>
+            </div>
+
+            {trends.length > 0 && (
+              <div className="rounded-xl bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="w-3.5 h-3.5 text-[hsl(200,80%,55%)]" />
+                  <span className="text-xs font-semibold text-white">등급 분포</span>
+                </div>
+                {['explosive', 'commerce', 'intent', 'spread', 'react', 'spark'].map(grade => {
+                  const count = trends.filter((t: any) => (t.trend_grade || 'spark').toLowerCase() === grade).length;
+                  const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
+                  if (count === 0) return null;
+                  const colorMap: Record<string, string> = {
+                    explosive: 'hsl(0,80%,55%)', commerce: 'hsl(270,80%,60%)', intent: 'hsl(45,80%,55%)',
+                    spread: 'hsl(200,70%,55%)', react: 'hsl(150,60%,55%)', spark: 'hsl(220,10%,35%)',
+                  };
+                  const labelMap: Record<string, string> = {
+                    explosive: 'Explosive', commerce: 'Commerce', intent: 'Intent',
+                    spread: 'Spread', react: 'React', spark: 'Spark',
+                  };
+                  return (
+                    <div key={grade} className="flex items-center gap-2 mb-2 last:mb-0">
+                      <span className="text-[10px] font-medium w-16" style={{ color: colorMap[grade] }}>{labelMap[grade]}</span>
+                      <div className="flex-1 h-2 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: colorMap[grade] }} />
+                      </div>
+                      <span className="text-[10px] text-[hsl(220,10%,50%)] w-6 text-right font-mono">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="pt-1">
+              <p className="text-[10px] text-[hsl(220,10%,30%)] font-medium uppercase tracking-wider mb-2">빠른 실행</p>
+              <div className="space-y-1.5">
+                {[
+                  { label: 'Pre/Post 분석', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                  { label: '경쟁사 벤치마크', icon: <Eye className="w-3.5 h-3.5" /> },
+                  { label: '캠페인 시뮬레이션', icon: <Zap className="w-3.5 h-3.5" /> },
+                ].map(action => (
+                  <button
+                    key={action.label}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[hsl(220,15%,18%)] bg-[hsl(220,15%,12%)] text-xs text-[hsl(220,10%,55%)] hover:border-[hsl(270,80%,55%,0.3)] hover:text-white transition-colors"
+                  >
+                    <span className="text-[hsl(270,80%,60%)]">{action.icon}</span>
+                    {action.label}
+                    <ChevronRight className="w-3 h-3 ml-auto opacity-30" />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
