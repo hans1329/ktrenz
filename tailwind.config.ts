@@ -125,6 +125,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "shake": "shake 0.5s ease-in-out",
+        "wiggle": "wiggle 0.8s ease-in-out infinite",
         "flip-in": "flip-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
         "flip-out": "flip-out 0.3s ease-in both",
       },
