@@ -405,6 +405,51 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     toast.success(t("readBoosted", language));
   };
 
+  // Keyword follow/track
+  const { data: isFollowing, refetch: refetchFollow } = useQuery({
+    queryKey: ["t2-keyword-follow", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
+  const handleToggleFollow = async () => {
+    if (!tile || !user) {
+      toast.info(t("loginToBet", language));
+      return;
+    }
+    if (isFollowing) {
+      await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .delete()
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id);
+      toast.info(t("unfollowedToast", language));
+    } else {
+      await supabase.from("ktrenz_keyword_follows" as any).insert({
+        user_id: user.id,
+        trigger_id: tile.id,
+        keyword: tile.keyword,
+        keyword_ko: tile.keywordKo || null,
+        star_id: tile.starId || null,
+        artist_name: tile.artistName || null,
+        last_influence_index: tile.influenceIndex || 0,
+      } as any);
+      track("t2_keyword_follow", { artist_name: tile.artistName, section: tile.keyword });
+      toast.success(t("followedToast", language));
+    }
+    refetchFollow();
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", tile.id, user.id] });
+  };
+
   if (!tile) return null;
 
   return (
