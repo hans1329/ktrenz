@@ -304,15 +304,15 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center animate-wiggle">
             <PartyPopper className="w-10 h-10 text-primary" />
           </div>
-          <p className="text-xl font-bold text-white animate-wiggle" style={{ animationDelay: "0.15s" }}>
+          <p className="text-xl font-bold text-white">
             {t("mission.complete")}
           </p>
           <p className="text-sm text-white/60 text-center">
             {celebration.label}
           </p>
           <div className="flex items-center gap-4">
-            <span className="text-3xl font-black text-primary animate-wiggle" style={{ animationDelay: "0.3s" }}>+{celebration.points}P</span>
-            <span className="text-base font-semibold text-white/70 animate-wiggle" style={{ animationDelay: "0.45s" }}>+{celebration.exp} EXP</span>
+            <span className="text-3xl font-black text-primary">+{celebration.points}P</span>
+            <span className="text-base font-semibold text-white/70">+{celebration.exp} EXP</span>
           </div>
         </div>
       </div>,
