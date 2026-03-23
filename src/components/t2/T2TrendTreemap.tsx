@@ -177,7 +177,7 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
 
   const tileSize = (item: TrendTile, idx: number) => {
     const metric = sortMode === "volume"
-      ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
+      ? Math.max((item.prevApiTotal ?? item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
       : Math.max(item.influenceIndex, 1);
     // Double-log to flatten extreme outliers, then cap
     const logBase = Math.min(Math.log1p(Math.log1p(metric)), 4);
