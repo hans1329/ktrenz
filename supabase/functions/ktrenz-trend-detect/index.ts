@@ -813,9 +813,150 @@ function mergeKeywords(
   return merged;
 }
 
+// ─── TikTok 소셜 키워드 추출 (AI 분류) ───
+async function extractSocialKeywordsFromTikTok(
+  openaiKey: string,
+  sb: any,
+  starId: string | null,
+  memberName: string,
+  groupName: string | null,
+): Promise<ExtractedKeyword[]> {
+  if (!starId) return [];
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
+  // 최근 24시간 내 TikTok 스냅샷 조회
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data: snapshots } = await sb
+    .from("ktrenz_social_snapshots")
+    .select("top_posts, metrics")
+    .eq("star_id", starId)
+    .eq("platform", "tiktok")
+    .gte("collected_at", cutoff)
+    .order("collected_at", { ascending: false })
+    .limit(1);
+
+  if (!snapshots?.length) return [];
+
+  const topPosts = (snapshots[0].top_posts || []) as any[];
+  if (!topPosts.length) return [];
+
+  // TikTok 영상 설명을 기사-like 포맷으로 변환
+  const tiktokArticles = topPosts
+    .filter((p: any) => p.desc && p.desc.trim().length > 5)
+    .map((p: any, i: number) => ({
+      title: `[TikTok] ${p.desc.slice(0, 200)}`,
+      description: `Views: ${(p.views || 0).toLocaleString()}, Likes: ${(p.likes || 0).toLocaleString()}, Author: @${p.author || "unknown"}${p.verified ? " ✓" : ""}`,
+      url: `https://www.tiktok.com/@${p.author}/video/${p.id}`,
+    }));
+
+  if (!tiktokArticles.length) return [];
+
+  const articleTexts = tiktokArticles
+    .map((a: any, i: number) => `[${i + 1}] ${a.title} - ${a.description}`)
+    .join("\n");
+
+  const systemPrompt = `You are a K-Pop social media trend analyst specializing in TikTok viral content.
+Analyze the TikTok video descriptions below to extract SOCIAL TREND keywords related to the artist.
+
+WHAT TO EXTRACT:
+- Viral challenge names (e.g., "Supernova Challenge", "Drama Dance Challenge")
+- Trending hashtag topics (not generic tags like #kpop #fyp, but specific ones like #AESPASupernova)
+- Specific dance/choreo trends (e.g., "Magnetic dance", "HEYA challenge")
+- Fan-created content trends (e.g., "fancam edit", specific meme names)
+- Collaboration or crossover content topics
+
+WHAT NOT TO EXTRACT:
+- Generic hashtags (#fyp, #kpop, #foryou, #viral, #dance)
+- The artist name itself
+- Platform names (TikTok, YouTube, Instagram)
+- Generic terms (dance, music, cover, reaction)
+
+Set category to "social" for ALL extracted keywords.
+Maximum 5 keywords. Quality over quantity. Return EMPTY array if nothing meaningful found.`;
+
+  const userPrompt = `TikTok videos related to "${memberName}"${groupName ? ` (${groupName})` : ""}:
+
+${articleTexts}
+
+Extract specific viral/trending social keywords from these TikTok descriptions. Call extract_keywords.`;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [TOOL_EXTRACT_KEYWORDS],
+        tool_choice: { type: "function", function: { name: "extract_keywords" } },
+        temperature: 0.05,
+        max_tokens: 1500,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[trend-detect] TikTok AI error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const toolCalls = data.choices?.[0]?.message?.tool_calls || [];
+    const results: ExtractedKeyword[] = [];
+
+    for (const tc of toolCalls) {
+      try {
+        const args = JSON.parse(tc.function.arguments);
+        const rawKws = args.keywords || [];
+        for (const k of rawKws) {
+          // 기본 검증만 수행 (소셜 키워드는 기사 텍스트 기반 검증 불필요)
+          if (!k.keyword || k.keyword.length < 2) continue;
+          const kwLower = k.keyword.toLowerCase();
+          if (PLATFORM_BLACKLIST.has(kwLower)) continue;
+          if (kwLower === memberName.toLowerCase() || kwLower === (groupName || "").toLowerCase()) continue;
+
+          // 제네릭 해시태그 필터
+          const genericTags = new Set(["fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction", "fancam", "edit", "trend", "trending"]);
+          if (genericTags.has(kwLower.replace(/^#/, ""))) continue;
+
+          results.push({
+            keyword: k.keyword,
+            keyword_en: k.keyword_en || k.keyword,
+            keyword_ko: k.keyword_ko || null,
+            keyword_ja: k.keyword_ja || null,
+            keyword_zh: k.keyword_zh || null,
+            category: "social",
+            confidence: k.confidence || 0.7,
+            context: k.context || `TikTok trend for ${memberName}`,
+            context_ko: k.context_ko || `${memberName} 관련 TikTok 트렌드`,
+            context_ja: k.context_ja || null,
+            context_zh: k.context_zh || null,
+            source_article_index: k.source_article_index,
+            commercial_intent: k.commercial_intent || "organic",
+            brand_intent: k.brand_intent || "awareness",
+            fan_sentiment: k.fan_sentiment || "positive",
+            trend_potential: k.trend_potential || 0.6,
+            purchase_stage: k.purchase_stage || "awareness",
+          });
+        }
+      } catch (parseErr) {
+        console.warn(`[trend-detect] TikTok tool parse error: ${(parseErr as Error).message}`);
+      }
+    }
+
+    console.log(`[trend-detect] TikTok social: ${results.length} keywords for ${memberName}`);
+    return results;
+  } catch (e) {
+    console.warn(`[trend-detect] TikTok extraction error: ${(e as Error).message}`);
+    return [];
+  }
+}
+
+
     return new Response(null, { headers: corsHeaders });
   }
 
