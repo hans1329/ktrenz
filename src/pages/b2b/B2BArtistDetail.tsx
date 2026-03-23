@@ -357,6 +357,7 @@ const B2BArtistDetail = () => {
           </div>
         </div>
       </aside>
+    </div>
   );
 };
 
