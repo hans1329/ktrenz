@@ -1,9 +1,13 @@
 import { useMemo, useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
+import { TrendingUp, Clock, Star, ExternalLink, MessageCircle, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
 import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
 
@@ -80,6 +84,8 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   const { language } = useLanguage();
   const navigate = useNavigate();
   const track = useTrackEvent();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const prevItemIdsRef = useRef<string[]>([]);
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
@@ -109,6 +115,50 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasMore, onLoadMore]);
+
+  // Fetch all followed trigger IDs for this user
+  const { data: followedIds } = useQuery({
+    queryKey: ["t2-keyword-follows-list", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return new Set<string>();
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("trigger_id")
+        .eq("user_id", user.id);
+      return new Set((data ?? []).map((d: any) => d.trigger_id as string));
+    },
+    enabled: !!user?.id,
+  });
+
+  const handleToggleFollow = async (item: TrendTile) => {
+    if (!user) {
+      toast.info("Login required");
+      return;
+    }
+    const isFollowing = followedIds?.has(item.id);
+    if (isFollowing) {
+      await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .delete()
+        .eq("trigger_id", item.id)
+        .eq("user_id", user.id);
+      toast.info("Unfollowed");
+    } else {
+      await supabase.from("ktrenz_keyword_follows" as any).insert({
+        user_id: user.id,
+        trigger_id: item.id,
+        keyword: item.keyword,
+        keyword_ko: item.keywordKo || null,
+        star_id: item.starId || null,
+        artist_name: item.artistName || null,
+        last_influence_index: item.influenceIndex || 0,
+      } as any);
+      track("t2_keyword_follow", { artist_name: item.artistName, section: item.keyword });
+      toast.success("Following");
+    }
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", item.id, user.id] });
+  };
 
   return (
     <div className="max-w-lg lg:max-w-2xl mx-auto space-y-5 lg:space-y-6">
@@ -160,6 +210,19 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                       <Clock className="w-2.5 h-2.5" />
                       {formatAge(item.detectedAt)}
                     </span>
+                    <span className="flex-1" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleFollow(item); }}
+                      className={cn(
+                        "p-1 rounded-full transition-colors shrink-0",
+                        followedIds?.has(item.id)
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      )}
+                      aria-label="Track keyword"
+                    >
+                      <Crosshair className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-1.5 pt-0.5">
