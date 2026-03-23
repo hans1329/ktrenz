@@ -123,6 +123,7 @@ const App = () => (
             <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
             <Route path="/b2b" element={<B2BLayout />}>
               <Route index element={<B2BDashboard />} />
+              <Route path="artist/:id" element={<B2BArtistDetail />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
