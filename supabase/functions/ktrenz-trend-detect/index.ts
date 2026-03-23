@@ -981,11 +981,24 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
         const args = JSON.parse(tc.function.arguments);
         const rawKws = args.keywords || [];
         for (const k of rawKws) {
-          // 기본 검증만 수행 (소셜 키워드는 기사 텍스트 기반 검증 불필요)
+          // 강화된 아티스트/팬덤명 필터
           if (!k.keyword || k.keyword.length < 2) continue;
-          const kwLower = k.keyword.toLowerCase();
+          const kwLower = k.keyword.toLowerCase().replace(/^#/, "");
+          const kwNorm = kwLower.replace(/[^a-z0-9가-힣]/g, "");
           if (PLATFORM_BLACKLIST.has(kwLower)) continue;
-          if (kwLower === memberName.toLowerCase() || kwLower === (groupName || "").toLowerCase()) continue;
+
+          // 정확 일치 또는 부분 일치 필터: 키워드가 아티스트/팬덤명이거나 포함하면 차단
+          let isArtistRelated = false;
+          for (const alias of artistAliases) {
+            if (kwNorm === alias || kwNorm.includes(alias) || alias.includes(kwNorm)) {
+              isArtistRelated = true;
+              break;
+            }
+          }
+          if (isArtistRelated) {
+            console.log(`[trend-detect] TikTok filter: rejected "${k.keyword}" (artist/fandom match)`);
+            continue;
+          }
 
           // 제네릭 해시태그 필터
           const genericTags = new Set(["fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction", "fancam", "edit", "trend", "trending"]);
