@@ -759,7 +759,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         <>
           <div
             className="relative w-full rounded-none md:rounded-2xl overflow-hidden"
-            style={{ aspectRatio: `${containerWidth} / ${containerHeight}` }}
+            style={{ aspectRatio: `${containerWidth} / ${containerHeight}`, touchAction: "pan-y pinch-zoom" }}
           >
             <div
               className="absolute inset-0 pointer-events-none z-[5]"
