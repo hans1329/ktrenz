@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Building2, ShoppingBag, ArrowRight, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 type OrgType = 'entertainment' | 'brand';
 
