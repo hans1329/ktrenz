@@ -414,7 +414,7 @@ async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
   }
 }
 
-
+function getNextPhase(currentPhase: string): string | null {
   const idx = PHASE_ORDER.indexOf(currentPhase as any);
   return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
 }
