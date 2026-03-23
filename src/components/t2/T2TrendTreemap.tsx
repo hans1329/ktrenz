@@ -848,28 +848,29 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         {formatAge(rect.item.detectedAt)}
                       </span>
                     )}
-                    <div className="relative z-10 flex flex-col items-center w-full px-2" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
-                      <div
-                        className="absolute inset-x-0 rounded-md"
-                        style={{
-                          top: '-4px',
-                          bottom: '-4px',
-                          background: tileColor.replace('0.85', '0.7'),
-                          backdropFilter: 'blur(4px)',
-                        }}
-                      />
-                      <span
-                        className="relative font-black text-white truncate w-full text-center leading-tight"
-                        style={{ fontSize: `${keywordSize}px` }}
-                      >
-                        {getLocalizedKeyword(rect.item, language)}
-                      </span>
-                      <span
-                        className="relative font-bold text-white truncate w-full text-center"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px` }}
-                      >
-                        {getLocalizedArtistName(rect.item, language)}
-                      </span>
+                    <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                      <div className="relative inline-flex flex-col items-center px-3 py-2" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
+                        <div
+                          className="absolute inset-0 rounded-lg"
+                          style={{
+                            background: tileColor.replace('0.85', '0.7'),
+                            backdropFilter: 'blur(4px)',
+                            margin: '-6px -8px',
+                          }}
+                        />
+                        <span
+                          className="relative font-black text-white truncate max-w-full text-center leading-tight"
+                          style={{ fontSize: `${keywordSize}px` }}
+                        >
+                          {getLocalizedKeyword(rect.item, language)}
+                        </span>
+                        <span
+                          className="relative font-bold text-white truncate max-w-full text-center"
+                          style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px` }}
+                        >
+                          {getLocalizedArtistName(rect.item, language)}
+                        </span>
+                      </div>
                     </div>
                     {isMedium && (
                       <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
