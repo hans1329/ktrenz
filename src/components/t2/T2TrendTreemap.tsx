@@ -179,8 +179,8 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     const metric = sortMode === "volume"
       ? Math.max((item.prevApiTotal ?? item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
       : Math.max(item.influenceIndex, 1);
-    // Double-log to flatten extreme outliers, then cap
-    const logBase = Math.min(Math.log1p(Math.log1p(metric)), 4);
+    // Single-log to preserve natural variance between scores
+    const logBase = Math.log1p(metric);
 
     // Flattened rank-based multiplier (same for collecting and idle)
     if (idx === 0) return logBase * 1.55;
