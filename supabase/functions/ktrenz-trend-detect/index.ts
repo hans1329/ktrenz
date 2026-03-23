@@ -1194,6 +1194,7 @@ async function detectForMember(
         brand_intent: keywordData.brand_intent || null,
         fan_sentiment: keywordData.fan_sentiment || null,
         trend_potential: keywordData.trend_potential ?? null,
+        purchase_stage: keywordData.purchase_stage || null,
         baseline_score: buzz.newsTotal + buzz.blogTotal,
         status: "pending",
         metadata: {
