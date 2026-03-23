@@ -82,6 +82,14 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
   const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
   const todayStart = `${today}T00:00:00.000Z`;
+  const [celebration, setCelebration] = useState<{ label: string; points: number; exp: number } | null>(null);
+
+  // Auto-close celebration after 3s
+  useEffect(() => {
+    if (!celebration) return;
+    const timer = setTimeout(() => setCelebration(null), 3000);
+    return () => clearTimeout(timer);
+  }, [celebration]);
 
   const { data: eventCounts = {} } = useQuery({
     queryKey: ["profile-mission-events", user?.id, today],
