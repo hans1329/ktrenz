@@ -233,12 +233,12 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
               key={mission.key}
               onClick={() => handleMission(mission)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left group",
+                "w-full flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left group",
                 claimed
-                  ? "bg-muted/50 opacity-60"
+                  ? "bg-card border-border/50 opacity-60"
                   : readyToClaim
-                  ? "bg-primary/10 ring-1 ring-primary/30"
-                  : "hover:bg-primary/5 active:scale-[0.98]"
+                  ? "bg-card border-primary/30 hover:border-primary/50"
+                  : "bg-card border-border/50 hover:border-border active:scale-[0.98]"
               )}
             >
               <div
