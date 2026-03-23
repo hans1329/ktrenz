@@ -461,7 +461,7 @@ const UserDashboard = () => {
                           {an && <span>{an}</span>}
                           {outcomeBreakdown.map(({ outcome, amount }) => {
                             const oc = OUTCOME_CONFIG[outcome];
-                            return <span key={outcome} className={cn("font-bold", `text-${oc?.color}-400`)}>{oc?.emoji} {language === "ko" ? oc?.labelKo : oc?.label} {amount.toLocaleString()}T</span>;
+                            return <span key={outcome} className="font-bold text-foreground/70">{oc?.emoji} {language === "ko" ? oc?.labelKo : oc?.label} {amount.toLocaleString()}T</span>;
                           })}
                           {daysLeft !== null && !isSettled && <span>⏳ {daysLeft}{language === "ko" ? "일" : "d"}</span>}
                         </div>
