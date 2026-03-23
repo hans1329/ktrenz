@@ -150,7 +150,7 @@ const B2BDashboard = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[hsl(220,10%,45%)]">활성 트렌드</span>
                     <span className="text-white font-bold">
-                      {activeTrends.filter((t: any) => t.star?.name_en === ts.star?.name_en).length}
+                      {activeTrends.filter((t: any) => t.artist_name === ts.star?.display_name).length}
                     </span>
                   </div>
                 </div>
