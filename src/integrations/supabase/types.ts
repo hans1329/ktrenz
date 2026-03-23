@@ -3262,6 +3262,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_keyword_follows: {
+        Row: {
+          artist_name: string | null
+          created_at: string
+          id: string
+          keyword: string
+          keyword_ko: string | null
+          last_influence_index: number | null
+          star_id: string | null
+          trigger_id: string
+          user_id: string
+        }
+        Insert: {
+          artist_name?: string | null
+          created_at?: string
+          id?: string
+          keyword: string
+          keyword_ko?: string | null
+          last_influence_index?: number | null
+          star_id?: string | null
+          trigger_id: string
+          user_id: string
+        }
+        Update: {
+          artist_name?: string | null
+          created_at?: string
+          id?: string
+          keyword?: string
+          keyword_ko?: string | null
+          last_influence_index?: number | null
+          star_id?: string | null
+          trigger_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_keyword_votes: {
         Row: {
           created_at: string
