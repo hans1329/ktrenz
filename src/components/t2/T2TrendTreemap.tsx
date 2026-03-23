@@ -196,7 +196,23 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
 
   const totalValue = items.reduce((s, item, idx) => s + tileSize(item, idx), 0);
   const totalArea = w * h;
-  const areas = items.map((item, idx) => (tileSize(item, idx) / totalValue) * totalArea);
+  const maxAreaPerTile = totalArea * 0.08; // Cap: no single tile exceeds 8% of total area
+  const rawAreas = items.map((item, idx) => (tileSize(item, idx) / totalValue) * totalArea);
+  // Clamp and redistribute excess
+  let excess = 0;
+  let uncappedCount = 0;
+  const capped = rawAreas.map(a => {
+    if (a > maxAreaPerTile) { excess += a - maxAreaPerTile; return maxAreaPerTile; }
+    uncappedCount++;
+    return a;
+  });
+  let areas: number[];
+  if (excess > 0 && uncappedCount > 0) {
+    const uncappedTotal = capped.reduce((s, a) => a < maxAreaPerTile ? s + a : s, 0);
+    areas = capped.map(a => a < maxAreaPerTile ? a + (a / uncappedTotal) * excess : a);
+  } else {
+    areas = capped;
+  }
   const rects: Rect[] = [];
   let cx = x, cy = y, cw = w, ch = h, idx = 0;
 
