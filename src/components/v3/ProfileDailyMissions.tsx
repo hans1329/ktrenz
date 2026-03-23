@@ -156,10 +156,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
       });
       queryClient.invalidateQueries({ queryKey: ["profile-mission-claimed", user.id, today] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points", user.id] });
-      toast.success(`+${mission.points}P · +${mission.exp} EXP`, {
-        description: `${t(mission.labelKey)} ${t("profileMission.completed")}`,
-        duration: 2500,
-      });
+      setCelebration({ label: t(mission.labelKey), points: mission.points, exp: mission.exp });
     } catch (e) {
       console.error("Claim mission error:", e);
     }
