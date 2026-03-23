@@ -151,7 +151,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               className="basis-1/2 min-w-0 rounded-xl overflow-hidden transition-all text-left group"
             >
               {/* Top */}
-              <div className="relative px-3 py-2.5" style={{ background: g.top }}>
+              <div className="relative px-3 py-1.5" style={{ background: g.top }}>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: g.accent }}>
                     <span className="text-foreground">{tierIcon}</span>
