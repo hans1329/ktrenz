@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
+import ProfileDailyMissions from "@/components/v3/ProfileDailyMissions";
 import {
   Drawer,
   DrawerContent,
