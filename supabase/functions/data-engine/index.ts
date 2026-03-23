@@ -417,6 +417,16 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     fireAndForget(p);
     return Promise.resolve({ status: "launched", module: "social" });
   },
+  tiktok: (url, key) => {
+    console.log("[data-engine] Launching TikTok trends (fire-and-forget)...");
+    const p = fetch(`${url}/functions/v1/collect-tiktok-trends`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    }).catch((e) => console.warn("[data-engine] tiktok fire error:", e.message));
+    fireAndForget(p);
+    return Promise.resolve({ status: "launched", module: "tiktok" });
+  },
   buzz: runBuzz,
   energy: (url, key) => runEnergy(url, key, false),
   detect_geo_changes: async (url, key) => {
