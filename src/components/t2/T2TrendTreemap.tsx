@@ -133,9 +133,9 @@ function normalizeTrendKey(value: string | null | undefined): string {
 
 function compareTrendPriority(a: TrendTile, b: TrendTile, sortMode: SortMode = "rate"): number {
   if (sortMode === "volume") {
-    // 일일 증가량 기준: peakScore - baselineScore as proxy (or prevApiTotal diff)
-    const aVolume = (a.peakScore ?? 0) - (a.baselineScore ?? 0);
-    const bVolume = (b.peakScore ?? 0) - (b.baselineScore ?? 0);
+    // Hot: baseline 대비 최근 수집값(prevApiTotal) 절대 증가량
+    const aVolume = (a.prevApiTotal ?? a.peakScore ?? 0) - (a.baselineScore ?? 0);
+    const bVolume = (b.prevApiTotal ?? b.peakScore ?? 0) - (b.baselineScore ?? 0);
     if (bVolume !== aVolume) return bVolume - aVolume;
     if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
     return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
@@ -177,7 +177,7 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
 
   const tileSize = (item: TrendTile, idx: number) => {
     const metric = sortMode === "volume"
-      ? Math.max((item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
+      ? Math.max((item.prevApiTotal ?? item.peakScore ?? 0) - (item.baselineScore ?? 0), 1)
       : Math.max(item.influenceIndex, 1);
     // Double-log to flatten extreme outliers, then cap
     const logBase = Math.min(Math.log1p(Math.log1p(metric)), 4);
@@ -833,11 +833,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       </span>
                     )}
                     {isMedium && sortMode === "volume" && (() => {
-                      const peak = rect.item.peakScore ?? 0;
+                      const current = rect.item.prevApiTotal ?? rect.item.peakScore ?? 0;
                       const base = rect.item.baselineScore ?? 0;
-                      // 피크가 0이면 아직 2차 수집 전이므로 표시하지 않음
-                      if (peak === 0 || base === 0) return null;
-                      const diff = peak - base;
+                      if (current === 0 || base === 0) return null;
+                      const diff = current - base;
                       if (diff === 0) return null;
                       return (
                         <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
