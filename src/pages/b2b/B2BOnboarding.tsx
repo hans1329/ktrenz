@@ -25,16 +25,16 @@ const B2BOnboarding = () => {
     if (!user || !orgType) return;
     setLoading(true);
     try {
-      const { data: org, error: orgErr } = await (supabase as any)
+      // Generate org id client-side to avoid SELECT RLS issue after INSERT
+      const orgId = crypto.randomUUID();
+      const { error: orgErr } = await (supabase as any)
         .from('ktrenz_b2b_organizations')
-        .insert({ name: orgName, org_type: orgType, industry: orgType === 'brand' ? industry : null })
-        .select('id')
-        .single();
+        .insert({ id: orgId, name: orgName, org_type: orgType, industry: orgType === 'brand' ? industry : null });
       if (orgErr) throw orgErr;
 
       const { error: memErr } = await (supabase as any)
         .from('ktrenz_b2b_members')
-        .insert({ user_id: user.id, org_id: org.id, role: 'owner', job_title: jobTitle || null });
+        .insert({ user_id: user.id, org_id: orgId, role: 'owner', job_title: jobTitle || null });
       if (memErr) throw memErr;
 
       toast({ title: '워크스페이스 생성 완료!', description: '대시보드를 설정하고 있습니다...' });
