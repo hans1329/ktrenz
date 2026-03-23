@@ -348,52 +348,61 @@ const T2TrendMap = () => {
             headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
           )}
         >
-          {/* Carousel viewport: active panel sets height, adjacent panel slides in without inflating scroll */}
-          <div className="relative overflow-x-hidden overflow-y-visible">
-            {VIEW_ORDER.map((mode, i) => {
-              const isVisible = visibleViews.some(v => v.index === i);
-              const isActive = i === viewIndex;
-              const offsetPercent = (i - viewIndex) * 100;
-              const panelStyle: React.CSSProperties = {
-                width: '100%',
-                position: isActive ? 'relative' : 'absolute',
-                top: 0,
-                left: 0,
-                height: isActive ? 'auto' : '100%',
-                transform: `translate3d(calc(${offsetPercent}% + ${dragOffsetX}px), 0, 0)`,
-                transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-                willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
-                visibility: isVisible ? 'visible' : 'hidden',
-                overflow: isActive ? 'visible' : 'hidden',
-                pointerEvents: isActive ? 'auto' : 'none',
-                zIndex: isActive ? 2 : 1,
-              };
+          <div className="relative">
+            <div className="md:max-w-[90%] mx-auto relative z-10">
+              <div
+                style={{
+                  transform: `translate3d(${dragOffsetX}px, 0, 0)`,
+                  transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+                  willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
+                }}
+              >
+                <T2TrendTreemap
+                  viewMode={viewMode}
+                  onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                  selectedCategory={category}
+                  onCategoryChange={setCategory}
+                  hideCategory
+                  hideHeader
+                  sortMode={sortMode}
+                  onSortModeChange={setSortMode}
+                  onCategoryStatsChange={handleCategoryStatsChange}
+                />
+              </div>
+            </div>
 
-              return (
-                <div
-                  key={mode}
-                  style={panelStyle}
-                >
-                  <div className="md:max-w-[90%] mx-auto">
-                    {isVisible ? (
-                      <T2TrendTreemap
-                        viewMode={mode}
-                        onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
-                        selectedCategory={category}
-                        onCategoryChange={setCategory}
-                        hideCategory
-                        hideHeader
-                        sortMode={sortMode}
-                        onSortModeChange={setSortMode}
-                        onCategoryStatsChange={isActive ? handleCategoryStatsChange : undefined}
-                      />
-                    ) : (
-                      <div style={{ minHeight: '50vh' }} />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+              {visibleViews
+                .filter(({ index }) => index !== viewIndex)
+                .map(({ mode, index }) => {
+                  const offsetPercent = (index - viewIndex) * 100;
+
+                  return (
+                    <div
+                      key={mode}
+                      className="absolute inset-x-0 top-0"
+                      style={{
+                        transform: `translate3d(calc(${offsetPercent}% + ${dragOffsetX}px), 0, 0)`,
+                        transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+                        willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
+                      }}
+                    >
+                      <div className="md:max-w-[90%] mx-auto">
+                        <T2TrendTreemap
+                          viewMode={mode}
+                          onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                          selectedCategory={category}
+                          onCategoryChange={setCategory}
+                          hideCategory
+                          hideHeader
+                          sortMode={sortMode}
+                          onSortModeChange={setSortMode}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         </div>
       </div>
