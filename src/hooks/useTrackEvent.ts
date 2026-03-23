@@ -17,7 +17,8 @@ export type TrackEventType =
   | "t2_keyword_detail_view"
   | "t2_external_link_click"
   | "t2_detail_open"
-  | "t2_share";
+  | "t2_share"
+  | "trend_bet_placed";
 
 interface EventData {
   artist_slug?: string;
