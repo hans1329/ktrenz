@@ -166,7 +166,7 @@ const T2TrendMap = () => {
               setTimeout(() => setIsAnimating(false), 250);
             });
           });
-        }, 200);
+        }, 100);
         return;
       }
     }
