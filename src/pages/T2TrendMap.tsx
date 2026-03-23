@@ -327,8 +327,8 @@ const T2TrendMap = () => {
                   style={{
                     backgroundColor: isActive
                       ? (cat === "my" ? "hsl(45 90% 50%)" : config?.color ?? "hsl(var(--primary))")
-                      : headerCollapsed ? "hsl(var(--muted))" : "transparent",
-                    color: isActive ? "hsl(var(--primary-foreground))" : headerCollapsed ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
+                      : headerCollapsed ? "hsl(0 0% 10%)" : "transparent",
+                    color: isActive ? "hsl(var(--primary-foreground))" : headerCollapsed ? "hsl(0 0% 100%)" : "hsl(var(--muted-foreground))",
                     borderColor: isActive
                       ? "transparent"
                       : headerCollapsed
@@ -348,7 +348,7 @@ const T2TrendMap = () => {
                     return count > 0 ? (
                       <span
                         className="text-[10px]"
-                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : "hsl(var(--muted-foreground) / 0.8)" }}
+                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : headerCollapsed ? "hsl(0 0% 70%)" : "hsl(var(--muted-foreground) / 0.8)" }}
                       >
                         {count}
                       </span>
