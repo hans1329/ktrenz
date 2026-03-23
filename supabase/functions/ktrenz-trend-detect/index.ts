@@ -860,6 +860,7 @@ async function extractSocialKeywordsFromTikTok(
       title: `[TikTok] ${p.desc.slice(0, 200)}`,
       description: `Views: ${(p.views || 0).toLocaleString()}, Likes: ${(p.likes || 0).toLocaleString()}, Author: @${p.author || "unknown"}${p.verified ? " ✓" : ""}`,
       url: `https://www.tiktok.com/@${p.author}/video/${p.id}`,
+      cover: p.cover || null,
     }));
 
   if (!tiktokArticles.length) return [];
