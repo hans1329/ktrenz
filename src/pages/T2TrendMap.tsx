@@ -44,6 +44,7 @@ const T2TrendMap = () => {
   // Swipe state
   const [dragOffsetX, setDragOffsetX] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
 
   const viewMode = VIEW_ORDER[viewIndex];
   const shouldRenderSwipeOverlay = dragOffsetX !== 0 || isAnimating;
