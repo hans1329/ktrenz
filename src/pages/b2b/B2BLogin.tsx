@@ -25,9 +25,14 @@ const B2BLogin = () => {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // Check if user has B2B org
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Admin users are treated as enterprise members automatically
+          const { data: isAdmin } = await supabase.rpc('is_admin', { user_id: user.id });
+          if (isAdmin) {
+            navigate('/b2b');
+            return;
+          }
           const { data: membership } = await (supabase as any)
             .from('ktrenz_b2b_members')
             .select('org_id')
