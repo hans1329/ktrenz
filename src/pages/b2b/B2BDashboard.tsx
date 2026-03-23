@@ -136,7 +136,7 @@ const B2BDashboard = () => {
                         <img src={ts.star.image_url} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,30%)] text-lg font-bold">
-                          {ts.star?.name_en?.[0]}
+                          {ts.star?.display_name?.[0]}
                         </div>
                       )}
                     </div>
