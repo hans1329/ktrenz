@@ -1153,7 +1153,7 @@ async function detectForMember(
 
   // 최근 7일 내 동일 멤버 키워드는 재삽입하지 않되, 빈 필드는 백필
   const keywordSources = keywords.map((k) => {
-    let articleIdx = 0;
+    let articleIdx = -1;
     if (k.source_article_index && k.source_article_index > 0) {
       articleIdx = k.source_article_index - 1;
     } else {
@@ -1161,7 +1161,20 @@ async function detectForMember(
       if (refMatch) articleIdx = parseInt(refMatch[1], 10) - 1;
     }
 
-    const sourceArticle = articles[articleIdx] || articles[0];
+    // ★ fallback을 articles[0]으로 하지 않음 — 매칭 실패 시 키워드 텍스트로 기사 검색
+    let sourceArticle = (articleIdx >= 0 && articleIdx < articles.length) ? articles[articleIdx] : null;
+
+    // 인덱스 매칭 실패 시 키워드가 포함된 기사를 찾아 매칭
+    if (!sourceArticle) {
+      const kwLower = (k.keyword_ko || k.keyword || "").toLowerCase();
+      if (kwLower.length >= 2) {
+        sourceArticle = articles.find(a => {
+          const text = `${a.title} ${a.description || ""}`.toLowerCase();
+          return text.includes(kwLower);
+        }) || null;
+      }
+    }
+
     return { keywordData: k, sourceArticle, sourceUrl: sourceArticle?.url || null };
   });
 
