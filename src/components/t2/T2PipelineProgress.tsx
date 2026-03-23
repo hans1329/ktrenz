@@ -45,15 +45,15 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const isDetect = run?.phase === "detect";
   const isGlobal = run?.phase === "detect_global";
 
-  // DB 기반 파이프라인 상태 (track 페이즈의 정확한 진행률)
+  // DB 기반 파이프라인 상태 (정확한 진행률)
   const { data: dbPipelineState } = useQuery({
     queryKey: ["pipeline-db-state", run?.phase],
     queryFn: async () => {
       // 먼저 running 상태 조회
       const { data: running } = await supabase
         .from("ktrenz_pipeline_state" as any)
-        .select("current_offset, total_candidates, status, run_id, batch_size")
-        .eq("phase", run?.phase ?? "track")
+        .select("current_offset, total_candidates, status, run_id, batch_size, phase")
+        .eq("phase", run?.phase ?? "detect")
         .in("status", ["running", "postprocess_requested", "postprocess_running"])
         .order("updated_at", { ascending: false })
         .limit(1);
@@ -61,14 +61,14 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       // running이 없으면 최근 done 상태 조회 (완료 표시용)
       const { data: done } = await supabase
         .from("ktrenz_pipeline_state" as any)
-        .select("current_offset, total_candidates, status, run_id, batch_size")
-        .eq("phase", run?.phase ?? "track")
+        .select("current_offset, total_candidates, status, run_id, batch_size, phase")
+        .eq("phase", run?.phase ?? "detect")
         .in("status", ["done", "postprocess_done"])
         .order("updated_at", { ascending: false })
         .limit(1);
       return (done as any[])?.[0] ?? null;
     },
-    enabled: !!run && isTrackPhase,
+    enabled: !!run,
     refetchInterval: 3000,
   });
 
@@ -226,8 +226,12 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   // 스타 로그 기반 processed 보정 (DB에 기록된 실제 처리 수)
   const starLogCount = starLogs?.length ?? 0;
   
-  const total = isTrackPhase ? trackTotal : (totalCount ?? 0);
-  const rawProcessed = isTrackPhase ? trackOffset : (phaseState?.processed ?? 0);
+  // DB pipeline_state의 offset이 가장 정확한 진행 지표
+  const dbOffset = dbPipelineState?.current_offset ?? 0;
+  const dbTotal = dbPipelineState?.total_candidates ?? 0;
+  
+  const total = isTrackPhase ? trackTotal : (dbTotal > 0 ? dbTotal : (totalCount ?? 0));
+  const rawProcessed = isTrackPhase ? trackOffset : (dbOffset > 0 ? dbOffset : (phaseState?.processed ?? 0));
   const processed = isTrackPhase ? rawProcessed : Math.max(rawProcessed, starLogCount);
   const pending = phaseState?.pending ?? 0;
   const active = phaseState?.active ?? 0;
@@ -236,17 +240,8 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const bySource = phaseState?.bySource ?? {};
   const batchSize = dbPipelineState?.batch_size ?? 5;
 
-  // Track: offset 기반 정확한 진행률
-  const progress = isTrackPhase
-    ? (total > 0 ? Math.min((processed / total) * 100, 99) : 0)
-    : (() => {
-        const batchesDone = Math.ceil(processed / batchSize);
-        const totalBatches = Math.ceil(total / batchSize);
-        const batchTime = 30;
-        const estimatedBatchesByTime = Math.floor(elapsed / batchTime);
-        const effectiveBatches = Math.max(estimatedBatchesByTime, batchesDone);
-        return totalBatches > 0 ? Math.min((effectiveBatches / totalBatches) * 100, 99) : 0;
-      })();
+  // DB offset 기반 정확한 진행률 (detect/track 모두)
+  const progress = total > 0 ? Math.min((processed / total) * 100, 99) : 0;
 
   const totalBatches = isTrackPhase ? Math.ceil(total / batchSize) : Math.ceil(total / batchSize);
   const batchesDone = Math.ceil(processed / batchSize);
@@ -273,7 +268,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const estimatedTotal = totalBatches * batchTime;
   const isDone = isTrackPhase
     ? (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (processed > 0 && processed >= total))
-    : processed > 0 && pending === 0 && elapsed > 30;
+    : (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (total > 0 && processed >= total && elapsed > 60));
 
   useEffect(() => {
     if (!run) return;
@@ -310,6 +305,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
     naver_multi: { icon: Newspaper, label: "뉴스+블로그", color: "text-blue-400" },
     naver_shop: { icon: ShoppingBag, label: "쇼핑", color: "text-emerald-400" },
     naver_news: { icon: Newspaper, label: "뉴스(레거시)", color: "text-blue-300" },
+    tiktok: { icon: BookOpen, label: "TikTok", color: "text-pink-400" },
     global_news: { icon: Newspaper, label: "글로벌 뉴스", color: "text-purple-400" },
     firecrawl_social: { icon: BookOpen, label: "소셜(Reddit/TikTok)", color: "text-pink-400" },
     youtube_comments: { icon: BookOpen, label: "YouTube 댓글", color: "text-red-400" },

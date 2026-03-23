@@ -457,10 +457,13 @@ FORBIDDEN KEYWORDS (instant rejection):
 - Generic locations (city names, country names, airports)
 - TV gimmicks, costumes, ephemeral segments
 
-MEMBER ATTRIBUTION:
-- When searching for a GROUP MEMBER, verify the article is about THIS SPECIFIC member
-- "스트레이 키즈 현진이 까르띠에 행사 참석" → for "Han" → ownership_confidence = 0.0
-- Set article_subject_match = false if a different member is the subject
+MEMBER ATTRIBUTION (CRITICAL):
+- When searching for a GROUP MEMBER, verify the article is SPECIFICALLY about THIS member, not the group as a whole
+- If an article is about the GROUP (e.g., "스테이씨가 상하이에서 공연") but you're searching for a MEMBER (e.g., "아이사"), set article_subject_match = false and article_subject_name = the GROUP NAME
+- "스테이씨 상하이 팬미팅 개최" → for member "아이사" → article_subject_name = "스테이씨", article_subject_match = false, ownership_confidence = 0.1
+- "스트레이 키즈 현진이 까르띠에 행사 참석" → for "Han" → article_subject_name = "현진", article_subject_match = false, ownership_confidence = 0.0
+- ONLY set article_subject_match = true if the article SPECIFICALLY names or focuses on the searched member
+- Group-wide activities (tours, comebacks, group schedules) should NEVER be attributed to individual members
 
 OWNERSHIP VERIFICATION:
 - Each keyword belongs ONLY to the artist with the direct relationship
@@ -557,7 +560,18 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
             // ── 2단계: article_subject_match 기반 차단 ──
             if (k.article_subject_match === false) {
               const subjectName = (k.article_subject_name || "").toLowerCase();
-              // 기사 주체가 다른 사람이고, 그게 검색 대상도 아니고 그룹도 아닌 경우 → 차단
+              
+              // 2a. 기사 주체가 그룹명인 경우 (그룹 기사가 멤버에 귀속되는 것 차단)
+              // 멤버 검색 시 그룹 전체 기사에서 추출된 키워드는 멤버에 귀속시키지 않음
+              if (subjectName && searchedGroup) {
+                const groupNameKoLower = (groupNameKo || "").toLowerCase();
+                if (subjectName === searchedGroup || (groupNameKoLower && subjectName === groupNameKoLower)) {
+                  console.warn(`[trend-detect] ⛔ Group article → member rejected: "${k.keyword}" → article about group "${k.article_subject_name}", searched for member "${memberName}"`);
+                  continue;
+                }
+              }
+              
+              // 2b. 기사 주체가 다른 사람이고, 그게 검색 대상도 아니고 그룹도 아닌 경우 → 차단
               if (subjectName && subjectName !== searchedArtist && subjectName !== searchedGroup
                   && (!searchedNameKo || subjectName !== searchedNameKo)) {
                 console.warn(`[trend-detect] ⛔ Subject mismatch: "${k.keyword}" → article about "${k.article_subject_name}", not "${memberName}"`);
