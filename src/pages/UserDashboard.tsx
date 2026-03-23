@@ -575,6 +575,8 @@ const UserDashboard = () => {
           </section>
         )}
       </main>
+      )}
+
 
       <V3TabBar activeTab="activity" onTabChange={() => {}} />
     </div>
