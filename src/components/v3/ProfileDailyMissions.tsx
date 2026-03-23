@@ -240,8 +240,8 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
                   claimed
                     ? "bg-muted text-muted-foreground"
                     : readyToClaim
-                    ? "bg-primary/20 text-primary"
-                    : "bg-primary/10 text-primary"
+                    ? "bg-muted text-foreground"
+                    : "bg-muted text-foreground"
                 )}
               >
                 {claimed ? <Check className="w-4 h-4" /> : mission.icon}
