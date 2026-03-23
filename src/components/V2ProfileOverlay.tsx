@@ -125,92 +125,49 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
-          {/* K-Tokens Card */}
-          <button
-            onClick={() => setShowPointsDrawer(true)}
-            className="w-full text-left rounded-xl bg-card border border-border p-4 hover:border-primary/40 hover:bg-primary/5 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-lg">
-                  💎
-                </div>
+          {/* K-Tokens + K-Pass compact row */}
+          <div className="flex gap-2">
+            {/* K-Tokens mini */}
+            <button
+              onClick={() => setShowPointsDrawer(true)}
+              className="flex-1 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">💎</span>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                    K·Trend Caches
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Caches
                   </p>
-                  <p className="text-lg font-bold text-foreground leading-tight">
+                  <p className="text-sm font-bold text-foreground leading-tight">
                     {kPoints.toLocaleString()}
                   </p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </div>
-          </button>
+            </button>
 
-          {/* K-Pass Ticket */}
-          <button
-            onClick={() => { onOpenChange(false); navigate("/k-pass", { state: { fromProfile: true } }); }}
-            className="w-full group text-left"
-          >
-            <div className="relative rounded-xl">
-              {/* Top half */}
-              <div
-                className="relative px-4 py-3.5 overflow-hidden rounded-t-xl"
-                style={{ background: g.top }}
-              >
-                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-30"
-                  style={{ background: g.accent }} />
-                <div className="absolute -left-6 -bottom-6 w-20 h-20 rounded-full blur-2xl opacity-20"
-                  style={{ background: g.accent }} />
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                      style={{ background: g.accent }}
-                    >
-                      <span className="text-foreground">{tierIcon}</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em]"
-                        style={{ background: g.label, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        K-Pass
-                      </p>
-                      <p className="text-base font-bold text-foreground leading-tight">
-                        {tierName}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+            {/* K-Pass mini */}
+            <button
+              onClick={() => { onOpenChange(false); navigate("/k-pass", { state: { fromProfile: true } }); }}
+              className="flex-1 rounded-xl border border-border p-3 hover:border-primary/40 transition-all text-left"
+              style={{ background: g.top }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">{tierIcon}</span>
+                <div>
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em]"
+                    style={{ background: g.label, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    K-Pass
+                  </p>
+                  <p className="text-sm font-bold text-foreground leading-tight">
+                    {tierName}
+                  </p>
                 </div>
               </div>
+            </button>
+          </div>
 
-              {/* Perforation */}
-              <div className="relative h-0 flex items-center overflow-visible">
-                <div className="absolute -left-2.5 w-5 h-5 rounded-full z-10" style={{ boxShadow: '0 0 0 4px hsl(var(--background))', backgroundColor: 'hsl(var(--background))' }} />
-                <div className="w-full border-t border-dashed border-border/60 mx-4" />
-                <div className="absolute -right-2.5 w-5 h-5 rounded-full z-10" style={{ boxShadow: '0 0 0 4px hsl(var(--background))', backgroundColor: 'hsl(var(--background))' }} />
-              </div>
-
-              {/* Bottom half */}
-              <div className="px-4 py-3.5 flex items-center justify-between rounded-b-xl"
-                style={{ background: g.bottom }}>
-                <p className="text-xs text-muted-foreground">
-                  View plans & upgrade →
-                </p>
-                <span
-                  className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
-                  style={{
-                    background: g.badge,
-                    borderColor: g.badgeBorder,
-                    color: g.badgeText,
-                  }}
-                >
-                  Active
-                </span>
-              </div>
-            </div>
-          </button>
+          {/* Daily Missions */}
+          <ProfileDailyMissions onClose={() => onOpenChange(false)} />
 
           {/* My Trend Bets */}
           <ProfileTrendBets onClose={() => onOpenChange(false)} />
