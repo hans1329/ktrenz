@@ -26,6 +26,7 @@ interface ExtractedKeyword {
   fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
   trend_potential?: number;
   purchase_stage?: "awareness" | "interest" | "consideration" | "purchase" | "review";
+  _tiktok_cover_url?: string | null;
 }
 
 // Platform names and non-trackable entities blacklist
@@ -860,6 +861,7 @@ async function extractSocialKeywordsFromTikTok(
       title: `[TikTok] ${p.desc.slice(0, 200)}`,
       description: `Views: ${(p.views || 0).toLocaleString()}, Likes: ${(p.likes || 0).toLocaleString()}, Author: @${p.author || "unknown"}${p.verified ? " ✓" : ""}`,
       url: `https://www.tiktok.com/@${p.author}/video/${p.id}`,
+      cover: p.cover || null,
     }));
 
   if (!tiktokArticles.length) return [];
@@ -955,6 +957,10 @@ Extract specific viral/trending social keywords from these TikTok descriptions. 
             fan_sentiment: k.fan_sentiment || "positive",
             trend_potential: k.trend_potential || 0.6,
             purchase_stage: k.purchase_stage || "awareness",
+            _tiktok_cover_url: (() => {
+              const idx = k.source_article_index ? k.source_article_index - 1 : 0;
+              return (idx >= 0 && idx < tiktokArticles.length) ? tiktokArticles[idx].cover : (tiktokArticles[0]?.cover || null);
+            })(),
           });
         }
       } catch (parseErr) {
@@ -1407,7 +1413,9 @@ async function detectForMember(
         confidence: keywordData.confidence,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
-        source_image_url: selectBestImage(sourceUrl),
+        source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
+          ? keywordData._tiktok_cover_url
+          : selectBestImage(sourceUrl),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         commercial_intent: keywordData.commercial_intent || null,
         brand_intent: keywordData.brand_intent || null,
