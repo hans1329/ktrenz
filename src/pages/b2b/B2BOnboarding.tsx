@@ -17,10 +17,30 @@ const B2BOnboarding = () => {
   const [industry, setIndustry] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Check if user already has a membership → redirect to dashboard
+  useState(() => {
+    if (!user?.id) { setChecking(false); return; }
+    (supabase as any)
+      .from('ktrenz_b2b_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .then(({ data }: any) => {
+        if (data && data.length > 0) {
+          navigate('/b2b', { replace: true });
+        } else {
+          setChecking(false);
+        }
+      });
+  });
+
+  if (checking) return null;
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();

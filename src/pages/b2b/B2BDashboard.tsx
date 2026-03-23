@@ -17,7 +17,7 @@ const B2BDashboard = () => {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('ktrenz_b2b_tracked_stars')
-        .select('*, star:ktrenz_stars(id, name_en, name_ko, image_url)')
+        .select('*, star:ktrenz_stars(id, display_name, name_ko, image_url)')
         .eq('org_id', org.id);
       return data || [];
     },
@@ -29,9 +29,9 @@ const B2BDashboard = () => {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('ktrenz_trend_triggers')
-        .select('id, keyword, category, influence_index, trend_score, trend_grade, star:ktrenz_stars(name_en, image_url), source_image_url, created_at')
+        .select('id, keyword, keyword_category, artist_name, influence_index, trend_score, trend_grade, source_image_url, detected_at, star_id')
         .eq('status', 'active')
-        .order('trend_score', { ascending: false })
+        .order('trend_score', { ascending: false, nullsFirst: false })
         .limit(20);
       return data || [];
     },
@@ -90,7 +90,7 @@ const B2BDashboard = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">{trend.keyword}</p>
                   <p className="text-xs text-[hsl(220,10%,45%)]">
-                    {trend.star?.name_en} · {trend.category}
+                    {trend.artist_name} · {trend.keyword_category}
                   </p>
                 </div>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${
@@ -136,12 +136,12 @@ const B2BDashboard = () => {
                         <img src={ts.star.image_url} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,30%)] text-lg font-bold">
-                          {ts.star?.name_en?.[0]}
+                          {ts.star?.display_name?.[0]}
                         </div>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-white font-semibold">{ts.star?.name_en}</p>
+                      <p className="text-sm text-white font-semibold">{ts.star?.display_name}</p>
                       <p className="text-xs text-[hsl(220,10%,45%)]">
                         {ts.relationship === 'owned' ? '소속' : '경쟁사'}
                       </p>
@@ -150,7 +150,7 @@ const B2BDashboard = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[hsl(220,10%,45%)]">활성 트렌드</span>
                     <span className="text-white font-bold">
-                      {activeTrends.filter((t: any) => t.star?.name_en === ts.star?.name_en).length}
+                      {activeTrends.filter((t: any) => t.artist_name === ts.star?.display_name).length}
                     </span>
                   </div>
                 </div>
