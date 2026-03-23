@@ -193,100 +193,104 @@ const T2TrendMap = () => {
         path="/t2"
       />
 
-      {!headerCollapsed && (
-        <>
-          <V3Header
-            centerSlot={
-              <div
-                className="flex items-center gap-0 rounded-full p-0.5 md:gap-1 md:p-1"
-                style={{ backgroundColor: "hsl(var(--card))" }}
-              >
-                {VIEW_TABS.map(({ key, icon: Icon, label }, i) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setViewIndex(i);
-                      window.scrollTo({ top: 0 });
-                    }}
-                    className={cn(
-                      "flex items-center justify-center gap-1.5 rounded-full transition-all",
-                      "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
-                      viewIndex === i
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                    aria-label={key}
-                  >
-                    <Icon className="w-4 h-4 md:w-4 md:h-4" />
-                    <span className="hidden md:inline text-xs font-semibold">{label}</span>
-                  </button>
-                ))}
-              </div>
-            }
-          />
+      <div
+        className={cn(
+          "transition-opacity duration-200",
+          headerCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+        )}
+        style={{ visibility: headerCollapsed ? "hidden" : "visible" }}
+      >
+        <V3Header
+          centerSlot={
+            <div
+              className="flex items-center gap-0 rounded-full p-0.5 md:gap-1 md:p-1"
+              style={{ backgroundColor: "hsl(var(--card))" }}
+            >
+              {VIEW_TABS.map(({ key, icon: Icon, label }, i) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setViewIndex(i);
+                    window.scrollTo({ top: 0 });
+                  }}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-full transition-all",
+                    "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
+                    viewIndex === i
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-label={key}
+                >
+                  <Icon className="w-4 h-4 md:w-4 md:h-4" />
+                  <span className="hidden md:inline text-xs font-semibold">{label}</span>
+                </button>
+              ))}
+            </div>
+          }
+        />
 
-          <div
-            className="fixed top-14 left-0 right-0 z-40 bg-card/90 backdrop-blur-lg"
-          >
-            <div className="md:max-w-[90%] mx-auto flex items-center justify-between gap-3 px-4 py-2">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-black text-muted-foreground">{t("trend.spectrumTitle")}</h2>
-                {isAdmin && isMobile && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setAdminMenuOpen((v) => !v)}
-                      className="p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                    {adminMenuOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setAdminMenuOpen(false)} />
-                        <div className="absolute left-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-lg p-3 min-w-[220px]">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Admin Tools</p>
-                          <T2AdminControls />
-                          <div className="border-t border-border mt-2 pt-2">
-                            <button
-                              onClick={() => {
-                                navigate("/admin");
-                                setAdminMenuOpen(false);
-                              }}
-                              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            >
-                              <Zap className="w-3 h-3" /> 관리자 대시보드
-                            </button>
-                          </div>
+        <div
+          className="fixed top-14 left-0 right-0 z-40 bg-card/90 backdrop-blur-lg"
+        >
+          <div className="md:max-w-[90%] mx-auto flex items-center justify-between gap-3 px-4 py-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black text-muted-foreground">{t("trend.spectrumTitle")}</h2>
+              {isAdmin && isMobile && (
+                <div className="relative">
+                  <button
+                    onClick={() => setAdminMenuOpen((v) => !v)}
+                    className="p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {adminMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setAdminMenuOpen(false)} />
+                      <div className="absolute left-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-lg p-3 min-w-[220px]">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Admin Tools</p>
+                        <T2AdminControls />
+                        <div className="border-t border-border mt-2 pt-2">
+                          <button
+                            onClick={() => {
+                              navigate("/admin");
+                              setAdminMenuOpen(false);
+                            }}
+                            className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                          >
+                            <Zap className="w-3 h-3" /> 관리자 대시보드
+                          </button>
                         </div>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              {isAdmin && !isMobile && <T2AdminControls />}
+            </div>
+            <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
+              <button
+                onClick={() => setSortMode("volume")}
+                className={cn(
+                  "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                  sortMode === "volume" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
-                {isAdmin && !isMobile && <T2AdminControls />}
-              </div>
-              <div className="flex items-center gap-1 bg-muted/50 rounded-full p-0.5">
-                <button
-                  onClick={() => setSortMode("volume")}
-                  className={cn(
-                    "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
-                    sortMode === "volume" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Hot
-                </button>
-                <button
-                  onClick={() => setSortMode("rate")}
-                  className={cn(
-                    "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
-                    sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Trend
-                </button>
-              </div>
+              >
+                Hot
+              </button>
+              <button
+                onClick={() => setSortMode("rate")}
+                className={cn(
+                  "min-w-[60px] px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                  sortMode === "rate" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Trend
+              </button>
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
 
       <div
         className="fixed left-0 right-0 z-40 py-2 bg-card/90 backdrop-blur-lg"
