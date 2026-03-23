@@ -183,6 +183,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
   };
 
   return (
+    <>
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
