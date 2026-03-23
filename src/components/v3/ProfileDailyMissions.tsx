@@ -290,6 +290,28 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         })}
       </div>
     </div>
+
+    {/* Celebration modal */}
+    <Drawer open={!!celebration} onOpenChange={(open) => !open && setCelebration(null)}>
+      <DrawerContent className="bg-background border-border mx-auto md:max-w-sm">
+        <div className="flex flex-col items-center gap-3 py-8 px-6 text-center">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <PartyPopper className="w-7 h-7 text-primary" />
+          </div>
+          <p className="text-lg font-bold text-foreground">
+            {t("mission.complete")}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {celebration?.label}
+          </p>
+          <div className="flex items-center gap-4 mt-1">
+            <span className="text-base font-bold text-primary">+{celebration?.points}P</span>
+            <span className="text-sm font-semibold text-muted-foreground">+{celebration?.exp} EXP</span>
+          </div>
+        </div>
+      </DrawerContent>
+    </Drawer>
+    </>
   );
 };
 
