@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { Zap, Eye, Crosshair, Share2, TrendingUp, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -17,35 +16,45 @@ interface DailyMission {
   exp: number;
   route?: string;
   bonus?: boolean;
+  /** event types that count toward this mission */
+  trackEvents: string[];
+  /** how many events needed to complete */
+  threshold: number;
 }
 
-const MISSIONS: (t: (k: string) => string) => DailyMission[] = (t) => [
+const MISSIONS: DailyMission[] = [
   {
     key: "view_trends",
     icon: <Eye className="w-4 h-4" />,
     label: "View 5 Trends",
-    desc: "Browse today's trending keywords",
+    desc: "Browse trending keywords",
     points: 10,
     exp: 5,
     route: "/t2",
+    trackEvents: ["t2_treemap_click", "t2_list_click", "t2_detail_open", "t2_keyword_detail_view"],
+    threshold: 5,
   },
   {
     key: "follow_keyword",
     icon: <Crosshair className="w-4 h-4" />,
     label: "Track a Keyword",
-    desc: "Follow & track a trending keyword",
+    desc: "Open & explore a keyword detail",
     points: 15,
     exp: 8,
     route: "/t2",
+    trackEvents: ["t2_keyword_detail_view"],
+    threshold: 1,
   },
   {
     key: "spread_trend",
     icon: <Share2 className="w-4 h-4" />,
     label: "Spread a Trend",
-    desc: "Share a trend to amplify it",
+    desc: "Share a trend on social media",
     points: 12,
     exp: 6,
     route: "/t2",
+    trackEvents: ["t2_share"],
+    threshold: 1,
   },
   {
     key: "predict_trend",
@@ -56,8 +65,13 @@ const MISSIONS: (t: (k: string) => string) => DailyMission[] = (t) => [
     exp: 15,
     bonus: true,
     route: "/t2",
+    trackEvents: ["trend_bet_placed"],
+    threshold: 1,
   },
 ];
+
+// Sentinel wiki_entry_id for profile-level missions
+const PROFILE_MISSION_ENTRY = "00000000-0000-0000-0000-000000000000";
 
 interface ProfileDailyMissionsProps {
   onClose: () => void;
@@ -66,11 +80,36 @@ interface ProfileDailyMissionsProps {
 const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
+  const todayStart = `${today}T00:00:00.000Z`;
 
-  const { data: completed = [] } = useQuery({
-    queryKey: ["profile-daily-missions", user?.id, today],
+  // 1. Fetch today's event counts by type from ktrenz_user_events
+  const { data: eventCounts = {} } = useQuery({
+    queryKey: ["profile-mission-events", user?.id, today],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      const allEventTypes = [...new Set(MISSIONS.flatMap((m) => m.trackEvents))];
+      const { data } = await supabase
+        .from("ktrenz_user_events" as any)
+        .select("event_type")
+        .eq("user_id", user.id)
+        .gte("created_at", todayStart)
+        .in("event_type", allEventTypes);
+
+      const counts: Record<string, number> = {};
+      (data || []).forEach((row: any) => {
+        counts[row.event_type] = (counts[row.event_type] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 30,
+  });
+
+  // 2. Fetch already-claimed missions today
+  const { data: claimedKeys = [] } = useQuery({
+    queryKey: ["profile-mission-claimed", user?.id, today],
     queryFn: async () => {
       if (!user?.id) return [];
       const { data } = await supabase
@@ -78,25 +117,82 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         .select("mission_key")
         .eq("user_id", user.id)
         .eq("mission_date", today)
-        .like("mission_key", "profile_%");
+        .eq("wiki_entry_id", PROFILE_MISSION_ENTRY);
       return (data || []).map((d: any) => d.mission_key);
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 30,
   });
 
-  const missions = MISSIONS(t);
-  const completedSet = new Set(completed);
-  const doneCount = missions.filter((m) => completedSet.has(m.key)).length;
-  const totalMissions = missions.length;
+  const claimedSet = new Set(claimedKeys);
+
+  // Check if a mission's event threshold is met
+  const isMet = (m: DailyMission): boolean => {
+    const total = m.trackEvents.reduce((sum, et) => sum + ((eventCounts as Record<string, number>)[et] || 0), 0);
+    return total >= m.threshold;
+  };
+
+  // Claim reward for a completed mission
+  const claimReward = useCallback(async (mission: DailyMission) => {
+    if (!user?.id) return;
+    try {
+      // Insert mission completion
+      const { error } = await supabase.from("ktrenz_daily_missions" as any).insert({
+        user_id: user.id,
+        wiki_entry_id: PROFILE_MISSION_ENTRY,
+        mission_key: mission.key,
+        points_awarded: mission.points,
+      });
+      if (error) {
+        if (error.code === "23505") return; // already claimed
+        throw error;
+      }
+
+      // Award K-Points
+      await supabase.from("ktrenz_point_transactions" as any).insert({
+        user_id: user.id,
+        amount: mission.points,
+        reason: "daily_mission",
+        description: `Daily Mission: ${mission.label}`,
+      });
+
+      // Invalidate caches
+      queryClient.invalidateQueries({ queryKey: ["profile-mission-claimed", user.id, today] });
+      queryClient.invalidateQueries({ queryKey: ["ktrenz-points", user.id] });
+
+      toast.success(`+${mission.points}P · +${mission.exp} EXP`, {
+        description: `${mission.label} completed!`,
+        duration: 2500,
+      });
+    } catch (e) {
+      console.error("Claim mission error:", e);
+    }
+  }, [user?.id, today, queryClient]);
+
+  // Calculate progress
+  const completedMissions = MISSIONS.filter((m) => claimedSet.has(m.key) || isMet(m));
+  const doneCount = MISSIONS.filter((m) => claimedSet.has(m.key)).length;
+  const totalMissions = MISSIONS.length;
   const progress = totalMissions > 0 ? (doneCount / totalMissions) * 100 : 0;
-  const totalPoints = missions.filter((m) => completedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
+  const earnedPoints = MISSIONS.filter((m) => claimedSet.has(m.key)).reduce((s, m) => s + m.points, 0);
 
   if (!user) return null;
 
-  const handleMission = (mission: DailyMission) => {
-    onClose();
-    if (mission.route) navigate(mission.route);
+  const handleMission = async (mission: DailyMission) => {
+    const met = isMet(mission);
+    const claimed = claimedSet.has(mission.key);
+
+    if (met && !claimed) {
+      // Auto-claim then navigate
+      await claimReward(mission);
+      return;
+    }
+
+    if (!claimed) {
+      // Not yet completed — navigate to do it
+      onClose();
+      if (mission.route) navigate(mission.route);
+    }
   };
 
   return (
@@ -111,8 +207,8 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         </div>
         <span className="text-xs text-muted-foreground font-medium">
           {doneCount}/{totalMissions}
-          {totalPoints > 0 && (
-            <span className="ml-1 text-amber-500 font-bold">+{totalPoints}P</span>
+          {earnedPoints > 0 && (
+            <span className="ml-1 font-bold" style={{ color: "hsl(var(--primary))" }}>+{earnedPoints}P</span>
           )}
         </span>
       </div>
@@ -130,17 +226,30 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
 
       {/* Mission items */}
       <div className="space-y-1">
-        {missions.map((mission) => {
-          const done = completedSet.has(mission.key);
+        {MISSIONS.map((mission) => {
+          const claimed = claimedSet.has(mission.key);
+          const met = isMet(mission);
+          const readyToClaim = met && !claimed;
+
+          // Progress text for view_trends (threshold > 1)
+          let progressText = "";
+          if (!claimed && mission.threshold > 1) {
+            const current = mission.trackEvents.reduce(
+              (sum, et) => sum + ((eventCounts as Record<string, number>)[et] || 0), 0
+            );
+            progressText = `${Math.min(current, mission.threshold)}/${mission.threshold}`;
+          }
+
           return (
             <button
               key={mission.key}
               onClick={() => handleMission(mission)}
-              disabled={done}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left group",
-                done
+                claimed
                   ? "bg-muted/50 opacity-60"
+                  : readyToClaim
+                  ? "bg-primary/10 ring-1 ring-primary/30"
                   : "hover:bg-primary/5 active:scale-[0.98]"
               )}
             >
@@ -148,38 +257,54 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
               <div
                 className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                  done ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                  claimed
+                    ? "bg-muted text-muted-foreground"
+                    : readyToClaim
+                    ? "bg-primary/20 text-primary"
+                    : "bg-primary/10 text-primary"
                 )}
               >
-                {done ? <Check className="w-4 h-4" /> : mission.icon}
+                {claimed ? <Check className="w-4 h-4" /> : mission.icon}
               </div>
 
               {/* Label + desc */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className={cn("text-xs font-bold truncate", done ? "text-muted-foreground line-through" : "text-foreground")}>
+                  <p
+                    className={cn(
+                      "text-xs font-bold truncate",
+                      claimed ? "text-muted-foreground line-through" : "text-foreground"
+                    )}
+                  >
                     {mission.label}
                   </p>
-                  {mission.bonus && !done && (
-                    <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full uppercase">
+                  {mission.bonus && !claimed && (
+                    <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase">
                       Bonus
                     </span>
                   )}
+                  {readyToClaim && (
+                    <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full animate-pulse">
+                      Claim!
+                    </span>
+                  )}
                 </div>
-                <p className="text-[10px] text-muted-foreground truncate">{mission.desc}</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {progressText && !claimed ? `${progressText} · ` : ""}{mission.desc}
+                </p>
               </div>
 
               {/* Reward */}
               <div className="text-right shrink-0">
-                <p className={cn("text-[10px] font-bold", done ? "text-muted-foreground" : "text-amber-500")}>
+                <p className={cn("text-[10px] font-bold", claimed ? "text-muted-foreground" : "text-primary")}>
                   +{mission.points}P
                 </p>
-                <p className={cn("text-[9px]", done ? "text-muted-foreground" : "text-primary/70")}>
+                <p className={cn("text-[9px]", claimed ? "text-muted-foreground" : "text-primary/70")}>
                   +{mission.exp} EXP
                 </p>
               </div>
 
-              {!done && (
+              {!claimed && !readyToClaim && (
                 <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
               )}
             </button>
