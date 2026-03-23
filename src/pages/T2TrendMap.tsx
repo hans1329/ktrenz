@@ -327,17 +327,19 @@ const T2TrendMap = () => {
                   style={{
                     backgroundColor: isActive
                       ? (cat === "my" ? "hsl(45 90% 50%)" : config?.color ?? "hsl(var(--primary))")
-                      : "transparent",
-                    color: isActive ? "hsl(var(--primary-foreground))" : headerCollapsed ? "hsl(0 0% 100%)" : "hsl(var(--muted-foreground))",
+                      : headerCollapsed ? "hsl(var(--muted))" : "transparent",
+                    color: isActive ? "hsl(var(--primary-foreground))" : headerCollapsed ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
                     borderColor: isActive
                       ? "transparent"
-                      : cat === "all"
-                        ? "hsl(var(--border) / 0.4)"
-                        : cat === "my"
-                          ? "hsl(45 90% 50% / 0.15)"
-                          : config?.color
-                            ? `${config.color.replace(")", ", 0.15)").replace("hsl(", "hsla(")}`
-                            : "hsl(var(--border) / 0.4)",
+                      : headerCollapsed
+                        ? "transparent"
+                        : cat === "all"
+                          ? "hsl(var(--border) / 0.4)"
+                          : cat === "my"
+                            ? "hsl(45 90% 50% / 0.15)"
+                            : config?.color
+                              ? `${config.color.replace(")", ", 0.15)").replace("hsl(", "hsla(")}`
+                              : "hsl(var(--border) / 0.4)",
                   }}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
@@ -346,7 +348,7 @@ const T2TrendMap = () => {
                     return count > 0 ? (
                       <span
                         className="text-[10px]"
-                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : headerCollapsed ? "hsl(0 0% 85%)" : "hsl(var(--muted-foreground) / 0.8)" }}
+                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : "hsl(var(--muted-foreground) / 0.8)" }}
                       >
                         {count}
                       </span>
