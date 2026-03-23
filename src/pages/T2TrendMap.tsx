@@ -34,6 +34,7 @@ const T2TrendMap = () => {
   const { t } = useLanguage();
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
