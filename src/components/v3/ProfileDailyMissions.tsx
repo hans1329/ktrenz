@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -292,16 +293,13 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
       </div>
     </div>
 
-    {/* Fullscreen Celebration Overlay */}
-    {celebration && (
+    {/* Fullscreen Celebration Overlay - portaled to body */}
+    {celebration && createPortal(
       <div
-        className="fixed inset-0 z-[200] flex items-center justify-center animate-in fade-in duration-300"
+        className="fixed inset-0 z-[9999] flex items-center justify-center animate-in fade-in duration-300"
         onClick={() => setCelebration(null)}
       >
-        {/* Blurred backdrop */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-
-        {/* Centered card */}
         <div className="relative z-10 flex flex-col items-center gap-5 mx-8 px-10 py-10 rounded-3xl bg-background/95 shadow-2xl animate-in zoom-in-90 duration-300">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
             <PartyPopper className="w-8 h-8 text-primary" />
@@ -317,7 +315,8 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
             <span className="text-sm font-semibold text-muted-foreground">+{celebration.exp} EXP</span>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )}
     </>
   );
