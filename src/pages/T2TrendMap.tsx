@@ -301,47 +301,35 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className="h-[100dvh] overflow-hidden"
+        className="h-[100dvh] overflow-y-auto overscroll-contain"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
+        onScroll={(e) => {
+          const scrollTop = (e.target as HTMLElement).scrollTop;
+          setScrollY(scrollTop);
+          setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
+        }}
       >
         <div
-          className="flex h-full items-start"
-          style={{
-            transform: `translateX(${translateX}%)`,
-            transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-            willChange: "transform",
-          }}
+          className={cn(
+            "pb-24 scrollbar-hide transition-all duration-500 ease-in-out",
+            headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
+          )}
         >
-          {VIEW_ORDER.map((mode) => (
-            <div
-              key={mode}
-              className={cn(
-                "h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24 scrollbar-hide transition-all duration-500 ease-in-out",
-                headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
-              )}
-              onScroll={(e) => {
-                const scrollTop = (e.target as HTMLElement).scrollTop;
-                setScrollY(scrollTop);
-                setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
-              }}
-            >
-              <div className="md:max-w-[90%] mx-auto">
-                <T2TrendTreemap
-                  viewMode={mode}
-                  onViewModeChange={setViewMode}
-                  selectedCategory={category}
-                  onCategoryChange={setCategory}
-                  hideCategory
-                  hideHeader
-                  sortMode={sortMode}
-                  onSortModeChange={setSortMode}
-                  onCategoryStatsChange={handleCategoryStatsChange}
-                />
-              </div>
-            </div>
-          ))}
+          <div className="md:max-w-[90%] mx-auto">
+            <T2TrendTreemap
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              selectedCategory={category}
+              onCategoryChange={setCategory}
+              hideCategory
+              hideHeader
+              sortMode={sortMode}
+              onSortModeChange={setSortMode}
+              onCategoryStatsChange={handleCategoryStatsChange}
+            />
+          </div>
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
