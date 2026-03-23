@@ -88,6 +88,14 @@ export default {
           "15%, 45%, 75%": { transform: "translateX(-2px)" },
           "30%, 60%, 90%": { transform: "translateX(2px)" },
         },
+        "wiggle": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "15%": { transform: "rotate(-12deg)" },
+          "30%": { transform: "rotate(10deg)" },
+          "45%": { transform: "rotate(-8deg)" },
+          "60%": { transform: "rotate(6deg)" },
+          "75%": { transform: "rotate(-3deg)" },
+        },
         "flip-in": {
           "0%": {
             opacity: "0",
