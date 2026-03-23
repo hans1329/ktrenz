@@ -221,7 +221,8 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                       )}
                       aria-label="Track keyword"
                     >
-                      <Crosshair className="w-4 h-4" />
+                      <Crosshair className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? "Tracking" : "Track"}</span>
                     </button>
                   </div>
                 </div>
