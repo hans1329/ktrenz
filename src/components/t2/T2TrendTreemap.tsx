@@ -521,7 +521,16 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [dedupedTriggers, selectedCategory, watchedSet]);
 
   const containerWidth = isMobile ? 390 : 1000;
-  const containerHeight = isMobile ? 4200 : 2800;
+  const containerHeight = useMemo(() => {
+    if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
+
+    const itemCount = visibleBoxItems.length;
+    if (isMobile) {
+      return Math.max(1800, Math.min(3000, itemCount * 44));
+    }
+
+    return Math.max(1800, Math.min(2600, itemCount * 32));
+  }, [currentViewMode, isMobile, visibleBoxItems.length]);
 
 
 
