@@ -359,10 +359,12 @@ const T2TrendMap = () => {
                 position: isActive ? 'relative' : 'absolute',
                 top: 0,
                 left: 0,
+                height: isActive ? 'auto' : '100%',
                 transform: `translate3d(calc(${offsetPercent}% + ${dragOffsetX}px), 0, 0)`,
                 transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
                 willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
                 visibility: isVisible ? 'visible' : 'hidden',
+                overflow: isActive ? 'visible' : 'hidden',
                 pointerEvents: isActive ? 'auto' : 'none',
                 zIndex: isActive ? 2 : 1,
               };
