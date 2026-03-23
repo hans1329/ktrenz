@@ -256,7 +256,7 @@ const T2TrendMap = () => {
                   {adminMenuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setAdminMenuOpen(false)} />
-                      <div className="absolute left-0 top-full mt-1 z-50 bg-background border border-border rounded-xl shadow-lg p-3 min-w-[220px]">
+                      <div className="absolute left-0 top-full mt-1 z-[9999] bg-background border border-border rounded-xl shadow-lg p-3 min-w-[220px]">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 px-1">Admin Tools</p>
                         <T2AdminControls />
                         <div className="border-t border-border mt-2 pt-2">
