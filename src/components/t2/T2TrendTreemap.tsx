@@ -805,6 +805,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       width: `${width}%`, height: `${height}%`,
+                      touchAction: 'pan-y pinch-zoom',
                       backgroundImage: (() => {
                         const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
                         const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;

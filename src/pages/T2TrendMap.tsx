@@ -346,6 +346,7 @@ const T2TrendMap = () => {
 
       <div
         className="overflow-x-hidden overscroll-none"
+        style={{ touchAction: "pan-y pinch-zoom" }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
