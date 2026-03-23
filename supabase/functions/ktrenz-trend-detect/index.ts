@@ -1397,9 +1397,13 @@ async function detectForMember(
         fan_sentiment: keywordData.fan_sentiment || null,
         trend_potential: keywordData.trend_potential ?? null,
         purchase_stage: keywordData.purchase_stage || null,
-        baseline_score: buzz.newsTotal + buzz.blogTotal,
+        baseline_score: keywordData.category === "social" ? 10 : (buzz.newsTotal + buzz.blogTotal),
         status: "pending",
-        metadata: {
+        metadata: keywordData.category === "social" ? {
+          source: "tiktok",
+          search_name: searchName,
+          group_name: member.group_name,
+        } : {
           article_count: articles.length,
           search_name: searchName,
           group_name: member.group_name,
