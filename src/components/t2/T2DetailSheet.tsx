@@ -621,28 +621,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               })()}
             </div>
 
-            {/* Read boost reward indicator */}
-            {user && (
+            {/* Read original link */}
+            {tile.sourceUrl && (
               <div className="px-3 pb-2 flex justify-end">
-                {tile.sourceUrl && !hasReadBoosted ? (
-                  <a
-                    href={tile.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
-                    onClick={handleReadBoost}
-                  >
-                    {t("readBoostReward", language)}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                ) : (
-                  <span className={cn(
-                    "text-[10px] font-medium",
-                    hasReadBoosted ? "text-emerald-400" : "text-emerald-500/70"
-                  )}>
-                    {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
-                  </span>
-                )}
+                <a
+                  href={tile.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => track("t2_read_original_click", { trigger_id: tile.id })}
+                >
+                  {t("readOriginal", language)}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             )}
           </div>
