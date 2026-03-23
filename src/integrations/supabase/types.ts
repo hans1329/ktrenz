@@ -3872,6 +3872,50 @@ export type Database = {
           },
         ]
       }
+      ktrenz_social_snapshots: {
+        Row: {
+          collected_at: string
+          id: string
+          keyword: string
+          keyword_type: string
+          metrics: Json
+          platform: string
+          star_id: string
+          top_posts: Json | null
+          wiki_entry_id: string
+        }
+        Insert: {
+          collected_at?: string
+          id?: string
+          keyword: string
+          keyword_type?: string
+          metrics?: Json
+          platform?: string
+          star_id: string
+          top_posts?: Json | null
+          wiki_entry_id: string
+        }
+        Update: {
+          collected_at?: string
+          id?: string
+          keyword?: string
+          keyword_type?: string
+          metrics?: Json
+          platform?: string
+          star_id?: string
+          top_posts?: Json | null
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_social_snapshots_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_stars: {
         Row: {
           agency: string | null

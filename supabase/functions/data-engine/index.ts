@@ -10,7 +10,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "korean_charts", "spotify_listeners", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "buzz", "buzz_enhancer", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
+const PIPELINE = ["youtube", "yt_sentiment", "external_videos", "korean_charts", "spotify_listeners", "music", "hanteo", "apple_music_charts", "billboard_charts", "social", "tiktok", "buzz", "buzz_enhancer", "energy", "detect_geo_changes", "fes_analyst", "fes_predictor"] as const;
 type PipelineModule = typeof PIPELINE[number];
 
 // buzz 개별 소스 모듈
@@ -416,6 +416,16 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     }).catch((e) => console.warn("[data-engine] social fire error:", e.message));
     fireAndForget(p);
     return Promise.resolve({ status: "launched", module: "social" });
+  },
+  tiktok: (url, key) => {
+    console.log("[data-engine] Launching TikTok trends (fire-and-forget)...");
+    const p = fetch(`${url}/functions/v1/collect-tiktok-trends`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({}),
+    }).catch((e) => console.warn("[data-engine] tiktok fire error:", e.message));
+    fireAndForget(p);
+    return Promise.resolve({ status: "launched", module: "tiktok" });
   },
   buzz: runBuzz,
   energy: (url, key) => runEnergy(url, key, false),
