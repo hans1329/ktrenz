@@ -159,21 +159,26 @@ const T2ArtistPage = () => {
         <div className="flex items-center gap-4 mb-6">
           {star.imageUrl ? (
             <>
-              <img
-                src={star.imageUrl}
-                alt={displayName}
-                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.style.display = "none";
-                  const fallback = el.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = "flex";
-                }}
-              />
-              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground" style={{ display: "none" }}>
-                {displayName.charAt(0)}
-              </div>
+               <img
+                 src={star.imageUrl}
+                 alt={displayName}
+                 className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
+                 referrerPolicy="no-referrer"
+                 onError={(e) => {
+                   const el = e.currentTarget;
+                   // Try content image as intermediate fallback
+                   if (star.contentImageUrl && el.src !== star.contentImageUrl) {
+                     el.src = star.contentImageUrl;
+                     return;
+                   }
+                   el.style.display = "none";
+                   const fallback = el.nextElementSibling as HTMLElement;
+                   if (fallback) fallback.style.display = "flex";
+                 }}
+               />
+               <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground" style={{ display: "none" }}>
+                 {displayName.charAt(0)}
+               </div>
             </>
           ) : (
             <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground">
