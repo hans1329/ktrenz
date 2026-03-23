@@ -384,6 +384,31 @@ async function executePostprocess(supabaseUrl: string, supabaseKey: string, trig
   }
 }
 
+// ── grade 인라인 실행 (별도 phase 대신 postprocess 직후 호출) ──
+async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Promise<any> {
+  console.log(`[cron] Running inline grade`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000);
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const text = await response.text();
+    try { return JSON.parse(text); } catch { return { raw: text.slice(0, 500) }; }
+  } catch (e) {
+    clearTimeout(timeout);
+    console.error(`[cron] Grade inline error: ${(e as Error).message}`);
+    return { error: (e as Error).message };
+  }
+}
+
 function getNextPhase(currentPhase: string): string | null {
   const idx = PHASE_ORDER.indexOf(currentPhase as any);
   return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
