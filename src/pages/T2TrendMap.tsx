@@ -46,6 +46,7 @@ const T2TrendMap = () => {
   const [isAnimating, setIsAnimating] = useState(false);
 
   const viewMode = VIEW_ORDER[viewIndex];
+  const shouldRenderSwipeOverlay = dragOffsetX !== 0 || isAnimating;
 
   const touchRef = useRef<{
     startX: number;
@@ -352,9 +353,9 @@ const T2TrendMap = () => {
             <div className="md:max-w-[90%] mx-auto relative z-10">
               <div
                 style={{
-                  transform: `translate3d(${dragOffsetX}px, 0, 0)`,
+                  transform: shouldRenderSwipeOverlay ? `translate3d(${dragOffsetX}px, 0, 0)` : 'none',
                   transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-                  willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
+                  willChange: shouldRenderSwipeOverlay ? 'transform' : 'auto',
                 }}
               >
                 <T2TrendTreemap
@@ -371,38 +372,40 @@ const T2TrendMap = () => {
               </div>
             </div>
 
-            <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-              {visibleViews
-                .filter(({ index }) => index !== viewIndex)
-                .map(({ mode, index }) => {
-                  const offsetPercent = (index - viewIndex) * 100;
+            {shouldRenderSwipeOverlay && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+                {visibleViews
+                  .filter(({ index }) => index !== viewIndex)
+                  .map(({ mode, index }) => {
+                    const offsetPercent = (index - viewIndex) * 100;
 
-                  return (
-                    <div
-                      key={mode}
-                      className="absolute inset-x-0 top-0"
-                      style={{
-                        transform: `translate3d(calc(${offsetPercent}% + ${dragOffsetX}px), 0, 0)`,
-                        transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-                        willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
-                      }}
-                    >
-                      <div className="md:max-w-[90%] mx-auto">
-                        <T2TrendTreemap
-                          viewMode={mode}
-                          onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
-                          selectedCategory={category}
-                          onCategoryChange={setCategory}
-                          hideCategory
-                          hideHeader
-                          sortMode={sortMode}
-                          onSortModeChange={setSortMode}
-                        />
+                    return (
+                      <div
+                        key={mode}
+                        className="absolute inset-x-0 top-0"
+                        style={{
+                          transform: `translate3d(calc(${offsetPercent}% + ${dragOffsetX}px), 0, 0)`,
+                          transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+                          willChange: 'transform',
+                        }}
+                      >
+                        <div className="md:max-w-[90%] mx-auto">
+                          <T2TrendTreemap
+                            viewMode={mode}
+                            onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                            selectedCategory={category}
+                            onCategoryChange={setCategory}
+                            hideCategory
+                            hideHeader
+                            sortMode={sortMode}
+                            onSortModeChange={setSortMode}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-            </div>
+                    );
+                  })}
+              </div>
+            )}
           </div>
         </div>
       </div>
