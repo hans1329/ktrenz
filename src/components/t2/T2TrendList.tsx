@@ -214,14 +214,15 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggleFollow(item); }}
                       className={cn(
-                        "p-1 rounded-full transition-colors shrink-0",
+                        "flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors shrink-0",
                         followedIds?.has(item.id)
                           ? "text-primary bg-primary/10"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       )}
                       aria-label="Track keyword"
                     >
-                      <Crosshair className="w-4 h-4" />
+                      <Crosshair className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? "Tracking" : "Track"}</span>
                     </button>
                   </div>
                 </div>
