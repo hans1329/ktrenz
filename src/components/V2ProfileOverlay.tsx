@@ -133,7 +133,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
             >
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm">💎</div>
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base p-0.5">💎</div>
                 <div>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     K·Trend Caches
