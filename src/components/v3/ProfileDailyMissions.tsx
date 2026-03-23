@@ -27,7 +27,7 @@ const MISSIONS: DailyMission[] = [
     icon: <Eye className="w-4 h-4" />,
     labelKey: "profileMission.viewTrends",
     descKey: "profileMission.viewTrendsDesc",
-    points: 10,
+    points: 20,
     exp: 5,
     route: "/t2",
     trackEvents: ["t2_treemap_click", "t2_list_click", "t2_detail_open", "t2_keyword_detail_view"],
@@ -41,7 +41,7 @@ const MISSIONS: DailyMission[] = [
     points: 15,
     exp: 8,
     route: "/t2",
-    trackEvents: ["t2_keyword_detail_view"],
+    trackEvents: ["t2_keyword_follow"],
     threshold: 1,
   },
   {

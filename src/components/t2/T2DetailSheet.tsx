@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins } from "lucide-react";
+import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -95,6 +95,10 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   shareBoostReward: { en: "Share & earn +5 K-Token", ko: "공유하고 +5 K-Token 받기", ja: "共有して +5 K-Token獲得", zh: "分享获得+5 K-Token" },
   alreadyShareBoostedDone: { en: "✓ Already earned +5T", ko: "✓ 이미 +5T 획득 완료", ja: "✓ 獲得済み +5T", zh: "✓ 已获得 +5T" },
   viewFullAnalysis: { en: "View Full Analysis", ko: "상세 분석 보기", ja: "詳細分析を見る", zh: "查看完整分析" },
+  followKeyword: { en: "Track", ko: "추적", ja: "追跡", zh: "追踪" },
+  unfollowKeyword: { en: "Tracking", ko: "추적중", ja: "追跡中", zh: "追踪中" },
+  followedToast: { en: "Tracking this keyword! 🎯", ko: "키워드 추적 시작! 🎯", ja: "キーワード追跡開始！🎯", zh: "开始追踪关键词！🎯" },
+  unfollowedToast: { en: "Stopped tracking", ko: "추적 해제", ja: "追跡解除", zh: "已取消追踪" },
 };
 
 function t(key: string, lang: string): string {
@@ -401,6 +405,51 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     toast.success(t("readBoosted", language));
   };
 
+  // Keyword follow/track
+  const { data: isFollowing, refetch: refetchFollow } = useQuery({
+    queryKey: ["t2-keyword-follow", tile?.id, user?.id],
+    queryFn: async () => {
+      if (!tile || !user) return false;
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("id")
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id)
+        .limit(1);
+      return (data ?? []).length > 0;
+    },
+    enabled: !!tile && !!user,
+  });
+
+  const handleToggleFollow = async () => {
+    if (!tile || !user) {
+      toast.info(t("loginToBet", language));
+      return;
+    }
+    if (isFollowing) {
+      await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .delete()
+        .eq("trigger_id", tile.id)
+        .eq("user_id", user.id);
+      toast.info(t("unfollowedToast", language));
+    } else {
+      await supabase.from("ktrenz_keyword_follows" as any).insert({
+        user_id: user.id,
+        trigger_id: tile.id,
+        keyword: tile.keyword,
+        keyword_ko: tile.keywordKo || null,
+        star_id: tile.starId || null,
+        artist_name: tile.artistName || null,
+        last_influence_index: tile.influenceIndex || 0,
+      } as any);
+      track("t2_keyword_follow", { artist_name: tile.artistName, section: tile.keyword });
+      toast.success(t("followedToast", language));
+    }
+    refetchFollow();
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", tile.id, user.id] });
+  };
+
   if (!tile) return null;
 
   return (
@@ -445,6 +494,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               <Clock className="w-3 h-3" />
               {formatAge(tile.detectedAt)}
             </span>
+            <button
+              onClick={handleToggleFollow}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ml-auto",
+                isFollowing
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+              )}
+            >
+              <Crosshair className="w-3 h-3" />
+              {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
+            </button>
           </div>
         </SheetHeader>
 
