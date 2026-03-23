@@ -457,10 +457,13 @@ FORBIDDEN KEYWORDS (instant rejection):
 - Generic locations (city names, country names, airports)
 - TV gimmicks, costumes, ephemeral segments
 
-MEMBER ATTRIBUTION:
-- When searching for a GROUP MEMBER, verify the article is about THIS SPECIFIC member
-- "스트레이 키즈 현진이 까르띠에 행사 참석" → for "Han" → ownership_confidence = 0.0
-- Set article_subject_match = false if a different member is the subject
+MEMBER ATTRIBUTION (CRITICAL):
+- When searching for a GROUP MEMBER, verify the article is SPECIFICALLY about THIS member, not the group as a whole
+- If an article is about the GROUP (e.g., "스테이씨가 상하이에서 공연") but you're searching for a MEMBER (e.g., "아이사"), set article_subject_match = false and article_subject_name = the GROUP NAME
+- "스테이씨 상하이 팬미팅 개최" → for member "아이사" → article_subject_name = "스테이씨", article_subject_match = false, ownership_confidence = 0.1
+- "스트레이 키즈 현진이 까르띠에 행사 참석" → for "Han" → article_subject_name = "현진", article_subject_match = false, ownership_confidence = 0.0
+- ONLY set article_subject_match = true if the article SPECIFICALLY names or focuses on the searched member
+- Group-wide activities (tours, comebacks, group schedules) should NEVER be attributed to individual members
 
 OWNERSHIP VERIFICATION:
 - Each keyword belongs ONLY to the artist with the direct relationship
