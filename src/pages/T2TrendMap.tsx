@@ -147,7 +147,7 @@ const T2TrendMap = () => {
               setTimeout(() => setIsAnimating(false), 250);
             });
           });
-        }, 200);
+        }, 100);
         return;
       } else if (dx > 0 && idx > 0) {
         // Slide out to right
