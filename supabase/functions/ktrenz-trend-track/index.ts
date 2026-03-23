@@ -219,6 +219,10 @@ Deno.serve(async (req) => {
         await updateCausalMetrics(sb, trigger.id, buzzScore);
         // prev_api_total 갱신 (다음 추적 시 daily_delta 계산용)
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
+
+        // ── 키워드 팔로우 알림: influence_index 변동 감지 ──
+        await notifyKeywordFollowers(sb, trigger, deltaPct);
+
         trackedCount++;
         results.push({ keyword: trigger.keyword, artist: trigger.artist_name, buzz_score: buzzScore, daily_delta: dailyDelta, delta_pct: deltaPct, api_total: apiTotal });
         console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} daily_delta=${dailyDelta} Δ=${deltaPct}%`);
