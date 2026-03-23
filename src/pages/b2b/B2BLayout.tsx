@@ -43,11 +43,15 @@ const B2BLayout = () => {
     queryKey: ['b2b-membership', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('ktrenz_b2b_members')
         .select('*, org:ktrenz_b2b_organizations(*)')
         .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
+
+      if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
