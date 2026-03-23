@@ -1,0 +1,261 @@
+import { useOutletContext } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  TrendingUp, TrendingDown, Zap, Star, BarChart3, ArrowUpRight,
+  Activity, ShoppingBag, Eye, Brain, Sparkles, ChevronRight
+} from 'lucide-react';
+import { useState } from 'react';
+
+const B2BDashboard = () => {
+  const { org } = useOutletContext<{ org: any }>();
+  const isEntertainment = org?.org_type === 'entertainment';
+
+  // Fetch tracked stars
+  const { data: trackedStars = [] } = useQuery({
+    queryKey: ['b2b-tracked-stars', org?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('ktrenz_b2b_tracked_stars')
+        .select('*, star:ktrenz_stars(id, name_en, name_ko, image_url)')
+        .eq('org_id', org.id);
+      return data || [];
+    },
+    enabled: !!org?.id,
+  });
+
+  // Fetch recent active trends
+  const { data: activeTrends = [] } = useQuery({
+    queryKey: ['b2b-active-trends'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('ktrenz_trend_triggers')
+        .select('id, keyword, category, influence_index, trend_score, trend_grade, star:ktrenz_stars(name_en, image_url), source_image_url, created_at')
+        .eq('status', 'active')
+        .order('trend_score', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+  });
+
+  const ownedStars = trackedStars.filter((s: any) => s.relationship === 'owned');
+  const competitorStars = trackedStars.filter((s: any) => s.relationship === 'competitor');
+
+  // AI insight panel state
+  const [aiQuery, setAiQuery] = useState('');
+
+  return (
+    <div className="flex min-h-full">
+      {/* CENTER: Main Content */}
+      <div className="flex-1 p-6 space-y-6 max-w-[calc(100%-360px)]">
+        {/* KPI Row */}
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            { label: 'Active Trends', value: activeTrends.length, icon: TrendingUp, color: 'hsl(270,80%,60%)' },
+            { label: isEntertainment ? 'My Artists' : 'Tracked Stars', value: ownedStars.length, icon: Star, color: 'hsl(45,90%,55%)' },
+            { label: 'Competitors', value: competitorStars.length, icon: Eye, color: 'hsl(200,80%,55%)' },
+            { label: 'Trend Alerts', value: activeTrends.filter((t: any) => (t.trend_score ?? 0) > 70).length, icon: Zap, color: 'hsl(15,90%,55%)' },
+          ].map(kpi => (
+            <div key={kpi.label} className="bg-[hsl(220,15%,12%)] rounded-xl p-4 border border-[hsl(220,15%,16%)]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-[hsl(220,10%,45%)] font-medium">{kpi.label}</span>
+                <kpi.icon className="w-4 h-4" style={{ color: kpi.color }} />
+              </div>
+              <p className="text-2xl font-bold text-white">{kpi.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Trending Keywords Table */}
+        <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(220,15%,16%)]">
+            <h2 className="text-white font-semibold flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[hsl(270,80%,60%)]" />
+              Live Trend Feed
+            </h2>
+            <button className="text-xs text-[hsl(270,80%,60%)] flex items-center gap-1 hover:underline">
+              View All <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="divide-y divide-[hsl(220,15%,16%)]">
+            {activeTrends.slice(0, 8).map((trend: any) => (
+              <div key={trend.id} className="flex items-center gap-4 px-5 py-3 hover:bg-[hsl(220,15%,14%)] transition-colors">
+                {/* Image */}
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
+                  {trend.source_image_url ? (
+                    <img src={trend.source_image_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,30%)]">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium truncate">{trend.keyword}</p>
+                  <p className="text-xs text-[hsl(220,10%,45%)]">
+                    {trend.star?.name_en} · {trend.category}
+                  </p>
+                </div>
+                {/* Grade */}
+                <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                  trend.trend_grade === 'Explosive' ? 'bg-[hsl(0,80%,50%,0.2)] text-[hsl(0,80%,65%)]' :
+                  trend.trend_grade === 'Commerce' ? 'bg-[hsl(270,80%,50%,0.2)] text-[hsl(270,80%,70%)]' :
+                  trend.trend_grade === 'Intent' ? 'bg-[hsl(45,80%,50%,0.2)] text-[hsl(45,80%,65%)]' :
+                  'bg-[hsl(220,15%,20%)] text-[hsl(220,10%,55%)]'
+                }`}>
+                  {trend.trend_grade || 'Spark'}
+                </span>
+                {/* Score */}
+                <div className="text-right w-16">
+                  <p className="text-sm font-bold text-white">{(trend.trend_score ?? trend.influence_index ?? 0).toFixed(0)}</p>
+                  <p className="text-[10px] text-[hsl(220,10%,40%)]">Score</p>
+                </div>
+                {/* Pre/Post indicator */}
+                <div className="flex items-center gap-1 text-[hsl(150,60%,50%)]">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold">+{Math.floor(Math.random() * 200 + 20)}%</span>
+                </div>
+              </div>
+            ))}
+            {activeTrends.length === 0 && (
+              <div className="px-5 py-12 text-center text-[hsl(220,10%,40%)]">
+                <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No active trends. Add artists to start tracking.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Star Performance Cards */}
+        {ownedStars.length > 0 && (
+          <div>
+            <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <Star className="w-4 h-4 text-[hsl(45,90%,55%)]" />
+              {isEntertainment ? 'My Artist Performance' : 'Tracked Star Performance'}
+            </h2>
+            <div className="grid grid-cols-3 gap-4">
+              {ownedStars.slice(0, 6).map((ts: any) => (
+                <div key={ts.id} className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-4 hover:border-[hsl(270,80%,55%,0.3)] transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[hsl(220,15%,18%)]">
+                      {ts.star?.image_url ? (
+                        <img src={ts.star.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,30%)] text-lg font-bold">
+                          {ts.star?.name_en?.[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-semibold">{ts.star?.name_en}</p>
+                      <p className="text-xs text-[hsl(220,10%,45%)] capitalize">{ts.relationship}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[hsl(220,10%,45%)]">Active Trends</span>
+                    <span className="text-white font-bold">
+                      {activeTrends.filter((t: any) => t.star?.name_en === ts.star?.name_en).length}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT: AI Decision Panel */}
+      <div className="w-[360px] border-l border-[hsl(220,15%,15%)] bg-[hsl(220,18%,9%)] flex flex-col shrink-0 sticky top-14 h-[calc(100vh-56px)]">
+        <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)]">
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-[hsl(270,80%,60%)]" />
+            <h3 className="text-sm font-bold text-white">AI Decision Engine</h3>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">LIVE</span>
+          </div>
+        </div>
+
+        {/* AI Insights */}
+        <div className="flex-1 overflow-auto p-4 space-y-3">
+          {/* Auto-generated insight cards */}
+          {[
+            {
+              type: 'opportunity',
+              icon: <Sparkles className="w-3.5 h-3.5" />,
+              color: 'hsl(45,90%,55%)',
+              title: 'Market Opportunity',
+              body: activeTrends.length > 0
+                ? `${activeTrends[0]?.keyword} is trending with ${activeTrends[0]?.trend_grade || 'Spark'}-level energy. Consider immediate brand collaboration.`
+                : 'Add artists to get personalized market opportunities.',
+            },
+            {
+              type: 'alert',
+              icon: <Zap className="w-3.5 h-3.5" />,
+              color: 'hsl(15,90%,55%)',
+              title: 'Trend Alert',
+              body: activeTrends.length > 3
+                ? `${activeTrends.filter((t: any) => t.trend_grade === 'Commerce' || t.trend_grade === 'Intent').length} trends show strong commercial intent.`
+                : 'More data needed to generate trend alerts.',
+            },
+            {
+              type: 'benchmark',
+              icon: <BarChart3 className="w-3.5 h-3.5" />,
+              color: 'hsl(200,80%,55%)',
+              title: 'Competitive Insight',
+              body: competitorStars.length > 0
+                ? `Monitoring ${competitorStars.length} competitor artists. Compare performance in Pre/Post Analysis.`
+                : 'Add competitor artists for benchmark insights.',
+            },
+          ].map(insight => (
+            <div key={insight.type} className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <div style={{ color: insight.color }}>{insight.icon}</div>
+                <span className="text-xs font-semibold text-white">{insight.title}</span>
+              </div>
+              <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">{insight.body}</p>
+              <button className="mt-2 text-[10px] text-[hsl(270,80%,60%)] font-medium hover:underline flex items-center gap-1">
+                Deep Dive <ArrowUpRight className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+
+          {/* Action buttons */}
+          <div className="pt-2 space-y-2">
+            <p className="text-[10px] text-[hsl(220,10%,35%)] font-medium uppercase tracking-wider">Quick Actions</p>
+            {[
+              { label: 'Generate Trend Report', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+              { label: 'Find Collaboration Match', icon: <ShoppingBag className="w-3.5 h-3.5" /> },
+              { label: 'Analyze Campaign Impact', icon: <Zap className="w-3.5 h-3.5" /> },
+            ].map(action => (
+              <button
+                key={action.label}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[hsl(220,15%,18%)] bg-[hsl(220,15%,12%)] text-sm text-[hsl(220,10%,60%)] hover:border-[hsl(270,80%,55%,0.3)] hover:text-white transition-colors"
+              >
+                <span className="text-[hsl(270,80%,60%)]">{action.icon}</span>
+                {action.label}
+                <ChevronRight className="w-3 h-3 ml-auto opacity-40" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Chat input */}
+        <div className="p-3 border-t border-[hsl(220,15%,15%)]">
+          <div className="relative">
+            <Input
+              value={aiQuery}
+              onChange={e => setAiQuery(e.target.value)}
+              placeholder="Ask AI about trends, stars, campaigns..."
+              className="bg-[hsl(220,15%,12%)] border-[hsl(220,15%,18%)] text-white placeholder:text-[hsl(220,10%,30%)] h-9 text-sm pr-10"
+            />
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(270,80%,60%)] hover:text-[hsl(270,80%,70%)]">
+              <Brain className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default B2BDashboard;
