@@ -401,15 +401,15 @@ const UserDashboard = () => {
 
             <div className="grid grid-cols-3 gap-2 mb-3">
               <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-green-400">{betStats.won}</p>
+                <p className="text-lg font-black text-foreground">{betStats.won}</p>
                 <p className="text-[9px] text-muted-foreground">{t("dash.won")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-red-400">{betStats.lost}</p>
+                <p className="text-lg font-black text-foreground">{betStats.lost}</p>
                 <p className="text-[9px] text-muted-foreground">{t("dash.lost")}</p>
               </Card>
               <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-yellow-400">{betStats.pending}</p>
+                <p className="text-lg font-black text-foreground">{betStats.pending}</p>
                 <p className="text-[9px] text-muted-foreground">{t("dash.pending")}</p>
               </Card>
             </div>
@@ -446,11 +446,11 @@ const UserDashboard = () => {
                         hasWon ? "border-green-500/30 bg-green-500/5" : hasLost ? "border-red-500/30 bg-red-500/5" : "border-border bg-card hover:bg-muted/50"
                       )}>
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        hasWon ? "bg-green-500/15" : hasLost ? "bg-red-500/15" : "bg-yellow-500/15"
+                        hasWon ? "bg-green-500/15" : hasLost ? "bg-red-500/15" : "bg-muted"
                       )}>
                         {hasWon ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
                          hasLost ? <XCircle className="w-4 h-4 text-red-400" /> :
-                         <Timer className="w-4 h-4 text-yellow-400" />}
+                         <Timer className="w-4 h-4 text-primary" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
@@ -461,7 +461,7 @@ const UserDashboard = () => {
                           {an && <span>{an}</span>}
                           {outcomeBreakdown.map(({ outcome, amount }) => {
                             const oc = OUTCOME_CONFIG[outcome];
-                            return <span key={outcome} className={cn("font-bold", `text-${oc?.color}-400`)}>{oc?.emoji} {language === "ko" ? oc?.labelKo : oc?.label} {amount.toLocaleString()}T</span>;
+                            return <span key={outcome} className="font-bold text-foreground/70">{oc?.emoji} {language === "ko" ? oc?.labelKo : oc?.label} {amount.toLocaleString()}T</span>;
                           })}
                           {daysLeft !== null && !isSettled && <span>⏳ {daysLeft}{language === "ko" ? "일" : "d"}</span>}
                         </div>
