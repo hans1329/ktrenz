@@ -551,6 +551,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       }
     }
 
+    // Re-sort after both passes so rank-based multiplier matches actual score order
+    deduped.sort((a, b) => compareTrendPriority(a, b, sortMode));
+
     return deduped;
   }, [filteredItems]);
 
