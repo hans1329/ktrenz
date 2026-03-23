@@ -273,7 +273,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const estimatedTotal = totalBatches * batchTime;
   const isDone = isTrackPhase
     ? (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (processed > 0 && processed >= total))
-    : processed > 0 && pending === 0 && elapsed > 30;
+    : (dbPipelineState?.status === 'done' || dbPipelineState?.status === 'postprocess_done' || (total > 0 && processed >= total && elapsed > 60));
 
   useEffect(() => {
     if (!run) return;
