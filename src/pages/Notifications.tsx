@@ -90,6 +90,32 @@ const Notifications = () => {
     enabled: (watchedArtists?.length ?? 0) > 0,
   });
 
+  // Fetch keyword follow notifications
+  const queryClient = useQueryClient();
+  const { data: keywordNotifs = [] } = useQuery({
+    queryKey: ["keyword-notifications", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_keyword_notifications" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const unreadCount = keywordNotifs.filter((n: any) => !n.is_read).length;
+
+  const markAllRead = async () => {
+    if (!user?.id || unreadCount === 0) return;
+    const unreadIds = keywordNotifs.filter((n: any) => !n.is_read).map((n: any) => n.id);
+    await supabase.from("ktrenz_keyword_notifications" as any).update({ is_read: true }).in("id", unreadIds);
+    queryClient.invalidateQueries({ queryKey: ["keyword-notifications", user.id] });
+  };
+
   // Fetch recent point transactions
   const { data: recentPoints } = useQuery({
     queryKey: ["notifications-points", user?.id],
