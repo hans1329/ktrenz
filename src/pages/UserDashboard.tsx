@@ -261,6 +261,18 @@ const UserDashboard = () => {
         </div>
       </header>
 
+      {!user ? (
+        <div className="flex-1 flex items-center justify-center min-h-[calc(100dvh-3.5rem-6rem)] px-4">
+          <Card className="p-8 text-center border-border bg-card max-w-xs w-full">
+            <Crosshair className="w-10 h-10 mx-auto text-primary/40 mb-3" />
+            <p className="text-sm font-semibold text-foreground mb-1">{t("dash.signInPrompt")}</p>
+            <p className="text-xs text-muted-foreground mb-4">{t("dash.signInDesc")}</p>
+            <button onClick={() => navigate("/login")} className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold w-full">
+              {t("dash.signIn")}
+            </button>
+          </Card>
+        </div>
+      ) : (
       <main className="pt-14 pb-24 px-4 max-w-2xl mx-auto">
 
         {/* ── 1. Tracked Keywords ── */}
@@ -270,14 +282,7 @@ const UserDashboard = () => {
             {t("dash.trackedKeywords")}
           </h2>
 
-          {!user ? (
-            <Card className="p-6 text-center border-border bg-card">
-              <p className="text-sm text-muted-foreground mb-3">{t("dash.signInPrompt")}</p>
-              <button onClick={() => navigate("/login")} className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                {t("dash.signIn")}
-              </button>
-            </Card>
-          ) : trackedLoading ? (
+          {trackedLoading ? (
             <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
           ) : !trackedKeywords?.length ? (
             <Card className="p-6 text-center border-border bg-card">
@@ -570,6 +575,8 @@ const UserDashboard = () => {
           </section>
         )}
       </main>
+      )}
+
 
       <V3TabBar activeTab="activity" onTabChange={() => {}} />
     </div>

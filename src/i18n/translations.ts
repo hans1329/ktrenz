@@ -510,6 +510,7 @@ const translations: Record<string, Record<Language, string>> = {
   "dash.noTrackedKeywords": { en: "No tracked keywords yet. Track keywords from trend details.", ko: "추적 중인 키워드가 없습니다. 트렌드 상세에서 추적해보세요.", ja: "追跡中のキーワードはありません。", zh: "暂无追踪关键词。" },
   "dash.signInPrompt": { en: "Sign in to track your trends", ko: "트렌드를 추적하려면 로그인하세요", ja: "トレンドを追跡するにはログインしてください", zh: "登录以追踪趋势" },
   "dash.signIn": { en: "Sign In", ko: "로그인", ja: "ログイン", zh: "登录" },
+  "dash.signInDesc": { en: "Track keywords, predict trends, and earn rewards", ko: "키워드 추적, 트렌드 예측, 리워드를 받아보세요", ja: "キーワード追跡、トレンド予測、リワード獲得", zh: "追踪关键词、预测趋势、获取奖励" },
    "dash.noTrends": { en: "No active trends for your artists right now", ko: "현재 나의 아티스트에 활성 트렌드가 없습니다", ja: "現在アーティストのアクティブなトレンドはありません", zh: "您的艺人目前没有活跃趋势" },
    "dash.noArtistsYet": { en: "No artists followed yet", ko: "아직 팔로우한 아티스트가 없습니다", ja: "まだフォロー中のアーティストがいません", zh: "尚未关注任何艺人" },
   "dash.followArtists": { en: "Follow artists →", ko: "아티스트 팔로우 →", ja: "アーティストをフォロー →", zh: "关注艺人 →" },
