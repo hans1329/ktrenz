@@ -210,6 +210,19 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                       <Clock className="w-2.5 h-2.5" />
                       {formatAge(item.detectedAt)}
                     </span>
+                    <span className="flex-1" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleFollow(item); }}
+                      className={cn(
+                        "p-1 rounded-full transition-colors shrink-0",
+                        followedIds?.has(item.id)
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      )}
+                      aria-label="Track keyword"
+                    >
+                      <Crosshair className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-1.5 pt-0.5">
