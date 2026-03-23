@@ -524,15 +524,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const containerHeight = useMemo(() => {
     if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
 
-    const itemCount = visibleBoxItems.length;
-    if (isMobile) {
-      return Math.max(1800, Math.min(3000, itemCount * 44));
-    }
-
-    return Math.max(1800, Math.min(2600, itemCount * 32));
-  }, [currentViewMode, isMobile, visibleBoxItems.length]);
-
-
+    const itemCount = filteredItems.length;
+    return isMobile
+      ? Math.max(1400, Math.min(2400, itemCount * 36))
+      : Math.max(1600, Math.min(2400, itemCount * 30));
+  }, [currentViewMode, isMobile, filteredItems.length]);
 
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
