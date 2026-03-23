@@ -1,12 +1,12 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { Zap, Eye, Crosshair, Share2, TrendingUp, ChevronRight, Check } from "lucide-react";
-import { toast } from "sonner";
+import { Zap, Eye, Crosshair, Share2, TrendingUp, ChevronRight, Check, PartyPopper } from "lucide-react";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 interface DailyMission {
   key: string;
