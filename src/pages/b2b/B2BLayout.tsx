@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +39,13 @@ const B2BLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
   const { data: membership, isLoading: memLoading, isFetched } = useQuery({
     queryKey: ['b2b-membership', user?.id],
     queryFn: async () => {
@@ -66,6 +73,38 @@ const B2BLayout = () => {
       navigate('/b2b/onboarding', { replace: true });
     }
   }, [authLoading, memLoading, isFetched, user, membership, navigate]);
+
+  // Close search on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Debounced search
+  const handleSearch = useCallback((q: string) => {
+    setSearchQuery(q);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!q.trim()) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      const { data } = await (supabase as any)
+        .from('ktrenz_stars')
+        .select('id, display_name, name_ko, star_type, agency, image_url')
+        .or(`display_name.ilike.%${q}%,name_ko.ilike.%${q}%`)
+        .eq('is_active', true)
+        .limit(10);
+      setSearchResults(data || []);
+      setSearchOpen(true);
+    }, 300);
+  }, []);
 
   if (authLoading || memLoading) {
     return (
@@ -164,13 +203,58 @@ const B2BLayout = () => {
         {/* 상단 바 */}
         <header className="h-14 border-b border-[hsl(220,15%,15%)] bg-[hsl(220,18%,10%)] flex items-center px-4 gap-4 sticky top-0 z-30">
           {/* AI 검색 */}
-          <div className="flex-1 max-w-xl relative">
+          <div className="flex-1 max-w-xl relative" ref={searchRef}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(220,10%,35%)]" />
             <Input
-              placeholder="AI 검색 — 스타, 트렌드, 캠페인에 대해 무엇이든 물어보세요..."
+              value={searchQuery}
+              onChange={e => handleSearch(e.target.value)}
+              onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+              placeholder="스타 검색 — 이름으로 검색하세요..."
               className="pl-10 bg-[hsl(220,15%,12%)] border-[hsl(220,15%,18%)] text-white placeholder:text-[hsl(220,10%,30%)] h-9 text-sm"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[hsl(220,10%,30%)] bg-[hsl(220,15%,18%)] px-1.5 py-0.5 rounded">⌘K</span>
+
+            {/* Search dropdown */}
+            {searchOpen && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,20%)] rounded-lg shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+                {searchResults.map((star: any) => (
+                  <button
+                    key={star.id}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[hsl(220,15%,16%)] transition-colors text-left"
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setSearchQuery('');
+                      // Navigate to star detail or add to tracked
+                      navigate(`/t2/artist/${star.id}`);
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
+                      {star.image_url ? (
+                        <img src={star.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,35%)] text-sm font-bold">
+                          {star.display_name?.[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-white font-medium truncate">{star.display_name}</p>
+                      <p className="text-xs text-[hsl(220,10%,45%)] truncate">
+                        {star.name_ko && star.name_ko !== star.display_name ? `${star.name_ko} · ` : ''}
+                        {star.star_type === 'group' ? '그룹' : star.star_type === 'member' ? '멤버' : '솔로'}
+                        {star.agency ? ` · ${star.agency}` : ''}
+                      </p>
+                    </div>
+                    <Star className="w-3.5 h-3.5 text-[hsl(220,10%,30%)] shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {searchOpen && searchQuery && searchResults.length === 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,20%)] rounded-lg shadow-2xl p-4 z-50">
+                <p className="text-sm text-[hsl(220,10%,40%)] text-center">검색 결과가 없습니다</p>
+              </div>
+            )}
           </div>
 
           {/* 필터 */}
@@ -185,7 +269,6 @@ const B2BLayout = () => {
           {/* 알림 */}
           <button className="relative p-2 rounded-lg hover:bg-[hsl(220,15%,15%)] text-[hsl(220,10%,50%)]">
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[hsl(0,80%,55%)]" />
           </button>
 
           {/* 사용자 */}
