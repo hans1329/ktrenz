@@ -797,10 +797,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                     key={rect.item.id}
                     onClick={() => handleTileClick(rect.item)}
                     className={cn(
-                      "absolute flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none transition-all overflow-hidden",
-                      isSelected
-                        ? "ring-2 ring-primary/40 z-20 brightness-110"
-                        : "hover:brightness-125 hover:z-10"
+                      "absolute flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none overflow-hidden",
+                      isSelected && "ring-2 ring-primary/40 z-20 brightness-110"
                     )}
                     style={{
                       left: `${left}%`, top: `${top}%`,
