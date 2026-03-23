@@ -148,7 +148,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             {/* K-Pass ticket mini */}
             <button
               onClick={() => { onOpenChange(false); navigate("/k-pass", { state: { fromProfile: true } }); }}
-              className="flex-1 rounded-xl overflow-hidden transition-all text-left group"
+              className="basis-1/2 min-w-0 rounded-xl overflow-hidden transition-all text-left group"
             >
               {/* Top */}
               <div className="relative px-3 py-2.5" style={{ background: g.top }}>
