@@ -183,11 +183,11 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     const logBase = Math.log1p(metric);
 
     // Rank-based multiplier with steep decay for lower ranks
-    const rankMultiplier = idx === 0 ? 2.0
-      : idx === 1 ? 1.8
-      : idx === 2 ? 1.6
-      : idx < 6 ? 1.2
-      : idx < 12 ? 0.8
+    const rankMultiplier = idx === 0 ? 1.4
+      : idx === 1 ? 1.3
+      : idx === 2 ? 1.2
+      : idx < 6 ? 1.0
+      : idx < 12 ? 0.75
       : idx < 25 ? 0.5
       : idx < 40 ? 0.3
       : 0.2;
