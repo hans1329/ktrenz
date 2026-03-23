@@ -446,11 +446,11 @@ const UserDashboard = () => {
                         hasWon ? "border-green-500/30 bg-green-500/5" : hasLost ? "border-red-500/30 bg-red-500/5" : "border-border bg-card hover:bg-muted/50"
                       )}>
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        hasWon ? "bg-green-500/15" : hasLost ? "bg-red-500/15" : "bg-yellow-500/15"
+                        hasWon ? "bg-green-500/15" : hasLost ? "bg-red-500/15" : "bg-muted"
                       )}>
                         {hasWon ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
                          hasLost ? <XCircle className="w-4 h-4 text-red-400" /> :
-                         <Timer className="w-4 h-4 text-yellow-400" />}
+                         <Timer className="w-4 h-4 text-primary" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
