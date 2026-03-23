@@ -316,7 +316,6 @@ const T2TrendMap = () => {
                   key={cat}
                   onClick={() => {
                     setCategory(cat);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className={cn(
                     "flex items-center gap-1.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
