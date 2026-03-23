@@ -1,9 +1,13 @@
 import { useMemo, useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Clock, Star, ExternalLink, MessageCircle } from "lucide-react";
+import { TrendingUp, Clock, Star, ExternalLink, MessageCircle, Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
 import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
 
