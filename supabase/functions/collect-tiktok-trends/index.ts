@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
     // ktrenz_stars에서 활성 아티스트 (group/solo만, member는 그룹으로 커버)
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, wiki_entry_id, star_type, metadata")
+      .select("id, display_name, name_ko, wiki_entry_id, star_type")
       .eq("is_active", true)
       .in("star_type", ["group", "solo"])
       .order("display_name")
