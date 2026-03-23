@@ -26,6 +26,7 @@ interface ExtractedKeyword {
   fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
   trend_potential?: number;
   purchase_stage?: "awareness" | "interest" | "consideration" | "purchase" | "review";
+  _tiktok_cover_url?: string | null;
 }
 
 // Platform names and non-trackable entities blacklist
