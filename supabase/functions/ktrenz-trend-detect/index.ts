@@ -1000,9 +1000,14 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
             continue;
           }
 
-          // 제네릭 해시태그 필터
-          const genericTags = new Set(["fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction", "fancam", "edit", "trend", "trending"]);
-          if (genericTags.has(kwLower.replace(/^#/, ""))) continue;
+          // 제네릭 해시태그 필터 (확장)
+          const genericTags = new Set([
+            "fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction",
+            "fancam", "edit", "trend", "trending", "stan", "bias", "idol", "concert",
+            "performance", "live", "shorts", "reels", "xyzbca", "fypシ", "parati",
+            "korean", "korea", "seoul", "hallyu", "kdrama", "oppa",
+          ]);
+          if (genericTags.has(kwNorm)) continue;
 
           results.push({
             keyword: k.keyword,
