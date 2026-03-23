@@ -234,7 +234,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   aria-label="Track keyword"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? "Tracking" : "Track"}</span>
+                  <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? t("trend.tracking") : t("trend.track")}</span>
                 </button>
               </div>
             </div>
