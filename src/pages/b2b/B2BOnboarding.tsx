@@ -27,6 +27,12 @@ const B2BOnboarding = () => {
     if (!user || !orgType) return;
     setLoading(true);
     try {
+      const existingMembership = queryClient.getQueryData<any>(['b2b-membership', user.id]);
+      if (existingMembership) {
+        navigate('/b2b', { replace: true });
+        return;
+      }
+
       // Generate org id client-side to avoid SELECT RLS issue after INSERT
       const orgId = crypto.randomUUID();
       const { error: orgErr } = await (supabase as any)
