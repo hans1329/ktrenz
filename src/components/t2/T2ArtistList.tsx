@@ -74,7 +74,7 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
     language === "ko" && group.artistNameKo ? group.artistNameKo : group.artistName;
 
   return (
-    <div className="grid grid-cols-1 gap-3 px-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
       {artistGroups.map((group, idx) => {
         const isWatched = watchedSet.has(group.wikiEntryId);
         return (
