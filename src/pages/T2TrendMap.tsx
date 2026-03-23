@@ -161,8 +161,6 @@ const T2TrendMap = () => {
     setTimeout(() => setIsAnimating(false), 300);
   }, [viewIndex, isDrawerInteraction]);
 
-  // The carousel translateX: -(viewIndex * 100%) + dragOffset
-  const containerTranslateX = `calc(-${viewIndex * 100}% + ${dragOffsetX}px)`;
 
   return (
     <>
