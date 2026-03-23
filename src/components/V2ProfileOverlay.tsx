@@ -169,7 +169,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               <div className="relative h-0 flex items-center overflow-visible">
                 <div className="absolute -left-1.5 w-3 h-3 rounded-full z-10" style={{ backgroundColor: 'hsl(var(--background))' }} />
                 <svg className="mx-2 flex-1" height="2" style={{ overflow: 'visible' }}>
-                  <line x1="0" y1="1" x2="100%" y2="1" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeDasharray="4 3" />
+                  <line x1="0" y1="1" x2="100%" y2="1" stroke="hsl(220 10% 85%)" strokeWidth="2" strokeDasharray="4 3" />
                 </svg>
                 <div className="absolute -right-1.5 w-3 h-3 rounded-full z-10" style={{ backgroundColor: 'hsl(var(--background))' }} />
               </div>
