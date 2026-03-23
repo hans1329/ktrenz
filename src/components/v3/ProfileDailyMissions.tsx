@@ -299,20 +299,20 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         className="fixed inset-0 z-[9999] flex items-center justify-center animate-in fade-in duration-300"
         onClick={() => setCelebration(null)}
       >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-        <div className="relative z-10 flex flex-col items-center gap-5 mx-8 px-10 py-10 rounded-3xl bg-background/95 shadow-2xl animate-in zoom-in-90 duration-300">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <PartyPopper className="w-8 h-8 text-primary" />
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+        <div className="relative z-10 flex flex-col items-center gap-5 animate-in zoom-in-90 duration-300">
+          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+            <PartyPopper className="w-10 h-10 text-primary" />
           </div>
-          <p className="text-lg font-bold text-foreground">
+          <p className="text-xl font-bold text-white">
             {t("mission.complete")}
           </p>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-sm text-white/60 text-center">
             {celebration.label}
           </p>
           <div className="flex items-center gap-4">
-            <span className="text-2xl font-black text-primary">+{celebration.points}P</span>
-            <span className="text-sm font-semibold text-muted-foreground">+{celebration.exp} EXP</span>
+            <span className="text-3xl font-black text-primary">+{celebration.points}P</span>
+            <span className="text-base font-semibold text-white/70">+{celebration.exp} EXP</span>
           </div>
         </div>
       </div>,
