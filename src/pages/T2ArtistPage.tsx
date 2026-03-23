@@ -1,14 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, Star, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; color: string }> = {
   brand:   { label: "Brand",   labelKo: "브랜드",  color: "hsl(210, 70%, 55%)" },
@@ -43,6 +46,9 @@ const T2ArtistPage = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const track = useTrackEvent();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [watchLoading, setWatchLoading] = useState(false);
 
   useEffect(() => {
     if (starId) track("t2_artist_view", { artist_slug: starId });
@@ -128,6 +134,61 @@ const T2ArtistPage = () => {
     enabled: !!star?.wiki_entry_id,
   });
 
+  // Watch status
+  const { data: isWatched } = useQuery({
+    queryKey: ["t2-watched-check", user?.id, star?.wiki_entry_id],
+    queryFn: async () => {
+      if (!user?.id || !star?.wiki_entry_id) return false;
+      const { data } = await supabase
+        .from("ktrenz_watched_artists")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("wiki_entry_id", star.wiki_entry_id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user?.id && !!star?.wiki_entry_id,
+  });
+
+  const toggleWatch = useCallback(async () => {
+    if (!user?.id || !star) return;
+    if (!star.wiki_entry_id) {
+      toast.error(language === "ko" ? "이 아티스트는 아직 연동되지 않았습니다" : "This artist is not linked yet");
+      return;
+    }
+    setWatchLoading(true);
+    try {
+      if (isWatched) {
+        await supabase
+          .from("ktrenz_watched_artists")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("wiki_entry_id", star.wiki_entry_id);
+        toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
+      } else {
+        // Delete existing then insert to avoid duplicates
+        await supabase
+          .from("ktrenz_watched_artists")
+          .delete()
+          .eq("user_id", user.id);
+        await supabase
+          .from("ktrenz_watched_artists")
+          .insert({
+            user_id: user.id,
+            artist_name: star.display_name,
+            wiki_entry_id: star.wiki_entry_id,
+          });
+        toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
+      }
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-check"] });
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-artists"] });
+    } catch {
+      toast.error("Error");
+    } finally {
+      setWatchLoading(false);
+    }
+  }, [user?.id, star, isWatched, language]);
+
   const displayName = language === "ko" && star?.name_ko ? star.name_ko : star?.display_name ?? "";
 
   const subHeader = (
@@ -156,45 +217,61 @@ const T2ArtistPage = () => {
           </div>
         </div>
       ) : star ? (
-        <div className="flex items-center gap-4 mb-6">
-          {star.imageUrl ? (
-            <>
-               <img
-                 src={star.imageUrl}
-                 alt={displayName}
-                 className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
-                 referrerPolicy="no-referrer"
-                 onError={(e) => {
-                   const el = e.currentTarget;
-                   // Try content image as intermediate fallback
-                   if (star.contentImageUrl && el.src !== star.contentImageUrl) {
-                     el.src = star.contentImageUrl;
-                     return;
-                   }
-                   el.style.display = "none";
-                   const fallback = el.nextElementSibling as HTMLElement;
-                   if (fallback) fallback.style.display = "flex";
-                 }}
-               />
-               <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground" style={{ display: "none" }}>
-                 {displayName.charAt(0)}
-               </div>
-            </>
-          ) : (
-            <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground">
-              {displayName.charAt(0)}
-            </div>
-          )}
-          <div>
-            <h1 className="text-xl lg:text-2xl font-black text-foreground">{displayName}</h1>
-            {star.agency && (
-              <p className="text-sm text-muted-foreground">{star.agency}</p>
-            )}
-            <p className="text-xs text-primary font-bold mt-0.5">
-              {keywords?.length ?? 0} {language === "ko" ? "활성 키워드" : "active keywords"}
-            </p>
-          </div>
-        </div>
+         <div className="flex items-center gap-4 mb-6">
+           {star.imageUrl ? (
+             <>
+                <img
+                  src={star.imageUrl}
+                  alt={displayName}
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20 shrink-0"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    if (star.contentImageUrl && el.src !== star.contentImageUrl) {
+                      el.src = star.contentImageUrl;
+                      return;
+                    }
+                    el.style.display = "none";
+                    const fallback = el.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = "flex";
+                  }}
+                />
+                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground shrink-0" style={{ display: "none" }}>
+                  {displayName.charAt(0)}
+                </div>
+             </>
+           ) : (
+             <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground shrink-0">
+               {displayName.charAt(0)}
+             </div>
+           )}
+           <div className="flex-1 min-w-0">
+             <h1 className="text-xl lg:text-2xl font-black text-foreground">{displayName}</h1>
+             {star.agency && (
+               <p className="text-sm text-muted-foreground">{star.agency}</p>
+             )}
+             <p className="text-xs text-primary font-bold mt-0.5">
+               {keywords?.length ?? 0} {language === "ko" ? "활성 키워드" : "active keywords"}
+             </p>
+           </div>
+           {user && (
+             <button
+               onClick={toggleWatch}
+               disabled={watchLoading}
+               className={cn(
+                 "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                 isWatched
+                   ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                   : "bg-muted text-muted-foreground border border-border hover:border-amber-500/50 hover:text-amber-500"
+               )}
+             >
+               <Star className={cn("w-3.5 h-3.5", isWatched && "fill-amber-500")} />
+               {isWatched
+                 ? (language === "ko" ? "관심중" : "Watching")
+                 : (language === "ko" ? "관심 등록" : "Watch")}
+             </button>
+           )}
+         </div>
       ) : null}
 
       {/* Keywords section */}
