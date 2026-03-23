@@ -88,9 +88,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied! 📋", ko: "링크 복사했어요! 📋", ja: "リンクコピー済み！📋", zh: "链接已复制！📋" },
   boosted: { en: "Shared! +5 K-Token earned 🚀", ko: "공유 완료! +5 K-Token 획득 🚀", ja: "共有完了！+5 K-Token獲得 🚀", zh: "分享完成！获得+5 K-Token 🚀" },
-  readBoostReward: { en: "Read article +3 K-Token", ko: "원문 읽기 +3 K-Token", ja: "元記事を読む +3 K-Token", zh: "阅读原文 +3 K-Token" },
-  readBoosted: { en: "Article read! +3 K-Token earned ✅", ko: "읽기 완료! +3 K-Token 획득 ✅", ja: "読了！+3 K-Token獲得 ✅", zh: "已阅读！获得+3 K-Token ✅" },
-  alreadyBoosted: { en: "✓ Already earned +3T", ko: "✓ 이미 +3T 획득 완료", ja: "✓ 獲得済み +3T", zh: "✓ 已获得 +3T" },
+  readOriginal: { en: "Read original", ko: "원문 읽기", ja: "元記事を読む", zh: "阅读原文" },
   alreadyShareBoosted: { en: "You already shared this one", ko: "이미 공유했어요", ja: "すでに共有済みです", zh: "已经分享过了" },
   shareBoostReward: { en: "Share this trend", ko: "트렌드 공유하기", ja: "トレンドを共有", zh: "分享趋势" },
   alreadyShareBoostedDone: { en: "✓ Shared", ko: "✓ 공유 완료", ja: "✓ 共有済み", zh: "✓ 已分享" },
@@ -623,28 +621,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               })()}
             </div>
 
-            {/* Read boost reward indicator */}
-            {user && (
+            {/* Read original link */}
+            {tile.sourceUrl && (
               <div className="px-3 pb-2 flex justify-end">
-                {tile.sourceUrl && !hasReadBoosted ? (
-                  <a
-                    href={tile.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
-                    onClick={handleReadBoost}
-                  >
-                    {t("readBoostReward", language)}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                ) : (
-                  <span className={cn(
-                    "text-[10px] font-medium",
-                    hasReadBoosted ? "text-emerald-400" : "text-emerald-500/70"
-                  )}>
-                    {hasReadBoosted ? t("alreadyBoosted", language) : t("readBoostReward", language)}
-                  </span>
-                )}
+                <a
+                  href={tile.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => track("t2_external_link_click", { trigger_id: tile.id })}
+                >
+                  {t("readOriginal", language)}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             )}
           </div>
