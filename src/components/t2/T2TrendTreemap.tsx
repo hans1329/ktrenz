@@ -788,7 +788,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 const sizeFactor = Math.sqrt(boxArea) / 10;
                 const isTopThree = rectIndex < 3;
                 const keywordSize = isTopThree
-789:                   ? Math.max(18, Math.min(36, sizeFactor * 5))
+                  ? Math.max(18, Math.min(36, sizeFactor * 5))
                   : isTop20
                     ? Math.max(14, Math.min(28, sizeFactor * 4.5))
                     : Math.max(12, Math.min(24, sizeFactor * 4));
