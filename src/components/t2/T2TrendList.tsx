@@ -186,44 +186,12 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {/* Header — keyword + artist row */}
             <div className="px-3.5 pt-4 pb-3 lg:px-5 lg:pt-5 lg:pb-4">
               <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 mt-1">
                     <MessageCircle className="w-4 h-4 text-primary shrink-0 scale-x-[-1]" />
                     <h3 className="text-lg lg:text-xl font-black text-foreground leading-tight truncate">
                       {getLocalizedKeyword(item, language)}
                     </h3>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 mb-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); if (item.starId) { track("t2_artist_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId }); navigate(`/t2/artist/${item.starId}`); } }}
-                      className={cn(
-                        "text-xs font-semibold truncate rounded-full px-2 py-0.5 transition-colors",
-                        item.starId
-                          ? "bg-primary/10 text-primary hover:bg-primary/20"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      <span className="text-muted-foreground font-normal">by</span> {getLocalizedArtistName(item, language)}
-                    </button>
-                    {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                      <Clock className="w-2.5 h-2.5" />
-                      {formatAge(item.detectedAt)}
-                    </span>
-                    <span className="flex-1" />
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleToggleFollow(item); }}
-                      className={cn(
-                        "flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors shrink-0",
-                        followedIds?.has(item.id)
-                          ? "text-primary bg-primary/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                      )}
-                      aria-label="Track keyword"
-                    >
-                      <Crosshair className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? "Tracking" : "Track"}</span>
-                    </button>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-1.5 pt-0.5">
@@ -236,6 +204,38 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                     #{rank}
                   </span>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 mt-2 mb-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (item.starId) { track("t2_artist_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId }); navigate(`/t2/artist/${item.starId}`); } }}
+                  className={cn(
+                    "text-xs font-semibold truncate rounded-full px-2 py-0.5 transition-colors",
+                    item.starId
+                      ? "bg-primary/10 text-primary hover:bg-primary/20"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  <span className="text-muted-foreground font-normal">by</span> {getLocalizedArtistName(item, language)}
+                </button>
+                {isMyArtist && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  {formatAge(item.detectedAt)}
+                </span>
+                <span className="flex-1" />
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleToggleFollow(item); }}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors shrink-0",
+                    followedIds?.has(item.id)
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                  aria-label="Track keyword"
+                >
+                  <Crosshair className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold">{followedIds?.has(item.id) ? "Tracking" : "Track"}</span>
+                </button>
               </div>
             </div>
 
