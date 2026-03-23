@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Building2, ShoppingBag, ArrowRight, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 type OrgType = 'entertainment' | 'brand';
 
@@ -19,6 +20,7 @@ const B2BOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,8 @@ const B2BOnboarding = () => {
         .insert({ user_id: user.id, org_id: orgId, role: 'owner', job_title: jobTitle || null });
       if (memErr) throw memErr;
 
-      toast({ title: '워크스페이스 생성 완료!', description: '대시보드를 설정하고 있습니다...' });
+      toast({ title: '워크스페이스 생성 완료!', description: '대시보드로 이동합니다.' });
+      await queryClient.invalidateQueries({ queryKey: ['b2b-membership'] });
       navigate('/b2b');
     } catch (err: any) {
       toast({ title: '오류', description: err.message, variant: 'destructive' });
