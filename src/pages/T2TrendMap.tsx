@@ -161,18 +161,26 @@ const T2TrendMap = () => {
 
     if (shouldSwipe) {
       if (dx < 0 && viewIndex < VIEW_ORDER.length - 1) {
-        // Animate to next
         setIsAnimating(true);
-        setDragOffsetX(0); // will be handled by viewIndex change
-        setViewIndex(viewIndex + 1);
-        setTimeout(() => setIsAnimating(false), 300);
+        setDragOffsetX(-window.innerWidth);
+        setPendingIndex(viewIndex + 1);
+        setTimeout(() => {
+          setViewIndex(viewIndex + 1);
+          setDragOffsetX(0);
+          setIsAnimating(false);
+          setPendingIndex(null);
+        }, 300);
         return;
       } else if (dx > 0 && viewIndex > 0) {
-        // Animate to prev
         setIsAnimating(true);
-        setDragOffsetX(0);
-        setViewIndex(viewIndex - 1);
-        setTimeout(() => setIsAnimating(false), 300);
+        setDragOffsetX(window.innerWidth);
+        setPendingIndex(viewIndex - 1);
+        setTimeout(() => {
+          setViewIndex(viewIndex - 1);
+          setDragOffsetX(0);
+          setIsAnimating(false);
+          setPendingIndex(null);
+        }, 300);
         return;
       }
     }
