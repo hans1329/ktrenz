@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ const DIRECTION_LOCK_THRESHOLD = 10;
 const HEADER_COLLAPSE_THRESHOLD = 60;
 
 const T2TrendMap = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>("treemap");
+  const [viewIndex, setViewIndex] = useState(0);
   const [category, setCategory] = useState<TrendCategory>("all");
   const [sortMode, setSortMode] = useState<SortMode>("volume");
   const isMobile = useIsMobile();
@@ -41,10 +41,11 @@ const T2TrendMap = () => {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
-  // Swipe animation state
+  // Swipe state
   const [dragOffsetX, setDragOffsetX] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
+
+  const viewMode = VIEW_ORDER[viewIndex];
 
   const touchRef = useRef<{
     startX: number;
@@ -53,6 +54,15 @@ const T2TrendMap = () => {
     locked: "horizontal" | "vertical" | null;
     isDragging: boolean;
   } | null>(null);
+
+  // Which views to render: current + adjacent (lazy, avoids crash)
+  const visibleViews = useMemo(() => {
+    const views: { mode: ViewMode; index: number }[] = [];
+    if (viewIndex > 0) views.push({ mode: VIEW_ORDER[viewIndex - 1], index: viewIndex - 1 });
+    views.push({ mode: VIEW_ORDER[viewIndex], index: viewIndex });
+    if (viewIndex < VIEW_ORDER.length - 1) views.push({ mode: VIEW_ORDER[viewIndex + 1], index: viewIndex + 1 });
+    return views;
+  }, [viewIndex]);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
     setCategoryStats(stats);
@@ -96,15 +106,14 @@ const T2TrendMap = () => {
 
     if (touchRef.current.locked === "horizontal") {
       touchRef.current.isDragging = true;
-      const idx = VIEW_ORDER.indexOf(viewMode);
-      // Apply rubber-band resistance at edges
+      // Rubber-band at edges
       let clampedDx = dx;
-      if ((dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1)) {
-        clampedDx = dx * 0.2; // rubber-band
+      if ((dx > 0 && viewIndex === 0) || (dx < 0 && viewIndex === VIEW_ORDER.length - 1)) {
+        clampedDx = dx * 0.2;
       }
       setDragOffsetX(clampedDx);
     }
-  }, [isDrawerInteraction, viewMode]);
+  }, [isDrawerInteraction, viewIndex]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchRef.current || isDrawerInteraction(e.target)) {
@@ -126,47 +135,22 @@ const T2TrendMap = () => {
       return;
     }
 
-    const idx = VIEW_ORDER.indexOf(viewMode);
     const shouldSwipe = Math.abs(dx) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
 
     if (shouldSwipe) {
-      if (dx < 0 && idx < VIEW_ORDER.length - 1) {
-        // Slide out to left
+      if (dx < 0 && viewIndex < VIEW_ORDER.length - 1) {
+        // Animate to next
         setIsAnimating(true);
-        setDragOffsetX(-window.innerWidth);
-        setTimeout(() => {
-          // Switch view, position new content off-screen right
-          setIsAnimating(false);
-          setViewMode(VIEW_ORDER[idx + 1]);
-          setDragOffsetX(window.innerWidth);
-          // Next frame: slide in from right
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setIsAnimating(true);
-              setDragOffsetX(0);
-              setTimeout(() => setIsAnimating(false), 250);
-            });
-          });
-        }, 100);
+        setDragOffsetX(0); // will be handled by viewIndex change
+        setViewIndex(viewIndex + 1);
+        setTimeout(() => setIsAnimating(false), 300);
         return;
-      } else if (dx > 0 && idx > 0) {
-        // Slide out to right
+      } else if (dx > 0 && viewIndex > 0) {
+        // Animate to prev
         setIsAnimating(true);
-        setDragOffsetX(window.innerWidth);
-        setTimeout(() => {
-          // Switch view, position new content off-screen left
-          setIsAnimating(false);
-          setViewMode(VIEW_ORDER[idx - 1]);
-          setDragOffsetX(-window.innerWidth);
-          // Next frame: slide in from left
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setIsAnimating(true);
-              setDragOffsetX(0);
-              setTimeout(() => setIsAnimating(false), 250);
-            });
-          });
-        }, 100);
+        setDragOffsetX(0);
+        setViewIndex(viewIndex - 1);
+        setTimeout(() => setIsAnimating(false), 300);
         return;
       }
     }
@@ -174,8 +158,11 @@ const T2TrendMap = () => {
     // Snap back
     setIsAnimating(true);
     setDragOffsetX(0);
-    setTimeout(() => setIsAnimating(false), 250);
-  }, [viewMode, isDrawerInteraction]);
+    setTimeout(() => setIsAnimating(false), 300);
+  }, [viewIndex, isDrawerInteraction]);
+
+  // The carousel translateX: -(viewIndex * 100%) + dragOffset
+  const containerTranslateX = `calc(-${viewIndex * 100}% + ${dragOffsetX}px)`;
 
   return (
     <>
@@ -195,17 +182,17 @@ const T2TrendMap = () => {
                 className="flex items-center gap-0 rounded-full p-0.5 md:gap-1 md:p-1"
                 style={{ backgroundColor: "hsl(var(--card))" }}
               >
-                {VIEW_TABS.map(({ key, icon: Icon, label }) => (
+                {VIEW_TABS.map(({ key, icon: Icon, label }, i) => (
                   <button
                     key={key}
                     onClick={() => {
-                      setViewMode(key);
+                      setViewIndex(i);
                       window.scrollTo({ top: 0 });
                     }}
                     className={cn(
                       "flex items-center justify-center gap-1.5 rounded-full transition-all",
                       "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
-                      viewMode === key
+                      viewIndex === i
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     )}
@@ -339,7 +326,7 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className="h-[100dvh] overflow-y-auto overscroll-contain"
+        className="h-[100dvh] overflow-y-auto overscroll-contain overflow-x-hidden"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -350,29 +337,47 @@ const T2TrendMap = () => {
         }}
       >
         <div
-          ref={contentRef}
           className={cn(
             "pb-24 scrollbar-hide",
             headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
           )}
-          style={{
-            transform: `translateX(${dragOffsetX}px)`,
-            transition: isAnimating ? 'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-            willChange: dragOffsetX !== 0 ? 'transform' : 'auto',
-          }}
         >
-          <div className="md:max-w-[90%] mx-auto">
-            <T2TrendTreemap
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              selectedCategory={category}
-              onCategoryChange={setCategory}
-              hideCategory
-              hideHeader
-              sortMode={sortMode}
-              onSortModeChange={setSortMode}
-              onCategoryStatsChange={handleCategoryStatsChange}
-            />
+          {/* Carousel container: all 3 views side by side */}
+          <div
+            className="flex"
+            style={{
+              width: `${VIEW_ORDER.length * 100}%`,
+              transform: `translateX(${containerTranslateX})`,
+              transition: isAnimating ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+              willChange: dragOffsetX !== 0 || isAnimating ? 'transform' : 'auto',
+            }}
+          >
+            {VIEW_ORDER.map((mode, i) => {
+              const isVisible = visibleViews.some(v => v.index === i);
+              return (
+                <div
+                  key={mode}
+                  className="md:max-w-[90%] mx-auto"
+                  style={{ width: `${100 / VIEW_ORDER.length}%`, flexShrink: 0 }}
+                >
+                  {isVisible ? (
+                    <T2TrendTreemap
+                      viewMode={mode}
+                      onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                      selectedCategory={category}
+                      onCategoryChange={setCategory}
+                      hideCategory
+                      hideHeader
+                      sortMode={sortMode}
+                      onSortModeChange={setSortMode}
+                      onCategoryStatsChange={i === viewIndex ? handleCategoryStatsChange : undefined}
+                    />
+                  ) : (
+                    <div style={{ minHeight: '50vh' }} />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
