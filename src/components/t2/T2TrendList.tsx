@@ -116,8 +116,51 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
     return () => observer.disconnect();
   }, [hasMore, onLoadMore]);
 
+  // Fetch all followed trigger IDs for this user
+  const { data: followedIds } = useQuery({
+    queryKey: ["t2-keyword-follows-list", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return new Set<string>();
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("trigger_id")
+        .eq("user_id", user.id);
+      return new Set((data ?? []).map((d: any) => d.trigger_id as string));
+    },
+    enabled: !!user?.id,
+  });
+
+  const handleToggleFollow = async (item: TrendTile) => {
+    if (!user) {
+      toast.info("Login required");
+      return;
+    }
+    const isFollowing = followedIds?.has(item.id);
+    if (isFollowing) {
+      await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .delete()
+        .eq("trigger_id", item.id)
+        .eq("user_id", user.id);
+      toast.info("Unfollowed");
+    } else {
+      await supabase.from("ktrenz_keyword_follows" as any).insert({
+        user_id: user.id,
+        trigger_id: item.id,
+        keyword: item.keyword,
+        keyword_ko: item.keywordKo || null,
+        star_id: item.starId || null,
+        artist_name: item.artistName || null,
+        last_influence_index: item.influenceIndex || 0,
+      } as any);
+      track("t2_keyword_follow", { artist_name: item.artistName, section: item.keyword });
+      toast.success("Following");
+    }
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", item.id, user.id] });
+  };
+
   return (
-    <div className="max-w-lg lg:max-w-2xl mx-auto space-y-5 lg:space-y-6">
       {items.map((item, idx) => {
         const catConfig = CATEGORY_CONFIG[item.category];
         const isMyArtist = watchedSet.has(item.wikiEntryId);
