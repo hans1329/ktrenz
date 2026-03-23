@@ -583,6 +583,7 @@ Deno.serve(async (req) => {
         memberPriority: dedupResult,
         sameArtistDedup: sameArtistResult,
         domesticPriority: srcDedupResult,
+        sameSourceUrlDedup: sameUrlResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
