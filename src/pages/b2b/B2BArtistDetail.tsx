@@ -82,9 +82,9 @@ const B2BArtistDetail = () => {
   const commerceCount = trends.filter((t: any) => t.trend_grade === 'Commerce' || t.trend_grade === 'Intent').length;
 
   return (
-    <div className="flex min-h-full">
+    <div className="flex min-h-full items-start">
       {/* 중앙 메인 */}
-      <div className="flex-1 p-6 space-y-6 max-w-[calc(100%-360px)]">
+      <div className="min-w-0 flex-1 p-6 space-y-6">
         {/* 프로필 헤더 */}
         <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-6">
           <div className="flex items-start gap-5">
