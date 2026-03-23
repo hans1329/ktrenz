@@ -433,74 +433,55 @@ async function extractCommercialKeywords(
   const allNames = [memberName, nameKo, groupName, groupNameKo].filter(Boolean) as string[];
   const nameListStr = allNames.map(n => `"${n}"`).join(", ");
 
-  const systemPrompt = `You are a trend-forecasting analyst and cultural intelligence expert. Your job is to extract SPECIFIC NAMED ENTITIES that have a DIRECT, ACTIVE commercial or cultural relationship with the given artist from Korean news articles.
+  const systemPrompt = `You are a Korean entertainment news analyst. You read Korean news article titles and descriptions, then extract SPECIFIC NAMED ENTITIES mentioned IN THE PROVIDED TEXT.
 
-CRITICAL RULES — READ CAREFULLY:
+★★★ THE MOST IMPORTANT RULE ★★★
+You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descriptions provided below.
+- You must NOT use your own knowledge about the artist.
+- If "팔레트" does not appear in any article text, you CANNOT extract "팔레트" — even if you know it's the artist's song.
+- If "나의 아저씨" does not appear in any article text, you CANNOT extract it.
+- The context/context_ko fields must SUMMARIZE THE ACTUAL ARTICLE where the keyword was found, NOT general knowledge.
+- If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
-1. ABSOLUTELY FORBIDDEN KEYWORDS (instant rejection):
-   - The artist's own name in ANY language/spelling: ${nameListStr}
-   - Any variation, nickname, or abbreviation of the above names
-   - Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
-   - Chart names (Billboard, Hanteo, Gaon, etc.)
-   - Generic K-pop terms: 컴백, comeback, album, concert, 앨범, 콘서트, 팬미팅, fanmeeting, 음방, 활동, 무대
-   - Generic locations: city names, district names, country names, airports
-   - TV campaign/variety show gimmicks, costumes, or ephemeral entertainment segments (e.g., wearing a costume on a show)
+WHAT MAKES A VALID KEYWORD:
+- A specific brand, product name, show title, event name, place name, or food item
+- It LITERALLY appears in the article title or description text
+- The artist has a DIRECT relationship with it (endorsement, appearance, collaboration, starring role)
+- ✅ Article says "카리나 프라다 앰버서더 발탁" → "프라다" VALID (appears in text, direct relationship)
+- ❌ You know IU sang "Palette" but no article mentions it → "팔레트" INVALID (not in provided text)
 
-2. CONTEXTUAL RELEVANCE — MOST IMPORTANT RULE:
-   - A keyword is valid ONLY if the artist has a DIRECT, ACTIVE relationship with the entity
-   - ✅ VALID: The artist endorses/wears/uses the brand, stars in the show, performs at the event, collaborates with the entity
-   - ❌ INVALID: Entity merely MENTIONED in passing, used as comparison/metaphor, part of another person's story, or background context
-   
-   DETAILED EXAMPLES of what to REJECT:
-   - "미쓰라가 삼성 이재용 회장과 동문인지 확인" → "삼성" INVALID (comparison, no business relationship)
-   - "하이라이트 멤버들이 BTS 공연 하이라이트를 감상" → "BTS" INVALID (the article mentions BTS but the keyword is about Highlight watching it)
-   - Article about Artist A mentions "이 곡은 마치 뉴진스의 Hype Boy 같다" → "Hype Boy" INVALID (metaphorical comparison)
-   - "한(Han)이 카르티에 행사에 참석" but the article is actually about Hyunjin → "Cartier" INVALID for Han (misattribution)
-   - "홍진경이 핫도그 탈을 입고 촬영장 입성" → "핫도그" INVALID (costume gimmick, not a commercial relationship)
-   - "코미디언과 아이돌이 MC로 함께하는 캠페인" → campaign name INVALID if it's a one-off TV segment, not the artist's own project
-   
-   DETAILED EXAMPLES of what to ACCEPT:
-   - "카리나가 프라다 2026 S/S 컬렉션 앰버서더로 발탁" → "프라다" VALID (direct endorsement)
-   - "뉴진스 x 코카콜라 컬래버 광고 공개" → "코카콜라" VALID (brand collaboration)
-   - "아이유가 '나의 아저씨' 재방송으로 화제" → "나의 아저씨" VALID (starred in the show)
+FORBIDDEN KEYWORDS (instant rejection):
+- The artist's own name: ${nameListStr}
+- Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
+- Chart names, generic K-pop terms (컴백, 앨범, 콘서트, 팬미팅)
+- Generic locations (city names, country names, airports)
+- TV gimmicks, costumes, ephemeral segments
 
-3. AMBIGUOUS ARTIST NAMES — CRITICAL:
-   - Some artist names are common words (e.g., "Highlight" = 하이라이트, "Han" = 한, "Win" = 윈, "Joy" = 조이)
-   - When the artist name is ambiguous, CAREFULLY verify the article is actually about THIS specific artist
-   - If an article uses the word in its general meaning (e.g., "하이라이트 영상" = highlight video), it is NOT about the artist
-   - Set ownership_confidence to 0.0 if the article isn't clearly about the searched artist
+MEMBER ATTRIBUTION:
+- When searching for a GROUP MEMBER, verify the article is about THIS SPECIFIC member
+- "스트레이 키즈 현진이 까르띠에 행사 참석" → for "Han" → ownership_confidence = 0.0
+- Set article_subject_match = false if a different member is the subject
 
-4. MEMBER ATTRIBUTION — VERIFY THE ARTICLE SUBJECT:
-   - When searching for a GROUP MEMBER, the article may mention the GROUP but focus on a DIFFERENT MEMBER
-   - You MUST check: is the article's MAIN SUBJECT specifically about "${memberName}"?
-   - If the article says "스트레이 키즈 현진이 까르띠에 행사 참석" and you are analyzing for "Han" (한), this keyword belongs to Hyunjin, NOT Han
-   - Even if the group name appears in the article, the keyword belongs to whichever member is the ACTUAL SUBJECT
-   - Set ownership_confidence to 0.0 if a different member of the same group is the article's subject
-   - RULE: If the article body specifically names a DIFFERENT member (e.g., 현진, Hyunjin) as the subject of the keyword relationship, reject it for the current search target
+OWNERSHIP VERIFICATION:
+- Each keyword belongs ONLY to the artist with the direct relationship
+- Set ownership_confidence below 0.5 for indirect/metaphorical/passing mentions
 
-5. CROSS-ARTIST CONTAMINATION — VERIFY OWNERSHIP:
-   - If the article mentions multiple artists, each keyword belongs ONLY to the artist who has the direct relationship
-   - "로제 콘서트에서 골든 앨범 언급" → "Golden" belongs to Jungkook, NOT Rosé
-   - "P1Harmony 기사에서 AB6IX 멤버 비교" → "AB6IX" does NOT belong to P1Harmony
-   - Always ask: "WHO is the true owner of this keyword?" and set ownership_artist accordingly
+Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
+When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
-6. Each keyword must be a SPECIFIC proper noun — a brand, product, place, show title, food item, or event name
-7. The keyword must LITERALLY appear in the article text
-8. OWNERSHIP CHECK: Set ownership_confidence below 0.5 if the relationship is indirect, metaphorical, or just a passing mention
-9. Maximum 7 keywords. Quality over quantity — return ZERO if no valid entities found.
-10. When in doubt, DO NOT extract. False negatives are far better than false positives.`;
+  const userPrompt = `Below are Korean news article titles and descriptions found by searching for "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
-  const userPrompt = `Analyze these Korean news articles about "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
-
-REMEMBER: 
-- Do NOT extract ${nameListStr} or any artist/group names as keywords. Only extract specific brands, products, places, show titles, etc.
-- CRITICAL: For each article, verify that the article's MAIN SUBJECT is "${memberName}"${nameKo ? ` (${nameKo})` : ""}. If the article is about a DIFFERENT member of the same group, set ownership_confidence to 0.0.
-- If the article mentions "${memberName}" only in a list or passing reference while focusing on another person, reject the keyword.
+★ CRITICAL REMINDER:
+- ONLY extract keywords that LITERALLY APPEAR in the article texts below.
+- Do NOT use your general knowledge about this artist to generate keywords.
+- The context_ko field must be a direct summary of the SPECIFIC ARTICLE (cite what the article says), not general knowledge about the artist.
+- If no article contains a valid extractable entity, call extract_keywords with an empty array.
+- source_article_index MUST point to the exact article [number] where the keyword appears.
 
 Articles:
 ${articleTexts}
 
-Call extract_keywords with the specific named entities found, then call analyze_trend_intent.`;
+Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, then call analyze_trend_intent.`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
