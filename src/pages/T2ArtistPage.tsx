@@ -46,6 +46,9 @@ const T2ArtistPage = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const track = useTrackEvent();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [watchLoading, setWatchLoading] = useState(false);
 
   useEffect(() => {
     if (starId) track("t2_artist_view", { artist_slug: starId });
