@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Bell, TrendingUp, TrendingDown, Minus, Zap, Loader2, LogIn } from "lucide-react";
+import { ArrowLeft, Bell, TrendingUp, TrendingDown, Minus, Zap, Loader2, LogIn, Crosshair, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -90,6 +90,32 @@ const Notifications = () => {
     enabled: (watchedArtists?.length ?? 0) > 0,
   });
 
+  // Fetch keyword follow notifications
+  const queryClient = useQueryClient();
+  const { data: keywordNotifs = [] } = useQuery({
+    queryKey: ["keyword-notifications", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from("ktrenz_keyword_notifications" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      return (data as any[]) ?? [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const unreadCount = keywordNotifs.filter((n: any) => !n.is_read).length;
+
+  const markAllRead = async () => {
+    if (!user?.id || unreadCount === 0) return;
+    const unreadIds = keywordNotifs.filter((n: any) => !n.is_read).map((n: any) => n.id);
+    await supabase.from("ktrenz_keyword_notifications" as any).update({ is_read: true }).in("id", unreadIds);
+    queryClient.invalidateQueries({ queryKey: ["keyword-notifications", user.id] });
+  };
+
   // Fetch recent point transactions
   const { data: recentPoints } = useQuery({
     queryKey: ["notifications-points", user?.id],
@@ -160,16 +186,93 @@ const Notifications = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <Bell className="w-5 h-5 text-primary" />
-          <h1 className="text-base font-bold text-foreground">알림</h1>
+          <h1 className="text-base font-bold text-foreground">{t("notif.title")}</h1>
         </div>
       </header>
 
       <div className="px-4 py-4 space-y-6 pb-24 max-w-lg mx-auto">
+        {/* Keyword Follow Alerts */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+              <Crosshair className="w-4 h-4 text-primary" />
+              {t("notif.keywordAlerts")}
+              {unreadCount > 0 && (
+                <span className="ml-1 text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </h2>
+            {unreadCount > 0 && (
+              <button onClick={markAllRead} className="text-xs text-primary flex items-center gap-1 hover:underline">
+                <CheckCheck className="w-3 h-3" />
+                {t("notif.markAllRead")}
+              </button>
+            )}
+          </div>
+
+          {keywordNotifs.length === 0 ? (
+            <div className="rounded-xl bg-card border border-border/50 p-6 text-center">
+              <Crosshair className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">{t("notif.noKeywordAlerts")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t("notif.followKeywords")}</p>
+              <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={() => navigate("/t2")}>
+                {t("nav.trendz")}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {keywordNotifs.map((notif: any) => (
+                <button
+                  key={notif.id}
+                  onClick={() => navigate(`/t2/keyword/${notif.trigger_id}`)}
+                  className={cn(
+                    "w-full rounded-xl border p-3 flex items-start gap-3 text-left transition-colors",
+                    notif.is_read
+                      ? "bg-card/50 border-border/30"
+                      : "bg-primary/5 border-primary/20"
+                  )}
+                >
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
+                    notif.notification_type === "influence_up" ? "bg-emerald-500/10" : "bg-red-500/10"
+                  )}>
+                    {notif.notification_type === "influence_up"
+                      ? <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      : <TrendingDown className="w-4 h-4 text-red-500" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("text-sm font-medium", notif.is_read ? "text-muted-foreground" : "text-foreground")}>
+                      {notif.keyword}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{notif.artist_name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-muted-foreground">
+                        {Number(notif.old_value).toFixed(0)} → {Number(notif.new_value).toFixed(0)}
+                      </span>
+                      <span className={cn(
+                        "text-[10px] font-bold",
+                        notif.delta_pct > 0 ? "text-emerald-500" : "text-red-500"
+                      )}>
+                        {notif.delta_pct > 0 ? "+" : ""}{Number(notif.delta_pct).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {new Date(notif.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Watched Artists Section */}
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
             <Zap className="w-4 h-4 text-primary" />
-            관심 아티스트 실시간 현황
+            {t("notif.watchedArtists")}
           </h2>
 
           {isLoading ? (

@@ -3298,6 +3298,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_keyword_notifications: {
+        Row: {
+          artist_name: string | null
+          created_at: string
+          delta_pct: number | null
+          follow_id: string
+          id: string
+          is_read: boolean
+          keyword: string
+          message: string | null
+          new_value: number | null
+          notification_type: string
+          old_value: number | null
+          trigger_id: string
+          user_id: string
+        }
+        Insert: {
+          artist_name?: string | null
+          created_at?: string
+          delta_pct?: number | null
+          follow_id: string
+          id?: string
+          is_read?: boolean
+          keyword: string
+          message?: string | null
+          new_value?: number | null
+          notification_type?: string
+          old_value?: number | null
+          trigger_id: string
+          user_id: string
+        }
+        Update: {
+          artist_name?: string | null
+          created_at?: string
+          delta_pct?: number | null
+          follow_id?: string
+          id?: string
+          is_read?: boolean
+          keyword?: string
+          message?: string | null
+          new_value?: number | null
+          notification_type?: string
+          old_value?: number | null
+          trigger_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_keyword_votes: {
         Row: {
           created_at: string
