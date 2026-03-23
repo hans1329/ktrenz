@@ -94,6 +94,7 @@ const T2TrendMap = () => {
       touchRef.current = null;
       return;
     }
+
     const touch = e.touches[0];
     touchRef.current = {
       startX: touch.clientX,
@@ -115,18 +116,24 @@ const T2TrendMap = () => {
 
     if (!touchRef.current.locked) {
       if (absDx < DIRECTION_LOCK_THRESHOLD && absDy < DIRECTION_LOCK_THRESHOLD) return;
-      touchRef.current.locked = absDx > absDy ? "horizontal" : "vertical";
+
+      if (absDy >= absDx) {
+        touchRef.current = null;
+        setDragOffsetX(0);
+        return;
+      }
+
+      touchRef.current.locked = "horizontal";
     }
 
-    if (touchRef.current.locked === "horizontal") {
-      touchRef.current.isDragging = true;
-      // Rubber-band at edges
-      let clampedDx = dx;
-      if ((dx > 0 && viewIndex === 0) || (dx < 0 && viewIndex === VIEW_ORDER.length - 1)) {
-        clampedDx = dx * 0.2;
-      }
-      setDragOffsetX(clampedDx);
+    touchRef.current.isDragging = true;
+
+    let clampedDx = dx;
+    if ((dx > 0 && viewIndex === 0) || (dx < 0 && viewIndex === VIEW_ORDER.length - 1)) {
+      clampedDx = dx * 0.2;
     }
+
+    setDragOffsetX(clampedDx);
   }, [isDrawerInteraction, viewIndex]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
@@ -339,6 +346,7 @@ const T2TrendMap = () => {
 
       <div
         className="overflow-x-hidden overscroll-none"
+        style={{ touchAction: "pan-y pinch-zoom" }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
