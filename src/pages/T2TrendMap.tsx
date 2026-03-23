@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -41,11 +41,17 @@ const T2TrendMap = () => {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
+  // Swipe animation state
+  const [dragOffsetX, setDragOffsetX] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const touchRef = useRef<{
     startX: number;
     startY: number;
     startTime: number;
     locked: "horizontal" | "vertical" | null;
+    isDragging: boolean;
   } | null>(null);
 
   const handleCategoryStatsChange = useCallback((stats: Record<string, number>, total: number, my: number) => {
@@ -60,7 +66,7 @@ const T2TrendMap = () => {
   }, []);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (isDrawerInteraction(e.target)) {
+    if (isDrawerInteraction(e.target) || isAnimating) {
       touchRef.current = null;
       return;
     }
@@ -70,8 +76,9 @@ const T2TrendMap = () => {
       startY: touch.clientY,
       startTime: Date.now(),
       locked: null,
+      isDragging: false,
     };
-  }, [isDrawerInteraction]);
+  }, [isDrawerInteraction, isAnimating]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchRef.current || isDrawerInteraction(e.target)) return;
@@ -86,7 +93,18 @@ const T2TrendMap = () => {
       if (absDx < DIRECTION_LOCK_THRESHOLD && absDy < DIRECTION_LOCK_THRESHOLD) return;
       touchRef.current.locked = absDx > absDy ? "horizontal" : "vertical";
     }
-  }, [isDrawerInteraction]);
+
+    if (touchRef.current.locked === "horizontal") {
+      touchRef.current.isDragging = true;
+      const idx = VIEW_ORDER.indexOf(viewMode);
+      // Apply rubber-band resistance at edges
+      let clampedDx = dx;
+      if ((dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1)) {
+        clampedDx = dx * 0.2; // rubber-band
+      }
+      setDragOffsetX(clampedDx);
+    }
+  }, [isDrawerInteraction, viewMode]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchRef.current || isDrawerInteraction(e.target)) {
@@ -99,21 +117,46 @@ const T2TrendMap = () => {
     const elapsed = Date.now() - touchRef.current.startTime;
     const velocity = Math.abs(dx) / elapsed;
     const wasHorizontal = touchRef.current.locked === "horizontal";
+    const wasDragging = touchRef.current.isDragging;
 
     touchRef.current = null;
 
-    if (!wasHorizontal) return;
+    if (!wasHorizontal || !wasDragging) {
+      setDragOffsetX(0);
+      return;
+    }
 
     const idx = VIEW_ORDER.indexOf(viewMode);
     const shouldSwipe = Math.abs(dx) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY_THRESHOLD;
 
     if (shouldSwipe) {
       if (dx < 0 && idx < VIEW_ORDER.length - 1) {
-        setViewMode(VIEW_ORDER[idx + 1]);
+        // Animate out to left, then switch
+        setIsAnimating(true);
+        setDragOffsetX(-window.innerWidth);
+        setTimeout(() => {
+          setViewMode(VIEW_ORDER[idx + 1]);
+          setDragOffsetX(0);
+          setIsAnimating(false);
+        }, 250);
+        return;
       } else if (dx > 0 && idx > 0) {
-        setViewMode(VIEW_ORDER[idx - 1]);
+        // Animate out to right, then switch
+        setIsAnimating(true);
+        setDragOffsetX(window.innerWidth);
+        setTimeout(() => {
+          setViewMode(VIEW_ORDER[idx - 1]);
+          setDragOffsetX(0);
+          setIsAnimating(false);
+        }, 250);
+        return;
       }
     }
+
+    // Snap back
+    setIsAnimating(true);
+    setDragOffsetX(0);
+    setTimeout(() => setIsAnimating(false), 250);
   }, [viewMode, isDrawerInteraction]);
 
   return (
@@ -289,10 +332,16 @@ const T2TrendMap = () => {
         }}
       >
         <div
+          ref={contentRef}
           className={cn(
-            "pb-24 scrollbar-hide transition-all duration-500 ease-in-out",
+            "pb-24 scrollbar-hide",
             headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
           )}
+          style={{
+            transform: `translateX(${dragOffsetX}px)`,
+            transition: isAnimating ? 'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+            willChange: dragOffsetX !== 0 ? 'transform' : 'auto',
+          }}
         >
           <div className="md:max-w-[90%] mx-auto">
             <T2TrendTreemap
