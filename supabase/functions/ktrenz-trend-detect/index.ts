@@ -46,6 +46,31 @@ const SOURCE_IMAGE_BLACKLIST = [
   "scontent.",
 ];
 
+// 텍스트 오버레이/배너 스타일 이미지를 걸러내기 위한 URL 패턴
+const TEXT_OVERLAY_IMAGE_PATTERNS = [
+  /thumb_\d+x\d+/i,           // 리사이즈된 썸네일 (텍스트 합성본 많음)
+  /card_img|card_news/i,       // 카드뉴스 이미지
+  /infographic/i,              // 인포그래픽
+  /screenshot/i,               // 스크린샷
+  /text_image|textimg/i,       // 텍스트 이미지 명시
+  /ranking|chart|graph/i,      // 차트/랭킹 이미지
+  /photo_layout|composite/i,   // 합성 레이아웃
+];
+
+// OG 이미지가 텍스트 오버레이/배너일 가능성이 높은지 판별
+function isLikelyTextOverlayImage(url: string): boolean {
+  // 카드뉴스/인포그래픽 패턴
+  if (TEXT_OVERLAY_IMAGE_PATTERNS.some(p => p.test(url))) return true;
+  // 극단적 가로 비율 (배너) - URL에 크기 힌트가 있는 경우
+  const sizeMatch = url.match(/(\d{3,4})x(\d{2,4})/);
+  if (sizeMatch) {
+    const w = parseInt(sizeMatch[1]);
+    const h = parseInt(sizeMatch[2]);
+    if (w > 0 && h > 0 && w / h > 3) return true; // 극단적 배너
+  }
+  return false;
+}
+
 // URL 정규화: HTML 엔티티 디코딩
 function sanitizeImageUrl(url: string | null): string | null {
   if (!url) return null;
@@ -1141,7 +1166,16 @@ async function detectForMember(
     return { keywordData: k, sourceArticle, sourceUrl: sourceArticle?.url || null };
   });
 
-  const uniqueUrls = [...new Set(keywordSources.map((item) => item.sourceUrl).filter(Boolean))] as string[];
+  // 모든 기사 URL에서 OG 이미지를 수집 (최대 10개 기사)
+  const allArticleUrls = articles
+    .slice(0, 10)
+    .map(a => a.url)
+    .filter(Boolean)
+    .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)));
+  const uniqueUrls = [...new Set([
+    ...keywordSources.map((item) => item.sourceUrl).filter(Boolean) as string[],
+    ...allArticleUrls,
+  ])];
   const ogImageMap = new Map<string, string | null>();
   await Promise.allSettled(
     uniqueUrls
@@ -1150,6 +1184,26 @@ async function detectForMember(
         ogImageMap.set(url, await fetchOgImage(url));
       })
   );
+
+  // 키워드별 최적 이미지 선택: 텍스트 오버레이 이미지를 건너뛰고 깨끗한 사진 우선
+  function selectBestImage(primaryUrl: string | null): string | null {
+    // 1차: 주 소스 기사 이미지 (텍스트 오버레이가 아닌 경우)
+    if (primaryUrl) {
+      const img = ogImageMap.get(primaryUrl);
+      if (img && !isLikelyTextOverlayImage(img)) return sanitizeImageUrl(img);
+    }
+    // 2차: 다른 기사들에서 깨끗한 이미지 찾기
+    for (const [url, img] of ogImageMap) {
+      if (!img || url === primaryUrl) continue;
+      if (!isLikelyTextOverlayImage(img)) return sanitizeImageUrl(img);
+    }
+    // 3차: 텍스트 오버레이여도 없는 것보다는 나음
+    if (primaryUrl) {
+      const img = ogImageMap.get(primaryUrl);
+      if (img) return sanitizeImageUrl(img);
+    }
+    return null;
+  }
 
   // ─── 키워드별 buzz raw counts + normalized score ───
   const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
@@ -1188,7 +1242,7 @@ async function detectForMember(
         confidence: keywordData.confidence,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
-        source_image_url: sanitizeImageUrl(sourceUrl ? ogImageMap.get(sourceUrl) || null : null),
+        source_image_url: selectBestImage(sourceUrl),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         commercial_intent: keywordData.commercial_intent || null,
         brand_intent: keywordData.brand_intent || null,
