@@ -95,11 +95,12 @@ Deno.serve(async (req) => {
             .eq("id", ppState.id)
             .eq("status", "postprocess_requested"); // optimistic lock
 
-          // postprocess 완료 → grade 인라인 실행 → 다음 phase
+          // postprocess 실행
+          const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
+
+          // postprocess 완료 → grade 인라인 실행 (별도 phase 제거)
           const gradeResult = await executeGradeInline(supabaseUrl, supabaseKey);
           console.log(`[cron] Inline grade result:`, gradeResult);
-
-          const ppResult = { postprocess: true, grade: gradeResult };
 
           // postprocess 완료 → 다음 phase 시작 or done
           const isSinglePhaseRun = ppState.run_id.startsWith("single_");
