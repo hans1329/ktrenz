@@ -1413,7 +1413,9 @@ async function detectForMember(
         confidence: keywordData.confidence,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
-        source_image_url: selectBestImage(sourceUrl),
+        source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
+          ? keywordData._tiktok_cover_url
+          : selectBestImage(sourceUrl),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         commercial_intent: keywordData.commercial_intent || null,
         brand_intent: keywordData.brand_intent || null,
