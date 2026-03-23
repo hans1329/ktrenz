@@ -217,45 +217,61 @@ const T2ArtistPage = () => {
           </div>
         </div>
       ) : star ? (
-        <div className="flex items-center gap-4 mb-6">
-          {star.imageUrl ? (
-            <>
-               <img
-                 src={star.imageUrl}
-                 alt={displayName}
-                 className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
-                 referrerPolicy="no-referrer"
-                 onError={(e) => {
-                   const el = e.currentTarget;
-                   // Try content image as intermediate fallback
-                   if (star.contentImageUrl && el.src !== star.contentImageUrl) {
-                     el.src = star.contentImageUrl;
-                     return;
-                   }
-                   el.style.display = "none";
-                   const fallback = el.nextElementSibling as HTMLElement;
-                   if (fallback) fallback.style.display = "flex";
-                 }}
-               />
-               <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground" style={{ display: "none" }}>
-                 {displayName.charAt(0)}
-               </div>
-            </>
-          ) : (
-            <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground">
-              {displayName.charAt(0)}
-            </div>
-          )}
-          <div>
-            <h1 className="text-xl lg:text-2xl font-black text-foreground">{displayName}</h1>
-            {star.agency && (
-              <p className="text-sm text-muted-foreground">{star.agency}</p>
-            )}
-            <p className="text-xs text-primary font-bold mt-0.5">
-              {keywords?.length ?? 0} {language === "ko" ? "활성 키워드" : "active keywords"}
-            </p>
-          </div>
-        </div>
+         <div className="flex items-center gap-4 mb-6">
+           {star.imageUrl ? (
+             <>
+                <img
+                  src={star.imageUrl}
+                  alt={displayName}
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20 shrink-0"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    if (star.contentImageUrl && el.src !== star.contentImageUrl) {
+                      el.src = star.contentImageUrl;
+                      return;
+                    }
+                    el.style.display = "none";
+                    const fallback = el.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = "flex";
+                  }}
+                />
+                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground shrink-0" style={{ display: "none" }}>
+                  {displayName.charAt(0)}
+                </div>
+             </>
+           ) : (
+             <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground shrink-0">
+               {displayName.charAt(0)}
+             </div>
+           )}
+           <div className="flex-1 min-w-0">
+             <h1 className="text-xl lg:text-2xl font-black text-foreground">{displayName}</h1>
+             {star.agency && (
+               <p className="text-sm text-muted-foreground">{star.agency}</p>
+             )}
+             <p className="text-xs text-primary font-bold mt-0.5">
+               {keywords?.length ?? 0} {language === "ko" ? "활성 키워드" : "active keywords"}
+             </p>
+           </div>
+           {user && (
+             <button
+               onClick={toggleWatch}
+               disabled={watchLoading}
+               className={cn(
+                 "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                 isWatched
+                   ? "bg-amber-500/15 text-amber-500 border border-amber-500/30"
+                   : "bg-muted text-muted-foreground border border-border hover:border-amber-500/50 hover:text-amber-500"
+               )}
+             >
+               <Star className={cn("w-3.5 h-3.5", isWatched && "fill-amber-500")} />
+               {isWatched
+                 ? (language === "ko" ? "관심중" : "Watching")
+                 : (language === "ko" ? "관심 등록" : "Watch")}
+             </button>
+           )}
+         </div>
       ) : null}
 
       {/* Keywords section */}
