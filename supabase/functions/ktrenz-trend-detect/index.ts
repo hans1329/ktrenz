@@ -695,8 +695,7 @@ Call extract_keywords with the specific named entities found, then call analyze_
         return false;
       }
 
-      // confidence 0.8 이상이면 텍스트 검증 스킵
-      if (k.confidence >= 0.8) return true;
+      // ★ confidence와 무관하게 항상 텍스트 존재 검증 수행 (AI 환각 방지)
 
       // 텍스트 존재 검증
       if (allText.includes(kwLower) || (kwKo && allText.includes(kwKo)) || (kwEn && allText.includes(kwEn))) return true;
