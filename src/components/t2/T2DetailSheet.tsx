@@ -494,6 +494,18 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               <Clock className="w-3 h-3" />
               {formatAge(tile.detectedAt)}
             </span>
+            <button
+              onClick={handleToggleFollow}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ml-auto",
+                isFollowing
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+              )}
+            >
+              <Crosshair className="w-3 h-3" />
+              {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
+            </button>
           </div>
         </SheetHeader>
 
