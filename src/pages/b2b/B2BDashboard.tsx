@@ -1,6 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
 import {
   TrendingUp, TrendingDown, Zap, Star, BarChart3, ArrowUpRight,
   Activity, ShoppingBag, Eye, Brain, Sparkles, ChevronRight
