@@ -330,12 +330,12 @@ const T2TrendMap = () => {
                     borderColor: isActive
                       ? "transparent"
                       : cat === "all"
-                        ? "hsl(var(--border) / 0.9)"
+                        ? "hsl(var(--border) / 0.4)"
                         : cat === "my"
-                          ? "hsl(45 90% 50% / 0.3)"
+                          ? "hsl(45 90% 50% / 0.15)"
                           : config?.color
-                            ? `${config.color.replace(")", ", 0.3)").replace("hsl(", "hsla(")}`
-                            : "hsl(var(--border) / 0.9)",
+                            ? `${config.color.replace(")", ", 0.15)").replace("hsl(", "hsla(")}`
+                            : "hsl(var(--border) / 0.4)",
                   }}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
