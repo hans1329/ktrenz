@@ -206,13 +206,12 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     uncappedCount++;
     return a;
   });
-  // Distribute excess proportionally to uncapped tiles
+  let areas: number[];
   if (excess > 0 && uncappedCount > 0) {
     const uncappedTotal = capped.reduce((s, a) => a < maxAreaPerTile ? s + a : s, 0);
-    const areas2 = capped.map(a => a < maxAreaPerTile ? a + (a / uncappedTotal) * excess : a);
-    var areas = areas2;
+    areas = capped.map(a => a < maxAreaPerTile ? a + (a / uncappedTotal) * excess : a);
   } else {
-    var areas = capped;
+    areas = capped;
   }
   const rects: Rect[] = [];
   let cx = x, cy = y, cw = w, ch = h, idx = 0;
