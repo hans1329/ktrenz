@@ -633,7 +633,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }
 
   return (
-    <div className="px-0 md:px-4 pb-4">
+    <div className={cn("px-0 md:px-4", currentViewMode === "treemap" ? "pb-0" : "pb-4")}>
       {/* Header */}
       {!hideHeader && (
       <div className="pt-4 pb-3 flex items-center justify-between gap-3 px-4 md:px-0">
