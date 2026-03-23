@@ -4,11 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, Star, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; color: string }> = {
   brand:   { label: "Brand",   labelKo: "브랜드",  color: "hsl(210, 70%, 55%)" },
