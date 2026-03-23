@@ -12,7 +12,6 @@ const B2BDashboard = () => {
   const { org } = useOutletContext<{ org: any }>();
   const isEntertainment = org?.org_type === 'entertainment';
 
-  // Fetch tracked stars
   const { data: trackedStars = [] } = useQuery({
     queryKey: ['b2b-tracked-stars', org?.id],
     queryFn: async () => {
@@ -25,7 +24,6 @@ const B2BDashboard = () => {
     enabled: !!org?.id,
   });
 
-  // Fetch recent active trends
   const { data: activeTrends = [] } = useQuery({
     queryKey: ['b2b-active-trends'],
     queryFn: async () => {
@@ -42,20 +40,19 @@ const B2BDashboard = () => {
   const ownedStars = trackedStars.filter((s: any) => s.relationship === 'owned');
   const competitorStars = trackedStars.filter((s: any) => s.relationship === 'competitor');
 
-  // AI insight panel state
   const [aiQuery, setAiQuery] = useState('');
 
   return (
     <div className="flex min-h-full">
-      {/* CENTER: Main Content */}
+      {/* 중앙: 메인 콘텐츠 */}
       <div className="flex-1 p-6 space-y-6 max-w-[calc(100%-360px)]">
-        {/* KPI Row */}
+        {/* KPI */}
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Active Trends', value: activeTrends.length, icon: TrendingUp, color: 'hsl(270,80%,60%)' },
-            { label: isEntertainment ? 'My Artists' : 'Tracked Stars', value: ownedStars.length, icon: Star, color: 'hsl(45,90%,55%)' },
-            { label: 'Competitors', value: competitorStars.length, icon: Eye, color: 'hsl(200,80%,55%)' },
-            { label: 'Trend Alerts', value: activeTrends.filter((t: any) => (t.trend_score ?? 0) > 70).length, icon: Zap, color: 'hsl(15,90%,55%)' },
+            { label: '활성 트렌드', value: activeTrends.length, icon: TrendingUp, color: 'hsl(270,80%,60%)' },
+            { label: isEntertainment ? '소속 아티스트' : '추적 스타', value: ownedStars.length, icon: Star, color: 'hsl(45,90%,55%)' },
+            { label: '경쟁사', value: competitorStars.length, icon: Eye, color: 'hsl(200,80%,55%)' },
+            { label: '트렌드 알림', value: activeTrends.filter((t: any) => (t.trend_score ?? 0) > 70).length, icon: Zap, color: 'hsl(15,90%,55%)' },
           ].map(kpi => (
             <div key={kpi.label} className="bg-[hsl(220,15%,12%)] rounded-xl p-4 border border-[hsl(220,15%,16%)]">
               <div className="flex items-center justify-between mb-3">
@@ -67,21 +64,20 @@ const B2BDashboard = () => {
           ))}
         </div>
 
-        {/* Trending Keywords Table */}
+        {/* 실시간 트렌드 피드 */}
         <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)]">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(220,15%,16%)]">
             <h2 className="text-white font-semibold flex items-center gap-2">
               <Activity className="w-4 h-4 text-[hsl(270,80%,60%)]" />
-              Live Trend Feed
+              실시간 트렌드 피드
             </h2>
             <button className="text-xs text-[hsl(270,80%,60%)] flex items-center gap-1 hover:underline">
-              View All <ChevronRight className="w-3 h-3" />
+              전체 보기 <ChevronRight className="w-3 h-3" />
             </button>
           </div>
           <div className="divide-y divide-[hsl(220,15%,16%)]">
             {activeTrends.slice(0, 8).map((trend: any) => (
               <div key={trend.id} className="flex items-center gap-4 px-5 py-3 hover:bg-[hsl(220,15%,14%)] transition-colors">
-                {/* Image */}
                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
                   {trend.source_image_url ? (
                     <img src={trend.source_image_url} alt="" className="w-full h-full object-cover" />
@@ -91,14 +87,12 @@ const B2BDashboard = () => {
                     </div>
                   )}
                 </div>
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">{trend.keyword}</p>
                   <p className="text-xs text-[hsl(220,10%,45%)]">
                     {trend.star?.name_en} · {trend.category}
                   </p>
                 </div>
-                {/* Grade */}
                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${
                   trend.trend_grade === 'Explosive' ? 'bg-[hsl(0,80%,50%,0.2)] text-[hsl(0,80%,65%)]' :
                   trend.trend_grade === 'Commerce' ? 'bg-[hsl(270,80%,50%,0.2)] text-[hsl(270,80%,70%)]' :
@@ -107,12 +101,10 @@ const B2BDashboard = () => {
                 }`}>
                   {trend.trend_grade || 'Spark'}
                 </span>
-                {/* Score */}
                 <div className="text-right w-16">
                   <p className="text-sm font-bold text-white">{(trend.trend_score ?? trend.influence_index ?? 0).toFixed(0)}</p>
-                  <p className="text-[10px] text-[hsl(220,10%,40%)]">Score</p>
+                  <p className="text-[10px] text-[hsl(220,10%,40%)]">스코어</p>
                 </div>
-                {/* Pre/Post indicator */}
                 <div className="flex items-center gap-1 text-[hsl(150,60%,50%)]">
                   <ArrowUpRight className="w-3.5 h-3.5" />
                   <span className="text-xs font-semibold">+{Math.floor(Math.random() * 200 + 20)}%</span>
@@ -122,18 +114,18 @@ const B2BDashboard = () => {
             {activeTrends.length === 0 && (
               <div className="px-5 py-12 text-center text-[hsl(220,10%,40%)]">
                 <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No active trends. Add artists to start tracking.</p>
+                <p className="text-sm">활성 트렌드가 없습니다. 아티스트를 추가하여 추적을 시작하세요.</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Star Performance Cards */}
+        {/* 스타 성과 카드 */}
         {ownedStars.length > 0 && (
           <div>
             <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
               <Star className="w-4 h-4 text-[hsl(45,90%,55%)]" />
-              {isEntertainment ? 'My Artist Performance' : 'Tracked Star Performance'}
+              {isEntertainment ? '소속 아티스트 성과' : '추적 스타 성과'}
             </h2>
             <div className="grid grid-cols-3 gap-4">
               {ownedStars.slice(0, 6).map((ts: any) => (
@@ -150,11 +142,13 @@ const B2BDashboard = () => {
                     </div>
                     <div>
                       <p className="text-sm text-white font-semibold">{ts.star?.name_en}</p>
-                      <p className="text-xs text-[hsl(220,10%,45%)] capitalize">{ts.relationship}</p>
+                      <p className="text-xs text-[hsl(220,10%,45%)]">
+                        {ts.relationship === 'owned' ? '소속' : '경쟁사'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[hsl(220,10%,45%)]">Active Trends</span>
+                    <span className="text-[hsl(220,10%,45%)]">활성 트렌드</span>
                     <span className="text-white font-bold">
                       {activeTrends.filter((t: any) => t.star?.name_en === ts.star?.name_en).length}
                     </span>
@@ -166,46 +160,44 @@ const B2BDashboard = () => {
         )}
       </div>
 
-      {/* RIGHT: AI Decision Panel */}
+      {/* 우측: AI 의사결정 패널 */}
       <div className="w-[360px] border-l border-[hsl(220,15%,15%)] bg-[hsl(220,18%,9%)] flex flex-col shrink-0 sticky top-14 h-[calc(100vh-56px)]">
         <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)]">
           <div className="flex items-center gap-2">
             <Brain className="w-4 h-4 text-[hsl(270,80%,60%)]" />
-            <h3 className="text-sm font-bold text-white">AI Decision Engine</h3>
+            <h3 className="text-sm font-bold text-white">AI 의사결정 엔진</h3>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">LIVE</span>
           </div>
         </div>
 
-        {/* AI Insights */}
         <div className="flex-1 overflow-auto p-4 space-y-3">
-          {/* Auto-generated insight cards */}
           {[
             {
               type: 'opportunity',
               icon: <Sparkles className="w-3.5 h-3.5" />,
               color: 'hsl(45,90%,55%)',
-              title: 'Market Opportunity',
+              title: '시장 기회',
               body: activeTrends.length > 0
-                ? `${activeTrends[0]?.keyword} is trending with ${activeTrends[0]?.trend_grade || 'Spark'}-level energy. Consider immediate brand collaboration.`
-                : 'Add artists to get personalized market opportunities.',
+                ? `${activeTrends[0]?.keyword}이(가) ${activeTrends[0]?.trend_grade || 'Spark'} 수준의 에너지로 트렌딩 중입니다. 즉각적인 브랜드 협업을 검토하세요.`
+                : '맞춤형 시장 기회를 받으려면 아티스트를 추가하세요.',
             },
             {
               type: 'alert',
               icon: <Zap className="w-3.5 h-3.5" />,
               color: 'hsl(15,90%,55%)',
-              title: 'Trend Alert',
+              title: '트렌드 알림',
               body: activeTrends.length > 3
-                ? `${activeTrends.filter((t: any) => t.trend_grade === 'Commerce' || t.trend_grade === 'Intent').length} trends show strong commercial intent.`
-                : 'More data needed to generate trend alerts.',
+                ? `${activeTrends.filter((t: any) => t.trend_grade === 'Commerce' || t.trend_grade === 'Intent').length}개 트렌드가 강한 상업적 의도를 보이고 있습니다.`
+                : '트렌드 알림을 생성하려면 더 많은 데이터가 필요합니다.',
             },
             {
               type: 'benchmark',
               icon: <BarChart3 className="w-3.5 h-3.5" />,
               color: 'hsl(200,80%,55%)',
-              title: 'Competitive Insight',
+              title: '경쟁 인사이트',
               body: competitorStars.length > 0
-                ? `Monitoring ${competitorStars.length} competitor artists. Compare performance in Pre/Post Analysis.`
-                : 'Add competitor artists for benchmark insights.',
+                ? `${competitorStars.length}개 경쟁사 아티스트를 모니터링 중입니다. Pre/Post 분석에서 성과를 비교하세요.`
+                : '벤치마크 인사이트를 받으려면 경쟁사 아티스트를 추가하세요.',
             },
           ].map(insight => (
             <div key={insight.type} className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
@@ -215,18 +207,17 @@ const B2BDashboard = () => {
               </div>
               <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">{insight.body}</p>
               <button className="mt-2 text-[10px] text-[hsl(270,80%,60%)] font-medium hover:underline flex items-center gap-1">
-                Deep Dive <ArrowUpRight className="w-3 h-3" />
+                자세히 보기 <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
           ))}
 
-          {/* Action buttons */}
           <div className="pt-2 space-y-2">
-            <p className="text-[10px] text-[hsl(220,10%,35%)] font-medium uppercase tracking-wider">Quick Actions</p>
+            <p className="text-[10px] text-[hsl(220,10%,35%)] font-medium uppercase tracking-wider">빠른 실행</p>
             {[
-              { label: 'Generate Trend Report', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-              { label: 'Find Collaboration Match', icon: <ShoppingBag className="w-3.5 h-3.5" /> },
-              { label: 'Analyze Campaign Impact', icon: <Zap className="w-3.5 h-3.5" /> },
+              { label: '트렌드 리포트 생성', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+              { label: '협업 매칭 찾기', icon: <ShoppingBag className="w-3.5 h-3.5" /> },
+              { label: '캠페인 임팩트 분석', icon: <Zap className="w-3.5 h-3.5" /> },
             ].map(action => (
               <button
                 key={action.label}
@@ -240,13 +231,13 @@ const B2BDashboard = () => {
           </div>
         </div>
 
-        {/* AI Chat input */}
+        {/* AI 채팅 입력 */}
         <div className="p-3 border-t border-[hsl(220,15%,15%)]">
           <div className="relative">
             <Input
               value={aiQuery}
               onChange={e => setAiQuery(e.target.value)}
-              placeholder="Ask AI about trends, stars, campaigns..."
+              placeholder="트렌드, 스타, 캠페인에 대해 AI에게 질문하세요..."
               className="bg-[hsl(220,15%,12%)] border-[hsl(220,15%,18%)] text-white placeholder:text-[hsl(220,10%,30%)] h-9 text-sm pr-10"
             />
             <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(270,80%,60%)] hover:text-[hsl(270,80%,70%)]">
