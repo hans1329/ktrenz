@@ -25,6 +25,7 @@ interface ExtractedKeyword {
   brand_intent?: "awareness" | "conversion" | "association" | "loyalty";
   fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
   trend_potential?: number;
+  purchase_stage?: "awareness" | "interest" | "consideration" | "purchase" | "review";
 }
 
 // Platform names and non-trackable entities blacklist
@@ -349,8 +350,13 @@ const TOOL_EXTRACT_KEYWORDS = {
                 },
                 description: "List of reasons why this keyword SHOULD be rejected. Empty array [] if the keyword is valid. Be honest — flag ALL applicable issues."
               },
+              purchase_stage: {
+                type: "string",
+                enum: ["awareness", "interest", "consideration", "purchase", "review"],
+                description: "Consumer purchase funnel stage: awareness = first exposure via star, interest = active search/curiosity, consideration = comparing options/prices, purchase = buying intent/action, review = post-purchase reviews/unboxing"
+              },
             },
-            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason", "article_subject_name", "article_subject_match", "rejection_flags"],
+            required: ["keyword", "keyword_en", "keyword_ko", "category", "confidence", "context", "context_ko", "source_article_index", "commercial_intent", "brand_intent", "fan_sentiment", "trend_potential", "ownership_artist", "ownership_confidence", "ownership_reason", "article_subject_name", "article_subject_match", "rejection_flags", "purchase_stage"],
           },
           description: "Array of extracted keywords. Maximum 7. Include ALL candidates even if you think they should be rejected — use rejection_flags to mark issues.",
         },
@@ -568,7 +574,7 @@ Call extract_keywords with the specific named entities found, then call analyze_
             }
 
             // ✅ 모든 검증 통과
-            console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence})`);
+            console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence}, stage: ${k.purchase_stage || "n/a"})`);
             extractedKeywords.push({
               keyword: k.keyword,
               keyword_en: k.keyword_en,
@@ -586,6 +592,7 @@ Call extract_keywords with the specific named entities found, then call analyze_
               brand_intent: k.brand_intent,
               fan_sentiment: k.fan_sentiment,
               trend_potential: k.trend_potential,
+              purchase_stage: k.purchase_stage || undefined,
             });
           }
         } else if (tc.function.name === "analyze_trend_intent") {
@@ -1187,6 +1194,7 @@ async function detectForMember(
         brand_intent: keywordData.brand_intent || null,
         fan_sentiment: keywordData.fan_sentiment || null,
         trend_potential: keywordData.trend_potential ?? null,
+        purchase_stage: keywordData.purchase_stage || null,
         baseline_score: buzz.newsTotal + buzz.blogTotal,
         status: "pending",
         metadata: {

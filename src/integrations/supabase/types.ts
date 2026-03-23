@@ -3782,6 +3782,50 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_trend_artist_grades: {
+        Row: {
+          computed_at: string
+          created_at: string
+          grade: string
+          grade_breakdown: Json | null
+          grade_score: number
+          id: string
+          keyword_count: number
+          star_id: string
+          updated_at: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          grade?: string
+          grade_breakdown?: Json | null
+          grade_score?: number
+          id?: string
+          keyword_count?: number
+          star_id: string
+          updated_at?: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          grade?: string
+          grade_breakdown?: Json | null
+          grade_score?: number
+          id?: string
+          keyword_count?: number
+          star_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_artist_grades_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: true
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_trend_bets: {
         Row: {
           amount: number
@@ -3958,12 +4002,14 @@ export type Database = {
           peak_delay_hours: number | null
           peak_score: number | null
           prev_api_total: number | null
+          purchase_stage: string | null
           source_image_url: string | null
           source_snippet: string | null
           source_title: string | null
           source_url: string | null
           star_id: string | null
           status: string
+          trend_grade: string | null
           trend_potential: number | null
           trigger_source: string
           trigger_type: string
@@ -3997,12 +4043,14 @@ export type Database = {
           peak_delay_hours?: number | null
           peak_score?: number | null
           prev_api_total?: number | null
+          purchase_stage?: string | null
           source_image_url?: string | null
           source_snippet?: string | null
           source_title?: string | null
           source_url?: string | null
           star_id?: string | null
           status?: string
+          trend_grade?: string | null
           trend_potential?: number | null
           trigger_source?: string
           trigger_type?: string
@@ -4036,12 +4084,14 @@ export type Database = {
           peak_delay_hours?: number | null
           peak_score?: number | null
           prev_api_total?: number | null
+          purchase_stage?: string | null
           source_image_url?: string | null
           source_snippet?: string | null
           source_title?: string | null
           source_url?: string | null
           star_id?: string | null
           status?: string
+          trend_grade?: string | null
           trend_potential?: number | null
           trigger_source?: string
           trigger_type?: string
