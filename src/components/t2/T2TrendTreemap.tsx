@@ -557,7 +557,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const containerHeight = useMemo(() => {
     if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
 
-    return isMobile ? 4200 : 2800;
+    return isMobile ? 3200 : 2800;
   }, [currentViewMode, isMobile]);
 
   const [listVisibleCount, setListVisibleCount] = useState(20);
