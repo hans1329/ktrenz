@@ -240,9 +240,62 @@ async function domesticPriorityDedup(sb: any): Promise<{ expired: number; detail
   return { expired: expireIds.length, details };
 }
 
-// ── 3. (제거됨) 복합 키워드 병합 ──
-// 이 로직은 "샤넬 투톤 슈즈"+"프라다 자켓"을 합쳐버리는 역효과가 있어 제거.
-// 복합 키워드 분리는 AI 분류(4단계)에서 처리함.
+// ── 3a. 동일 아티스트 + 동일 source_url 중복제거 ──
+// 같은 아티스트의 서로 다른 키워드가 동일 기사를 참조하면 baseline_score가 높은 것만 유지
+async function sameSourceUrlDedup(sb: any): Promise<{ expired: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, star_id, artist_name, source_url, baseline_score, detected_at")
+    .in("status", ["active", "pending"])
+    .gte("detected_at", threeDaysAgo)
+    .not("source_url", "is", null);
+
+  if (!active?.length) return { expired: 0, details: [] };
+
+  // star_id + source_url 기준 그룹화
+  const byKey = new Map<string, any[]>();
+  for (const e of active) {
+    if (!e.source_url) continue;
+    const key = `${e.star_id}::${e.source_url}`;
+    const list = byKey.get(key) || [];
+    list.push(e);
+    byKey.set(key, list);
+  }
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+
+  for (const [_key, entries] of byKey) {
+    if (entries.length <= 1) continue;
+
+    // baseline_score가 가장 높은 것을 유지, 동점이면 최신 것 유지
+    entries.sort((a: any, b: any) => {
+      const scoreDiff = (b.baseline_score || 0) - (a.baseline_score || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime();
+    });
+
+    for (let i = 1; i < entries.length; i++) {
+      expireIds.push(entries[i].id);
+    }
+    const kept = entries[0];
+    const removed = entries.slice(1).map((e: any) => e.keyword_ko || e.keyword).join(", ");
+    details.push(`"${kept.keyword_ko || kept.keyword}" 유지, "${removed}" 제거 (${kept.artist_name}, 동일 기사)`);
+  }
+
+  if (expireIds.length > 0) {
+    for (let i = 0; i < expireIds.length; i += 500) {
+      const batch = expireIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ status: "expired", expired_at: new Date().toISOString() })
+        .in("id", batch);
+    }
+  }
+
+  return { expired: expireIds.length, details };
+}
 
 // ── 4. AI 분류 (툴콜링) ──
 // pending 키워드 중 그룹/멤버 귀속이 모호한 것들을 AI로 판단
@@ -506,6 +559,10 @@ Deno.serve(async (req) => {
     const srcDedupResult = await domesticPriorityDedup(sb);
     console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
 
+    // 4.5단계: 동일 아티스트 + 동일 source_url 중복제거
+    const sameUrlResult = await sameSourceUrlDedup(sb);
+    console.log(`[postprocess] Same source_url dedup: expired ${sameUrlResult.expired} duplicates`);
+
     // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
@@ -515,7 +572,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -526,6 +583,7 @@ Deno.serve(async (req) => {
         memberPriority: dedupResult,
         sameArtistDedup: sameArtistResult,
         domesticPriority: srcDedupResult,
+        sameSourceUrlDedup: sameUrlResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
