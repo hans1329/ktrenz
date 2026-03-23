@@ -25,6 +25,7 @@ interface ExtractedKeyword {
   brand_intent?: "awareness" | "conversion" | "association" | "loyalty";
   fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
   trend_potential?: number;
+  purchase_stage?: "awareness" | "interest" | "consideration" | "purchase" | "review";
 }
 
 // Platform names and non-trackable entities blacklist
