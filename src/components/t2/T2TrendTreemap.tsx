@@ -133,9 +133,9 @@ function normalizeTrendKey(value: string | null | undefined): string {
 
 function compareTrendPriority(a: TrendTile, b: TrendTile, sortMode: SortMode = "rate"): number {
   if (sortMode === "volume") {
-    // 일일 증가량 기준: peakScore - baselineScore as proxy (or prevApiTotal diff)
-    const aVolume = (a.peakScore ?? 0) - (a.baselineScore ?? 0);
-    const bVolume = (b.peakScore ?? 0) - (b.baselineScore ?? 0);
+    // Hot: baseline 대비 최근 수집값(prevApiTotal) 절대 증가량
+    const aVolume = (a.prevApiTotal ?? a.peakScore ?? 0) - (a.baselineScore ?? 0);
+    const bVolume = (b.prevApiTotal ?? b.peakScore ?? 0) - (b.baselineScore ?? 0);
     if (bVolume !== aVolume) return bVolume - aVolume;
     if ((b.baselineScore ?? 0) !== (a.baselineScore ?? 0)) return (b.baselineScore ?? 0) - (a.baselineScore ?? 0);
     return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime();
