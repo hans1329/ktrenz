@@ -114,9 +114,10 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 14%, 42%, 0.72)" },
   event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 18%, 40%, 0.72)" },
   shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 10%, 38%, 0.72)" },
+  social:  { label: "Social", color: "hsl(290, 65%, 55%)", tileColor: "hsla(290, 14%, 42%, 0.72)" },
 };
 
-export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "food", "fashion", "beauty", "media", "event", "shopping"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "food", "fashion", "beauty", "media", "event", "shopping", "social"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
