@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { Zap, Eye, Crosshair, Share2, TrendingUp, ChevronRight, Check, PartyPopper } from "lucide-react";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 interface DailyMission {
   key: string;
