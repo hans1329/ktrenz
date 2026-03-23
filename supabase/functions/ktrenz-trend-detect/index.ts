@@ -957,6 +957,10 @@ Extract specific viral/trending social keywords from these TikTok descriptions. 
             fan_sentiment: k.fan_sentiment || "positive",
             trend_potential: k.trend_potential || 0.6,
             purchase_stage: k.purchase_stage || "awareness",
+            _tiktok_cover_url: (() => {
+              const idx = k.source_article_index ? k.source_article_index - 1 : 0;
+              return (idx >= 0 && idx < tiktokArticles.length) ? tiktokArticles[idx].cover : (tiktokArticles[0]?.cover || null);
+            })(),
           });
         }
       } catch (parseErr) {
