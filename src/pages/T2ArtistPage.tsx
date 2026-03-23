@@ -71,19 +71,23 @@ const T2ArtistPage = () => {
       }
 
       // fallback: use first keyword's source_image_url
-      if (!imageUrl) {
-        const { data: kwData } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("source_image_url")
-          .eq("star_id", starId!)
-          .not("source_image_url", "is", null)
-          .limit(1);
-        if (kwData && kwData.length > 0) {
-          imageUrl = (kwData[0] as any).source_image_url;
-        }
+      let contentImageUrl: string | null = null;
+      const { data: kwData } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("source_image_url")
+        .eq("star_id", starId!)
+        .not("source_image_url", "is", null)
+        .order("detected_at", { ascending: false })
+        .limit(1);
+      if (kwData && kwData.length > 0) {
+        contentImageUrl = (kwData[0] as any).source_image_url;
       }
 
-      return { ...(data as any), imageUrl };
+      if (!imageUrl) {
+        imageUrl = contentImageUrl;
+      }
+
+      return { ...(data as any), imageUrl, contentImageUrl };
     },
     enabled: !!starId,
   });
@@ -155,21 +159,26 @@ const T2ArtistPage = () => {
         <div className="flex items-center gap-4 mb-6">
           {star.imageUrl ? (
             <>
-              <img
-                src={star.imageUrl}
-                alt={displayName}
-                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.style.display = "none";
-                  const fallback = el.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = "flex";
-                }}
-              />
-              <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground" style={{ display: "none" }}>
-                {displayName.charAt(0)}
-              </div>
+               <img
+                 src={star.imageUrl}
+                 alt={displayName}
+                 className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover border-2 border-primary/20"
+                 referrerPolicy="no-referrer"
+                 onError={(e) => {
+                   const el = e.currentTarget;
+                   // Try content image as intermediate fallback
+                   if (star.contentImageUrl && el.src !== star.contentImageUrl) {
+                     el.src = star.contentImageUrl;
+                     return;
+                   }
+                   el.style.display = "none";
+                   const fallback = el.nextElementSibling as HTMLElement;
+                   if (fallback) fallback.style.display = "flex";
+                 }}
+               />
+               <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted items-center justify-center text-2xl font-black text-muted-foreground" style={{ display: "none" }}>
+                 {displayName.charAt(0)}
+               </div>
             </>
           ) : (
             <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-muted flex items-center justify-center text-2xl font-black text-muted-foreground">
