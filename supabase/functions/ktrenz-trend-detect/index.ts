@@ -1166,7 +1166,16 @@ async function detectForMember(
     return { keywordData: k, sourceArticle, sourceUrl: sourceArticle?.url || null };
   });
 
-  const uniqueUrls = [...new Set(keywordSources.map((item) => item.sourceUrl).filter(Boolean))] as string[];
+  // 모든 기사 URL에서 OG 이미지를 수집 (최대 10개 기사)
+  const allArticleUrls = articles
+    .slice(0, 10)
+    .map(a => a.url)
+    .filter(Boolean)
+    .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)));
+  const uniqueUrls = [...new Set([
+    ...keywordSources.map((item) => item.sourceUrl).filter(Boolean) as string[],
+    ...allArticleUrls,
+  ])];
   const ogImageMap = new Map<string, string | null>();
   await Promise.allSettled(
     uniqueUrls
@@ -1175,6 +1184,26 @@ async function detectForMember(
         ogImageMap.set(url, await fetchOgImage(url));
       })
   );
+
+  // 키워드별 최적 이미지 선택: 텍스트 오버레이 이미지를 건너뛰고 깨끗한 사진 우선
+  function selectBestImage(primaryUrl: string | null): string | null {
+    // 1차: 주 소스 기사 이미지 (텍스트 오버레이가 아닌 경우)
+    if (primaryUrl) {
+      const img = ogImageMap.get(primaryUrl);
+      if (img && !isLikelyTextOverlayImage(img)) return sanitizeImageUrl(img);
+    }
+    // 2차: 다른 기사들에서 깨끗한 이미지 찾기
+    for (const [url, img] of ogImageMap) {
+      if (!img || url === primaryUrl) continue;
+      if (!isLikelyTextOverlayImage(img)) return sanitizeImageUrl(img);
+    }
+    // 3차: 텍스트 오버레이여도 없는 것보다는 나음
+    if (primaryUrl) {
+      const img = ogImageMap.get(primaryUrl);
+      if (img) return sanitizeImageUrl(img);
+    }
+    return null;
+  }
 
   // ─── 키워드별 buzz raw counts + normalized score ───
   const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
