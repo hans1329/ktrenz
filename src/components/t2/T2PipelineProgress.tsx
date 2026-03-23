@@ -45,15 +45,15 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const isDetect = run?.phase === "detect";
   const isGlobal = run?.phase === "detect_global";
 
-  // DB 기반 파이프라인 상태 (track 페이즈의 정확한 진행률)
+  // DB 기반 파이프라인 상태 (정확한 진행률)
   const { data: dbPipelineState } = useQuery({
     queryKey: ["pipeline-db-state", run?.phase],
     queryFn: async () => {
       // 먼저 running 상태 조회
       const { data: running } = await supabase
         .from("ktrenz_pipeline_state" as any)
-        .select("current_offset, total_candidates, status, run_id, batch_size")
-        .eq("phase", run?.phase ?? "track")
+        .select("current_offset, total_candidates, status, run_id, batch_size, phase")
+        .eq("phase", run?.phase ?? "detect")
         .in("status", ["running", "postprocess_requested", "postprocess_running"])
         .order("updated_at", { ascending: false })
         .limit(1);
@@ -61,14 +61,14 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
       // running이 없으면 최근 done 상태 조회 (완료 표시용)
       const { data: done } = await supabase
         .from("ktrenz_pipeline_state" as any)
-        .select("current_offset, total_candidates, status, run_id, batch_size")
-        .eq("phase", run?.phase ?? "track")
+        .select("current_offset, total_candidates, status, run_id, batch_size, phase")
+        .eq("phase", run?.phase ?? "detect")
         .in("status", ["done", "postprocess_done"])
         .order("updated_at", { ascending: false })
         .limit(1);
       return (done as any[])?.[0] ?? null;
     },
-    enabled: !!run && isTrackPhase,
+    enabled: !!run,
     refetchInterval: 3000,
   });
 
