@@ -533,6 +533,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        {/* Track/Follow button — top-right corner */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
+                          className={cn(
+                            "absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all shadow-lg",
+                            isFollowing
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-black/50 text-white/90 backdrop-blur-sm border border-white/20 hover:bg-primary hover:text-primary-foreground"
+                          )}
+                        >
+                          <Crosshair className="w-3 h-3" />
+                          {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
+                        </button>
                         <div className="absolute bottom-0 left-0 right-0 p-3">
                           <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
                             {getLocalizedSourceTitle(tile, language)}
