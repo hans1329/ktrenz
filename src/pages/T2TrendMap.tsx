@@ -321,7 +321,7 @@ const T2TrendMap = () => {
                     setCategory(cat);
                   }}
                   className={cn(
-                    "flex items-center gap-1.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
+                    "flex items-center gap-1.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
                     cat === "all" ? "px-5" : "px-3"
                   )}
                   style={{
