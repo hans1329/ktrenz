@@ -560,7 +560,18 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
             // ── 2단계: article_subject_match 기반 차단 ──
             if (k.article_subject_match === false) {
               const subjectName = (k.article_subject_name || "").toLowerCase();
-              // 기사 주체가 다른 사람이고, 그게 검색 대상도 아니고 그룹도 아닌 경우 → 차단
+              
+              // 2a. 기사 주체가 그룹명인 경우 (그룹 기사가 멤버에 귀속되는 것 차단)
+              // 멤버 검색 시 그룹 전체 기사에서 추출된 키워드는 멤버에 귀속시키지 않음
+              if (subjectName && searchedGroup) {
+                const groupNameKoLower = (groupNameKo || "").toLowerCase();
+                if (subjectName === searchedGroup || (groupNameKoLower && subjectName === groupNameKoLower)) {
+                  console.warn(`[trend-detect] ⛔ Group article → member rejected: "${k.keyword}" → article about group "${k.article_subject_name}", searched for member "${memberName}"`);
+                  continue;
+                }
+              }
+              
+              // 2b. 기사 주체가 다른 사람이고, 그게 검색 대상도 아니고 그룹도 아닌 경우 → 차단
               if (subjectName && subjectName !== searchedArtist && subjectName !== searchedGroup
                   && (!searchedNameKo || subjectName !== searchedNameKo)) {
                 console.warn(`[trend-detect] ⛔ Subject mismatch: "${k.keyword}" → article about "${k.article_subject_name}", not "${memberName}"`);
