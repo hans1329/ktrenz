@@ -79,7 +79,11 @@ const B2BArtistDetail = () => {
   const avgInfluence = activeTrends.length > 0
     ? activeTrends.reduce((s: number, t: any) => s + (t.influence_index ?? 0), 0) / activeTrends.length
     : 0;
-  const commerceCount = trends.filter((t: any) => t.trend_grade === 'Commerce' || t.trend_grade === 'Intent').length;
+  const commerceCount = trends.filter((t: any) => {
+    const g = (t.trend_grade || '').toLowerCase();
+    const ci = (t.commercial_intent || '').toLowerCase();
+    return g === 'commerce' || g === 'intent' || ci === 'ad' || ci === 'sponsorship';
+  }).length;
 
   return (
     <div className="flex min-h-full items-start">
