@@ -574,7 +574,7 @@ Call extract_keywords with the specific named entities found, then call analyze_
             }
 
             // ✅ 모든 검증 통과
-            console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence})`);
+            console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence}, stage: ${k.purchase_stage || "n/a"})`);
             extractedKeywords.push({
               keyword: k.keyword,
               keyword_en: k.keyword_en,
@@ -592,6 +592,7 @@ Call extract_keywords with the specific named entities found, then call analyze_
               brand_intent: k.brand_intent,
               fan_sentiment: k.fan_sentiment,
               trend_potential: k.trend_potential,
+              purchase_stage: k.purchase_stage || undefined,
             });
           }
         } else if (tc.function.name === "analyze_trend_intent") {
