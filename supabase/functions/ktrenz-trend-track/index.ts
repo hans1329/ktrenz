@@ -84,6 +84,60 @@ async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number
   }
 }
 
+// ── 키워드 팔로우 알림 생성 ──
+async function notifyKeywordFollowers(sb: any, trigger: any, deltaPct: number) {
+  try {
+    // 변동이 ±10% 미만이면 알림 생략
+    if (Math.abs(deltaPct) < 10) return;
+
+    // 이 키워드를 팔로우하는 사용자 조회
+    const { data: followers } = await sb
+      .from("ktrenz_keyword_follows")
+      .select("id, user_id, keyword, last_influence_index")
+      .eq("trigger_id", trigger.id);
+
+    if (!followers?.length) return;
+
+    const currentInfluence = trigger.influence_index ?? 0;
+    const notifications: any[] = [];
+
+    for (const f of followers) {
+      const oldVal = f.last_influence_index ?? 0;
+      const changeAbs = Math.abs(currentInfluence - oldVal);
+      // 최소 5점 이상 변동 시에만 알림
+      if (changeAbs < 5 && Math.abs(deltaPct) < 20) continue;
+
+      const direction = currentInfluence > oldVal ? "up" : "down";
+      const emoji = direction === "up" ? "📈" : "📉";
+      const message = `${emoji} ${trigger.keyword} (${trigger.artist_name}): ${oldVal.toFixed(0)} → ${currentInfluence.toFixed(0)} (${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(1)}%)`;
+
+      notifications.push({
+        user_id: f.user_id,
+        follow_id: f.id,
+        trigger_id: trigger.id,
+        keyword: trigger.keyword,
+        artist_name: trigger.artist_name,
+        notification_type: direction === "up" ? "influence_up" : "influence_down",
+        old_value: oldVal,
+        new_value: currentInfluence,
+        delta_pct: deltaPct,
+        message,
+      });
+    }
+
+    if (notifications.length > 0) {
+      await sb.from("ktrenz_keyword_notifications").insert(notifications);
+      // last_influence_index 갱신
+      for (const f of followers) {
+        await sb.from("ktrenz_keyword_follows").update({ last_influence_index: currentInfluence }).eq("id", f.id);
+      }
+      console.log(`[trend-track] Notified ${notifications.length} followers for ${trigger.keyword}`);
+    }
+  } catch (e) {
+    console.warn(`[trend-track] Notify error: ${(e as Error).message}`);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 

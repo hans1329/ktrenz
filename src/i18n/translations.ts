@@ -534,6 +534,19 @@ const translations: Record<string, Record<Language, string>> = {
   "dash.evList": { en: "List", ko: "리스트", ja: "リスト", zh: "列表" },
   "dash.mostExplored": { en: "Most Explored", ko: "가장 많이 탐색", ja: "最も探索した", zh: "探索最多" },
   "trend.spectrumTitle": { en: "Trends by K·Stars", ko: "Trends by K·Stars", ja: "Trends by K·Stars", zh: "Trends by K·Stars" },
+
+  // ── Keyword Follow Notifications ──
+  "notif.keywordAlerts": { en: "Keyword Alerts", ko: "키워드 알림", ja: "キーワードアラート", zh: "关键词提醒" },
+  "notif.noKeywordAlerts": { en: "No keyword alerts yet", ko: "키워드 알림이 없습니다", ja: "キーワードアラートはまだありません", zh: "暂无关键词提醒" },
+  "notif.followKeywords": { en: "Track keywords on trends to get alerts", ko: "트렌드에서 키워드를 추적하면 알림을 받을 수 있어요", ja: "トレンドでキーワードを追跡するとアラートが届きます", zh: "追踪趋势关键词即可获取提醒" },
+  "notif.markAllRead": { en: "Mark all read", ko: "모두 읽음", ja: "すべて既読", zh: "全部已读" },
+  "notif.watchedArtists": { en: "Watched Artists", ko: "관심 아티스트 실시간 현황", ja: "ウォッチ中のアーティスト", zh: "关注的艺人" },
+  "notif.noWatchedArtists": { en: "No watched artists", ko: "관심 아티스트가 없습니다", ja: "ウォッチ中のアーティストがいません", zh: "暂无关注艺人" },
+  "notif.recentPoints": { en: "Recent Token History", ko: "최근 토큰 내역", ja: "最近のトークン履歴", zh: "最近代币记录" },
+  "notif.noPoints": { en: "No token history", ko: "토큰 기록이 없습니다", ja: "トークン履歴がありません", zh: "暂无代币记录" },
+  "notif.title": { en: "Alerts", ko: "알림", ja: "通知", zh: "通知" },
+  "notif.loginRequired": { en: "Sign in required", ko: "로그인이 필요합니다", ja: "ログインが必要です", zh: "需要登录" },
+  "notif.loginDesc": { en: "Sign in to view your alerts", ko: "알림을 보려면 로그인해주세요", ja: "通知を見るにはログインしてください", zh: "登录查看您的通知" },
 };
 
 export default translations;
