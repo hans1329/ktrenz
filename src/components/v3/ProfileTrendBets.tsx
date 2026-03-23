@@ -116,7 +116,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <TrendingUp className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+          <span className="text-sm font-bold text-foreground uppercase tracking-wider">
             {t("dash.activeTrends")}
           </span>
         </div>

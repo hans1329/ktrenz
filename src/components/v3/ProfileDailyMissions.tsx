@@ -190,7 +190,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-primary" />
-          <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+          <span className="text-sm font-bold text-foreground uppercase tracking-wider">
             {t("profileMission.title")}
           </span>
         </div>
