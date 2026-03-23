@@ -11,10 +11,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["detect", "grade", "track"] as const;
+const PHASE_ORDER = ["detect", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
-  grade: "ktrenz-trend-grade",
   track: "ktrenz-trend-track",
 };
 const DETECT_PHASES = new Set(["detect"]);
@@ -28,7 +27,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { action = "tick", runId, phase, batchSize = 5, singlePhase = false } = body;
+    const { action = "tick", runId, phase, batchSize = 15, singlePhase = false } = body;
 
     if (COLLECTION_PAUSED) {
       return respond({ success: true, paused: true, message: "Collection paused" });
@@ -98,6 +97,10 @@ Deno.serve(async (req) => {
 
           // postprocess 실행
           const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
+
+          // postprocess 완료 → grade 인라인 실행 (별도 phase 제거)
+          const gradeResult = await executeGradeInline(supabaseUrl, supabaseKey);
+          console.log(`[cron] Inline grade result:`, gradeResult);
 
           // postprocess 완료 → 다음 phase 시작 or done
           const isSinglePhaseRun = ppState.run_id.startsWith("single_");
@@ -377,6 +380,31 @@ async function executePostprocess(supabaseUrl: string, supabaseKey: string, trig
   } catch (e) {
     clearTimeout(timeout);
     console.error(`[cron] Postprocess error: ${(e as Error).message}`);
+    return { error: (e as Error).message };
+  }
+}
+
+// ── grade 인라인 실행 (별도 phase 대신 postprocess 직후 호출) ──
+async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Promise<any> {
+  console.log(`[cron] Running inline grade`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000);
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const text = await response.text();
+    try { return JSON.parse(text); } catch { return { raw: text.slice(0, 500) }; }
+  } catch (e) {
+    clearTimeout(timeout);
+    console.error(`[cron] Grade inline error: ${(e as Error).message}`);
     return { error: (e as Error).message };
   }
 }
