@@ -351,13 +351,12 @@ const T2TrendMap = () => {
           >
             {VIEW_ORDER.map((mode, i) => {
               const isVisible = visibleViews.some(v => v.index === i);
-              const isActive = i === viewIndex;
-              // Treemap view has fixed height content; non-active panels should not inflate scroll area
+              const isAdjacentOrActive = Math.abs(i - viewIndex) <= 1;
+              // Only clamp far-away panels; adjacent ones must be fully visible for swipe
               const panelStyle: React.CSSProperties = {
                 width: '100vw',
                 flexShrink: 0,
-                ...((!isActive && mode === 'treemap') ? { maxHeight: 'calc(100dvh - 12rem)', overflow: 'hidden' } : {}),
-                ...((!isActive && mode !== 'treemap') ? { maxHeight: 'calc(100dvh - 6rem)', overflow: 'hidden' } : {}),
+                ...(!isAdjacentOrActive ? { maxHeight: '1px', overflow: 'hidden' } : {}),
               };
               return (
                 <div
@@ -375,7 +374,7 @@ const T2TrendMap = () => {
                         hideHeader
                         sortMode={sortMode}
                         onSortModeChange={setSortMode}
-                        onCategoryStatsChange={isActive ? handleCategoryStatsChange : undefined}
+                        onCategoryStatsChange={isAdjacentOrActive ? handleCategoryStatsChange : undefined}
                       />
                     ) : (
                       <div style={{ minHeight: '50vh' }} />
