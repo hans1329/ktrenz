@@ -91,7 +91,9 @@ export function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: str
 export function isBlockedImageDomain(url: string | null): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
-  return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.');
+  // Block hotlink-protected domains and HTTP-only URLs (mixed content fails on HTTPS)
+  if (lower.startsWith('http://')) return true;
+  return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.') || lower.includes('tvdaily.co.kr');
 }
 
 export function sanitizeImageUrl(url: string | null): string | null {
