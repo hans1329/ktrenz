@@ -348,7 +348,7 @@ const T2TrendMap = () => {
                     return count > 0 ? (
                       <span
                         className="text-[10px]"
-                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : "hsl(var(--muted-foreground) / 0.8)" }}
+                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : headerCollapsed ? "hsl(0 0% 70%)" : "hsl(var(--muted-foreground) / 0.8)" }}
                       >
                         {count}
                       </span>
