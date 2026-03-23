@@ -46,6 +46,31 @@ const SOURCE_IMAGE_BLACKLIST = [
   "scontent.",
 ];
 
+// 텍스트 오버레이/배너 스타일 이미지를 걸러내기 위한 URL 패턴
+const TEXT_OVERLAY_IMAGE_PATTERNS = [
+  /thumb_\d+x\d+/i,           // 리사이즈된 썸네일 (텍스트 합성본 많음)
+  /card_img|card_news/i,       // 카드뉴스 이미지
+  /infographic/i,              // 인포그래픽
+  /screenshot/i,               // 스크린샷
+  /text_image|textimg/i,       // 텍스트 이미지 명시
+  /ranking|chart|graph/i,      // 차트/랭킹 이미지
+  /photo_layout|composite/i,   // 합성 레이아웃
+];
+
+// OG 이미지가 텍스트 오버레이/배너일 가능성이 높은지 판별
+function isLikelyTextOverlayImage(url: string): boolean {
+  // 카드뉴스/인포그래픽 패턴
+  if (TEXT_OVERLAY_IMAGE_PATTERNS.some(p => p.test(url))) return true;
+  // 극단적 가로 비율 (배너) - URL에 크기 힌트가 있는 경우
+  const sizeMatch = url.match(/(\d{3,4})x(\d{2,4})/);
+  if (sizeMatch) {
+    const w = parseInt(sizeMatch[1]);
+    const h = parseInt(sizeMatch[2]);
+    if (w > 0 && h > 0 && w / h > 3) return true; // 극단적 배너
+  }
+  return false;
+}
+
 // URL 정규화: HTML 엔티티 디코딩
 function sanitizeImageUrl(url: string | null): string | null {
   if (!url) return null;
