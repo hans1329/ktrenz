@@ -91,7 +91,9 @@ export function detectPlatformLogo(sourceUrl: string | null, sourceImageUrl: str
 export function isBlockedImageDomain(url: string | null): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
-  return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.');
+  // Block hotlink-protected domains and HTTP-only URLs (mixed content fails on HTTPS)
+  if (lower.startsWith('http://')) return true;
+  return lower.includes('fbcdn.net') || lower.includes('cdninstagram.com') || lower.includes('scontent.') || lower.includes('tvdaily.co.kr');
 }
 
 export function sanitizeImageUrl(url: string | null): string | null {
@@ -786,11 +788,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 const sizeFactor = Math.sqrt(boxArea) / 10;
                 const isTopThree = rectIndex < 3;
                 const keywordSize = isTopThree
-                  ? Math.max(16, Math.min(32, sizeFactor * 4.5))
+                  ? Math.max(18, Math.min(36, sizeFactor * 5))
                   : isTop20
-                    ? Math.max(13, Math.min(26, sizeFactor * 4))
-                    : Math.max(11, Math.min(22, sizeFactor * 3.5));
-                const scoreSize = Math.max(12, Math.min(36, sizeFactor * 4));
+                    ? Math.max(14, Math.min(28, sizeFactor * 4.5))
+                    : Math.max(12, Math.min(24, sizeFactor * 4));
+                const scoreSize = Math.max(13, Math.min(38, sizeFactor * 4.5));
 
                 return (
                   <button
