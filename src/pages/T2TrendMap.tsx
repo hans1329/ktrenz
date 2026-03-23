@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -35,8 +35,6 @@ const T2TrendMap = () => {
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
@@ -56,8 +54,6 @@ const T2TrendMap = () => {
     setMyCount(my);
   }, []);
 
-  const currentIndex = VIEW_ORDER.indexOf(viewMode);
-
   const isDrawerInteraction = useCallback((target: EventTarget | null) => {
     if (!(target instanceof HTMLElement)) return false;
     return Boolean(target.closest('[data-vaul-drawer], [data-vaul-overlay], [role="dialog"]'));
@@ -75,8 +71,6 @@ const T2TrendMap = () => {
       startTime: Date.now(),
       locked: null,
     };
-    setIsDragging(false);
-    setDragOffset(0);
   }, [isDrawerInteraction]);
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
@@ -88,40 +82,25 @@ const T2TrendMap = () => {
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    // Direction lock: decide once
     if (!touchRef.current.locked) {
       if (absDx < DIRECTION_LOCK_THRESHOLD && absDy < DIRECTION_LOCK_THRESHOLD) return;
       touchRef.current.locked = absDx > absDy ? "horizontal" : "vertical";
     }
-
-    if (touchRef.current.locked === "vertical") return;
-
-    // Horizontal swipe — prevent vertical scroll
-    e.preventDefault();
-    setIsDragging(true);
-
-    const idx = VIEW_ORDER.indexOf(viewMode);
-    const atEdge = (dx > 0 && idx === 0) || (dx < 0 && idx === VIEW_ORDER.length - 1);
-    setDragOffset(atEdge ? dx * 0.15 : dx);
-  }, [isDrawerInteraction, viewMode]);
+  }, [isDrawerInteraction]);
 
   const onTouchEnd = useCallback((e: React.TouchEvent) => {
     if (!touchRef.current || isDrawerInteraction(e.target)) {
       touchRef.current = null;
-      setIsDragging(false);
-      setDragOffset(0);
       return;
     }
 
     const touch = e.changedTouches[0];
     const dx = touch.clientX - touchRef.current.startX;
     const elapsed = Date.now() - touchRef.current.startTime;
-    const velocity = Math.abs(dx) / elapsed; // px/ms
+    const velocity = Math.abs(dx) / elapsed;
     const wasHorizontal = touchRef.current.locked === "horizontal";
 
     touchRef.current = null;
-    setIsDragging(false);
-    setDragOffset(0);
 
     if (!wasHorizontal) return;
 
@@ -136,8 +115,6 @@ const T2TrendMap = () => {
       }
     }
   }, [viewMode, isDrawerInteraction]);
-
-  const translateX = -currentIndex * 100 + (isDragging ? (dragOffset / window.innerWidth) * 100 : 0);
 
   return (
     <>
@@ -301,47 +278,35 @@ const T2TrendMap = () => {
       </div>
 
       <div
-        className="h-[100dvh] overflow-hidden"
+        className="h-[100dvh] overflow-y-auto overscroll-contain"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
+        onScroll={(e) => {
+          const scrollTop = (e.target as HTMLElement).scrollTop;
+          setScrollY(scrollTop);
+          setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
+        }}
       >
         <div
-          className="flex h-full items-start"
-          style={{
-            transform: `translateX(${translateX}%)`,
-            transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-            willChange: "transform",
-          }}
+          className={cn(
+            "pb-24 scrollbar-hide transition-all duration-500 ease-in-out",
+            headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
+          )}
         >
-          {VIEW_ORDER.map((mode) => (
-            <div
-              key={mode}
-              className={cn(
-                "h-full w-full flex-shrink-0 overflow-y-auto overscroll-contain pb-24 scrollbar-hide transition-all duration-500 ease-in-out",
-                headerCollapsed ? "pt-[3.25rem]" : "pt-[9rem]"
-              )}
-              onScroll={(e) => {
-                const scrollTop = (e.target as HTMLElement).scrollTop;
-                setScrollY(scrollTop);
-                setHeaderCollapsed(scrollTop > HEADER_COLLAPSE_THRESHOLD);
-              }}
-            >
-              <div className="md:max-w-[90%] mx-auto">
-                <T2TrendTreemap
-                  viewMode={mode}
-                  onViewModeChange={setViewMode}
-                  selectedCategory={category}
-                  onCategoryChange={setCategory}
-                  hideCategory
-                  hideHeader
-                  sortMode={sortMode}
-                  onSortModeChange={setSortMode}
-                  onCategoryStatsChange={handleCategoryStatsChange}
-                />
-              </div>
-            </div>
-          ))}
+          <div className="md:max-w-[90%] mx-auto">
+            <T2TrendTreemap
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              selectedCategory={category}
+              onCategoryChange={setCategory}
+              hideCategory
+              hideHeader
+              sortMode={sortMode}
+              onSortModeChange={setSortMode}
+              onCategoryStatsChange={handleCategoryStatsChange}
+            />
+          </div>
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
