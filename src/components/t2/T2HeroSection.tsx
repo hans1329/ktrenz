@@ -59,7 +59,7 @@ interface T2HeroSectionProps {
   onOpenOnboarding?: () => void;
 }
 
-const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
+const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { language } = useLanguage();
