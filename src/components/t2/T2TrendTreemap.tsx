@@ -895,9 +895,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   : language === "zh" ? (item.contextZh || item.context)
                                   : item.context;
                                 return ctx ? (
-                                  <p className="flex items-start gap-1 text-[10px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
-                                    <MessageCircle className="w-3 h-3 shrink-0 -scale-x-100 mt-px" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
-                                    <span>{ctx.replace(/\[\d+\]/g, "").trim()}</span>
+                                  <p className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 min-w-0">
+                                    <MessageCircle className="w-3 h-3 shrink-0 -scale-x-100" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
+                                    <span className="truncate">{ctx.replace(/\[\d+\]/g, "").trim()}</span>
                                   </p>
                                 ) : null;
                               })()}
