@@ -203,13 +203,7 @@ const T2TrendMap = () => {
         path="/t2"
       />
 
-      <div
-        className={cn(
-          "transition-opacity duration-200",
-          headerCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
-        )}
-        style={{ visibility: headerCollapsed ? "hidden" : "visible" }}
-      >
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg">
         <V3Header
           rightSlot={
             <div
@@ -337,10 +331,7 @@ const T2TrendMap = () => {
         // onTouchEnd={onTouchEnd}
       >
         <div
-          className={cn(
-            viewMode === "treemap" ? "pb-24 scrollbar-hide" : "pb-24 scrollbar-hide",
-            headerCollapsed ? "pt-[0.5rem]" : "pt-[4rem]"
-          )}
+          className="pb-24 scrollbar-hide pt-[4rem]"
         >
           <div className="relative">
             <div className="md:max-w-[90%] mx-auto relative z-10">
