@@ -60,19 +60,29 @@ const T2ArtistPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_stars" as any)
-        .select("id, wiki_entry_id, display_name, name_ko, agency")
+        .select("id, wiki_entry_id, group_star_id, display_name, name_ko, agency")
         .eq("id", starId!)
-        .single();
+        .maybeSingle();
       if (!data) return null;
+
+      let resolvedWikiEntryId: string | null = (data as any).wiki_entry_id ?? null;
+      if (!resolvedWikiEntryId && (data as any).group_star_id) {
+        const { data: groupStar } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("wiki_entry_id")
+          .eq("id", (data as any).group_star_id)
+          .maybeSingle();
+        resolvedWikiEntryId = (groupStar as any)?.wiki_entry_id ?? null;
+      }
 
       // fetch image from wiki_entries
       let imageUrl: string | null = null;
-      if ((data as any).wiki_entry_id) {
+      if (resolvedWikiEntryId) {
         const { data: entry } = await supabase
           .from("wiki_entries")
           .select("image_url")
-          .eq("id", (data as any).wiki_entry_id)
-          .single();
+          .eq("id", resolvedWikiEntryId)
+          .maybeSingle();
         imageUrl = (entry as any)?.image_url ?? null;
       }
 
@@ -93,34 +103,28 @@ const T2ArtistPage = () => {
         imageUrl = contentImageUrl;
       }
 
-      return { ...(data as any), imageUrl, contentImageUrl };
+      return { ...(data as any), resolvedWikiEntryId, imageUrl, contentImageUrl };
     },
     enabled: !!starId,
   });
 
   const keywordTargetStarId = star?.group_star_id || star?.id || starId;
 
-  // Fetch keywords for this artist (fallback to group artist for members)
+  // Fetch collected keywords for this artist (group fallback for members, excludes shopping source)
   const { data: keywords, isLoading: kwLoading } = useQuery({
     queryKey: ["t2-artist-keywords", keywordTargetStarId],
     queryFn: async () => {
-      const baseQuery = supabase
+      const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("star_id", keywordTargetStarId!)
         .eq("status", "active")
+        .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
         .limit(50);
-
-      const { data: preferredData } = await baseQuery.neq("trigger_source", "naver_shop");
-      if (preferredData && preferredData.length > 0) {
-        return preferredData as any[];
-      }
-
-      const { data: fallbackData } = await baseQuery;
-      return (fallbackData ?? []) as any[];
+      return (data ?? []) as any[];
     },
     enabled: !!keywordTargetStarId,
   });
@@ -156,19 +160,19 @@ const T2ArtistPage = () => {
 
   // Fetch schedules
   const { data: schedules, isLoading: schedLoading } = useQuery({
-    queryKey: ["t2-artist-schedules", star?.wiki_entry_id],
+    queryKey: ["t2-artist-schedules", star?.resolvedWikiEntryId],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data } = await supabase
         .from("ktrenz_schedules" as any)
         .select("*")
-        .eq("wiki_entry_id", star!.wiki_entry_id)
+        .eq("wiki_entry_id", star!.resolvedWikiEntryId)
         .gte("event_date", today)
         .order("event_date", { ascending: true })
         .limit(20);
       return (data ?? []) as any[];
     },
-    enabled: !!star?.wiki_entry_id,
+    enabled: !!star?.resolvedWikiEntryId,
   });
 
   // Watch status
