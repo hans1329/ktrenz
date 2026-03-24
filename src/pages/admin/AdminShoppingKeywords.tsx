@@ -112,7 +112,7 @@ const AdminShoppingKeywords = () => {
     toast.info('쇼핑 키워드 배치 추적을 시작합니다...');
     try {
       const { data, error } = await supabase.functions.invoke('ktrenz-trend-track', {
-        body: { batchSize: 50, batchOffset: 0, shopOnly: true },
+        body: { batchSize: 50, batchOffset: 0 },
       });
       if (error) throw error;
       toast.success(`배치 추적 완료: ${data?.tracked ?? 0}건`);

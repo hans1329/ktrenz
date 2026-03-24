@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { triggerId, batchSize = 5, batchOffset = 0, shopOnly = false } = body;
+    const { triggerId, batchSize = 10, batchOffset = 0 } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── 대상 조회: active 상태의 기존 키워드 ───
+    // ─── 대상 조회: 모든 active 키워드 (trigger_source 구분 없이) ───
     let triggers: any[];
     let totalTriggers = 0;
 
@@ -238,24 +238,17 @@ Deno.serve(async (req) => {
     } else {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      let countQ = sb.from("ktrenz_trend_triggers")
+      const { count } = await sb.from("ktrenz_trend_triggers")
         .select("id", { count: "exact", head: true })
         .eq("status", "active").gte("detected_at", weekAgo);
-      let dataQ = sb.from("ktrenz_trend_triggers")
-        .select("*").eq("status", "active").gte("detected_at", weekAgo)
-        .order("detected_at", { ascending: false });
 
-      if (shopOnly) {
-        countQ = countQ.eq("trigger_source", "naver_shop");
-        dataQ = dataQ.eq("trigger_source", "naver_shop");
-      } else {
-        countQ = countQ.neq("trigger_source", "naver_shop");
-        dataQ = dataQ.neq("trigger_source", "naver_shop");
-      }
-
-      const { count } = await countQ;
       totalTriggers = count ?? 0;
-      const { data } = await dataQ.range(batchOffset, batchOffset + batchSize - 1);
+
+      const { data } = await sb.from("ktrenz_trend_triggers")
+        .select("*").eq("status", "active").gte("detected_at", weekAgo)
+        .order("detected_at", { ascending: false })
+        .range(batchOffset, batchOffset + batchSize - 1);
+
       triggers = data || [];
     }
 
