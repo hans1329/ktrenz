@@ -906,7 +906,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               )}
                             </div>
                             {/* Image area with rank badge + sparkline overlay */}
-                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[4/5]" : "aspect-[4/3]")}>)}>
+                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[4/5]" : "aspect-[4/3]")}>
                               {bgImg ? (
                                 <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-top" loading="lazy" referrerPolicy="no-referrer" />
                               ) : (
