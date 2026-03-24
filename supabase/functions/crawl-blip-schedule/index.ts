@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Match artist names to ktrenz_stars (T2 SSOT)
+    // 3. Match artist names to ktrenz_stars (T2 SSOT) with normalized matching
     const uniqueArtists = [...new Set(entries.map((e) => e.artist_name))];
     console.log(`[crawl-blip] Matching ${uniqueArtists.length} artists against ktrenz_stars...`);
 
@@ -231,18 +231,41 @@ Deno.serve(async (req) => {
       .select("id, display_name, name_ko, wiki_entry_id")
       .eq("is_active", true);
 
+    // Normalize: lowercase, remove spaces/hyphens/parenthetical suffixes
+    function normalizeName(name: string): string {
+      return name
+        .toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g, "") // remove (...)
+        .replace(/[\s\-·]/g, "")       // remove spaces, hyphens, middle dots
+        .trim();
+    }
+
     const starMap = new Map<string, { starId: string; wikiEntryId: string | null }>();
     if (stars) {
       for (const s of stars as any[]) {
         const entry = { starId: s.id, wikiEntryId: s.wiki_entry_id || null };
-        if (s.display_name) starMap.set(s.display_name.toLowerCase(), entry);
-        if (s.name_ko) starMap.set(s.name_ko.toLowerCase(), entry);
+        // Store both exact lowercase and normalized versions
+        if (s.display_name) {
+          starMap.set(s.display_name.toLowerCase(), entry);
+          starMap.set(normalizeName(s.display_name), entry);
+        }
+        if (s.name_ko) {
+          starMap.set(s.name_ko.toLowerCase(), entry);
+          starMap.set(normalizeName(s.name_ko), entry);
+        }
       }
+    }
+
+    // Match helper: try exact lowercase first, then normalized
+    function findStar(artistName: string) {
+      return starMap.get(artistName.toLowerCase()) 
+        || starMap.get(normalizeName(artistName)) 
+        || null;
     }
 
     // 4. Upsert into ktrenz_schedules
     const rows = entries.map((e) => {
-      const match = starMap.get(e.artist_name.toLowerCase());
+      const match = findStar(e.artist_name);
       return {
         star_id: match?.starId || null,
         wiki_entry_id: match?.wikiEntryId || null,
