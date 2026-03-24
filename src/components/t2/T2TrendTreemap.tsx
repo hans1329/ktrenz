@@ -846,7 +846,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             onClick={() => handleTileClick(item)}
                             className={cn(
                               "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-all active:scale-[0.97]",
-                              idx === 0 ? "w-[360px] md:w-[400px]" : "w-[260px] md:w-[300px]",
+                              idx === 0 ? "w-[320px] md:w-[360px]" : "w-[320px] md:w-[360px]",
                               isSelected
                                 ? "border-primary/50 ring-2 ring-primary/20 bg-card"
                                 : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
@@ -880,7 +880,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               })()}
                             </div>
                             {/* Image area with rank badge + sparkline overlay */}
-                            <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[420px]" : "h-[300px]")}>
+                            <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[360px]" : "h-[360px]")}>
                               {bgImg ? (
                                 <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-center" loading="lazy" referrerPolicy="no-referrer" />
                               ) : (
