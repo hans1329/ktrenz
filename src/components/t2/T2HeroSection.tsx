@@ -78,9 +78,9 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
       const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
       const { data: markets } = await supabase
         .from("ktrenz_trend_markets" as any)
-        .select("trigger_id")
+        .select("trigger_id, status")
         .in("id", marketIds)
-        .eq("status", "open");
+        .in("status", ["open", "active", "pending"]);
       if (!markets?.length) return [];
 
       const triggerIds = (markets as any[]).map((m: any) => m.trigger_id);
