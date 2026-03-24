@@ -32,18 +32,62 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-/** Generate a simple sparkline SVG path from seed values (viewBox height=40) */
-function generateSparkline(seed: number, points = 8): string {
-  const vals: number[] = [];
-  let v = 15 + (seed % 12);
-  for (let i = 0; i < points; i++) {
-    v += ((seed * (i + 1) * 7) % 15) - 5;
-    v = Math.max(3, Math.min(32, v));
-    vals.push(v);
+function formatTimelineLabel(hours: number): string {
+  if (hours <= 0) return "0h";
+  return hours >= 24 ? `${Math.round(hours / 24)}d` : `${Math.round(hours)}h`;
+}
+
+function buildTrackingSparkline(
+  history: any[] | undefined,
+  detectedAt: string,
+  baselineScore?: number | null,
+  expiredAt?: string | null,
+) {
+  let points: { t: number; v: number }[] = [];
+
+  if (history && history.length >= 2) {
+    points = history.map((entry) => ({
+      t: new Date(entry.tracked_at).getTime(),
+      v: Number(entry.interest_score ?? 0),
+    }));
+  } else if (history && history.length === 1) {
+    points = [
+      { t: new Date(detectedAt).getTime(), v: Number(baselineScore ?? 0) },
+      { t: new Date(history[0].tracked_at).getTime(), v: Number(history[0].interest_score ?? 0) },
+    ];
+  } else {
+    const start = new Date(detectedAt).getTime();
+    const end = expiredAt ? new Date(expiredAt).getTime() : Date.now();
+    const safeEnd = Math.max(end, start + 60 * 60 * 1000);
+    const base = Number(baselineScore ?? 0);
+    points = [
+      { t: start, v: base },
+      { t: safeEnd, v: base },
+    ];
   }
-  vals[vals.length - 1] = Math.max(...vals) + 2;
-  const step = 100 / (points - 1);
-  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${36 - y}`).join(" ");
+
+  const startMs = points[0]?.t ?? Date.now();
+  const endMs = points[points.length - 1]?.t ?? startMs + 60 * 60 * 1000;
+  const spanMs = Math.max(endMs - startMs, 60 * 60 * 1000);
+  const maxVal = Math.max(...points.map((point) => point.v), 1);
+  const stepX = (time: number) => ((time - startMs) / spanMs) * 100;
+  const stepY = (value: number) => 36 - (value / maxVal) * 28;
+
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${stepX(point.t).toFixed(1)},${stepY(point.v).toFixed(1)}`)
+    .join(" ");
+
+  const totalHours = Math.round(spanMs / (60 * 60 * 1000));
+
+  return {
+    path,
+    labels: [
+      formatTimelineLabel(0),
+      formatTimelineLabel(Math.round(totalHours * 0.33)),
+      formatTimelineLabel(Math.round(totalHours * 0.66)),
+      expiredAt ? "expired" : "now",
+    ],
+  };
 }
 
 const HERO_GRADIENTS = [
@@ -146,6 +190,31 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     [betKeywords, myIds]
   );
 
+  // Personalized: My Picks carousel (artist keywords + bet keywords)
+  const topPicks = myKeywords.slice(0, 8);
+  const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
+
+  const { data: trackingMap } = useQuery({
+    queryKey: ["hero-tracking-history", allItems.map((item) => item.id).join(",")],
+    enabled: allItems.length > 0,
+    queryFn: async () => {
+      const triggerIds = allItems.map((item) => item.id);
+      const { data } = await supabase
+        .from("ktrenz_trend_tracking" as any)
+        .select("trigger_id, tracked_at, interest_score")
+        .in("trigger_id", triggerIds)
+        .order("tracked_at", { ascending: true });
+
+      const map = new Map<string, any[]>();
+      (data ?? []).forEach((row: any) => {
+        const existing = map.get(row.trigger_id) ?? [];
+        existing.push(row);
+        map.set(row.trigger_id, existing);
+      });
+      return map;
+    },
+  });
+
   // Not logged in
   if (!user) {
     return (
@@ -204,10 +273,6 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     );
   }
 
-  // Personalized: My Picks carousel (artist keywords + bet keywords)
-  const topPicks = myKeywords.slice(0, 8);
-  const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
-
   return (
     <div className="pt-2 pb-2">
       <div className="px-4 mb-3 flex items-center justify-between">
@@ -240,7 +305,12 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
           const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
           const gradient = HERO_GRADIENTS[idx % HERO_GRADIENTS.length];
-          const sparkPath = generateSparkline(item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx);
+          const spark = buildTrackingSparkline(
+            trackingMap?.get(item.id),
+            item.detectedAt,
+            item.baselineScore,
+            item.expiredAt,
+          );
 
           return (
             <button
@@ -307,11 +377,11 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                     </linearGradient>
                   </defs>
                   <path
-                    d={`${sparkPath} L100,40 L0,40 Z`}
+                    d={`${spark.path} L100,40 L0,40 Z`}
                     fill={`url(#spark-fill-${item.id})`}
                   />
                   <path
-                    d={sparkPath}
+                    d={spark.path}
                     fill="none"
                     stroke="white"
                     strokeWidth="2"
@@ -320,41 +390,12 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                     opacity="0.7"
                   />
                 </svg>
-                {(() => {
-                  const age = formatAge(item.detectedAt);
-                  const ageNum = parseInt(age) || 0;
-                  const unit = age.includes("d") ? "d" : "h";
-                  if (unit === "d" && ageNum >= 3) {
-                    const step = Math.round(ageNum / 3);
-                    return (
-                      <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
-                        <span>{ageNum}{unit}</span>
-                        <span>{ageNum - step}{unit}</span>
-                        <span>{ageNum - step * 2}{unit}</span>
-                        <span>now</span>
-                      </div>
-                    );
-                  }
-                  if (unit === "h" && ageNum >= 6) {
-                    const step = Math.round(ageNum / 3);
-                    return (
-                      <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
-                        <span>{ageNum}h</span>
-                        <span>{ageNum - step}h</span>
-                        <span>{ageNum - step * 2}h</span>
-                        <span>now</span>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
-                      <span>{age}</span>
-                      <span>·</span>
-                      <span>·</span>
-                      <span>now</span>
-                    </div>
-                  );
-                })()}
+                <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
+                  <span>{spark.labels[0]}</span>
+                  <span>{spark.labels[1]}</span>
+                  <span>{spark.labels[2]}</span>
+                  <span>{spark.labels[3]}</span>
+                </div>
               </div>
             </button>
           );
