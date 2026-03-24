@@ -98,14 +98,16 @@ const T2ArtistPage = () => {
     enabled: !!starId,
   });
 
-  // Fetch keywords for this artist
+  const keywordTargetStarId = star?.group_star_id || star?.id || starId;
+
+  // Fetch keywords for this artist (fallback to group artist for members)
   const { data: keywords, isLoading: kwLoading } = useQuery({
-    queryKey: ["t2-artist-keywords", starId],
+    queryKey: ["t2-artist-keywords", keywordTargetStarId],
     queryFn: async () => {
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
-        .eq("star_id", starId!)
+        .eq("star_id", keywordTargetStarId!)
         .eq("status", "active")
         .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
@@ -114,7 +116,7 @@ const T2ArtistPage = () => {
         .limit(50);
       return (data ?? []) as any[];
     },
-    enabled: !!starId,
+    enabled: !!keywordTargetStarId,
   });
 
   // Fetch tracking history for all keywords in batch
