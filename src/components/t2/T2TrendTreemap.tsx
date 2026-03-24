@@ -787,6 +787,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           selectedTileId={selectedTile?.id ?? null}
           hasMore={hasMoreList}
           onLoadMore={() => setListVisibleCount(prev => prev + 20)}
+          gridMode={gridMode}
         />
       ) : (
         <div className="px-4 md:px-0 space-y-6">
