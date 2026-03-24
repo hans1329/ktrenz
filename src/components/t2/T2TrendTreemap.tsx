@@ -886,8 +886,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {formatAge(item.detectedAt)}
                                 </span>
                               </div>
-                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug flex items-center gap-1", idx === 0 ? "text-base" : "text-sm")}>
-                                <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
+                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-base" : "text-sm")}>
                                 {getLocalizedKeyword(item, language)}
                               </h4>
                               {(() => {
@@ -896,8 +895,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   : language === "zh" ? (item.contextZh || item.context)
                                   : item.context;
                                 return ctx ? (
-                                  <p className="text-[10px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
-                                    {ctx.replace(/\[\d+\]/g, "").trim()}
+                                  <p className="flex items-start gap-1 text-[10px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
+                                    <MessageCircle className="w-3 h-3 shrink-0 -scale-x-100 mt-px" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
+                                    <span>{ctx.replace(/\[\d+\]/g, "").trim()}</span>
                                   </p>
                                 ) : null;
                               })()}
