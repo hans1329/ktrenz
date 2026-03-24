@@ -287,7 +287,7 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void }) => {
+const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange, mergedCategories }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void; mergedCategories?: string[] }) => {
   const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
   const selectedCategory = externalCategory ?? internalCategory;
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
@@ -528,6 +528,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [dedupedTriggers, watchedSet]);
 
   const filteredItems = useMemo(() => {
+    // If mergedCategories provided, filter by multiple categories
+    if (mergedCategories && mergedCategories.length > 0) {
+      return dedupedTriggers.filter(t => mergedCategories.includes(t.category));
+    }
     if (selectedCategory === "shopping") {
       return dedupedShopTriggers;
     }
@@ -539,7 +543,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       return dedupedTriggers.filter(t => t.category !== "music");
     }
     return dedupedTriggers.filter(t => t.category === selectedCategory);
-  }, [dedupedTriggers, selectedCategory, watchedSet]);
+  }, [dedupedTriggers, selectedCategory, watchedSet, mergedCategories]);
 
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
@@ -820,13 +824,16 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 return (
                   <div key={key}>
                     {/* Section header */}
-                    <div className="flex items-center gap-3 mb-3">
+                    <div
+                      className="flex items-center gap-3 mb-3 cursor-pointer group"
+                      onClick={() => navigate(`/t2/category/${key}`)}
+                    >
                       <span
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: color }}
                       />
-                      <h3 className="text-lg font-black text-foreground">{label}</h3>
-                      <span className="text-xs text-muted-foreground font-medium">{items.length}</span>
+                      <h3 className="text-lg font-black text-foreground flex-1">{label}</h3>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
 
                     {/* Horizontal carousel */}

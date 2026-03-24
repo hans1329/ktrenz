@@ -56,6 +56,7 @@ import B2BOnboarding from "./pages/b2b/B2BOnboarding";
 import B2BLayout from "./pages/b2b/B2BLayout";
 import B2BDashboard from "./pages/b2b/B2BDashboard";
 import B2BArtistDetail from "./pages/b2b/B2BArtistDetail";
+import T2CategoryDetail from "./pages/T2CategoryDetail";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/t2" element={<T2TrendMap />} />
             <Route path="/t2/my" element={<T2MyArtists />} />
             <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
+            <Route path="/t2/category/:categoryKey" element={<T2CategoryDetail />} />
             <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
             <Route path="/pd" element={<T2PitchDeck />} />
             <Route path="/t2/grades" element={<T2TrendGrades />} />
