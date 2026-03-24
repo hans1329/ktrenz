@@ -186,7 +186,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     idx === 0 ? "text-lg line-clamp-3" : "text-sm line-clamp-2"
                   )}
                 >
-                  <MessageCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 -scale-x-100 text-white/60" />
+                  <MessageCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 -scale-x-100" style={{ color: config?.color || "hsl(var(--primary))" }} />
                   {getLocalizedKeyword(item, language)}
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
