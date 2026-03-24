@@ -783,30 +783,37 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         <div className="px-4 md:px-0 space-y-6">
           {/* Carousel Card View — grouped by category */}
           {(() => {
-            // Group items by category, preserving sort order
-            const categoryOrder = Object.keys(CATEGORY_CONFIG).filter(cat => cat !== "shopping");
+            // Group items by category, merging brand+product
             const grouped = new Map<string, TrendTile[]>();
             for (const item of filteredItems) {
-              const list = grouped.get(item.category) || [];
+              const cat = (item.category === "brand" || item.category === "product") ? "brand_product" : item.category;
+              const list = grouped.get(cat) || [];
               list.push(item);
-              grouped.set(item.category, list);
+              grouped.set(cat, list);
             }
 
-            return categoryOrder
-              .filter(cat => (grouped.get(cat)?.length ?? 0) > 0)
-              .map(cat => {
-                const items = grouped.get(cat)!;
-                const config = CATEGORY_CONFIG[cat];
+            // My artists section first, then merged brand+product, then rest
+            const myItems = myKeywords.length > 0 ? myKeywords : [];
+            const sectionOrder = [
+              ...(myItems.length > 0 ? [{ key: "my", label: "★ My Picks", color: "hsl(45, 90%, 50%)", items: myItems }] : []),
+              ...(grouped.has("brand_product") ? [{ key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color, items: grouped.get("brand_product")! }] : []),
+              ...Object.keys(CATEGORY_CONFIG)
+                .filter(cat => cat !== "shopping" && cat !== "brand" && cat !== "product")
+                .filter(cat => (grouped.get(cat)?.length ?? 0) > 0)
+                .map(cat => ({ key: cat, label: CATEGORY_CONFIG[cat].label, color: CATEGORY_CONFIG[cat].color, items: grouped.get(cat)! })),
+            ];
+
+            return sectionOrder.map(({ key, label, color, items }) => {
 
                 return (
-                  <div key={cat}>
+                  <div key={key}>
                     {/* Section header */}
                     <div className="flex items-center gap-2 mb-2.5">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: config?.color }}
+                        style={{ backgroundColor: color }}
                       />
-                      <h3 className="text-sm font-black text-foreground">{config?.label || cat}</h3>
+                      <h3 className="text-sm font-black text-foreground">{label}</h3>
                       <span className="text-[11px] text-muted-foreground font-medium">{items.length}</span>
                     </div>
 
@@ -855,7 +862,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               ) : (
                                 <div
                                   className="w-full h-full flex items-center justify-center font-black text-white/20"
-                                  style={{ backgroundColor: config?.tileColor || "hsl(var(--muted))", fontSize: "40px" }}
+                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: "40px" }}
                                 >
                                   {getLocalizedArtistName(item, language).charAt(0)}
                                 </div>
