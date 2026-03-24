@@ -191,7 +191,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                 : "Follow your favorite artists\nfor personalized trends"}
             </h2>
             <button
-              onClick={() => navigate("/t2/my")}
+              onClick={() => onOpenOnboarding ? onOpenOnboarding() : navigate("/t2/my")}
               className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 text-white text-sm font-bold hover:bg-white/25 transition-all self-start"
             >
               <Heart className="w-4 h-4" />
