@@ -203,6 +203,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-bet-keywords", user?.id] });
       setBetAmount("");
       track("trend_bet_placed", { artist_name: tile?.artistName, section: tile?.keyword });
       toast.success(t("betSuccess", language));
