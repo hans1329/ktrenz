@@ -1010,9 +1010,14 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
           // 제네릭 해시태그 필터 (확장)
           const genericTags = new Set([
             "fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction",
-            "fancam", "edit", "trend", "trending", "stan", "bias", "idol", "concert",
+            "fancam", "edit", "edits", "trend", "trending", "stan", "bias", "idol", "concert",
             "performance", "live", "shorts", "reels", "xyzbca", "fypシ", "parati",
             "korean", "korea", "seoul", "hallyu", "kdrama", "oppa",
+            "facialexpressions", "facial", "expressions", "crowdreaction", "crowd",
+            "sns", "selca", "selfie", "cute", "funny", "aesthetic", "vlog",
+            "dailylife", "daily", "fanedit", "fanmade", "compilation",
+            "bestmoments", "moments", "highlights", "stage", "airport",
+            "dandysworld", "dandy", "bailey",
           ]);
           if (genericTags.has(kwNorm)) continue;
 
