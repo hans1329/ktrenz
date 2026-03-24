@@ -214,9 +214,41 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { triggerId, batchSize = 10, batchOffset = 0 } = body;
 
-      const { count } = await countQ;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const naverClientId = Deno.env.get("NAVER_CLIENT_ID") || "";
+    const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET") || "";
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    if (!naverClientId || !naverClientSecret) {
+      return new Response(
+        JSON.stringify({ success: false, error: "NAVER_CLIENT_ID/SECRET not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ─── 대상 조회: 모든 active 키워드 (trigger_source 구분 없이) ───
+    let triggers: any[];
+    let totalTriggers = 0;
+
+    if (triggerId) {
+      const { data } = await sb.from("ktrenz_trend_triggers").select("*").eq("id", triggerId).single();
+      triggers = data ? [data] : [];
+      totalTriggers = triggers.length;
+    } else {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { count } = await sb.from("ktrenz_trend_triggers")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active").gte("detected_at", weekAgo);
+
       totalTriggers = count ?? 0;
-      const { data } = await dataQ.range(batchOffset, batchOffset + batchSize - 1);
+
+      const { data } = await sb.from("ktrenz_trend_triggers")
+        .select("*").eq("status", "active").gte("detected_at", weekAgo)
+        .order("detected_at", { ascending: false })
+        .range(batchOffset, batchOffset + batchSize - 1);
+
       triggers = data || [];
     }
 
