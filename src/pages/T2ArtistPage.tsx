@@ -348,34 +348,45 @@ const T2ArtistPage = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ctxText}</p>
                       )}
 
-                      {/* Sparkline */}
+                      {/* Sparkline – real tracking data */}
                       {(() => {
-                        const detectedMs = new Date(kw.detected_at).getTime();
-                        const nowMs = Date.now();
+                        const history = trackingMap?.get(kw.id) ?? [];
                         const isExpired = !!kw.expired_at;
-                        const endMs = isExpired ? new Date(kw.expired_at).getTime() : nowMs;
-                        const peakMs = kw.peak_at ? new Date(kw.peak_at).getTime()
-                          : kw.peak_delay_hours ? detectedMs + kw.peak_delay_hours * 3600000
-                          : detectedMs + (endMs - detectedMs) * 0.4;
-                        const spanMs = Math.max(endMs - detectedMs, 3600000);
 
-                        const baseline = kw.baseline_score ?? 0;
-                        const peak = kw.peak_score ?? Math.max(baseline, 1);
-                        const maxVal = Math.max(peak, baseline, 1);
-
-                        const pts: { t: number; v: number }[] = [
-                          { t: detectedMs, v: baseline },
-                          { t: peakMs, v: peak },
-                        ];
-                        if (endMs > peakMs) {
-                          const decay = isExpired ? 0.05 * maxVal
-                            : peak * (0.3 + 0.7 * Math.max(0, 1 - (endMs - peakMs) / (spanMs * 0.6)));
-                          pts.push({ t: endMs, v: decay });
+                        // Build points: use real tracking history if available
+                        let pts: { t: number; v: number }[] = [];
+                        if (history.length >= 2) {
+                          pts = history.map((h: any) => ({
+                            t: new Date(h.tracked_at).getTime(),
+                            v: h.interest_score ?? 0,
+                          }));
+                        } else if (history.length === 1) {
+                          // 1 point: show baseline → single point
+                          const h = history[0];
+                          pts = [
+                            { t: new Date(kw.detected_at).getTime(), v: kw.baseline_score ?? 0 },
+                            { t: new Date(h.tracked_at).getTime(), v: h.interest_score ?? 0 },
+                          ];
+                        } else {
+                          // No tracking yet: show flat line at baseline
+                          const detMs = new Date(kw.detected_at).getTime();
+                          const bv = kw.baseline_score ?? 0;
+                          pts = [
+                            { t: detMs, v: bv },
+                            { t: Date.now(), v: bv },
+                          ];
                         }
+
+                        if (pts.length < 2) return null;
+
+                        const startMs = pts[0].t;
+                        const endMs = pts[pts.length - 1].t;
+                        const spanMs = Math.max(endMs - startMs, 3600000);
+                        const maxVal = Math.max(...pts.map(p => p.v), 1);
 
                         const W = 100;
                         const H = 18;
-                        const toX = (t: number) => ((t - detectedMs) / spanMs) * W;
+                        const toX = (t: number) => ((t - startMs) / spanMs) * W;
                         const toY = (v: number) => H - (v / maxVal) * (H - 2);
 
                         const path = pts.map((p, i) =>
@@ -383,6 +394,7 @@ const T2ArtistPage = () => {
                         ).join(" ");
                         const fill = path + ` L${toX(pts[pts.length - 1].t).toFixed(1)},${H} L0,${H} Z`;
 
+                        // Time labels
                         const fmtH = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : `${Math.round(h)}h`;
                         const totalH = Math.round(spanMs / 3600000);
                         const t1 = fmtH(Math.round(totalH * 0.33));
