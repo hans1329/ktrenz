@@ -372,7 +372,7 @@ Deno.serve(async (req) => {
               interest_score: buzzScore, region: isShopTrigger ? "naver_shop" : "naver",
               delta_pct: deltaPct, raw_response: rawResponse,
             });
-            await updateCausalMetrics(sb, dupId, buzzScore);
+            await updateCausalMetrics(sb, dupId, buzzScore, isShopTrigger);
             await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", dupId);
           }
         }
