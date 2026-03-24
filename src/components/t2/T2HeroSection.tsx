@@ -227,10 +227,41 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     opacity="0.7"
                   />
                 </svg>
-                <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[8px] font-medium text-white/40">
-                  <span>{formatAge(item.detectedAt)}</span>
-                  <span>now</span>
-                </div>
+                {(() => {
+                  const age = formatAge(item.detectedAt);
+                  const ageNum = parseInt(age) || 0;
+                  const unit = age.includes("d") ? "d" : "h";
+                  if (unit === "d" && ageNum >= 3) {
+                    const step = Math.round(ageNum / 3);
+                    return (
+                      <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
+                        <span>{ageNum}{unit}</span>
+                        <span>{ageNum - step}{unit}</span>
+                        <span>{ageNum - step * 2}{unit}</span>
+                        <span>now</span>
+                      </div>
+                    );
+                  }
+                  if (unit === "h" && ageNum >= 6) {
+                    const step = Math.round(ageNum / 3);
+                    return (
+                      <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
+                        <span>{ageNum}h</span>
+                        <span>{ageNum - step}h</span>
+                        <span>{ageNum - step * 2}h</span>
+                        <span>now</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
+                      <span>{age}</span>
+                      <span>·</span>
+                      <span>·</span>
+                      <span>now</span>
+                    </div>
+                  );
+                })()}
               </div>
             </button>
           );
