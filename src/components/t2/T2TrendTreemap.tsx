@@ -192,10 +192,10 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
       : idx < 8 ? 0.26
       : idx < 12 ? 0.19
       : idx < 16 ? 0.15
-      : idx < 22 ? 0.12
-      : idx < 35 ? 0.10
-      : idx < 50 ? 0.08
-      : 0.06;
+      : idx < 22 ? 0.13
+      : idx < 35 ? 0.11
+      : idx < 50 ? 0.10
+      : 0.09;
     return logBase * rankMultiplier;
   };
 
