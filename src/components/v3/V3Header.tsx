@@ -28,7 +28,7 @@ interface KeywordResult {
   star_id: string | null;
 }
 
-const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
+const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rightSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -223,7 +223,8 @@ const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
                 />
               </Link>
               {centerSlot && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">{centerSlot}</div>}
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                {rightSlot}
                 <button className="p-1 active:opacity-60 transition-opacity" onClick={() => setIsSearchOpen(true)}>
                   <Search className="w-5 h-5 text-foreground/80" />
                 </button>
