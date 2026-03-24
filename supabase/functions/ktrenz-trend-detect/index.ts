@@ -1891,7 +1891,7 @@ async function trackExistingKeywords(
     .eq("star_id", starId)
     .eq("status", "active")
     .gte("detected_at", weekAgo)
-    .neq("trigger_source", "naver_shop");
+    ;
 
   if (!activeTriggers?.length) return { tracked: 0 };
 
