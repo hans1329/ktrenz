@@ -426,8 +426,9 @@ const T2ArtistPage = () => {
                             </svg>
                             <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
                               <span>{startLabel}</span>
-                              <span>{t1}</span>
-                              <span>{t2}</span>
+                              <span>{fmtH(Math.round(totalH * 0.25))}</span>
+                              <span>{fmtH(Math.round(totalH * 0.5))}</span>
+                              <span>{fmtH(Math.round(totalH * 0.75))}</span>
                               <span>{endLabel}</span>
                             </div>
                           </div>
