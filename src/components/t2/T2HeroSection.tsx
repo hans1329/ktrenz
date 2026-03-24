@@ -32,18 +32,62 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-/** Generate a simple sparkline SVG path from seed values (viewBox height=40) */
-function generateSparkline(seed: number, points = 8): string {
-  const vals: number[] = [];
-  let v = 15 + (seed % 12);
-  for (let i = 0; i < points; i++) {
-    v += ((seed * (i + 1) * 7) % 15) - 5;
-    v = Math.max(3, Math.min(32, v));
-    vals.push(v);
+function formatTimelineLabel(hours: number): string {
+  if (hours <= 0) return "0h";
+  return hours >= 24 ? `${Math.round(hours / 24)}d` : `${Math.round(hours)}h`;
+}
+
+function buildTrackingSparkline(
+  history: any[] | undefined,
+  detectedAt: string,
+  baselineScore?: number | null,
+  expiredAt?: string | null,
+) {
+  let points: { t: number; v: number }[] = [];
+
+  if (history && history.length >= 2) {
+    points = history.map((entry) => ({
+      t: new Date(entry.tracked_at).getTime(),
+      v: Number(entry.interest_score ?? 0),
+    }));
+  } else if (history && history.length === 1) {
+    points = [
+      { t: new Date(detectedAt).getTime(), v: Number(baselineScore ?? 0) },
+      { t: new Date(history[0].tracked_at).getTime(), v: Number(history[0].interest_score ?? 0) },
+    ];
+  } else {
+    const start = new Date(detectedAt).getTime();
+    const end = expiredAt ? new Date(expiredAt).getTime() : Date.now();
+    const safeEnd = Math.max(end, start + 60 * 60 * 1000);
+    const base = Number(baselineScore ?? 0);
+    points = [
+      { t: start, v: base },
+      { t: safeEnd, v: base },
+    ];
   }
-  vals[vals.length - 1] = Math.max(...vals) + 2;
-  const step = 100 / (points - 1);
-  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${36 - y}`).join(" ");
+
+  const startMs = points[0]?.t ?? Date.now();
+  const endMs = points[points.length - 1]?.t ?? startMs + 60 * 60 * 1000;
+  const spanMs = Math.max(endMs - startMs, 60 * 60 * 1000);
+  const maxVal = Math.max(...points.map((point) => point.v), 1);
+  const stepX = (time: number) => ((time - startMs) / spanMs) * 100;
+  const stepY = (value: number) => 36 - (value / maxVal) * 28;
+
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"}${stepX(point.t).toFixed(1)},${stepY(point.v).toFixed(1)}`)
+    .join(" ");
+
+  const totalHours = Math.round(spanMs / (60 * 60 * 1000));
+
+  return {
+    path,
+    labels: [
+      formatTimelineLabel(0),
+      formatTimelineLabel(Math.round(totalHours * 0.33)),
+      formatTimelineLabel(Math.round(totalHours * 0.66)),
+      expiredAt ? "expired" : "now",
+    ],
+  };
 }
 
 const HERO_GRADIENTS = [
