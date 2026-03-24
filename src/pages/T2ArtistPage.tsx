@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,12 +118,12 @@ const T2ArtistPage = () => {
   });
 
   // Fetch tracking history for all keywords in batch
+  const kwIds = useMemo(() => (keywords ?? []).map((k: any) => k.id).join(","), [keywords]);
   const { data: trackingMap } = useQuery({
-    queryKey: ["t2-artist-tracking", starId, keywords?.map((k: any) => k.id)],
+    queryKey: ["t2-artist-tracking", starId, kwIds],
     queryFn: async () => {
       if (!keywords || keywords.length === 0) return new Map<string, any[]>();
       const ids = keywords.map((k: any) => k.id);
-      // Supabase limit is 1000, batch if needed
       const allData: any[] = [];
       for (let i = 0; i < ids.length; i += 20) {
         const batch = ids.slice(i, i + 20);

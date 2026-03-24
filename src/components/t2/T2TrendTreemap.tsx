@@ -532,6 +532,34 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return deduped;
   }, [filteredItems]);
 
+  // Fetch real tracking history for carousel sparklines
+  const carouselIds = useMemo(() => filteredItems.slice(0, 90).map(i => i.id).join(","), [filteredItems]);
+  const { data: carouselTrackingMap } = useQuery({
+    queryKey: ["carousel-tracking", carouselIds],
+    enabled: filteredItems.length > 0,
+    queryFn: async () => {
+      const ids = filteredItems.slice(0, 90).map(i => i.id);
+      const allData: any[] = [];
+      for (let i = 0; i < ids.length; i += 30) {
+        const batch = ids.slice(i, i + 30);
+        const { data } = await supabase
+          .from("ktrenz_trend_tracking" as any)
+          .select("trigger_id, tracked_at, interest_score")
+          .in("trigger_id", batch)
+          .order("tracked_at", { ascending: true });
+        if (data) allData.push(...(data as any[]));
+      }
+      const map = new Map<string, any[]>();
+      allData.forEach((d: any) => {
+        const arr = map.get(d.trigger_id) || [];
+        arr.push(d);
+        map.set(d.trigger_id, arr);
+      });
+      return map;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   const containerWidth = isMobile ? 390 : 1000;
   const containerHeight = useMemo(() => {
     if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
@@ -861,25 +889,55 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                       </linearGradient>
                                     </defs>
                                     {(() => {
-                                      const seed = item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx;
-                                      const pts = 8; const vals: number[] = []; let v = 5 + (seed % 6);
-                                      for (let i = 0; i < pts; i++) { v += ((seed * (i + 1) * 7) % 9) - 3; v = Math.max(2, Math.min(15, v)); vals.push(v); }
-                                      vals[vals.length - 1] = Math.max(...vals) + 1;
-                                      const stp = 100 / (pts - 1);
-                                      const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * stp},${18 - y}`).join(" ");
-                                      return (<><path d={`${path} L100,20 L0,20 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.95" /></>);
+                                      const history = carouselTrackingMap?.get(item.id) ?? [];
+                                      let pts: { t: number; v: number }[] = [];
+                                      if (history.length >= 2) {
+                                        pts = history.map((h: any) => ({ t: new Date(h.tracked_at).getTime(), v: h.interest_score ?? 0 }));
+                                      } else if (history.length === 1) {
+                                        pts = [
+                                          { t: new Date(item.detectedAt).getTime(), v: item.baselineScore ?? 0 },
+                                          { t: new Date(history[0].tracked_at).getTime(), v: history[0].interest_score ?? 0 },
+                                        ];
+                                      } else {
+                                        const detMs = new Date(item.detectedAt).getTime();
+                                        const bv = item.baselineScore ?? 0;
+                                        pts = [{ t: detMs, v: bv }, { t: Date.now(), v: bv }];
+                                      }
+                                      if (pts.length < 2) return null;
+                                      const startMs = pts[0].t;
+                                      const endMs = pts[pts.length - 1].t;
+                                      const spanMs = Math.max(endMs - startMs, 3600000);
+                                      const maxVal = Math.max(...pts.map(p => p.v), 1);
+                                      const toX = (t: number) => ((t - startMs) / spanMs) * 100;
+                                      const toY = (v: number) => 18 - (v / maxVal) * 14;
+                                      const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
+                                      const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
+                                      return (
+                                        <>
+                                          <path d={`${path} L100,20 L0,20 Z`} fill={`url(#cat-spark-${item.id})`} />
+                                          <path d={path} fill="none" stroke={catColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.95" />
+                                        </>
+                                      );
                                     })()}
                                   </svg>
                                   {(() => {
-                                    const age = formatAge(item.detectedAt);
-                                    const ageNum = parseInt(age) || 0;
-                                    const unit = age.includes("d") ? "d" : "h";
-                                    const s = Math.max(1, Math.round(ageNum / 3));
+                                    const history = carouselTrackingMap?.get(item.id) ?? [];
+                                    let startMs: number, endMs: number;
+                                    if (history.length >= 2) {
+                                      startMs = new Date(history[0].tracked_at).getTime();
+                                      endMs = new Date(history[history.length - 1].tracked_at).getTime();
+                                    } else {
+                                      startMs = new Date(item.detectedAt).getTime();
+                                      endMs = Date.now();
+                                    }
+                                    const spanMs = Math.max(endMs - startMs, 3600000);
+                                    const totalH = Math.round(spanMs / 3600000);
+                                    const fmtH = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : `${Math.round(h)}h`;
                                     return (
                                       <div className="absolute bottom-1.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/50 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-                                        <span>{age}</span>
-                                        <span>{ageNum >= 3 ? `${ageNum - s}${unit}` : "·"}</span>
-                                        <span>{ageNum >= 3 ? `${ageNum - s * 2}${unit}` : "·"}</span>
+                                        <span>{fmtH(0)}</span>
+                                        <span>{fmtH(Math.round(totalH * 0.33))}</span>
+                                        <span>{fmtH(Math.round(totalH * 0.66))}</span>
                                         <span>now</span>
                                       </div>
                                     );
