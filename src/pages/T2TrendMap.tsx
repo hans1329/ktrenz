@@ -344,6 +344,9 @@ const T2TrendMap = () => {
         >
           <div className="relative">
             <div className="md:max-w-[90%] mx-auto relative z-10">
+              {/* Hero section */}
+              <T2HeroSection myKeywords={myKeywords} />
+
               <div
                 style={{
                   transform: shouldRenderSwipeOverlay ? `translate3d(${dragOffsetX}px, 0, 0)` : 'none',
@@ -361,6 +364,7 @@ const T2TrendMap = () => {
                   sortMode={sortMode}
                   onSortModeChange={setSortMode}
                   onCategoryStatsChange={handleCategoryStatsChange}
+                  onMyKeywordsChange={setMyKeywords}
                 />
               </div>
             </div>
