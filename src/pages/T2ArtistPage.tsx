@@ -371,7 +371,7 @@ const T2ArtistPage = () => {
 
                         return (
                           <div className="mt-2">
-                            <svg width="100%" height={svgH + 14} viewBox={`0 0 ${svgW} ${svgH + 14}`} preserveAspectRatio="none">
+                            <svg width="100%" viewBox={`0 0 ${svgW} ${svgH + 14}`} preserveAspectRatio="xMidYMid meet" style={{ height: 'auto' }}>
                               {/* Grid line */}
                               <line x1={padX} y1={svgH - padY} x2={svgW - padX} y2={svgH - padY} stroke="hsl(var(--border))" strokeWidth="0.5" />
                               {/* Fill */}
