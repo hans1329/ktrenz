@@ -431,8 +431,8 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_zh: { type: "string", description: "Chinese translation" },
               category: { type: "string", enum: ["brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "social"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
-              context: { type: "string", description: "English context sentence" },
-              context_ko: { type: "string", description: "Korean context sentence" },
+              context: { type: "string", description: "1 sentence in English: Use the KEYWORD as the subject and explain WHY it is linked to the artist. e.g. 'Biore UV collaborated with Stray Kids for an event in Osaka.'" },
+              context_ko: { type: "string", description: "1 sentence in Korean: Use the KEYWORD as the subject and explain WHY it is linked to the artist. e.g. '비오레UV가 스트레이키즈와 오사카 행사에서 협업했다.'" },
               context_ja: { type: "string", description: "Japanese context sentence" },
               context_zh: { type: "string", description: "Chinese context sentence" },
               source_article_index: { type: "integer", description: "1-based index of the source article" },
@@ -530,7 +530,7 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
 - You must NOT use your own knowledge about the artist.
 - If "팔레트" does not appear in any article text, you CANNOT extract "팔레트" — even if you know it's the artist's song.
 - If "나의 아저씨" does not appear in any article text, you CANNOT extract it.
-- The context/context_ko fields must SUMMARIZE THE ACTUAL ARTICLE where the keyword was found, NOT general knowledge.
+- The context/context_ko fields must use the KEYWORD as the grammatical subject and explain in ONE sentence why it is linked to this artist. Example: keyword="비오레" → context_ko="비오레UV가 스트레이키즈와 오사카 이벤트에서 협업했다." Do NOT summarize the whole article — only the keyword↔artist relationship.
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
 WHAT MAKES A VALID KEYWORD:
@@ -580,7 +580,7 @@ When in doubt, DO NOT extract. False negatives are far better than false positiv
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
 - Do NOT use your general knowledge about this artist to generate keywords.
-- The context_ko field must be a direct summary of the SPECIFIC ARTICLE (cite what the article says), not general knowledge about the artist.
+- The context_ko field must use the KEYWORD as the subject and explain in ONE sentence why it relates to the artist, based on the article. NOT a general article summary.
 - If no article contains a valid extractable entity, call extract_keywords with an empty array.
 - source_article_index MUST point to the exact article [number] where the keyword appears.
 
