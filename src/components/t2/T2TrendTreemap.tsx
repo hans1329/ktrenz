@@ -856,14 +856,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             onClick={() => handleTileClick(item)}
                             className={cn(
                               "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-all active:scale-[0.97]",
-                              "w-[200px] md:w-[240px]",
+                              idx === 0 ? "w-[280px] md:w-[320px]" : "w-[200px] md:w-[240px]",
                               isSelected
                                 ? "border-primary/50 ring-2 ring-primary/20 bg-card"
                                 : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
                             )}
                           >
                             {/* Image area */}
-                            <div className="relative w-full aspect-[4/3] bg-muted/30 overflow-hidden">
+                            <div className={cn("relative w-full bg-muted/30 overflow-hidden", idx === 0 ? "aspect-[3/2]" : "aspect-[4/3]")}>
                               {bgImg ? (
                                 <img
                                   src={bgImg}
@@ -874,14 +874,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               ) : (
                                 <div
                                   className="w-full h-full flex items-center justify-center font-black text-white/20"
-                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: "40px" }}
+                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}
                                 >
                                   {getLocalizedArtistName(item, language).charAt(0)}
                                 </div>
                               )}
-                              {/* Rank badge */}
                               {idx < 3 && (
-                                <span className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black flex items-center justify-center">
+                                <span className={cn("absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-8 h-8 text-sm" : "w-6 h-6 text-[10px]")}>
                                   {idx + 1}
                                 </span>
                               )}
@@ -895,29 +894,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             </div>
 
                             {/* Text area */}
-                            <div className="p-3 flex flex-col gap-1.5 flex-1">
-                              <span className="text-[11px] font-medium text-muted-foreground truncate">
+                            <div className={cn("flex flex-col gap-1 flex-1", idx === 0 ? "p-4" : "p-3")}>
+                              <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-xs" : "text-[11px]")}>
                                 {getLocalizedArtistName(item, language)}
                               </span>
-                              <h4 className="text-sm font-black text-foreground line-clamp-2 leading-snug">
+                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-base" : "text-sm")}>
                                 {getLocalizedKeyword(item, language)}
                               </h4>
-                              <div className="flex items-center gap-2 mt-auto">
-                                {item.influenceIndex > 0 && (
-                                  <span className="flex items-center gap-0.5 text-[11px] font-bold text-primary">
-                                    <TrendingUp className="w-3 h-3" />
-                                    +{item.influenceIndex.toFixed(0)}%
-                                  </span>
-                                )}
-                                {sortMode === "volume" && delta != null && delta !== 0 && (
-                                  <span className={cn(
-                                    "text-[11px] font-bold",
-                                    delta > 0 ? "text-emerald-500" : "text-red-400"
-                                  )}>
-                                    {delta > 0 ? "+" : ""}{delta.toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
+                            </div>
+                          </button>
                             </div>
                           </button>
                         );
