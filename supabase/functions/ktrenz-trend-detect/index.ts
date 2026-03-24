@@ -580,7 +580,7 @@ When in doubt, DO NOT extract. False negatives are far better than false positiv
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
 - Do NOT use your general knowledge about this artist to generate keywords.
-- The context_ko field must be a direct summary of the SPECIFIC ARTICLE (cite what the article says), not general knowledge about the artist.
+- The context_ko field must use the KEYWORD as the subject and explain in ONE sentence why it relates to the artist, based on the article. NOT a general article summary.
 - If no article contains a valid extractable entity, call extract_keywords with an empty array.
 - source_article_index MUST point to the exact article [number] where the keyword appears.
 
