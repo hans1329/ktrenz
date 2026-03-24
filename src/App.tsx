@@ -90,6 +90,7 @@ const App = () => (
             <Route path="/t2" element={<T2TrendMap />} />
             <Route path="/t2/my" element={<T2MyArtists />} />
             <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
+            <Route path="/t2/category/:categoryKey" element={<T2CategoryDetail />} />
             <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
             <Route path="/pd" element={<T2PitchDeck />} />
             <Route path="/t2/grades" element={<T2TrendGrades />} />
