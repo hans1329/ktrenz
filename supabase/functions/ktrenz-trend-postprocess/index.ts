@@ -621,6 +621,10 @@ Deno.serve(async (req) => {
     const sameUrlResult = await sameSourceUrlDedup(sb);
     console.log(`[postprocess] Same source_url dedup: expired ${sameUrlResult.expired} duplicates`);
 
+    // 4.6단계: 크로스 아티스트 동일 source_url 중복제거
+    const crossArtistResult = await crossArtistSourceUrlDedup(sb);
+    console.log(`[postprocess] Cross-artist source_url dedup: expired ${crossArtistResult.expired} duplicates`);
+
     // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
@@ -630,7 +634,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -642,6 +646,7 @@ Deno.serve(async (req) => {
         sameArtistDedup: sameArtistResult,
         domesticPriority: srcDedupResult,
         sameSourceUrlDedup: sameUrlResult,
+        crossArtistDedup: crossArtistResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
