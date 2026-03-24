@@ -48,7 +48,7 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
         .select("id, wiki_entry_id, display_name, name_ko, image_url, agency, star_type")
         .eq("is_active", true)
         .order("display_name");
-      return (data ?? []) as StarItem[];
+      return (data ?? []) as unknown as StarItem[];
     },
     enabled: open,
     staleTime: 1000 * 60 * 10,
