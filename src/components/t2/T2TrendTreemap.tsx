@@ -905,10 +905,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                       }
                                       if (pts.length < 2) return null;
                                       const startMs = pts[0].t;
-                                      const endMs = pts[pts.length - 1].t;
-                                      const spanMs = Math.max(endMs - startMs, 3600000);
+                                      const nowMs = Date.now();
+                                      const spanMs = Math.max(nowMs - startMs, 3600000);
                                       const maxVal = Math.max(...pts.map(p => p.v), 1);
-                                      const toX = (t: number) => ((t - startMs) / spanMs) * 100;
+                                      const toX = (t: number) => Math.min(((t - startMs) / spanMs) * 100, 100);
                                       const toY = (v: number) => 18 - (v / maxVal) * 14;
                                       const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
                                       const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
@@ -922,22 +922,19 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   </svg>
                                   {(() => {
                                     const history = carouselTrackingMap?.get(item.id) ?? [];
-                                    let startMs: number, endMs: number;
-                                    if (history.length >= 2) {
-                                      startMs = new Date(history[0].tracked_at).getTime();
-                                      endMs = new Date(history[history.length - 1].tracked_at).getTime();
-                                    } else {
-                                      startMs = new Date(item.detectedAt).getTime();
-                                      endMs = Date.now();
-                                    }
-                                    const spanMs = Math.max(endMs - startMs, 3600000);
+                                    const startMs = history.length >= 1
+                                      ? new Date(history[0].tracked_at).getTime()
+                                      : new Date(item.detectedAt).getTime();
+                                    const nowMs = Date.now();
+                                    const spanMs = Math.max(nowMs - startMs, 3600000);
                                     const totalH = Math.round(spanMs / 3600000);
                                     const fmtH = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : `${Math.round(h)}h`;
                                     return (
                                       <div className="absolute bottom-1.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/50 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
                                         <span>{fmtH(0)}</span>
-                                        <span>{fmtH(Math.round(totalH * 0.33))}</span>
-                                        <span>{fmtH(Math.round(totalH * 0.66))}</span>
+                                        <span>{fmtH(Math.round(totalH * 0.25))}</span>
+                                        <span>{fmtH(Math.round(totalH * 0.5))}</span>
+                                        <span>{fmtH(Math.round(totalH * 0.75))}</span>
                                         <span>now</span>
                                       </div>
                                     );
