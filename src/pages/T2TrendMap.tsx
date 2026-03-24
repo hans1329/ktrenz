@@ -309,7 +309,7 @@ const T2TrendMap = () => {
           <div className="relative">
             <div className="md:max-w-[90%] mx-auto relative z-10">
               {/* Hero section */}
-              <T2HeroSection myKeywords={myKeywords} />
+              <T2HeroSection myKeywords={myKeywords} onOpenOnboarding={() => setShowOnboarding(true)} />
 
               <div
                 style={{
