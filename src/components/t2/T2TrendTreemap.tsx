@@ -203,9 +203,12 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
   const totalArea = w * h;
   const rawAreas = items.map((item, idx) => (tileSize(item, idx) / totalValue) * totalArea);
   // Cap per-tile area and enforce minimum so keywords are always visible
-  const minArea = totalArea * 0.008; // minimum ~0.8% per tile
+  const minArea = totalArea * 0.006;
   const areas = rawAreas.map((a, i) => {
-    const cap = i < 5 ? totalArea * 0.035 : totalArea * 0.025;
+    const cap = i === 0 ? totalArea * 0.08
+      : i < 3 ? totalArea * 0.055
+      : i < 6 ? totalArea * 0.04
+      : totalArea * 0.025;
     return Math.max(Math.min(a, cap), minArea);
   });
   // Normalize to fill total area
