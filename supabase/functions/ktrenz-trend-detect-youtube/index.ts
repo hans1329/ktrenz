@@ -33,7 +33,23 @@ const PLATFORM_BLACKLIST = new Set([
   "weverse", "vlive", "bubble", "universe", "phoning", "lysn",
   "naver", "google", "daum", "kakao", "billboard", "hanteo", "gaon",
   "circle chart", "oricon", "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn",
+  "sns", "hybe", "sm", "yg", "jyp", "starship", "pledis", "cube",
 ]);
+
+const AGENCY_BLACKLIST_PATTERNS = [
+  "엔터테인먼트", "entertainment",
+  "hybe", "하이브", "bighit", "빅히트",
+  "sm엔터", "에스엠", "yg엔터", "와이지",
+  "jyp엔터", "제이와이피", "starship", "스타쉽",
+  "큐브엔터", "pledis", "플레디스", "woollim", "울림",
+  "fnc엔터", "rbw", "koz엔터", "ador", "아도어",
+  "belift", "빌리프", "p nation", "피네이션",
+];
+
+function isAgencyKeyword(kw: string): boolean {
+  const lower = kw.toLowerCase();
+  return AGENCY_BLACKLIST_PATTERNS.some(p => lower.includes(p));
+}
 
 interface YouTubeVideo {
   videoId: string;
@@ -187,6 +203,12 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       // Platform blacklist filter
       if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
         console.warn(`[detect-youtube] Blocked platform keyword: "${k.keyword}"`);
+        return false;
+      }
+
+      // Agency blacklist filter
+      if (isAgencyKeyword(kwLower) || isAgencyKeyword(kwKo) || isAgencyKeyword(kwEn)) {
+        console.warn(`[detect-youtube] Blocked agency keyword: "${k.keyword}"`);
         return false;
       }
       

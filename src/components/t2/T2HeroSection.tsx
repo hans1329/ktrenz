@@ -96,7 +96,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
       const { data: entries } = wikiIds.length
         ? await supabase
             .from("wiki_entries")
-            .select("id, title, title_ko, image_url, star_id")
+            .select("id, title, image_url, star_id")
             .in("id", wikiIds)
         : { data: [] as any[] };
       const entryMap = new Map((entries || []).map((e: any) => [e.id, e]));
@@ -111,7 +111,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
           keywordZh: t.keyword_zh,
           category: t.keyword_category || "social",
           artistName: entry?.title || t.artist_name || "",
-          artistNameKo: entry?.title_ko || null,
+          artistNameKo: null,
           artistImageUrl: entry?.image_url || null,
           wikiEntryId: t.wiki_entry_id || "",
           influenceIndex: t.influence_index || 0,
