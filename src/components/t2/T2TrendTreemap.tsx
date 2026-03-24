@@ -874,7 +874,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
                             )}
                           >
-                            {/* Top: keyword + artist */}
+                            {/* Top: keyword + artist + sparkline */}
                             <div className={cn("flex flex-col gap-1", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
                               <div className="flex items-center justify-between">
                                 <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-xs" : "text-[11px]")}>
@@ -888,44 +888,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-base" : "text-sm")}>
                                 {getLocalizedKeyword(item, language)}
                               </h4>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                {idx < 3 && (
-                                  <span className={cn("rounded-full bg-foreground/10 text-foreground font-black flex items-center justify-center shrink-0", idx === 0 ? "w-6 h-6 text-[10px]" : "w-5 h-5 text-[9px]")}>
-                                    {idx + 1}
-                                  </span>
-                                )}
-                                {isMyArtist && (
-                                  <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Image area */}
-                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[3/2]" : "aspect-[4/3]")}>
-                              {bgImg ? (
-                                <img
-                                  src={bgImg}
-                                  alt={getLocalizedKeyword(item, language)}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div
-                                  className="w-full h-full flex items-center justify-center font-black text-white/20"
-                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}
-                                >
-                                  {getLocalizedArtistName(item, language).charAt(0)}
-                                </div>
+                              {isMyArtist && (
+                                <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
                               )}
-                            </div>
-
-                            {/* Mini sparkline */}
-                            <div className="px-2 py-1.5">
-                              <svg
-                                viewBox="0 0 100 30"
-                                className="w-full h-[24px]"
-                                preserveAspectRatio="none"
-                              >
+                              {/* Inline sparkline */}
+                              <svg viewBox="0 0 100 24" className="w-full h-[20px] mt-1" preserveAspectRatio="none">
                                 <defs>
                                   <linearGradient id={`cat-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.25" />
@@ -934,25 +901,30 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 </defs>
                                 {(() => {
                                   const seed = item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx;
-                                  const pts = 8;
-                                  const vals: number[] = [];
-                                  let v = 15 + (seed % 10);
-                                  for (let i = 0; i < pts; i++) {
-                                    v += ((seed * (i + 1) * 7) % 13) - 5;
-                                    v = Math.max(3, Math.min(27, v));
-                                    vals.push(v);
-                                  }
-                                  vals[vals.length - 1] = Math.max(...vals) + 2;
+                                  const pts = 8; const vals: number[] = []; let v = 10 + (seed % 8);
+                                  for (let i = 0; i < pts; i++) { v += ((seed * (i + 1) * 7) % 11) - 4; v = Math.max(2, Math.min(21, v)); vals.push(v); }
+                                  vals[vals.length - 1] = Math.max(...vals) + 1;
                                   const step = 80 / (pts - 1);
-                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${30 - y}`).join(" ");
-                                  return (
-                                    <>
-                                      <path d={`${path} L90,30 L10,30 Z`} fill={`url(#cat-spark-${item.id})`} />
-                                      <path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-                                    </>
-                                  );
+                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${24 - y}`).join(" ");
+                                  return (<><path d={`${path} L90,24 L10,24 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" /></>);
                                 })()}
                               </svg>
+                            </div>
+
+                            {/* Image area with rank badge */}
+                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[3/2]" : "aspect-[4/3]")}>
+                              {bgImg ? (
+                                <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover" loading="lazy" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center font-black text-white/20" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}>
+                                  {getLocalizedArtistName(item, language).charAt(0)}
+                                </div>
+                              )}
+                              {idx < 3 && (
+                                <span className={cn("absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-8 h-8 text-sm" : "w-6 h-6 text-[10px]")}>
+                                  {idx + 1}
+                                </span>
+                              )}
                             </div>
                           </button>
                         );
