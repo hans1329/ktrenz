@@ -119,7 +119,6 @@ const T2ArtistPage = () => {
         .select("*")
         .eq("star_id", keywordTargetStarId!)
         .eq("status", "active")
-        .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })

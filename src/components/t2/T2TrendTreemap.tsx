@@ -466,12 +466,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const dedupedShopTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    return dedupeTrendTiles(triggers.filter(t => t.triggerSource === "naver_shop"), sortMode);
+    return dedupeTrendTiles(triggers.filter(t => t.category === "shopping"), sortMode);
   }, [triggers, sortMode]);
 
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    return dedupeTrendTiles(triggers.filter(t => t.triggerSource !== "naver_shop"), sortMode);
+    return dedupeTrendTiles(triggers, sortMode);
   }, [triggers, sortMode]);
 
   // My artists' keywords
