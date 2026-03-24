@@ -4,9 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart } from "lucide-react";
+import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
