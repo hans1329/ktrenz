@@ -7,6 +7,7 @@ import {
   Activity, ShoppingBag, Eye, Brain, Sparkles, ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
+import KeywordProbePanel from '@/components/b2b/KeywordProbePanel';
 
 const B2BDashboard = () => {
   const { org } = useOutletContext<{ org: any }>();
@@ -171,6 +172,10 @@ const B2BDashboard = () => {
         </div>
 
         <div className="flex-1 overflow-auto p-4 space-y-3">
+          {/* 키워드 프로브 패널 */}
+          <KeywordProbePanel />
+
+          {/* AI 인사이트 카드 */}
           {[
             {
               type: 'opportunity',
@@ -190,15 +195,6 @@ const B2BDashboard = () => {
                 ? `${activeTrends.filter((t: any) => t.trend_grade === 'Commerce' || t.trend_grade === 'Intent').length}개 트렌드가 강한 상업적 의도를 보이고 있습니다.`
                 : '트렌드 알림을 생성하려면 더 많은 데이터가 필요합니다.',
             },
-            {
-              type: 'benchmark',
-              icon: <BarChart3 className="w-3.5 h-3.5" />,
-              color: 'hsl(200,80%,55%)',
-              title: '경쟁 인사이트',
-              body: competitorStars.length > 0
-                ? `${competitorStars.length}개 경쟁사 아티스트를 모니터링 중입니다. Pre/Post 분석에서 성과를 비교하세요.`
-                : '벤치마크 인사이트를 받으려면 경쟁사 아티스트를 추가하세요.',
-            },
           ].map(insight => (
             <div key={insight.type} className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-3.5">
               <div className="flex items-center gap-2 mb-2">
@@ -206,44 +202,8 @@ const B2BDashboard = () => {
                 <span className="text-xs font-semibold text-white">{insight.title}</span>
               </div>
               <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">{insight.body}</p>
-              <button className="mt-2 text-[10px] text-[hsl(270,80%,60%)] font-medium hover:underline flex items-center gap-1">
-                자세히 보기 <ArrowUpRight className="w-3 h-3" />
-              </button>
             </div>
           ))}
-
-          <div className="pt-2 space-y-2">
-            <p className="text-[10px] text-[hsl(220,10%,35%)] font-medium uppercase tracking-wider">빠른 실행</p>
-            {[
-              { label: '트렌드 리포트 생성', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-              { label: '협업 매칭 찾기', icon: <ShoppingBag className="w-3.5 h-3.5" /> },
-              { label: '캠페인 임팩트 분석', icon: <Zap className="w-3.5 h-3.5" /> },
-            ].map(action => (
-              <button
-                key={action.label}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[hsl(220,15%,18%)] bg-[hsl(220,15%,12%)] text-sm text-[hsl(220,10%,60%)] hover:border-[hsl(270,80%,55%,0.3)] hover:text-white transition-colors"
-              >
-                <span className="text-[hsl(270,80%,60%)]">{action.icon}</span>
-                {action.label}
-                <ChevronRight className="w-3 h-3 ml-auto opacity-40" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* AI 채팅 입력 */}
-        <div className="p-3 border-t border-[hsl(220,15%,15%)]">
-          <div className="relative">
-            <Input
-              value={aiQuery}
-              onChange={e => setAiQuery(e.target.value)}
-              placeholder="트렌드, 스타, 캠페인에 대해 AI에게 질문하세요..."
-              className="bg-[hsl(220,15%,12%)] border-[hsl(220,15%,18%)] text-white placeholder:text-[hsl(220,10%,30%)] h-9 text-sm pr-10"
-            />
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 text-[hsl(270,80%,60%)] hover:text-[hsl(270,80%,70%)]">
-              <Brain className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
     </div>
