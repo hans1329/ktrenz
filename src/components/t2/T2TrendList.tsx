@@ -184,7 +184,8 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             className={cn(
               "rounded-none md:rounded-2xl border-x-0 border-y md:border overflow-hidden bg-card transition-all",
               isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
-              isNew && "animate-flip-in"
+              isNew && "animate-flip-in",
+              gridMode && "break-inside-avoid md:mb-4 md:inline-block md:w-full"
             )}
             style={isNew ? { animationDelay: `${idx * 60}ms` } : undefined}
           >
