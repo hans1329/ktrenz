@@ -134,6 +134,21 @@ const T2AdminControls = () => {
     onError: (err) => toast.error(`수집 실패: ${(err as Error).message}`),
   });
 
+  const shopMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-track", {
+        body: { batchSize: 10, batchOffset: 0, shopOnly: true },
+      });
+      if (error) throw error;
+      return typeof data === "string" ? JSON.parse(data) : data;
+    },
+    onSuccess: (data) => {
+      toast.success(`쇼핑 키워드 추적 완료: ${data?.tracked ?? 0}건`);
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`쇼핑 추적 실패: ${(err as Error).message}`),
+  });
+
   if (loading || !isAdmin) return null;
 
   const activeRunList = Object.values(activeRuns);
