@@ -68,12 +68,12 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
     enabled: open && !!user?.id,
   });
 
-  // Merge watched into selected on mount
-  useState(() => {
+  // Sync watched into selected when data loads
+  useEffect(() => {
     if (watchedIds && watchedIds.size > 0) {
       setSelected(new Set(watchedIds));
     }
-  });
+  }, [watchedIds]);
 
   // Popular artists (those with recent detections)
   const popular = useMemo(() => {
