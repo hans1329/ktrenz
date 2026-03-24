@@ -532,6 +532,34 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return deduped;
   }, [filteredItems]);
 
+  // Fetch real tracking history for carousel sparklines
+  const carouselIds = useMemo(() => filteredItems.slice(0, 90).map(i => i.id).join(","), [filteredItems]);
+  const { data: carouselTrackingMap } = useQuery({
+    queryKey: ["carousel-tracking", carouselIds],
+    enabled: filteredItems.length > 0 && currentViewMode === "carousel",
+    queryFn: async () => {
+      const ids = filteredItems.slice(0, 90).map(i => i.id);
+      const allData: any[] = [];
+      for (let i = 0; i < ids.length; i += 30) {
+        const batch = ids.slice(i, i + 30);
+        const { data } = await supabase
+          .from("ktrenz_trend_tracking" as any)
+          .select("trigger_id, tracked_at, interest_score")
+          .in("trigger_id", batch)
+          .order("tracked_at", { ascending: true });
+        if (data) allData.push(...(data as any[]));
+      }
+      const map = new Map<string, any[]>();
+      allData.forEach((d: any) => {
+        const arr = map.get(d.trigger_id) || [];
+        arr.push(d);
+        map.set(d.trigger_id, arr);
+      });
+      return map;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
   const containerWidth = isMobile ? 390 : 1000;
   const containerHeight = useMemo(() => {
     if (currentViewMode !== "treemap") return isMobile ? 1200 : 1800;
