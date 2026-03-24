@@ -205,6 +205,12 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
         console.warn(`[detect-youtube] Blocked platform keyword: "${k.keyword}"`);
         return false;
       }
+
+      // Agency blacklist filter
+      if (isAgencyKeyword(kwLower) || isAgencyKeyword(kwKo) || isAgencyKeyword(kwEn)) {
+        console.warn(`[detect-youtube] Blocked agency keyword: "${k.keyword}"`);
+        return false;
+      }
       
       const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
       if (!existsInText) {
