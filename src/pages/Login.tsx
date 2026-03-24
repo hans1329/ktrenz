@@ -23,7 +23,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) navigate("/", { replace: true });
+    if (!authLoading && user) {
+      // Check if this is a new signup (came from signup mode) — open onboarding
+      const isNewUser = sessionStorage.getItem("ktrenz-just-signed-up");
+      if (isNewUser) {
+        sessionStorage.removeItem("ktrenz-just-signed-up");
+        navigate("/?onboarding=1", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+    }
   }, [user, authLoading, navigate]);
 
   const handleGoogleLogin = async () => {
