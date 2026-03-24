@@ -263,11 +263,6 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
               {/* Top: keyword + artist */}
               <div className="relative z-10 p-4 pb-2 flex-1">
                 <div className="flex items-center gap-1 mb-1">
-                  {isBet && (
-                    <span className="text-[10px] font-bold text-white bg-purple-500/80 backdrop-blur-sm rounded-full px-1.5 py-0.5" style={{ filter: "hue-rotate(0deg)" }}>
-                      💎
-                    </span>
-                  )}
                   <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide">
                     {getLocalizedArtistName(item, language)}
                   </span>
@@ -291,6 +286,9 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     <Clock className="w-2.5 h-2.5" />
                     {formatAge(item.detectedAt)}
                   </span>
+                  {isBet && (
+                    <span className="text-[10px]" style={{ filter: "saturate(1.5) brightness(1.2)" }}>💎</span>
+                  )}
                 </div>
               </div>
 
