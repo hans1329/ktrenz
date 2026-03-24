@@ -142,7 +142,7 @@ const T2AdminControls = () => {
   const shopMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-track", {
-        body: { batchSize: 10, batchOffset: 0, shopOnly: true },
+        body: { batchSize: 50, batchOffset: 0, shopOnly: true },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
