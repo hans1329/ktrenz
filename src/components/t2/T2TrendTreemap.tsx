@@ -183,17 +183,19 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
     // Single-log to preserve natural variance between scores
     const logBase = Math.log1p(metric);
 
-    // Rank-based multiplier: top 15 halved, steep decay below
-    const rankMultiplier = idx === 0 ? 0.6
-      : idx === 1 ? 0.5
-      : idx === 2 ? 0.42
-      : idx < 6 ? 0.32
-      : idx < 10 ? 0.24
-      : idx < 15 ? 0.2
-      : idx < 20 ? 0.18
-      : idx < 30 ? 0.16
-      : idx < 45 ? 0.14
-      : 0.12;
+    // Rank-based multiplier: steep exponential decay for clear size hierarchy
+    const rankMultiplier = idx === 0 ? 1.0
+      : idx === 1 ? 0.72
+      : idx === 2 ? 0.55
+      : idx === 3 ? 0.42
+      : idx === 4 ? 0.34
+      : idx < 8 ? 0.26
+      : idx < 12 ? 0.19
+      : idx < 16 ? 0.15
+      : idx < 22 ? 0.12
+      : idx < 35 ? 0.10
+      : idx < 50 ? 0.08
+      : 0.06;
     return logBase * rankMultiplier;
   };
 
@@ -201,9 +203,12 @@ function squarify(items: TrendTile[], x: number, y: number, w: number, h: number
   const totalArea = w * h;
   const rawAreas = items.map((item, idx) => (tileSize(item, idx) / totalValue) * totalArea);
   // Cap per-tile area and enforce minimum so keywords are always visible
-  const minArea = totalArea * 0.008; // minimum ~0.8% per tile
+  const minArea = totalArea * 0.006;
   const areas = rawAreas.map((a, i) => {
-    const cap = i < 5 ? totalArea * 0.035 : totalArea * 0.025;
+    const cap = i === 0 ? totalArea * 0.08
+      : i < 3 ? totalArea * 0.055
+      : i < 6 ? totalArea * 0.04
+      : totalArea * 0.025;
     return Math.max(Math.min(a, cap), minArea);
   });
   // Normalize to fill total area
