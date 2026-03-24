@@ -4,9 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart } from "lucide-react";
+import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -154,71 +159,78 @@ const T2AdminControls = () => {
   const activeRunList = Object.values(activeRuns);
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => runMutation.mutate()}
-        disabled={runMutation.isPending}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        {runMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-        트렌드 수집
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => navigate("/admin/stars")}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        <Database className="w-3 h-3" />
-        스타 관리
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => navigate("/admin/keyword-monitor")}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        <BarChart3 className="w-3 h-3" />
-        키워드 모니터
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => shopMutation.mutate()}
-        disabled={shopMutation.isPending}
-        className="gap-1 text-xs h-7 px-2"
-      >
-        {shopMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShoppingCart className="w-3 h-3" />}
-        쇼핑 수집
-      </Button>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="relative p-1.5 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <Shield className="w-4 h-4" />
+          {activeRunList.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-56 p-2 space-y-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 pb-1">Admin</p>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => runMutation.mutate()}
+          disabled={runMutation.isPending}
+          className="w-full justify-start gap-2 text-xs h-8"
+        >
+          {runMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+          트렌드 수집
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => shopMutation.mutate()}
+          disabled={shopMutation.isPending}
+          className="w-full justify-start gap-2 text-xs h-8"
+        >
+          {shopMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+          쇼핑 수집
+        </Button>
 
-      {activeRunList.length > 0 && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline" className="gap-1 text-xs h-7 px-2 text-primary border-primary/30">
-              <Activity className="w-3 h-3 animate-pulse" />
-              수집 현황
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[80dvh] overflow-y-auto z-[9999]">
-            <DialogHeader>
-              <DialogTitle>수집 모니터링</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              {activeRunList.map((run) => (
-                <T2PipelineProgress
-                  key={run.phase}
-                  run={run}
-                  onClose={() => closeRun(run.phase)}
-                />
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+        <div className="border-t border-border/40 my-1" />
+
+        <Button size="sm" variant="ghost" onClick={() => navigate("/admin/stars")} className="w-full justify-start gap-2 text-xs h-8">
+          <Database className="w-3.5 h-3.5" /> 스타 관리
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => navigate("/admin/keyword-monitor")} className="w-full justify-start gap-2 text-xs h-8">
+          <BarChart3 className="w-3.5 h-3.5" /> 키워드 모니터
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => navigate("/admin")} className="w-full justify-start gap-2 text-xs h-8">
+          <Shield className="w-3.5 h-3.5" /> 관리자 대시보드
+        </Button>
+
+        {activeRunList.length > 0 && (
+          <>
+            <div className="border-t border-border/40 my-1" />
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="w-full justify-start gap-2 text-xs h-8 text-primary border-primary/30">
+                  <Activity className="w-3.5 h-3.5 animate-pulse" /> 수집 현황
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[80dvh] overflow-y-auto z-[9999]">
+                <DialogHeader>
+                  <DialogTitle>수집 모니터링</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  {activeRunList.map((run) => (
+                    <T2PipelineProgress
+                      key={run.phase}
+                      run={run}
+                      onClose={() => closeRun(run.phase)}
+                    />
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 };
 
