@@ -200,7 +200,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
               </div>
 
               {/* Bottom: mini sparkline graph */}
-              <div className="relative z-10 px-2 pb-3">
+              <div className="relative z-10 pb-2">
                 <svg
                   viewBox="0 0 100 50"
                   className={cn("w-full", idx === 0 ? "h-[56px]" : "h-[44px]")}
