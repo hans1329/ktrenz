@@ -813,7 +813,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             ];
 
             const sectionOrder = [
-              ...(myItems.length > 0 ? [{ key: "my", label: "★ My Picks", color: "hsl(45, 90%, 50%)", items: myItems }] : []),
+              // My Picks is now shown in the hero section above
               ...sectionDefs
                 .filter(s => (grouped.get(s.key)?.length ?? 0) > 0)
                 .map(s => ({ ...s, items: grouped.get(s.key)! })),
