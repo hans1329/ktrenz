@@ -836,6 +836,7 @@ async function extractSocialKeywordsFromTikTok(
   starId: string | null,
   memberName: string,
   groupName: string | null,
+  allMemberNames?: string[], // 그룹의 모든 멤버명 (필터 강화용)
 ): Promise<ExtractedKeyword[]> {
   if (!starId) return [];
 
