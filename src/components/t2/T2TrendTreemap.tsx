@@ -900,16 +900,35 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               </div>
                             </div>
 
-                            {/* Sparkline graph */}
-                            <div className="px-2 pb-2 mt-auto">
+                            {/* Image area */}
+                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[3/2]" : "aspect-[4/3]")}>
+                              {bgImg ? (
+                                <img
+                                  src={bgImg}
+                                  alt={getLocalizedKeyword(item, language)}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div
+                                  className="w-full h-full flex items-center justify-center font-black text-white/20"
+                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}
+                                >
+                                  {getLocalizedArtistName(item, language).charAt(0)}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Mini sparkline */}
+                            <div className="px-2 py-1.5">
                               <svg
-                                viewBox="0 0 100 50"
-                                className={cn("w-full", idx === 0 ? "h-[52px]" : "h-[40px]")}
+                                viewBox="0 0 100 30"
+                                className="w-full h-[24px]"
                                 preserveAspectRatio="none"
                               >
                                 <defs>
                                   <linearGradient id={`cat-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.3" />
+                                    <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.25" />
                                     <stop offset="100%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.02" />
                                   </linearGradient>
                                 </defs>
@@ -917,19 +936,19 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   const seed = item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx;
                                   const pts = 8;
                                   const vals: number[] = [];
-                                  let v = 30 + (seed % 20);
+                                  let v = 15 + (seed % 10);
                                   for (let i = 0; i < pts; i++) {
-                                    v += ((seed * (i + 1) * 7) % 21) - 8;
-                                    v = Math.max(5, Math.min(45, v));
+                                    v += ((seed * (i + 1) * 7) % 13) - 5;
+                                    v = Math.max(3, Math.min(27, v));
                                     vals.push(v);
                                   }
-                                  vals[vals.length - 1] = Math.max(...vals) + 3;
+                                  vals[vals.length - 1] = Math.max(...vals) + 2;
                                   const step = 80 / (pts - 1);
-                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${50 - y}`).join(" ");
+                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${30 - y}`).join(" ");
                                   return (
                                     <>
-                                      <path d={`${path} L90,50 L10,50 Z`} fill={`url(#cat-spark-${item.id})`} />
-                                      <path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                                      <path d={`${path} L90,30 L10,30 Z`} fill={`url(#cat-spark-${item.id})`} />
+                                      <path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
                                     </>
                                   );
                                 })()}
