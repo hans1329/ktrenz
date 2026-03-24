@@ -287,7 +287,7 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange, mergedCategories, onMyKeywordsChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void; mergedCategories?: string[]; onMyKeywordsChange?: (items: TrendTile[]) => void }) => {
+const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange, mergedCategories, onMyKeywordsChange, gridMode }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void; mergedCategories?: string[]; onMyKeywordsChange?: (items: TrendTile[]) => void; gridMode?: boolean }) => {
   const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
   const selectedCategory = externalCategory ?? internalCategory;
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
@@ -787,6 +787,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           selectedTileId={selectedTile?.id ?? null}
           hasMore={hasMoreList}
           onLoadMore={() => setListVisibleCount(prev => prev + 20)}
+          gridMode={gridMode}
         />
       ) : (
         <div className="px-4 md:px-0 space-y-6">

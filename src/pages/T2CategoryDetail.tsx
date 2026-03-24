@@ -50,7 +50,7 @@ const T2CategoryDetail = () => {
       </div>
 
       {/* List view */}
-      <div className="pb-24">
+      <div className="pt-4 pb-24">
         <T2TrendTreemap
           viewMode="list"
           selectedCategory={primaryCategory}
@@ -58,6 +58,7 @@ const T2CategoryDetail = () => {
           hideHeader
           sortMode="volume"
           mergedCategories={dbCategories.length > 0 ? dbCategories : undefined}
+          gridMode
         />
       </div>
 
