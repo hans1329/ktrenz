@@ -934,7 +934,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                     const unit = age.includes("d") ? "d" : "h";
                                     const s = Math.max(1, Math.round(ageNum / 3));
                                     return (
-                                      <div className="absolute bottom-0.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/72 drop-shadow-[0_1px_1px_rgba(0,0,0,0.65)]">
+                                      <div className="absolute bottom-0.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.65)]">
                                         <span>{age}</span>
                                         <span>{ageNum >= 3 ? `${ageNum - s}${unit}` : "·"}</span>
                                         <span>{ageNum >= 3 ? `${ageNum - s * 2}${unit}` : "·"}</span>
@@ -948,6 +948,16 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                           </button>
                         );
                       })}
+                      {/* See More card */}
+                      <button
+                        onClick={() => navigate(`/t2/category/${key}`)}
+                        className="flex-none snap-start w-[100px] rounded-xl border border-border/40 bg-muted/30 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors shrink-0"
+                        style={{ minHeight: "160px" }}
+                      >
+                        <ChevronRight className="w-6 h-6 text-muted-foreground" />
+                        <span className="text-xs font-bold text-muted-foreground">More</span>
+                        <span className="text-[10px] text-muted-foreground/60">{items.length} keywords</span>
+                      </button>
                     </div>
                   </div>
                 );
