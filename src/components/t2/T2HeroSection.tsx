@@ -32,19 +32,18 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-/** Generate a simple sparkline SVG path from seed values */
+/** Generate a simple sparkline SVG path from seed values (viewBox height=40) */
 function generateSparkline(seed: number, points = 8): string {
   const vals: number[] = [];
-  let v = 30 + (seed % 20);
+  let v = 15 + (seed % 12);
   for (let i = 0; i < points; i++) {
-    v += ((seed * (i + 1) * 7) % 21) - 8;
-    v = Math.max(5, Math.min(45, v));
+    v += ((seed * (i + 1) * 7) % 15) - 5;
+    v = Math.max(3, Math.min(32, v));
     vals.push(v);
   }
-  // Make last point the highest for upward trend feel
-  vals[vals.length - 1] = Math.max(...vals) + 3;
+  vals[vals.length - 1] = Math.max(...vals) + 2;
   const step = 100 / (points - 1);
-  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${50 - y}`).join(" ");
+  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${36 - y}`).join(" ");
 }
 
 const HERO_GRADIENTS = [
@@ -293,10 +292,10 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
               </div>
 
               {/* Bottom: mini sparkline graph + period */}
-              <div className="relative z-10 pb-2">
+              <div className="relative z-10 pb-5">
                 <svg
-                  viewBox="0 0 100 50"
-                  className={cn("w-full", idx === 0 ? "h-[56px]" : "h-[44px]")}
+                  viewBox="0 0 100 40"
+                  className={cn("w-full", idx === 0 ? "h-[48px]" : "h-[36px]")}
                   preserveAspectRatio="none"
                 >
                   <defs>
@@ -306,7 +305,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     </linearGradient>
                   </defs>
                   <path
-                    d={`${sparkPath} L100,50 L0,50 Z`}
+                    d={`${sparkPath} L100,40 L0,40 Z`}
                     fill={`url(#spark-fill-${item.id})`}
                   />
                   <path
