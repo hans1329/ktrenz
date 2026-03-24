@@ -27,6 +27,7 @@ interface ExtractedKeyword {
   trend_potential?: number;
   purchase_stage?: "awareness" | "interest" | "consideration" | "purchase" | "review";
   _tiktok_cover_url?: string | null;
+  _tiktok_source_url?: string | null;
 }
 
 // Platform names and non-trackable entities blacklist
@@ -835,6 +836,7 @@ async function extractSocialKeywordsFromTikTok(
   starId: string | null,
   memberName: string,
   groupName: string | null,
+  allMemberNames?: string[], // 그룹의 모든 멤버명 (필터 강화용)
 ): Promise<ExtractedKeyword[]> {
   if (!starId) return [];
 
@@ -879,9 +881,14 @@ async function extractSocialKeywordsFromTikTok(
   };
   addAlias(memberName);
   addAlias(groupName);
+  // 그룹의 모든 멤버명도 필터에 추가 (그룹 레벨 처리 시 멤버명 누락 방지)
+  if (allMemberNames) {
+    for (const mn of allMemberNames) addAlias(mn);
+  }
   // 흔한 팬덤명 패턴: 멤버명+fyp, 멤버명+edit, 그룹명+fan 등
   const FANDOM_SUFFIXES = ["fyp", "edit", "edits", "fan", "fans", "stan", "stans", "lover", "lovers", "bestleader", "best", "era", "challenge"];
-  const baseNames = [memberName, groupName].filter(Boolean).map(n => n!.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const allNames = [memberName, groupName, ...(allMemberNames || [])].filter(Boolean);
+  const baseNames = allNames.map(n => n!.toLowerCase().replace(/[^a-z0-9]/g, ""));
   for (const base of baseNames) {
     if (base.length < 2) continue;
     artistAliases.add(base);
@@ -919,27 +926,30 @@ async function extractSocialKeywordsFromTikTok(
     for (const f of fandoms) artistAliases.add(f);
   }
 
+  const memberNamesStr = allMemberNames?.length ? `, members: ${allMemberNames.join(", ")}` : "";
   const systemPrompt = `You are a K-Pop social media trend analyst specializing in TikTok viral content.
 Analyze the TikTok video descriptions below to extract SOCIAL TREND keywords related to the artist "${memberName}".
 
-WHAT TO EXTRACT (specific, actionable trends only):
-- Named viral challenges (e.g., "Supernova Challenge", "BOTTOMS UP Challenge")
-- Specific choreography/performance trends (e.g., "LOOK AT ME performance", "Magnetic dance break")
-- Unique fan-created content formats with specific names
-- Collaboration or crossover content with identifiable names
-- Product/brand mentions appearing in videos (e.g., specific makeup, fashion items)
+WHAT TO EXTRACT (specific, actionable trends only — must have a PROPER NAME):
+- Named viral challenges with specific titles (e.g., "Supernova Challenge", "BOTTOMS UP Challenge")
+- Specific choreography trends with song/move names (e.g., "LOOK AT ME performance", "Magnetic dance break")
+- Collaboration content with OTHER artist/brand names (e.g., "Puma x ATEEZ collab")
+- Named fan events or campaigns with specific titles
 
-STRICT REJECTION RULES — DO NOT EXTRACT:
-- Artist names, member names, or any variation/abbreviation (${memberName}${groupName ? `, ${groupName}` : ""})
-- Fandom names or fan identity tags (e.g., ARMY, BLINK, ATINY, MY, STAY, etc.)
-- Any hashtag that is just the artist/member/group name with or without suffixes like "fyp", "edit", "fan", "stan", "era", "best", "lover"
+STRICT REJECTION RULES — DO NOT EXTRACT ANY OF THESE:
+- Artist names, member names, or ANY variation: ${memberName}${groupName ? `, ${groupName}` : ""}${memberNamesStr}
+- Fandom names (ARMY, BLINK, ATINY, MY, STAY, CARAT, MOA, ENGENE, etc.)
+- Member name + ANY suffix (e.g., "Wooyoung edits", "Hongjoong best leader")
+- Generic descriptions of content (e.g., "facial expressions", "crowd reaction", "concert moments", "fan edits", "stage presence", "SNS", "daily life")
 - Generic hashtags (#fyp, #kpop, #foryou, #viral, #dance, #trending)
 - Platform names (TikTok, YouTube, Instagram)
-- Generic activity words (dance, music, cover, reaction, fancam, edit)
-- Song titles alone without a specific trend context (a song name is NOT a trend; "Song Name Challenge" IS a trend)
+- Non-K-pop content (gaming references like "dandysworld", "bailey", etc.)
+- Award show abbreviations without specific context (e.g., "kgma" alone)
+
+KEY RULE: The keyword must be a SPECIFIC PROPER NOUN or NAMED TREND, not a generic description of what's happening in the video.
 
 Set category to "social" for ALL extracted keywords.
-Maximum 3 keywords. QUALITY OVER QUANTITY. Return EMPTY array if nothing meaningful found — most videos will NOT contain extractable trends.`;
+Maximum 2 keywords. EXTREME QUALITY BAR. Return EMPTY array for 90%+ of inputs — only extract genuinely viral, named trends.`;
 
   const userPrompt = `TikTok videos related to "${memberName}"${groupName ? ` (${groupName})` : ""}:
 
@@ -1003,9 +1013,14 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
           // 제네릭 해시태그 필터 (확장)
           const genericTags = new Set([
             "fyp", "foryou", "kpop", "viral", "dance", "music", "cover", "reaction",
-            "fancam", "edit", "trend", "trending", "stan", "bias", "idol", "concert",
+            "fancam", "edit", "edits", "trend", "trending", "stan", "bias", "idol", "concert",
             "performance", "live", "shorts", "reels", "xyzbca", "fypシ", "parati",
             "korean", "korea", "seoul", "hallyu", "kdrama", "oppa",
+            "facialexpressions", "facial", "expressions", "crowdreaction", "crowd",
+            "sns", "selca", "selfie", "cute", "funny", "aesthetic", "vlog",
+            "dailylife", "daily", "fanedit", "fanmade", "compilation",
+            "bestmoments", "moments", "highlights", "stage", "airport",
+            "dandysworld", "dandy", "bailey",
           ]);
           if (genericTags.has(kwNorm)) continue;
 
@@ -1030,6 +1045,10 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
             _tiktok_cover_url: (() => {
               const idx = k.source_article_index ? k.source_article_index - 1 : 0;
               return (idx >= 0 && idx < tiktokArticles.length) ? tiktokArticles[idx].cover : (tiktokArticles[0]?.cover || null);
+            })(),
+            _tiktok_source_url: (() => {
+              const idx = k.source_article_index ? k.source_article_index - 1 : 0;
+              return (idx >= 0 && idx < tiktokArticles.length) ? tiktokArticles[idx].url : (tiktokArticles[0]?.url || null);
             })(),
           });
         }
@@ -1345,8 +1364,21 @@ async function detectForMember(
   // ─── TikTok 소셜 키워드 추출 (AI 분류) ───
   let socialKeywords: ExtractedKeyword[] = [];
   try {
+    // 그룹인 경우 멤버명 목록을 가져와서 필터 강화
+    let memberNames: string[] | undefined;
+    if (member.id && !member.group_name) {
+      // group 또는 solo → 멤버 목록 조회
+      const { data: members } = await sb
+        .from("ktrenz_stars")
+        .select("display_name, name_ko")
+        .eq("group_star_id", member.id)
+        .eq("is_active", true);
+      if (members?.length) {
+        memberNames = members.flatMap((m: any) => [m.display_name, m.name_ko].filter(Boolean));
+      }
+    }
     socialKeywords = await extractSocialKeywordsFromTikTok(
-      openaiKey, sb, member.id, member.display_name, member.group_name
+      openaiKey, sb, member.id, member.display_name, member.group_name, memberNames
     );
     srcStats.socialExtracted = socialKeywords.length;
     srcStats.tiktok = socialKeywords.length > 0 ? 1 : 0;
@@ -1380,6 +1412,15 @@ async function detectForMember(
 
   // 최근 7일 내 동일 멤버 키워드는 재삽입하지 않되, 빈 필드는 백필
   const keywordSources = keywords.map((k) => {
+    // 소셜(TikTok) 키워드는 TikTok URL을 직접 사용
+    if (k.category === "social" && k._tiktok_source_url) {
+      return {
+        keywordData: k,
+        sourceArticle: { title: k.context || "", description: k.context_ko || "", url: k._tiktok_source_url },
+        sourceUrl: k._tiktok_source_url,
+      };
+    }
+
     let articleIdx = -1;
     if (k.source_article_index && k.source_article_index > 0) {
       articleIdx = k.source_article_index - 1;
