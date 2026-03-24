@@ -468,7 +468,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               }}
               tabIndex={-1}
               className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors",
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-sm font-semibold transition-colors",
                 tile.starId
                   ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
                   : "bg-primary/80 text-primary-foreground cursor-default"
