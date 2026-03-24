@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Clock, Star, LogIn, TrendingUp, Sparkles, Heart } from "lucide-react";
+import { ChevronRight, Clock, Star, LogIn, Sparkles, Heart, TrendingUp } from "lucide-react";
 import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 import type { TrendTile } from "@/components/t2/T2TrendTreemap";
+import heroBg from "@/assets/t2-hero-bg.jpg";
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
@@ -46,64 +47,90 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
   const { user } = useAuth();
   const { language, t } = useLanguage();
 
-  // Not logged in — welcome & sign-in prompt
+  // Not logged in — large hero with image background
   if (!user) {
     return (
-      <div className="px-4 pt-4 pb-5">
-        <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-black text-foreground">For You</h2>
+      <div className="px-4 pt-2 pb-5">
+        <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "220px" }}>
+          <img
+            src={heroBg}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            width={960}
+            height={512}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">Kinterest</span>
+            </div>
+            <h2 className="text-2xl font-black text-white leading-tight mb-2">
+              {language === "ko"
+                ? "K-Pop이 만드는\n소비 트렌드를 발견하세요"
+                : "Discover Trends\nDriven by K-Pop"}
+            </h2>
+            <p className="text-sm text-white/70 mb-4 whitespace-pre-line">
+              {language === "ko"
+                ? "패션, 뷰티, 음식까지 — 실시간 트렌드 분석"
+                : "Fashion, beauty, food & more — real-time analysis"}
+            </p>
+            <button
+              onClick={() => (window.location.href = "/login")}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-all self-start"
+            >
+              <LogIn className="w-4 h-4" />
+              {language === "ko" ? "시작하기" : "Get Started"}
+            </button>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {language === "ko"
-              ? "로그인하고 관심 아티스트의 맞춤 트렌드를 받아보세요"
-              : "Sign in to get personalized trends from your favorite artists"}
-          </p>
-          <button
-            onClick={() => (window.location.href = "/login")}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-all"
-          >
-            <LogIn className="w-4 h-4" />
-            {language === "ko" ? "시작하기" : "Get Started"}
-          </button>
         </div>
       </div>
     );
   }
 
-  // Logged in but no watched artists — registration prompt
+  // Logged in but no watched artists
   if (!myKeywords.length) {
     return (
-      <div className="px-4 pt-4 pb-5">
-        <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-black text-foreground">For You</h2>
+      <div className="px-4 pt-2 pb-5">
+        <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "200px" }}>
+          <img
+            src={heroBg}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            width={960}
+            height={512}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "200px" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">For You</span>
+            </div>
+            <h2 className="text-xl font-black text-white leading-tight mb-2">
+              {language === "ko"
+                ? "관심 아티스트를 등록하고\n맞춤 트렌드를 받아보세요"
+                : "Follow your favorite artists\nfor personalized trends"}
+            </h2>
+            <button
+              onClick={() => navigate("/t2/my")}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 text-white text-sm font-bold hover:bg-white/25 transition-all self-start"
+            >
+              <Heart className="w-4 h-4" />
+              {language === "ko" ? "아티스트 등록하기" : "Follow Artists"}
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {language === "ko"
-              ? "관심 아티스트를 등록하면 맞춤 트렌드가 여기에 표시됩니다"
-              : "Follow artists to see personalized trends here"}
-          </p>
-          <button
-            onClick={() => navigate("/t2/my")}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-bold hover:bg-primary/15 transition-all"
-          >
-            <Heart className="w-4 h-4" />
-            {language === "ko" ? "아티스트 등록하기" : "Follow Artists"}
-            <ChevronRight className="w-4 h-4 ml-auto" />
-          </button>
         </div>
       </div>
     );
   }
 
-  // Personalized section with My Picks carousel
+  // Personalized: My Picks carousel
   const topPicks = myKeywords.slice(0, 8);
 
   return (
-    <div className="pt-4 pb-2">
+    <div className="pt-2 pb-2">
       {/* Section header */}
       <div className="px-4 mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
