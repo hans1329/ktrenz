@@ -362,7 +362,7 @@ async function executePostprocess(supabaseUrl: string, supabaseKey: string, trig
 async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Promise<any> {
   console.log(`[cron] Running inline grade`);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  const timeout = setTimeout(() => controller.abort(), 120000);
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
       method: "POST",
