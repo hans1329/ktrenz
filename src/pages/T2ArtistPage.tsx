@@ -104,17 +104,23 @@ const T2ArtistPage = () => {
   const { data: keywords, isLoading: kwLoading } = useQuery({
     queryKey: ["t2-artist-keywords", keywordTargetStarId],
     queryFn: async () => {
-      const { data } = await supabase
+      const baseQuery = supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("star_id", keywordTargetStarId!)
         .eq("status", "active")
-        .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
         .limit(50);
-      return (data ?? []) as any[];
+
+      const { data: preferredData } = await baseQuery.neq("trigger_source", "naver_shop");
+      if (preferredData && preferredData.length > 0) {
+        return preferredData as any[];
+      }
+
+      const { data: fallbackData } = await baseQuery;
+      return (fallbackData ?? []) as any[];
     },
     enabled: !!keywordTargetStarId,
   });
