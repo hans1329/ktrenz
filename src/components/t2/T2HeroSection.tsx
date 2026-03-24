@@ -83,19 +83,22 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
         .in("status", ["open", "active", "pending"]);
       if (!markets?.length) return [];
 
-      const triggerIds = (markets as any[]).map((m: any) => m.trigger_id);
+      const triggerIds = [...new Set((markets as any[]).map((m: any) => m.trigger_id).filter(Boolean))];
+      if (!triggerIds.length) return [];
+
       const { data: triggers } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, category, detected_at, source_url, source_image_url, influence_index, baseline_score, star_id, wiki_entry_id, status, lifetime_hours, peak_at, expired_at, peak_delay_hours, peak_score, source_title, source_snippet, context, context_ko, context_ja, context_zh, prev_api_total")
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, detected_at, source_url, source_image_url, influence_index, baseline_score, star_id, wiki_entry_id, status, lifetime_hours, peak_at, expired_at, peak_delay_hours, peak_score, source_title, source_snippet, context, context_ko, context_ja, context_zh, prev_api_total")
         .in("id", triggerIds);
       if (!triggers?.length) return [];
 
-      // Get artist info
-      const wikiIds = [...new Set((triggers as any[]).map((t: any) => t.wiki_entry_id))];
-      const { data: entries } = await supabase
-        .from("wiki_entries")
-        .select("id, title, title_ko, image_url, star_id")
-        .in("id", wikiIds);
+      const wikiIds = [...new Set((triggers as any[]).map((t: any) => t.wiki_entry_id).filter(Boolean))];
+      const { data: entries } = wikiIds.length
+        ? await supabase
+            .from("wiki_entries")
+            .select("id, title, title_ko, image_url, star_id")
+            .in("id", wikiIds)
+        : { data: [] as any[] };
       const entryMap = new Map((entries || []).map((e: any) => [e.id, e]));
 
       return (triggers as any[]).map((t: any): TrendTile => {
@@ -106,11 +109,11 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
           keywordKo: t.keyword_ko,
           keywordJa: t.keyword_ja,
           keywordZh: t.keyword_zh,
-          category: t.category,
-          artistName: entry?.title || "",
+          category: t.keyword_category || "social",
+          artistName: entry?.title || t.artist_name || "",
           artistNameKo: entry?.title_ko || null,
           artistImageUrl: entry?.image_url || null,
-          wikiEntryId: t.wiki_entry_id,
+          wikiEntryId: t.wiki_entry_id || "",
           influenceIndex: t.influence_index || 0,
           context: t.context,
           contextKo: t.context_ko,
