@@ -38,6 +38,9 @@ const PLATFORM_BLACKLIST = new Set([
   "naver", "google", "daum", "kakao", "naver news", "theqoo", "pann",
   "billboard", "hanteo", "gaon", "circle chart", "oricon",
   "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "tv chosun",
+  "netflix", "넷플릭스", "disney+", "디즈니플러스", "disney plus",
+  "amazon", "아마존", "hulu", "wavve", "웨이브", "tving", "티빙", "coupang play", "쿠팡플레이",
+  "sns", "hybe", "sm", "yg", "jyp", "starship", "pledis", "cube",
 ]);
 
 // 이미지 수집 불가 도메인 (봇 차단, 핫링크 차단)
