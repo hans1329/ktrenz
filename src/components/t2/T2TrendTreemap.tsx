@@ -528,6 +528,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [dedupedTriggers, watchedSet]);
 
   const filteredItems = useMemo(() => {
+    // If mergedCategories provided, filter by multiple categories
+    if (mergedCategories && mergedCategories.length > 0) {
+      return dedupedTriggers.filter(t => mergedCategories.includes(t.category));
+    }
     if (selectedCategory === "shopping") {
       return dedupedShopTriggers;
     }
@@ -539,7 +543,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       return dedupedTriggers.filter(t => t.category !== "music");
     }
     return dedupedTriggers.filter(t => t.category === selectedCategory);
-  }, [dedupedTriggers, selectedCategory, watchedSet]);
+  }, [dedupedTriggers, selectedCategory, watchedSet, mergedCategories]);
 
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
