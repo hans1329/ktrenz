@@ -37,11 +37,13 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    sessionStorage.setItem("ktrenz-just-signed-up", "1");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/?onboarding=1` },
     });
     if (error) {
+      sessionStorage.removeItem("ktrenz-just-signed-up");
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
       setLoading(false);
     }
