@@ -3832,6 +3832,7 @@ export type Database = {
           id: string
           source: string | null
           source_url: string | null
+          star_id: string | null
           title: string
           updated_at: string | null
           wiki_entry_id: string | null
@@ -3845,6 +3846,7 @@ export type Database = {
           id?: string
           source?: string | null
           source_url?: string | null
+          star_id?: string | null
           title: string
           updated_at?: string | null
           wiki_entry_id?: string | null
@@ -3858,11 +3860,19 @@ export type Database = {
           id?: string
           source?: string | null
           source_url?: string | null
+          star_id?: string | null
           title?: string
           updated_at?: string | null
           wiki_entry_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ktrenz_schedules_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ktrenz_schedules_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]

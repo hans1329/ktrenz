@@ -222,26 +222,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Match artist names to wiki_entries
+    // 3. Match artist names to ktrenz_stars (T2 SSOT)
     const uniqueArtists = [...new Set(entries.map((e) => e.artist_name))];
-    console.log(`[crawl-blip] Matching ${uniqueArtists.length} artists...`);
+    console.log(`[crawl-blip] Matching ${uniqueArtists.length} artists against ktrenz_stars...`);
 
-    const { data: wikiEntries } = await supabase
-      .from("wiki_entries")
-      .select("id, title, korean_name")
-      .in("title", uniqueArtists);
+    const { data: stars } = await supabase
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko")
+      .eq("is_active", true);
 
-    const artistMap = new Map<string, string>();
-    if (wikiEntries) {
-      for (const we of wikiEntries) {
-        artistMap.set(we.title.toLowerCase(), we.id);
-        if (we.korean_name) artistMap.set(we.korean_name.toLowerCase(), we.id);
+    const starMap = new Map<string, string>();
+    if (stars) {
+      for (const s of stars as any[]) {
+        if (s.display_name) starMap.set(s.display_name.toLowerCase(), s.id);
+        if (s.name_ko) starMap.set(s.name_ko.toLowerCase(), s.id);
       }
     }
 
     // 4. Upsert into ktrenz_schedules
     const rows = entries.map((e) => ({
-      wiki_entry_id: artistMap.get(e.artist_name.toLowerCase()) || null,
+      star_id: starMap.get(e.artist_name.toLowerCase()) || null,
+      wiki_entry_id: null,
       artist_name: e.artist_name,
       title: e.title,
       event_date: e.event_date,

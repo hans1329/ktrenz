@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_schedules ADD COLUMN IF NOT EXISTS star_id uuid REFERENCES ktrenz_stars(id);
