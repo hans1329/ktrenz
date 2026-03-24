@@ -259,7 +259,8 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                 <img
                   src={heroImage}
                   alt={getLocalizedKeyword(item, language)}
-                  className="w-full max-h-[500px] object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full transition-transform duration-300 group-hover:scale-105"
+                  style={{ maxHeight: 500 }}
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
