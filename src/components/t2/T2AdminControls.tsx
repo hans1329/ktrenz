@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2, Zap, Database, Activity, BarChart3 } from "lucide-react";
+import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
 import {
@@ -134,6 +134,21 @@ const T2AdminControls = () => {
     onError: (err) => toast.error(`수집 실패: ${(err as Error).message}`),
   });
 
+  const shopMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ktrenz-trend-track", {
+        body: { batchSize: 10, batchOffset: 0, shopOnly: true },
+      });
+      if (error) throw error;
+      return typeof data === "string" ? JSON.parse(data) : data;
+    },
+    onSuccess: (data) => {
+      toast.success(`쇼핑 키워드 추적 완료: ${data?.tracked ?? 0}건`);
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    },
+    onError: (err) => toast.error(`쇼핑 추적 실패: ${(err as Error).message}`),
+  });
+
   if (loading || !isAdmin) return null;
 
   const activeRunList = Object.values(activeRuns);
@@ -167,6 +182,16 @@ const T2AdminControls = () => {
       >
         <BarChart3 className="w-3 h-3" />
         키워드 모니터
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => shopMutation.mutate()}
+        disabled={shopMutation.isPending}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {shopMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShoppingCart className="w-3 h-3" />}
+        쇼핑 수집
       </Button>
 
       {activeRunList.length > 0 && (
