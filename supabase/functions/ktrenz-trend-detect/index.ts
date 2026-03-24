@@ -1550,17 +1550,21 @@ async function detectForMember(
       })
   );
 
-  // 키워드별 최적 이미지 선택: 텍스트 오버레이 이미지를 건너뛰고 깨끗한 사진 우선
+  // ── Vision API로 이미지 품질 일괄 분류 ──
+  const allOgImages = Array.from(ogImageMap.values()).filter((v): v is string => !!v);
+  const textHeavyImages = await classifyImagesWithVision(allOgImages, openaiKey);
+
+  // 키워드별 최적 이미지 선택: Vision API가 판별한 텍스트 오버레이 이미지를 건너뛰고 깨끗한 사진 우선
   function selectBestImage(primaryUrl: string | null): string | null {
     // 1차: 주 소스 기사 이미지 (텍스트 오버레이가 아닌 경우)
     if (primaryUrl) {
       const img = ogImageMap.get(primaryUrl);
-      if (img && !isLikelyTextOverlayImage(img)) return sanitizeImageUrl(img);
+      if (img && !textHeavyImages.has(img)) return sanitizeImageUrl(img);
     }
     // 2차: 다른 기사들에서 깨끗한 이미지 찾기
     for (const [url, img] of ogImageMap) {
       if (!img || url === primaryUrl) continue;
-      if (!isLikelyTextOverlayImage(img)) return sanitizeImageUrl(img);
+      if (!textHeavyImages.has(img)) return sanitizeImageUrl(img);
     }
     // 3차: 텍스트 오버레이여도 없는 것보다는 나음
     if (primaryUrl) {
