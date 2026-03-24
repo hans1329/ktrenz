@@ -260,9 +260,16 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
 
               {/* Top: keyword + artist */}
               <div className="relative z-10 p-4 pb-2 flex-1">
-                <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide mb-1 block">
-                  {getLocalizedArtistName(item, language)}
-                </span>
+                <div className="flex items-center gap-1 mb-1">
+                  {isBet && (
+                    <span className="text-[10px] font-bold text-white bg-purple-500/80 backdrop-blur-sm rounded-full px-1.5 py-0.5" style={{ filter: "hue-rotate(0deg)" }}>
+                      💎
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide">
+                    {getLocalizedArtistName(item, language)}
+                  </span>
+                </div>
                 <div className="flex items-center gap-1">
                   <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 text-white" />
                   <h3
