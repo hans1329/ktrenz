@@ -214,7 +214,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                   </defs>
                   {/* Fill area */}
                   <path
-                    d={`${sparkPath} L90,50 L10,50 Z`}
+                    d={`${sparkPath} L100,50 L0,50 Z`}
                     fill={`url(#spark-fill-${item.id})`}
                   />
                   {/* Line */}
