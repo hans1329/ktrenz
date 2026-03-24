@@ -26,6 +26,53 @@ async function searchNaverShop(
   } catch { return { total: 0, recentItems: 0 }; }
 }
 
+// ─── 네이버 데이터랩 검색어 트렌드 API ───
+async function searchNaverDatalab(
+  clientId: string, clientSecret: string, keyword: string,
+): Promise<{ latestRatio: number; trend: number[]; period: string }> {
+  try {
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000); // 30일
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const response = await fetch("https://openapi.naver.com/v1/datalab/search", {
+      method: "POST",
+      headers: {
+        "X-Naver-Client-Id": clientId,
+        "X-Naver-Client-Secret": clientSecret,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        startDate: fmt(startDate),
+        endDate: fmt(endDate),
+        timeUnit: "date",
+        keywordGroups: [{ groupName: keyword, keywords: [keyword] }],
+      }),
+    });
+
+    if (!response.ok) return { latestRatio: 0, trend: [], period: "" };
+    const data = await response.json();
+    const results = data.results?.[0]?.data || [];
+    const ratios = results.map((d: any) => d.ratio || 0);
+    const latestRatio = ratios.length > 0 ? ratios[ratios.length - 1] : 0;
+
+    return {
+      latestRatio: Math.round(latestRatio * 100) / 100,
+      trend: ratios.slice(-7), // 최근 7일 트렌드
+      period: `${fmt(startDate)}~${fmt(endDate)}`,
+    };
+  } catch { return { latestRatio: 0, trend: [], period: "" }; }
+}
+
+// ─── 쇼핑 복합 점수: 데이터랩 검색량(60%) + 상품 수 정규화(40%) ───
+function computeShopScore(datalabRatio: number, shopTotal: number): number {
+  // datalabRatio: 0~100 (네이버 상대값)
+  const searchScore = datalabRatio; // 이미 0~100 스케일
+  // shopTotal: 상품 수 → 로그 정규화 (max ~100k 기준)
+  const shopNorm = shopTotal > 0 ? (Math.log10(shopTotal + 1) / Math.log10(100001)) * 100 : 0;
+  return Math.round(Math.min(searchScore * 0.6 + shopNorm * 0.4, 100));
+}
+
 // ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
 function normalizeBuzzScore(newsCount: number, blogCount: number): number {
   const newsCap = 100;
