@@ -831,7 +831,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                   <div key={key}>
                     {/* Section header */}
                     <div
-                      className="flex items-center gap-3 mb-3 cursor-pointer group"
+                      className="flex items-center gap-3 mb-3 cursor-pointer group pl-4"
                       onClick={() => navigate(`/t2/category/${key}`)}
                     >
                       <span
