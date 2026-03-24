@@ -335,13 +335,36 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
                           : "border-border/40 bg-card/60 hover:bg-card/90"
                       )}
                     >
-                      <div className="relative">
-                        <Avatar className="w-14 h-14">
-                          <AvatarImage src={star.image_url || undefined} className="object-cover" />
-                          <AvatarFallback className="bg-muted text-xs font-bold">
-                            {getName(star).slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
+                       <div className="relative">
+                        <div className="w-14 h-14 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                          {star.image_url ? (
+                            <>
+                              <img
+                                src={star.image_url}
+                                alt={getName(star)}
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  const el = e.currentTarget;
+                                  if (star.contentImageUrl && el.src !== star.contentImageUrl) {
+                                    el.src = star.contentImageUrl;
+                                    return;
+                                  }
+                                  el.style.display = "none";
+                                  const fb = el.nextElementSibling as HTMLElement;
+                                  if (fb) fb.style.display = "flex";
+                                }}
+                              />
+                              <span className="text-xs font-bold text-muted-foreground items-center justify-center w-full h-full" style={{ display: "none" }}>
+                                {getName(star).slice(0, 2)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-xs font-bold text-muted-foreground">
+                              {getName(star).slice(0, 2)}
+                            </span>
+                          )}
+                        </div>
                         {isChecked && (
                           <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                             <Check className="w-3 h-3 text-primary-foreground" />
