@@ -46,6 +46,7 @@ export interface TrendTile {
   sourceSnippet: string | null;
   starId: string | null;
   status: string;
+  triggerSource: string | null;
   prevApiTotal: number | null;
 }
 
@@ -455,6 +456,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           sourceSnippet: t.source_snippet || null,
           starId: t.star_id || null,
           status: t.status,
+          triggerSource: t.trigger_source || null,
           prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
         };
       });
@@ -462,16 +464,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     refetchInterval: 30 * 60 * 1000,
   });
 
-  // Shop triggers are now included in the main query above (no separate fetch needed)
-
   const dedupedShopTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    return dedupeTrendTiles(triggers.filter(t => t.category === "shopping"), sortMode);
+    return dedupeTrendTiles(triggers.filter(t => t.triggerSource === "naver_shop"), sortMode);
   }, [triggers, sortMode]);
 
   const dedupedTriggers = useMemo(() => {
     if (!triggers?.length) return [];
-    return dedupeTrendTiles(triggers, sortMode);
+    return dedupeTrendTiles(triggers.filter(t => t.triggerSource !== "naver_shop"), sortMode);
   }, [triggers, sortMode]);
 
   // My artists' keywords
