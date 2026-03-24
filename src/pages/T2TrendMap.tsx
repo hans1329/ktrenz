@@ -241,6 +241,7 @@ const T2TrendMap = () => {
           }
         />
 
+        {/* Fixed sub-header — hidden (title/sort buttons moved or removed)
         <div
           className="fixed top-14 left-0 right-0 z-40 bg-card/90 backdrop-blur-lg"
         >
@@ -301,6 +302,7 @@ const T2TrendMap = () => {
             </div>
           </div>
         </div>
+        */}
       </div>
 
       {/* Category filter buttons — hidden for carousel view
@@ -339,7 +341,7 @@ const T2TrendMap = () => {
         <div
           className={cn(
             viewMode === "treemap" ? "pb-24 scrollbar-hide" : "pb-24 scrollbar-hide",
-            headerCollapsed ? "pt-[2rem]" : "pt-[6.5rem]"
+            headerCollapsed ? "pt-[0.5rem]" : "pt-[4rem]"
           )}
         >
           <div className="relative">

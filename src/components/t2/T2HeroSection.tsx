@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Clock, Star, LogIn } from "lucide-react";
+import { ChevronRight, Clock, Star, LogIn, TrendingUp, Sparkles, Heart } from "lucide-react";
 import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 import type { TrendTile } from "@/components/t2/T2TrendTreemap";
 
@@ -31,7 +29,6 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-// Gradient backgrounds for hero cards (like T Universe style)
 const HERO_GRADIENTS = [
   "linear-gradient(135deg, hsl(330, 70%, 55%), hsl(350, 80%, 45%))",
   "linear-gradient(135deg, hsl(260, 65%, 55%), hsl(280, 70%, 40%))",
@@ -49,59 +46,91 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
   const { user } = useAuth();
   const { language, t } = useLanguage();
 
-  // Not logged in state
+  // Not logged in — welcome & sign-in prompt
   if (!user) {
     return (
-      <div className="px-4 pt-2 pb-4">
-        <h2 className="text-2xl font-black text-foreground leading-tight mb-1">
-          Discover Trends
-        </h2>
-        <p className="text-sm text-muted-foreground mb-4">K-Pop이 만드는 소비 트렌드</p>
+      <div className="px-4 pt-4 pb-5">
+        <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-black text-foreground">For You</h2>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {language === "ko"
+              ? "로그인하고 관심 아티스트의 맞춤 트렌드를 받아보세요"
+              : "Sign in to get personalized trends from your favorite artists"}
+          </p>
+          <button
+            onClick={() => (window.location.href = "/login")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-all"
+          >
+            <LogIn className="w-4 h-4" />
+            {language === "ko" ? "시작하기" : "Get Started"}
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Logged in but no watched artists
+  // Logged in but no watched artists — registration prompt
   if (!myKeywords.length) {
     return (
-      <div className="px-4 pt-2 pb-4">
-        <h2 className="text-2xl font-black text-foreground leading-tight mb-1">
-          My Trends
-        </h2>
-        <p className="text-sm text-muted-foreground mb-4">관심 아티스트를 등록하고 맞춤 트렌드를 받아보세요</p>
-        <button
-          onClick={() => navigate("/t2/my")}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-bold hover:bg-primary/15 transition-all"
-        >
-          <Star className="w-4 h-4" />
-          아티스트 등록하기
-          <ChevronRight className="w-4 h-4 ml-auto" />
-        </button>
+      <div className="px-4 pt-4 pb-5">
+        <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-black text-foreground">For You</h2>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {language === "ko"
+              ? "관심 아티스트를 등록하면 맞춤 트렌드가 여기에 표시됩니다"
+              : "Follow artists to see personalized trends here"}
+          </p>
+          <button
+            onClick={() => navigate("/t2/my")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-bold hover:bg-primary/15 transition-all"
+          >
+            <Heart className="w-4 h-4" />
+            {language === "ko" ? "아티스트 등록하기" : "Follow Artists"}
+            <ChevronRight className="w-4 h-4 ml-auto" />
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Top picks from my artists
-  const topPicks = myKeywords.slice(0, 6);
+  // Personalized section with My Picks carousel
+  const topPicks = myKeywords.slice(0, 8);
 
   return (
-    <div className="pt-2 pb-2">
-      {/* Title */}
-      <div className="px-4 mb-4">
-        <h2 className="text-2xl font-black text-foreground leading-tight">
-          My Picks
-        </h2>
-        <p className="text-sm text-muted-foreground mt-0.5">관심 아티스트의 실시간 트렌드</p>
+    <div className="pt-4 pb-2">
+      {/* Section header */}
+      <div className="px-4 mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <h2 className="text-lg font-black text-foreground">My Picks</h2>
+        </div>
+        <button
+          onClick={() => navigate("/t2/category/my")}
+          className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {myKeywords.length} {language === "ko" ? "개" : "trends"}
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
-      {/* Hero carousel */}
+      {/* My Picks carousel */}
       <div
         className="flex gap-3 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
       >
         {topPicks.map((item, idx) => {
           const config = CATEGORY_CONFIG[item.category];
-          const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
+          const rawSourceImg = sanitizeImageUrl(
+            item.sourceImageUrl?.startsWith("https://") || item.sourceImageUrl?.startsWith("http://")
+              ? item.sourceImageUrl
+              : null
+          );
           const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
           const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
           const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
@@ -113,12 +142,11 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
               onClick={() => navigate(`/t2/${item.id}`)}
               className="flex-none snap-start rounded-[20px] overflow-hidden text-left transition-all active:scale-[0.97] relative"
               style={{
-                width: idx === 0 ? "260px" : "200px",
-                height: idx === 0 ? "280px" : "240px",
+                width: idx === 0 ? "260px" : "180px",
+                height: idx === 0 ? "260px" : "220px",
                 background: gradient,
               }}
             >
-              {/* Background image */}
               {bgImg && (
                 <img
                   src={bgImg}
@@ -127,48 +155,29 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                   loading="lazy"
                 />
               )}
-
-              {/* Content overlay */}
               <div className="relative z-10 flex flex-col justify-end h-full p-4">
-                {/* Time badge */}
                 <span className="absolute top-3 right-3 flex items-center gap-0.5 text-[10px] text-white/70 bg-white/10 backdrop-blur-sm rounded-full px-2 py-0.5">
                   <Clock className="w-2.5 h-2.5" />
                   {formatAge(item.detectedAt)}
                 </span>
-
-                {/* Category label */}
                 <span className="text-[11px] font-semibold text-white/70 mb-1">
                   {getLocalizedArtistName(item, language)}
                 </span>
-
-                {/* Keyword */}
-                <h3 className={cn(
-                  "font-black text-white leading-tight",
-                  idx === 0 ? "text-xl line-clamp-3" : "text-base line-clamp-2"
-                )}>
+                <h3
+                  className={cn(
+                    "font-black text-white leading-tight",
+                    idx === 0 ? "text-xl line-clamp-3" : "text-sm line-clamp-2"
+                  )}
+                >
                   {getLocalizedKeyword(item, language)}
                 </h3>
-
-                {/* Category badge */}
-                <span
-                  className="mt-2 text-[10px] font-bold text-white/80 bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5 self-start"
-                >
+                <span className="mt-2 text-[10px] font-bold text-white/80 bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5 self-start">
                   {config?.label || item.category}
                 </span>
               </div>
             </button>
           );
         })}
-
-        {/* View all card */}
-        <button
-          onClick={() => navigate("/t2/category/my")}
-          className="flex-none snap-start rounded-[20px] w-[120px] h-[240px] border border-border/30 bg-card/60 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-card hover:text-foreground transition-all active:scale-[0.97]"
-        >
-          <ChevronRight className="w-6 h-6" />
-          <span className="text-xs font-bold">View All</span>
-          <span className="text-[10px]">{myKeywords.length} keywords</span>
-        </button>
       </div>
     </div>
   );
