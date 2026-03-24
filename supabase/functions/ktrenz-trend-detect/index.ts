@@ -926,27 +926,30 @@ async function extractSocialKeywordsFromTikTok(
     for (const f of fandoms) artistAliases.add(f);
   }
 
+  const memberNamesStr = allMemberNames?.length ? `, members: ${allMemberNames.join(", ")}` : "";
   const systemPrompt = `You are a K-Pop social media trend analyst specializing in TikTok viral content.
 Analyze the TikTok video descriptions below to extract SOCIAL TREND keywords related to the artist "${memberName}".
 
-WHAT TO EXTRACT (specific, actionable trends only):
-- Named viral challenges (e.g., "Supernova Challenge", "BOTTOMS UP Challenge")
-- Specific choreography/performance trends (e.g., "LOOK AT ME performance", "Magnetic dance break")
-- Unique fan-created content formats with specific names
-- Collaboration or crossover content with identifiable names
-- Product/brand mentions appearing in videos (e.g., specific makeup, fashion items)
+WHAT TO EXTRACT (specific, actionable trends only — must have a PROPER NAME):
+- Named viral challenges with specific titles (e.g., "Supernova Challenge", "BOTTOMS UP Challenge")
+- Specific choreography trends with song/move names (e.g., "LOOK AT ME performance", "Magnetic dance break")
+- Collaboration content with OTHER artist/brand names (e.g., "Puma x ATEEZ collab")
+- Named fan events or campaigns with specific titles
 
-STRICT REJECTION RULES — DO NOT EXTRACT:
-- Artist names, member names, or any variation/abbreviation (${memberName}${groupName ? `, ${groupName}` : ""})
-- Fandom names or fan identity tags (e.g., ARMY, BLINK, ATINY, MY, STAY, etc.)
-- Any hashtag that is just the artist/member/group name with or without suffixes like "fyp", "edit", "fan", "stan", "era", "best", "lover"
+STRICT REJECTION RULES — DO NOT EXTRACT ANY OF THESE:
+- Artist names, member names, or ANY variation: ${memberName}${groupName ? `, ${groupName}` : ""}${memberNamesStr}
+- Fandom names (ARMY, BLINK, ATINY, MY, STAY, CARAT, MOA, ENGENE, etc.)
+- Member name + ANY suffix (e.g., "Wooyoung edits", "Hongjoong best leader")
+- Generic descriptions of content (e.g., "facial expressions", "crowd reaction", "concert moments", "fan edits", "stage presence", "SNS", "daily life")
 - Generic hashtags (#fyp, #kpop, #foryou, #viral, #dance, #trending)
 - Platform names (TikTok, YouTube, Instagram)
-- Generic activity words (dance, music, cover, reaction, fancam, edit)
-- Song titles alone without a specific trend context (a song name is NOT a trend; "Song Name Challenge" IS a trend)
+- Non-K-pop content (gaming references like "dandysworld", "bailey", etc.)
+- Award show abbreviations without specific context (e.g., "kgma" alone)
+
+KEY RULE: The keyword must be a SPECIFIC PROPER NOUN or NAMED TREND, not a generic description of what's happening in the video.
 
 Set category to "social" for ALL extracted keywords.
-Maximum 3 keywords. QUALITY OVER QUANTITY. Return EMPTY array if nothing meaningful found — most videos will NOT contain extractable trends.`;
+Maximum 2 keywords. EXTREME QUALITY BAR. Return EMPTY array for 90%+ of inputs — only extract genuinely viral, named trends.`;
 
   const userPrompt = `TikTok videos related to "${memberName}"${groupName ? ` (${groupName})` : ""}:
 
