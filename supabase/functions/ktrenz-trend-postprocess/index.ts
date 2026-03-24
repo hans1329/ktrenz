@@ -300,7 +300,7 @@ async function sameSourceUrlDedup(sb: any): Promise<{ expired: number; details: 
 // ── 3b. 크로스 아티스트 동일 source_url 중복제거 ──
 // 서로 다른 아티스트가 같은 기사에서 키워드를 추출한 경우 baseline_score가 높은 것만 유지
 async function crossArtistSourceUrlDedup(sb: any): Promise<{ expired: number; details: string[] }> {
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60_60_000).toISOString();
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: active } = await sb
     .from("ktrenz_trend_triggers")
