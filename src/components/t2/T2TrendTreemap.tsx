@@ -901,9 +901,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   </p>
                                 ) : null;
                               })()}
-                              {isMyArtist && (
-                                <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
-                              )}
                             </div>
                             {/* Image area with rank badge + sparkline overlay */}
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[4/5]" : "aspect-[3/4]")}>
@@ -918,6 +915,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 <span className={cn("absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-8 h-8 text-sm" : "w-6 h-6 text-[10px]")}>
                                   {idx + 1}
                                 </span>
+                              )}
+                              {isMyArtist && (
+                                <Star className="w-4 h-4 text-amber-400 fill-amber-400 absolute top-2 right-2 drop-shadow-md" />
                               )}
                               {/* Sparkline overlay at bottom of image */}
                               <div className="absolute inset-x-0 bottom-0">
