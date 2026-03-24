@@ -891,25 +891,25 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               {isMyArtist && (
                                 <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
                               )}
-                              {/* Inline sparkline */}
-                              <svg viewBox="0 0 100 24" className="w-full h-[20px] mt-1" preserveAspectRatio="none">
-                                <defs>
-                                  <linearGradient id={`cat-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.25" />
-                                    <stop offset="100%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.02" />
-                                  </linearGradient>
-                                </defs>
-                                {(() => {
-                                  const seed = item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx;
-                                  const pts = 8; const vals: number[] = []; let v = 10 + (seed % 8);
-                                  for (let i = 0; i < pts; i++) { v += ((seed * (i + 1) * 7) % 11) - 4; v = Math.max(2, Math.min(21, v)); vals.push(v); }
-                                  vals[vals.length - 1] = Math.max(...vals) + 1;
-                                  const step = 100 / (pts - 1);
-                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${24 - y}`).join(" ");
-                                  return (<><path d={`${path} L100,24 L0,24 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" /></>);
-                                })()}
-                              </svg>
                             </div>
+                            {/* Sparkline — full width */}
+                            <svg viewBox="0 0 100 24" className="w-full h-[20px]" preserveAspectRatio="none">
+                              <defs>
+                                <linearGradient id={`cat-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.25" />
+                                  <stop offset="100%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.02" />
+                                </linearGradient>
+                              </defs>
+                              {(() => {
+                                const seed = item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx;
+                                const pts = 8; const vals: number[] = []; let v = 10 + (seed % 8);
+                                for (let i = 0; i < pts; i++) { v += ((seed * (i + 1) * 7) % 11) - 4; v = Math.max(2, Math.min(21, v)); vals.push(v); }
+                                vals[vals.length - 1] = Math.max(...vals) + 1;
+                                const step = 100 / (pts - 1);
+                                const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${24 - y}`).join(" ");
+                                return (<><path d={`${path} L100,24 L0,24 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" /></>);
+                              })()}
+                            </svg>
 
                             {/* Image area with rank badge */}
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[3/2]" : "aspect-[4/3]")}>
