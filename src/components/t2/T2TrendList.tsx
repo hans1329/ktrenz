@@ -259,10 +259,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                 <img
                   src={heroImage}
                   alt={getLocalizedKeyword(item, language)}
-                  className={cn(
-                    "w-full transition-transform duration-300 group-hover:scale-105",
-                    gridMode ? "h-auto object-contain" : "h-full object-cover"
-                  )}
+                  className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
                 {/* Category badge — bottom left */}
