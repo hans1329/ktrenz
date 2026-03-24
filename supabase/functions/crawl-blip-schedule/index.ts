@@ -228,29 +228,33 @@ Deno.serve(async (req) => {
 
     const { data: stars } = await supabase
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko")
+      .select("id, display_name, name_ko, wiki_entry_id")
       .eq("is_active", true);
 
-    const starMap = new Map<string, string>();
+    const starMap = new Map<string, { starId: string; wikiEntryId: string | null }>();
     if (stars) {
       for (const s of stars as any[]) {
-        if (s.display_name) starMap.set(s.display_name.toLowerCase(), s.id);
-        if (s.name_ko) starMap.set(s.name_ko.toLowerCase(), s.id);
+        const entry = { starId: s.id, wikiEntryId: s.wiki_entry_id || null };
+        if (s.display_name) starMap.set(s.display_name.toLowerCase(), entry);
+        if (s.name_ko) starMap.set(s.name_ko.toLowerCase(), entry);
       }
     }
 
     // 4. Upsert into ktrenz_schedules
-    const rows = entries.map((e) => ({
-      star_id: starMap.get(e.artist_name.toLowerCase()) || null,
-      wiki_entry_id: null,
-      artist_name: e.artist_name,
-      title: e.title,
-      event_date: e.event_date,
-      event_time: e.event_time,
-      category: e.category,
-      source: "blip",
-      source_url: BLIP_URL,
-    }));
+    const rows = entries.map((e) => {
+      const match = starMap.get(e.artist_name.toLowerCase());
+      return {
+        star_id: match?.starId || null,
+        wiki_entry_id: match?.wikiEntryId || null,
+        artist_name: e.artist_name,
+        title: e.title,
+        event_date: e.event_date,
+        event_time: e.event_time,
+        category: e.category,
+        source: "blip",
+        source_url: BLIP_URL,
+      };
+    });
 
     const { error: upsertError, count } = await supabase
       .from("ktrenz_schedules" as any)
