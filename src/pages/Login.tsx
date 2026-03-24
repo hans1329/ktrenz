@@ -91,6 +91,7 @@ const Login = () => {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
+      sessionStorage.setItem("ktrenz-just-signed-up", "1");
       toast({ title: "Check your email", description: "We sent you a confirmation link." });
       setMode("email-login");
     }
