@@ -184,6 +184,7 @@ Deno.serve(async (req) => {
           url: BLIP_URL,
           formats: ["markdown"],
           onlyMainContent: true,
+          waitFor: 3000,
         }),
       });
 
