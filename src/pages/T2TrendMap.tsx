@@ -14,11 +14,10 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 type ViewMode = "treemap" | "list" | "artist";
 
-const VIEW_ORDER: ViewMode[] = ["treemap", "list", "artist"];
+const VIEW_ORDER: ViewMode[] = ["treemap", "artist"];
 
 const VIEW_TABS: { key: ViewMode; icon: typeof LayoutGrid; label: string }[] = [
   { key: "treemap", icon: LayoutGrid, label: "Map" },
-  { key: "list", icon: List, label: "List" },
   { key: "artist", icon: Users, label: "Artist" },
 ];
 
