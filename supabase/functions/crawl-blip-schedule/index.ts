@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         entriesCount: rows.length,
-        matchedArtists: artistMap.size,
+        matchedArtists: rows.filter((r) => r.star_id).length,
         totalArtists: uniqueArtists.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
