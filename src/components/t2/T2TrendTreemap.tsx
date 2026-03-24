@@ -835,7 +835,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
                         const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
                         return quotedBgImg
-                          ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.55')}, ${tileColor}), url(${quotedBgImg})`
+                          ? `linear-gradient(to bottom, ${tileColor.replace('0.85', '0.35')}, ${tileColor.replace('0.85', '0.55')}), url(${quotedBgImg})`
                           : undefined;
                       })(),
                       backgroundSize: 'cover',
