@@ -120,7 +120,7 @@ async function searchNaverRecent7d(
 }
 
 // peak/influence 갱신
-async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number) {
+async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number, isShopTrigger = false) {
   const { data: trigger } = await sb
     .from("ktrenz_trend_triggers")
     .select("baseline_score, peak_score")
@@ -131,10 +131,14 @@ async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number
   const updates: any = {};
   const baseline = trigger.baseline_score ?? 0;
 
-  if (baseline <= 0 && buzzScore > 0) {
-    // baseline 미설정 → 지금 설정
+  // 쇼핑 키워드: composite score는 0~100 스케일인데 baseline이 100 초과면 스케일 불일치 → 리셋
+  const needsBaselineReset = isShopTrigger && baseline > 100;
+
+  if ((baseline <= 0 || needsBaselineReset) && buzzScore > 0) {
+    // baseline 미설정 또는 스케일 불일치 → 지금 설정
     updates.baseline_score = buzzScore;
     updates.peak_score = buzzScore;
+    updates.influence_index = 0;
   } else if (baseline > 0) {
     if (buzzScore > (trigger.peak_score || 0)) {
       updates.peak_score = buzzScore;
