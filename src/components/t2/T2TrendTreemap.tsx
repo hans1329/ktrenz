@@ -780,117 +780,134 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           onLoadMore={() => setListVisibleCount(prev => prev + 20)}
         />
       ) : (
-        <div className="px-4 md:px-0">
-          {/* Carousel Card View */}
-          <div
-            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
-            style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
-          >
-            {visibleBoxItems.slice(0, 30).map((item, idx) => {
-              const config = CATEGORY_CONFIG[item.category];
-              const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
-              const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
-              const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
-              const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
-              const isMyArtist = watchedSet.has(item.wikiEntryId);
-              const isSelected = selectedTile?.id === item.id;
+        <div className="px-4 md:px-0 space-y-6">
+          {/* Carousel Card View — grouped by category */}
+          {(() => {
+            // Group items by category, preserving sort order
+            const categoryOrder = Object.keys(CATEGORY_CONFIG).filter(cat => cat !== "shopping");
+            const grouped = new Map<string, TrendTile[]>();
+            for (const item of filteredItems) {
+              const list = grouped.get(item.category) || [];
+              list.push(item);
+              grouped.set(item.category, list);
+            }
 
-              const delta = sortMode === "volume"
-                ? (() => {
-                    const current = item.prevApiTotal ?? item.peakScore ?? 0;
-                    const base = item.baselineScore ?? 0;
-                    return current - base;
-                  })()
-                : null;
+            return categoryOrder
+              .filter(cat => (grouped.get(cat)?.length ?? 0) > 0)
+              .map(cat => {
+                const items = grouped.get(cat)!;
+                const config = CATEGORY_CONFIG[cat];
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTileClick(item)}
-                  className={cn(
-                    "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-all active:scale-[0.97]",
-                    "w-[260px] md:w-[280px]",
-                    isSelected
-                      ? "border-primary/50 ring-2 ring-primary/20 bg-card"
-                      : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
-                  )}
-                >
-                  {/* Image area */}
-                  <div className="relative w-full aspect-[4/3] bg-muted/30 overflow-hidden">
-                    {bgImg ? (
-                      <img
-                        src={bgImg}
-                        alt={getLocalizedKeyword(item, language)}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center font-black text-white/20"
-                        style={{ backgroundColor: config?.tileColor || "hsl(var(--muted))", fontSize: "48px" }}
-                      >
-                        {getLocalizedArtistName(item, language).charAt(0)}
-                      </div>
-                    )}
-                    {/* Rank badge */}
-                    {idx < 5 && (
-                      <span className="absolute top-2.5 left-2.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-black flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                    )}
-                    {/* My artist star */}
-                    {isMyArtist && (
-                      <Star className="absolute top-2.5 right-2.5 w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-md" />
-                    )}
-                    {/* Time badge */}
-                    <span className="absolute bottom-2 left-2.5 flex items-center gap-1 text-[10px] text-white/90 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
-                      <Clock className="w-3 h-3" />
-                      {formatAge(item.detectedAt)}
-                    </span>
-                  </div>
-
-                  {/* Text area */}
-                  <div className="p-3.5 flex flex-col gap-2 flex-1">
-                    {/* Category + metrics row */}
-                    <div className="flex items-center gap-2">
+                return (
+                  <div key={cat}>
+                    {/* Section header */}
+                    <div className="flex items-center gap-2 mb-2.5">
                       <span
-                        className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
-                        style={{ backgroundColor: config?.color || "hsl(var(--muted-foreground))" }}
-                      >
-                        {config?.label || item.category}
-                      </span>
-                      <span className="text-[11px] font-medium text-muted-foreground truncate">
-                        {getLocalizedArtistName(item, language)}
-                      </span>
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: config?.color }}
+                      />
+                      <h3 className="text-sm font-black text-foreground">{config?.label || cat}</h3>
+                      <span className="text-[11px] text-muted-foreground font-medium">{items.length}</span>
                     </div>
 
-                    {/* Keyword title */}
-                    <h3 className="text-base font-black text-foreground line-clamp-2 leading-snug">
-                      {getLocalizedKeyword(item, language)}
-                    </h3>
+                    {/* Horizontal carousel */}
+                    <div
+                      className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+                      style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+                    >
+                      {items.slice(0, 15).map((item, idx) => {
+                        const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
+                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                        const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
+                        const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
+                        const isMyArtist = watchedSet.has(item.wikiEntryId);
+                        const isSelected = selectedTile?.id === item.id;
 
-                    {/* Metrics row */}
-                    <div className="flex items-center gap-3 mt-auto">
-                      {item.influenceIndex > 0 && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-primary">
-                          <TrendingUp className="w-3.5 h-3.5" />
-                          +{item.influenceIndex.toFixed(0)}%
-                        </span>
-                      )}
-                      {sortMode === "volume" && delta != null && delta !== 0 && (
-                        <span className={cn(
-                          "text-xs font-bold",
-                          delta > 0 ? "text-emerald-500" : "text-red-400"
-                        )}>
-                          {delta > 0 ? "+" : ""}{delta.toLocaleString()}
-                        </span>
-                      )}
+                        const delta = sortMode === "volume"
+                          ? (() => {
+                              const current = item.prevApiTotal ?? item.peakScore ?? 0;
+                              const base = item.baselineScore ?? 0;
+                              return current - base;
+                            })()
+                          : null;
+
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => handleTileClick(item)}
+                            className={cn(
+                              "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-all active:scale-[0.97]",
+                              "w-[200px] md:w-[240px]",
+                              isSelected
+                                ? "border-primary/50 ring-2 ring-primary/20 bg-card"
+                                : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
+                            )}
+                          >
+                            {/* Image area */}
+                            <div className="relative w-full aspect-[4/3] bg-muted/30 overflow-hidden">
+                              {bgImg ? (
+                                <img
+                                  src={bgImg}
+                                  alt={getLocalizedKeyword(item, language)}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div
+                                  className="w-full h-full flex items-center justify-center font-black text-white/20"
+                                  style={{ backgroundColor: config?.tileColor || "hsl(var(--muted))", fontSize: "40px" }}
+                                >
+                                  {getLocalizedArtistName(item, language).charAt(0)}
+                                </div>
+                              )}
+                              {/* Rank badge */}
+                              {idx < 3 && (
+                                <span className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-black flex items-center justify-center">
+                                  {idx + 1}
+                                </span>
+                              )}
+                              {isMyArtist && (
+                                <Star className="absolute top-2 right-2 w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-md" />
+                              )}
+                              <span className="absolute bottom-1.5 left-2 flex items-center gap-0.5 text-[9px] text-white/90 bg-black/40 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                                <Clock className="w-2.5 h-2.5" />
+                                {formatAge(item.detectedAt)}
+                              </span>
+                            </div>
+
+                            {/* Text area */}
+                            <div className="p-3 flex flex-col gap-1.5 flex-1">
+                              <span className="text-[11px] font-medium text-muted-foreground truncate">
+                                {getLocalizedArtistName(item, language)}
+                              </span>
+                              <h4 className="text-sm font-black text-foreground line-clamp-2 leading-snug">
+                                {getLocalizedKeyword(item, language)}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-auto">
+                                {item.influenceIndex > 0 && (
+                                  <span className="flex items-center gap-0.5 text-[11px] font-bold text-primary">
+                                    <TrendingUp className="w-3 h-3" />
+                                    +{item.influenceIndex.toFixed(0)}%
+                                  </span>
+                                )}
+                                {sortMode === "volume" && delta != null && delta !== 0 && (
+                                  <span className={cn(
+                                    "text-[11px] font-bold",
+                                    delta > 0 ? "text-emerald-500" : "text-red-400"
+                                  )}>
+                                    {delta > 0 ? "+" : ""}{delta.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                );
+              });
+          })()}
         </div>
       )}
       </div>
