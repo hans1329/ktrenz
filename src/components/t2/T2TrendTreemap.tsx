@@ -885,7 +885,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {formatAge(item.detectedAt)}
                                 </span>
                               </div>
-                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-base" : "text-sm")}>
+                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug flex items-start gap-1", idx === 0 ? "text-base" : "text-sm")}>
+                                <MessageCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 -scale-x-100 text-primary/60" />
                                 {getLocalizedKeyword(item, language)}
                               </h4>
                               {isMyArtist && (
