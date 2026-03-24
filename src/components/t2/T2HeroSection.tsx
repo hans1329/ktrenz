@@ -141,7 +141,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
 
       <div
         className="flex gap-3 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide"
-        style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+        style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", scrollPaddingLeft: "16px" }}
       >
         {topPicks.map((item, idx) => {
           const config = CATEGORY_CONFIG[item.category];
