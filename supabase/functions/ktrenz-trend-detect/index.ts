@@ -1391,6 +1391,15 @@ async function detectForMember(
 
   // 최근 7일 내 동일 멤버 키워드는 재삽입하지 않되, 빈 필드는 백필
   const keywordSources = keywords.map((k) => {
+    // 소셜(TikTok) 키워드는 TikTok URL을 직접 사용
+    if (k.category === "social" && k._tiktok_source_url) {
+      return {
+        keywordData: k,
+        sourceArticle: { title: k.context || "", description: k.context_ko || "", url: k._tiktok_source_url },
+        sourceUrl: k._tiktok_source_url,
+      };
+    }
+
     let articleIdx = -1;
     if (k.source_article_index && k.source_article_index > 0) {
       articleIdx = k.source_article_index - 1;
