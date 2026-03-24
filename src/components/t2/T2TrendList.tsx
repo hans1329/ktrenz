@@ -161,7 +161,11 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   };
 
   return (
-    <div className="max-w-lg lg:max-w-2xl mx-auto space-y-5 lg:space-y-6">
+    <div className={cn(
+      gridMode
+        ? "md:max-w-[90%] mx-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 space-y-5 md:space-y-0 px-0 md:px-4"
+        : "max-w-lg lg:max-w-2xl mx-auto space-y-5 lg:space-y-6"
+    )}>
       {items.map((item, idx) => {
         const catConfig = CATEGORY_CONFIG[item.category];
         const isMyArtist = watchedSet.has(item.wikiEntryId);
