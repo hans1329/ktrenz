@@ -86,9 +86,18 @@ function parseScheduleMarkdown(markdown: string): Array<{
         // Date pattern: "(Mon) Mar 9th..." or just date-like text
         if (/\(\w+\)\s+\w+\s+\d+/.test(ahead)) {
           dateStr = ahead;
-          // After date, find artist name (non-empty, non-image, non-date line)
+          // After date, find artist name from image alt text or plain text
           for (let k = j + 1; k < Math.min(j + 10, lines.length); k++) {
             const nameLine = lines[k].trim();
+
+            // Check image alt text: ![ARTIST_NAME](url)
+            const altMatch = nameLine.match(/^!\[([^\]]+)\]\(/);
+            if (altMatch && altMatch[1] && altMatch[1].length > 1) {
+              artistName = altMatch[1];
+              break;
+            }
+
+            // Also check plain text lines (fallback)
             if (
               nameLine &&
               !nameLine.startsWith("!") &&
@@ -96,7 +105,7 @@ function parseScheduleMarkdown(markdown: string): Array<{
               !nameLine.startsWith("(") &&
               !nameLine.startsWith("#") &&
               !nameLine.startsWith("|") &&
-              !nameLine.includes("image.blip.kr") &&
+              !nameLine.includes("blip.kr") &&
               nameLine.length > 1 &&
               nameLine.length < 50
             ) {
@@ -175,6 +184,7 @@ Deno.serve(async (req) => {
           url: BLIP_URL,
           formats: ["markdown"],
           onlyMainContent: true,
+          waitFor: 3000,
         }),
       });
 
