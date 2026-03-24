@@ -287,7 +287,7 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
 }
 
 // ── Main Component ──
-const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange, mergedCategories }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void; mergedCategories?: string[] }) => {
+const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: externalCategory, onCategoryChange, hideCategory, hideHeader, onCategoryStatsChange, sortMode: externalSortMode, onSortModeChange, mergedCategories, onMyKeywordsChange }: { viewMode?: "treemap" | "list" | "artist"; onViewModeChange?: (mode: "treemap" | "list" | "artist") => void; selectedCategory?: TrendCategory; onCategoryChange?: (cat: TrendCategory) => void; hideCategory?: boolean; hideHeader?: boolean; onCategoryStatsChange?: (stats: Record<string, number>, total: number, myCount: number) => void; sortMode?: SortMode; onSortModeChange?: (mode: SortMode) => void; mergedCategories?: string[]; onMyKeywordsChange?: (items: TrendTile[]) => void }) => {
   const [internalCategory, setInternalCategory] = useState<TrendCategory>("all");
   const selectedCategory = externalCategory ?? internalCategory;
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
@@ -645,6 +645,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     }
   }, [categoryStats, dedupedTriggers.length, myKeywords.length, onCategoryStatsChange]);
 
+  useEffect(() => {
+    if (onMyKeywordsChange) onMyKeywordsChange(myKeywords);
+  }, [myKeywords, onMyKeywordsChange]);
+
   if (isLoading) {
     return (
       <div className="px-4 pb-4">
@@ -813,7 +817,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             ];
 
             const sectionOrder = [
-              ...(myItems.length > 0 ? [{ key: "my", label: "★ My Picks", color: "hsl(45, 90%, 50%)", items: myItems }] : []),
+              // My Picks is now shown in the hero section above
               ...sectionDefs
                 .filter(s => (grouped.get(s.key)?.length ?? 0) > 0)
                 .map(s => ({ ...s, items: grouped.get(s.key)! })),

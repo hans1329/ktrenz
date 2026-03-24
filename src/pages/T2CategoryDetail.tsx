@@ -31,8 +31,9 @@ const T2CategoryDetail = () => {
   // but we need to pick a single TrendCategory for the prop.
   // We'll use "all" and rely on the list view showing everything,
   // then the parent filters. For simplicity, use the first sub-category.
-  const dbCategories = MERGE_MAP[categoryKey || ""] || [categoryKey];
-  const primaryCategory = (dbCategories[0] || "all") as TrendCategory;
+  const isMy = categoryKey === "my";
+  const dbCategories = isMy ? [] : (MERGE_MAP[categoryKey || ""] || [categoryKey]);
+  const primaryCategory = (isMy ? "my" : dbCategories[0] || "all") as TrendCategory;
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -56,7 +57,7 @@ const T2CategoryDetail = () => {
           hideCategory
           hideHeader
           sortMode="volume"
-          mergedCategories={dbCategories}
+          mergedCategories={dbCategories.length > 0 ? dbCategories : undefined}
         />
       </div>
 

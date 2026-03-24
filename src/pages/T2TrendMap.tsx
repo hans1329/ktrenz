@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
-import T2TrendTreemap, { type TrendCategory, type SortMode, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import T2TrendTreemap, { type TrendCategory, type SortMode, type TrendTile, ALL_CATEGORIES, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import T2HeroSection from "@/components/t2/T2HeroSection";
 import T2AdminControls from "@/components/t2/T2AdminControls";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -39,6 +40,7 @@ const T2TrendMap = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [myKeywords, setMyKeywords] = useState<TrendTile[]>([]);
   const [scrollY, setScrollY] = useState(0);
 
   // Swipe state
@@ -342,6 +344,9 @@ const T2TrendMap = () => {
         >
           <div className="relative">
             <div className="md:max-w-[90%] mx-auto relative z-10">
+              {/* Hero section */}
+              <T2HeroSection myKeywords={myKeywords} />
+
               <div
                 style={{
                   transform: shouldRenderSwipeOverlay ? `translate3d(${dragOffsetX}px, 0, 0)` : 'none',
@@ -359,6 +364,7 @@ const T2TrendMap = () => {
                   sortMode={sortMode}
                   onSortModeChange={setSortMode}
                   onCategoryStatsChange={handleCategoryStatsChange}
+                  onMyKeywordsChange={setMyKeywords}
                 />
               </div>
             </div>
