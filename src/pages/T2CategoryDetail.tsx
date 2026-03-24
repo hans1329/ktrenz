@@ -50,7 +50,7 @@ const T2CategoryDetail = () => {
       </div>
 
       {/* List view */}
-      <div className="pb-24">
+      <div className="pt-4 pb-24 md:max-w-[90%] mx-auto md:grid md:grid-cols-3 md:gap-3">
         <T2TrendTreemap
           viewMode="list"
           selectedCategory={primaryCategory}
