@@ -371,7 +371,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("status", "active")
-        .neq("trigger_source", "naver_shop")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
@@ -463,53 +462,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     refetchInterval: 30 * 60 * 1000,
   });
 
-  // Separate query for shopping (naver_shop) triggers
-  const { data: shopTriggers } = useQuery({
-    queryKey: ["t2-trend-triggers-shopping"],
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, star_id, wiki_entry_id, influence_index, context, context_ko, context_ja, context_zh, detected_at, peak_at, expired_at, lifetime_hours, peak_delay_hours, baseline_score, peak_score, source_url, source_title, source_image_url, source_snippet, status")
-        .eq("status", "active")
-        .eq("trigger_source", "naver_shop")
-        .order("influence_index", { ascending: false })
-        .limit(200);
-
-      return ((data ?? []) as any[]).map((t: any): TrendTile => ({
-        id: t.id,
-        keyword: t.keyword,
-        keywordKo: t.keyword_ko || null,
-        keywordJa: t.keyword_ja || null,
-        keywordZh: t.keyword_zh || null,
-        category: (t.keyword_category === "brand" || t.keyword_category === "product") ? t.keyword_category : "shopping",
-        artistName: t.artist_name || "Unknown",
-        artistNameKo: null,
-        artistImageUrl: null,
-        wikiEntryId: t.wiki_entry_id || "",
-        influenceIndex: Number(t.influence_index) || 0,
-        context: t.context,
-        contextKo: t.context_ko || null,
-        contextJa: t.context_ja || null,
-        contextZh: t.context_zh || null,
-        detectedAt: t.detected_at,
-        peakAt: t.peak_at || null,
-        expiredAt: t.expired_at || null,
-        lifetimeHours: t.lifetime_hours != null ? Number(t.lifetime_hours) : null,
-        peakDelayHours: t.peak_delay_hours != null ? Number(t.peak_delay_hours) : null,
-        baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
-        peakScore: t.peak_score != null ? Number(t.peak_score) : null,
-        sourceUrl: t.source_url || null,
-        sourceTitle: t.source_title || null,
-        sourceImageUrl: t.source_image_url || null,
-        sourceSnippet: t.source_snippet || null,
-        starId: t.star_id || null,
-        status: t.status,
-        prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
-      }));
-    },
-  });
+  // Shop triggers are now included in the main query above (no separate fetch needed)
 
   const dedupedShopTriggers = useMemo(() => {
     if (!shopTriggers?.length) return [];
