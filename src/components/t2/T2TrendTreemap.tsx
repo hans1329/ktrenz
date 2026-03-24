@@ -780,191 +780,118 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           onLoadMore={() => setListVisibleCount(prev => prev + 20)}
         />
       ) : (
-        <>
+        <div className="px-4 md:px-0">
+          {/* Carousel Card View */}
           <div
-            className="relative w-full rounded-none md:rounded-2xl overflow-hidden"
-            style={{ aspectRatio: `${containerWidth} / ${containerHeight}`, touchAction: "pan-y pinch-zoom" }}
+            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+            style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
           >
-            <div
-              className="absolute inset-0 pointer-events-none z-[5]"
-              style={{
-                borderRadius: 'inherit',
-                boxShadow: 'inset 0 0 0 2px hsl(var(--background))',
-              }}
-            />
-            <div className="absolute inset-0">
-              {rects.map((rect, rectIndex) => {
-                const left = (rect.x / containerWidth) * 100;
-                const top = (rect.y / containerHeight) * 100;
-                const width = (rect.w / containerWidth) * 100;
-                const height = (rect.h / containerHeight) * 100;
-                 const isTop20 = rectIndex < 20;
-                 const isLarge = width > 18 && height > 15;
-                 const isMedium = isTop20 || (width > 6 && height > 5);
-                const isSelected = selectedTile?.id === rect.item.id;
-                const config = CATEGORY_CONFIG[rect.item.category];
-                const tileColor = config?.tileColor || "hsla(220, 20%, 40%, 0.85)";
-                const isMyArtist = watchedSet.has(rect.item.wikiEntryId);
+            {visibleBoxItems.slice(0, 30).map((item, idx) => {
+              const config = CATEGORY_CONFIG[item.category];
+              const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
+              const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+              const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
+              const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
+              const isMyArtist = watchedSet.has(item.wikiEntryId);
+              const isSelected = selectedTile?.id === item.id;
 
-                const boxArea = width * height;
-                const sizeFactor = Math.sqrt(boxArea) / 10;
-                const isTopThree = rectIndex < 3;
-                const keywordSize = isTopThree
-                  ? Math.max(18, Math.min(36, sizeFactor * 5))
-                  : isTop20
-                    ? Math.max(14, Math.min(28, sizeFactor * 4.5))
-                    : Math.max(12, Math.min(24, sizeFactor * 4));
-                const scoreSize = Math.max(13, Math.min(38, sizeFactor * 4.5));
+              const delta = sortMode === "volume"
+                ? (() => {
+                    const current = item.prevApiTotal ?? item.peakScore ?? 0;
+                    const base = item.baselineScore ?? 0;
+                    return current - base;
+                  })()
+                : null;
 
-                const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
-                const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
-                const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
-                const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
-
-                // 작은 박스는 기존 오버레이 방식 유지, 중간 이상은 분리 레이아웃
-                const useSplitLayout = isMedium && height > 8;
-
-                return (
-                  <button
-                    key={rect.item.id}
-                    onClick={() => handleTileClick(rect.item)}
-                    className={cn(
-                      "absolute flex flex-col outline-none focus:outline-none overflow-hidden rounded-sm",
-                      isSelected && "ring-2 ring-primary/40 z-20 brightness-110"
-                    )}
-                    style={{
-                      left: `${left}%`, top: `${top}%`,
-                      width: `${width}%`, height: `${height}%`,
-                      touchAction: 'pan-y pinch-zoom',
-                      ...(!useSplitLayout ? {
-                        backgroundImage: bgImg
-                          ? `linear-gradient(to bottom, ${tileColor.replace(/[\d.]+\)$/, '0.3)')}, ${tileColor.replace(/[\d.]+\)$/, '0.5)')}), url("${bgImg.replace(/"/g, '\\"')}")`
-                          : undefined,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center center',
-                        backgroundColor: bgImg ? undefined : tileColor,
-                      } : {
-                        backgroundColor: tileColor.replace(/[\d.]+\)$/, '1)'),
-                      }),
-                    }}
-                  >
-                    {useSplitLayout ? (
-                      <>
-                        {/* 이미지 영역 (상단 60%) */}
-                        <div
-                          className="relative w-full overflow-hidden"
-                          style={{
-                            height: '60%',
-                            backgroundImage: bgImg ? `url("${bgImg.replace(/"/g, '\\"')}")` : undefined,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center 20%',
-                            backgroundColor: bgImg ? undefined : tileColor.replace(/[\d.]+\)$/, '0.6)'),
-                          }}
-                        >
-                          {/* 상단 뱃지: 시간 + 관심 아티스트 */}
-                          <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/80 drop-shadow-md">
-                            {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
-                            <Clock className="w-2.5 h-2.5" />
-                            {formatAge(rect.item.detectedAt)}
-                          </span>
-                          {/* 우상단: influence / volume 수치 */}
-                          {sortMode === "rate" && rect.item.influenceIndex > 0 && (
-                            <span className="absolute top-1 right-1.5 z-20 text-[10px] font-black text-white drop-shadow-lg">
-                              +{rect.item.influenceIndex.toFixed(0)}%
-                            </span>
-                          )}
-                          {sortMode === "volume" && (() => {
-                            const current = rect.item.prevApiTotal ?? rect.item.peakScore ?? 0;
-                            const base = rect.item.baselineScore ?? 0;
-                            if (current === 0 || base === 0) return null;
-                            const diff = current - base;
-                            if (diff === 0) return null;
-                            return (
-                              <span className="absolute top-1 right-1.5 z-20 text-[10px] font-black text-white drop-shadow-lg">
-                                {diff > 0 ? "+" : ""}{diff.toLocaleString()}
-                              </span>
-                            );
-                          })()}
-                          {/* 이미지 없을 때 이니셜 */}
-                          {!bgImg && (
-                            <div className="w-full h-full flex items-center justify-center text-white/30 font-black" style={{ fontSize: `${Math.max(20, sizeFactor * 6)}px` }}>
-                              {getLocalizedArtistName(rect.item, language).charAt(0)}
-                            </div>
-                          )}
-                        </div>
-                        {/* 키워드 영역 (하단 40%) */}
-                        <div
-                          className="relative w-full flex flex-col justify-center px-1.5 overflow-hidden"
-                          style={{
-                            height: '40%',
-                            backgroundColor: tileColor.replace(/[\d.]+\)$/, '0.95)'),
-                          }}
-                        >
-                          <span
-                            className="font-black text-white truncate w-full leading-tight"
-                            style={{ fontSize: `${Math.min(keywordSize, isLarge ? 28 : 18)}px` }}
-                          >
-                            {getLocalizedKeyword(rect.item, language)}
-                          </span>
-                          <div className="flex items-center justify-between w-full mt-0.5">
-                            <span
-                              className="font-semibold text-white/70 truncate"
-                              style={{ fontSize: `${Math.max(8, Math.min(12, keywordSize * 0.6))}px` }}
-                            >
-                              {getLocalizedArtistName(rect.item, language)}
-                            </span>
-                            <span
-                              className="text-[8px] font-bold text-white rounded px-1 py-0.5 shrink-0 ml-0.5"
-                              style={{ backgroundColor: config?.color ? `${config.color.replace(')', ' / 0.8)').replace('hsl(', 'hsl(')}` : 'rgba(255,255,255,0.15)' }}
-                            >
-                              {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                      </>
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleTileClick(item)}
+                  className={cn(
+                    "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-all active:scale-[0.97]",
+                    "w-[260px] md:w-[280px]",
+                    isSelected
+                      ? "border-primary/50 ring-2 ring-primary/20 bg-card"
+                      : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
+                  )}
+                >
+                  {/* Image area */}
+                  <div className="relative w-full aspect-[4/3] bg-muted/30 overflow-hidden">
+                    {bgImg ? (
+                      <img
+                        src={bgImg}
+                        alt={getLocalizedKeyword(item, language)}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     ) : (
-                      /* 작은 박스: 기존 오버레이 스타일 유지 */
-                      <>
-                        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
-                          <span
-                            className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                            style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
-                          >
-                            {getLocalizedKeyword(rect.item, language)}
-                          </span>
-                          <span
-                            className="font-bold text-white truncate w-full text-center drop-shadow-md"
-                            style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
-                          >
-                            {getLocalizedArtistName(rect.item, language)}
-                          </span>
-                        </div>
-                      </>
+                      <div
+                        className="w-full h-full flex items-center justify-center font-black text-white/20"
+                        style={{ backgroundColor: config?.tileColor || "hsl(var(--muted))", fontSize: "48px" }}
+                      >
+                        {getLocalizedArtistName(item, language).charAt(0)}
+                      </div>
                     )}
-                    {isTopThree && (
-                      <BoxParticles
-                        count={rectIndex === 0 ? 24 : rectIndex === 1 ? 10 : 6}
-                        color="hsla(45, 100%, 80%, 0.9)"
-                        speed={rectIndex === 0 ? 0.9 : 0.6}
-                        density={rectIndex === 0 ? 0.7 : 0.4}
-                        shape="star"
-                      />
+                    {/* Rank badge */}
+                    {idx < 5 && (
+                      <span className="absolute top-2.5 left-2.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-black flex items-center justify-center">
+                        {idx + 1}
+                      </span>
                     )}
-                    {(rectIndex === 3 || rectIndex === 4) && (
-                      <BoxParticles
-                        count={8}
-                        color="hsla(0, 0%, 100%, 0.6)"
-                        speed={0.15}
-                        density={0.3}
-                        shape="circle"
-                      />
+                    {/* My artist star */}
+                    {isMyArtist && (
+                      <Star className="absolute top-2.5 right-2.5 w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-md" />
                     )}
-                  </button>
-                );
-              })}
-            </div>
+                    {/* Time badge */}
+                    <span className="absolute bottom-2 left-2.5 flex items-center gap-1 text-[10px] text-white/90 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
+                      <Clock className="w-3 h-3" />
+                      {formatAge(item.detectedAt)}
+                    </span>
+                  </div>
+
+                  {/* Text area */}
+                  <div className="p-3.5 flex flex-col gap-2 flex-1">
+                    {/* Category + metrics row */}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
+                        style={{ backgroundColor: config?.color || "hsl(var(--muted-foreground))" }}
+                      >
+                        {config?.label || item.category}
+                      </span>
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">
+                        {getLocalizedArtistName(item, language)}
+                      </span>
+                    </div>
+
+                    {/* Keyword title */}
+                    <h3 className="text-base font-black text-foreground line-clamp-2 leading-snug">
+                      {getLocalizedKeyword(item, language)}
+                    </h3>
+
+                    {/* Metrics row */}
+                    <div className="flex items-center gap-3 mt-auto">
+                      {item.influenceIndex > 0 && (
+                        <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          +{item.influenceIndex.toFixed(0)}%
+                        </span>
+                      )}
+                      {sortMode === "volume" && delta != null && delta !== 0 && (
+                        <span className={cn(
+                          "text-xs font-bold",
+                          delta > 0 ? "text-emerald-500" : "text-red-400"
+                        )}>
+                          {delta > 0 ? "+" : ""}{delta.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </>
+        </div>
       )}
       </div>
 
