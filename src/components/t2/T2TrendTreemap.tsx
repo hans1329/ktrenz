@@ -890,6 +890,17 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
                                 {getLocalizedKeyword(item, language)}
                               </h4>
+                              {(() => {
+                                const ctx = language === "ko" ? (item.contextKo || item.context)
+                                  : language === "ja" ? (item.contextJa || item.context)
+                                  : language === "zh" ? (item.contextZh || item.context)
+                                  : item.context;
+                                return ctx ? (
+                                  <p className="text-[10px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
+                                    {ctx.replace(/\[\d+\]/g, "").trim()}
+                                  </p>
+                                ) : null;
+                              })()}
                               {isMyArtist && (
                                 <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
                               )}
