@@ -120,12 +120,14 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
         const groupImage = groupWikiId ? imageMap.get(groupWikiId) : null;
         const directImage = s.image_url && s.image_url !== "" ? s.image_url : null;
 
+        const contentImage = contentImageMap.get(s.id) || null;
         return {
           id: s.id,
           wiki_entry_id: s.wiki_entry_id,
           display_name: s.display_name,
           name_ko: s.name_ko,
-          image_url: ownImage || directImage || groupImage || null,
+          image_url: ownImage || directImage || groupImage || contentImage || null,
+          contentImageUrl: contentImage,
           agency: s.agency,
           star_type: s.star_type,
           trendCount: countMap.get(s.id) || 0,
