@@ -331,10 +331,7 @@ const T2TrendMap = () => {
         // onTouchEnd={onTouchEnd}
       >
         <div
-          className={cn(
-            viewMode === "treemap" ? "pb-24 scrollbar-hide" : "pb-24 scrollbar-hide",
-            headerCollapsed ? "pt-[0.5rem]" : "pt-[4rem]"
-          )}
+          className="pb-24 scrollbar-hide pt-[4rem]"
         >
           <div className="relative">
             <div className="md:max-w-[90%] mx-auto relative z-10">
