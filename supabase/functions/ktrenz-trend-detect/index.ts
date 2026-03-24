@@ -730,6 +730,12 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
       const kwKo = k.keyword_ko?.toLowerCase() || "";
       const kwEn = k.keyword_en?.toLowerCase() || "";
 
+      // 소속사/기획사 이름 차단 (부분 일치)
+      if (isAgencyKeyword(kwLower) || isAgencyKeyword(kwKo) || isAgencyKeyword(kwEn)) {
+        console.warn(`[trend-detect] Blocked agency keyword: "${k.keyword}"`);
+        return false;
+      }
+
       // 플랫폼 블랙리스트
       if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
         console.warn(`[trend-detect] Blocked platform keyword: "${k.keyword}"`);
