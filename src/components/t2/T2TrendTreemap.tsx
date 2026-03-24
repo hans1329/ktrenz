@@ -934,7 +934,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                     const unit = age.includes("d") ? "d" : "h";
                                     const s = Math.max(1, Math.round(ageNum / 3));
                                     return (
-                                      <div className="absolute bottom-0.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/50 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+                                      <div className="absolute bottom-1.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/50 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
                                         <span>{age}</span>
                                         <span>{ageNum >= 3 ? `${ageNum - s}${unit}` : "·"}</span>
                                         <span>{ageNum >= 3 ? `${ageNum - s * 2}${unit}` : "·"}</span>
