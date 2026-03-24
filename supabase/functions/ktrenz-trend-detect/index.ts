@@ -696,6 +696,28 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               continue;
             }
 
+            // ── 5단계: 키워드가 아티스트 이름 자체인 경우 차단 (exact match) ──
+            const kwLower = (k.keyword || "").toLowerCase().trim();
+            const kwKoLower = (k.keyword_ko || "").toLowerCase().trim();
+            const kwEnLower = (k.keyword_en || "").toLowerCase().trim();
+            const allArtistNames = [
+              memberName, nameKo, groupName, groupNameKo,
+            ].filter(Boolean).map((n: string) => n.toLowerCase().trim());
+            // Also check without spaces (e.g., "G DRAGON" vs "G-DRAGON")
+            const normalizeForCompare = (s: string) => s.replace(/[-\s·.]/g, "").toLowerCase();
+            const normalizedKw = normalizeForCompare(k.keyword || "");
+            const normalizedKwKo = normalizeForCompare(k.keyword_ko || "");
+            const normalizedKwEn = normalizeForCompare(k.keyword_en || "");
+            const isArtistNameKeyword = allArtistNames.some(name => {
+              const normalized = normalizeForCompare(name);
+              return kwLower === name || kwKoLower === name || kwEnLower === name
+                || normalizedKw === normalized || normalizedKwKo === normalized || normalizedKwEn === normalized;
+            });
+            if (isArtistNameKeyword) {
+              console.warn(`[trend-detect] ⛔ Artist name as keyword rejected: "${k.keyword}" (ko: ${k.keyword_ko}, en: ${k.keyword_en}) matches artist name [${allArtistNames.join(", ")}]`);
+              continue;
+            }
+
             // ✅ 모든 검증 통과
             console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence}, stage: ${k.purchase_stage || "n/a"})`);
             extractedKeywords.push({
