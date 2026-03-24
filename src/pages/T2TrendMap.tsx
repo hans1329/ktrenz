@@ -371,6 +371,9 @@ const T2TrendMap = () => {
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
+      <Suspense fallback={null}>
+        <ArtistOnboardingDrawer open={showOnboarding} onOpenChange={setShowOnboarding} />
+      </Suspense>
     </>
   );
 };
