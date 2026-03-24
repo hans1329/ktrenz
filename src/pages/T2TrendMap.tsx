@@ -303,6 +303,7 @@ const T2TrendMap = () => {
           </div>
         </div>
         */}
+      </div>
 
       {/* Category filter buttons — hidden for carousel view
       <div
