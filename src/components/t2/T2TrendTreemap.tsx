@@ -880,9 +880,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               })()}
                             </div>
                             {/* Image area with rank badge + sparkline overlay */}
-                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[4/5]" : "aspect-[3/4]")}>
+                            <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "min-h-[200px]" : "min-h-[160px]")}>
                               {bgImg ? (
-                                <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-top" loading="lazy" referrerPolicy="no-referrer" />
+                                <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-contain object-center" loading="lazy" referrerPolicy="no-referrer" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center font-black text-white/20" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}>
                                   {getLocalizedArtistName(item, language).charAt(0)}
