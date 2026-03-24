@@ -319,7 +319,7 @@ const T2ArtistPage = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ctxText}</p>
                       )}
 
-                      {/* Sparkline with time axis */}
+                      {/* Sparkline */}
                       {(() => {
                         const detectedMs = new Date(kw.detected_at).getTime();
                         const nowMs = Date.now();
@@ -334,7 +334,6 @@ const T2ArtistPage = () => {
                         const peak = kw.peak_score ?? Math.max(baseline, 1);
                         const maxVal = Math.max(peak, baseline, 1);
 
-                        // Build time-based points: detected → peak → now/expired
                         const pts: { t: number; v: number }[] = [
                           { t: detectedMs, v: baseline },
                           { t: peakMs, v: peak },
@@ -345,55 +344,29 @@ const T2ArtistPage = () => {
                           pts.push({ t: endMs, v: decay });
                         }
 
-                        const svgW = 140;
-                        const svgH = 32;
-                        const padX = 2;
-                        const padY = 4;
+                        const W = 100;
+                        const H = 18;
+                        const toX = (t: number) => ((t - detectedMs) / spanMs) * W;
+                        const toY = (v: number) => H - (v / maxVal) * (H - 2);
 
-                        const toX = (t: number) => padX + ((t - detectedMs) / spanMs) * (svgW - padX * 2);
-                        const toY = (v: number) => svgH - padY - (v / maxVal) * (svgH - padY * 2);
-
-                        const pathD = pts.map((p, i) =>
+                        const path = pts.map((p, i) =>
                           `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`
                         ).join(" ");
-                        const fillD = pathD
-                          + ` L${toX(pts[pts.length - 1].t).toFixed(1)},${(svgH - padY).toFixed(1)}`
-                          + ` L${padX},${(svgH - padY).toFixed(1)} Z`;
+                        const fill = path + ` L${toX(pts[pts.length - 1].t).toFixed(1)},${H} L0,${H} Z`;
 
-                        // Time axis labels
-                        const formatTs = (ms: number) => {
-                          const d = new Date(ms);
-                          return `${d.getMonth() + 1}/${d.getDate()}`;
-                        };
-
-                        const peakX = toX(peakMs);
-                        const peakY = toY(peak);
+                        const elapsedH = Math.round((nowMs - detectedMs) / 3600000);
+                        const ageLabel = elapsedH >= 24 ? `${Math.round(elapsedH / 24)}d` : `${elapsedH}h`;
 
                         return (
-                          <div className="mt-2">
-                            <svg width="100%" viewBox={`0 0 ${svgW} ${svgH + 14}`} preserveAspectRatio="xMidYMid meet" style={{ height: 'auto' }}>
-                              {/* Grid line */}
-                              <line x1={padX} y1={svgH - padY} x2={svgW - padX} y2={svgH - padY} stroke="hsl(var(--border))" strokeWidth="0.5" />
-                              {/* Fill */}
-                              <path d={fillD} fill={isExpired ? "hsl(var(--muted-foreground) / 0.08)" : "hsl(var(--primary) / 0.12)"} />
-                              {/* Line */}
-                              <path d={pathD} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.4)" : "hsl(var(--primary) / 0.7)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              {/* Peak dot */}
-                              {peak > 0 && (
-                                <circle cx={peakX} cy={peakY} r="2.5" fill="hsl(var(--primary))" />
-                              )}
-                              {/* Current dot (if active) */}
-                              {!isExpired && pts.length > 2 && (
-                                <circle cx={toX(endMs)} cy={toY(pts[pts.length - 1].v)} r="2" fill="hsl(var(--primary) / 0.5)" />
-                              )}
-                              {/* Time axis labels */}
-                              <text x={padX} y={svgH + 10} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="start">{formatTs(detectedMs)}</text>
-                              <text x={svgW - padX} y={svgH + 10} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="end">{isExpired ? formatTs(endMs) : (language === "ko" ? "현재" : "Now")}</text>
-                              {/* Peak label */}
-                              <text x={peakX} y={Math.max(peakY - 4, 8)} fontSize="7" fill="hsl(var(--primary))" textAnchor="middle" fontWeight="bold">
-                                {formatTs(peakMs)}
-                              </text>
+                          <div className="mt-1.5">
+                            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[18px]" preserveAspectRatio="none">
+                              <path d={fill} fill={isExpired ? "hsl(var(--muted-foreground) / 0.08)" : "hsl(var(--primary) / 0.12)"} />
+                              <path d={path} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.35)" : "hsl(var(--primary) / 0.6)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
+                            <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
+                              <span>{ageLabel}</span>
+                              <span>{isExpired ? (language === "ko" ? "만료" : "expired") : (language === "ko" ? "현재" : "now")}</span>
+                            </div>
                           </div>
                         );
                       })()}
