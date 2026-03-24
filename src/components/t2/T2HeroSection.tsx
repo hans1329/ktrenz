@@ -278,6 +278,17 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     {getLocalizedKeyword(item, language)}
                   </h3>
                 </div>
+                {(() => {
+                  const ctx = language === "ko" ? (item.contextKo || item.context)
+                    : language === "ja" ? (item.contextJa || item.context)
+                    : language === "zh" ? (item.contextZh || item.context)
+                    : item.context;
+                  return ctx ? (
+                    <p className={cn("text-white/60 leading-snug mt-1.5", idx === 0 ? "text-[11px] line-clamp-2" : "text-[10px] line-clamp-1")}>
+                      {ctx}
+                    </p>
+                  ) : null;
+                })()}
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] font-bold text-white/70 bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
                     {config?.label || item.category}
