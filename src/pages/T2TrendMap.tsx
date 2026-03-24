@@ -40,6 +40,7 @@ const T2TrendMap = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [myCount, setMyCount] = useState(0);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [myKeywords, setMyKeywords] = useState<TrendTile[]>([]);
   const [scrollY, setScrollY] = useState(0);
 
   // Swipe state
