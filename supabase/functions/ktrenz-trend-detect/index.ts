@@ -48,29 +48,84 @@ const SOURCE_IMAGE_BLACKLIST = [
   "scontent.",
 ];
 
-// 텍스트 오버레이/배너 스타일 이미지를 걸러내기 위한 URL 패턴
-const TEXT_OVERLAY_IMAGE_PATTERNS = [
-  /thumb_\d+x\d+/i,           // 리사이즈된 썸네일 (텍스트 합성본 많음)
-  /card_img|card_news/i,       // 카드뉴스 이미지
-  /infographic/i,              // 인포그래픽
-  /screenshot/i,               // 스크린샷
-  /text_image|textimg/i,       // 텍스트 이미지 명시
-  /ranking|chart|graph/i,      // 차트/랭킹 이미지
-  /photo_layout|composite/i,   // 합성 레이아웃
-];
+// ── OpenAI Vision 기반 이미지 품질 분류 ──
+// OG 이미지들을 일괄로 분석하여 텍스트 오버레이/카드뉴스/배너 이미지를 식별
+async function classifyImagesWithVision(
+  imageUrls: string[],
+  openaiKey: string,
+): Promise<Set<string>> {
+  const textOverlaySet = new Set<string>();
+  if (imageUrls.length === 0) return textOverlaySet;
 
-// OG 이미지가 텍스트 오버레이/배너일 가능성이 높은지 판별
-function isLikelyTextOverlayImage(url: string): boolean {
-  // 카드뉴스/인포그래픽 패턴
-  if (TEXT_OVERLAY_IMAGE_PATTERNS.some(p => p.test(url))) return true;
-  // 극단적 가로 비율 (배너) - URL에 크기 힌트가 있는 경우
-  const sizeMatch = url.match(/(\d{3,4})x(\d{2,4})/);
-  if (sizeMatch) {
-    const w = parseInt(sizeMatch[1]);
-    const h = parseInt(sizeMatch[2]);
-    if (w > 0 && h > 0 && w / h > 3) return true; // 극단적 배너
+  // 비용 절감: 최대 10개까지만 분석 (주기당 아티스트 1명 기준)
+  const batch = imageUrls.slice(0, 10);
+
+  const userContent: any[] = [
+    {
+      type: "text",
+      text: `Analyze these ${batch.length} images. For each image, determine if it is a CLEAN photo (person/scene with minimal text) or a TEXT-HEAVY image (card news, infographic, banner, screenshot, chart, text overlay, composite layout with heavy text).
+
+Reply ONLY with a JSON array of objects: [{"index": 0, "text_heavy": true/false}]
+No explanation needed.`,
+    },
+  ];
+
+  for (let i = 0; i < batch.length; i++) {
+    userContent.push({
+      type: "image_url",
+      image_url: { url: batch[i], detail: "low" },
+    });
   }
-  return false;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: userContent,
+          },
+        ],
+        max_tokens: 300,
+        temperature: 0,
+      }),
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.warn(`[trend-detect] Vision API error ${res.status}, skipping image classification`);
+      return textOverlaySet;
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || "";
+
+    // JSON 배열 파싱
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const results = JSON.parse(jsonMatch[0]);
+      for (const r of results) {
+        if (r.text_heavy && typeof r.index === "number" && r.index < batch.length) {
+          textOverlaySet.add(batch[r.index]);
+          console.log(`[trend-detect] Vision: text-heavy image #${r.index} → ${batch[r.index].slice(0, 80)}`);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn(`[trend-detect] Vision classification error:`, (e as Error).message);
+  }
+
+  return textOverlaySet;
 }
 
 // URL 정규화: HTML 엔티티 디코딩
