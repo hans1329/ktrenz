@@ -164,7 +164,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   return (
     <div className={cn(
       gridMode
-        ? "md:max-w-[90%] mx-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 space-y-5 md:space-y-0 px-0 md:px-4"
+        ? "md:max-w-[90%] mx-auto md:columns-2 lg:columns-3 md:gap-4 space-y-5 md:space-y-0 px-0 md:px-4"
         : "max-w-lg lg:max-w-2xl mx-auto space-y-5 lg:space-y-6"
     )}>
       {items.map((item, idx) => {
@@ -184,7 +184,8 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             className={cn(
               "rounded-none md:rounded-2xl border-x-0 border-y md:border overflow-hidden bg-card transition-all",
               isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
-              isNew && "animate-flip-in"
+              isNew && "animate-flip-in",
+              gridMode && "break-inside-avoid md:mb-4 md:inline-block md:w-full"
             )}
             style={isNew ? { animationDelay: `${idx * 60}ms` } : undefined}
           >
