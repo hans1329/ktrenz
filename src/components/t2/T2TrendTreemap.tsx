@@ -783,20 +783,27 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         <div className="px-4 md:px-0 space-y-6">
           {/* Carousel Card View — grouped by category */}
           {(() => {
-            // Group items by category, preserving sort order
-            const categoryOrder = Object.keys(CATEGORY_CONFIG).filter(cat => cat !== "shopping");
+            // Group items by category, merging brand+product
             const grouped = new Map<string, TrendTile[]>();
             for (const item of filteredItems) {
-              const list = grouped.get(item.category) || [];
+              const cat = (item.category === "brand" || item.category === "product") ? "brand_product" : item.category;
+              const list = grouped.get(cat) || [];
               list.push(item);
-              grouped.set(item.category, list);
+              grouped.set(cat, list);
             }
 
-            return categoryOrder
-              .filter(cat => (grouped.get(cat)?.length ?? 0) > 0)
-              .map(cat => {
-                const items = grouped.get(cat)!;
-                const config = CATEGORY_CONFIG[cat];
+            // My artists section first, then merged brand+product, then rest
+            const myItems = myKeywords.length > 0 ? myKeywords : [];
+            const sectionOrder = [
+              ...(myItems.length > 0 ? [{ key: "my", label: "★ My Picks", color: "hsl(45, 90%, 50%)", items: myItems }] : []),
+              ...(grouped.has("brand_product") ? [{ key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color, items: grouped.get("brand_product")! }] : []),
+              ...Object.keys(CATEGORY_CONFIG)
+                .filter(cat => cat !== "shopping" && cat !== "brand" && cat !== "product")
+                .filter(cat => (grouped.get(cat)?.length ?? 0) > 0)
+                .map(cat => ({ key: cat, label: CATEGORY_CONFIG[cat].label, color: CATEGORY_CONFIG[cat].color, items: grouped.get(cat)! })),
+            ];
+
+            return sectionOrder.map(({ key, label, color, items }) => {
 
                 return (
                   <div key={cat}>
