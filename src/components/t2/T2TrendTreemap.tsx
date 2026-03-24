@@ -888,7 +888,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       </span>
                     </div>
                     {isMedium && (
-                      <span className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white/70 bg-black/25 rounded px-1 py-0.5">
+                      <span
+                        className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white rounded px-1 py-0.5"
+                        style={{ backgroundColor: config?.color ? `${config.color.replace(')', ' / 0.7)').replace('hsl(', 'hsl(')}` : 'rgba(0,0,0,0.25)' }}
+                      >
                         {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
                       </span>
                     )}
