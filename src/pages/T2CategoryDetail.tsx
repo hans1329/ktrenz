@@ -58,6 +58,7 @@ const T2CategoryDetail = () => {
           hideHeader
           sortMode="volume"
           mergedCategories={dbCategories.length > 0 ? dbCategories : undefined}
+          gridMode
         />
       </div>
 
