@@ -225,7 +225,8 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
         className="flex gap-3 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", scrollPaddingLeft: "16px" }}
       >
-        {topPicks.map((item, idx) => {
+        {allItems.map((item, idx) => {
+          const isBet = idx >= topPicks.length;
           const config = CATEGORY_CONFIG[item.category];
           const rawSourceImg = sanitizeImageUrl(
             item.sourceImageUrl?.startsWith("https://") || item.sourceImageUrl?.startsWith("http://")
