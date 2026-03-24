@@ -313,11 +313,10 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           );
 
           return (
-            <button
+            <div
               key={item.id}
-              onClick={() => navigate(`/t2/${item.id}`)}
               className={cn(
-                "flex-none snap-start rounded-[20px] overflow-hidden text-left transition-all active:scale-[0.97] relative flex flex-col",
+                "flex-none snap-start rounded-[20px] overflow-hidden text-left relative flex flex-col pointer-events-none select-none",
                 idx === 0 ? "w-[260px]" : "w-[180px]"
               )}
               style={{ background: gradient }}
@@ -331,7 +330,6 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                 />
               )}
 
-              {/* Top: keyword + artist */}
               <div className="relative z-10 p-4 pb-2 flex-1">
                 <div className="flex items-center gap-1 mb-1">
                   <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide">
@@ -363,7 +361,6 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                 </div>
               </div>
 
-              {/* Bottom: mini sparkline graph + period */}
               <div className="relative z-10 pb-5">
                 <svg
                   viewBox="0 0 100 40"
@@ -396,7 +393,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                   ))}
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

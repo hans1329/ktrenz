@@ -77,7 +77,7 @@ const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onK
               key={`${kw.keyword}-${idx}`}
               type="button"
               onClick={() => onKeywordClick?.(kw)}
-              className="flex-none w-[200px] snap-start rounded-2xl border border-border/40 bg-card/60 hover:bg-card/90 hover:border-primary/30 transition-colors group overflow-hidden flex flex-col text-left"
+              className="flex-none w-[200px] snap-start rounded-2xl border border-border/40 bg-card/60 hover:bg-card/90 hover:border-primary/30 transition-all group active:scale-[0.97] overflow-hidden flex flex-col text-left"
             >
               {/* Image area */}
               <div className="w-full aspect-[4/3] bg-muted/40 rounded-t-2xl overflow-hidden relative">
