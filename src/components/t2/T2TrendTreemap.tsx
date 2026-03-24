@@ -902,10 +902,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 {getLocalizedKeyword(item, language)}
                               </h4>
                             </div>
-                          </button>
-                            </div>
-                          </button>
                         );
+                      })}
                       })}
                     </div>
                   </div>
