@@ -211,10 +211,10 @@ const T2TrendMap = () => {
         style={{ visibility: headerCollapsed ? "hidden" : "visible" }}
       >
         <V3Header
-          centerSlot={
+          rightSlot={
             <div
-              className="flex items-center gap-0 rounded-full p-0.5 md:gap-1 md:p-1"
-              style={{ backgroundColor: "hsl(var(--card))" }}
+              className="flex items-center gap-0 rounded-full p-0.5"
+              style={{ backgroundColor: "hsl(var(--muted) / 0.5)" }}
             >
               {VIEW_TABS.map(({ key, icon: Icon, label }, i) => (
                 <button
@@ -225,15 +225,14 @@ const T2TrendMap = () => {
                   }}
                   className={cn(
                     "flex items-center justify-center gap-1.5 rounded-full transition-all",
-                    "w-10 h-10 aspect-square md:aspect-auto md:w-auto md:h-8 md:px-4",
+                    "w-9 h-9 aspect-square",
                     viewIndex === i
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                   aria-label={key}
                 >
-                  <Icon className="w-4 h-4 md:w-4 md:h-4" />
-                  <span className="hidden md:inline text-xs font-semibold">{label}</span>
+                  <Icon className="w-4 h-4" />
                 </button>
               ))}
             </div>
