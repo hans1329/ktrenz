@@ -547,6 +547,19 @@ FORBIDDEN KEYWORDS (instant rejection):
 - Generic locations (city names, country names, airports)
 - TV gimmicks, costumes, ephemeral segments
 
+CATEGORY CLASSIFICATION GUIDE:
+- "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
+- "event": Fan meetings, concerts, tours, award shows, festivals, exhibitions, fan signs, pop-up stores — physical/live EVENTS only
+- "brand": Brand endorsements, ambassadorships, advertising campaigns, brand collaborations
+- "fashion": Specific fashion items, designer names, fashion shows, styling trends
+- "beauty": Cosmetics, skincare, beauty brands
+- "food": Restaurant names, food brands, food collaborations
+- "media": Drama/movie titles, variety show names, YouTube content, documentary titles
+- "social": Social media trends, viral moments, memes, fan culture phenomena
+- "product": Specific product names/models
+- "place": Specific venue names, location-based trends
+- ⚠️ IMPORTANT: Album releases, song titles, music projects, music collaborations → ALWAYS "music", NEVER "event"
+
 MEMBER ATTRIBUTION (CRITICAL):
 - When searching for a GROUP MEMBER, verify the article is SPECIFICALLY about THIS member, not the group as a whole
 - If an article is about the GROUP (e.g., "스테이씨가 상하이에서 공연") but you're searching for a MEMBER (e.g., "아이사"), set article_subject_match = false and article_subject_name = the GROUP NAME
