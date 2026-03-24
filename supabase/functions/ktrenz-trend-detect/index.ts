@@ -530,7 +530,7 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
 - You must NOT use your own knowledge about the artist.
 - If "팔레트" does not appear in any article text, you CANNOT extract "팔레트" — even if you know it's the artist's song.
 - If "나의 아저씨" does not appear in any article text, you CANNOT extract it.
-- The context/context_ko fields must SUMMARIZE THE ACTUAL ARTICLE where the keyword was found, NOT general knowledge.
+- The context/context_ko fields must use the KEYWORD as the grammatical subject and explain in ONE sentence why it is linked to this artist. Example: keyword="비오레" → context_ko="비오레UV가 스트레이키즈와 오사카 이벤트에서 협업했다." Do NOT summarize the whole article — only the keyword↔artist relationship.
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
 WHAT MAKES A VALID KEYWORD:
