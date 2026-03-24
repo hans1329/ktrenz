@@ -937,16 +937,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                           </button>
                         );
                       })}
-                      {/* See More card */}
-                      <button
-                        onClick={() => navigate(`/t2/category/${key}`)}
-                        className="flex-none snap-start w-[100px] rounded-xl border border-border/40 bg-muted/30 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors shrink-0"
-                        style={{ minHeight: "160px" }}
-                      >
-                        <ChevronRight className="w-6 h-6 text-muted-foreground" />
-                        <span className="text-xs font-bold text-muted-foreground">More</span>
-                        
-                      </button>
                     </div>
                   </div>
                 );
