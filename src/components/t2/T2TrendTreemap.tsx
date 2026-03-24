@@ -862,7 +862,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               ) : (
                                 <div
                                   className="w-full h-full flex items-center justify-center font-black text-white/20"
-                                  style={{ backgroundColor: config?.tileColor || "hsl(var(--muted))", fontSize: "40px" }}
+                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: "40px" }}
                                 >
                                   {getLocalizedArtistName(item, language).charAt(0)}
                                 </div>
