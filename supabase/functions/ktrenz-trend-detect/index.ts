@@ -1038,6 +1038,10 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
               const idx = k.source_article_index ? k.source_article_index - 1 : 0;
               return (idx >= 0 && idx < tiktokArticles.length) ? tiktokArticles[idx].cover : (tiktokArticles[0]?.cover || null);
             })(),
+            _tiktok_source_url: (() => {
+              const idx = k.source_article_index ? k.source_article_index - 1 : 0;
+              return (idx >= 0 && idx < tiktokArticles.length) ? tiktokArticles[idx].url : (tiktokArticles[0]?.url || null);
+            })(),
           });
         }
       } catch (parseErr) {
