@@ -26,6 +26,8 @@ const SWIPE_VELOCITY_THRESHOLD = 0.3;
 const DIRECTION_LOCK_THRESHOLD = 10;
 const HEADER_COLLAPSE_THRESHOLD = 60;
 
+const ArtistOnboardingDrawer = lazy(() => import("@/components/ArtistOnboardingDrawer"));
+
 const T2TrendMap = () => {
   const [viewIndex, setViewIndex] = useState(0);
   const [category, setCategory] = useState<TrendCategory>("all");
@@ -34,6 +36,7 @@ const T2TrendMap = () => {
   const { t } = useLanguage();
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
