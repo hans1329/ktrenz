@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Clock, Star, LogIn, Sparkles, Heart, TrendingUp } from "lucide-react";
+import { ChevronRight, Clock, LogIn, Sparkles, Heart } from "lucide-react";
 import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 import type { TrendTile } from "@/components/t2/T2TrendTreemap";
 import heroBg from "@/assets/t2-hero-bg.jpg";
@@ -30,6 +30,21 @@ function formatAge(dateStr: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+/** Generate a simple sparkline SVG path from seed values */
+function generateSparkline(seed: number, points = 8): string {
+  const vals: number[] = [];
+  let v = 30 + (seed % 20);
+  for (let i = 0; i < points; i++) {
+    v += ((seed * (i + 1) * 7) % 21) - 8;
+    v = Math.max(5, Math.min(45, v));
+    vals.push(v);
+  }
+  // Make last point the highest for upward trend feel
+  vals[vals.length - 1] = Math.max(...vals) + 3;
+  const step = 80 / (points - 1);
+  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${50 - y}`).join(" ");
+}
+
 const HERO_GRADIENTS = [
   "linear-gradient(135deg, hsl(330, 70%, 55%), hsl(350, 80%, 45%))",
   "linear-gradient(135deg, hsl(260, 65%, 55%), hsl(280, 70%, 40%))",
@@ -45,32 +60,22 @@ interface T2HeroSectionProps {
 const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
 
-  // Not logged in — large hero with image background
+  // Not logged in
   if (!user) {
     return (
       <div className="px-4 pt-2 pb-5">
         <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "220px" }}>
-          <img
-            src={heroBg}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            width={960}
-            height={512}
-          />
+          <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" width={960} height={512} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">Kinterest</span>
-            </div>
-            <h2 className="text-2xl font-black text-white leading-tight mb-2">
+            <h2 className="text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
               {language === "ko"
                 ? "K-Pop이 만드는\n소비 트렌드를 발견하세요"
                 : "Discover Trends\nDriven by K-Pop"}
             </h2>
-            <p className="text-sm text-white/70 mb-4 whitespace-pre-line">
+            <p className="text-sm text-white/70 mb-4">
               {language === "ko"
                 ? "패션, 뷰티, 음식까지 — 실시간 트렌드 분석"
                 : "Fashion, beauty, food & more — real-time analysis"}
@@ -93,21 +98,10 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
     return (
       <div className="px-4 pt-2 pb-5">
         <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "200px" }}>
-          <img
-            src={heroBg}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            width={960}
-            height={512}
-          />
+          <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" width={960} height={512} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "200px" }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-xs font-bold text-primary uppercase tracking-wider">For You</span>
-            </div>
-            <h2 className="text-xl font-black text-white leading-tight mb-2">
+            <h2 className="text-xl font-black text-white leading-tight mb-2 whitespace-pre-line">
               {language === "ko"
                 ? "관심 아티스트를 등록하고\n맞춤 트렌드를 받아보세요"
                 : "Follow your favorite artists\nfor personalized trends"}
@@ -131,7 +125,6 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
 
   return (
     <div className="pt-2 pb-2">
-      {/* Section header */}
       <div className="px-4 mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
@@ -146,7 +139,6 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
         </button>
       </div>
 
-      {/* My Picks carousel */}
       <div
         className="flex gap-3 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
@@ -162,45 +154,80 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
           const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
           const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
           const gradient = HERO_GRADIENTS[idx % HERO_GRADIENTS.length];
+          const sparkPath = generateSparkline(item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx);
 
           return (
             <button
               key={item.id}
               onClick={() => navigate(`/t2/${item.id}`)}
-              className="flex-none snap-start rounded-[20px] overflow-hidden text-left transition-all active:scale-[0.97] relative"
-              style={{
-                width: idx === 0 ? "260px" : "180px",
-                height: idx === 0 ? "260px" : "220px",
-                background: gradient,
-              }}
+              className={cn(
+                "flex-none snap-start rounded-[20px] overflow-hidden text-left transition-all active:scale-[0.97] relative flex flex-col",
+                idx === 0 ? "w-[260px]" : "w-[180px]"
+              )}
+              style={{ background: gradient }}
             >
               {bgImg && (
                 <img
                   src={bgImg}
                   alt=""
-                  className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40"
+                  className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
                   loading="lazy"
                 />
               )}
-              <div className="relative z-10 flex flex-col justify-end h-full p-4">
-                <span className="absolute top-3 right-3 flex items-center gap-0.5 text-[10px] text-white/70 bg-white/10 backdrop-blur-sm rounded-full px-2 py-0.5">
-                  <Clock className="w-2.5 h-2.5" />
-                  {formatAge(item.detectedAt)}
-                </span>
-                <span className="text-[11px] font-semibold text-white/70 mb-1">
+
+              {/* Top: keyword + artist */}
+              <div className="relative z-10 p-4 pb-2 flex-1">
+                <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide mb-1 block">
                   {getLocalizedArtistName(item, language)}
                 </span>
                 <h3
                   className={cn(
                     "font-black text-white leading-tight",
-                    idx === 0 ? "text-xl line-clamp-3" : "text-sm line-clamp-2"
+                    idx === 0 ? "text-lg line-clamp-3" : "text-sm line-clamp-2"
                   )}
                 >
                   {getLocalizedKeyword(item, language)}
                 </h3>
-                <span className="mt-2 text-[10px] font-bold text-white/80 bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5 self-start">
-                  {config?.label || item.category}
-                </span>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] font-bold text-white/70 bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
+                    {config?.label || item.category}
+                  </span>
+                  <span className="flex items-center gap-0.5 text-[10px] text-white/50">
+                    <Clock className="w-2.5 h-2.5" />
+                    {formatAge(item.detectedAt)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom: mini sparkline graph */}
+              <div className="relative z-10 px-2 pb-3">
+                <svg
+                  viewBox="0 0 100 50"
+                  className={cn("w-full", idx === 0 ? "h-[56px]" : "h-[44px]")}
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient id={`spark-fill-${item.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="white" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="white" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {/* Fill area */}
+                  <path
+                    d={`${sparkPath} L90,50 L10,50 Z`}
+                    fill={`url(#spark-fill-${item.id})`}
+                  />
+                  {/* Line */}
+                  <path
+                    d={sparkPath}
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.7"
+                  />
+                </svg>
               </div>
             </button>
           );
