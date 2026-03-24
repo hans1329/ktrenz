@@ -203,13 +203,7 @@ const T2TrendMap = () => {
         path="/t2"
       />
 
-      <div
-        className={cn(
-          "transition-opacity duration-200",
-          headerCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
-        )}
-        style={{ visibility: headerCollapsed ? "hidden" : "visible" }}
-      >
+      <div className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg">
         <V3Header
           rightSlot={
             <div
