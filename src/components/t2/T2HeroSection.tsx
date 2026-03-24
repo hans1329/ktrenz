@@ -72,7 +72,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
             <h2 className="text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
               {language === "ko"
-                ? "K-Pop이 만드는\n소비 트렌드를 발견하세요"
+                ? "K·스타가 만드는\n소비 트렌드를 발견하세요"
                 : "Discover Trends\nDriven by K-Pop"}
             </h2>
             <p className="text-sm text-white/70 mb-4">
