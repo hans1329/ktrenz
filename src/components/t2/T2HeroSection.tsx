@@ -41,7 +41,7 @@ function buildTrackingSparkline(
   history: any[] | undefined,
   detectedAt: string,
   baselineScore?: number | null,
-  expiredAt?: string | null,
+  _expiredAt?: string | null,
 ) {
   let points: { t: number; v: number }[] = [];
 
@@ -57,20 +57,18 @@ function buildTrackingSparkline(
     ];
   } else {
     const start = new Date(detectedAt).getTime();
-    const end = expiredAt ? new Date(expiredAt).getTime() : Date.now();
-    const safeEnd = Math.max(end, start + 60 * 60 * 1000);
     const base = Number(baselineScore ?? 0);
     points = [
       { t: start, v: base },
-      { t: safeEnd, v: base },
+      { t: Date.now(), v: base },
     ];
   }
 
   const startMs = points[0]?.t ?? Date.now();
-  const endMs = points[points.length - 1]?.t ?? startMs + 60 * 60 * 1000;
-  const spanMs = Math.max(endMs - startMs, 60 * 60 * 1000);
+  const nowMs = Date.now();
+  const spanMs = Math.max(nowMs - startMs, 60 * 60 * 1000);
   const maxVal = Math.max(...points.map((point) => point.v), 1);
-  const stepX = (time: number) => ((time - startMs) / spanMs) * 100;
+  const stepX = (time: number) => Math.min(((time - startMs) / spanMs) * 100, 100);
   const stepY = (value: number) => 36 - (value / maxVal) * 28;
 
   const path = points
@@ -83,9 +81,10 @@ function buildTrackingSparkline(
     path,
     labels: [
       formatTimelineLabel(0),
-      formatTimelineLabel(Math.round(totalHours * 0.33)),
-      formatTimelineLabel(Math.round(totalHours * 0.66)),
-      expiredAt ? "expired" : "now",
+      formatTimelineLabel(Math.round(totalHours * 0.25)),
+      formatTimelineLabel(Math.round(totalHours * 0.5)),
+      formatTimelineLabel(Math.round(totalHours * 0.75)),
+      "now",
     ],
   };
 }
