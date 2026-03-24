@@ -783,24 +783,36 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         <div className="px-4 md:px-0 space-y-6">
           {/* Carousel Card View — grouped by category */}
           {(() => {
-            // Group items by category, merging brand+product
+            // Group items by merged categories
+            const mergeMap: Record<string, string> = {
+              brand: "brand_product", product: "brand_product",
+              beauty: "beauty_fashion", fashion: "beauty_fashion",
+              event: "event_social", social: "event_social",
+              music: "music_media", media: "music_media",
+            };
             const grouped = new Map<string, TrendTile[]>();
             for (const item of filteredItems) {
-              const cat = (item.category === "brand" || item.category === "product") ? "brand_product" : item.category;
+              const cat = mergeMap[item.category] || item.category;
               const list = grouped.get(cat) || [];
               list.push(item);
               grouped.set(cat, list);
             }
 
-            // My artists section first, then merged brand+product, then rest
             const myItems = myKeywords.length > 0 ? myKeywords : [];
+            const sectionDefs: { key: string; label: string; color: string }[] = [
+              { key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color },
+              { key: "place", label: "Place", color: CATEGORY_CONFIG.place.color },
+              { key: "food", label: "Food", color: CATEGORY_CONFIG.food.color },
+              { key: "beauty_fashion", label: "Beauty · Fashion", color: CATEGORY_CONFIG.beauty.color },
+              { key: "event_social", label: "Event · Social", color: CATEGORY_CONFIG.event.color },
+              { key: "music_media", label: "Music · Media", color: CATEGORY_CONFIG.music.color },
+            ];
+
             const sectionOrder = [
               ...(myItems.length > 0 ? [{ key: "my", label: "★ My Picks", color: "hsl(45, 90%, 50%)", items: myItems }] : []),
-              ...(grouped.has("brand_product") ? [{ key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color, items: grouped.get("brand_product")! }] : []),
-              ...Object.keys(CATEGORY_CONFIG)
-                .filter(cat => cat !== "shopping" && cat !== "brand" && cat !== "product")
-                .filter(cat => (grouped.get(cat)?.length ?? 0) > 0)
-                .map(cat => ({ key: cat, label: CATEGORY_CONFIG[cat].label, color: CATEGORY_CONFIG[cat].color, items: grouped.get(cat)! })),
+              ...sectionDefs
+                .filter(s => (grouped.get(s.key)?.length ?? 0) > 0)
+                .map(s => ({ ...s, items: grouped.get(s.key)! })),
             ];
 
             return sectionOrder.map(({ key, label, color, items }) => {
