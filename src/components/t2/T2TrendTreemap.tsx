@@ -909,12 +909,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               )}
                               {/* Sparkline overlay at bottom of image */}
                               <div className="absolute bottom-0 left-0 right-0">
-                                <div className="relative pb-3.5">
+                                <div className="relative pb-4">
                                   <svg viewBox="0 0 100 20" className="w-full h-[20px]" preserveAspectRatio="none">
                                     <defs>
                                       <linearGradient id={`cat-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="white" stopOpacity="0.35" />
-                                        <stop offset="100%" stopColor="white" stopOpacity="0.05" />
+                                        <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.5" />
+                                        <stop offset="100%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.08" />
                                       </linearGradient>
                                     </defs>
                                     {(() => {
@@ -924,7 +924,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                       vals[vals.length - 1] = Math.max(...vals) + 1;
                                       const stp = 100 / (pts - 1);
                                       const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * stp},${18 - y}`).join(" ");
-                                      return (<><path d={`${path} L100,20 L0,20 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" /></>);
+                                      return (<><path d={`${path} L100,20 L0,20 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" /></>);
                                     })()}
                                   </svg>
                                   {(() => {
@@ -933,7 +933,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                     const unit = age.includes("d") ? "d" : "h";
                                     const s = Math.max(1, Math.round(ageNum / 3));
                                     return (
-                                      <div className="absolute bottom-0 left-1 right-1 flex justify-between text-[7px] font-medium text-white/50">
+                                      <div className="absolute bottom-0.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/60">
                                         <span>{age}</span>
                                         <span>{ageNum >= 3 ? `${ageNum - s}${unit}` : "·"}</span>
                                         <span>{ageNum >= 3 ? `${ageNum - s * 2}${unit}` : "·"}</span>
