@@ -200,7 +200,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                 </div>
               </div>
 
-              {/* Bottom: mini sparkline graph */}
+              {/* Bottom: mini sparkline graph + period */}
               <div className="relative z-10 pb-2">
                 <svg
                   viewBox="0 0 100 50"
@@ -213,12 +213,10 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                       <stop offset="100%" stopColor="white" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
-                  {/* Fill area */}
                   <path
                     d={`${sparkPath} L100,50 L0,50 Z`}
                     fill={`url(#spark-fill-${item.id})`}
                   />
-                  {/* Line */}
                   <path
                     d={sparkPath}
                     fill="none"
@@ -229,6 +227,9 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     opacity="0.7"
                   />
                 </svg>
+                <span className="absolute bottom-3 right-2 text-[9px] font-semibold text-white/50">
+                  {formatAge(item.detectedAt)}
+                </span>
               </div>
             </button>
           );
