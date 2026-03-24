@@ -901,9 +901,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   </p>
                                 ) : null;
                               })()}
-                              {isMyArtist && (
-                                <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
-                              )}
                             </div>
                             {/* Image area with rank badge + sparkline overlay */}
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden flex-1 min-h-0", idx === 0 ? "aspect-[4/5]" : "aspect-[3/4]")}>
