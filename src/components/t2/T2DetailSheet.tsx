@@ -470,11 +470,11 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold transition-colors",
                 tile.starId
-                  ? "bg-muted-foreground/10 text-foreground hover:bg-muted-foreground/20 cursor-pointer"
-                  : "bg-muted-foreground/10 text-muted-foreground cursor-default"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                  : "bg-primary/80 text-primary-foreground cursor-default"
               )}
             >
-              <span className="text-xs text-muted-foreground">by</span>
+              <span className="text-xs text-primary-foreground/70">by</span>
               {getLocalizedArtistName(tile, language)}
               {tile.starId && <ChevronRight className="w-3.5 h-3.5" />}
             </button>
