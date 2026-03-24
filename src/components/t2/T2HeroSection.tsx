@@ -96,7 +96,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
       const { data: entries } = wikiIds.length
         ? await supabase
             .from("wiki_entries")
-            .select("id, title, title_ko, image_url, star_id")
+            .select("id, title, image_url, star_id")
             .in("id", wikiIds)
         : { data: [] as any[] };
       const entryMap = new Map((entries || []).map((e: any) => [e.id, e]));
