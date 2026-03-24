@@ -7,6 +7,7 @@ import {
   Activity, ShoppingBag, Eye, Brain, Sparkles, ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
+import KeywordProbePanel from '@/components/b2b/KeywordProbePanel';
 
 const B2BDashboard = () => {
   const { org } = useOutletContext<{ org: any }>();
