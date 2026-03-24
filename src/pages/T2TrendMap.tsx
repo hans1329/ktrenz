@@ -301,6 +301,7 @@ const T2TrendMap = () => {
         </div>
       </div>
 
+      {/* Category filter buttons — hidden for carousel view
       <div
         className={cn(
           "fixed left-0 right-0 z-50 py-2 transition-colors duration-300",
@@ -313,53 +314,18 @@ const T2TrendMap = () => {
             {ALL_CATEGORIES.map((cat) => {
               const isActive = category === cat;
               const config = cat === "all" || cat === "my" ? null : CATEGORY_CONFIG[cat];
-
               return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setCategory(cat);
-                  }}
-                  className={cn(
-                    "flex items-center gap-1.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
-                    cat === "all" ? "px-5" : "px-3"
-                  )}
-                  style={{
-                    backgroundColor: isActive
-                      ? (cat === "my" ? "hsl(45 90% 50%)" : config?.color ?? "hsl(var(--primary))")
-                      : headerCollapsed ? "hsl(0 0% 25% / 0.8)" : "transparent",
-                    color: isActive ? "hsl(var(--primary-foreground))" : headerCollapsed ? "hsl(0 0% 100%)" : "hsl(var(--muted-foreground))",
-                    borderColor: isActive
-                      ? "transparent"
-                      : headerCollapsed
-                        ? "transparent"
-                        : cat === "all"
-                          ? "hsl(var(--border) / 0.4)"
-                          : cat === "my"
-                            ? "hsl(45 90% 50% / 0.15)"
-                            : config?.color
-                              ? `${config.color.replace(")", ", 0.15)").replace("hsl(", "hsla(")}`
-                              : "hsl(var(--border) / 0.4)",
-                  }}
+                <button key={cat} onClick={() => setCategory(cat)}
+                  className={cn("flex items-center gap-1.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border", cat === "all" ? "px-5" : "px-3")}
                 >
                   {cat === "all" ? "All" : cat === "my" ? "★ My" : config?.label}
-                  {(() => {
-                    const count = cat === "all" ? totalCount : cat === "my" ? myCount : categoryStats[cat] || 0;
-                    return count > 0 ? (
-                      <span
-                        className="text-[10px]"
-                        style={{ color: isActive ? "hsl(var(--primary-foreground) / 0.75)" : headerCollapsed ? "hsl(0 0% 70%)" : "hsl(var(--muted-foreground) / 0.8)" }}
-                      >
-                        {count}
-                      </span>
-                    ) : null;
-                  })()}
                 </button>
               );
             })}
           </div>
         </div>
       </div>
+      */}
 
       <div
         className=""
@@ -371,7 +337,7 @@ const T2TrendMap = () => {
         <div
           className={cn(
             viewMode === "treemap" ? "pb-24 scrollbar-hide" : "pb-24 scrollbar-hide",
-            headerCollapsed ? "pt-[4rem]" : "pt-[9.75rem]"
+            headerCollapsed ? "pt-[2rem]" : "pt-[6.5rem]"
           )}
         >
           <div className="relative">
