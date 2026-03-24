@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, lazy, Suspense } from "react";
 import { LayoutGrid, List, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,8 @@ const SWIPE_VELOCITY_THRESHOLD = 0.3;
 const DIRECTION_LOCK_THRESHOLD = 10;
 const HEADER_COLLAPSE_THRESHOLD = 60;
 
+const ArtistOnboardingDrawer = lazy(() => import("@/components/ArtistOnboardingDrawer"));
+
 const T2TrendMap = () => {
   const [viewIndex, setViewIndex] = useState(0);
   const [category, setCategory] = useState<TrendCategory>("all");
@@ -34,6 +36,18 @@ const T2TrendMap = () => {
   const { t } = useLanguage();
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Auto-open onboarding drawer after signup
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("onboarding") === "1") {
+      setShowOnboarding(true);
+      params.delete("onboarding");
+      const newUrl = params.toString() ? `${window.location.pathname}?${params}` : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
   
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
@@ -306,7 +320,7 @@ const T2TrendMap = () => {
           <div className="relative">
             <div className="md:max-w-[90%] mx-auto relative z-10">
               {/* Hero section */}
-              <T2HeroSection myKeywords={myKeywords} />
+              <T2HeroSection myKeywords={myKeywords} onOpenOnboarding={() => setShowOnboarding(true)} />
 
               <div
                 style={{
@@ -368,6 +382,9 @@ const T2TrendMap = () => {
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
+      <Suspense fallback={null}>
+        <ArtistOnboardingDrawer open={showOnboarding} onOpenChange={setShowOnboarding} />
+      </Suspense>
     </>
   );
 };

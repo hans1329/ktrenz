@@ -23,16 +23,27 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) navigate("/", { replace: true });
+    if (!authLoading && user) {
+      // Check if this is a new signup (came from signup mode) — open onboarding
+      const isNewUser = sessionStorage.getItem("ktrenz-just-signed-up");
+      if (isNewUser) {
+        sessionStorage.removeItem("ktrenz-just-signed-up");
+        navigate("/?onboarding=1", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+    }
   }, [user, authLoading, navigate]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    sessionStorage.setItem("ktrenz-just-signed-up", "1");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/?onboarding=1` },
     });
     if (error) {
+      sessionStorage.removeItem("ktrenz-just-signed-up");
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
       setLoading(false);
     }
@@ -82,6 +93,7 @@ const Login = () => {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
+      sessionStorage.setItem("ktrenz-just-signed-up", "1");
       toast({ title: "Check your email", description: "We sent you a confirmation link." });
       setMode("email-login");
     }
