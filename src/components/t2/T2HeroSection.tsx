@@ -41,8 +41,8 @@ function generateSparkline(seed: number, points = 8): string {
   }
   // Make last point the highest for upward trend feel
   vals[vals.length - 1] = Math.max(...vals) + 3;
-  const step = 80 / (points - 1);
-  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${50 - y}`).join(" ");
+  const step = 100 / (points - 1);
+  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${50 - y}`).join(" ");
 }
 
 const HERO_GRADIENTS = [
