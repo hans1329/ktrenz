@@ -185,6 +185,13 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
 
   // Deduplicate: exclude bet keywords already in myKeywords
   const myIds = useMemo(() => new Set(myKeywords.map(k => k.id)), [myKeywords]);
+  const uniqueBetKeywords = useMemo(
+    () => betKeywords.filter((bk: TrendTile) => !myIds.has(bk.id)),
+    [betKeywords, myIds]
+  );
+
+  // Personalized: My Picks carousel (artist keywords + bet keywords)
+  const topPicks = myKeywords.slice(0, 8);
   const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
 
   const { data: trackingMap } = useQuery({
