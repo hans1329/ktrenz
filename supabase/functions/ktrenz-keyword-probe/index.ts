@@ -208,12 +208,23 @@ Deno.serve(async (req) => {
       pubDate: item.pubDate,
     }));
 
-    // 7. 구매 단계 추정 (기존 데이터 또는 쇼핑 결과 기반)
+    // 7. 구매 단계 추정 (기존 트렌드 데이터 우선, 없으면 뉴스/블로그 콘텐츠 기반)
     let purchaseStage = existingTrend?.purchase_stage || "awareness";
     if (!existingTrend) {
-      if (shopResult.total > 50) purchaseStage = "consideration";
-      else if (shopResult.total > 10) purchaseStage = "interest";
-      else if (shopResult.total > 0) purchaseStage = "awareness";
+      // 쇼핑 데이터가 아니라 뉴스/블로그 콘텐츠의 광고/협찬 시그널로 판단
+      const allText = [...newsResult.items, ...blogResult.items]
+        .map((i: any) => ((i.title || "") + " " + (i.description || "")).replace(/<[^>]*>/g, ""))
+        .join(" ").toLowerCase();
+      
+      const purchaseWords = ["구매", "구입", "주문", "할인", "세일", "쿠폰", "가격", "최저가"];
+      const reviewWords = ["후기", "리뷰", "사용기", "언박싱", "개봉기"];
+      const considerWords = ["비교", "추천", "vs", "어떤", "고민", "선택"];
+      const interestWords = ["협찬", "광고", "앰배서더", "모델", "화보", "콜라보", "뮤즈"];
+      
+      if (purchaseWords.some(w => allText.includes(w))) purchaseStage = "purchase";
+      else if (reviewWords.some(w => allText.includes(w))) purchaseStage = "review";
+      else if (considerWords.some(w => allText.includes(w))) purchaseStage = "consideration";
+      else if (interestWords.some(w => allText.includes(w))) purchaseStage = "interest";
     }
 
     const result = {

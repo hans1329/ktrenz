@@ -1569,11 +1569,7 @@ async function detectForMember(
       if (!img || url === primaryUrl) continue;
       if (!textHeavyImages.has(img)) return sanitizeImageUrl(img);
     }
-    // 3차: 텍스트 오버레이여도 없는 것보다는 나음
-    if (primaryUrl) {
-      const img = ogImageMap.get(primaryUrl);
-      if (img) return sanitizeImageUrl(img);
-    }
+    // 3차: 텍스트 오버레이 이미지는 사용하지 않음 → null 반환하여 아티스트 이니셜 폴백
     return null;
   }
 
