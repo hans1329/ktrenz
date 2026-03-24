@@ -940,6 +940,7 @@ STRICT REJECTION RULES — DO NOT EXTRACT ANY OF THESE:
 - Artist names, member names, or ANY variation: ${memberName}${groupName ? `, ${groupName}` : ""}${memberNamesStr}
 - Fandom names (ARMY, BLINK, ATINY, MY, STAY, CARAT, MOA, ENGENE, etc.)
 - Member name + ANY suffix (e.g., "Wooyoung edits", "Hongjoong best leader")
+- Author-credit or attribution phrases (e.g., "by Minji", "by민지", "호시 by", "민니, 호시", "민지 ver")
 - Generic descriptions of content (e.g., "facial expressions", "crowd reaction", "concert moments", "fan edits", "stage presence", "SNS", "daily life")
 - Generic hashtags (#fyp, #kpop, #foryou, #viral, #dance, #trending)
 - Platform names (TikTok, YouTube, Instagram)
@@ -995,18 +996,47 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
           if (!k.keyword || k.keyword.length < 2) continue;
           const kwLower = k.keyword.toLowerCase().replace(/^#/, "");
           const kwNorm = kwLower.replace(/[^a-z0-9가-힣]/g, "");
+          const kwCompact = kwLower.replace(/[\s·,_\-]+/g, "");
           if (PLATFORM_BLACKLIST.has(kwLower)) continue;
+
+          // TikTok 편집자/작성자 표기, 멤버 이름 나열형 차단
+          const looksLikeAttribution = /(^|\s)by\s*[a-z0-9가-힣]+$/i.test(kwLower)
+            || /^by[a-z0-9가-힣]+$/i.test(kwCompact)
+            || /^[a-z0-9가-힣]+\s*by$/i.test(kwLower)
+            || /\bver\b/i.test(kwLower)
+            || /(?:^|\s)(?:직캠|캠|focus|fancam|edit|edits|version|ver)(?:$|\s)/i.test(kwLower);
+          if (looksLikeAttribution) {
+            console.log(`[trend-detect] TikTok filter: rejected "${k.keyword}" (attribution/edit pattern)`);
+            continue;
+          }
 
           // 정확 일치 또는 부분 일치 필터: 키워드가 아티스트/팬덤명이거나 포함하면 차단
           let isArtistRelated = false;
           for (const alias of artistAliases) {
-            if (kwNorm === alias || kwNorm.includes(alias) || alias.includes(kwNorm)) {
+            const aliasCompact = alias.replace(/[\s·,_\-]+/g, "");
+            if (
+              kwNorm === alias
+              || kwNorm.includes(alias)
+              || alias.includes(kwNorm)
+              || kwCompact === `by${aliasCompact}`
+              || kwCompact.startsWith(`by${aliasCompact}`)
+              || kwCompact.endsWith(`by${aliasCompact}`)
+            ) {
               isArtistRelated = true;
               break;
             }
           }
           if (isArtistRelated) {
             console.log(`[trend-detect] TikTok filter: rejected "${k.keyword}" (artist/fandom match)`);
+            continue;
+          }
+
+          const aliasMentionCount = Array.from(artistAliases).reduce((count, alias) => {
+            if (!alias || alias.length < 2) return count;
+            return kwNorm.includes(alias) ? count + 1 : count;
+          }, 0);
+          if (aliasMentionCount >= 2) {
+            console.log(`[trend-detect] TikTok filter: rejected "${k.keyword}" (multiple artist/member aliases)`);
             continue;
           }
 
@@ -1020,7 +1050,7 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
             "sns", "selca", "selfie", "cute", "funny", "aesthetic", "vlog",
             "dailylife", "daily", "fanedit", "fanmade", "compilation",
             "bestmoments", "moments", "highlights", "stage", "airport",
-            "dandysworld", "dandy", "bailey",
+            "dandysworld", "dandy", "bailey", "by",
           ]);
           if (genericTags.has(kwNorm)) continue;
 
