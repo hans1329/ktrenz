@@ -212,7 +212,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     <div className="pt-2 pb-2">
       <div className="px-4 mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <Heart className="w-4 h-4 text-primary fill-primary" />
           <h2 className="text-lg font-black text-foreground">My Picks</h2>
         </div>
         <button
