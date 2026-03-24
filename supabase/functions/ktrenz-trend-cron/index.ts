@@ -332,7 +332,7 @@ async function executePostprocess(supabaseUrl: string, supabaseKey: string, trig
   console.log(`[cron] Running postprocess, triggeredBy=${triggeredBy}`);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  const timeout = setTimeout(() => controller.abort(), 120000);
 
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
