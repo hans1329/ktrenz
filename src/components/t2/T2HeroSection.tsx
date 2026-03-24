@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Clock, LogIn, Sparkles, Heart } from "lucide-react";
+import { ChevronRight, Clock, LogIn, Sparkles, Heart, MessageCircle } from "lucide-react";
 import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 import type { TrendTile } from "@/components/t2/T2TrendTreemap";
 import heroBg from "@/assets/t2-hero-bg.jpg";
@@ -182,10 +182,11 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                 </span>
                 <h3
                   className={cn(
-                    "font-black text-white leading-tight",
+                    "font-black text-white leading-tight flex items-start gap-1",
                     idx === 0 ? "text-lg line-clamp-3" : "text-sm line-clamp-2"
                   )}
                 >
+                  <MessageCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 -scale-x-100 text-white/60" />
                   {getLocalizedKeyword(item, language)}
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
