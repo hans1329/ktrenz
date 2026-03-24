@@ -73,7 +73,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<T2TrendMap />} />
-            <Route path="/old" element={<V3Home />} />
+            
             <Route path="/artist/:slug" element={<V3ArtistDetail />} />
             <Route path="/rankings" element={<V3Rankings />} />
             <Route path="/fes-engine" element={<FesEngine />} />
