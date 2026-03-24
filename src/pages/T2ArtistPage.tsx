@@ -108,9 +108,9 @@ const T2ArtistPage = () => {
     enabled: !!starId,
   });
 
-  const keywordTargetStarId = star?.group_star_id || star?.id || starId;
+  const keywordTargetStarId = star?.id || starId;
 
-  // Fetch collected keywords for this artist (group fallback for members, excludes shopping source)
+  // Fetch collected keywords for this exact star only (no group keyword fallback)
   const { data: keywords, isLoading: kwLoading } = useQuery({
     queryKey: ["t2-artist-keywords", keywordTargetStarId],
     queryFn: async () => {
