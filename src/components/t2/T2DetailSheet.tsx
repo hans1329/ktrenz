@@ -603,7 +603,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               </h3>
               {/* Article snippet */}
               {tile.sourceSnippet && (
-                <p className="text-sm text-foreground/80 leading-relaxed line-clamp-[7]">
+                <p className="text-sm text-foreground/80 leading-relaxed" style={{ display: '-webkit-box', WebkitLineClamp: 7, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {tile.sourceSnippet}
                 </p>
               )}
