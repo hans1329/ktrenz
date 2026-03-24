@@ -806,14 +806,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             return sectionOrder.map(({ key, label, color, items }) => {
 
                 return (
-                  <div key={cat}>
+                  <div key={key}>
                     {/* Section header */}
                     <div className="flex items-center gap-2 mb-2.5">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: config?.color }}
+                        style={{ backgroundColor: color }}
                       />
-                      <h3 className="text-sm font-black text-foreground">{config?.label || cat}</h3>
+                      <h3 className="text-sm font-black text-foreground">{label}</h3>
                       <span className="text-[11px] text-muted-foreground font-medium">{items.length}</span>
                     </div>
 
