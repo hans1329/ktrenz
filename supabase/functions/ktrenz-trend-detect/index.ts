@@ -1665,7 +1665,7 @@ async function detectForMember(
         star_id: member.id || null,
         trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
         trigger_source: keywordData.category === "social" ? "tiktok"
-          : (keywordData.context?.startsWith("[Shop]") || keywordData.category === "goods") ? "naver_shop"
+          : (keywordData.context?.startsWith("[Shop]") || ["brand", "product", "goods"].includes(keywordData.category)) ? "naver_shop"
           : "naver_multi",
         artist_name: member.display_name,
         keyword: keywordData.keyword,

@@ -483,7 +483,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         keywordKo: t.keyword_ko || null,
         keywordJa: t.keyword_ja || null,
         keywordZh: t.keyword_zh || null,
-        category: "shopping",
+        category: (t.keyword_category === "brand" || t.keyword_category === "product") ? t.keyword_category : "shopping",
         artistName: t.artist_name || "Unknown",
         artistNameKo: null,
         artistImageUrl: null,
@@ -513,13 +513,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const dedupedShopTriggers = useMemo(() => {
     if (!shopTriggers?.length) return [];
-    return dedupeTrendTiles(shopTriggers, sortMode);
+    return dedupeTrendTiles(shopTriggers.filter(t => t.category === "shopping"), sortMode);
   }, [shopTriggers, sortMode]);
 
+  // brand/product items from naver_shop should be merged into main triggers
+  const shopBrandProductItems = useMemo(() => {
+    if (!shopTriggers?.length) return [];
+    return shopTriggers.filter(t => t.category === "brand" || t.category === "product");
+  }, [shopTriggers]);
+
   const dedupedTriggers = useMemo(() => {
-    if (!triggers?.length) return [];
-    return dedupeTrendTiles(triggers, sortMode);
-  }, [triggers, sortMode]);
+    const combined = [...(triggers ?? []), ...shopBrandProductItems];
+    if (!combined.length) return [];
+    return dedupeTrendTiles(combined, sortMode);
+  }, [triggers, shopBrandProductItems, sortMode]);
 
   // My artists' keywords
   const myKeywords = useMemo(() => {
