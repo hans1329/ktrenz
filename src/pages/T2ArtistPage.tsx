@@ -354,8 +354,12 @@ const T2ArtistPage = () => {
                         ).join(" ");
                         const fill = path + ` L${toX(pts[pts.length - 1].t).toFixed(1)},${H} L0,${H} Z`;
 
-                        const elapsedH = Math.round((nowMs - detectedMs) / 3600000);
-                        const ageLabel = elapsedH >= 24 ? `${Math.round(elapsedH / 24)}d` : `${elapsedH}h`;
+                        const fmtH = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : `${Math.round(h)}h`;
+                        const totalH = Math.round(spanMs / 3600000);
+                        const t1 = fmtH(Math.round(totalH * 0.33));
+                        const t2 = fmtH(Math.round(totalH * 0.66));
+                        const startLabel = fmtH(0);
+                        const endLabel = isExpired ? (language === "ko" ? "만료" : "expired") : (language === "ko" ? "현재" : "now");
 
                         return (
                           <div className="mt-1.5">
@@ -364,8 +368,10 @@ const T2ArtistPage = () => {
                               <path d={path} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.35)" : "hsl(var(--primary) / 0.6)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                             <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
-                              <span>{ageLabel}</span>
-                              <span>{isExpired ? (language === "ko" ? "만료" : "expired") : (language === "ko" ? "현재" : "now")}</span>
+                              <span>{startLabel}</span>
+                              <span>{t1}</span>
+                              <span>{t2}</span>
+                              <span>{endLabel}</span>
                             </div>
                           </div>
                         );
