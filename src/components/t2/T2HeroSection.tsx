@@ -293,10 +293,10 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
               </div>
 
               {/* Bottom: mini sparkline graph + period */}
-              <div className="relative z-10 pb-2">
+              <div className="relative z-10 pb-5">
                 <svg
-                  viewBox="0 0 100 50"
-                  className={cn("w-full", idx === 0 ? "h-[56px]" : "h-[44px]")}
+                  viewBox="0 0 100 40"
+                  className={cn("w-full", idx === 0 ? "h-[48px]" : "h-[36px]")}
                   preserveAspectRatio="none"
                 >
                   <defs>
@@ -306,7 +306,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     </linearGradient>
                   </defs>
                   <path
-                    d={`${sparkPath} L100,50 L0,50 Z`}
+                    d={`${sparkPath} L100,40 L0,40 Z`}
                     fill={`url(#spark-fill-${item.id})`}
                   />
                   <path
