@@ -881,9 +881,14 @@ async function extractSocialKeywordsFromTikTok(
   };
   addAlias(memberName);
   addAlias(groupName);
+  // 그룹의 모든 멤버명도 필터에 추가 (그룹 레벨 처리 시 멤버명 누락 방지)
+  if (allMemberNames) {
+    for (const mn of allMemberNames) addAlias(mn);
+  }
   // 흔한 팬덤명 패턴: 멤버명+fyp, 멤버명+edit, 그룹명+fan 등
   const FANDOM_SUFFIXES = ["fyp", "edit", "edits", "fan", "fans", "stan", "stans", "lover", "lovers", "bestleader", "best", "era", "challenge"];
-  const baseNames = [memberName, groupName].filter(Boolean).map(n => n!.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const allNames = [memberName, groupName, ...(allMemberNames || [])].filter(Boolean);
+  const baseNames = allNames.map(n => n!.toLowerCase().replace(/[^a-z0-9]/g, ""));
   for (const base of baseNames) {
     if (base.length < 2) continue;
     artistAliases.add(base);
