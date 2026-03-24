@@ -307,17 +307,19 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                   {context}
                 </p>
               )}
-              {item.sourceTitle && item.sourceUrl && (
-                <a
-                  href={item.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-                  onClick={(e) => { e.stopPropagation(); track("t2_external_link_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, url: item.sourceUrl || "" }); }}
-                >
-                  <ExternalLink className="w-3 h-3 shrink-0" />
-                  <span className="truncate">{item.sourceTitle}</span>
-                </a>
+              {item.sourceUrl && (
+                <div className="flex justify-end">
+                  <a
+                    href={item.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                    onClick={(e) => { e.stopPropagation(); track("t2_external_link_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, url: item.sourceUrl || "" }); }}
+                    aria-label="Source link"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               )}
             </div>
           </article>
