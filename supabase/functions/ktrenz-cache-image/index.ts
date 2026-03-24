@@ -203,14 +203,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Get public URL
+      // Get public URL and append a cache-busting version so browsers don't keep showing stale images
       const { data: publicUrlData } = sb.storage.from(BUCKET).getPublicUrl(storagePath);
       const cachedUrl = publicUrlData.publicUrl;
+      const versionedCachedUrl = `${cachedUrl}?v=${Date.now()}`;
 
-      // Update trigger with cached URL
+      // Update trigger with cache-busted URL
       await sb
         .from("ktrenz_trend_triggers")
-        .update({ source_image_url: cachedUrl } as any)
+        .update({ source_image_url: versionedCachedUrl } as any)
         .eq("id", trigger.id);
 
       cached++;

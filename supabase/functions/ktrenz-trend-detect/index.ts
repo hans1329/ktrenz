@@ -1606,20 +1606,16 @@ async function detectForMember(
   const allOgImages = Array.from(ogImageMap.values()).filter((v): v is string => !!v);
   const textHeavyImages = await classifyImagesWithVision(allOgImages, openaiKey);
 
-  // 키워드별 최적 이미지 선택: Vision API가 판별한 텍스트 오버레이 이미지를 건너뛰고 깨끗한 사진 우선
+  // 키워드별 이미지 선택: 반드시 해당 키워드의 sourceUrl 기사에서만 가져온다.
+  // 다른 기사 이미지로 fallback하면 엉뚱한 썸네일이 섞일 수 있으므로 금지한다.
   function selectBestImage(primaryUrl: string | null): string | null {
-    // 1차: 주 소스 기사 이미지 (텍스트 오버레이가 아닌 경우)
-    if (primaryUrl) {
-      const img = ogImageMap.get(primaryUrl);
-      if (img && !textHeavyImages.has(img)) return sanitizeImageUrl(img);
-    }
-    // 2차: 다른 기사들에서 깨끗한 이미지 찾기
-    for (const [url, img] of ogImageMap) {
-      if (!img || url === primaryUrl) continue;
-      if (!textHeavyImages.has(img)) return sanitizeImageUrl(img);
-    }
-    // 3차: 텍스트 오버레이 이미지는 사용하지 않음 → null 반환하여 아티스트 이니셜 폴백
-    return null;
+    if (!primaryUrl) return null;
+
+    const img = ogImageMap.get(primaryUrl);
+    if (!img) return null;
+    if (textHeavyImages.has(img)) return null;
+
+    return sanitizeImageUrl(img);
   }
 
   // ─── 키워드별 buzz raw counts + normalized score ───
