@@ -820,13 +820,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                 return (
                   <div key={key}>
                     {/* Section header */}
-                    <div className="flex items-center gap-2 mb-2.5">
+                    <div className="flex items-center gap-3 mb-3">
                       <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: color }}
                       />
-                      <h3 className="text-sm font-black text-foreground">{label}</h3>
-                      <span className="text-[11px] text-muted-foreground font-medium">{items.length}</span>
+                      <h3 className="text-lg font-black text-foreground">{label}</h3>
+                      <span className="text-xs text-muted-foreground font-medium">{items.length}</span>
                     </div>
 
                     {/* Horizontal carousel */}
