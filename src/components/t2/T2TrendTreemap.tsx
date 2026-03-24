@@ -826,7 +826,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             key={item.id}
                             onClick={() => handleTileClick(item)}
                             className={cn(
-                              "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-all active:scale-[0.97]",
+                              "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-colors",
                               idx === 0 ? "w-[320px] md:w-[360px]" : "w-[300px] md:w-[320px]",
                               isSelected
                                 ? "border-primary/50 ring-2 ring-primary/20 bg-card"
