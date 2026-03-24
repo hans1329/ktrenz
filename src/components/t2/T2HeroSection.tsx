@@ -182,11 +182,11 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                 </span>
                 <h3
                   className={cn(
-                    "font-black text-white leading-tight flex items-start gap-1",
+                    "font-black text-white leading-tight flex items-center gap-1",
                     idx === 0 ? "text-lg line-clamp-3" : "text-sm line-clamp-2"
                   )}
                 >
-                  <MessageCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 -scale-x-100" style={{ color: config?.color || "hsl(var(--primary))" }} />
+                  <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 text-white" />
                   {getLocalizedKeyword(item, language)}
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
