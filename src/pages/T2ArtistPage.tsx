@@ -319,66 +319,80 @@ const T2ArtistPage = () => {
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{ctxText}</p>
                       )}
 
-                      {/* Lifetime timeline bar */}
+                      {/* Sparkline with time axis */}
                       {(() => {
                         const detectedMs = new Date(kw.detected_at).getTime();
                         const nowMs = Date.now();
-                        const elapsedHours = (nowMs - detectedMs) / 3600000;
                         const isExpired = !!kw.expired_at;
-                        // Use actual lifetime if expired, otherwise estimate from elapsed time
-                        const totalHours = isExpired && kw.lifetime_hours
-                          ? kw.lifetime_hours
-                          : Math.max(elapsedHours * 1.2, 48); // dynamic scale: 120% of elapsed or min 48h
-                        const progressPct = isExpired ? 100 : Math.min((elapsedHours / totalHours) * 100, 95);
-                        const peakPct = kw.peak_delay_hours != null
-                          ? Math.min((kw.peak_delay_hours / totalHours) * 100, 100)
-                          : null;
+                        const endMs = isExpired ? new Date(kw.expired_at).getTime() : nowMs;
+                        const peakMs = kw.peak_at ? new Date(kw.peak_at).getTime()
+                          : kw.peak_delay_hours ? detectedMs + kw.peak_delay_hours * 3600000
+                          : detectedMs + (endMs - detectedMs) * 0.4;
+                        const spanMs = Math.max(endMs - detectedMs, 3600000);
 
-                        const displayHours = isExpired ? Math.round(kw.lifetime_hours ?? elapsedHours) : Math.round(elapsedHours);
-                        const displayLabel = displayHours >= 24
-                          ? `${Math.round(displayHours / 24)}d`
-                          : `${displayHours}h`;
-
-                        // Build sparkline points from available data
                         const baseline = kw.baseline_score ?? 0;
-                        const peak = kw.peak_score ?? baseline;
-                        const peakH = kw.peak_delay_hours ?? (elapsedHours * 0.5);
+                        const peak = kw.peak_score ?? Math.max(baseline, 1);
                         const maxVal = Math.max(peak, baseline, 1);
 
-                        // Generate curve: start → peak → current
-                        const points: [number, number][] = [
-                          [0, baseline / maxVal],
-                          [peakH / Math.max(totalHours, 1), peak / maxVal],
+                        // Build time-based points: detected → peak → now/expired
+                        const pts: { t: number; v: number }[] = [
+                          { t: detectedMs, v: baseline },
+                          { t: peakMs, v: peak },
                         ];
-                        // If past peak, add a declining current point
-                        if (elapsedHours > peakH && !isExpired) {
-                          const currentEst = peak * (0.3 + 0.7 * Math.max(0, 1 - (elapsedHours - peakH) / (totalHours - peakH)));
-                          points.push([elapsedHours / totalHours, currentEst / maxVal]);
-                        }
-                        if (isExpired) {
-                          points.push([1, 0.05]);
+                        if (endMs > peakMs) {
+                          const decay = isExpired ? 0.05 * maxVal
+                            : peak * (0.3 + 0.7 * Math.max(0, 1 - (endMs - peakMs) / (spanMs * 0.6)));
+                          pts.push({ t: endMs, v: decay });
                         }
 
-                        const svgW = 120;
-                        const svgH = 28;
-                        const pad = 2;
-                        const pathD = points.map((p, i) => {
-                          const x = pad + p[0] * (svgW - pad * 2);
-                          const y = svgH - pad - p[1] * (svgH - pad * 2);
-                          return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-                        }).join(" ");
-                        const fillD = pathD + ` L${(pad + points[points.length - 1][0] * (svgW - pad * 2)).toFixed(1)},${svgH - pad} L${pad},${svgH - pad} Z`;
+                        const svgW = 140;
+                        const svgH = 32;
+                        const padX = 2;
+                        const padY = 4;
+
+                        const toX = (t: number) => padX + ((t - detectedMs) / spanMs) * (svgW - padX * 2);
+                        const toY = (v: number) => svgH - padY - (v / maxVal) * (svgH - padY * 2);
+
+                        const pathD = pts.map((p, i) =>
+                          `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`
+                        ).join(" ");
+                        const fillD = pathD
+                          + ` L${toX(pts[pts.length - 1].t).toFixed(1)},${(svgH - padY).toFixed(1)}`
+                          + ` L${padX},${(svgH - padY).toFixed(1)} Z`;
+
+                        // Time axis labels
+                        const formatTs = (ms: number) => {
+                          const d = new Date(ms);
+                          return `${d.getMonth() + 1}/${d.getDate()}`;
+                        };
+
+                        const peakX = toX(peakMs);
+                        const peakY = toY(peak);
 
                         return (
                           <div className="mt-2">
-                            <svg width="100%" height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none">
-                              <path d={fillD} fill={isExpired ? "hsl(var(--muted-foreground) / 0.1)" : "hsl(var(--primary) / 0.15)"} />
-                              <path d={pathD} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.4)" : "hsl(var(--primary) / 0.6)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              {peak > 0 && (() => {
-                                const px = pad + (peakH / Math.max(totalHours, 1)) * (svgW - pad * 2);
-                                const py = svgH - pad - (peak / maxVal) * (svgH - pad * 2);
-                                return <circle cx={px} cy={py} r="2" fill="hsl(var(--primary))" />;
-                              })()}
+                            <svg width="100%" height={svgH + 14} viewBox={`0 0 ${svgW} ${svgH + 14}`} preserveAspectRatio="none">
+                              {/* Grid line */}
+                              <line x1={padX} y1={svgH - padY} x2={svgW - padX} y2={svgH - padY} stroke="hsl(var(--border))" strokeWidth="0.5" />
+                              {/* Fill */}
+                              <path d={fillD} fill={isExpired ? "hsl(var(--muted-foreground) / 0.08)" : "hsl(var(--primary) / 0.12)"} />
+                              {/* Line */}
+                              <path d={pathD} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.4)" : "hsl(var(--primary) / 0.7)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              {/* Peak dot */}
+                              {peak > 0 && (
+                                <circle cx={peakX} cy={peakY} r="2.5" fill="hsl(var(--primary))" />
+                              )}
+                              {/* Current dot (if active) */}
+                              {!isExpired && pts.length > 2 && (
+                                <circle cx={toX(endMs)} cy={toY(pts[pts.length - 1].v)} r="2" fill="hsl(var(--primary) / 0.5)" />
+                              )}
+                              {/* Time axis labels */}
+                              <text x={padX} y={svgH + 10} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="start">{formatTs(detectedMs)}</text>
+                              <text x={svgW - padX} y={svgH + 10} fontSize="7" fill="hsl(var(--muted-foreground))" textAnchor="end">{isExpired ? formatTs(endMs) : (language === "ko" ? "현재" : "Now")}</text>
+                              {/* Peak label */}
+                              <text x={peakX} y={Math.max(peakY - 4, 8)} fontSize="7" fill="hsl(var(--primary))" textAnchor="middle" fontWeight="bold">
+                                {formatTs(peakMs)}
+                              </text>
                             </svg>
                           </div>
                         );
