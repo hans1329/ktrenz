@@ -25,6 +25,7 @@ interface StarItem {
   display_name: string;
   name_ko: string | null;
   image_url: string | null;
+  contentImageUrl: string | null;
   agency: string | null;
   star_type: string;
   trendCount?: number;
