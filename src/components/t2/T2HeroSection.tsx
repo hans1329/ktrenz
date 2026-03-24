@@ -273,10 +273,6 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     );
   }
 
-  // Personalized: My Picks carousel (artist keywords + bet keywords)
-  const topPicks = myKeywords.slice(0, 8);
-  const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
-
   return (
     <div className="pt-2 pb-2">
       <div className="px-4 mb-3 flex items-center justify-between">
@@ -309,7 +305,12 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
           const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
           const gradient = HERO_GRADIENTS[idx % HERO_GRADIENTS.length];
-          const sparkPath = generateSparkline(item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx);
+          const spark = buildTrackingSparkline(
+            trackingMap?.get(item.id),
+            item.detectedAt,
+            item.baselineScore,
+            item.expiredAt,
+          );
 
           return (
             <button
