@@ -183,6 +183,16 @@ const T2AdminControls = () => {
         <BarChart3 className="w-3 h-3" />
         키워드 모니터
       </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => shopMutation.mutate()}
+        disabled={shopMutation.isPending}
+        className="gap-1 text-xs h-7 px-2"
+      >
+        {shopMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShoppingCart className="w-3 h-3" />}
+        쇼핑 수집
+      </Button>
 
       {activeRunList.length > 0 && (
         <Dialog>
