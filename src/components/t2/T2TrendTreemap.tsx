@@ -816,84 +816,130 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                     : Math.max(12, Math.min(24, sizeFactor * 4));
                 const scoreSize = Math.max(13, Math.min(38, sizeFactor * 4.5));
 
+                const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
+                const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
+                const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
+
+                // 작은 박스는 기존 오버레이 방식 유지, 중간 이상은 분리 레이아웃
+                const useSplitLayout = isMedium && height > 8;
+
                 return (
                   <button
                     key={rect.item.id}
                     onClick={() => handleTileClick(rect.item)}
                     className={cn(
-                      "absolute flex flex-col items-center justify-center p-1.5 outline-none focus:outline-none overflow-hidden",
+                      "absolute flex flex-col outline-none focus:outline-none overflow-hidden rounded-sm",
                       isSelected && "ring-2 ring-primary/40 z-20 brightness-110"
                     )}
                     style={{
                       left: `${left}%`, top: `${top}%`,
                       width: `${width}%`, height: `${height}%`,
                       touchAction: 'pan-y pinch-zoom',
-                      backgroundImage: (() => {
-                        const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
-                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
-                        const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
-                        const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
-                        const quotedBgImg = bgImg ? `"${bgImg.replace(/"/g, '\\"')}"` : null;
-                        return quotedBgImg
-                          ? `linear-gradient(to bottom, ${tileColor.replace(/[\d.]+\)$/, '0.3)')}, ${tileColor.replace(/[\d.]+\)$/, '0.5)')}), url(${quotedBgImg})`
-                          : undefined;
-                      })(),
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center center',
-                      backgroundColor: (() => {
-                        const rawSourceImg = sanitizeImageUrl((rect.item.sourceImageUrl?.startsWith('https://') || rect.item.sourceImageUrl?.startsWith('http://')) ? rect.item.sourceImageUrl : null);
-                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
-                        const platformLogo = detectPlatformLogo(rect.item.sourceUrl, rect.item.sourceImageUrl);
-                        const bgImg = safeSourceImg || rect.item.artistImageUrl || platformLogo;
-                        return bgImg ? undefined : tileColor;
-                      })(),
+                      ...(!useSplitLayout ? {
+                        backgroundImage: bgImg
+                          ? `linear-gradient(to bottom, ${tileColor.replace(/[\d.]+\)$/, '0.3)')}, ${tileColor.replace(/[\d.]+\)$/, '0.5)')}), url("${bgImg.replace(/"/g, '\\"')}")`
+                          : undefined,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center center',
+                        backgroundColor: bgImg ? undefined : tileColor,
+                      } : {
+                        backgroundColor: tileColor.replace(/[\d.]+\)$/, '1)'),
+                      }),
                     }}
                   >
-                    {isMedium && sortMode === "rate" && rect.item.influenceIndex > 0 && (
-                      <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
-                        +{rect.item.influenceIndex.toFixed(0)}%
-                      </span>
-                    )}
-                    {isMedium && sortMode === "volume" && (() => {
-                      const current = rect.item.prevApiTotal ?? rect.item.peakScore ?? 0;
-                      const base = rect.item.baselineScore ?? 0;
-                      if (current === 0 || base === 0) return null;
-                      const diff = current - base;
-                      if (diff === 0) return null;
-                      return (
-                        <span className="absolute top-1.5 right-1.5 z-20 text-xs font-black text-white drop-shadow-lg">
-                          {diff > 0 ? "+" : ""}{diff.toLocaleString()}
-                        </span>
-                      );
-                    })()}
-                    {isMedium && (
-                      <span className="absolute top-3 left-3.5 z-20 flex items-center gap-0.5 text-[9px] text-white/60">
-                        {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
-                        <Clock className="w-2.5 h-2.5" />
-                        {formatAge(rect.item.detectedAt)}
-                      </span>
-                    )}
-                    <div className="relative z-10 flex flex-col items-center w-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
-                      <span
-                        className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
-                        style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
-                      >
-                        {getLocalizedKeyword(rect.item, language)}
-                      </span>
-                      <span
-                        className="font-bold text-white truncate w-full text-center drop-shadow-md"
-                        style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
-                      >
-                        {getLocalizedArtistName(rect.item, language)}
-                      </span>
-                    </div>
-                    {isMedium && (
-                      <span
-                        className="absolute bottom-1 right-1 z-20 text-[9px] font-bold text-white rounded px-1 py-0.5"
-                        style={{ backgroundColor: config?.color ? `${config.color.replace(')', ' / 0.7)').replace('hsl(', 'hsl(')}` : 'rgba(0,0,0,0.25)' }}
-                      >
-                        {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
-                      </span>
+                    {useSplitLayout ? (
+                      <>
+                        {/* 이미지 영역 (상단 60%) */}
+                        <div
+                          className="relative w-full overflow-hidden"
+                          style={{
+                            height: '60%',
+                            backgroundImage: bgImg ? `url("${bgImg.replace(/"/g, '\\"')}")` : undefined,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center 20%',
+                            backgroundColor: bgImg ? undefined : tileColor.replace(/[\d.]+\)$/, '0.6)'),
+                          }}
+                        >
+                          {/* 상단 뱃지: 시간 + 관심 아티스트 */}
+                          <span className="absolute top-1 left-1.5 z-20 flex items-center gap-0.5 text-[9px] text-white/80 drop-shadow-md">
+                            {isMyArtist && <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />}
+                            <Clock className="w-2.5 h-2.5" />
+                            {formatAge(rect.item.detectedAt)}
+                          </span>
+                          {/* 우상단: influence / volume 수치 */}
+                          {sortMode === "rate" && rect.item.influenceIndex > 0 && (
+                            <span className="absolute top-1 right-1.5 z-20 text-[10px] font-black text-white drop-shadow-lg">
+                              +{rect.item.influenceIndex.toFixed(0)}%
+                            </span>
+                          )}
+                          {sortMode === "volume" && (() => {
+                            const current = rect.item.prevApiTotal ?? rect.item.peakScore ?? 0;
+                            const base = rect.item.baselineScore ?? 0;
+                            if (current === 0 || base === 0) return null;
+                            const diff = current - base;
+                            if (diff === 0) return null;
+                            return (
+                              <span className="absolute top-1 right-1.5 z-20 text-[10px] font-black text-white drop-shadow-lg">
+                                {diff > 0 ? "+" : ""}{diff.toLocaleString()}
+                              </span>
+                            );
+                          })()}
+                          {/* 이미지 없을 때 이니셜 */}
+                          {!bgImg && (
+                            <div className="w-full h-full flex items-center justify-center text-white/30 font-black" style={{ fontSize: `${Math.max(20, sizeFactor * 6)}px` }}>
+                              {getLocalizedArtistName(rect.item, language).charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        {/* 키워드 영역 (하단 40%) */}
+                        <div
+                          className="relative w-full flex flex-col justify-center px-1.5 overflow-hidden"
+                          style={{
+                            height: '40%',
+                            backgroundColor: tileColor.replace(/[\d.]+\)$/, '0.95)'),
+                          }}
+                        >
+                          <span
+                            className="font-black text-white truncate w-full leading-tight"
+                            style={{ fontSize: `${Math.min(keywordSize, isLarge ? 28 : 18)}px` }}
+                          >
+                            {getLocalizedKeyword(rect.item, language)}
+                          </span>
+                          <div className="flex items-center justify-between w-full mt-0.5">
+                            <span
+                              className="font-semibold text-white/70 truncate"
+                              style={{ fontSize: `${Math.max(8, Math.min(12, keywordSize * 0.6))}px` }}
+                            >
+                              {getLocalizedArtistName(rect.item, language)}
+                            </span>
+                            <span
+                              className="text-[8px] font-bold text-white rounded px-1 py-0.5 shrink-0 ml-0.5"
+                              style={{ backgroundColor: config?.color ? `${config.color.replace(')', ' / 0.8)').replace('hsl(', 'hsl(')}` : 'rgba(255,255,255,0.15)' }}
+                            >
+                              {isLarge ? (config?.label || rect.item.category) : (config?.label || rect.item.category).charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* 작은 박스: 기존 오버레이 스타일 유지 */
+                      <>
+                        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-1" style={{ gap: `${Math.max(0, sizeFactor * 0.3)}px` }}>
+                          <span
+                            className="font-black text-white truncate w-full text-center leading-tight drop-shadow-lg"
+                            style={{ fontSize: `${keywordSize}px`, textShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                          >
+                            {getLocalizedKeyword(rect.item, language)}
+                          </span>
+                          <span
+                            className="font-bold text-white truncate w-full text-center drop-shadow-md"
+                            style={{ fontSize: `${Math.max(9, keywordSize * 0.7)}px`, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}
+                          >
+                            {getLocalizedArtistName(rect.item, language)}
+                          </span>
+                        </div>
+                      </>
                     )}
                     {isTopThree && (
                       <BoxParticles
