@@ -16,7 +16,6 @@ import { toast } from "sonner";
 interface ArtistOnboardingDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** If true, at least 1 artist must be selected to close */
   requireMinOne?: boolean;
 }
 
@@ -28,27 +27,104 @@ interface StarItem {
   image_url: string | null;
   agency: string | null;
   star_type: string;
+  trendCount?: number;
 }
 
 const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: ArtistOnboardingDrawerProps) => {
   const { user } = useAuth();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set()); // wiki_entry_ids
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
-  // Fetch all active stars
+  // Fetch all active stars with wiki_entries images as fallback
   const { data: stars, isLoading: starsLoading } = useQuery({
     queryKey: ["onboarding-stars"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: starsData } = await supabase
         .from("ktrenz_stars" as any)
-        .select("id, wiki_entry_id, display_name, name_ko, image_url, agency, star_type")
+        .select("id, wiki_entry_id, display_name, name_ko, image_url, agency, star_type, group_star_id")
         .eq("is_active", true)
         .order("display_name");
-      return (data ?? []) as unknown as StarItem[];
+
+      const starsList = (starsData ?? []) as any[];
+
+      // Collect wiki_entry_ids and group_star_ids for image fallback
+      const wikiIds = new Set<string>();
+      const groupStarIds = new Set<string>();
+      starsList.forEach((s) => {
+        if (s.wiki_entry_id) wikiIds.add(s.wiki_entry_id);
+        if (s.group_star_id) groupStarIds.add(s.group_star_id);
+      });
+
+      // Fetch wiki_entries images
+      const imageMap = new Map<string, string>();
+      if (wikiIds.size > 0) {
+        const { data: wikiEntries } = await supabase
+          .from("wiki_entries")
+          .select("id, image_url")
+          .in("id", Array.from(wikiIds));
+        (wikiEntries ?? []).forEach((w: any) => {
+          if (w.image_url) imageMap.set(w.id, w.image_url);
+        });
+      }
+
+      // Fetch group stars' wiki_entry_ids for fallback
+      const groupWikiMap = new Map<string, string>();
+      if (groupStarIds.size > 0) {
+        const { data: groupStars } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("id, wiki_entry_id")
+          .in("id", Array.from(groupStarIds));
+        (groupStars ?? []).forEach((g: any) => {
+          if (g.wiki_entry_id) {
+            groupWikiMap.set(g.id, g.wiki_entry_id);
+          }
+        });
+        // Fetch group wiki images if not already fetched
+        const missingWikiIds = Array.from(groupWikiMap.values()).filter((id) => !imageMap.has(id));
+        if (missingWikiIds.length > 0) {
+          const { data: groupWiki } = await supabase
+            .from("wiki_entries")
+            .select("id, image_url")
+            .in("id", missingWikiIds);
+          (groupWiki ?? []).forEach((w: any) => {
+            if (w.image_url) imageMap.set(w.id, w.image_url);
+          });
+        }
+      }
+
+      // Count active triggers per star for popularity ranking
+      const { data: triggerCounts } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("star_id")
+        .eq("status", "active")
+        .not("star_id", "is", null);
+
+      const countMap = new Map<string, number>();
+      ((triggerCounts ?? []) as any[]).forEach((t) => {
+        countMap.set(t.star_id, (countMap.get(t.star_id) || 0) + 1);
+      });
+
+      return starsList.map((s): StarItem => {
+        const ownImage = s.wiki_entry_id ? imageMap.get(s.wiki_entry_id) : null;
+        const groupWikiId = s.group_star_id ? groupWikiMap.get(s.group_star_id) : null;
+        const groupImage = groupWikiId ? imageMap.get(groupWikiId) : null;
+        const directImage = s.image_url && s.image_url !== "" ? s.image_url : null;
+
+        return {
+          id: s.id,
+          wiki_entry_id: s.wiki_entry_id,
+          display_name: s.display_name,
+          name_ko: s.name_ko,
+          image_url: ownImage || directImage || groupImage || null,
+          agency: s.agency,
+          star_type: s.star_type,
+          trendCount: countMap.get(s.id) || 0,
+        };
+      });
     },
     enabled: open,
     staleTime: 1000 * 60 * 10,
@@ -68,19 +144,27 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
     enabled: open && !!user?.id,
   });
 
-  // Sync watched into selected when data loads
   useEffect(() => {
     if (watchedIds && watchedIds.size > 0) {
       setSelected(new Set(watchedIds));
     }
   }, [watchedIds]);
 
-  // Popular artists (those with recent detections)
+  // Popular: groups first (star_type=group), then solo, sorted by active trend count
   const popular = useMemo(() => {
     if (!stars) return [];
-    return stars
-      .filter((s) => s.image_url)
-      .slice(0, 20);
+    // Prioritize groups with trends, then individuals with trends
+    return [...stars]
+      .sort((a, b) => {
+        // Groups first
+        const aGroup = a.star_type === "group" ? 1 : 0;
+        const bGroup = b.star_type === "group" ? 1 : 0;
+        if (bGroup !== aGroup) return bGroup - aGroup;
+        // Then by trend count
+        return (b.trendCount || 0) - (a.trendCount || 0);
+      })
+      .filter((s) => (s.trendCount || 0) > 0 || s.image_url)
+      .slice(0, 24);
   }, [stars]);
 
   // Search filter
@@ -122,13 +206,11 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
 
     setSaving(true);
     try {
-      // Delete existing
       await supabase
         .from("ktrenz_watched_artists" as any)
         .delete()
         .eq("user_id", user.id);
 
-      // Insert new selections
       if (selected.size > 0 && stars) {
         const starMap = new Map(stars.map((s) => [s.wiki_entry_id, s]));
         const inserts = Array.from(selected)
@@ -164,7 +246,6 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
     onOpenChange(val);
   };
 
-  // If not logged in, redirect
   if (open && !user) {
     navigate("/login");
     return null;
@@ -224,7 +305,7 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
             <>
               {!isSearching && (
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                  {language === "ko" ? "인기 아티스트" : "Popular Artists"}
+                  {language === "ko" ? "🔥 트렌드 아티스트" : "🔥 Trending Artists"}
                 </p>
               )}
               {isSearching && displayList.length === 0 && (
@@ -260,11 +341,16 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
                         )}
                       </div>
                       <span className={cn(
-                        "text-[11px] font-semibold text-center truncate w-full",
+                        "text-[11px] font-semibold text-center leading-tight w-full",
                         isChecked ? "text-primary" : "text-foreground"
                       )}>
                         {getName(star)}
                       </span>
+                      {(star.trendCount || 0) > 0 && !isSearching && (
+                        <span className="text-[9px] text-muted-foreground">
+                          {star.trendCount} keywords
+                        </span>
+                      )}
                     </button>
                   );
                 })}
