@@ -43,6 +43,36 @@ const PLATFORM_BLACKLIST = new Set([
   "sns", "hybe", "sm", "yg", "jyp", "starship", "pledis", "cube",
 ]);
 
+// 소속사/기획사 이름 (부분 일치 방식으로 차단)
+const AGENCY_BLACKLIST_PATTERNS = [
+  "엔터테인먼트", "entertainment",
+  "hybe", "하이브", "bighit", "빅히트",
+  "sm엔터", "sm entertainment", "에스엠",
+  "yg엔터", "yg entertainment", "와이지",
+  "jyp엔터", "jyp entertainment", "제이와이피",
+  "starship", "스타쉽", "큐브엔터", "cube entertainment",
+  "pledis", "플레디스", "woollim", "울림",
+  "fnc엔터", "fnc entertainment",
+  "rbw", "알비더블유",
+  "koz엔터", "koz entertainment",
+  "ador", "아도어",
+  "belift", "빌리프",
+  "ist엔터", "ist entertainment",
+  "wm엔터", "wm entertainment",
+  "top media", "탑미디어",
+  "fantiago", "판타지오",
+  "jellyfish", "젤리피쉬",
+  "dsp미디어", "dsp media",
+  "antenna", "안테나",
+  "aomg",
+  "p nation", "피네이션",
+];
+
+function isAgencyKeyword(kw: string): boolean {
+  const lower = kw.toLowerCase();
+  return AGENCY_BLACKLIST_PATTERNS.some(p => lower.includes(p));
+}
+
 // 이미지 수집 불가 도메인 (봇 차단, 핫링크 차단)
 const SOURCE_IMAGE_BLACKLIST = [
   "ddaily.co.kr",
