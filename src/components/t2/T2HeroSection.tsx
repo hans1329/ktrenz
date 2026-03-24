@@ -56,6 +56,7 @@ const HERO_GRADIENTS = [
 
 interface T2HeroSectionProps {
   myKeywords: TrendTile[];
+  onOpenOnboarding?: () => void;
 }
 
 const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
