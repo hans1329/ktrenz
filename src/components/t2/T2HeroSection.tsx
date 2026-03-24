@@ -391,10 +391,9 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                   />
                 </svg>
                 <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[7px] font-medium text-white/35">
-                  <span>{spark.labels[0]}</span>
-                  <span>{spark.labels[1]}</span>
-                  <span>{spark.labels[2]}</span>
-                  <span>{spark.labels[3]}</span>
+                  {spark.labels.map((label, li) => (
+                    <span key={li}>{label}</span>
+                  ))}
                 </div>
               </div>
             </button>
