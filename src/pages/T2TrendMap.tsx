@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { LayoutGrid, List, Users, MoreVertical, Zap } from "lucide-react";
+import { LayoutGrid, List, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
