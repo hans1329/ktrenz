@@ -341,7 +341,7 @@ const T2TrendMap = () => {
         <div
           className={cn(
             viewMode === "treemap" ? "pb-24 scrollbar-hide" : "pb-24 scrollbar-hide",
-            headerCollapsed ? "pt-[2rem]" : "pt-[6.5rem]"
+            headerCollapsed ? "pt-[0.5rem]" : "pt-[4rem]"
           )}
         >
           <div className="relative">
