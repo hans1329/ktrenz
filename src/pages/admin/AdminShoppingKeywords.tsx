@@ -44,7 +44,7 @@ const AdminShoppingKeywords = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ktrenz_trend_triggers')
-        .select('id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, status')
+        .select('id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, status, prev_api_total')
         .eq('trigger_source', 'naver_shop')
         .eq('status', 'active')
         .order('detected_at', { ascending: false })
@@ -71,14 +71,21 @@ const AdminShoppingKeywords = () => {
           }
         }
 
-        return data.map(t => ({
-          ...t,
-          latest: latestMap.get(t.id) ?? null,
-        })) as ShopTrigger[];
+        return data.map(t => {
+          const latest = latestMap.get(t.id) ?? null;
+          // baseline이 리셋(0)된 상태면 이전 추적 데이터를 무효로 표시
+          const isReset = (t.baseline_score ?? 0) === 0 && (t.prev_api_total ?? 0) === 0;
+          return {
+            ...t,
+            latest: isReset ? null : latest,
+          } as ShopTrigger;
+        });
       }
 
       return (data || []) as ShopTrigger[];
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const handleTrackSingle = async (triggerId: string) => {
