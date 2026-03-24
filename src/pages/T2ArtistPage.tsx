@@ -117,6 +117,35 @@ const T2ArtistPage = () => {
     enabled: !!starId,
   });
 
+  // Fetch tracking history for all keywords in batch
+  const { data: trackingMap } = useQuery({
+    queryKey: ["t2-artist-tracking", starId, keywords?.map((k: any) => k.id)],
+    queryFn: async () => {
+      if (!keywords || keywords.length === 0) return new Map<string, any[]>();
+      const ids = keywords.map((k: any) => k.id);
+      // Supabase limit is 1000, batch if needed
+      const allData: any[] = [];
+      for (let i = 0; i < ids.length; i += 20) {
+        const batch = ids.slice(i, i + 20);
+        const { data } = await supabase
+          .from("ktrenz_trend_tracking" as any)
+          .select("trigger_id, tracked_at, interest_score")
+          .in("trigger_id", batch)
+          .order("tracked_at", { ascending: true })
+          .limit(500);
+        if (data) allData.push(...(data as any[]));
+      }
+      const map = new Map<string, any[]>();
+      allData.forEach((d: any) => {
+        const arr = map.get(d.trigger_id) || [];
+        arr.push(d);
+        map.set(d.trigger_id, arr);
+      });
+      return map;
+    },
+    enabled: !!keywords && keywords.length > 0,
+  });
+
   // Fetch schedules
   const { data: schedules, isLoading: schedLoading } = useQuery({
     queryKey: ["t2-artist-schedules", star?.wiki_entry_id],
