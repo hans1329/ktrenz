@@ -199,6 +199,11 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
                       {getLocalizedKeyword(item, language)}
                     </h3>
                   </div>
+                  {context && (
+                    <p className="text-[11px] lg:text-xs text-muted-foreground leading-snug mt-1 line-clamp-1">
+                      {context}
+                    </p>
+                  )}
                 </div>
                 <div className="shrink-0 flex items-center gap-1.5 pt-0.5">
                   <span className={cn(
