@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { TrendingUp, TrendingDown, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -51,82 +51,97 @@ const categoryEmoji: Record<string, string> = {
 };
 
 const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore, loadMoreLabel }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   if (!keywords || keywords.length === 0) return null;
 
-  const displayed = keywords.slice(0, 5);
+  const displayed = keywords.slice(0, 8);
 
   return (
     <div className="flex flex-col gap-2 mt-2 w-full">
-      {displayed.map((kw, idx) => {
-        const catClass = categoryColors[kw.category] || "bg-muted text-muted-foreground border-border";
-        const emoji = categoryEmoji[kw.category] || "📊";
-        const delta = kw.delta_pct ?? 0;
-        const hasDelta = kw.delta_pct != null && kw.delta_pct !== 0;
-        const displayKeyword = kw.keyword_ko || kw.keyword;
+      {/* Horizontal carousel */}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+        style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+      >
+        {displayed.map((kw, idx) => {
+          const catClass = categoryColors[kw.category] || "bg-muted text-muted-foreground border-border";
+          const emoji = categoryEmoji[kw.category] || "📊";
+          const delta = kw.delta_pct ?? 0;
+          const hasDelta = kw.delta_pct != null && kw.delta_pct !== 0;
+          const displayKeyword = kw.keyword_ko || kw.keyword;
 
-        return (
-          <button
-            key={`${kw.keyword}-${idx}`}
-            type="button"
-            onClick={() => onKeywordClick?.(kw)}
-            className="w-full text-left rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all group active:scale-[0.98] overflow-hidden flex"
-          >
-            {/* Thumbnail */}
-            {kw.source_image_url && (
-              <div className="w-24 h-24 shrink-0 bg-muted overflow-hidden">
-                <img
-                  src={kw.source_image_url}
-                  alt={displayKeyword}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            )}
-
-            <div className="flex-1 p-2.5 min-w-0 flex flex-col justify-center gap-1">
-              {/* Row 1: Keyword + Category */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs shrink-0">{emoji}</span>
-                <span className="text-sm font-bold text-foreground truncate">{displayKeyword}</span>
+          return (
+            <button
+              key={`${kw.keyword}-${idx}`}
+              type="button"
+              onClick={() => onKeywordClick?.(kw)}
+              className="flex-none w-[200px] snap-start rounded-2xl border border-border/40 bg-card/60 hover:bg-card/90 hover:border-primary/30 transition-all group active:scale-[0.97] overflow-hidden flex flex-col text-left"
+            >
+              {/* Image area */}
+              <div className="w-full aspect-[4/3] bg-muted/40 rounded-t-2xl overflow-hidden relative">
+                {kw.source_image_url ? (
+                  <img
+                    src={kw.source_image_url}
+                    alt={displayKeyword}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl">
+                    {emoji}
+                  </div>
+                )}
+                {/* Category badge overlay */}
                 <Badge
                   variant="outline"
-                  className={cn("text-[9px] px-1 py-0 h-3.5 shrink-0 capitalize ml-auto", catClass)}
+                  className={cn(
+                    "absolute top-2 left-2 text-[9px] px-1.5 py-0 h-4 capitalize backdrop-blur-sm",
+                    catClass
+                  )}
                 >
                   {kw.category}
                 </Badge>
               </div>
 
-              {/* Row 2: Artist + metrics */}
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                {kw.artist && (
-                  <span className="font-medium text-foreground/60 truncate">{kw.artist}</span>
-                )}
-                {kw.influence_index != null && (
-                  <span className="shrink-0">
-                    🔥 {Math.round(kw.influence_index)}
-                  </span>
-                )}
-                {hasDelta && (
-                  <span className={cn(
-                    "flex items-center gap-0.5 font-bold shrink-0",
-                    delta > 0 ? "text-emerald-400" : "text-red-400"
-                  )}>
-                    {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
-                  </span>
+              {/* Text area */}
+              <div className="p-3 flex flex-col gap-1.5 flex-1">
+                {/* Keyword title */}
+                <span className="text-sm font-bold text-foreground line-clamp-2 leading-snug">
+                  {displayKeyword}
+                </span>
+
+                {/* Artist + metrics row */}
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                  {kw.artist && (
+                    <span className="font-medium text-foreground/60 truncate max-w-[100px]">{kw.artist}</span>
+                  )}
+                  {kw.influence_index != null && (
+                    <span className="shrink-0">🔥 {Math.round(kw.influence_index)}</span>
+                  )}
+                  {hasDelta && (
+                    <span className={cn(
+                      "flex items-center gap-0.5 font-bold shrink-0",
+                      delta > 0 ? "text-emerald-400" : "text-red-400"
+                    )}>
+                      {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+
+                {/* Context snippet */}
+                {kw.context && (
+                  <p className="text-[10px] text-muted-foreground/70 line-clamp-2 leading-tight">
+                    {kw.context}
+                  </p>
                 )}
               </div>
-
-              {/* Row 3: Context snippet */}
-              {kw.context && (
-                <p className="text-[11px] text-muted-foreground/80 line-clamp-1 leading-tight">
-                  {kw.context}
-                </p>
-              )}
-            </div>
-          </button>
-        );
-      })}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Load more button */}
       {onLoadMore && (
