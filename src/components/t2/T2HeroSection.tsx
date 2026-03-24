@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -62,6 +64,85 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
   const { user } = useAuth();
   const { language } = useLanguage();
 
+  // Fetch user's active bet keywords
+  const { data: betKeywords = [] } = useQuery({
+    queryKey: ["hero-bet-keywords", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      // Get user's active bets
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("market_id")
+        .eq("user_id", user!.id);
+      if (!bets?.length) return [];
+
+      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
+      const { data: markets } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("trigger_id")
+        .in("id", marketIds)
+        .eq("status", "open");
+      if (!markets?.length) return [];
+
+      const triggerIds = (markets as any[]).map((m: any) => m.trigger_id);
+      const { data: triggers } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, category, detected_at, source_url, source_image_url, influence_index, baseline_score, star_id, wiki_entry_id, status, lifetime_hours, peak_at, expired_at, peak_delay_hours, peak_score, source_title, source_snippet, context, context_ko, context_ja, context_zh, prev_api_total")
+        .in("id", triggerIds);
+      if (!triggers?.length) return [];
+
+      // Get artist info
+      const wikiIds = [...new Set((triggers as any[]).map((t: any) => t.wiki_entry_id))];
+      const { data: entries } = await supabase
+        .from("wiki_entries")
+        .select("id, title, title_ko, image_url, star_id")
+        .in("id", wikiIds);
+      const entryMap = new Map((entries || []).map((e: any) => [e.id, e]));
+
+      return (triggers as any[]).map((t: any): TrendTile => {
+        const entry = entryMap.get(t.wiki_entry_id);
+        return {
+          id: t.id,
+          keyword: t.keyword,
+          keywordKo: t.keyword_ko,
+          keywordJa: t.keyword_ja,
+          keywordZh: t.keyword_zh,
+          category: t.category,
+          artistName: entry?.title || "",
+          artistNameKo: entry?.title_ko || null,
+          artistImageUrl: entry?.image_url || null,
+          wikiEntryId: t.wiki_entry_id,
+          influenceIndex: t.influence_index || 0,
+          context: t.context,
+          contextKo: t.context_ko,
+          contextJa: t.context_ja,
+          contextZh: t.context_zh,
+          detectedAt: t.detected_at,
+          peakAt: t.peak_at,
+          expiredAt: t.expired_at,
+          lifetimeHours: t.lifetime_hours,
+          peakDelayHours: t.peak_delay_hours,
+          baselineScore: t.baseline_score,
+          peakScore: t.peak_score,
+          sourceUrl: t.source_url,
+          sourceTitle: t.source_title,
+          sourceImageUrl: t.source_image_url,
+          sourceSnippet: t.source_snippet,
+          starId: entry?.star_id || t.star_id,
+          status: t.status,
+          prevApiTotal: t.prev_api_total,
+        };
+      });
+    },
+  });
+
+  // Deduplicate: exclude bet keywords already in myKeywords
+  const myIds = useMemo(() => new Set(myKeywords.map(k => k.id)), [myKeywords]);
+  const uniqueBetKeywords = useMemo(
+    () => betKeywords.filter((bk: TrendTile) => !myIds.has(bk.id)),
+    [betKeywords, myIds]
+  );
+
   // Not logged in
   if (!user) {
     return (
@@ -93,8 +174,8 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
     );
   }
 
-  // Logged in but no watched artists
-  if (!myKeywords.length) {
+  // Logged in but no watched artists and no bets
+  if (!myKeywords.length && !uniqueBetKeywords.length) {
     return (
       <div className="px-4 pt-2 pb-5">
         <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "200px" }}>
@@ -120,8 +201,9 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
     );
   }
 
-  // Personalized: My Picks carousel
+  // Personalized: My Picks carousel (artist keywords + bet keywords)
   const topPicks = myKeywords.slice(0, 8);
+  const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
 
   return (
     <div className="pt-2 pb-2">
@@ -143,7 +225,8 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
         className="flex gap-3 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", scrollPaddingLeft: "16px" }}
       >
-        {topPicks.map((item, idx) => {
+        {allItems.map((item, idx) => {
+          const isBet = idx >= topPicks.length;
           const config = CATEGORY_CONFIG[item.category];
           const rawSourceImg = sanitizeImageUrl(
             item.sourceImageUrl?.startsWith("https://") || item.sourceImageUrl?.startsWith("http://")
@@ -177,9 +260,16 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
 
               {/* Top: keyword + artist */}
               <div className="relative z-10 p-4 pb-2 flex-1">
-                <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide mb-1 block">
-                  {getLocalizedArtistName(item, language)}
-                </span>
+                <div className="flex items-center gap-1 mb-1">
+                  {isBet && (
+                    <span className="text-[10px] font-bold text-white bg-purple-500/80 backdrop-blur-sm rounded-full px-1.5 py-0.5" style={{ filter: "hue-rotate(0deg)" }}>
+                      💎
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide">
+                    {getLocalizedArtistName(item, language)}
+                  </span>
+                </div>
                 <div className="flex items-center gap-1">
                   <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 text-white" />
                   <h3
