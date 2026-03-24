@@ -377,7 +377,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        await updateCausalMetrics(sb, trigger.id, buzzScore);
+        await updateCausalMetrics(sb, trigger.id, buzzScore, isShopTrigger);
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
         await notifyKeywordFollowers(sb, trigger, deltaPct);
 
