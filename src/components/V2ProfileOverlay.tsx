@@ -127,7 +127,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
           {/* K-Tokens + K-Pass row with ticket styling */}
           <div className="flex gap-2">
-            {/* K·Trend Caches */}
+            {/* K·Trend Cashes */}
             <button
               onClick={() => setShowPointsDrawer(true)}
               className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
