@@ -1356,8 +1356,21 @@ async function detectForMember(
   // ─── TikTok 소셜 키워드 추출 (AI 분류) ───
   let socialKeywords: ExtractedKeyword[] = [];
   try {
+    // 그룹인 경우 멤버명 목록을 가져와서 필터 강화
+    let memberNames: string[] | undefined;
+    if (member.id && !member.group_name) {
+      // group 또는 solo → 멤버 목록 조회
+      const { data: members } = await sb
+        .from("ktrenz_stars")
+        .select("display_name, name_ko")
+        .eq("group_star_id", member.id)
+        .eq("is_active", true);
+      if (members?.length) {
+        memberNames = members.flatMap((m: any) => [m.display_name, m.name_ko].filter(Boolean));
+      }
+    }
     socialKeywords = await extractSocialKeywordsFromTikTok(
-      openaiKey, sb, member.id, member.display_name, member.group_name
+      openaiKey, sb, member.id, member.display_name, member.group_name, memberNames
     );
     srcStats.socialExtracted = socialKeywords.length;
     srcStats.tiktok = socialKeywords.length > 0 ? 1 : 0;
