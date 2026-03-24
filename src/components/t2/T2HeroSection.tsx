@@ -185,10 +185,28 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
 
   // Deduplicate: exclude bet keywords already in myKeywords
   const myIds = useMemo(() => new Set(myKeywords.map(k => k.id)), [myKeywords]);
-  const uniqueBetKeywords = useMemo(
-    () => betKeywords.filter((bk: TrendTile) => !myIds.has(bk.id)),
-    [betKeywords, myIds]
-  );
+  const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
+
+  const { data: trackingMap } = useQuery({
+    queryKey: ["hero-tracking-history", allItems.map((item) => item.id).join(",")],
+    enabled: allItems.length > 0,
+    queryFn: async () => {
+      const triggerIds = allItems.map((item) => item.id);
+      const { data } = await supabase
+        .from("ktrenz_trend_tracking" as any)
+        .select("trigger_id, tracked_at, interest_score")
+        .in("trigger_id", triggerIds)
+        .order("tracked_at", { ascending: true });
+
+      const map = new Map<string, any[]>();
+      (data ?? []).forEach((row: any) => {
+        const existing = map.get(row.trigger_id) ?? [];
+        existing.push(row);
+        map.set(row.trigger_id, existing);
+      });
+      return map;
+    },
+  });
 
   // Not logged in
   if (!user) {
