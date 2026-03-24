@@ -916,6 +916,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {idx + 1}
                                 </span>
                               )}
+                              {isMyArtist && (
+                                <Star className="w-4 h-4 text-amber-400 fill-amber-400 absolute top-2 right-2 drop-shadow-md" />
+                              )}
                               {/* Sparkline overlay at bottom of image */}
                               <div className="absolute inset-x-0 bottom-0">
                                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
