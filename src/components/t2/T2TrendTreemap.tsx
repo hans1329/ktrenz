@@ -266,7 +266,7 @@ function MyArtistsBanner({ myKeywords, language }: { myKeywords: TrendTile[]; la
       onClick={() => navigate("/t2/my")}
       className="w-full mb-4 flex items-center gap-3 px-3 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-all group"
     >
-      <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+      <Heart className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
       <div className="min-w-0 flex-1 text-left">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-bold text-foreground truncate">{getLocalizedKeyword(top, language)}</span>
