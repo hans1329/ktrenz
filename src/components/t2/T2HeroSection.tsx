@@ -227,9 +227,10 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                     opacity="0.7"
                   />
                 </svg>
-                <span className="absolute bottom-3 right-2 text-[9px] font-semibold text-white/50">
-                  {formatAge(item.detectedAt)}
-                </span>
+                <div className="absolute bottom-2.5 left-2 right-2 flex justify-between text-[8px] font-medium text-white/40">
+                  <span>{formatAge(item.detectedAt)}</span>
+                  <span>now</span>
+                </div>
               </div>
             </button>
           );
