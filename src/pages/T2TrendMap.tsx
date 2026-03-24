@@ -37,6 +37,17 @@ const T2TrendMap = () => {
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Auto-open onboarding drawer after signup
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("onboarding") === "1") {
+      setShowOnboarding(true);
+      params.delete("onboarding");
+      const newUrl = params.toString() ? `${window.location.pathname}?${params}` : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
   
   const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [totalCount, setTotalCount] = useState(0);
