@@ -874,45 +874,66 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
                             )}
                           >
-                            {/* Image area */}
-                            <div className={cn("relative w-full bg-muted/30 overflow-hidden", idx === 0 ? "aspect-[3/2]" : "aspect-[4/3]")}>
-                              {bgImg ? (
-                                <img
-                                  src={bgImg}
-                                  alt={getLocalizedKeyword(item, language)}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div
-                                  className="w-full h-full flex items-center justify-center font-black text-white/20"
-                                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}
-                                >
-                                  {getLocalizedArtistName(item, language).charAt(0)}
-                                </div>
-                              )}
-                              {idx < 3 && (
-                                <span className={cn("absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-8 h-8 text-sm" : "w-6 h-6 text-[10px]")}>
-                                  {idx + 1}
+                            {/* Top: keyword + artist */}
+                            <div className={cn("flex flex-col gap-1", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
+                              <div className="flex items-center justify-between">
+                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-xs" : "text-[11px]")}>
+                                  {getLocalizedArtistName(item, language)}
                                 </span>
-                              )}
-                              {isMyArtist && (
-                                <Star className="absolute top-2 right-2 w-3.5 h-3.5 text-amber-400 fill-amber-400 drop-shadow-md" />
-                              )}
-                              <span className="absolute bottom-1.5 left-2 flex items-center gap-0.5 text-[9px] text-white/90 bg-black/40 backdrop-blur-sm rounded-full px-1.5 py-0.5">
-                                <Clock className="w-2.5 h-2.5" />
-                                {formatAge(item.detectedAt)}
-                              </span>
-                            </div>
-
-                            {/* Text area */}
-                            <div className={cn("flex flex-col gap-1 flex-1", idx === 0 ? "p-4" : "p-3")}>
-                              <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-xs" : "text-[11px]")}>
-                                {getLocalizedArtistName(item, language)}
-                              </span>
+                                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {formatAge(item.detectedAt)}
+                                </span>
+                              </div>
                               <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-base" : "text-sm")}>
                                 {getLocalizedKeyword(item, language)}
                               </h4>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {idx < 3 && (
+                                  <span className={cn("rounded-full bg-foreground/10 text-foreground font-black flex items-center justify-center shrink-0", idx === 0 ? "w-6 h-6 text-[10px]" : "w-5 h-5 text-[9px]")}>
+                                    {idx + 1}
+                                  </span>
+                                )}
+                                {isMyArtist && (
+                                  <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Sparkline graph */}
+                            <div className="px-2 pb-2 mt-auto">
+                              <svg
+                                viewBox="0 0 100 50"
+                                className={cn("w-full", idx === 0 ? "h-[52px]" : "h-[40px]")}
+                                preserveAspectRatio="none"
+                              >
+                                <defs>
+                                  <linearGradient id={`cat-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.3" />
+                                    <stop offset="100%" stopColor={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} stopOpacity="0.02" />
+                                  </linearGradient>
+                                </defs>
+                                {(() => {
+                                  const seed = item.id.charCodeAt(0) + item.id.charCodeAt(1) + idx;
+                                  const pts = 8;
+                                  const vals: number[] = [];
+                                  let v = 30 + (seed % 20);
+                                  for (let i = 0; i < pts; i++) {
+                                    v += ((seed * (i + 1) * 7) % 21) - 8;
+                                    v = Math.max(5, Math.min(45, v));
+                                    vals.push(v);
+                                  }
+                                  vals[vals.length - 1] = Math.max(...vals) + 3;
+                                  const step = 80 / (pts - 1);
+                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${50 - y}`).join(" ");
+                                  return (
+                                    <>
+                                      <path d={`${path} L90,50 L10,50 Z`} fill={`url(#cat-spark-${item.id})`} />
+                                      <path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                                    </>
+                                  );
+                                })()}
+                              </svg>
                             </div>
                           </button>
                         );
