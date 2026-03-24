@@ -28,7 +28,7 @@ interface KeywordResult {
   star_id: string | null;
 }
 
-const V3Header = ({ centerSlot }: { centerSlot?: React.ReactNode }) => {
+const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rightSlot?: React.ReactNode }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
