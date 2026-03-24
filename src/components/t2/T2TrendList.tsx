@@ -254,18 +254,12 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
             {heroImage && (
               <button
                 onClick={() => { track("t2_list_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, section: item.keyword }); onTileClick(item); }}
-                className={cn(
-                  "relative w-full bg-muted overflow-hidden group",
-                  gridMode ? "" : "aspect-[4/3] lg:aspect-[3/4]"
-                )}
+                className="relative w-full bg-muted overflow-hidden group"
               >
                 <img
                   src={heroImage}
                   alt={getLocalizedKeyword(item, language)}
-                  className={cn(
-                    "w-full transition-transform duration-300 group-hover:scale-105",
-                    gridMode ? "h-auto object-contain" : "h-full object-cover"
-                  )}
+                  className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
                 />
                 {/* Category badge — bottom left */}
