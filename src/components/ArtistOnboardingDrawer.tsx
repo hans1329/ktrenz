@@ -97,16 +97,21 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
         }
       }
 
-      // Count active triggers per star for popularity ranking
-      const { data: triggerCounts } = await supabase
+      // Count active triggers per star & grab latest content image per star
+      const { data: triggerData } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("star_id")
+        .select("star_id, source_image_url")
         .eq("status", "active")
-        .not("star_id", "is", null);
+        .not("star_id", "is", null)
+        .order("detected_at", { ascending: false });
 
       const countMap = new Map<string, number>();
-      ((triggerCounts ?? []) as any[]).forEach((t) => {
+      const contentImageMap = new Map<string, string>();
+      ((triggerData ?? []) as any[]).forEach((t) => {
         countMap.set(t.star_id, (countMap.get(t.star_id) || 0) + 1);
+        if (t.source_image_url && !contentImageMap.has(t.star_id)) {
+          contentImageMap.set(t.star_id, t.source_image_url);
+        }
       });
 
       return starsList.map((s): StarItem => {
