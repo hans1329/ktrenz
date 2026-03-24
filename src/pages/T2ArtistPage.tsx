@@ -391,25 +391,30 @@ const T2ArtistPage = () => {
                         if (pts.length < 2) return null;
 
                         const startMs = pts[0].t;
-                        const endMs = pts[pts.length - 1].t;
-                        const spanMs = Math.max(endMs - startMs, 3600000);
+                        const nowMs = Date.now();
+                        const spanMs = Math.max(nowMs - startMs, 3600000);
                         const maxVal = Math.max(...pts.map(p => p.v), 1);
 
                         const W = 100;
                         const H = 18;
-                        const toX = (t: number) => ((t - startMs) / spanMs) * W;
+                        const toX = (t: number) => Math.min(((t - startMs) / spanMs) * W, W);
                         const toY = (v: number) => H - (v / maxVal) * (H - 2);
 
-                        const path = pts.map((p, i) =>
+                        // Extend last point to current time
+                        const lastPt = pts[pts.length - 1];
+                        const extendedPts = [...pts];
+                        if (lastPt.t < nowMs) {
+                          extendedPts.push({ t: nowMs, v: lastPt.v });
+                        }
+
+                        const path = extendedPts.map((p, i) =>
                           `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`
                         ).join(" ");
-                        const fill = path + ` L${toX(pts[pts.length - 1].t).toFixed(1)},${H} L0,${H} Z`;
+                        const fill = path + ` L${W},${H} L0,${H} Z`;
 
-                        // Time labels
+                        // Time labels: 5 labels for 4 segments
                         const fmtH = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : `${Math.round(h)}h`;
                         const totalH = Math.round(spanMs / 3600000);
-                        const t1 = fmtH(Math.round(totalH * 0.33));
-                        const t2 = fmtH(Math.round(totalH * 0.66));
                         const startLabel = fmtH(0);
                         const endLabel = isExpired ? (language === "ko" ? "만료" : "expired") : (language === "ko" ? "현재" : "now");
 
