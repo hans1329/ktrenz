@@ -956,7 +956,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       >
                         <ChevronRight className="w-6 h-6 text-muted-foreground" />
                         <span className="text-xs font-bold text-muted-foreground">More</span>
-                        <span className="text-[10px] text-muted-foreground/60">{items.length} keywords</span>
+                        
                       </button>
                     </div>
                   </div>
