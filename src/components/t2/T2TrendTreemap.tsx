@@ -536,7 +536,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const carouselIds = useMemo(() => filteredItems.slice(0, 90).map(i => i.id).join(","), [filteredItems]);
   const { data: carouselTrackingMap } = useQuery({
     queryKey: ["carousel-tracking", carouselIds],
-    enabled: filteredItems.length > 0 && currentViewMode === "carousel",
+    enabled: filteredItems.length > 0,
     queryFn: async () => {
       const ids = filteredItems.slice(0, 90).map(i => i.id);
       const allData: any[] = [];
