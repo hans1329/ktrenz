@@ -8,6 +8,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── 네이버 쇼핑 API: 키워드만으로 상품 수 조회 ───
+async function searchNaverShop(
+  clientId: string, clientSecret: string, keyword: string,
+): Promise<{ total: number; recentItems: number }> {
+  try {
+    const url = new URL("https://openapi.naver.com/v1/search/shop.json");
+    url.searchParams.set("query", keyword);
+    url.searchParams.set("display", "100");
+    url.searchParams.set("sort", "date");
+    const response = await fetch(url.toString(), {
+      headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
+    });
+    if (!response.ok) return { total: 0, recentItems: 0 };
+    const data = await response.json();
+    return { total: data.total || 0, recentItems: (data.items || []).length };
+  } catch { return { total: 0, recentItems: 0 }; }
+}
+
 // ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
 function normalizeBuzzScore(newsCount: number, blogCount: number): number {
   const newsCap = 100;
