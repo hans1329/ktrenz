@@ -370,43 +370,16 @@ const T2ArtistPage = () => {
                         const fillD = pathD + ` L${(pad + points[points.length - 1][0] * (svgW - pad * 2)).toFixed(1)},${svgH - pad} L${pad},${svgH - pad} Z`;
 
                         return (
-                          <div className="mt-2.5">
-                            <div className="flex items-center justify-between text-[9px] text-muted-foreground mb-1">
-                              <span>{language === "ko" ? "라이프사이클" : "Lifecycle"}</span>
-                              <span>
-                                {isExpired
-                                  ? `${displayLabel} · ${language === "ko" ? "만료" : "Expired"}`
-                                  : `${displayLabel} ${language === "ko" ? "경과" : "elapsed"}`}
-                              </span>
-                            </div>
-                            {/* Sparkline */}
-                            <svg width="100%" height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" className="mb-1.5">
+                          <div className="mt-2">
+                            <svg width="100%" height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none">
                               <path d={fillD} fill={isExpired ? "hsl(var(--muted-foreground) / 0.1)" : "hsl(var(--primary) / 0.15)"} />
                               <path d={pathD} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.4)" : "hsl(var(--primary) / 0.6)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              {/* Peak dot */}
                               {peak > 0 && (() => {
                                 const px = pad + (peakH / Math.max(totalHours, 1)) * (svgW - pad * 2);
                                 const py = svgH - pad - (peak / maxVal) * (svgH - pad * 2);
                                 return <circle cx={px} cy={py} r="2" fill="hsl(var(--primary))" />;
                               })()}
                             </svg>
-                            {/* Progress bar */}
-                            <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className={cn(
-                                  "absolute inset-y-0 left-0 rounded-full transition-all",
-                                  isExpired ? "bg-muted-foreground/40" : "bg-primary/60"
-                                )}
-                                style={{ width: `${progressPct}%` }}
-                              />
-                              {peakPct != null && (
-                                <div
-                                  className="absolute top-0 bottom-0 w-0.5 bg-primary rounded-full"
-                                  style={{ left: `${peakPct}%` }}
-                                  title={`Peak at ${Math.round(kw.peak_delay_hours)}h`}
-                                />
-                              )}
-                            </div>
                           </div>
                         );
                       })()}
