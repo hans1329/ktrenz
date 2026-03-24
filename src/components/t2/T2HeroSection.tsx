@@ -133,7 +133,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
 
       const { data: triggers } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, detected_at, source_url, source_image_url, influence_index, baseline_score, star_id, wiki_entry_id, status, lifetime_hours, peak_at, expired_at, peak_delay_hours, peak_score, source_title, source_snippet, context, context_ko, context_ja, context_zh, prev_api_total")
+        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, detected_at, source_url, source_image_url, influence_index, baseline_score, star_id, wiki_entry_id, status, lifetime_hours, peak_at, expired_at, peak_delay_hours, peak_score, source_title, source_snippet, context, context_ko, context_ja, context_zh, prev_api_total, trigger_source")
         .in("id", triggerIds);
       if (!triggers?.length) return [];
 
@@ -177,6 +177,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           sourceSnippet: t.source_snippet,
           starId: entry?.star_id || t.star_id,
           status: t.status,
+          triggerSource: t.trigger_source || null,
           prevApiTotal: t.prev_api_total,
         };
       });
