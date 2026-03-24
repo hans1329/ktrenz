@@ -339,6 +339,36 @@ const T2ArtistPage = () => {
                           ? `${Math.round(displayHours / 24)}d`
                           : `${displayHours}h`;
 
+                        // Build sparkline points from available data
+                        const baseline = kw.baseline_score ?? 0;
+                        const peak = kw.peak_score ?? baseline;
+                        const peakH = kw.peak_delay_hours ?? (elapsedHours * 0.5);
+                        const maxVal = Math.max(peak, baseline, 1);
+
+                        // Generate curve: start → peak → current
+                        const points: [number, number][] = [
+                          [0, baseline / maxVal],
+                          [peakH / Math.max(totalHours, 1), peak / maxVal],
+                        ];
+                        // If past peak, add a declining current point
+                        if (elapsedHours > peakH && !isExpired) {
+                          const currentEst = peak * (0.3 + 0.7 * Math.max(0, 1 - (elapsedHours - peakH) / (totalHours - peakH)));
+                          points.push([elapsedHours / totalHours, currentEst / maxVal]);
+                        }
+                        if (isExpired) {
+                          points.push([1, 0.05]);
+                        }
+
+                        const svgW = 120;
+                        const svgH = 28;
+                        const pad = 2;
+                        const pathD = points.map((p, i) => {
+                          const x = pad + p[0] * (svgW - pad * 2);
+                          const y = svgH - pad - p[1] * (svgH - pad * 2);
+                          return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+                        }).join(" ");
+                        const fillD = pathD + ` L${(pad + points[points.length - 1][0] * (svgW - pad * 2)).toFixed(1)},${svgH - pad} L${pad},${svgH - pad} Z`;
+
                         return (
                           <div className="mt-2.5">
                             <div className="flex items-center justify-between text-[9px] text-muted-foreground mb-1">
@@ -349,7 +379,19 @@ const T2ArtistPage = () => {
                                   : `${displayLabel} ${language === "ko" ? "경과" : "elapsed"}`}
                               </span>
                             </div>
-                            <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                            {/* Sparkline */}
+                            <svg width="100%" height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" className="mb-1.5">
+                              <path d={fillD} fill={isExpired ? "hsl(var(--muted-foreground) / 0.1)" : "hsl(var(--primary) / 0.15)"} />
+                              <path d={pathD} fill="none" stroke={isExpired ? "hsl(var(--muted-foreground) / 0.4)" : "hsl(var(--primary) / 0.6)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              {/* Peak dot */}
+                              {peak > 0 && (() => {
+                                const px = pad + (peakH / Math.max(totalHours, 1)) * (svgW - pad * 2);
+                                const py = svgH - pad - (peak / maxVal) * (svgH - pad * 2);
+                                return <circle cx={px} cy={py} r="2" fill="hsl(var(--primary))" />;
+                              })()}
+                            </svg>
+                            {/* Progress bar */}
+                            <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
                               <div
                                 className={cn(
                                   "absolute inset-y-0 left-0 rounded-full transition-all",
@@ -362,11 +404,7 @@ const T2ArtistPage = () => {
                                   className="absolute top-0 bottom-0 w-0.5 bg-primary rounded-full"
                                   style={{ left: `${peakPct}%` }}
                                   title={`Peak at ${Math.round(kw.peak_delay_hours)}h`}
-                                >
-                                  <div className="absolute -top-1.5 left-1/2 -translate-x-1/2">
-                                    <TrendingUp className="w-2.5 h-2.5 text-primary" />
-                                  </div>
-                                </div>
+                                />
                               )}
                             </div>
                           </div>
