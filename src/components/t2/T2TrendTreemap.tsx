@@ -905,10 +905,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                       }
                                       if (pts.length < 2) return null;
                                       const startMs = pts[0].t;
-                                      const endMs = pts[pts.length - 1].t;
-                                      const spanMs = Math.max(endMs - startMs, 3600000);
+                                      const nowMs = Date.now();
+                                      const spanMs = Math.max(nowMs - startMs, 3600000);
                                       const maxVal = Math.max(...pts.map(p => p.v), 1);
-                                      const toX = (t: number) => ((t - startMs) / spanMs) * 100;
+                                      const toX = (t: number) => Math.min(((t - startMs) / spanMs) * 100, 100);
                                       const toY = (v: number) => 18 - (v / maxVal) * 14;
                                       const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
                                       const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
