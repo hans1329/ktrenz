@@ -904,9 +904,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   const pts = 8; const vals: number[] = []; let v = 10 + (seed % 8);
                                   for (let i = 0; i < pts; i++) { v += ((seed * (i + 1) * 7) % 11) - 4; v = Math.max(2, Math.min(21, v)); vals.push(v); }
                                   vals[vals.length - 1] = Math.max(...vals) + 1;
-                                  const step = 80 / (pts - 1);
-                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${24 - y}`).join(" ");
-                                  return (<><path d={`${path} L90,24 L10,24 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" /></>);
+                                  const step = 100 / (pts - 1);
+                                  const path = vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${24 - y}`).join(" ");
+                                  return (<><path d={`${path} L100,24 L0,24 Z`} fill={`url(#cat-spark-${item.id})`} /><path d={path} fill="none" stroke={CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" /></>);
                                 })()}
                               </svg>
                             </div>
