@@ -41,8 +41,8 @@ function generateSparkline(seed: number, points = 8): string {
   }
   // Make last point the highest for upward trend feel
   vals[vals.length - 1] = Math.max(...vals) + 3;
-  const step = 80 / (points - 1);
-  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${10 + i * step},${50 - y}`).join(" ");
+  const step = 100 / (points - 1);
+  return vals.map((y, i) => `${i === 0 ? "M" : "L"}${i * step},${50 - y}`).join(" ");
 }
 
 const HERO_GRADIENTS = [
@@ -200,7 +200,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
               </div>
 
               {/* Bottom: mini sparkline graph */}
-              <div className="relative z-10 px-2 pb-3">
+              <div className="relative z-10 pb-2">
                 <svg
                   viewBox="0 0 100 50"
                   className={cn("w-full", idx === 0 ? "h-[56px]" : "h-[44px]")}
@@ -214,7 +214,7 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                   </defs>
                   {/* Fill area */}
                   <path
-                    d={`${sparkPath} L90,50 L10,50 Z`}
+                    d={`${sparkPath} L100,50 L0,50 Z`}
                     fill={`url(#spark-fill-${item.id})`}
                   />
                   {/* Line */}
