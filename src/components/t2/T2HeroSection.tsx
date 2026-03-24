@@ -180,15 +180,17 @@ const T2HeroSection = ({ myKeywords }: T2HeroSectionProps) => {
                 <span className="text-[10px] font-bold text-white/60 uppercase tracking-wide mb-1 block">
                   {getLocalizedArtistName(item, language)}
                 </span>
-                <h3
-                  className={cn(
-                    "font-black text-white leading-tight flex items-center gap-1",
-                    idx === 0 ? "text-lg line-clamp-3" : "text-sm line-clamp-2"
-                  )}
-                >
+                <div className="flex items-center gap-1">
                   <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 text-white" />
-                  {getLocalizedKeyword(item, language)}
-                </h3>
+                  <h3
+                    className={cn(
+                      "font-black text-white leading-tight",
+                      idx === 0 ? "text-lg line-clamp-3" : "text-sm line-clamp-2"
+                    )}
+                  >
+                    {getLocalizedKeyword(item, language)}
+                  </h3>
+                </div>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] font-bold text-white/70 bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
                     {config?.label || item.category}
