@@ -39,16 +39,19 @@ function getConfidenceLabel(c: number): { text: string; color: string } {
   return { text: "Moderate", color: "text-amber-400" };
 }
 
-const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) => {
+const V3ArtistSchedule = ({ starId, wikiEntryId, artistName }: V3ArtistScheduleProps) => {
   const { t } = useLanguage();
+  const lookupId = starId || wikiEntryId;
+  const lookupField = starId ? "star_id" : "wiki_entry_id";
 
   const { data: predictions, isLoading } = useQuery({
-    queryKey: ["schedule-predictions", wikiEntryId],
+    queryKey: ["schedule-predictions", lookupId],
     queryFn: async () => {
+      if (!lookupId) return [];
       const { data } = await supabase
         .from("ktrenz_schedule_predictions" as any)
         .select("*")
-        .eq("wiki_entry_id", wikiEntryId)
+        .eq(lookupField, lookupId)
         .eq("status", "active")
         .gte("expires_at", new Date().toISOString())
         .gte("confidence", 0.7)
@@ -56,6 +59,7 @@ const V3ArtistSchedule = ({ wikiEntryId, artistName }: V3ArtistScheduleProps) =>
         .limit(8) as { data: any[] | null };
       return data || [];
     },
+    enabled: !!lookupId,
     staleTime: 5 * 60 * 1000,
   });
 
