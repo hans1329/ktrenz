@@ -63,6 +63,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   media: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
   music: "bg-violet-500/10 text-violet-400 border-violet-500/30",
   event: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+  social: "bg-sky-500/10 text-sky-400 border-sky-500/30",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
