@@ -254,6 +254,32 @@ Deno.serve(async (req) => {
         }
       }
       
+      // url이 없으면 본문 이미지 스캔 시도
+      if (!url && trigger.source_url) {
+        console.log(`[cache-image] No OG, trying body images for ${trigger.id}`);
+        const candidates = await fetchBodyImageCandidates(trigger.source_url);
+        if (candidates.length > 0) {
+          const best = await findLargestImage(candidates);
+          if (best && best.data.length > LOW_RES_THRESHOLD_BYTES) {
+            url = best.url;
+            console.log(`[cache-image] Found body image (${best.data.length}b) for ${trigger.id}: ${best.url}`);
+          }
+        }
+      }
+
+      // 여전히 없으면 아티스트 프로필 이미지로 폴백
+      if (!url && trigger.star_id) {
+        const { data: starData } = await sb
+          .from("ktrenz_stars")
+          .select("image_url")
+          .eq("id", trigger.star_id)
+          .single();
+        if (starData?.image_url) {
+          url = starData.image_url;
+          console.log(`[cache-image] Using artist image for ${trigger.id}: ${url}`);
+        }
+      }
+
       if (!url || (!force && url.includes(supabaseUrl))) continue;
 
       // 블랙리스트 도메인 체크
@@ -282,6 +308,22 @@ Deno.serve(async (req) => {
             console.log(`[cache-image] ✓ Found better image (${better.data.length}b vs ${image.data.length}b) for ${trigger.id}: ${better.url}`);
             finalImage = better;
             finalUrl = better.url;
+          }
+        }
+        // 본문 이미지도 저해상도면 아티스트 이미지로 폴백
+        if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES && trigger.star_id) {
+          const { data: starData } = await sb
+            .from("ktrenz_stars")
+            .select("image_url")
+            .eq("id", trigger.star_id)
+            .single();
+          if (starData?.image_url && !starData.image_url.includes(supabaseUrl)) {
+            const artistImg = await downloadImage(starData.image_url);
+            if (artistImg && artistImg.data.length > finalImage.data.length) {
+              console.log(`[cache-image] Using artist image fallback for ${trigger.id}`);
+              finalImage = artistImg;
+              finalUrl = starData.image_url;
+            }
           }
         }
       }
