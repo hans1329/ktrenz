@@ -1702,7 +1702,7 @@ async function detectForMember(
   const aiKeywords = articles.length > 0
     ? await extractCommercialKeywords(
         openaiKey, member.display_name, member.group_name, articles, member.star_category,
-        member.name_ko, member.group_name_ko
+        member.name_ko, member.group_name_ko, globalStarNames
       )
     : [];
 
