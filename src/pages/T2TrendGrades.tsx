@@ -133,7 +133,7 @@ const T2TrendGrades = () => {
       <main className="pt-14 pb-20 px-3 max-w-2xl mx-auto">
         {/* Title */}
         <div className="flex items-center gap-2 mt-3 mb-4">
-          <button onClick={() => navigate("/")} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+          <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
           <h1 className="text-lg font-bold text-foreground">Trend Grades</h1>
