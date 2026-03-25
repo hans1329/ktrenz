@@ -47,7 +47,7 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto">
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto" onPointerDownOutside={(e) => e.stopPropagation()} onInteractOutside={(e) => e.stopPropagation()}>
         <SheetHeader className="pb-3">
           <div className="flex items-center gap-3">
             {/* Brand logo */}
