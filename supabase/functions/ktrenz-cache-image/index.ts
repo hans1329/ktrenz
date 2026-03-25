@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
         // 1차: 이름 매칭 본문 이미지
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
-          const better = await findLargestImage(candidates);
+          const better = await findLargestImage(candidates, openaiKey);
           if (better && better.data.length > image.data.length * 1.5) {
             console.log(`[cache-image] ✓ Found better name-matched image (${better.data.length}b vs ${image.data.length}b) for ${trigger.id}: ${better.url}`);
             finalImage = better;
