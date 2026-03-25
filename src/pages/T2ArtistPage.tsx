@@ -395,11 +395,9 @@ const T2ArtistPage = () => {
                 {/* Grade + Score */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: `${gc.color}20` }}
-                    >
-                      <GradeIcon className="w-4.5 h-4.5" style={{ color: gc.color }} />
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-muted">
+                      <GradeIcon className="w-4.5 h-4.5 text-foreground" />
+                    </div>
                     </div>
                     <span className="text-lg font-black text-foreground">
                       {gc.label}
