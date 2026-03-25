@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins, Crosshair } from "lucide-react";
+import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins, Crosshair, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -457,7 +457,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-hidden border-border sm:max-w-lg sm:mx-auto flex flex-col gap-0 bg-muted">
         <SheetHeader className="pb-4 shrink-0 bg-background -mx-6 px-6 -mt-6 pt-6 rounded-t-2xl border-b border-border">
           <SheetTitle className="flex items-center gap-2 text-lg">
-            <TrendingUp className="w-5 h-5 text-primary" />
+            <MessageCircle className="w-5 h-5 text-primary" style={{ transform: 'scaleX(-1)' }} />
             {getLocalizedKeyword(tile, language)}
           </SheetTitle>
           <SheetDescription className="sr-only">{getLocalizedArtistName(tile, language)} trend detail</SheetDescription>
@@ -588,7 +588,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           <div className="rounded-xl bg-background border border-border overflow-hidden">
             <div className="p-3 space-y-1.5">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                <Newspaper className="w-4.5 h-4.5 text-primary" />
+                <Target className="w-4.5 h-4.5 text-primary" />
                 {t("whyTrend", language)}
               </h3>
               {(() => {
@@ -834,7 +834,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     </div>
                   )}
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 py-5"
                     onClick={handlePlaceBet}
                     disabled={betMutation.isPending || !betAmount}
                   >
