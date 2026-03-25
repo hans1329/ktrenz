@@ -901,6 +901,16 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         }
       }
 
+      // 글로벌 스타 이름과 일치하는 키워드 차단 (다른 아티스트 이름이 키워드로 추출되는 것 방지)
+      if (globalStarNames) {
+        const matchedStar = globalStarNames.get(kwLower) || globalStarNames.get(kwKo) || globalStarNames.get(kwEn)
+          || globalStarNames.get(normalizeForCompare(k.keyword || "")) || globalStarNames.get(normalizeForCompare(k.keyword_ko || ""));
+        if (matchedStar && !allNameVariants.has(kwLower)) {
+          console.warn(`[trend-detect] Blocked other star name as keyword: "${k.keyword}" (matches star: ${matchedStar})`);
+          return false;
+        }
+      }
+
       // 2글자 이하 단문 차단
       if (kwLower.length <= 1 && (!kwKo || kwKo.length <= 1)) return false;
 
