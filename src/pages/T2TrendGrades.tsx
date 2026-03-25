@@ -247,11 +247,22 @@ const T2TrendGrades = () => {
 
                   {/* Score */}
                   <div className="text-right shrink-0">
-                    <div className="text-xs font-mono font-semibold text-foreground">
-                      {Math.round(kw.influence_index || 0)}
-                    </div>
-                    {growth > 0 && (
-                      <div className="text-[10px] text-green-500 font-mono">+{growth}</div>
+                    {kw.trend_score != null ? (
+                      <>
+                        <div className="text-xs font-mono font-semibold text-foreground">
+                          {(kw.trend_score * 100).toFixed(0)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">score</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs font-mono font-semibold text-foreground">
+                          {Math.round(kw.influence_index || 0)}
+                        </div>
+                        {growth > 0 && (
+                          <div className="text-[10px] text-green-500 font-mono">+{growth}</div>
+                        )}
+                      </>
                     )}
                   </div>
                 </button>
