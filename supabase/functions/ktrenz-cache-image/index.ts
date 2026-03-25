@@ -444,8 +444,8 @@ Deno.serve(async (req) => {
             }
           }
         }
-        // 3차: 본문 이미지도 저해상도면 아티스트 이미지로 폴백
-        if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES && trigger.star_id) {
+        // 3차: 여전히 개선 못 했으면 아티스트 이미지로 폴백
+        if (finalImage === image && trigger.star_id) {
           const { data: starData } = await sb
             .from("ktrenz_stars")
             .select("image_url")
