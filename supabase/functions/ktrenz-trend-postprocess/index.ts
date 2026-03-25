@@ -8,6 +8,60 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function normalizeForCompare(value: string): string {
+  return value.toLowerCase().replace(/[()\[\]{}'"`“”‘’·,\-_\s]+/g, "");
+}
+
+function collectNameVariants(...inputs: Array<string | null | undefined>): Set<string> {
+  const variants = new Set<string>();
+
+  for (const input of inputs) {
+    if (!input) continue;
+    const trimmed = input.trim();
+    if (!trimmed) continue;
+
+    variants.add(trimmed.toLowerCase());
+
+    const normalized = normalizeForCompare(trimmed);
+    if (normalized) variants.add(normalized);
+
+    const withoutParen = trimmed.replace(/\([^)]*\)/g, " ").trim();
+    if (withoutParen && withoutParen !== trimmed) {
+      variants.add(withoutParen.toLowerCase());
+      const normalizedWithoutParen = normalizeForCompare(withoutParen);
+      if (normalizedWithoutParen) variants.add(normalizedWithoutParen);
+    }
+
+    for (const match of trimmed.matchAll(/\(([^)]+)\)/g)) {
+      const inner = match[1]?.trim();
+      if (!inner) continue;
+      variants.add(inner.toLowerCase());
+      const normalizedInner = normalizeForCompare(inner);
+      if (normalizedInner) variants.add(normalizedInner);
+    }
+  }
+
+  return variants;
+}
+
+function matchesBlockedNameKeyword(
+  keyword: string | null | undefined,
+  keywordKo: string | null | undefined,
+  keywordEn: string | null | undefined,
+  blockedNames: Set<string>,
+): boolean {
+  for (const value of [keyword, keywordKo, keywordEn]) {
+    if (!value) continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    if (blockedNames.has(trimmed.toLowerCase()) || blockedNames.has(normalizeForCompare(trimmed))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // ── 1. 멤버 우선 중복제거 ──
 // 같은 키워드 또는 같은 source_url이 그룹과 멤버 양쪽에 존재하면 멤버 것만 유지
 async function memberPriorityDedup(sb: any): Promise<{ expired: number; details: string[] }> {
@@ -369,7 +423,7 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
   // pending 상태인 것만 대상
   const { data: pending } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, artist_name, star_id, context, context_ko, source_title, keyword_category, trigger_source")
+    .select("id, keyword, keyword_ko, keyword_en, artist_name, star_id, context, context_ko, source_title, keyword_category, trigger_source")
     .eq("status", "pending")
     .gte("detected_at", threeDaysAgo);
 
@@ -434,6 +488,12 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
       continue;
     }
 
+    const blockedNameSet = collectNameVariants(
+      star.display_name,
+      star.name_ko,
+      ...memberList.flatMap((m: any) => [m.display_name, m.name_ko]),
+    );
+
     const keywordList = entries.map((e: any) => ({
       id: e.id,
       keyword: e.keyword,
@@ -495,6 +555,16 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
         const entry = entries.find((e: any) => e.id === r.id);
         if (!entry) continue;
 
+        if (matchesBlockedNameKeyword(entry.keyword, entry.keyword_ko, entry.keyword_en, blockedNameSet)) {
+          await sb.from("ktrenz_trend_triggers").update({
+            status: "expired",
+            expired_at: new Date().toISOString(),
+          }).eq("id", r.id);
+          reclassified++;
+          details.push(`"${entry.keyword}" 제거: 그룹/멤버 이름 키워드`);
+          continue;
+        }
+
         // 멤버 귀속 처리
         if (r.attribution === "member" && r.attributed_member) {
           // 해당 멤버의 star_id 찾기 (memberList에서 검색)
@@ -513,25 +583,42 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
 
         // 복합 키워드 분리
         if (r.should_split && r.split_keywords?.length > 1) {
-          // 원본을 첫 번째 키워드로 업데이트
+          const cleanedSplitKeywords = r.split_keywords
+            .map((value: string) => value?.trim())
+            .filter((value: string | undefined): value is string => Boolean(value))
+            .filter((value: string, index: number, arr: string[]) =>
+              arr.findIndex((candidate: string) => normalizeForCompare(candidate) === normalizeForCompare(value)) === index
+            )
+            .filter((value: string) => !matchesBlockedNameKeyword(value, value, value, blockedNameSet));
+
+          if (!cleanedSplitKeywords.length) {
+            await sb.from("ktrenz_trend_triggers").update({
+              status: "expired",
+              expired_at: new Date().toISOString(),
+            }).eq("id", r.id);
+            reclassified++;
+            details.push(`"${entry.keyword}" 제거: 분리 후 이름 키워드만 남음`);
+            continue;
+          }
+
           await sb.from("ktrenz_trend_triggers").update({
-            keyword: r.split_keywords[0],
-            keyword_ko: r.split_keywords[0],
+            keyword: cleanedSplitKeywords[0],
+            keyword_ko: cleanedSplitKeywords[0],
+            keyword_en: cleanedSplitKeywords[0],
           }).eq("id", r.id);
 
-          // 나머지를 새 레코드로 삽입
-          for (let i = 1; i < r.split_keywords.length; i++) {
+          for (let i = 1; i < cleanedSplitKeywords.length; i++) {
             await sb.from("ktrenz_trend_triggers").insert({
               ...entry,
               id: undefined,
-              keyword: r.split_keywords[i],
-              keyword_ko: r.split_keywords[i],
-              keyword_en: r.split_keywords[i],
+              keyword: cleanedSplitKeywords[i],
+              keyword_ko: cleanedSplitKeywords[i],
+              keyword_en: cleanedSplitKeywords[i],
               status: "pending",
             });
           }
           reclassified++;
-          details.push(`"${entry.keyword}" → 분리: ${r.split_keywords.join(", ")}`);
+          details.push(`"${entry.keyword}" → 분리: ${cleanedSplitKeywords.join(", ")}`);
         }
       }
 
