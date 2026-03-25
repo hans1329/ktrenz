@@ -162,14 +162,26 @@ const T2ArtistPage = () => {
     queryKey: ["t2-artist-schedules", star?.resolvedWikiEntryId],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
-      const { data } = await supabase
+
+      const { data: upcoming } = await supabase
         .from("ktrenz_schedules" as any)
         .select("*")
         .eq("wiki_entry_id", star!.resolvedWikiEntryId)
         .gte("event_date", today)
         .order("event_date", { ascending: true })
         .limit(20);
-      return (data ?? []) as any[];
+
+      if ((upcoming ?? []).length > 0) return (upcoming ?? []) as any[];
+
+      const { data: recentPast } = await supabase
+        .from("ktrenz_schedules" as any)
+        .select("*")
+        .eq("wiki_entry_id", star!.resolvedWikiEntryId)
+        .lt("event_date", today)
+        .order("event_date", { ascending: false })
+        .limit(6);
+
+      return (recentPast ?? []) as any[];
     },
     enabled: !!star?.resolvedWikiEntryId,
   });
