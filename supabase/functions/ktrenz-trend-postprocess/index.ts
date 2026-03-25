@@ -702,6 +702,7 @@ Deno.serve(async (req) => {
         domesticPriority: srcDedupResult,
         sameSourceUrlDedup: sameUrlResult,
         crossArtistDedup: crossArtistResult,
+        brandMapped,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
