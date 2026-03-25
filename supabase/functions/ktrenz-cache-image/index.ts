@@ -61,8 +61,42 @@ async function downloadImage(url: string): Promise<{ data: Uint8Array; contentTy
   }
 }
 
-// 본문 HTML에서 고해상도 <img> URL 후보들을 추출 (og:image보다 큰 이미지를 찾기 위해)
-async function fetchBodyImageCandidates(pageUrl: string): Promise<string[]> {
+// 아티스트/키워드 이름 변형 생성 (매칭용)
+function buildNameVariants(artistName: string | null, keyword: string | null): string[] {
+  const variants: string[] = [];
+  for (const name of [artistName, keyword]) {
+    if (!name) continue;
+    const trimmed = name.trim();
+    if (!trimmed) continue;
+    variants.push(trimmed.toLowerCase());
+    // 공백 제거 버전
+    const noSpace = trimmed.replace(/\s+/g, "").toLowerCase();
+    if (noSpace !== trimmed.toLowerCase()) variants.push(noSpace);
+    // 괄호 안 이름 추출 (e.g. "엔믹스(NMIXX)" → "NMIXX")
+    for (const m of trimmed.matchAll(/\(([^)]+)\)/g)) {
+      const inner = m[1]?.trim().toLowerCase();
+      if (inner) variants.push(inner);
+    }
+    // 괄호 제거 버전
+    const noParen = trimmed.replace(/\([^)]*\)/g, "").trim().toLowerCase();
+    if (noParen && noParen !== trimmed.toLowerCase()) variants.push(noParen);
+  }
+  return [...new Set(variants)].filter(v => v.length >= 2);
+}
+
+// 텍스트에 이름 변형 중 하나라도 포함되는지 확인
+function textMatchesNames(text: string, nameVariants: string[]): boolean {
+  if (!text || nameVariants.length === 0) return false;
+  const lower = text.toLowerCase();
+  return nameVariants.some(v => lower.includes(v));
+}
+
+// 본문 HTML에서 <img> 후보를 추출하되, alt 텍스트/캡션에 아티스트명이 있는 것만 반환
+// nameVariants가 빈 배열이면 (이름 정보 없으면) 기존처럼 전부 반환
+async function fetchBodyImageCandidates(
+  pageUrl: string,
+  nameVariants: string[] = [],
+): Promise<string[]> {
   try {
     const res = await fetch(pageUrl, {
       headers: {
@@ -85,15 +119,21 @@ async function fetchBodyImageCandidates(pageUrl: string): Promise<string[]> {
     }
     reader.cancel();
 
-    const candidates: string[] = [];
-    const imgMatches = html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi);
-    for (const m of imgMatches) {
-      const src = m[1];
-      // 광고/아이콘/로고 등 제외
+    const hasFilter = nameVariants.length > 0;
+    const matched: string[] = [];
+    const unmatched: string[] = [];
+
+    // 각 img 태그를 순회하며 alt + 후방 캡션 텍스트 검사
+    const imgRegex = /<img[^>]*src=["']([^"']+)["'][^>]*>/gi;
+    let imgMatch: RegExpExecArray | null;
+    while ((imgMatch = imgRegex.exec(html)) !== null) {
+      const fullTag = imgMatch[0];
+      const src = imgMatch[1];
+
+      // 기본 필터
       if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
       if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|emoticon|emoji/i.test(src)) continue;
-      // 작은 크기 힌트가 있는 이미지 제외
-      if (/width=["']?([1-9]|[1-9]\d)["'\s>]/i.test(m[0]) && !/width=["']?[1-9]\d{2,}/i.test(m[0])) continue;
+      if (/width=["']?([1-9]|[1-9]\d)["'\s>]/i.test(fullTag) && !/width=["']?[1-9]\d{2,}/i.test(fullTag)) continue;
 
       let resolved = src.replace(/&amp;/g, "&");
       if (resolved.startsWith("//")) resolved = "https:" + resolved;
@@ -101,16 +141,46 @@ async function fetchBodyImageCandidates(pageUrl: string): Promise<string[]> {
         try { resolved = new URL(resolved, pageUrl).href; } catch { continue; }
       }
       if (!resolved.startsWith("http")) continue;
-
-      // 블랙리스트 도메인 체크
-      const isBlacklisted = IMAGE_DOMAIN_BLACKLIST.some(domain => resolved.includes(domain));
-      if (isBlacklisted) continue;
-      // http:// 프로토콜은 mixed content 위험 → 스킵
+      if (IMAGE_DOMAIN_BLACKLIST.some(domain => resolved.includes(domain))) continue;
       if (resolved.startsWith("http://")) continue;
 
-      candidates.push(resolved);
+      if (!hasFilter) {
+        matched.push(resolved);
+        continue;
+      }
+
+      // alt 텍스트 추출
+      const altMatch = fullTag.match(/alt=["']([^"']*?)["']/i);
+      const altText = altMatch?.[1] || "";
+
+      // img 태그 직후 200자 내의 텍스트(캡션)도 확인
+      const afterTagStart = imgMatch.index + fullTag.length;
+      const captionSlice = html.slice(afterTagStart, afterTagStart + 300);
+      // HTML 태그 제거하고 순수 텍스트만
+      const captionText = captionSlice.replace(/<[^>]+>/g, " ").slice(0, 200);
+
+      const combinedText = `${altText} ${captionText}`;
+
+      if (textMatchesNames(combinedText, nameVariants)) {
+        matched.push(resolved);
+        console.log(`[cache-image] ✓ Name-matched image: alt="${altText.slice(0, 60)}" → ${resolved.slice(0, 80)}`);
+      } else {
+        unmatched.push(resolved);
+      }
     }
-    return candidates;
+
+    if (matched.length > 0) {
+      console.log(`[cache-image] Name filter: ${matched.length} matched, ${unmatched.length} excluded`);
+      return matched;
+    }
+
+    // 매칭 이미지가 없으면 빈 배열 반환 (무관한 이미지 사용 방지)
+    if (hasFilter) {
+      console.log(`[cache-image] No name-matched images found, returning empty (${unmatched.length} excluded)`);
+      return [];
+    }
+
+    return unmatched;
   } catch {
     return [];
   }
@@ -186,23 +256,26 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     let targets: any[] = [];
 
+    // select에 artist_name, keyword, metadata 추가 (이름 매칭용)
+    const selectFields = "id, source_image_url, source_url, star_id, artist_name, keyword, metadata";
+
     if (triggerId) {
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url, source_url, star_id")
+        .select(selectFields)
         .eq("id", triggerId)
         .single();
       if (data) targets = [data];
     } else if (triggerIds?.length) {
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url, source_url, star_id")
+        .select(selectFields)
         .in("id", triggerIds);
       if (data) targets = data;
     } else if (backfill) {
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url, source_url, star_id")
+        .select(selectFields)
         .eq("status", "active")
         .order("detected_at", { ascending: false })
         .limit(limit);
@@ -227,6 +300,14 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const trigger of targets) {
+      // 아티스트/키워드 이름 변형 생성 (본문 이미지 필터링용)
+      const searchName = trigger.metadata?.search_name || null;
+      const groupName = trigger.metadata?.group_name || null;
+      const nameVariants = buildNameVariants(trigger.artist_name, searchName);
+      // 그룹명과 키워드도 변형에 추가
+      const extraVariants = buildNameVariants(groupName, trigger.keyword);
+      const allNameVariants = [...new Set([...nameVariants, ...extraVariants])];
+
       let url = sanitizeImageUrl(trigger.source_image_url);
 
       // force 모드: 이미 캐시된 이미지도 source_url에서 다시 가져오기
@@ -254,10 +335,10 @@ Deno.serve(async (req) => {
         }
       }
       
-      // url이 없으면 본문 이미지 스캔 시도
+      // url이 없으면 본문 이미지 스캔 시도 (아티스트명 필터 적용)
       if (!url && trigger.source_url) {
-        console.log(`[cache-image] No OG, trying body images for ${trigger.id}`);
-        const candidates = await fetchBodyImageCandidates(trigger.source_url);
+        console.log(`[cache-image] No OG, trying body images for ${trigger.id} (nameVariants: ${allNameVariants.join(",")})`);
+        const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
           const best = await findLargestImage(candidates);
           if (best && best.data.length > LOW_RES_THRESHOLD_BYTES) {
@@ -296,16 +377,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // og:image가 저해상도(30KB 이하)이면 본문에서 더 큰 이미지를 찾는다
+      // og:image가 저해상도(30KB 이하)이면 본문에서 아티스트명 매칭된 더 큰 이미지를 찾는다
       let finalImage = image;
       let finalUrl = url;
       if (image.data.length < LOW_RES_THRESHOLD_BYTES && trigger.source_url) {
-        console.log(`[cache-image] Low-res og:image (${image.data.length}b) for ${trigger.id}, scanning body images from ${trigger.source_url}`);
-        const candidates = await fetchBodyImageCandidates(trigger.source_url);
+        console.log(`[cache-image] Low-res og:image (${image.data.length}b) for ${trigger.id}, scanning body images with name filter`);
+        const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
           const better = await findLargestImage(candidates);
           if (better && better.data.length > image.data.length * 1.5) {
-            console.log(`[cache-image] ✓ Found better image (${better.data.length}b vs ${image.data.length}b) for ${trigger.id}: ${better.url}`);
+            console.log(`[cache-image] ✓ Found better name-matched image (${better.data.length}b vs ${image.data.length}b) for ${trigger.id}: ${better.url}`);
             finalImage = better;
             finalUrl = better.url;
           }
