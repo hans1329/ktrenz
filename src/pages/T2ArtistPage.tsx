@@ -257,7 +257,7 @@ const T2ArtistPage = () => {
         toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
       }
       queryClient.invalidateQueries({ queryKey: ["t2-watched-check"] });
-      queryClient.invalidateQueries({ queryKey: ["t2-watched-artists"] });
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2"] });
       queryClient.invalidateQueries({ queryKey: ["hero-has-watched"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     } catch {
