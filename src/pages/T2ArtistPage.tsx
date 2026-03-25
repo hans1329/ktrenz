@@ -242,11 +242,11 @@ const T2ArtistPage = () => {
           .eq("wiki_entry_id", star.wiki_entry_id);
         toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
       } else {
-        // Delete existing then insert to avoid duplicates
         await supabase
           .from("ktrenz_watched_artists")
           .delete()
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .eq("wiki_entry_id", star.wiki_entry_id);
         await supabase
           .from("ktrenz_watched_artists")
           .insert({
@@ -258,6 +258,8 @@ const T2ArtistPage = () => {
       }
       queryClient.invalidateQueries({ queryKey: ["t2-watched-check"] });
       queryClient.invalidateQueries({ queryKey: ["t2-watched-artists"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-has-watched"] });
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     } catch {
       toast.error("Error");
     } finally {

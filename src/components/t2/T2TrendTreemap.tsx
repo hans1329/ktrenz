@@ -390,13 +390,16 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     staleTime: 20000,
   });
 
+  const watchedKey = (watchedWikiIds ?? []).slice().sort().join(",");
+  const followedKey = (followedTriggerIds ?? []).slice().sort().join(",");
+
   const { data: triggers, isLoading } = useQuery({
-    queryKey: ["t2-trend-triggers"],
+    queryKey: ["t2-trend-triggers", watchedKey, followedKey],
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
+    enabled: watchedWikiIds !== undefined && followedTriggerIds !== undefined,
     queryFn: async () => {
-      // Fetch triggers
-      const { data } = await supabase
+      const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("status", "active")
@@ -405,10 +408,39 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         .order("detected_at", { ascending: false })
         .limit(500);
 
-      const triggers = (data ?? []) as any[];
+      const watchedPromise = watchedWikiIds && watchedWikiIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("wiki_entry_id", watchedWikiIds)
+            .order("influence_index", { ascending: false })
+            .order("baseline_score", { ascending: false })
+            .order("detected_at", { ascending: false })
+            .limit(300)
+        : Promise.resolve({ data: [] as any[] });
 
-      // Fetch star info using star_id from ktrenz_stars (only active stars)
-      const starIds = [...new Set(triggers.map((t: any) => t.star_id).filter(Boolean))];
+      const followedPromise = followedTriggerIds && followedTriggerIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("id", followedTriggerIds)
+        : Promise.resolve({ data: [] as any[] });
+
+      const [{ data: baseData }, { data: watchedData }, { data: followedData }] = await Promise.all([
+        basePromise,
+        watchedPromise,
+        followedPromise,
+      ]);
+
+      const mergedRaw = new Map<string, any>();
+      [...(baseData ?? []), ...(watchedData ?? []), ...(followedData ?? [])].forEach((item: any) => {
+        mergedRaw.set(item.id, item);
+      });
+      const rawTriggers = Array.from(mergedRaw.values()) as any[];
+
+      const starIds = [...new Set(rawTriggers.map((t: any) => t.star_id).filter(Boolean))];
       const starMap = new Map<string, { display_name: string; name_ko: string | null; image_url: string | null; wiki_entry_id: string | null }>();
       const activeStarIds = new Set<string>();
       if (starIds.length > 0) {
@@ -416,42 +448,51 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           .from("ktrenz_stars" as any)
           .select("id, wiki_entry_id, display_name, name_ko, is_active, group_star_id, image_url")
           .in("id", starIds);
-        
-        // Only include active stars
+
         const activeStars = (stars ?? []).filter((s: any) => s.is_active !== false);
         activeStars.forEach((s: any) => activeStarIds.add(s.id));
 
-        // Collect wiki_entry_ids from both the star itself and its group parent
         const wikiIds = new Set<string>();
         const groupStarIds = new Set<string>();
         activeStars.forEach((s: any) => {
           if (s.wiki_entry_id) wikiIds.add(s.wiki_entry_id);
           if (s.group_star_id) groupStarIds.add(s.group_star_id);
         });
-        // Also fetch group stars' wiki_entry_ids for fallback images
-        const groupWikiMap = new Map<string, string>(); // group_star_id -> wiki_entry_id
+
+        const groupWikiMap = new Map<string, string>();
         if (groupStarIds.size > 0) {
           const { data: groupStars } = await supabase.from("ktrenz_stars").select("id, wiki_entry_id").in("id", Array.from(groupStarIds));
           (groupStars ?? []).forEach((g: any) => {
-            if (g.wiki_entry_id) { groupWikiMap.set(g.id, g.wiki_entry_id); wikiIds.add(g.wiki_entry_id); }
+            if (g.wiki_entry_id) {
+              groupWikiMap.set(g.id, g.wiki_entry_id);
+              wikiIds.add(g.wiki_entry_id);
+            }
           });
         }
+
         const imageMap = new Map<string, string>();
         if (wikiIds.size > 0) {
           const { data: wikiEntries } = await supabase.from("wiki_entries").select("id, image_url").in("id", Array.from(wikiIds));
-          (wikiEntries ?? []).forEach((w: any) => { if (w.image_url) imageMap.set(w.id, w.image_url); });
+          (wikiEntries ?? []).forEach((w: any) => {
+            if (w.image_url) imageMap.set(w.id, w.image_url);
+          });
         }
+
         activeStars.forEach((s: any) => {
           const ownImage = s.wiki_entry_id ? imageMap.get(s.wiki_entry_id) : null;
           const groupWikiId = s.group_star_id ? groupWikiMap.get(s.group_star_id) : null;
           const groupImage = groupWikiId ? imageMap.get(groupWikiId) : null;
           const starDirectImage = s.image_url && s.image_url !== "" ? s.image_url : null;
-          starMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: ownImage || starDirectImage || groupImage || null, wiki_entry_id: s.wiki_entry_id || groupWikiId });
+          starMap.set(s.id, {
+            display_name: s.display_name,
+            name_ko: s.name_ko,
+            image_url: ownImage || starDirectImage || groupImage || null,
+            wiki_entry_id: s.wiki_entry_id || groupWikiId,
+          });
         });
       }
 
-      // Filter out triggers whose star_id is not in active stars
-      const filteredTriggers = triggers.filter((t: any) => !t.star_id || activeStarIds.has(t.star_id));
+      const filteredTriggers = rawTriggers.filter((t: any) => !t.star_id || activeStarIds.has(t.star_id));
 
       return filteredTriggers.map((t: any): TrendTile => {
         const star = t.star_id ? starMap.get(t.star_id) : null;
@@ -503,11 +544,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return dedupeTrendTiles(triggers, sortMode);
   }, [triggers, sortMode]);
 
-  // My picks: keep existing watched-artist keywords and append explicitly tracked keywords
   const myKeywords = useMemo(() => {
     if (!triggers?.length) return [];
 
-    const watchedKeywords = dedupedTriggers.filter((t) => watchedSet.has(t.wikiEntryId));
+    const watchedKeywords = triggers.filter((t) => watchedSet.has(t.wikiEntryId));
     const trackedKeywords = triggers.filter((t) => followedTriggerSet.has(t.id));
 
     const merged = new Map<string, TrendTile>();
@@ -516,7 +556,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     });
 
     return Array.from(merged.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
-  }, [triggers, dedupedTriggers, watchedSet, followedTriggerSet, sortMode]);
+  }, [triggers, watchedSet, followedTriggerSet, sortMode]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
