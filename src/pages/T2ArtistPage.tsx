@@ -350,9 +350,9 @@ const T2ArtistPage = () => {
              {star.agency && (
                <p className="text-sm text-muted-foreground">{star.agency}</p>
              )}
-             <p className="text-xs text-primary font-bold mt-0.5">
-               {keywords?.length ?? 0} {language === "ko" ? "활성 키워드" : "active keywords"}
-             </p>
+              <p className="text-xs text-primary font-bold mt-0.5">
+                {keywords?.length ?? 0} {t("artist.activeKeywords")}
+              </p>
            </div>
            {user && (
              <button
