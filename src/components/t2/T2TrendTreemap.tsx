@@ -832,7 +832,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       className="flex items-start gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
                       style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                     >
-                      {items.slice(0, 15).map((item, idx) => {
+                      {items.slice(0, 20).map((item, idx) => {
                         const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
                         const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
                         const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
