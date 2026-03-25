@@ -314,23 +314,34 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     queryKey: ["t2-watched-artists", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      // 1. Get user's agent slots
+
+      // 1. Get wiki_entry_ids from ktrenz_watched_artists
+      const { data: watched } = await supabase
+        .from("ktrenz_watched_artists" as any)
+        .select("wiki_entry_id")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null);
+      const watchedIds = (watched ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+
+      // 2. Also get wiki_entry_ids from ktrenz_agent_slots (최애 등록)
       const { data: slots } = await supabase
         .from("ktrenz_agent_slots")
         .select("wiki_entry_id")
         .eq("user_id", user.id)
         .not("wiki_entry_id", "is", null);
-      const directIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+      const slotIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+
+      const directIds = [...new Set([...watchedIds, ...slotIds])];
       if (!directIds.length) return [];
 
-      // 2. Find star_ids for these wiki_entry_ids (to check if any are groups)
+      // 3. Find star_ids for these wiki_entry_ids (to check if any are groups)
       const { data: stars } = await supabase
         .from("ktrenz_stars" as any)
         .select("id, wiki_entry_id")
         .in("wiki_entry_id", directIds);
       const starIds = (stars ?? []).map((s: any) => s.id) as string[];
 
-      // 3. Find members whose group_star_id matches any of these star_ids
+      // 4. Find members whose group_star_id matches any of these star_ids
       if (starIds.length) {
         const { data: members } = await supabase
           .from("ktrenz_stars" as any)
