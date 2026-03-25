@@ -366,9 +366,7 @@ const T2ArtistPage = () => {
                )}
              >
                <Star className={cn("w-3.5 h-3.5", isWatched && "fill-amber-500")} />
-               {isWatched
-                 ? (language === "ko" ? "관심중" : "Watching")
-                 : (language === "ko" ? "관심 등록" : "Watch")}
+                {isWatched ? t("artist.watching") : t("artist.watch")}
              </button>
            )}
          </div>
