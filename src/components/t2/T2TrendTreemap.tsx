@@ -361,7 +361,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const watchedStarIds = watchedData?.starIds;
   const watchedStarSet = useMemo(() => new Set(watchedStarIds ?? []), [watchedStarIds]);
 
-  const { data: followedTriggerIds } = useQuery({
+  const { data: followedTriggerIds = [] } = useQuery({
     queryKey: ["t2-keyword-follows-list", user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as string[];
@@ -373,6 +373,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     },
     enabled: !!user?.id,
     staleTime: 10_000,
+    placeholderData: [],
   });
 
   const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
