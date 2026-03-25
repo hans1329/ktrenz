@@ -797,6 +797,27 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               continue;
             }
 
+            // ── 6단계: 소스 기사에 아티스트 이름이 실제 포함되는지 코드 레벨 검증 ──
+            // AI가 article_subject_match=true로 판정해도 기사 제목/설명에 이름이 없으면 차단
+            if (typeof k.source_article_index === "number" && k.source_article_index > 0) {
+              const srcArticle = articles[k.source_article_index - 1];
+              if (srcArticle) {
+                const artText = `${srcArticle.title} ${srcArticle.description || ""}`.toLowerCase();
+                // 아티스트의 모든 이름 변형 중 하나라도 기사 텍스트에 포함되어야 함
+                const nameVariantsForCheck = [memberName, nameKo, groupName, groupNameKo]
+                  .filter(Boolean)
+                  .map((n: string) => n.toLowerCase().trim());
+                const articleMentionsArtist = nameVariantsForCheck.some(n => {
+                  if (n.length < 2) return false;
+                  return artText.includes(n) || artText.includes(n.replace(/[\s\-]/g, ""));
+                });
+                if (!articleMentionsArtist) {
+                  console.warn(`[trend-detect] ⛔ Source article does NOT mention artist: "${k.keyword}" from article[${k.source_article_index}] "${srcArticle.title?.slice(0, 60)}" — searched for [${nameVariantsForCheck.join(", ")}]`);
+                  continue;
+                }
+              }
+            }
+
             // ✅ 모든 검증 통과
             console.log(`[trend-detect] ✅ Accepted: "${k.keyword}" (subject: ${k.article_subject_name}, match: ${k.article_subject_match}, flags: [${rejectionFlags.join(",")}], ownership: ${k.ownership_confidence}, stage: ${k.purchase_stage || "n/a"})`);
             extractedKeywords.push({
