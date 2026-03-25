@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { triggerId, triggerIds, backfill = false, limit = 50 } = body;
+    const { triggerId, triggerIds, backfill = false, limit = 50, force = false } = body;
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -229,6 +229,19 @@ Deno.serve(async (req) => {
 
     for (const trigger of targets) {
       let url = sanitizeImageUrl(trigger.source_image_url);
+
+      // force 모드: 이미 캐시된 이미지도 source_url에서 다시 가져오기
+      if (force && url && url.includes(supabaseUrl) && trigger.source_url) {
+        console.log(`[cache-image] Force re-cache for ${trigger.id}, fetching OG from ${trigger.source_url}`);
+        const ogUrl = await fetchOgImage(trigger.source_url);
+        if (ogUrl) {
+          url = ogUrl;
+        } else {
+          console.warn(`[cache-image] Force: no OG image found for ${trigger.id}, skipping`);
+          failed++;
+          continue;
+        }
+      }
       
       // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
       if (!url && trigger.source_url) {
@@ -244,7 +257,7 @@ Deno.serve(async (req) => {
         }
       }
       
-      if (!url || url.includes(supabaseUrl)) continue;
+      if (!url || (!force && url.includes(supabaseUrl))) continue;
 
       // 블랙리스트 도메인 체크
       const isBlacklisted = IMAGE_DOMAIN_BLACKLIST.some(domain => url!.includes(domain));
