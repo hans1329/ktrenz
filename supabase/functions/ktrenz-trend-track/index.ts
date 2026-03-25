@@ -1,4 +1,4 @@
-// T2 Trend Track v3: 기존 active 키워드의 버즈 점수 재측정 + delta 계산
+// T2 Trend Track v4: 기존 active 키워드의 버즈 점수 재측정 + delta 계산 + AI 동적 컨텍스트
 // detect와 동일한 공식: news(60%) + blog(40%), 네이버 API 단독
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,6 +7,71 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// ─── AI 동적 컨텍스트 생성 ───
+async function generateDynamicContext(
+  trigger: any,
+  buzzScore: number,
+  deltaPct: number,
+  trackingHistory: number[],
+): Promise<string | null> {
+  const openaiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiKey) return null;
+
+  try {
+    const baseline = trigger.baseline_score ?? 0;
+    const peak = trigger.peak_score ?? 0;
+    const influence = trigger.influence_index ?? 0;
+    const ageDays = Math.round((Date.now() - new Date(trigger.detected_at).getTime()) / 86400000);
+    const isShop = trigger.trigger_source === "naver_shop";
+    const trendDirection = trackingHistory.length >= 3
+      ? (trackingHistory[trackingHistory.length - 1] > trackingHistory[0] ? "rising" : "declining")
+      : "stable";
+
+    const prompt = `You are a K-pop trend data analyst. Based on the following real-time tracking data, write a concise 1-2 sentence interpretation of the current status of this keyword trend. Write in English. Be specific with numbers and direction. Use a punchy editorial tone.
+
+Artist: ${trigger.artist_name}
+Keyword: ${trigger.keyword}
+Category: ${trigger.keyword_category || "general"}
+Source: ${isShop ? "Shopping/Commerce" : "News/Blog"}
+Current Score: ${buzzScore}
+Baseline Score: ${baseline}
+Peak Score: ${peak}
+Score Change: ${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(1)}%
+Influence Index: ${influence}
+Trend Direction (last 3 readings): ${trendDirection}
+Recent Scores: [${trackingHistory.slice(-5).join(", ")}]
+Days Since Detection: ${ageDays}
+${trigger.context ? `Previous Context: ${trigger.context}` : ""}
+
+Write ONLY the interpretation, no labels or prefixes.`;
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 150,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn(`[trend-track] AI context error: ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content?.trim() || null;
+  } catch (e) {
+    console.warn(`[trend-track] AI context failed: ${(e as Error).message}`);
+    return null;
+  }
+}
 
 // ─── 네이버 쇼핑 API: 키워드만으로 상품 수 조회 ───
 async function searchNaverShop(
@@ -372,6 +437,26 @@ Deno.serve(async (req) => {
 
         await updateCausalMetrics(sb, trigger.id, buzzScore, isShopTrigger);
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
+
+        // ─── AI 동적 컨텍스트 생성 (변동폭 ±15% 이상일 때만) ───
+        if (Math.abs(deltaPct) >= 15) {
+          const { data: recentTracking } = await sb.from("ktrenz_trend_tracking")
+            .select("interest_score")
+            .eq("trigger_id", trigger.id)
+            .order("tracked_at", { ascending: false })
+            .limit(10);
+          const history = (recentTracking ?? []).map((r: any) => r.interest_score).reverse();
+
+          const newContext = await generateDynamicContext(trigger, buzzScore, deltaPct, history);
+          if (newContext) {
+            await sb.from("ktrenz_trend_triggers").update({
+              context: newContext,
+              context_ko: null, context_ja: null, context_zh: null,
+            }).eq("id", trigger.id);
+            console.log(`[trend-track] 🤖 Dynamic context updated: ${trigger.keyword}`);
+          }
+        }
+
         await notifyKeywordFollowers(sb, trigger, deltaPct);
 
         trackedCount++;
