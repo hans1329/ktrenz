@@ -133,7 +133,8 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
             return (
               <button
                 key={kw.id}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   onClose();
                   navigate(`/t2/${kw.id}`);
                 }}
