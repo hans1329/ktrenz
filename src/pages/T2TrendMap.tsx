@@ -380,7 +380,7 @@ const T2TrendMap = () => {
                         <div className="md:max-w-[90%] mx-auto">
                           <T2TrendTreemap
                             viewMode={mode}
-                            onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                            onViewModeChange={(m) => updateViewIndex(VIEW_ORDER.indexOf(m))}
                             selectedCategory={category}
                             onCategoryChange={setCategory}
                             hideCategory
