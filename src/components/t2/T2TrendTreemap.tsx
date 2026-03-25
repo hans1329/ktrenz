@@ -445,14 +445,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             .in("id", followedTriggerIds)
         : Promise.resolve({ data: [] as any[] });
 
-      const [{ data: baseData }, { data: watchedData }, { data: followedData }] = await Promise.all([
+      const [{ data: baseData }, { data: watchedByStarData }, { data: watchedByWikiData }, { data: followedData }] = await Promise.all([
         basePromise,
-        watchedPromise,
+        watchedByStarPromise,
+        watchedByWikiPromise,
         followedPromise,
       ]);
 
       const mergedRaw = new Map<string, any>();
-      [...(baseData ?? []), ...(watchedData ?? []), ...(followedData ?? [])].forEach((item: any) => {
+      [...(baseData ?? []), ...(watchedByStarData ?? []), ...(watchedByWikiData ?? []), ...(followedData ?? [])].forEach((item: any) => {
         mergedRaw.set(item.id, item);
       });
       const rawTriggers = Array.from(mergedRaw.values()) as any[];
