@@ -1,0 +1,1 @@
+DELETE FROM ktrenz_trend_triggers WHERE status = 'expired';
