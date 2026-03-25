@@ -43,7 +43,10 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
 
   const brandName = language === "ko" && brand.brand_name_ko ? brand.brand_name_ko : brand.brand_name;
   const sortedKeywords = [...keywords].sort((a, b) => b.influenceIndex - a.influenceIndex);
-  const strengthPct = Math.min(totalInfluence, 100);
+  // 가중 평균 공식: avg * 0.6 + max * 0.4, 캡 100
+  const avgInfluence = keywords.length > 0 ? totalInfluence / keywords.length : 0;
+  const maxInfluence = keywords.length > 0 ? Math.max(...keywords.map(k => k.influenceIndex)) : 0;
+  const strengthPct = Math.min(Math.round(avgInfluence * 0.6 + maxInfluence * 0.4), 100);
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
