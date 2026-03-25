@@ -347,7 +347,7 @@ const T2TrendMap = () => {
               >
                 <T2TrendTreemap
                   viewMode={viewMode}
-                  onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                  onViewModeChange={(m) => updateViewIndex(VIEW_ORDER.indexOf(m))}
                   selectedCategory={category}
                   onCategoryChange={setCategory}
                   hideCategory
