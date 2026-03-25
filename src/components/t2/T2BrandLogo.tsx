@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface T2BrandLogoProps {
+  brandId?: string;
   brandName: string;
   domain: string | null;
   logoUrl?: string | null;
@@ -10,36 +11,23 @@ interface T2BrandLogoProps {
   alt?: string;
 }
 
-function normalizeDomain(domain: string | null): string | null {
-  if (!domain) return null;
-  return domain
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "")
-    .trim()
-    .toLowerCase() || null;
+function isPlaceholderLogo(url: string | null | undefined): boolean {
+  if (!url) return true;
+  const lower = url.toLowerCase();
+  return lower.includes("logo.clearbit.com") || lower.includes("google.com/s2/favicons") || lower.includes("favicon");
 }
 
-function buildLogoCandidates(domain: string | null, logoUrl?: string | null): string[] {
-  const normalizedDomain = normalizeDomain(domain);
-  const candidates: string[] = [];
-
-  if (logoUrl && !logoUrl.includes("logo.clearbit.com")) {
-    candidates.push(logoUrl);
-  }
-
-  if (normalizedDomain) {
-    candidates.push(`https://api.companyenrich.com/logo/${normalizedDomain}`);
-    candidates.push(`https://cdn.tickerlogos.com/${normalizedDomain}`);
-  }
-
-  if (logoUrl) {
-    candidates.push(logoUrl);
-  }
-
-  return Array.from(new Set(candidates.filter(Boolean)));
+function buildProxyUrl(brandId: string | undefined, brandName: string, domain: string | null, logoUrl?: string | null) {
+  const params = new URLSearchParams();
+  if (brandId) params.set("brandId", brandId);
+  if (brandName) params.set("brandName", brandName);
+  if (domain) params.set("domain", domain);
+  if (logoUrl && !isPlaceholderLogo(logoUrl)) params.set("logoUrl", logoUrl);
+  return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ktrenz-brand-logo?${params.toString()}`;
 }
 
 export default function T2BrandLogo({
+  brandId,
   brandName,
   domain,
   logoUrl,
@@ -47,38 +35,41 @@ export default function T2BrandLogo({
   fallbackClassName,
   alt,
 }: T2BrandLogoProps) {
-  const sources = useMemo(() => buildLogoCandidates(domain, logoUrl), [domain, logoUrl]);
+  const sources = useMemo(() => {
+    const items: string[] = [];
+    if (logoUrl && !isPlaceholderLogo(logoUrl)) items.push(logoUrl);
+    if (domain || brandId) items.push(buildProxyUrl(brandId, brandName, domain, logoUrl));
+    return items;
+  }, [brandId, brandName, domain, logoUrl]);
+
   const [sourceIndex, setSourceIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setSourceIndex(0);
+    setFailed(false);
   }, [sources]);
 
-  const currentSrc = sources[sourceIndex] ?? null;
+  const currentSrc = sources[sourceIndex];
 
-  if (!currentSrc) {
-    return (
-      <span className={cn("font-bold text-muted-foreground", fallbackClassName)}>
-        {brandName.charAt(0)}
-      </span>
-    );
+  if (!currentSrc || failed) {
+    return <span className={cn("font-bold text-muted-foreground", fallbackClassName)}>{brandName.charAt(0)}</span>;
   }
 
   return (
-    <>
-      <img
-        src={currentSrc}
-        alt={alt ?? brandName}
-        className={className}
-        loading="lazy"
-        referrerPolicy="no-referrer"
-        onError={() => setSourceIndex((prev) => prev + 1)}
-      />
-      {sourceIndex >= sources.length - 1 && (
-        <span className={cn("hidden font-bold text-muted-foreground", fallbackClassName)}>
-          {brandName.charAt(0)}
-        </span>
-      )}
-    </>
+    <img
+      src={currentSrc}
+      alt={alt ?? brandName}
+      className={className}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (sourceIndex < sources.length - 1) {
+          setSourceIndex((prev) => prev + 1);
+          return;
+        }
+        setFailed(true);
+      }}
+    />
   );
 }
