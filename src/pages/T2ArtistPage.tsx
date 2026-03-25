@@ -7,11 +7,21 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, Star, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ExternalLink, Flame, MessageCircle, Share2, ShoppingCart, Star, TrendingUp, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+
+const GRADE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  spark: { label: "Spark", icon: Zap, color: "hsl(45 100% 55%)" },
+  react: { label: "React", icon: TrendingUp, color: "hsl(200 80% 55%)" },
+  spread: { label: "Spread", icon: Share2, color: "hsl(130 60% 45%)" },
+  intent: { label: "Intent", icon: ShoppingCart, color: "hsl(30 90% 55%)" },
+  commerce: { label: "Commerce", icon: Star, color: "hsl(340 80% 55%)" },
+  explosive: { label: "Explosive", icon: Flame, color: "hsl(0 85% 55%)" },
+};
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
   brand:   { label: "Brand",   labelKo: "브랜드",  labelJa: "ブランド",    labelZh: "品牌",   color: "hsl(210, 70%, 55%)" },
@@ -186,7 +196,21 @@ const T2ArtistPage = () => {
     enabled: !!starId,
   });
 
-  // Watch status
+  // Fetch artist grade
+  const { data: artistGrade } = useQuery({
+    queryKey: ["t2-artist-grade", starId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_trend_artist_grades" as any)
+        .select("grade, grade_score, influence_score, keyword_count, grade_breakdown")
+        .eq("star_id", starId!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!starId,
+  });
+
+
   const { data: isWatched } = useQuery({
     queryKey: ["t2-watched-check", user?.id, star?.wiki_entry_id],
     queryFn: async () => {
@@ -325,6 +349,62 @@ const T2ArtistPage = () => {
            )}
          </div>
       ) : null}
+
+      {/* Trend Grade Card */}
+      {artistGrade && (
+        <section className="mb-6">
+          {(() => {
+            const gc = GRADE_CONFIG[artistGrade.grade] || GRADE_CONFIG.spark;
+            const GradeIcon = gc.icon;
+            return (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${gc.color}20` }}
+                    >
+                      <GradeIcon className="w-4 h-4" style={{ color: gc.color }} />
+                    </div>
+                    <div>
+                      <Badge
+                        className="text-xs px-2 py-0.5 border-0 font-bold"
+                        style={{ backgroundColor: `${gc.color}20`, color: gc.color }}
+                      >
+                        {gc.label}
+                      </Badge>
+                    </div>
+                  </div>
+                  {artistGrade.influence_score > 0 && (
+                    <div className="text-right">
+                      <div className="text-lg font-black text-foreground">{artistGrade.influence_score.toFixed(2)}</div>
+                      <div className="text-[10px] text-muted-foreground">Influence Score</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grade breakdown */}
+                {artistGrade.grade_breakdown && Object.keys(artistGrade.grade_breakdown).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(artistGrade.grade_breakdown).map(([grade, count]) => {
+                      const g = GRADE_CONFIG[grade];
+                      return (
+                        <span
+                          key={grade}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${g?.color || 'hsl(0 0% 50%)'}15`, color: g?.color || 'hsl(var(--muted-foreground))' }}
+                        >
+                          {g?.label || grade}: {count as number}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </section>
+      )}
 
       {/* Keywords section */}
       <section className="mb-8">

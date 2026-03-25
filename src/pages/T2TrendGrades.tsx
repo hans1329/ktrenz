@@ -35,6 +35,7 @@ interface TrendKeyword {
   baseline_score: number | null;
   peak_score: number | null;
   prev_api_total: number | null;
+  trend_score: number | null;
   source_image_url: string | null;
   keyword_category: string;
   detected_at: string;
@@ -47,6 +48,7 @@ interface ArtistGrade {
   star_id: string;
   grade: string;
   grade_score: number;
+  influence_score: number;
   keyword_count: number;
   grade_breakdown: Record<string, number>;
   computed_at: string;
@@ -72,14 +74,14 @@ const T2TrendGrades = () => {
     const [kwRes, artRes] = await Promise.all([
       supabase
         .from("ktrenz_trend_triggers")
-        .select("id, keyword, keyword_en, keyword_ko, artist_name, trend_grade, purchase_stage, influence_index, baseline_score, peak_score, prev_api_total, source_image_url, keyword_category, detected_at, star_id, metadata")
+        .select("id, keyword, keyword_en, keyword_ko, artist_name, trend_grade, purchase_stage, influence_index, baseline_score, peak_score, prev_api_total, trend_score, source_image_url, keyword_category, detected_at, star_id, metadata")
         .eq("status", "active")
         .not("trend_grade", "is", null)
         .order("influence_index", { ascending: false })
         .limit(200),
       supabase
         .from("ktrenz_trend_artist_grades")
-        .select("id, star_id, grade, grade_score, keyword_count, grade_breakdown, computed_at")
+        .select("id, star_id, grade, grade_score, influence_score, keyword_count, grade_breakdown, computed_at")
         .order("grade_score", { ascending: false })
         .limit(100),
     ]);
@@ -247,11 +249,22 @@ const T2TrendGrades = () => {
 
                   {/* Score */}
                   <div className="text-right shrink-0">
-                    <div className="text-xs font-mono font-semibold text-foreground">
-                      {Math.round(kw.influence_index || 0)}
-                    </div>
-                    {growth > 0 && (
-                      <div className="text-[10px] text-green-500 font-mono">+{growth}</div>
+                    {kw.trend_score != null ? (
+                      <>
+                        <div className="text-xs font-mono font-semibold text-foreground">
+                          {(kw.trend_score * 100).toFixed(0)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">score</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs font-mono font-semibold text-foreground">
+                          {Math.round(kw.influence_index || 0)}
+                        </div>
+                        {growth > 0 && (
+                          <div className="text-[10px] text-green-500 font-mono">+{growth}</div>
+                        )}
+                      </>
                     )}
                   </div>
                 </button>
@@ -316,9 +329,18 @@ const T2TrendGrades = () => {
 
                   {/* Score */}
                   <div className="text-right shrink-0">
-                    <div className="text-xs font-mono font-semibold text-foreground">
-                      {artist.grade_score}
-                    </div>
+                    {artist.influence_score > 0 ? (
+                      <>
+                        <div className="text-xs font-mono font-semibold text-foreground">
+                          {artist.influence_score.toFixed(2)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">influence</div>
+                      </>
+                    ) : (
+                      <div className="text-xs font-mono font-semibold text-foreground">
+                        {artist.grade_score}
+                      </div>
+                    )}
                     <div className="text-[10px] text-muted-foreground">
                       {artist.keyword_count} kw
                     </div>
