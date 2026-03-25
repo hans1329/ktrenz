@@ -20,7 +20,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
 
 interface T2ArtistListProps {
   items: TrendTile[];
-  watchedSet: Set<string>;
+  watchedStarSet: Set<string>;
 }
 
 interface ArtistGroup {
@@ -35,7 +35,7 @@ interface ArtistGroup {
   totalScore: number;
 }
 
-const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
+const T2ArtistList = ({ items, watchedStarSet }: T2ArtistListProps) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const track = useTrackEvent();
@@ -77,7 +77,7 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
       {artistGroups.map((group, idx) => {
-        const isWatched = watchedSet.has(group.wikiEntryId);
+        const isWatched = group.starId ? watchedStarSet.has(group.starId) : false;
         return (
           <button
             key={group.groupKey}

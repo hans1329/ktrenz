@@ -68,18 +68,17 @@ const T2MyArtists = () => {
   useEffect(() => {
   }, []);
 
-  // Fetch watched wiki ids (from both ktrenz_watched_artists and ktrenz_agent_slots)
-  const { data: watchedWikiIds } = useQuery({
+  // Fetch watched star ids (from both ktrenz_watched_artists and ktrenz_agent_slots)
+  const { data: watchedStarIds } = useQuery({
     queryKey: ["t2-watched-artists-v2", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
       const { data: watched } = await supabase
         .from("ktrenz_watched_artists" as any)
-        .select("wiki_entry_id")
-        .eq("user_id", user.id)
-        .not("wiki_entry_id", "is", null);
-      const watchedIds = (watched ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+        .select("star_id")
+        .eq("user_id", user.id);
+      const watchedIds = (watched ?? []).map((d: any) => d.star_id).filter(Boolean) as string[];
 
       const { data: slots } = await supabase
         .from("ktrenz_agent_slots")
@@ -87,32 +86,35 @@ const T2MyArtists = () => {
         .eq("user_id", user.id)
         .not("wiki_entry_id", "is", null);
       const slotIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+      let slotStarIds: string[] = [];
+      if (slotIds.length > 0) {
+        const { data: slotStars } = await supabase
+          .from("ktrenz_stars" as any)
+          .select("id")
+          .in("wiki_entry_id", slotIds);
+        slotStarIds = (slotStars ?? []).map((s: any) => s.id) as string[];
+      }
 
-      const directIds = [...new Set([...watchedIds, ...slotIds])];
-      if (!directIds.length) return [];
+      const directStarIds = [...new Set([...watchedIds, ...slotStarIds])];
+      if (!directStarIds.length) return [];
 
-      const { data: stars } = await supabase
-        .from("ktrenz_stars" as any)
-        .select("id, wiki_entry_id")
-        .in("wiki_entry_id", directIds);
-      const starIds = (stars ?? []).map((s: any) => s.id) as string[];
-
-      if (starIds.length) {
+      // Expand: include group members
+      let allStarIds = [...directStarIds];
+      if (directStarIds.length > 0) {
         const { data: members } = await supabase
           .from("ktrenz_stars" as any)
-          .select("wiki_entry_id")
-          .in("group_star_id", starIds)
-          .not("wiki_entry_id", "is", null);
-        const memberIds = (members ?? []).map((m: any) => m.wiki_entry_id).filter(Boolean) as string[];
-        return [...new Set([...directIds, ...memberIds])];
+          .select("id")
+          .in("group_star_id", directStarIds);
+        const memberStarIds = (members ?? []).map((m: any) => m.id).filter(Boolean) as string[];
+        allStarIds = [...new Set([...allStarIds, ...memberStarIds])];
       }
-      return directIds;
+      return allStarIds;
     },
     enabled: !!user?.id,
     staleTime: 60_000,
   });
 
-  const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
+  const watchedStarSet = useMemo(() => new Set(watchedStarIds ?? []), [watchedStarIds]);
 
   // Fetch triggers
   const { data: triggers, isLoading } = useQuery({
@@ -171,9 +173,9 @@ const T2MyArtists = () => {
   });
 
   const myKeywords = useMemo(() => {
-    if (!triggers?.length || !watchedSet.size) return [];
-    return triggers.filter(t => watchedSet.has(t.wikiEntryId));
-  }, [triggers, watchedSet]);
+    if (!triggers?.length || !watchedStarSet.size) return [];
+    return triggers.filter(t => t.starId ? watchedStarSet.has(t.starId) : false);
+  }, [triggers, watchedStarSet]);
 
   // Group by artist
   const artistGroups = useMemo(() => {
