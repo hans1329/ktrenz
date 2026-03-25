@@ -417,19 +417,22 @@ const T2ArtistPage = () => {
 
                 {/* Grade breakdown */}
                 {artistGrade.grade_breakdown && Object.keys(artistGrade.grade_breakdown).length > 0 && (
-                  <p className="text-[10px] text-muted-foreground mb-1.5">{t("artist.gradeBreakdownDesc")}</p>
-                    {Object.entries(artistGrade.grade_breakdown).map(([grade, count]) => {
-                      const g = GRADE_CONFIG[grade];
-                      return (
-                        <span
-                          key={grade}
-                          className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                          style={{ backgroundColor: `${g?.color || 'hsl(0 0% 50%)'}15`, color: g?.color || 'hsl(var(--muted-foreground))' }}
-                        >
-                          {g?.label || grade}: {count as number}
-                        </span>
-                      );
-                    })}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1.5">{t("artist.gradeBreakdownDesc")}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(artistGrade.grade_breakdown).map(([grade, count]) => {
+                        const g = GRADE_CONFIG[grade];
+                        return (
+                          <span
+                            key={grade}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                            style={{ backgroundColor: `${g?.color || 'hsl(0 0% 50%)'}15`, color: g?.color || 'hsl(var(--muted-foreground))' }}
+                          >
+                            {g?.label || grade}: {count as number}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
