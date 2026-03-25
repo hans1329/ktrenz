@@ -46,8 +46,8 @@ export default function T2BrandBadges({ keywords, artistName, max = 3 }: Props) 
     enabled: brandIds.length > 0,
     staleTime: 10 * 60_000,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ktrenz_brand_registry" as any)
+      const { data } = await (supabase as any)
+        .from("ktrenz_brand_registry")
         .select("id, brand_name, brand_name_ko, logo_url, domain, category")
         .in("id", brandIds);
       return (data || []) as BrandInfo[];
