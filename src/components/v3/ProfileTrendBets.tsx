@@ -149,8 +149,8 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
                   <Crosshair className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-foreground truncate">{displayKw}</p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-sm font-bold text-foreground truncate">{displayKw}</p>
+                  <p className="text-xs text-muted-foreground">
                     🔥 {kw.influenceIndex.toFixed(0)}
                     <span className={cn("ml-1.5 font-medium", isActive ? "text-green-400" : "text-muted-foreground/60")}>
                       {isActive ? "LIVE" : "ENDED"}
