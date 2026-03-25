@@ -492,11 +492,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return dedupeTrendTiles(triggers, sortMode);
   }, [triggers, sortMode]);
 
-  // My artists' keywords
+  // My picks' keywords (tracked keywords shown in main hero)
   const myKeywords = useMemo(() => {
-    if (!dedupedTriggers.length || !watchedSet.size) return [];
-    return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
-  }, [dedupedTriggers, watchedSet]);
+    if (!dedupedTriggers.length || !followedTriggerSet.size) return [];
+    return dedupedTriggers.filter(t => followedTriggerSet.has(t.id));
+  }, [dedupedTriggers, followedTriggerSet]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
