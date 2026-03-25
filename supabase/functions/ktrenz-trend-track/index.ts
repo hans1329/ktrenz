@@ -153,10 +153,10 @@ function parseBlogPostdate(pd: string): number {
   return new Date(`${pd.slice(0,4)}-${pd.slice(4,6)}-${pd.slice(6,8)}T00:00:00+09:00`).getTime();
 }
 
-async function searchNaverRecent7d(
+async function searchNaverRecent(
   clientId: string, clientSecret: string,
   endpoint: "news" | "blog", query: string,
-): Promise<{ recent: number; total: number }> {
+): Promise<{ recent24h: number; recent7d: number; total: number }> {
   try {
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
@@ -165,12 +165,14 @@ async function searchNaverRecent7d(
     const response = await fetch(url.toString(), {
       headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
     });
-    if (!response.ok) return { recent: 0, total: 0 };
+    if (!response.ok) return { recent24h: 0, recent7d: 0, total: 0 };
     const data = await response.json();
     const apiTotal = data.total || 0;
     const items = data.items || [];
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    let count = 0;
+    let count24h = 0;
+    let count7d = 0;
     for (const item of items) {
       let pubTime: number;
       if (endpoint === "blog") {
@@ -178,10 +180,11 @@ async function searchNaverRecent7d(
       } else {
         pubTime = item.pubDate ? new Date(item.pubDate).getTime() : 0;
       }
-      if (pubTime >= sevenDaysAgo) count++;
+      if (pubTime >= oneDayAgo) count24h++;
+      if (pubTime >= sevenDaysAgo) count7d++;
     }
-    return { recent: count, total: apiTotal };
-  } catch { return { recent: 0, total: 0 }; }
+    return { recent24h: count24h, recent7d: count7d, total: apiTotal };
+  } catch { return { recent24h: 0, recent7d: 0, total: 0 }; }
 }
 
 // peak/influence 갱신
@@ -383,13 +386,16 @@ Deno.serve(async (req) => {
           // ─── 일반 키워드: 뉴스 + 블로그 버즈 ───
           const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
           const [newsResult, blogResult] = await Promise.all([
-            searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
-            searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
+            searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
+            searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           ]);
 
-          const newsRecent = newsResult.recent;
-          const blogRecent = blogResult.recent;
-          buzzScore = newsRecent + blogRecent;
+          // 24시간 기사수(가중 3x) + 7일 기사수로 민감도 향상
+          const news24h = newsResult.recent24h;
+          const blog24h = blogResult.recent24h;
+          const news7d = newsResult.recent7d;
+          const blog7d = blogResult.recent7d;
+          buzzScore = (news24h + blog24h) * 3 + (news7d + blog7d);
           const apiNewsTotal = newsResult.total;
           const apiBlogTotal = blogResult.total;
           apiTotal = apiNewsTotal + apiBlogTotal;
@@ -401,13 +407,14 @@ Deno.serve(async (req) => {
             : buzzScore > 0 ? 100 : 0;
 
           rawResponse = {
-            news_recent: newsRecent, blog_recent: blogRecent,
+            news_24h: news24h, blog_24h: blog24h,
+            news_7d: news7d, blog_7d: blog7d,
             news_api_total: apiNewsTotal, blog_api_total: apiBlogTotal,
             api_total: apiTotal, daily_delta: dailyDelta,
             search_query: searchQuery,
           };
 
-          console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} daily_delta=${dailyDelta} Δ=${deltaPct}%`);
+          console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} (24h:${news24h+blog24h} 7d:${news7d+blog7d}) Δ=${deltaPct}%`);
         }
 
         // tracking 레코드 저장
