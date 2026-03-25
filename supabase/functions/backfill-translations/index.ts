@@ -19,8 +19,8 @@ async function translateContext(keyword: string, context: string): Promise<{ ko:
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a K-pop trend translator. Return only JSON with ko, ja, zh keys. Keep translations concise and natural for mobile UI." },
-          { role: "user", content: `Translate this K-pop trend context into Korean, Japanese, and Chinese (Simplified).\n\nKeyword: ${keyword}\nContext: ${context}\n\nReturn JSON: {"ko":"...","ja":"...","zh":"..."}` },
+          { role: "system", content: "You are a K-pop trend translator. Return only JSON with ko, ja, zh keys. Translate the editorial narrative tone faithfully — keep the punchy, specific, phenomenon-describing style. Do NOT flatten into dry factual summaries. Keep translations concise for mobile UI." },
+          { role: "user", content: `Translate this K-pop trend context into Korean, Japanese, and Chinese (Simplified). Preserve the editorial narrative tone and specific details.\n\nKeyword: ${keyword}\nContext: ${context}\n\nReturn JSON: {"ko":"...","ja":"...","zh":"..."}` },
         ],
         response_format: { type: "json_object" },
         temperature: 0.3,
