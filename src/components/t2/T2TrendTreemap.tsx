@@ -420,15 +420,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     staleTime: 20000,
   });
 
-  const watchedStarKey = (watchedStarIds ?? []).slice().sort().join(",");  
   const followedKey = (followedTriggerIds ?? []).slice().sort().join(",");
   const predictedKey = (predictedTriggerIds ?? []).slice().sort().join(",");
 
   const { data: triggers, isLoading } = useQuery({
-    queryKey: ["t2-trend-triggers", watchedStarKey, followedKey, predictedKey],
+    queryKey: ["t2-trend-triggers", followedKey, predictedKey],
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
-    enabled: watchedData !== undefined && followedTriggerIds !== undefined && predictedTriggerIds !== undefined,
+    enabled: followedTriggerIds !== undefined && predictedTriggerIds !== undefined,
     queryFn: async () => {
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
@@ -438,17 +437,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
         .limit(500);
-
-      // Fetch watched triggers by star_id (most triggers don't have wiki_entry_id)
-      const watchedByStarPromise = watchedStarIds && watchedStarIds.length > 0
-        ? supabase
-            .from("ktrenz_trend_triggers" as any)
-            .select("*")
-            .eq("status", "active")
-            .in("star_id", watchedStarIds)
-            .order("influence_index", { ascending: false })
-            .limit(300)
-        : Promise.resolve({ data: [] as any[] });
 
       const followedPromise = followedTriggerIds && followedTriggerIds.length > 0
         ? supabase
@@ -466,15 +454,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             .in("id", predictedTriggerIds)
         : Promise.resolve({ data: [] as any[] });
 
-      const [{ data: baseData }, { data: watchedByStarData }, { data: followedData }, { data: predictedData }] = await Promise.all([
+      const [{ data: baseData }, { data: followedData }, { data: predictedData }] = await Promise.all([
         basePromise,
-        watchedByStarPromise,
         followedPromise,
         predictedPromise,
       ]);
 
       const mergedRaw = new Map<string, any>();
-      [...(baseData ?? []), ...(watchedByStarData ?? []), ...(followedData ?? []), ...(predictedData ?? [])].forEach((item: any) => {
+      [...(baseData ?? []), ...(followedData ?? []), ...(predictedData ?? [])].forEach((item: any) => {
         mergedRaw.set(item.id, item);
       });
       const rawTriggers = Array.from(mergedRaw.values()) as any[];
