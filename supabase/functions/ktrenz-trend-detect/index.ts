@@ -562,6 +562,7 @@ async function extractCommercialKeywords(
   starCategory: string = "kpop",
   nameKo: string | null = null,
   groupNameKo: string | null = null,
+  globalStarNames?: Map<string, string>,
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
@@ -610,7 +611,14 @@ WHAT MAKES A VALID KEYWORD:
 - ✅ Article says "카리나 프라다 앰버서더 발탁" → "프라다" VALID (appears in text, direct relationship)
 - ❌ You know IU sang "Palette" but no article mentions it → "팔레트" INVALID (not in provided text)
 
-FORBIDDEN KEYWORDS (instant rejection):
+${globalStarNames && globalStarNames.size > 0 ? `KNOWN STARS IN OUR DATABASE (★ CROSS-REFERENCE THIS LIST ★):
+Below are ALL known K-stars tracked in our system. You MUST use this list to:
+1. VERIFY ARTICLE SUBJECT: If the article is PRIMARILY about a person in this list who is NOT "${memberName}"${groupName ? ` or "${groupName}"` : ""}, set article_subject_match=false and add "wrong_artist" to rejection_flags. For example, if you're searching for "민니" but the article is actually about "쯔양" (who is in this list), that's a wrong_artist.
+2. REJECT STAR NAMES AS KEYWORDS: If a keyword matches ANY name in this list, it's a STAR NAME, not a valid commercial keyword — DO NOT extract it.
+3. DETECT CROSS-CONTAMINATION: Search results for "${memberName}" may include articles where "${memberName}" appears only in passing while the article actually focuses on a DIFFERENT star from this list.
+
+Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
+` : ''}FORBIDDEN KEYWORDS (instant rejection):
 - The artist's own name: ${nameListStr}
 - Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
 - Chart names, generic K-pop terms (컴백, 앨범, 콘서트, 팬미팅)
@@ -889,6 +897,16 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         const blockedStripped = blocked.replace(/[\s·,\-]+/g, "");
         if (kwStripped === blockedStripped) {
           console.warn(`[trend-detect] Blocked artist/group name as keyword (normalized): "${k.keyword}"`);
+          return false;
+        }
+      }
+
+      // 글로벌 스타 이름과 일치하는 키워드 차단 (다른 아티스트 이름이 키워드로 추출되는 것 방지)
+      if (globalStarNames) {
+        const matchedStar = globalStarNames.get(kwLower) || globalStarNames.get(kwKo) || globalStarNames.get(kwEn)
+          || globalStarNames.get(normalizeForCompare(k.keyword || "")) || globalStarNames.get(normalizeForCompare(k.keyword_ko || ""));
+        if (matchedStar && !allNameVariants.has(kwLower)) {
+          console.warn(`[trend-detect] Blocked other star name as keyword: "${k.keyword}" (matches star: ${matchedStar})`);
           return false;
         }
       }
@@ -1369,11 +1387,31 @@ Deno.serve(async (req) => {
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    // 글로벌 스타 이름 DB 로드 (AI 프롬프트 컨텍스트 + 코드 레벨 필터용 — 모든 모드 공통)
+    const { data: _allStarNamesData } = await sb
+      .from("ktrenz_stars")
+      .select("display_name, name_ko")
+      .eq("is_active", true)
+      .in("star_type", ["group", "solo", "member"]);
+    const globalStarNames = new Map<string, string>();
+    for (const _s of (_allStarNamesData || [])) {
+      if (_s.display_name) {
+        globalStarNames.set(_s.display_name.toLowerCase(), _s.display_name);
+        globalStarNames.set(normalizeForCompare(_s.display_name), _s.display_name);
+      }
+      if (_s.name_ko) {
+        globalStarNames.set(_s.name_ko.toLowerCase(), _s.display_name);
+        globalStarNames.set(normalizeForCompare(_s.name_ko), _s.display_name);
+      }
+    }
+    console.log(`[trend-detect] Loaded ${globalStarNames.size} global star name variants for cross-reference`);
+
     // 단일 멤버 모드 (수동 테스트용)
     if (starId && memberName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null, star_category: body.starCategory || "kpop" }
+        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null, star_category: body.starCategory || "kpop" },
+        globalStarNames
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -1385,7 +1423,8 @@ Deno.serve(async (req) => {
     if (wikiEntryId && artistName) {
       const result = await detectForMember(
         sb, openaiKey, naverClientId, naverClientSecret,
-        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId, star_category: "kpop" }
+        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId, star_category: "kpop" },
+        globalStarNames
       );
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -1465,7 +1504,7 @@ Deno.serve(async (req) => {
         };
 
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames
         );
         successCount++;
         totalKeywords += result.keywordsFound;
@@ -1572,6 +1611,7 @@ async function detectForMember(
   naverClientId: string,
   naverClientSecret: string,
   member: MemberInfo,
+  globalStarNames?: Map<string, string>,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
@@ -1662,7 +1702,7 @@ async function detectForMember(
   const aiKeywords = articles.length > 0
     ? await extractCommercialKeywords(
         openaiKey, member.display_name, member.group_name, articles, member.star_category,
-        member.name_ko, member.group_name_ko
+        member.name_ko, member.group_name_ko, globalStarNames
       )
     : [];
 
@@ -1903,6 +1943,16 @@ async function detectForMember(
     if (matchesBlockedNameKeyword(candidate.row, artistNameSet)) {
       console.warn(`[trend-detect] Artist/member name keyword filtered: "${candidate.row.keyword}" (${member.display_name})`);
       continue;
+    }
+
+    // 글로벌 스타 이름과 일치하는 키워드 차단 (크로스 아티스트 오염 방지)
+    if (globalStarNames) {
+      const matchedStar = globalStarNames.get(kwLower) || globalStarNames.get(kwKoLower) || globalStarNames.get(kwEnLower)
+        || globalStarNames.get(kwStripped);
+      if (matchedStar) {
+        console.warn(`[trend-detect] Global star name keyword filtered at insert: "${candidate.row.keyword}" (matches star: ${matchedStar})`);
+        continue;
+      }
     }
 
     // 노이즈 필터
