@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TrendTile } from "./T2TrendTreemap";
 import T2BrandSheet from "./T2BrandSheet";
+import T2BrandLogo from "./T2BrandLogo";
 
 interface BrandInfo {
   id: string;

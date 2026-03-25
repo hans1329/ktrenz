@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CATEGORY_CONFIG } from "./T2TrendTreemap";
+import T2BrandLogo from "./T2BrandLogo";
 import type { TrendTile } from "./T2TrendTreemap";
 
 interface BrandInfo {
