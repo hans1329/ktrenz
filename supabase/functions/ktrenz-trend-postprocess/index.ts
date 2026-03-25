@@ -917,7 +917,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, brand_mapped=${brandMapped}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, brand_mapped=${brandMapped}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -931,6 +931,8 @@ Deno.serve(async (req) => {
         sameSourceUrlDedup: sameUrlResult,
         crossArtistDedup: crossArtistResult,
         brandMapped,
+        globalStarNameFilter: globalNameResult,
+        noisePatternFilter: noiseResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
