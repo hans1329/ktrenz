@@ -81,7 +81,7 @@ const T2TrendGrades = () => {
         .limit(200),
       supabase
         .from("ktrenz_trend_artist_grades")
-        .select("id, star_id, grade, grade_score, keyword_count, grade_breakdown, computed_at")
+        .select("id, star_id, grade, grade_score, influence_score, keyword_count, grade_breakdown, computed_at")
         .order("grade_score", { ascending: false })
         .limit(100),
     ]);
