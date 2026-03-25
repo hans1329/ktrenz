@@ -14,21 +14,21 @@ import { Loader2 } from 'lucide-react';
 
 const entertainmentNav = [
   { section: 'Overview', items: [
-    { label: '대시보드', path: '/b2b', icon: LayoutDashboard },
-    { label: 'Radar', path: '/b2b/radar', icon: Target, badge: 3 },
+    { label: '대시보드', path: '/b2b', icon: LayoutDashboard, enabled: true },
+    { label: 'Radar', path: '/b2b/radar', icon: Target, badge: 3, enabled: false },
   ]},
   { section: 'Intelligence', items: [
-    { label: 'Artists', path: '/b2b/artists', icon: Star },
-    { label: 'Brands', path: '/b2b/brands', icon: BarChart3 },
-    { label: 'Campaigns', path: '/b2b/campaigns', icon: Zap },
-    { label: 'Benchmark', path: '/b2b/benchmark', icon: GitCompare },
+    { label: 'Artists', path: '/b2b/artists', icon: Star, enabled: true },
+    { label: 'Brands', path: '/b2b/brands', icon: BarChart3, enabled: false },
+    { label: 'Campaigns', path: '/b2b/campaigns', icon: Zap, enabled: false },
+    { label: 'Benchmark', path: '/b2b/benchmark', icon: GitCompare, enabled: false },
   ]},
   { section: 'Markets', items: [
-    { label: 'Markets', path: '/b2b/markets', icon: Globe },
-    { label: 'Recommendations', path: '/b2b/rec', icon: Lightbulb },
+    { label: 'Markets', path: '/b2b/markets', icon: Globe, enabled: false },
+    { label: 'Recommendations', path: '/b2b/rec', icon: Lightbulb, enabled: false },
   ]},
   { section: 'Activation', items: [
-    { label: 'Activation Studio', path: '/b2b/studio', icon: Rocket },
+    { label: 'Activation Studio', path: '/b2b/studio', icon: Rocket, enabled: false },
   ]},
 ];
 
