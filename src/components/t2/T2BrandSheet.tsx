@@ -51,9 +51,9 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
           <div className="flex items-center gap-3">
             {/* Brand logo */}
             <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden border border-border/40">
-              {brand.logo_url ? (
+              {brand.domain ? (
                 <img
-                  src={brand.logo_url}
+                  src={`https://www.google.com/s2/favicons?domain=${brand.domain}&sz=128`}
                   alt={brand.brand_name}
                   className="w-10 h-10 object-contain"
                 />
