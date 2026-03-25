@@ -366,6 +366,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const watchedStarIds = watchedData?.starIds;
 
   const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
+  const watchedStarSet = useMemo(() => new Set(watchedStarIds ?? []), [watchedStarIds]);
 
   const { data: followedTriggerIds } = useQuery({
     queryKey: ["t2-keyword-follows-list", user?.id],
@@ -565,7 +566,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const myKeywords = useMemo(() => {
     if (!triggers?.length) return [];
 
-    const watchedKeywords = triggers.filter((t) => watchedSet.has(t.wikiEntryId));
+    const watchedKeywords = triggers.filter(
+      (t) => watchedSet.has(t.wikiEntryId) || (t.starId ? watchedStarSet.has(t.starId) : false)
+    );
     const trackedKeywords = triggers.filter((t) => followedTriggerSet.has(t.id));
 
     const merged = new Map<string, TrendTile>();
@@ -574,7 +577,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     });
 
     return Array.from(merged.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
-  }, [triggers, watchedSet, followedTriggerSet, sortMode]);
+  }, [triggers, watchedSet, watchedStarSet, followedTriggerSet, sortMode]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
