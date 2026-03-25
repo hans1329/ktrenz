@@ -3866,6 +3866,7 @@ export type Database = {
           expires_at: string
           id: string
           reasoning: string | null
+          source_articles: Json | null
           source_headlines: Json | null
           star_id: string | null
           status: string
@@ -3881,6 +3882,7 @@ export type Database = {
           expires_at?: string
           id?: string
           reasoning?: string | null
+          source_articles?: Json | null
           source_headlines?: Json | null
           star_id?: string | null
           status?: string
@@ -3896,6 +3898,7 @@ export type Database = {
           expires_at?: string
           id?: string
           reasoning?: string | null
+          source_articles?: Json | null
           source_headlines?: Json | null
           star_id?: string | null
           status?: string

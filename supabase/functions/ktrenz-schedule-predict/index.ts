@@ -172,7 +172,14 @@ Deno.serve(async (req) => {
 });
 
 // ── 최근 뉴스 데이터 가져오기 ──
-async function getRecentNews(sb: any, wikiEntryId: string): Promise<{ title: string; description: string }[]> {
+interface NewsItem {
+  title: string;
+  description: string;
+  url: string;
+  image: string | null;
+}
+
+async function getRecentNews(sb: any, wikiEntryId: string): Promise<NewsItem[]> {
   const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
 
   const { data: snapshots } = await sb
@@ -186,7 +193,7 @@ async function getRecentNews(sb: any, wikiEntryId: string): Promise<{ title: str
 
   if (!snapshots?.length) return [];
 
-  const allNews: { title: string; description: string }[] = [];
+  const allNews: NewsItem[] = [];
   const seenTitles = new Set<string>();
 
   for (const snap of snapshots) {
@@ -194,7 +201,12 @@ async function getRecentNews(sb: any, wikiEntryId: string): Promise<{ title: str
     for (const item of items) {
       if (item.title && !seenTitles.has(item.title)) {
         seenTitles.add(item.title);
-        allNews.push({ title: item.title, description: item.description || "" });
+        allNews.push({
+          title: item.title,
+          description: item.description || "",
+          url: item.url || "",
+          image: item.image || null,
+        });
       }
     }
   }
@@ -280,7 +292,7 @@ async function savePredictions(
   wikiEntryId: string,
   starId: string | null,
   predictions: any[],
-  newsData: { title: string }[],
+  newsData: NewsItem[],
 ) {
   // 기존 active 예측 만료 처리
   await sb
@@ -299,6 +311,12 @@ async function savePredictions(
     confidence: p.confidence,
     reasoning: p.reasoning || null,
     source_headlines: newsData.map((n) => n.title).slice(0, 10),
+    source_articles: newsData.slice(0, 10).map((n) => ({
+      title: n.title,
+      description: n.description,
+      url: n.url,
+      image: n.image,
+    })),
     status: "active",
     expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   }));
