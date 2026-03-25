@@ -61,6 +61,10 @@ const T2ArtistPage = () => {
   const queryClient = useQueryClient();
   const [watchLoading, setWatchLoading] = useState(false);
 
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [starId]);
+
   useEffect(() => {
     if (starId) track("t2_artist_view", { artist_slug: starId });
   }, [starId]);
