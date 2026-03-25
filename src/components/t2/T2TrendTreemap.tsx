@@ -499,7 +499,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     queryKey: ["t2-trend-triggers", followedKey, predictedKey],
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
-    enabled: followedTriggerIds !== undefined && predictedTriggerIds !== undefined,
+    enabled: true,
     queryFn: async () => {
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
