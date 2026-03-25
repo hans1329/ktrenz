@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
 import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
+import T2BrandBadges from "./T2BrandBadges";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)" },
