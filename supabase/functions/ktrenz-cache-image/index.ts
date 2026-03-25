@@ -190,7 +190,7 @@ async function fetchBodyImageCandidates(
 async function findLargestImage(candidates: string[]): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
   let best: { url: string; data: Uint8Array; contentType: string } | null = null;
   // 최대 6개만 시도 (속도 제한)
-  for (const url of candidates.slice(0, 6)) {
+  for (const url of candidates.slice(0, 10)) {
     const result = await downloadImage(url);
     if (!result) continue;
     if (!best || result.data.length > best.data.length) {
