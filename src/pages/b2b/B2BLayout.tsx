@@ -138,8 +138,25 @@ const B2BLayout = () => {
                 </div>
               )}
               {group.items.map(item => {
-                const active = location.pathname === item.path || (item.path === '/b2b' && location.pathname === '/b2b');
                 const isExactActive = item.path === '/b2b' ? location.pathname === '/b2b' : location.pathname.startsWith(item.path);
+                const disabled = !item.enabled;
+
+                if (disabled) {
+                  return (
+                    <div
+                      key={item.path}
+                      title={`${item.label} (준비 중)`}
+                      className="relative flex items-center gap-[10px] px-5 py-[9px] text-[13px] text-white/20 cursor-not-allowed select-none"
+                    >
+                      <item.icon className="w-[15px] h-[15px] shrink-0 opacity-40" />
+                      {!sidebarCollapsed && <span>{item.label}</span>}
+                      {!sidebarCollapsed && (
+                        <span className="ml-auto text-[9px] font-semibold text-white/15 uppercase tracking-wider">Soon</span>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.path}
