@@ -413,11 +413,14 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // og:image가 저해상도(30KB 이하)이면 본문에서 더 큰 이미지를 찾는다
+      // og:image 품질 검사: 저해상도이거나 텍스트 오버레이 이미지면 본문에서 더 나은 이미지를 찾는다
       let finalImage = image;
       let finalUrl = url;
-      if (image.data.length < LOW_RES_THRESHOLD_BYTES && trigger.source_url) {
-        console.log(`[cache-image] Low-res og:image (${image.data.length}b) for ${trigger.id}, scanning body images with name filter`);
+      const isLowRes = image.data.length < LOW_RES_THRESHOLD_BYTES;
+      const isTextOverlay = !isLowRes && openaiKey ? await isTextHeavyImage(url!, openaiKey) : false;
+      const needsBetterImage = isLowRes || isTextOverlay;
+      if (needsBetterImage && trigger.source_url) {
+        console.log(`[cache-image] ${isTextOverlay ? 'Text-heavy' : 'Low-res'} og:image (${image.data.length}b) for ${trigger.id}, scanning body images`);
         // 1차: 이름 매칭 본문 이미지
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
