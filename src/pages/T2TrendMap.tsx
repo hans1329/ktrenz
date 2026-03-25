@@ -196,7 +196,7 @@ const T2TrendMap = () => {
         setDragOffsetX(-window.innerWidth);
         setPendingIndex(viewIndex + 1);
         setTimeout(() => {
-          setViewIndex(viewIndex + 1);
+          updateViewIndex(viewIndex + 1);
           setDragOffsetX(0);
           setIsAnimating(false);
           setPendingIndex(null);
