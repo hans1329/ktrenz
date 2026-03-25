@@ -153,10 +153,10 @@ function parseBlogPostdate(pd: string): number {
   return new Date(`${pd.slice(0,4)}-${pd.slice(4,6)}-${pd.slice(6,8)}T00:00:00+09:00`).getTime();
 }
 
-async function searchNaverRecent7d(
+async function searchNaverRecent(
   clientId: string, clientSecret: string,
   endpoint: "news" | "blog", query: string,
-): Promise<{ recent: number; total: number }> {
+): Promise<{ recent24h: number; recent7d: number; total: number }> {
   try {
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
     url.searchParams.set("query", query);
@@ -165,12 +165,14 @@ async function searchNaverRecent7d(
     const response = await fetch(url.toString(), {
       headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
     });
-    if (!response.ok) return { recent: 0, total: 0 };
+    if (!response.ok) return { recent24h: 0, recent7d: 0, total: 0 };
     const data = await response.json();
     const apiTotal = data.total || 0;
     const items = data.items || [];
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    let count = 0;
+    let count24h = 0;
+    let count7d = 0;
     for (const item of items) {
       let pubTime: number;
       if (endpoint === "blog") {
@@ -178,10 +180,11 @@ async function searchNaverRecent7d(
       } else {
         pubTime = item.pubDate ? new Date(item.pubDate).getTime() : 0;
       }
-      if (pubTime >= sevenDaysAgo) count++;
+      if (pubTime >= oneDayAgo) count24h++;
+      if (pubTime >= sevenDaysAgo) count7d++;
     }
-    return { recent: count, total: apiTotal };
-  } catch { return { recent: 0, total: 0 }; }
+    return { recent24h: count24h, recent7d: count7d, total: apiTotal };
+  } catch { return { recent24h: 0, recent7d: 0, total: 0 }; }
 }
 
 // peak/influence 갱신
