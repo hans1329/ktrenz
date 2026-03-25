@@ -28,21 +28,39 @@ async function generateDynamicContext(
       ? (trackingHistory[trackingHistory.length - 1] > trackingHistory[0] ? "rising" : "declining")
       : "stable";
 
-    const prompt = `당신은 K-pop 트렌드 데이터 분석가입니다. 아래 실시간 추적 데이터를 기반으로, 이 키워드 트렌드의 현재 상태를 1-2문장으로 해석하세요. 반드시 한국어로 작성하세요. 구체적인 수치와 방향성을 포함하고, 편집자 톤(Editorial Narrative)으로 작성하세요. '[구체적 상황] → [트렌드 현상/수치 변화]' 패턴을 따르세요.
+    // 트렌드 방향성을 정성적으로 변환
+    const momentum = deltaPct > 30 ? "급격히 상승 중"
+      : deltaPct > 10 ? "상승세"
+      : deltaPct > -10 ? "안정적"
+      : deltaPct > -30 ? "하락세"
+      : "급격히 하락 중";
 
-Artist: ${trigger.artist_name}
-Keyword: ${trigger.keyword}
-Category: ${trigger.keyword_category || "general"}
-Source: ${isShop ? "Shopping/Commerce" : "News/Blog"}
-Current Score: ${buzzScore}
-Baseline Score: ${baseline}
-Peak Score: ${peak}
-Score Change: ${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(1)}%
-Influence Index: ${influence}
-Trend Direction (last 3 readings): ${trendDirection}
-Recent Scores: [${trackingHistory.slice(-5).join(", ")}]
-Days Since Detection: ${ageDays}
-${trigger.context ? `Previous Context: ${trigger.context}` : ""}
+    const peakStatus = peak > 0 && buzzScore >= peak * 0.9 ? "피크 수준 유지"
+      : peak > 0 && buzzScore >= peak * 0.5 ? "피크 대비 중간 수준"
+      : peak > 0 ? "피크 대비 낮은 수준"
+      : "초기 단계";
+
+    const prompt = `당신은 K-pop 트렌드 편집자입니다. 아래 추적 정보를 기반으로, 이 키워드 트렌드의 현재 상태를 1-2문장의 편집자 톤(Editorial Narrative)으로 작성하세요.
+
+★ 절대 금지 사항:
+- 내부 점수, 수치, 퍼센트, 스코어, 지수 등 구체적 숫자를 일절 언급하지 마세요.
+- "점수가 31", "244% 변화", "influence index" 같은 표현을 절대 사용하지 마세요.
+- 대신 정성적 표현("급격히 주목받고 있다", "화제성이 지속되고 있다", "관심이 식어가고 있다" 등)을 사용하세요.
+
+★ 작성 규칙:
+- '[구체적 상황/배경] → [현재 트렌드 현상/대중 반응]' 패턴을 따르세요.
+- 기사에서 나올 법한 구체적 맥락(브랜드명, 행사, 콜라보 등)을 포함하세요.
+- 반드시 한국어로 작성하세요.
+
+아티스트: ${trigger.artist_name}
+키워드: ${trigger.keyword}
+카테고리: ${trigger.keyword_category || "general"}
+분야: ${isShop ? "쇼핑/커머스" : "뉴스/블로그"}
+현재 추세: ${momentum}
+피크 대비 상태: ${peakStatus}
+트렌드 방향 (최근 추이): ${trendDirection}
+감지 후 경과일: ${ageDays}일
+${trigger.context ? `이전 컨텍스트: ${trigger.context}` : ""}
 
 해석만 작성하세요. 라벨이나 접두사 없이.`;
 
