@@ -119,6 +119,20 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   const { user } = useAuth();
   const { language } = useLanguage();
 
+  // Independent check: does the user have watched artists?
+  const { data: hasWatchedArtists, isLoading: isWatchedLoading } = useQuery({
+    queryKey: ["hero-has-watched", user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("ktrenz_watched_artists" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id);
+      return (count ?? 0) > 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
   const handleCardClick = useCallback((item: TrendTile) => {
     setSearchParams((prev) => {
       prev.set("modal", item.id);
@@ -266,8 +280,8 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     );
   }
 
-  // Logged in but no watched artists and no bets
-  if (!myKeywords.length && !uniqueBetKeywords.length) {
+  // Logged in but no watched artists and no bets (and loading is complete)
+  if (!myKeywords.length && !uniqueBetKeywords.length && !isWatchedLoading && !hasWatchedArtists) {
     return (
       <div className="px-4 pt-2 pb-5">
         <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "200px" }}>
