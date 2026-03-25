@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect, lazy, Suspense } from "react";
 import { LayoutGrid, List, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
@@ -29,7 +29,9 @@ const HEADER_COLLAPSE_THRESHOLD = 60;
 const ArtistOnboardingDrawer = lazy(() => import("@/components/ArtistOnboardingDrawer"));
 
 const T2TrendMap = () => {
-  const [viewIndex, setViewIndex] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = VIEW_ORDER.indexOf(searchParams.get("view") as ViewMode);
+  const [viewIndex, setViewIndex] = useState(initialView >= 0 ? initialView : 0);
   const [category, setCategory] = useState<TrendCategory>("all");
   const [sortMode, setSortMode] = useState<SortMode>("volume");
   const isMobile = useIsMobile();
@@ -37,6 +39,20 @@ const T2TrendMap = () => {
   const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Sync viewIndex to URL searchParams for history persistence
+  const updateViewIndex = useCallback((idx: number) => {
+    setViewIndex(idx);
+    const mode = VIEW_ORDER[idx];
+    setSearchParams(prev => {
+      if (mode === VIEW_ORDER[0]) {
+        prev.delete("view");
+      } else {
+        prev.set("view", mode);
+      }
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   // Auto-open onboarding drawer after signup
   useEffect(() => {
@@ -180,7 +196,7 @@ const T2TrendMap = () => {
         setDragOffsetX(-window.innerWidth);
         setPendingIndex(viewIndex + 1);
         setTimeout(() => {
-          setViewIndex(viewIndex + 1);
+          updateViewIndex(viewIndex + 1);
           setDragOffsetX(0);
           setIsAnimating(false);
           setPendingIndex(null);
@@ -191,7 +207,7 @@ const T2TrendMap = () => {
         setDragOffsetX(window.innerWidth);
         setPendingIndex(viewIndex - 1);
         setTimeout(() => {
-          setViewIndex(viewIndex - 1);
+          updateViewIndex(viewIndex - 1);
           setDragOffsetX(0);
           setIsAnimating(false);
           setPendingIndex(null);
@@ -228,7 +244,7 @@ const T2TrendMap = () => {
                 <button
                   key={key}
                   onClick={() => {
-                    setViewIndex(i);
+                    updateViewIndex(i);
                     window.scrollTo({ top: 0 });
                   }}
                   className={cn(
@@ -331,7 +347,7 @@ const T2TrendMap = () => {
               >
                 <T2TrendTreemap
                   viewMode={viewMode}
-                  onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                  onViewModeChange={(m) => updateViewIndex(VIEW_ORDER.indexOf(m))}
                   selectedCategory={category}
                   onCategoryChange={setCategory}
                   hideCategory
@@ -364,7 +380,7 @@ const T2TrendMap = () => {
                         <div className="md:max-w-[90%] mx-auto">
                           <T2TrendTreemap
                             viewMode={mode}
-                            onViewModeChange={(m) => setViewIndex(VIEW_ORDER.indexOf(m))}
+                            onViewModeChange={(m) => updateViewIndex(VIEW_ORDER.indexOf(m))}
                             selectedCategory={category}
                             onCategoryChange={setCategory}
                             hideCategory
