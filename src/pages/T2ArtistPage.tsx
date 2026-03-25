@@ -401,10 +401,7 @@ const T2ArtistPage = () => {
                     >
                       <GradeIcon className="w-4.5 h-4.5" style={{ color: gc.color }} />
                     </div>
-                    <span
-                      className="text-lg font-black"
-                      style={{ color: gc.color }}
-                    >
+                    <span className="text-lg font-black text-foreground">
                       {gc.label}
                     </span>
                   </div>
