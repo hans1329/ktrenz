@@ -546,6 +546,57 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
 }
 
 // ── 5. pending → active 전환 ──
+// ── brand_id 자동 매핑 ──
+// brand/product 카테고리 키워드에 brand_id가 없으면 ktrenz_brand_registry에서 매칭
+async function mapBrandIds(sb: any): Promise<number> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  // brand_id가 없는 brand/product 키워드 조회
+  const { data: unmapped } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword_en, keyword, keyword_category")
+    .in("keyword_category", ["brand", "product"])
+    .is("brand_id", null)
+    .in("status", ["pending", "active"])
+    .gte("detected_at", threeDaysAgo);
+
+  if (!unmapped?.length) return 0;
+
+  // 브랜드 레지스트리 전체 로드
+  const { data: brands } = await sb
+    .from("ktrenz_brand_registry")
+    .select("id, brand_name, brand_name_ko")
+    .eq("is_active", true);
+
+  if (!brands?.length) return 0;
+
+  let mapped = 0;
+  for (const trigger of unmapped) {
+    const kwEn = (trigger.keyword_en || "").toLowerCase();
+    const kwKo = (trigger.keyword || "").toLowerCase();
+
+    // 1) 정확 매칭 (brand 카테고리)
+    let match = brands.find((b: any) =>
+      b.brand_name.toLowerCase() === kwEn || (b.brand_name_ko && b.brand_name_ko.toLowerCase() === kwKo)
+    );
+
+    // 2) 포함 매칭 (product 카테고리 — 브랜드명이 키워드에 포함)
+    if (!match && trigger.keyword_category === "product") {
+      match = brands.find((b: any) =>
+        kwEn.includes(b.brand_name.toLowerCase()) ||
+        (b.brand_name_ko && kwKo.includes(b.brand_name_ko.toLowerCase()))
+      );
+    }
+
+    if (match) {
+      await sb.from("ktrenz_trend_triggers").update({ brand_id: match.id }).eq("id", trigger.id);
+      mapped++;
+    }
+  }
+
+  return mapped;
+}
+
 async function activatePending(sb: any): Promise<number> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -625,6 +676,10 @@ Deno.serve(async (req) => {
     const crossArtistResult = await crossArtistSourceUrlDedup(sb);
     console.log(`[postprocess] Cross-artist source_url dedup: expired ${crossArtistResult.expired} duplicates`);
 
+    // 4.7단계: brand_id 자동 매핑
+    const brandMapped = await mapBrandIds(sb);
+    console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped} keywords`);
+
     // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
@@ -634,7 +689,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, brand_mapped=${brandMapped}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -647,6 +702,7 @@ Deno.serve(async (req) => {
         domesticPriority: srcDedupResult,
         sameSourceUrlDedup: sameUrlResult,
         crossArtistDedup: crossArtistResult,
+        brandMapped,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
