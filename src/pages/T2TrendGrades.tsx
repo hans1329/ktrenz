@@ -73,7 +73,7 @@ const T2TrendGrades = () => {
     const [kwRes, artRes] = await Promise.all([
       supabase
         .from("ktrenz_trend_triggers")
-        .select("id, keyword, keyword_en, keyword_ko, artist_name, trend_grade, purchase_stage, influence_index, baseline_score, peak_score, prev_api_total, source_image_url, keyword_category, detected_at, star_id, metadata")
+        .select("id, keyword, keyword_en, keyword_ko, artist_name, trend_grade, purchase_stage, influence_index, baseline_score, peak_score, prev_api_total, trend_score, source_image_url, keyword_category, detected_at, star_id, metadata")
         .eq("status", "active")
         .not("trend_grade", "is", null)
         .order("influence_index", { ascending: false })
