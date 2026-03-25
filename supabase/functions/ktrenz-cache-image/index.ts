@@ -10,6 +10,9 @@ const corsHeaders = {
 
 const BUCKET = "trend-images";
 
+// og:image가 이 크기(바이트) 이하면 저해상도로 판단 → 본문 이미지에서 더 큰 것을 찾는다
+const LOW_RES_THRESHOLD_BYTES = 30_000; // 30KB
+
 // 이미지 다운로드가 불가능한 도메인 블랙리스트 (봇 차단, 핫링크 차단 등)
 const IMAGE_DOMAIN_BLACKLIST = [
   "ddaily.co.kr",
@@ -56,6 +59,77 @@ async function downloadImage(url: string): Promise<{ data: Uint8Array; contentTy
     console.error(`[cache-image] Download error for ${url}:`, e.message);
     return null;
   }
+}
+
+// 본문 HTML에서 고해상도 <img> URL 후보들을 추출 (og:image보다 큰 이미지를 찾기 위해)
+async function fetchBodyImageCandidates(pageUrl: string): Promise<string[]> {
+  try {
+    const res = await fetch(pageUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        "Accept": "text/html",
+      },
+      redirect: "follow",
+    });
+    if (!res.ok) return [];
+
+    // 본문 앞 100KB만 읽기
+    const reader = res.body?.getReader();
+    if (!reader) return [];
+    let html = "";
+    const decoder = new TextDecoder();
+    while (html.length < 100_000) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      html += decoder.decode(value, { stream: true });
+    }
+    reader.cancel();
+
+    const candidates: string[] = [];
+    const imgMatches = html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi);
+    for (const m of imgMatches) {
+      const src = m[1];
+      // 광고/아이콘/로고 등 제외
+      if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
+      if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|emoticon|emoji/i.test(src)) continue;
+      // 작은 크기 힌트가 있는 이미지 제외
+      if (/width=["']?([1-9]|[1-9]\d)["'\s>]/i.test(m[0]) && !/width=["']?[1-9]\d{2,}/i.test(m[0])) continue;
+
+      let resolved = src.replace(/&amp;/g, "&");
+      if (resolved.startsWith("//")) resolved = "https:" + resolved;
+      else if (resolved.startsWith("/")) {
+        try { resolved = new URL(resolved, pageUrl).href; } catch { continue; }
+      }
+      if (!resolved.startsWith("http")) continue;
+
+      // 블랙리스트 도메인 체크
+      const isBlacklisted = IMAGE_DOMAIN_BLACKLIST.some(domain => resolved.includes(domain));
+      if (isBlacklisted) continue;
+      // http:// 프로토콜은 mixed content 위험 → 스킵
+      if (resolved.startsWith("http://")) continue;
+
+      candidates.push(resolved);
+    }
+    return candidates;
+  } catch {
+    return [];
+  }
+}
+
+// 후보 이미지 중 가장 큰 것을 찾아 반환
+async function findLargestImage(candidates: string[]): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
+  let best: { url: string; data: Uint8Array; contentType: string } | null = null;
+  // 최대 6개만 시도 (속도 제한)
+  for (const url of candidates.slice(0, 6)) {
+    const result = await downloadImage(url);
+    if (!result) continue;
+    if (!best || result.data.length > best.data.length) {
+      best = { url, ...result };
+    }
+    // 100KB 이상이면 충분히 고해상도 — 즉시 반환
+    if (result.data.length > 100_000) break;
+  }
+  return best;
 }
 
 function getExtension(contentType: string): string {
@@ -186,14 +260,30 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const ext = getExtension(image.contentType);
+      // og:image가 저해상도(30KB 이하)이면 본문에서 더 큰 이미지를 찾는다
+      let finalImage = image;
+      let finalUrl = url;
+      if (image.data.length < LOW_RES_THRESHOLD_BYTES && trigger.source_url) {
+        console.log(`[cache-image] Low-res og:image (${image.data.length}b) for ${trigger.id}, scanning body images from ${trigger.source_url}`);
+        const candidates = await fetchBodyImageCandidates(trigger.source_url);
+        if (candidates.length > 0) {
+          const better = await findLargestImage(candidates);
+          if (better && better.data.length > image.data.length * 1.5) {
+            console.log(`[cache-image] ✓ Found better image (${better.data.length}b vs ${image.data.length}b) for ${trigger.id}: ${better.url}`);
+            finalImage = better;
+            finalUrl = better.url;
+          }
+        }
+      }
+
+      const ext = getExtension(finalImage.contentType);
       const storagePath = `${trigger.id}.${ext}`;
 
       // Upload to storage (upsert)
       const { error: uploadError } = await sb.storage
         .from(BUCKET)
-        .upload(storagePath, image.data, {
-          contentType: image.contentType,
+        .upload(storagePath, finalImage.data, {
+          contentType: finalImage.contentType,
           upsert: true,
         });
 
