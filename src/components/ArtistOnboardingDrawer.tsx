@@ -28,6 +28,7 @@ interface StarItem {
   contentImageUrl: string | null;
   agency: string | null;
   star_type: string;
+  group_star_id?: string | null;
   trendCount?: number;
 }
 
@@ -134,6 +135,7 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
           contentImageUrl: contentImage,
           agency: s.agency,
           star_type: s.star_type,
+          group_star_id: s.group_star_id ?? null,
           trendCount: countMap.get(s.id) || 0,
         };
       });
@@ -242,10 +244,15 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
         }
       }
 
-      const nextStarIds = Array.from(selected);
+      const selectedStarItems = stars?.filter((s) => selected.has(s.id)) ?? [];
+      const nextStarIds = Array.from(new Set([
+        ...selectedStarItems.map((s) => s.id),
+        ...selectedStarItems.map((s) => s.group_star_id).filter(Boolean) as string[],
+      ]));
       queryClient.setQueryData(["onboarding-watched", user.id], new Set(nextStarIds));
       queryClient.setQueryData(["t2-watched-artists-v2", user.id], (prev: WatchedArtistsCache | undefined) => {
         const preserved = new Set(prev?.starIds ?? []);
+        preserved.clear();
         nextStarIds.forEach((id) => preserved.add(id));
         return { starIds: Array.from(preserved) };
       });
