@@ -118,7 +118,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
   }, [hasMore, onLoadMore]);
 
   // Fetch all followed trigger IDs for this user
-  const { data: followedIds } = useQuery({
+  const { data: followedIdsRaw } = useQuery({
     queryKey: ["t2-keyword-follows-list", user?.id],
     queryFn: async () => {
       if (!user?.id) return new Set<string>();
