@@ -271,15 +271,14 @@ const B2BLayout = () => {
               )}
             </div>
 
-            <button className="relative w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] hover:bg-[#E5E7EB]">
+            <button className="relative w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-[#D1D5DB] cursor-not-allowed opacity-50" disabled title="준비 중">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-[5px] right-[5px] w-[7px] h-[7px] bg-[#EF4444] rounded-full border border-white" />
             </button>
 
-            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB] hover:bg-[#E5E7EB]">
+            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#F3F4F6] text-[#D1D5DB] border border-[#E5E7EB] cursor-not-allowed opacity-50" disabled title="준비 중">
               ROI 시뮬레이터
             </button>
-            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8]">
+            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#93C5FD] text-white cursor-not-allowed opacity-50" disabled title="준비 중">
               + 캠페인 등록
             </button>
           </div>
