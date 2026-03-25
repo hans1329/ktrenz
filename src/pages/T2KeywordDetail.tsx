@@ -438,8 +438,8 @@ const T2KeywordDetail = () => {
             <div className="grid grid-cols-3 gap-3 mt-5">
               <div className="rounded-xl bg-white/10 backdrop-blur border border-white/15 p-3 text-center">
                 <div className="text-[10px] text-white/60 mb-0.5">{t2l("influence", language)}</div>
-                <div className="text-xl font-black text-white">
-                  {influenceIndex > 0 ? `+${influenceIndex.toFixed(1)}%` : "—"}
+                <div className={cn("font-black text-white", influenceIndex >= 1000 ? "text-sm" : influenceIndex >= 100 ? "text-base" : "text-xl")}>
+                  {influenceIndex > 0 ? `+${influenceIndex.toFixed(influenceIndex >= 100 ? 0 : 1)}%` : "—"}
                 </div>
               </div>
               <div className="rounded-xl bg-white/10 backdrop-blur border border-white/15 p-3 text-center">
