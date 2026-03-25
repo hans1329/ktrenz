@@ -673,6 +673,13 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
           body: JSON.stringify({ artistName: artist.title, koreanName: starInfo?.name_ko || null, wikiEntryId }),
+        }).then(async () => {
+          // 네이버 뉴스 수집 후 schedule predict 트리거
+          await fetch(`${supabaseUrl}/functions/v1/ktrenz-schedule-predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify({ wikiEntryId, artistName: artist.title }),
+          }).catch((e) => console.warn(`[data-engine] Schedule predict for ${artist.title} error:`, e.message));
         }).catch((e) => console.warn(`[data-engine] Naver News single fire error:`, e.message));
         fireAndForget(p);
         return new Response(
