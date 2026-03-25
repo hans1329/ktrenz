@@ -629,13 +629,13 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
-- "event": Fan meetings, concerts, tours, award shows, festivals, exhibitions, fan signs, pop-up stores — physical/live EVENTS only
-- "brand": Brand endorsements, ambassadorships, advertising campaigns, brand collaborations
+- "event": Fan meetings, concerts, tours, award shows, festivals, exhibitions, fan signs, pop-up stores, challenges, certifications (인증), viral challenges — physical/live EVENTS or fan-driven challenges/certifications
+- "brand": Brand endorsements, ambassadorships, advertising campaigns, brand collaborations — must be a NAMED BRAND, not a personal activity
 - "fashion": Specific fashion items, designer names, fashion shows, styling trends
 - "beauty": Cosmetics, skincare, beauty brands
 - "food": Restaurant names, food brands, food collaborations
 - "media": Drama/movie titles, variety show names, YouTube content, documentary titles
-- "social": ⚠️ RESERVED FOR TIKTOK ONLY — do NOT use this category for news/blog articles. If an article discusses social media trends or viral moments, classify as "media" instead.
+- "social": Social media challenges, viral certifications (인증), fan-driven trends, SNS campaigns, TikTok trends — online community-driven activities that are NOT tied to a specific brand/product
 - "product": Specific product names/models
 - "place": Specific venue names, location-based trends
 - ⚠️ IMPORTANT: Album releases, song titles, music projects, music collaborations → ALWAYS "music", NEVER "event"
