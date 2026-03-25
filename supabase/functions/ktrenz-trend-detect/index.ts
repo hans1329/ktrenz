@@ -611,7 +611,14 @@ WHAT MAKES A VALID KEYWORD:
 - ✅ Article says "카리나 프라다 앰버서더 발탁" → "프라다" VALID (appears in text, direct relationship)
 - ❌ You know IU sang "Palette" but no article mentions it → "팔레트" INVALID (not in provided text)
 
-FORBIDDEN KEYWORDS (instant rejection):
+${globalStarNames && globalStarNames.size > 0 ? `KNOWN STARS IN OUR DATABASE (★ CROSS-REFERENCE THIS LIST ★):
+Below are ALL known K-stars tracked in our system. You MUST use this list to:
+1. VERIFY ARTICLE SUBJECT: If the article is PRIMARILY about a person in this list who is NOT "${memberName}"${groupName ? ` or "${groupName}"` : ""}, set article_subject_match=false and add "wrong_artist" to rejection_flags. For example, if you're searching for "민니" but the article is actually about "쯔양" (who is in this list), that's a wrong_artist.
+2. REJECT STAR NAMES AS KEYWORDS: If a keyword matches ANY name in this list, it's a STAR NAME, not a valid commercial keyword — DO NOT extract it.
+3. DETECT CROSS-CONTAMINATION: Search results for "${memberName}" may include articles where "${memberName}" appears only in passing while the article actually focuses on a DIFFERENT star from this list.
+
+Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
+` : ''}FORBIDDEN KEYWORDS (instant rejection):
 - The artist's own name: ${nameListStr}
 - Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
 - Chart names, generic K-pop terms (컴백, 앨범, 콘서트, 팬미팅)
