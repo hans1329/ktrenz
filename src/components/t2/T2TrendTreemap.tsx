@@ -514,7 +514,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       return dedupedTriggers.filter(t => t.category !== "music");
     }
     return dedupedTriggers.filter(t => t.category === selectedCategory);
-  }, [dedupedTriggers, selectedCategory, watchedSet, mergedCategories]);
+  }, [dedupedTriggers, selectedCategory, followedTriggerSet, mergedCategories]);
 
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
