@@ -229,18 +229,21 @@ const T2ArtistPage = () => {
   const syncWatchedArtistCaches = useCallback((nextIsWatched: boolean) => {
     if (!user?.id || !starId) return;
 
+    const optimisticStarIds = [starId, ...(star?.group_star_id ? [star.group_star_id] : [])].filter(Boolean) as string[];
+
     queryClient.setQueryData(["t2-watched-check", user.id, starId], nextIsWatched);
     queryClient.setQueryData(["hero-has-watched", user.id], nextIsWatched);
     queryClient.setQueryData(["t2-watched-artists-v2", user.id], (prev: { starIds?: string[] } | undefined) => {
       const current = new Set(prev?.starIds ?? []);
-      if (nextIsWatched) {
-        current.add(starId);
-      } else {
-        current.delete(starId);
-      }
+
+      optimisticStarIds.forEach((id) => {
+        if (nextIsWatched) current.add(id);
+        else current.delete(id);
+      });
+
       return { starIds: Array.from(current) };
     });
-  }, [queryClient, starId, user?.id]);
+  }, [queryClient, star?.group_star_id, starId, user?.id]);
 
   const toggleWatch = useCallback(async () => {
     if (!user?.id || !star) return;
