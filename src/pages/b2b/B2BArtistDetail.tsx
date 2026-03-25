@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   TrendingUp, Star, BarChart3, ArrowLeft,
-  Activity, Zap, Brain, Sparkles, ChevronRight, Users,
+  Activity, Zap, Brain, Sparkles, Users,
   ShoppingBag, Globe, Flame, Share2, ShoppingCart
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
@@ -309,11 +309,13 @@ const B2BArtistDetail = () => {
               ].map(action => (
                 <button
                   key={action.label}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-xs text-[#374151] hover:bg-[#EFF6FF] hover:border-[#BFDBFE] hover:text-[#2563EB] transition-colors"
+                  disabled
+                  title="준비 중"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-xs text-[#D1D5DB] cursor-not-allowed opacity-60"
                 >
-                  <span className="text-[#2563EB]">{action.icon}</span>
+                  <span className="text-[#D1D5DB]">{action.icon}</span>
                   {action.label}
-                  <ChevronRight className="w-3 h-3 ml-auto opacity-30" />
+                  <span className="ml-auto text-[9px] font-semibold text-[#D1D5DB] uppercase">Soon</span>
                 </button>
               ))}
             </div>

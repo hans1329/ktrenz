@@ -14,21 +14,21 @@ import { Loader2 } from 'lucide-react';
 
 const entertainmentNav = [
   { section: 'Overview', items: [
-    { label: '대시보드', path: '/b2b', icon: LayoutDashboard },
-    { label: 'Radar', path: '/b2b/radar', icon: Target, badge: 3 },
+    { label: '대시보드', path: '/b2b', icon: LayoutDashboard, enabled: true },
+    { label: 'Radar', path: '/b2b/radar', icon: Target, badge: 3, enabled: false },
   ]},
   { section: 'Intelligence', items: [
-    { label: 'Artists', path: '/b2b/artists', icon: Star },
-    { label: 'Brands', path: '/b2b/brands', icon: BarChart3 },
-    { label: 'Campaigns', path: '/b2b/campaigns', icon: Zap },
-    { label: 'Benchmark', path: '/b2b/benchmark', icon: GitCompare },
+    { label: 'Artists', path: '/b2b/artists', icon: Star, enabled: true },
+    { label: 'Brands', path: '/b2b/brands', icon: BarChart3, enabled: false },
+    { label: 'Campaigns', path: '/b2b/campaigns', icon: Zap, enabled: false },
+    { label: 'Benchmark', path: '/b2b/benchmark', icon: GitCompare, enabled: false },
   ]},
   { section: 'Markets', items: [
-    { label: 'Markets', path: '/b2b/markets', icon: Globe },
-    { label: 'Recommendations', path: '/b2b/rec', icon: Lightbulb },
+    { label: 'Markets', path: '/b2b/markets', icon: Globe, enabled: false },
+    { label: 'Recommendations', path: '/b2b/rec', icon: Lightbulb, enabled: false },
   ]},
   { section: 'Activation', items: [
-    { label: 'Activation Studio', path: '/b2b/studio', icon: Rocket },
+    { label: 'Activation Studio', path: '/b2b/studio', icon: Rocket, enabled: false },
   ]},
 ];
 
@@ -138,8 +138,25 @@ const B2BLayout = () => {
                 </div>
               )}
               {group.items.map(item => {
-                const active = location.pathname === item.path || (item.path === '/b2b' && location.pathname === '/b2b');
                 const isExactActive = item.path === '/b2b' ? location.pathname === '/b2b' : location.pathname.startsWith(item.path);
+                const disabled = !item.enabled;
+
+                if (disabled) {
+                  return (
+                    <div
+                      key={item.path}
+                      title={`${item.label} (준비 중)`}
+                      className="relative flex items-center gap-[10px] px-5 py-[9px] text-[13px] text-white/20 cursor-not-allowed select-none"
+                    >
+                      <item.icon className="w-[15px] h-[15px] shrink-0 opacity-40" />
+                      {!sidebarCollapsed && <span>{item.label}</span>}
+                      {!sidebarCollapsed && (
+                        <span className="ml-auto text-[9px] font-semibold text-white/15 uppercase tracking-wider">Soon</span>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.path}
@@ -254,15 +271,14 @@ const B2BLayout = () => {
               )}
             </div>
 
-            <button className="relative w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] hover:bg-[#E5E7EB]">
+            <button className="relative w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-[#D1D5DB] cursor-not-allowed opacity-50" disabled title="준비 중">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-[5px] right-[5px] w-[7px] h-[7px] bg-[#EF4444] rounded-full border border-white" />
             </button>
 
-            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB] hover:bg-[#E5E7EB]">
+            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#F3F4F6] text-[#D1D5DB] border border-[#E5E7EB] cursor-not-allowed opacity-50" disabled title="준비 중">
               ROI 시뮬레이터
             </button>
-            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8]">
+            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#93C5FD] text-white cursor-not-allowed opacity-50" disabled title="준비 중">
               + 캠페인 등록
             </button>
           </div>
