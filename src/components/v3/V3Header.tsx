@@ -87,8 +87,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .eq("is_active", true)
             .or(starFilter)
             .limit(10)
-            .then((r: any) => r.data || [])
-            .catch(() => []);
+            .then((r: any) => r.data || [], () => []);
 
           const wikiPromise = supabase
             .from("wiki_entries")
@@ -96,8 +95,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .or(`title.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
             .in("schema_type", ["artist", "member"] as const)
             .limit(8)
-            .then((r) => r.data || [])
-            .then(d => d, () => [] as SearchResult[]);
+            .then((r) => r.data || [], () => [] as SearchResult[]);
 
           const kwPromise = (supabase as any)
             .from("ktrenz_trend_triggers")
@@ -106,8 +104,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .or(`keyword.ilike.%${searchQuery}%,keyword_ko.ilike.%${searchQuery}%,keyword_en.ilike.%${searchQuery}%`)
             .order("detected_at", { ascending: false })
             .limit(8)
-            .then((r: any) => r.data || [])
-            .catch(() => []);
+            .then((r: any) => r.data || [], () => []);
 
           const [starsData, wikiData, kwData] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
 
