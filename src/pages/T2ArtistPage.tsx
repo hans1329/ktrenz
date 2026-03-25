@@ -404,8 +404,6 @@ const T2ArtistPage = () => {
                     <span className="text-lg font-black text-foreground">
                       {gc.label}
                     </span>
-                      {gc.label}
-                    </span>
                   </div>
                   {artistGrade.influence_score > 0 && (
                     <span className="text-2xl font-black text-foreground tabular-nums">
