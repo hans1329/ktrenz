@@ -157,33 +157,35 @@ const T2ArtistPage = () => {
     enabled: !!keywords && keywords.length > 0,
   });
 
-  // Fetch schedules
+  // Fetch schedules using star_id (primary) with wiki_entry_id fallback
   const { data: schedules, isLoading: schedLoading } = useQuery({
-    queryKey: ["t2-artist-schedules", star?.resolvedWikiEntryId],
+    queryKey: ["t2-artist-schedules", starId, star?.resolvedWikiEntryId],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
 
+      // Try star_id first
       const { data: upcoming } = await supabase
         .from("ktrenz_schedules" as any)
         .select("*")
-        .eq("wiki_entry_id", star!.resolvedWikiEntryId)
+        .eq("star_id", starId!)
         .gte("event_date", today)
         .order("event_date", { ascending: true })
         .limit(20);
 
       if ((upcoming ?? []).length > 0) return (upcoming ?? []) as any[];
 
+      // No upcoming? Try recent past by star_id
       const { data: recentPast } = await supabase
         .from("ktrenz_schedules" as any)
         .select("*")
-        .eq("wiki_entry_id", star!.resolvedWikiEntryId)
+        .eq("star_id", starId!)
         .lt("event_date", today)
         .order("event_date", { ascending: false })
         .limit(6);
 
       return (recentPast ?? []) as any[];
     },
-    enabled: !!star?.resolvedWikiEntryId,
+    enabled: !!starId,
   });
 
   // Watch status

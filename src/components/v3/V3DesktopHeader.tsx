@@ -105,10 +105,11 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
     setSearchQuery(query);
     if (query.trim().length < 2) { setSearchResults([]); setKeywordResults([]); return; }
     setIsSearching(true);
-    const qNoSpace = query.trim().replace(/\s+/g, "");
-    const starFilter = query.trim() === qNoSpace
-      ? `display_name.ilike.%${query}%,name_ko.ilike.%${query}%`
-      : `display_name.ilike.%${query}%,name_ko.ilike.%${query}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
+    const q = query.trim();
+    const qNoSpace = q.replace(/\s+/g, "");
+    const starFilter = q === qNoSpace
+      ? `display_name.ilike.%${q}%,name_ko.ilike.%${q}%`
+      : `display_name.ilike.%${q}%,name_ko.ilike.%${q}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
     try {
       const starsPromise = (supabase as any)
         .from("ktrenz_stars")
@@ -117,49 +118,38 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
         .or(starFilter)
         .limit(10)
         .then((r: any) => r.data || [])
-        .then((d: any) => d, () => []);
-
-      const wikiPromise = supabase
-        .from("wiki_entries")
-        .select("id, title, slug, image_url, schema_type")
-        .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
-        .in("schema_type", ["artist", "member"] as const)
-        .limit(8)
-        .then((r) => r.data || [])
-        .then(d => d, () => [] as any[]);
+        .then((d: any) => d, () => [] as any[]);
 
       const kwPromise = (supabase as any)
         .from("ktrenz_trend_triggers")
         .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
         .eq("status", "active")
-        .or(`keyword.ilike.%${query}%,keyword_ko.ilike.%${query}%,keyword_en.ilike.%${query}%`)
+        .or(`keyword.ilike.%${q}%,keyword_ko.ilike.%${q}%,keyword_en.ilike.%${q}%`)
         .order("detected_at", { ascending: false })
         .limit(8)
         .then((r: any) => r.data || [])
-        .then((d: any) => d, () => []);
+        .then((d: any) => d, () => [] as any[]);
 
-      const [starsData, wikiData, kwData] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
+      const [starsData, kwData] = await Promise.all([starsPromise, kwPromise]);
 
-      const wikiToStarMap = new Map<string, { starId: string; name: string }>();
+      // Build results directly from ktrenz_stars
+      const results: any[] = [];
       for (const s of starsData) {
-        if (s.wiki_entry_id) wikiToStarMap.set(s.wiki_entry_id, { starId: s.id, name: s.display_name });
-      }
-
-      const resultMap = new Map<string, any>();
-      (wikiData as any[]).forEach((r: any) => {
-        const starInfo = wikiToStarMap.get(r.id);
-        resultMap.set(r.id, { ...r, starId: starInfo?.starId });
-      });
-      for (const s of starsData) {
-        const key = s.wiki_entry_id || s.id;
-        if (!resultMap.has(key)) {
-          resultMap.set(key, {
-            id: key, title: s.display_name, slug: key,
-            image_url: null, schema_type: s.is_group ? "artist" : "member", starId: s.id,
-          });
+        let imageUrl: string | null = null;
+        if (s.wiki_entry_id) {
+          const { data: entry } = await supabase
+            .from("wiki_entries")
+            .select("image_url")
+            .eq("id", s.wiki_entry_id)
+            .maybeSingle();
+          imageUrl = (entry as any)?.image_url ?? null;
         }
+        results.push({
+          id: s.id, title: s.display_name, slug: s.id,
+          image_url: imageUrl, schema_type: s.is_group ? "artist" : "member", starId: s.id,
+        });
       }
-      setSearchResults(Array.from(resultMap.values()).slice(0, 8));
+      setSearchResults(results.slice(0, 8));
 
       const seenKw = new Set<string>();
       const uniqueKw: KeywordResult[] = [];
