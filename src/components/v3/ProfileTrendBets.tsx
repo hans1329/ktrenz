@@ -149,8 +149,8 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
                   <Crosshair className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-foreground truncate">{displayKw}</p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-sm font-bold text-foreground truncate">{displayKw}</p>
+                  <p className="text-xs text-muted-foreground">
                     🔥 {kw.influenceIndex.toFixed(0)}
                     <span className={cn("ml-1.5 font-medium", isActive ? "text-green-400" : "text-muted-foreground/60")}>
                       {isActive ? "LIVE" : "ENDED"}
@@ -176,16 +176,16 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
               >
                 <span className="text-sm shrink-0" style={{ filter: "hue-rotate(260deg) saturate(2)" }}>💎</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-foreground truncate">{displayKeyword}</p>
-                  <p className={cn("text-[10px] font-medium", outcomeColors[bet.outcome] || "text-muted-foreground")}>
+                   <p className="text-sm font-bold text-foreground truncate">{displayKeyword}</p>
+                  <p className={cn("text-xs font-medium", outcomeColors[bet.outcome] || "text-muted-foreground")}>
                     {outcomeLabels[bet.outcome] || bet.outcome}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-bold text-foreground">{bet.amount.toLocaleString()}</p>
-                  {isPending && <span className="text-[10px] text-primary font-medium">Pending</span>}
-                  {isWin && <span className="text-[10px] text-emerald-400 font-bold">+{bet.payout!.toLocaleString()}</span>}
-                  {isLoss && <span className="text-[10px] text-red-400 font-medium">Lost</span>}
+                  <p className="text-sm font-bold text-foreground">{bet.amount.toLocaleString()}</p>
+                   {isPending && <span className="text-xs text-primary font-medium">Pending</span>}
+                  {isWin && <span className="text-xs text-emerald-400 font-bold">+{bet.payout!.toLocaleString()}</span>}
+                  {isLoss && <span className="text-xs text-red-400 font-medium">Lost</span>}
                 </div>
                 <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
               </button>

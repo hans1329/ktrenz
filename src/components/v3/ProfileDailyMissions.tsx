@@ -256,7 +256,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className={cn("text-xs font-bold truncate", claimed ? "text-muted-foreground line-through" : "text-foreground")}>
+                  <p className={cn("text-sm font-bold truncate", claimed ? "text-muted-foreground line-through" : "text-foreground")}>
                     {t(mission.labelKey)}
                   </p>
                   {mission.bonus && !claimed && (
@@ -270,16 +270,16 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate">
                   {progressText && !claimed ? `${progressText} · ` : ""}{t(mission.descKey)}
                 </p>
               </div>
 
               <div className="text-right shrink-0">
-                <p className={cn("text-[10px] font-bold", claimed ? "text-muted-foreground" : "text-primary")}>
+                <p className={cn("text-xs font-bold", claimed ? "text-muted-foreground" : "text-primary")}>
                   +{mission.points}P
                 </p>
-                <p className={cn("text-[9px]", claimed ? "text-muted-foreground" : "text-primary/70")}>
+                <p className={cn("text-[10px]", claimed ? "text-muted-foreground" : "text-primary/70")}>
                   +{mission.exp} EXP
                 </p>
               </div>
