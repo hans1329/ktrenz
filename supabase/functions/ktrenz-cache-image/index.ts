@@ -431,8 +431,8 @@ Deno.serve(async (req) => {
             finalUrl = better.url;
           }
         }
-        // 2차: 이름 매칭 실패 시, 필터 없이 본문 최대 이미지 시도 (저해상도 og보다는 나은 이미지 확보)
-        if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES) {
+        // 2차: 1차에서 개선 못 했으면 필터 없이 본문 최대 이미지 시도
+        if (finalImage === image) {
           console.log(`[cache-image] Name-matched images insufficient, trying unfiltered body images for ${trigger.id}`);
           const unfilteredCandidates = await fetchBodyImageCandidates(trigger.source_url, []);
           if (unfilteredCandidates.length > 0) {
