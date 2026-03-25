@@ -28,7 +28,7 @@ async function generateDynamicContext(
       ? (trackingHistory[trackingHistory.length - 1] > trackingHistory[0] ? "rising" : "declining")
       : "stable";
 
-    const prompt = `You are a K-pop trend data analyst. Based on the following real-time tracking data, write a concise 1-2 sentence interpretation of the current status of this keyword trend. Write in English. Be specific with numbers and direction. Use a punchy editorial tone.
+    const prompt = `당신은 K-pop 트렌드 데이터 분석가입니다. 아래 실시간 추적 데이터를 기반으로, 이 키워드 트렌드의 현재 상태를 1-2문장으로 해석하세요. 반드시 한국어로 작성하세요. 구체적인 수치와 방향성을 포함하고, 편집자 톤(Editorial Narrative)으로 작성하세요. '[구체적 상황] → [트렌드 현상/수치 변화]' 패턴을 따르세요.
 
 Artist: ${trigger.artist_name}
 Keyword: ${trigger.keyword}
@@ -44,7 +44,7 @@ Recent Scores: [${trackingHistory.slice(-5).join(", ")}]
 Days Since Detection: ${ageDays}
 ${trigger.context ? `Previous Context: ${trigger.context}` : ""}
 
-Write ONLY the interpretation, no labels or prefixes.`;
+해석만 작성하세요. 라벨이나 접두사 없이.`;
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -458,7 +458,7 @@ Deno.serve(async (req) => {
           if (newContext) {
             await sb.from("ktrenz_trend_triggers").update({
               context: newContext,
-              context_ko: null, context_ja: null, context_zh: null,
+              context_ko: newContext, context_ja: null, context_zh: null,
             }).eq("id", trigger.id);
             console.log(`[trend-track] 🤖 Dynamic context updated: ${trigger.keyword}`);
           }
