@@ -442,7 +442,7 @@ const T2ArtistPage = () => {
       <section className="mb-8">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <MessageCircle className="w-4 h-4 -scale-x-100" />
-          {language === "ko" ? "트렌드 키워드" : "Trend Keywords"}
+          {t("artist.trendKeywords")}
         </h2>
 
         {kwLoading ? (
