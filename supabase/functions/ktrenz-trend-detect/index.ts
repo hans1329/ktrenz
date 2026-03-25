@@ -624,6 +624,9 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - Chart names, generic K-pop terms (컴백, 앨범, 콘서트, 팬미팅)
 - Generic locations (city names, country names, airports)
 - TV gimmicks, costumes, ephemeral segments
+- Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
+- Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
+- Generic descriptors of appearance or condition (e.g., "비주얼", "몸매", "피부 관리") — too vague to be a trend keyword
 
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
