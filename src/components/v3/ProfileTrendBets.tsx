@@ -176,8 +176,8 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
               >
                 <span className="text-sm shrink-0" style={{ filter: "hue-rotate(260deg) saturate(2)" }}>💎</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-foreground truncate">{displayKeyword}</p>
-                  <p className={cn("text-[10px] font-medium", outcomeColors[bet.outcome] || "text-muted-foreground")}>
+                   <p className="text-sm font-bold text-foreground truncate">{displayKeyword}</p>
+                  <p className={cn("text-xs font-medium", outcomeColors[bet.outcome] || "text-muted-foreground")}>
                     {outcomeLabels[bet.outcome] || bet.outcome}
                   </p>
                 </div>
