@@ -1504,7 +1504,7 @@ Deno.serve(async (req) => {
         };
 
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames
         );
         successCount++;
         totalKeywords += result.keywordsFound;
