@@ -616,12 +616,6 @@ const T2KeywordDetail = () => {
             {evidenceImageUrl && (
               <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
                 <img src={evidenceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                {context && (
-                  <p className="absolute bottom-0 left-0 right-0 px-4 pb-3 text-[11px] text-white/90 leading-relaxed line-clamp-2">
-                    {context}
-                  </p>
-                )}
               </div>
             )}
             <div className="p-4 space-y-3">
