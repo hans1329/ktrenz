@@ -232,7 +232,6 @@ const T2ArtistPage = () => {
     const optimisticStarIds = [starId, ...(star?.group_star_id ? [star.group_star_id] : [])].filter(Boolean) as string[];
 
     queryClient.setQueryData(["t2-watched-check", user.id, starId], nextIsWatched);
-    queryClient.setQueryData(["hero-has-watched", user.id], nextIsWatched);
     queryClient.setQueryData(["t2-watched-artists-v2", user.id], (prev: { starIds?: string[] } | undefined) => {
       const current = new Set(prev?.starIds ?? []);
 
@@ -241,6 +240,7 @@ const T2ArtistPage = () => {
         else current.delete(id);
       });
 
+      queryClient.setQueryData(["hero-has-watched", user.id], current.size > 0);
       return { starIds: Array.from(current) };
     });
   }, [queryClient, star?.group_star_id, starId, user?.id]);
@@ -250,34 +250,36 @@ const T2ArtistPage = () => {
     setWatchLoading(true);
     try {
       if (isWatched) {
-        await supabase
+        const { error } = await supabase
           .from("ktrenz_watched_artists")
           .delete()
           .eq("user_id", user.id)
           .eq("star_id", starId);
+        if (error) throw error;
+
         syncWatchedArtistCaches(false);
         toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
       } else {
-        await supabase
+        const { error } = await supabase
           .from("ktrenz_watched_artists")
-          .upsert({
+          .insert({
             user_id: user.id,
             artist_name: star.display_name,
             star_id: starId,
             wiki_entry_id: star.resolvedWikiEntryId || null,
-          }, { onConflict: "user_id,star_id", ignoreDuplicates: true } as any);
+          });
+        if (error) throw error;
+
         syncWatchedArtistCaches(true);
         toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
       }
-      // Delayed refetch to let DB commit propagate — avoids overwriting optimistic cache
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["t2-watched-check", user.id, starId] });
-        queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2", user.id] });
-        queryClient.invalidateQueries({ queryKey: ["hero-has-watched", user.id] });
-        queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
-      }, 1500);
-    } catch {
-      toast.error("Error");
+
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-check", user.id, starId] });
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["hero-has-watched", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    } catch (error: any) {
+      toast.error(error?.message || "Error");
     } finally {
       setWatchLoading(false);
     }
