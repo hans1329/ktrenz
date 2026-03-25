@@ -73,6 +73,7 @@ const AdminKeywordMonitor = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [filterZone, setFilterZone] = useState<Zone | "all">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [zoneSortDir, setZoneSortDir] = useState<Record<Zone, "desc" | "asc">>({
     rising: "desc", peaked: "desc", stable: "desc", declining: "desc", at_risk: "desc",
@@ -108,9 +109,42 @@ const AdminKeywordMonitor = () => {
     return counts;
   }, [classified]);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    classified.forEach(t => {
+      const cat = t.keyword_category || "other";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    // brand+product 합산
+    counts["brand+product"] = (counts["brand"] || 0) + (counts["product"] || 0);
+    return counts;
+  }, [classified]);
+
+  const CATEGORY_FILTERS = [
+    { key: "all", label: "전체" },
+    { key: "brand+product", label: "🏷️ 브랜드/상품" },
+    { key: "music", label: "🎵 음악" },
+    { key: "event", label: "📅 이벤트" },
+    { key: "media", label: "📺 미디어" },
+    { key: "social", label: "💬 소셜" },
+    { key: "fashion", label: "👗 패션" },
+    { key: "beauty", label: "💄 뷰티" },
+    { key: "food", label: "🍽️ 음식" },
+    { key: "place", label: "📍 장소" },
+  ];
+
   const groupedByZone = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let base = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    let base = classified;
+    // Zone filter
+    if (filterZone !== "all") base = base.filter(t => t.zone === filterZone);
+    // Category filter
+    if (filterCategory === "brand+product") {
+      base = base.filter(t => t.keyword_category === "brand" || t.keyword_category === "product");
+    } else if (filterCategory !== "all") {
+      base = base.filter(t => t.keyword_category === filterCategory);
+    }
+    // Search filter
     if (q) {
       base = base.filter(t =>
         (t.keyword?.toLowerCase().includes(q)) ||
@@ -126,7 +160,7 @@ const AdminKeywordMonitor = () => {
       acc[zone] = items;
       return acc;
     }, {} as Record<Zone, typeof classified>);
-  }, [classified, filterZone, zoneSortDir, searchQuery]);
+  }, [classified, filterZone, filterCategory, zoneSortDir, searchQuery]);
 
   const handleRemove = useCallback(async (id: string, label: string) => {
     try {
@@ -202,6 +236,23 @@ const AdminKeywordMonitor = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* Category filter chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {CATEGORY_FILTERS.filter(cf => cf.key === "all" || (categoryCounts[cf.key] || 0) > 0).map(cf => (
+            <button
+              key={cf.key}
+              onClick={() => setFilterCategory(cf.key)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                filterCategory === cf.key
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
+              }`}
+            >
+              {cf.label} ({cf.key === "all" ? triggers?.length ?? 0 : categoryCounts[cf.key] || 0})
+            </button>
+          ))}
         </div>
 
         {isLoading ? (
