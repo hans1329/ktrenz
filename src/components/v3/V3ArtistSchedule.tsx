@@ -6,7 +6,8 @@ import { format, parseISO, differenceInDays, isPast } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface V3ArtistScheduleProps {
-  wikiEntryId: string;
+  starId?: string;
+  wikiEntryId?: string;
   artistName: string;
 }
 
