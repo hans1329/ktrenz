@@ -676,6 +676,10 @@ Deno.serve(async (req) => {
     const crossArtistResult = await crossArtistSourceUrlDedup(sb);
     console.log(`[postprocess] Cross-artist source_url dedup: expired ${crossArtistResult.expired} duplicates`);
 
+    // 4.7단계: brand_id 자동 매핑
+    const brandMapped = await mapBrandIds(sb);
+    console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped} keywords`);
+
     // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
