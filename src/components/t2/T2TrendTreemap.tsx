@@ -397,14 +397,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     staleTime: 20000,
   });
 
-  const watchedKey = (watchedWikiIds ?? []).slice().sort().join(",");
+  const watchedStarKey = (watchedStarIds ?? []).slice().sort().join(",");
+  const watchedWikiKey = (watchedWikiIds ?? []).slice().sort().join(",");
   const followedKey = (followedTriggerIds ?? []).slice().sort().join(",");
 
   const { data: triggers, isLoading } = useQuery({
-    queryKey: ["t2-trend-triggers", watchedKey, followedKey],
+    queryKey: ["t2-trend-triggers", watchedStarKey, watchedWikiKey, followedKey],
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
-    enabled: watchedWikiIds !== undefined && followedTriggerIds !== undefined,
+    enabled: watchedData !== undefined && followedTriggerIds !== undefined,
     queryFn: async () => {
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
@@ -415,16 +416,25 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         .order("detected_at", { ascending: false })
         .limit(500);
 
-      const watchedPromise = watchedWikiIds && watchedWikiIds.length > 0
+      // Fetch watched triggers by star_id (most triggers don't have wiki_entry_id)
+      const watchedByStarPromise = watchedStarIds && watchedStarIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("star_id", watchedStarIds)
+            .order("influence_index", { ascending: false })
+            .limit(300)
+        : Promise.resolve({ data: [] as any[] });
+
+      // Also fetch by wiki_entry_id as fallback (some triggers have it directly)
+      const watchedByWikiPromise = watchedWikiIds && watchedWikiIds.length > 0
         ? supabase
             .from("ktrenz_trend_triggers" as any)
             .select("*")
             .eq("status", "active")
             .in("wiki_entry_id", watchedWikiIds)
-            .order("influence_index", { ascending: false })
-            .order("baseline_score", { ascending: false })
-            .order("detected_at", { ascending: false })
-            .limit(300)
+            .limit(200)
         : Promise.resolve({ data: [] as any[] });
 
       const followedPromise = followedTriggerIds && followedTriggerIds.length > 0
