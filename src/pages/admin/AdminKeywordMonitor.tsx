@@ -109,9 +109,42 @@ const AdminKeywordMonitor = () => {
     return counts;
   }, [classified]);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    classified.forEach(t => {
+      const cat = t.keyword_category || "other";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    // brand+product 합산
+    counts["brand+product"] = (counts["brand"] || 0) + (counts["product"] || 0);
+    return counts;
+  }, [classified]);
+
+  const CATEGORY_FILTERS = [
+    { key: "all", label: "전체" },
+    { key: "brand+product", label: "🏷️ 브랜드/상품" },
+    { key: "music", label: "🎵 음악" },
+    { key: "event", label: "📅 이벤트" },
+    { key: "media", label: "📺 미디어" },
+    { key: "social", label: "💬 소셜" },
+    { key: "fashion", label: "👗 패션" },
+    { key: "beauty", label: "💄 뷰티" },
+    { key: "food", label: "🍽️ 음식" },
+    { key: "place", label: "📍 장소" },
+  ];
+
   const groupedByZone = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let base = filterZone === "all" ? classified : classified.filter(t => t.zone === filterZone);
+    let base = classified;
+    // Zone filter
+    if (filterZone !== "all") base = base.filter(t => t.zone === filterZone);
+    // Category filter
+    if (filterCategory === "brand+product") {
+      base = base.filter(t => t.keyword_category === "brand" || t.keyword_category === "product");
+    } else if (filterCategory !== "all") {
+      base = base.filter(t => t.keyword_category === filterCategory);
+    }
+    // Search filter
     if (q) {
       base = base.filter(t =>
         (t.keyword?.toLowerCase().includes(q)) ||
@@ -127,7 +160,7 @@ const AdminKeywordMonitor = () => {
       acc[zone] = items;
       return acc;
     }, {} as Record<Zone, typeof classified>);
-  }, [classified, filterZone, zoneSortDir, searchQuery]);
+  }, [classified, filterZone, filterCategory, zoneSortDir, searchQuery]);
 
   const handleRemove = useCallback(async (id: string, label: string) => {
     try {
