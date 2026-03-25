@@ -270,6 +270,13 @@ const T2ArtistPage = () => {
       queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2"] });
       queryClient.invalidateQueries({ queryKey: ["hero-has-watched"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+
+      // Delayed refetch to let DB commit propagate — avoids overwriting optimistic cache
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["t2-watched-check", user.id, starId] });
+        queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2", user.id] });
+        queryClient.invalidateQueries({ queryKey: ["hero-has-watched", user.id] });
+      }, 1500);
     } catch {
       toast.error("Error");
     } finally {
