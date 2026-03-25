@@ -69,6 +69,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 const CATEGORY_LABELS: Record<string, string> = {
   brand: "Brand", product: "Product", place: "Place", food: "Food",
   fashion: "Fashion", beauty: "Beauty", media: "Media", music: "Music", event: "Event",
+  social: "Social",
 };
 
 // Strip citation refs like [1], [2], [3] etc from text
