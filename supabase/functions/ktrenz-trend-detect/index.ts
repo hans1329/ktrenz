@@ -572,7 +572,7 @@ CATEGORY CLASSIFICATION GUIDE:
 - "beauty": Cosmetics, skincare, beauty brands
 - "food": Restaurant names, food brands, food collaborations
 - "media": Drama/movie titles, variety show names, YouTube content, documentary titles
-- "social": Social media trends, viral moments, memes, fan culture phenomena
+- "social": ⚠️ RESERVED FOR TIKTOK ONLY — do NOT use this category for news/blog articles. If an article discusses social media trends or viral moments, classify as "media" instead.
 - "product": Specific product names/models
 - "place": Specific venue names, location-based trends
 - ⚠️ IMPORTANT: Album releases, song titles, music projects, music collaborations → ALWAYS "music", NEVER "event"
