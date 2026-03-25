@@ -626,17 +626,16 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - TV gimmicks, costumes, ephemeral segments
 - Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
-- Generic descriptors of appearance or condition (e.g., "비주얼", "몸매", "피부 관리") — too vague to be a trend keyword
 
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
-- "event": Fan meetings, concerts, tours, award shows, festivals, exhibitions, fan signs, pop-up stores — physical/live EVENTS only
-- "brand": Brand endorsements, ambassadorships, advertising campaigns, brand collaborations
+- "event": Fan meetings, concerts, tours, award shows, festivals, exhibitions, fan signs, pop-up stores, challenges, certifications (인증), viral challenges — physical/live EVENTS or fan-driven challenges/certifications
+- "brand": Brand endorsements, ambassadorships, advertising campaigns, brand collaborations — must be a NAMED BRAND, not a personal activity
 - "fashion": Specific fashion items, designer names, fashion shows, styling trends
 - "beauty": Cosmetics, skincare, beauty brands
 - "food": Restaurant names, food brands, food collaborations
 - "media": Drama/movie titles, variety show names, YouTube content, documentary titles
-- "social": ⚠️ RESERVED FOR TIKTOK ONLY — do NOT use this category for news/blog articles. If an article discusses social media trends or viral moments, classify as "media" instead.
+- "social": Social media challenges, viral certifications (인증), fan-driven trends, SNS campaigns, TikTok trends — online community-driven activities that are NOT tied to a specific brand/product
 - "product": Specific product names/models
 - "place": Specific venue names, location-based trends
 - ⚠️ IMPORTANT: Album releases, song titles, music projects, music collaborations → ALWAYS "music", NEVER "event"
@@ -940,10 +939,10 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         console.warn(`[trend-detect] Blocked measurement keyword: "${k.keyword}"`);
         return false;
       }
-      // 체중/신체/다이어트 관련 비상업적 키워드 차단
-      const BODY_PATTERN = /(?:체중|몸무게|키\s?\d|다이어트\s?인증|살\s?빠|감량|식단\s?공개|체지방|bmi|body\s?weight)/i;
-      if (BODY_PATTERN.test(kwLower) || BODY_PATTERN.test(kwKo)) {
-        console.warn(`[trend-detect] Blocked body/weight keyword: "${k.keyword}"`);
+      // 체중/신체 수치 키워드 차단 (단, 인증/챌린지는 허용)
+      const BODY_STAT_PATTERN = /^(?:체중|몸무게|키\s?\d|체지방|bmi|body\s?weight)$/i;
+      if (BODY_STAT_PATTERN.test(kwKo) || BODY_STAT_PATTERN.test(kwLower)) {
+        console.warn(`[trend-detect] Blocked body stat keyword: "${k.keyword}"`);
         return false;
       }
       if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
