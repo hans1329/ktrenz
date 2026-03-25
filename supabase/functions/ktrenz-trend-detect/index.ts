@@ -888,7 +888,16 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         "홍대", "이태원", "명동", "동대문", "압구정", "청담",
         "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
         "airport", "인천공항", "공항", "출국", "입국",
+        // 반복 오수집 브랜드/플랫폼
+        "오픈와이와이", "open yy", "openyy",
+        "트리플엑스", "triple x", "triplex",
       ]);
+      // 숫자+단위 패턴 필터 (59kg, 180cm 등)
+      const MEASUREMENT_PATTERN = /^\d+(\.\d+)?\s*(kg|cm|mm|ml|l|g|oz|lb|lbs|m|km|cc|inch|인치|센치|킬로|그램|미리)s?$/i;
+      if (MEASUREMENT_PATTERN.test(kwLower) || MEASUREMENT_PATTERN.test(kwKo)) {
+        console.warn(`[trend-detect] Blocked measurement keyword: "${k.keyword}"`);
+        return false;
+      }
       if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
         console.warn(`[trend-detect] Blocked noise keyword: "${k.keyword}"`);
         return false;

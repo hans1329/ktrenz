@@ -632,6 +632,133 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
   return { reclassified, details };
 }
 
+// ── 4.8. 글로벌 스타명 필터 ──
+// 모든 pending/active 키워드를 ktrenz_stars 전체 이름과 대조, 아티스트/그룹명이 키워드인 것 차단
+async function globalStarNameFilter(sb: any): Promise<{ expired: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  // 모든 활성 스타의 이름 변형 수집
+  const { data: allStars } = await sb
+    .from("ktrenz_stars")
+    .select("id, display_name, name_ko, star_type")
+    .eq("is_active", true);
+
+  if (!allStars?.length) return { expired: 0, details: [] };
+
+  // 글로벌 이름 블랙리스트 구축
+  const globalNameSet = new Set<string>();
+  for (const s of allStars) {
+    for (const n of [s.display_name, s.name_ko]) {
+      if (!n) continue;
+      globalNameSet.add(n.toLowerCase().trim());
+      const normalized = normalizeForCompare(n);
+      if (normalized && normalized.length >= 2) globalNameSet.add(normalized);
+    }
+  }
+
+  // pending + active 키워드 조회
+  const { data: triggers } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, keyword_en, star_id, artist_name")
+    .in("status", ["pending", "active"])
+    .gte("detected_at", threeDaysAgo);
+
+  if (!triggers?.length) return { expired: 0, details: [] };
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+
+  for (const t of triggers) {
+    // 자기 자신의 이름은 이미 detect에서 걸러지므로, 여기서는 "다른 아티스트 이름이 키워드인 경우" 차단
+    const kwValues = [t.keyword, t.keyword_ko, t.keyword_en].filter(Boolean);
+    for (const kw of kwValues) {
+      const kwLower = kw.toLowerCase().trim();
+      const kwNorm = normalizeForCompare(kw);
+      if (globalNameSet.has(kwLower) || (kwNorm && globalNameSet.has(kwNorm))) {
+        expireIds.push(t.id);
+        details.push(`"${t.keyword}" (${t.artist_name}): 다른 아티스트/그룹 이름 → 제거`);
+        break;
+      }
+    }
+  }
+
+  if (expireIds.length > 0) {
+    for (let i = 0; i < expireIds.length; i += 500) {
+      const batch = expireIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ status: "expired", expired_at: new Date().toISOString() })
+        .in("id", batch);
+    }
+  }
+
+  return { expired: expireIds.length, details };
+}
+
+// ── 4.9. 패턴 기반 노이즈 필터 ──
+// 숫자+단위, 너무 짧은 키워드, 일반 명사 등을 차단
+async function noisePatternFilter(sb: any): Promise<{ expired: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: triggers } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, keyword_en, artist_name")
+    .in("status", ["pending", "active"])
+    .gte("detected_at", threeDaysAgo);
+
+  if (!triggers?.length) return { expired: 0, details: [] };
+
+  // 숫자+단위 패턴 (59kg, 180cm, 100ml 등)
+  const MEASUREMENT_PATTERN = /^\d+(\.\d+)?\s*(kg|cm|mm|ml|l|g|oz|lb|lbs|m|km|cc|inch|인치|센치|킬로|그램|미리)s?$/i;
+  // 순수 숫자
+  const PURE_NUMBER_PATTERN = /^\d+(\.\d+)?$/;
+  // 1글자 키워드 (한글/영문 모두)
+  const TOO_SHORT = (kw: string) => kw.replace(/\s/g, "").length <= 1;
+
+  const ADDITIONAL_NOISE = new Set([
+    "오픈와이와이", "open yy", "openyy",
+    "트리플엑스", "triple x", "triplex",
+  ]);
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+
+  for (const t of triggers) {
+    const kw = (t.keyword || "").trim();
+    const kwKo = (t.keyword_ko || "").trim();
+    const kwEn = (t.keyword_en || "").trim();
+    const kwLower = kw.toLowerCase();
+    const kwKoLower = kwKo.toLowerCase();
+    const kwEnLower = kwEn.toLowerCase();
+
+    let reason = "";
+    if (MEASUREMENT_PATTERN.test(kw) || MEASUREMENT_PATTERN.test(kwKo) || MEASUREMENT_PATTERN.test(kwEn)) {
+      reason = "숫자+단위 패턴";
+    } else if (PURE_NUMBER_PATTERN.test(kw)) {
+      reason = "순수 숫자";
+    } else if (TOO_SHORT(kw) && TOO_SHORT(kwKo || kw)) {
+      reason = "너무 짧은 키워드";
+    } else if (ADDITIONAL_NOISE.has(kwLower) || ADDITIONAL_NOISE.has(kwKoLower) || ADDITIONAL_NOISE.has(kwEnLower)) {
+      reason = "알려진 노이즈";
+    }
+
+    if (reason) {
+      expireIds.push(t.id);
+      details.push(`"${kw}" (${t.artist_name}): ${reason} → 제거`);
+    }
+  }
+
+  if (expireIds.length > 0) {
+    for (let i = 0; i < expireIds.length; i += 500) {
+      const batch = expireIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ status: "expired", expired_at: new Date().toISOString() })
+        .in("id", batch);
+    }
+  }
+
+  return { expired: expireIds.length, details };
+}
+
 // ── 5. pending → active 전환 ──
 // ── brand_id 자동 매핑 ──
 // brand/product 카테고리 키워드에 brand_id가 없으면 ktrenz_brand_registry에서 매칭
@@ -767,6 +894,20 @@ Deno.serve(async (req) => {
     const brandMapped = await mapBrandIds(sb);
     console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped} keywords`);
 
+    // 4.8단계: 글로벌 스타명 필터 (다른 아티스트/그룹 이름이 키워드인 경우 제거)
+    const globalNameResult = await globalStarNameFilter(sb);
+    console.log(`[postprocess] Global star name filter: expired ${globalNameResult.expired} entries`);
+    if (globalNameResult.details.length > 0) {
+      console.log(`[postprocess] Global name details: ${globalNameResult.details.join("; ")}`);
+    }
+
+    // 4.9단계: 패턴 기반 노이즈 필터 (숫자+단위, 알려진 노이즈 등)
+    const noiseResult = await noisePatternFilter(sb);
+    console.log(`[postprocess] Noise pattern filter: expired ${noiseResult.expired} entries`);
+    if (noiseResult.details.length > 0) {
+      console.log(`[postprocess] Noise details: ${noiseResult.details.join("; ")}`);
+    }
+
     // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
@@ -776,7 +917,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, brand_mapped=${brandMapped}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, brand_mapped=${brandMapped}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -790,6 +931,8 @@ Deno.serve(async (req) => {
         sameSourceUrlDedup: sameUrlResult,
         crossArtistDedup: crossArtistResult,
         brandMapped,
+        globalStarNameFilter: globalNameResult,
+        noisePatternFilter: noiseResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
