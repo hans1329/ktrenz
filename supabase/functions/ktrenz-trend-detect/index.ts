@@ -624,6 +624,9 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - Chart names, generic K-pop terms (컴백, 앨범, 콘서트, 팬미팅)
 - Generic locations (city names, country names, airports)
 - TV gimmicks, costumes, ephemeral segments
+- Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
+- Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
+- Generic descriptors of appearance or condition (e.g., "비주얼", "몸매", "피부 관리") — too vague to be a trend keyword
 
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
@@ -935,6 +938,12 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
       const MEASUREMENT_PATTERN = /\b\d+(\.\d+)?\s*(kg|cm|mm|ml|l|g|oz|lb|lbs|m|km|cc|inch|인치|센치|킬로|그램|미리)s?\b/i;
       if (MEASUREMENT_PATTERN.test(kwLower) || MEASUREMENT_PATTERN.test(kwKo)) {
         console.warn(`[trend-detect] Blocked measurement keyword: "${k.keyword}"`);
+        return false;
+      }
+      // 체중/신체/다이어트 관련 비상업적 키워드 차단
+      const BODY_PATTERN = /(?:체중|몸무게|키\s?\d|다이어트\s?인증|살\s?빠|감량|식단\s?공개|체지방|bmi|body\s?weight)/i;
+      if (BODY_PATTERN.test(kwLower) || BODY_PATTERN.test(kwKo)) {
+        console.warn(`[trend-detect] Blocked body/weight keyword: "${k.keyword}"`);
         return false;
       }
       if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
