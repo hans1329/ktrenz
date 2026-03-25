@@ -446,6 +446,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     }
     refetchFollow();
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", tile.id, user.id] });
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-tracked-keywords", user.id] });
   };
 
   if (!tile) return null;

@@ -242,7 +242,8 @@ const UserDashboard = () => {
 
   const handleUntrack = async (followId: string) => {
     await supabase.from("ktrenz_keyword_follows" as any).delete().eq("id", followId);
-    queryClient.invalidateQueries({ queryKey: ["dashboard-tracked-keywords"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-tracked-keywords", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user?.id] });
   };
 
   const getKw = (kw: any) => language === "ko" && kw.keywordKo ? kw.keywordKo : kw.keyword;
