@@ -460,6 +460,7 @@ const TOOL_EXTRACT_KEYWORDS = {
                     "metaphor_comparison",// Entity used as metaphor or comparison
                     "tv_gimmick",         // TV show costume, prop, or ephemeral segment
                     "ambiguous_name",     // Artist name matches a common word in the article
+                    "non_kstar_subject",  // The article's main subject is NOT a K-star (Korean entertainer/celebrity). e.g., a brand, company, organization, or non-Korean entity is the subject
                     "noise"              // General noise that doesn't represent a meaningful trend
                   ],
                 },
@@ -589,6 +590,15 @@ OWNERSHIP VERIFICATION:
 - Each keyword belongs ONLY to the artist with the direct relationship
 - Set ownership_confidence below 0.5 for indirect/metaphorical/passing mentions
 
+K-STAR SUBJECT VERIFICATION (★ CRITICAL ★):
+- This system tracks trends of K-STARS (Korean entertainers/celebrities: K-pop artists, actors, comedians, etc.)
+- The article's MAIN SUBJECT must be a K-star. If the article's subject is a brand, company, organization, fashion label, sports team, or non-Korean entity, flag it as "non_kstar_subject"
+- Example: "트리플에스" is a brand/company, NOT a K-star → flag "non_kstar_subject"
+- Example: "오픈와이와이(OPEN YY)" is a fashion brand → flag "non_kstar_subject"  
+- Example: "한국패션협회" is an organization → flag "non_kstar_subject"
+- Even if the keyword APPEARS in the article text, if the article's main actor is NOT a K-star, it must be rejected
+- Ask yourself: "Is the article's protagonist a Korean entertainer/celebrity?" If NO → flag "non_kstar_subject"
+
 Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
 When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
@@ -662,7 +672,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
             const rejectionFlags: string[] = k.rejection_flags || [];
 
             // ── 1단계: rejection_flags 기반 자동 차단 ──
-            const hardRejectFlags = ["wrong_member", "wrong_artist", "generic_word", "tv_gimmick", "ambiguous_name"];
+            const hardRejectFlags = ["wrong_member", "wrong_artist", "generic_word", "tv_gimmick", "ambiguous_name", "non_kstar_subject"];
             const activeHardRejects = rejectionFlags.filter((f: string) => hardRejectFlags.includes(f));
             if (activeHardRejects.length > 0) {
               console.warn(`[trend-detect] ⛔ Rejected by flags: "${k.keyword}" → [${activeHardRejects.join(",")}] (subject: ${k.article_subject_name})`);
