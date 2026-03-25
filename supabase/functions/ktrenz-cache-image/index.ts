@@ -190,7 +190,7 @@ async function fetchBodyImageCandidates(
 async function findLargestImage(candidates: string[]): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
   let best: { url: string; data: Uint8Array; contentType: string } | null = null;
   // 최대 6개만 시도 (속도 제한)
-  for (const url of candidates.slice(0, 6)) {
+  for (const url of candidates.slice(0, 10)) {
     const result = await downloadImage(url);
     if (!result) continue;
     if (!best || result.data.length > best.data.length) {
@@ -377,11 +377,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // og:image가 저해상도(30KB 이하)이면 본문에서 아티스트명 매칭된 더 큰 이미지를 찾는다
+      // og:image가 저해상도(30KB 이하)이면 본문에서 더 큰 이미지를 찾는다
       let finalImage = image;
       let finalUrl = url;
       if (image.data.length < LOW_RES_THRESHOLD_BYTES && trigger.source_url) {
         console.log(`[cache-image] Low-res og:image (${image.data.length}b) for ${trigger.id}, scanning body images with name filter`);
+        // 1차: 이름 매칭 본문 이미지
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
           const better = await findLargestImage(candidates);
@@ -391,7 +392,20 @@ Deno.serve(async (req) => {
             finalUrl = better.url;
           }
         }
-        // 본문 이미지도 저해상도면 아티스트 이미지로 폴백
+        // 2차: 이름 매칭 실패 시, 필터 없이 본문 최대 이미지 시도 (저해상도 og보다는 나은 이미지 확보)
+        if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES) {
+          console.log(`[cache-image] Name-matched images insufficient, trying unfiltered body images for ${trigger.id}`);
+          const unfilteredCandidates = await fetchBodyImageCandidates(trigger.source_url, []);
+          if (unfilteredCandidates.length > 0) {
+            const bestUnfiltered = await findLargestImage(unfilteredCandidates);
+            if (bestUnfiltered && bestUnfiltered.data.length > image.data.length * 1.5) {
+              console.log(`[cache-image] ✓ Found better unfiltered body image (${bestUnfiltered.data.length}b) for ${trigger.id}: ${bestUnfiltered.url}`);
+              finalImage = bestUnfiltered;
+              finalUrl = bestUnfiltered.url;
+            }
+          }
+        }
+        // 3차: 본문 이미지도 저해상도면 아티스트 이미지로 폴백
         if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES && trigger.star_id) {
           const { data: starData } = await sb
             .from("ktrenz_stars")
