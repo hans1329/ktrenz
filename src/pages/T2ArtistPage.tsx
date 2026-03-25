@@ -11,6 +11,7 @@ import { ArrowLeft, Calendar, Clock, ExternalLink, Flame, MessageCircle, Share2,
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
 const GRADE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
