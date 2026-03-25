@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   TrendingUp, Star, BarChart3, ArrowLeft,
-  Activity, Zap, Brain, Sparkles, ChevronRight, Users,
+  Activity, Zap, Brain, Sparkles, Users,
   ShoppingBag, Globe, Flame, Share2, ShoppingCart
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
