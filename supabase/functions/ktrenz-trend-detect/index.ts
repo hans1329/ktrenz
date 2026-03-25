@@ -431,8 +431,8 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_zh: { type: "string", description: "Chinese translation" },
               category: { type: "string", enum: ["brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event", "social"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
-              context: { type: "string", description: "1 sentence in English: Use the KEYWORD as the subject and explain WHY it is linked to the artist. e.g. 'Biore UV collaborated with Stray Kids for an event in Osaka.'" },
-              context_ko: { type: "string", description: "1 sentence in Korean: Use the KEYWORD as the subject and explain WHY it is linked to the artist. e.g. '비오레UV가 스트레이키즈와 오사카 행사에서 협업했다.'" },
+              context: { type: "string", description: "1-2 sentences in English: Write a punchy editorial narrative. Describe the SPECIFIC situation/event, then the resulting trend phenomenon or public reaction. Include concrete details (magazine name, event name, product detail) when available. e.g. 'Winter appeared on the April cover of Esquire in a near-bare-face look, but it was the Polo Ralph Lauren red knit dress that stole the spotlight — related searches surged within 6 hours of release.'" },
+              context_ko: { type: "string", description: "1-2 sentences in Korean: 기사의 구체적 상황을 서술하고, 그로 인한 트렌드 현상이나 대중 반응을 편집자 톤으로 작성. 매체명·제품 디테일·수치 등 구체적 정보를 포함. e.g. '에스콰이어 4월호 표지 화보에서 윈터가 거의 생얼로 등장하면서, 최소 메이크업보다 폴로 랄프 로렌 레드 니트 드레스가 더 주목받는 역설적 현상이 발생. 화보 공개 6시간 만에 관련 검색 급등.'" },
               context_ja: { type: "string", description: "Japanese context sentence" },
               context_zh: { type: "string", description: "Chinese context sentence" },
               source_article_index: { type: "integer", description: "1-based index of the source article" },
@@ -530,7 +530,7 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
 - You must NOT use your own knowledge about the artist.
 - If "팔레트" does not appear in any article text, you CANNOT extract "팔레트" — even if you know it's the artist's song.
 - If "나의 아저씨" does not appear in any article text, you CANNOT extract it.
-- The context/context_ko fields must use the KEYWORD as the grammatical subject and explain in ONE sentence why it is linked to this artist. Example: keyword="비오레" → context_ko="비오레UV가 스트레이키즈와 오사카 이벤트에서 협업했다." Do NOT summarize the whole article — only the keyword↔artist relationship.
+- The context/context_ko fields must be written as a PUNCHY EDITORIAL NARRATIVE (1-2 sentences). Describe the SPECIFIC situation from the article, then the resulting trend phenomenon or public reaction. Include concrete details (magazine name, brand product detail, event specifics). Example: keyword="폴로 랄프 로렌" → context_ko="에스콰이어 4월호 표지 화보에서 윈터가 거의 생얼로 등장하면서, 최소 메이크업보다 폴로 랄프 로렌 레드 니트 드레스가 더 주목받는 역설적 현상이 발생." Do NOT write dry factual summaries like "폴로 랄프 로렌이 윈터와 협업했다."
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
 WHAT MAKES A VALID KEYWORD:
@@ -580,7 +580,7 @@ When in doubt, DO NOT extract. False negatives are far better than false positiv
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
 - Do NOT use your general knowledge about this artist to generate keywords.
-- The context_ko field must use the KEYWORD as the subject and explain in ONE sentence why it relates to the artist, based on the article. NOT a general article summary.
+- The context_ko field must be a PUNCHY EDITORIAL NARRATIVE (1-2 sentences): describe the specific situation, then the resulting phenomenon. Include concrete details. NOT a dry factual summary.
 - If no article contains a valid extractable entity, call extract_keywords with an empty array.
 - source_article_index MUST point to the exact article [number] where the keyword appears.
 
