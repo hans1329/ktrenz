@@ -244,7 +244,7 @@ const T2TrendMap = () => {
                 <button
                   key={key}
                   onClick={() => {
-                    setViewIndex(i);
+                    updateViewIndex(i);
                     window.scrollTo({ top: 0 });
                   }}
                   className={cn(
