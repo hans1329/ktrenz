@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { triggerId, triggerIds, backfill = false, limit = 50 } = body;
+    const { triggerId, triggerIds, backfill = false, limit = 50, force = false } = body;
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
