@@ -1387,6 +1387,25 @@ Deno.serve(async (req) => {
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    // 글로벌 스타 이름 DB 로드 (AI 프롬프트 컨텍스트 + 코드 레벨 필터용 — 모든 모드 공통)
+    const { data: _allStarNamesData } = await sb
+      .from("ktrenz_stars")
+      .select("display_name, name_ko")
+      .eq("is_active", true)
+      .in("star_type", ["group", "solo", "member"]);
+    const globalStarNames = new Map<string, string>();
+    for (const _s of (_allStarNamesData || [])) {
+      if (_s.display_name) {
+        globalStarNames.set(_s.display_name.toLowerCase(), _s.display_name);
+        globalStarNames.set(normalizeForCompare(_s.display_name), _s.display_name);
+      }
+      if (_s.name_ko) {
+        globalStarNames.set(_s.name_ko.toLowerCase(), _s.display_name);
+        globalStarNames.set(normalizeForCompare(_s.name_ko), _s.display_name);
+      }
+    }
+    console.log(`[trend-detect] Loaded ${globalStarNames.size} global star name variants for cross-reference`);
+
     // 단일 멤버 모드 (수동 테스트용)
     if (starId && memberName) {
       const result = await detectForMember(
