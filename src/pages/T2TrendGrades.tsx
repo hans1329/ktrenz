@@ -35,6 +35,7 @@ interface TrendKeyword {
   baseline_score: number | null;
   peak_score: number | null;
   prev_api_total: number | null;
+  trend_score: number | null;
   source_image_url: string | null;
   keyword_category: string;
   detected_at: string;
