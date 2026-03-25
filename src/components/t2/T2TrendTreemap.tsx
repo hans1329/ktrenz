@@ -378,7 +378,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
 
-  const { data: predictedTriggerIds } = useQuery({
+  const { data: predictedTriggerIds = [] } = useQuery({
     queryKey: ["t2-predicted-trigger-ids", user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as string[];
@@ -403,6 +403,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     },
     enabled: !!user?.id,
     staleTime: 10_000,
+    placeholderData: [],
   });
 
   const predictedTriggerSet = useMemo(() => new Set(predictedTriggerIds ?? []), [predictedTriggerIds]);
