@@ -183,6 +183,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           status: t.status,
           triggerSource: t.trigger_source || null,
           prevApiTotal: t.prev_api_total,
+          brandId: t.brand_id || null,
         };
       });
     },
