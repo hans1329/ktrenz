@@ -7,7 +7,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { ArrowLeft, Calendar, Clock, ExternalLink, MessageCircle, Star, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ExternalLink, Flame, MessageCircle, Share2, ShoppingCart, Star, TrendingUp, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
