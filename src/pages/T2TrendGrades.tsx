@@ -327,9 +327,18 @@ const T2TrendGrades = () => {
 
                   {/* Score */}
                   <div className="text-right shrink-0">
-                    <div className="text-xs font-mono font-semibold text-foreground">
-                      {artist.grade_score}
-                    </div>
+                    {artist.influence_score > 0 ? (
+                      <>
+                        <div className="text-xs font-mono font-semibold text-foreground">
+                          {artist.influence_score.toFixed(2)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-mono">influence</div>
+                      </>
+                    ) : (
+                      <div className="text-xs font-mono font-semibold text-foreground">
+                        {artist.grade_score}
+                      </div>
+                    )}
                     <div className="text-[10px] text-muted-foreground">
                       {artist.keyword_count} kw
                     </div>
