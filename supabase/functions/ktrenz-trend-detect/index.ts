@@ -672,7 +672,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
             const rejectionFlags: string[] = k.rejection_flags || [];
 
             // ── 1단계: rejection_flags 기반 자동 차단 ──
-            const hardRejectFlags = ["wrong_member", "wrong_artist", "generic_word", "tv_gimmick", "ambiguous_name"];
+            const hardRejectFlags = ["wrong_member", "wrong_artist", "generic_word", "tv_gimmick", "ambiguous_name", "non_kstar_subject"];
             const activeHardRejects = rejectionFlags.filter((f: string) => hardRejectFlags.includes(f));
             if (activeHardRejects.length > 0) {
               console.warn(`[trend-detect] ⛔ Rejected by flags: "${k.keyword}" → [${activeHardRejects.join(",")}] (subject: ${k.article_subject_name})`);
