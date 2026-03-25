@@ -13,16 +13,17 @@ import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; color: string }> = {
-  brand:   { label: "Brand",   labelKo: "브랜드",  color: "hsl(210, 70%, 55%)" },
-  product: { label: "Product", labelKo: "제품",    color: "hsl(270, 60%, 55%)" },
-  place:   { label: "Place",   labelKo: "장소",    color: "hsl(145, 55%, 45%)" },
-  food:    { label: "Food",    labelKo: "음식",    color: "hsl(25, 80%, 55%)" },
-  fashion: { label: "Fashion", labelKo: "패션",    color: "hsl(330, 65%, 55%)" },
-  beauty:  { label: "Beauty",  labelKo: "뷰티",    color: "hsl(350, 60%, 55%)" },
-  media:   { label: "Media",   labelKo: "미디어",  color: "hsl(190, 70%, 45%)" },
-  music:   { label: "Music",   labelKo: "음악",    color: "hsl(260, 70%, 60%)" },
-  event:   { label: "Event",   labelKo: "이벤트",  color: "hsl(45, 85%, 50%)" },
+const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
+  brand:   { label: "Brand",   labelKo: "브랜드",  labelJa: "ブランド",    labelZh: "品牌",   color: "hsl(210, 70%, 55%)" },
+  product: { label: "Product", labelKo: "제품",    labelJa: "製品",        labelZh: "产品",   color: "hsl(270, 60%, 55%)" },
+  place:   { label: "Place",   labelKo: "장소",    labelJa: "場所",        labelZh: "地点",   color: "hsl(145, 55%, 45%)" },
+  food:    { label: "Food",    labelKo: "음식",    labelJa: "フード",      labelZh: "美食",   color: "hsl(25, 80%, 55%)" },
+  fashion: { label: "Fashion", labelKo: "패션",    labelJa: "ファッション", labelZh: "时尚",   color: "hsl(330, 65%, 55%)" },
+  beauty:  { label: "Beauty",  labelKo: "뷰티",    labelJa: "ビューティー", labelZh: "美妆",   color: "hsl(350, 60%, 55%)" },
+  media:   { label: "Media",   labelKo: "미디어",  labelJa: "メディア",    labelZh: "媒体",   color: "hsl(190, 70%, 45%)" },
+  music:   { label: "Music",   labelKo: "음악",    labelJa: "音楽",        labelZh: "音乐",   color: "hsl(260, 70%, 60%)" },
+  event:   { label: "Event",   labelKo: "이벤트",  labelJa: "イベント",    labelZh: "活动",   color: "hsl(45, 85%, 50%)" },
+  social:  { label: "Social",  labelKo: "소셜",    labelJa: "ソーシャル",  labelZh: "社交",   color: "hsl(200, 65%, 50%)" },
 };
 
 function formatAge(dateStr: string): string {
