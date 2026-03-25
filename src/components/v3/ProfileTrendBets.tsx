@@ -182,10 +182,10 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-bold text-foreground">{bet.amount.toLocaleString()}</p>
-                  {isPending && <span className="text-[10px] text-primary font-medium">Pending</span>}
-                  {isWin && <span className="text-[10px] text-emerald-400 font-bold">+{bet.payout!.toLocaleString()}</span>}
-                  {isLoss && <span className="text-[10px] text-red-400 font-medium">Lost</span>}
+                  <p className="text-sm font-bold text-foreground">{bet.amount.toLocaleString()}</p>
+                   {isPending && <span className="text-xs text-primary font-medium">Pending</span>}
+                  {isWin && <span className="text-xs text-emerald-400 font-bold">+{bet.payout!.toLocaleString()}</span>}
+                  {isLoss && <span className="text-xs text-red-400 font-medium">Lost</span>}
                 </div>
                 <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
               </button>

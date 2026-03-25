@@ -276,10 +276,10 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
               </div>
 
               <div className="text-right shrink-0">
-                <p className={cn("text-[10px] font-bold", claimed ? "text-muted-foreground" : "text-primary")}>
+                <p className={cn("text-xs font-bold", claimed ? "text-muted-foreground" : "text-primary")}>
                   +{mission.points}P
                 </p>
-                <p className={cn("text-[9px]", claimed ? "text-muted-foreground" : "text-primary/70")}>
+                <p className={cn("text-[10px]", claimed ? "text-muted-foreground" : "text-primary/70")}>
                   +{mission.exp} EXP
                 </p>
               </div>
