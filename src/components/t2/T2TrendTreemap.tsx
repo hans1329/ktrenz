@@ -309,11 +309,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   
   const navigate = useNavigate();
 
-  // Fetch user's watched artists (including group members)
-  const { data: watchedWikiIds } = useQuery({
+  // Fetch user's watched artists (including group members) — returns { wikiIds, starIds }
+  const { data: watchedData } = useQuery({
     queryKey: ["t2-watched-artists", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id) return { wikiIds: [] as string[], starIds: [] as string[] };
 
       // 1. Get wiki_entry_ids from ktrenz_watched_artists
       const { data: watched } = await supabase
@@ -332,31 +332,38 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       const slotIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
 
       const directIds = [...new Set([...watchedIds, ...slotIds])];
-      if (!directIds.length) return [];
+      if (!directIds.length) return { wikiIds: [], starIds: [] };
 
       // 3. Find star_ids for these wiki_entry_ids (to check if any are groups)
       const { data: stars } = await supabase
         .from("ktrenz_stars" as any)
-        .select("id, wiki_entry_id")
+        .select("id, wiki_entry_id, group_star_id")
         .in("wiki_entry_id", directIds);
-      const starIds = (stars ?? []).map((s: any) => s.id) as string[];
+      const directStarIds = (stars ?? []).map((s: any) => s.id) as string[];
 
       // 4. Find members whose group_star_id matches any of these star_ids
-      if (starIds.length) {
+      let allWikiIds = [...directIds];
+      let allStarIds = [...directStarIds];
+      if (directStarIds.length) {
         const { data: members } = await supabase
           .from("ktrenz_stars" as any)
-          .select("wiki_entry_id")
-          .in("group_star_id", starIds)
+          .select("id, wiki_entry_id")
+          .in("group_star_id", directStarIds)
           .not("wiki_entry_id", "is", null);
-        const memberIds = (members ?? []).map((m: any) => m.wiki_entry_id).filter(Boolean) as string[];
-        return [...new Set([...directIds, ...memberIds])];
+        const memberWikiIds = (members ?? []).map((m: any) => m.wiki_entry_id).filter(Boolean) as string[];
+        const memberStarIds = (members ?? []).map((m: any) => m.id).filter(Boolean) as string[];
+        allWikiIds = [...new Set([...allWikiIds, ...memberWikiIds])];
+        allStarIds = [...new Set([...allStarIds, ...memberStarIds])];
       }
 
-      return directIds;
+      return { wikiIds: allWikiIds, starIds: allStarIds };
     },
     enabled: !!user?.id,
     staleTime: 60_000,
   });
+
+  const watchedWikiIds = watchedData?.wikiIds;
+  const watchedStarIds = watchedData?.starIds;
 
   const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
 
