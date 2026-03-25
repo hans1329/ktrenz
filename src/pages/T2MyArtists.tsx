@@ -116,11 +116,59 @@ const T2MyArtists = () => {
 
   const watchedStarSet = useMemo(() => new Set(watchedStarIds ?? []), [watchedStarIds]);
 
+  const { data: followedTriggerIds } = useQuery({
+    queryKey: ["t2-keyword-follows-list", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("trigger_id")
+        .eq("user_id", user.id);
+      return (data ?? []).map((row: any) => row.trigger_id).filter(Boolean) as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 10_000,
+  });
+
+  const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
+
+  const { data: predictedTriggerIds } = useQuery({
+    queryKey: ["t2-predicted-trigger-ids", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("market_id")
+        .eq("user_id", user.id);
+
+      if (!bets?.length) return [] as string[];
+
+      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id).filter(Boolean))];
+      if (!marketIds.length) return [] as string[];
+
+      const { data: markets } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("trigger_id, status")
+        .in("id", marketIds)
+        .in("status", ["open", "active", "pending"]);
+
+      return [...new Set((markets ?? []).map((m: any) => m.trigger_id).filter(Boolean))] as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 10_000,
+  });
+
+  const predictedTriggerSet = useMemo(() => new Set(predictedTriggerIds ?? []), [predictedTriggerIds]);
+  const watchedStarKey = (watchedStarIds ?? []).slice().sort().join(",");
+  const followedKey = (followedTriggerIds ?? []).slice().sort().join(",");
+  const predictedKey = (predictedTriggerIds ?? []).slice().sort().join(",");
+
   // Fetch triggers
   const { data: triggers, isLoading } = useQuery({
-    queryKey: ["t2-trend-triggers"],
+    queryKey: ["t2-my-artist-triggers", watchedStarKey, followedKey, predictedKey],
     queryFn: async () => {
-      const { data } = await supabase
+      const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
         .eq("status", "active")
@@ -129,7 +177,43 @@ const T2MyArtists = () => {
         .order("detected_at", { ascending: false })
         .limit(500);
 
-      const raw = (data ?? []) as any[];
+      const watchedPromise = watchedStarIds && watchedStarIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("star_id", watchedStarIds)
+        : Promise.resolve({ data: [] as any[] });
+
+      const followedPromise = followedTriggerIds && followedTriggerIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("id", followedTriggerIds)
+        : Promise.resolve({ data: [] as any[] });
+
+      const predictedPromise = predictedTriggerIds && predictedTriggerIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("id", predictedTriggerIds)
+        : Promise.resolve({ data: [] as any[] });
+
+      const [{ data: baseData }, { data: watchedData }, { data: followedData }, { data: predictedData }] = await Promise.all([
+        basePromise,
+        watchedPromise,
+        followedPromise,
+        predictedPromise,
+      ]);
+
+      const mergedRaw = new Map<string, any>();
+      [...(baseData ?? []), ...(watchedData ?? []), ...(followedData ?? []), ...(predictedData ?? [])].forEach((item: any) => {
+        mergedRaw.set(item.id, item);
+      });
+
+      const raw = Array.from(mergedRaw.values()) as any[];
       const starIds = [...new Set(raw.map((t: any) => t.star_id).filter(Boolean))];
       const starMap = new Map<string, any>();
       if (starIds.length > 0) {
@@ -169,13 +253,24 @@ const T2MyArtists = () => {
         };
       });
     },
+    enabled: watchedStarIds !== undefined && followedTriggerIds !== undefined && predictedTriggerIds !== undefined,
     staleTime: 30_000,
   });
 
   const myKeywords = useMemo(() => {
-    if (!triggers?.length || !watchedStarSet.size) return [];
-    return triggers.filter(t => t.starId ? watchedStarSet.has(t.starId) : false);
-  }, [triggers, watchedStarSet]);
+    if (!triggers?.length) return [];
+
+    const watchedKeywords = triggers.filter((t) => t.starId ? watchedStarSet.has(t.starId) : false);
+    const trackedKeywords = triggers.filter((t) => followedTriggerSet.has(t.id));
+    const predictedKeywords = triggers.filter((t) => predictedTriggerSet.has(t.id));
+
+    const merged = new Map<string, TrendTile>();
+    [...watchedKeywords, ...trackedKeywords, ...predictedKeywords].forEach((item) => {
+      merged.set(item.id, item);
+    });
+
+    return Array.from(merged.values()).sort((a, b) => b.influenceIndex - a.influenceIndex);
+  }, [triggers, watchedStarSet, followedTriggerSet, predictedTriggerSet]);
 
   // Group by artist
   const artistGroups = useMemo(() => {

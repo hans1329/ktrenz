@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Clock, LogIn, Sparkles, Heart, MessageCircle } from "lucide-react";
+import { ChevronRight, Clock, LogIn, Heart, MessageCircle } from "lucide-react";
 import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo, CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
 import type { TrendTile } from "@/components/t2/T2TrendTreemap";
 import heroBg from "@/assets/t2-hero-bg.jpg";
@@ -147,93 +147,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     });
   }, [setSearchParams]);
 
-  // Fetch user's active bet keywords
-  const { data: betKeywords = [] } = useQuery({
-    queryKey: ["hero-bet-keywords", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      // Get user's active bets
-      const { data: bets } = await supabase
-        .from("ktrenz_trend_bets" as any)
-        .select("market_id")
-        .eq("user_id", user!.id);
-      if (!bets?.length) return [];
-
-      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
-      const { data: markets } = await supabase
-        .from("ktrenz_trend_markets" as any)
-        .select("trigger_id, status")
-        .in("id", marketIds)
-        .in("status", ["open", "active", "pending"]);
-      if (!markets?.length) return [];
-
-      const triggerIds = [...new Set((markets as any[]).map((m: any) => m.trigger_id).filter(Boolean))];
-      if (!triggerIds.length) return [];
-
-      const { data: triggers } = await supabase
-        .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_ja, keyword_zh, keyword_category, artist_name, detected_at, source_url, source_image_url, influence_index, baseline_score, star_id, wiki_entry_id, status, lifetime_hours, peak_at, expired_at, peak_delay_hours, peak_score, source_title, source_snippet, context, context_ko, context_ja, context_zh, prev_api_total, trigger_source")
-        .in("id", triggerIds);
-      if (!triggers?.length) return [];
-
-      const wikiIds = [...new Set((triggers as any[]).map((t: any) => t.wiki_entry_id).filter(Boolean))];
-      const { data: entries } = wikiIds.length
-        ? await supabase
-            .from("wiki_entries")
-            .select("id, title, image_url")
-            .in("id", wikiIds)
-        : { data: [] as any[] };
-      const entryMap = new Map((entries || []).map((e: any) => [e.id, e]));
-
-      return (triggers as any[]).map((t: any): TrendTile => {
-        const entry = entryMap.get(t.wiki_entry_id);
-        return {
-          id: t.id,
-          keyword: t.keyword,
-          keywordKo: t.keyword_ko,
-          keywordJa: t.keyword_ja,
-          keywordZh: t.keyword_zh,
-          category: t.keyword_category || "social",
-          artistName: entry?.title || t.artist_name || "",
-          artistNameKo: null,
-          artistImageUrl: entry?.image_url || null,
-          wikiEntryId: t.wiki_entry_id || "",
-          influenceIndex: t.influence_index || 0,
-          context: t.context,
-          contextKo: t.context_ko,
-          contextJa: t.context_ja,
-          contextZh: t.context_zh,
-          detectedAt: t.detected_at,
-          peakAt: t.peak_at,
-          expiredAt: t.expired_at,
-          lifetimeHours: t.lifetime_hours,
-          peakDelayHours: t.peak_delay_hours,
-          baselineScore: t.baseline_score,
-          peakScore: t.peak_score,
-          sourceUrl: t.source_url,
-          sourceTitle: t.source_title,
-          sourceImageUrl: t.source_image_url,
-          sourceSnippet: t.source_snippet,
-          starId: entry?.star_id || t.star_id,
-          status: t.status,
-          triggerSource: t.trigger_source || null,
-          prevApiTotal: t.prev_api_total,
-          brandId: t.brand_id || null,
-        };
-      });
-    },
-  });
-
-  // Deduplicate: exclude bet keywords already in myKeywords
-  const myIds = useMemo(() => new Set(myKeywords.map(k => k.id)), [myKeywords]);
-  const uniqueBetKeywords = useMemo(
-    () => betKeywords.filter((bk: TrendTile) => !myIds.has(bk.id)),
-    [betKeywords, myIds]
-  );
-
-  // Personalized: My Picks carousel (artist keywords + bet keywords)
-  const topPicks = myKeywords.slice(0, 8);
-  const allItems = [...topPicks, ...uniqueBetKeywords.slice(0, 4)];
+  const allItems = useMemo(() => myKeywords.slice(0, 12), [myKeywords]);
 
   const { data: trackingMap } = useQuery({
     queryKey: ["hero-tracking-history", allItems.map((item) => item.id).join(",")],
@@ -288,7 +202,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   }
 
   // Logged in but no watched artists and no bets (and loading is complete)
-  if (!myKeywords.length && !uniqueBetKeywords.length && !isWatchedLoading && !hasWatchedArtists) {
+  if (!myKeywords.length && !isWatchedLoading && !hasWatchedArtists) {
     return (
       <div className="px-4 pt-2 pb-5">
         <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "200px" }}>
@@ -334,8 +248,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
         className="flex gap-3 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none", scrollPaddingLeft: "16px" }}
       >
-        {allItems.map((item, idx) => {
-          const isBet = idx >= topPicks.length;
+          {allItems.map((item, idx) => {
           const config = CATEGORY_CONFIG[item.category];
           const rawSourceImg = sanitizeImageUrl(
             item.sourceImageUrl?.startsWith("https://") || item.sourceImageUrl?.startsWith("http://")
@@ -397,9 +310,6 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                     <Clock className="w-2.5 h-2.5" />
                     {formatAge(item.detectedAt)}
                   </span>
-                  {isBet && (
-                    <span className="text-[10px]" style={{ filter: "saturate(1.5) brightness(1.2)" }}>💎</span>
-                  )}
                 </div>
               </div>
 
