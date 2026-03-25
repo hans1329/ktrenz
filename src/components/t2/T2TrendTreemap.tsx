@@ -377,6 +377,35 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
 
+  const { data: predictedTriggerIds } = useQuery({
+    queryKey: ["t2-predicted-trigger-ids", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("market_id")
+        .eq("user_id", user.id);
+
+      if (!bets?.length) return [] as string[];
+
+      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id).filter(Boolean))];
+      if (!marketIds.length) return [] as string[];
+
+      const { data: markets } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("trigger_id, status")
+        .in("id", marketIds)
+        .in("status", ["open", "active", "pending"]);
+
+      return [...new Set((markets ?? []).map((m: any) => m.trigger_id).filter(Boolean))] as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 10_000,
+  });
+
+  const predictedTriggerSet = useMemo(() => new Set(predictedTriggerIds ?? []), [predictedTriggerIds]);
+
   const { data: isCollecting = false } = useQuery({
     queryKey: ["t2-pipeline-running"],
     queryFn: async () => {
@@ -393,12 +422,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const watchedStarKey = (watchedStarIds ?? []).slice().sort().join(",");  
   const followedKey = (followedTriggerIds ?? []).slice().sort().join(",");
+  const predictedKey = (predictedTriggerIds ?? []).slice().sort().join(",");
 
   const { data: triggers, isLoading } = useQuery({
-    queryKey: ["t2-trend-triggers", watchedStarKey, followedKey],
+    queryKey: ["t2-trend-triggers", watchedStarKey, followedKey, predictedKey],
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
-    enabled: watchedData !== undefined && followedTriggerIds !== undefined,
+    enabled: watchedData !== undefined && followedTriggerIds !== undefined && predictedTriggerIds !== undefined,
     queryFn: async () => {
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
@@ -428,14 +458,23 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             .in("id", followedTriggerIds)
         : Promise.resolve({ data: [] as any[] });
 
-      const [{ data: baseData }, { data: watchedByStarData }, { data: followedData }] = await Promise.all([
+      const predictedPromise = predictedTriggerIds && predictedTriggerIds.length > 0
+        ? supabase
+            .from("ktrenz_trend_triggers" as any)
+            .select("*")
+            .eq("status", "active")
+            .in("id", predictedTriggerIds)
+        : Promise.resolve({ data: [] as any[] });
+
+      const [{ data: baseData }, { data: watchedByStarData }, { data: followedData }, { data: predictedData }] = await Promise.all([
         basePromise,
         watchedByStarPromise,
         followedPromise,
+        predictedPromise,
       ]);
 
       const mergedRaw = new Map<string, any>();
-      [...(baseData ?? []), ...(watchedByStarData ?? []), ...(followedData ?? [])].forEach((item: any) => {
+      [...(baseData ?? []), ...(watchedByStarData ?? []), ...(followedData ?? []), ...(predictedData ?? [])].forEach((item: any) => {
         mergedRaw.set(item.id, item);
       });
       const rawTriggers = Array.from(mergedRaw.values()) as any[];
@@ -551,14 +590,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       (t) => t.starId ? watchedStarSet.has(t.starId) : false
     );
     const trackedKeywords = triggers.filter((t) => followedTriggerSet.has(t.id));
+    const predictedKeywords = triggers.filter((t) => predictedTriggerSet.has(t.id));
 
     const merged = new Map<string, TrendTile>();
-    [...watchedKeywords, ...trackedKeywords].forEach((item) => {
+    [...watchedKeywords, ...trackedKeywords, ...predictedKeywords].forEach((item) => {
       merged.set(item.id, item);
     });
 
     return Array.from(merged.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
-  }, [triggers, watchedStarSet, followedTriggerSet, sortMode]);
+  }, [triggers, watchedStarSet, followedTriggerSet, predictedTriggerSet, sortMode]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
