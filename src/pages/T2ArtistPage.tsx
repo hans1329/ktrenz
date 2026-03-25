@@ -340,8 +340,22 @@ const T2ArtistPage = () => {
           <div className="space-y-3">
             {keywords.map((kw: any, idx: number) => {
               const catConfig = CATEGORY_CONFIG[kw.keyword_category];
-              const kwText = language === "ko" && kw.keyword_ko ? kw.keyword_ko : kw.keyword;
-              const ctxText = language === "ko" && kw.context_ko ? kw.context_ko : kw.context;
+              const kwText = (() => {
+                switch (language) {
+                  case "ko": return kw.keyword_ko || kw.keyword;
+                  case "ja": return kw.keyword_ja || kw.keyword;
+                  case "zh": return kw.keyword_zh || kw.keyword;
+                  default: return kw.keyword;
+                }
+              })();
+              const ctxText = (() => {
+                switch (language) {
+                  case "ko": return kw.context_ko || kw.context;
+                  case "ja": return kw.context_ja || kw.context;
+                  case "zh": return kw.context_zh || kw.context;
+                  default: return kw.context;
+                }
+              })();
 
               return (
                 <button
