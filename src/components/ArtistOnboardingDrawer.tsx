@@ -145,9 +145,9 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
       if (!user?.id) return new Set<string>();
       const { data } = await supabase
         .from("ktrenz_watched_artists" as any)
-        .select("wiki_entry_id")
+        .select("star_id")
         .eq("user_id", user.id);
-      return new Set((data ?? []).map((d: any) => d.wiki_entry_id as string));
+      return new Set((data ?? []).map((d: any) => d.star_id as string).filter(Boolean));
     },
     enabled: open && !!user?.id,
   });
@@ -190,13 +190,13 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
   const displayList = filtered ?? popular;
   const isSearching = !!search.trim();
 
-  const toggleArtist = useCallback((wikiEntryId: string) => {
+  const toggleArtist = useCallback((starId: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(wikiEntryId)) {
-        next.delete(wikiEntryId);
+      if (next.has(starId)) {
+        next.delete(starId);
       } else {
-        next.add(wikiEntryId);
+        next.add(starId);
       }
       return next;
     });
@@ -220,14 +220,18 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
         .eq("user_id", user.id);
 
       if (selected.size > 0 && stars) {
-        const starMap = new Map(stars.map((s) => [s.wiki_entry_id, s]));
+        const starMap = new Map(stars.map((s) => [s.id, s]));
         const inserts = Array.from(selected)
-          .filter((wid) => starMap.has(wid))
-          .map((wid) => ({
+          .filter((sid) => starMap.has(sid))
+          .map((sid) => {
+            const s = starMap.get(sid)!;
+            return {
             user_id: user.id,
-            wiki_entry_id: wid,
-            artist_name: starMap.get(wid)!.display_name,
-          }));
+            star_id: sid,
+            wiki_entry_id: s.wiki_entry_id || null,
+            artist_name: s.display_name,
+          };
+          });
 
         if (inserts.length > 0) {
           await supabase.from("ktrenz_watched_artists" as any).insert(inserts);
@@ -237,6 +241,8 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
       queryClient.invalidateQueries({ queryKey: ["watched-artists"] });
       queryClient.invalidateQueries({ queryKey: ["onboarding-watched"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+      queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-has-watched"] });
       toast.success(language === "ko" ? `관심 아티스트 ${selected.size}명 저장 완료` : `Saved ${selected.size} favorite artists`);
       onOpenChange(false);
     } catch (e: any) {
@@ -323,11 +329,11 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
               )}
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {displayList.map((star) => {
-                  const isChecked = selected.has(star.wiki_entry_id);
+                  const isChecked = selected.has(star.id);
                   return (
                     <button
                       key={star.id}
-                      onClick={() => toggleArtist(star.wiki_entry_id)}
+                      onClick={() => toggleArtist(star.id)}
                       className={cn(
                         "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all",
                         isChecked
