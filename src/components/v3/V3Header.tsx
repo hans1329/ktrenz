@@ -81,14 +81,18 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .select("id, display_name, name_ko, wiki_entry_id, is_group")
             .eq("is_active", true)
             .or(`display_name.ilike.%${searchQuery}%,name_ko.ilike.%${searchQuery}%`)
-            .limit(10);
+            .limit(10)
+            .then((r: any) => r.data || [])
+            .catch(() => []);
 
           const wikiPromise = supabase
             .from("wiki_entries")
             .select("id, title, slug, image_url, schema_type")
             .or(`title.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
             .in("schema_type", ["artist", "member"] as const)
-            .limit(8);
+            .limit(8)
+            .then((r) => r.data || [])
+            .catch(() => [] as SearchResult[]);
 
           const kwPromise = (supabase as any)
             .from("ktrenz_trend_triggers")
@@ -96,39 +100,33 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .eq("status", "active")
             .or(`keyword.ilike.%${searchQuery}%,keyword_ko.ilike.%${searchQuery}%,keyword_en.ilike.%${searchQuery}%`)
             .order("detected_at", { ascending: false })
-            .limit(8);
+            .limit(8)
+            .then((r: any) => r.data || [])
+            .catch(() => []);
 
-          const [{ data: starsData }, { data: wikiData }, { data: kwData }] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
+          const [starsData, wikiData, kwData] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
 
-          // Build star lookup: wiki_entry_id -> star_id
-          const wikiToStarMap = new Map<string, string>();
-          for (const s of (starsData || [])) {
-            if (s.wiki_entry_id) wikiToStarMap.set(s.wiki_entry_id, s.id);
+          // Build star lookup: wiki_entry_id -> star info
+          const wikiToStarMap = new Map<string, { starId: string; name: string }>();
+          for (const s of starsData) {
+            if (s.wiki_entry_id) wikiToStarMap.set(s.wiki_entry_id, { starId: s.id, name: s.display_name });
           }
 
           // Merge wiki results with star_id mapping
           const resultMap = new Map<string, SearchResult & { starId?: string }>();
-          (wikiData || []).forEach((r: SearchResult) => {
-            resultMap.set(r.id, { ...r, starId: wikiToStarMap.get(r.id) });
+          (wikiData as SearchResult[]).forEach((r) => {
+            const starInfo = wikiToStarMap.get(r.id);
+            resultMap.set(r.id, { ...r, starId: starInfo?.starId });
           });
 
-          // Add stars that matched but weren't in wiki results (use wiki_entry_id for image lookup)
-          for (const s of (starsData || [])) {
-            if (s.wiki_entry_id && !resultMap.has(s.wiki_entry_id)) {
-              resultMap.set(s.wiki_entry_id, {
-                id: s.wiki_entry_id,
+          // Add stars that matched but weren't in wiki results
+          for (const s of starsData) {
+            const key = s.wiki_entry_id || s.id;
+            if (!resultMap.has(key)) {
+              resultMap.set(key, {
+                id: key,
                 title: s.display_name,
-                slug: s.wiki_entry_id,
-                image_url: null,
-                schema_type: s.is_group ? "artist" : "member",
-                starId: s.id,
-              });
-            } else if (!s.wiki_entry_id) {
-              // Star without wiki_entry_id - still show with star_id
-              resultMap.set(s.id, {
-                id: s.id,
-                title: s.display_name,
-                slug: s.id,
+                slug: key,
                 image_url: null,
                 schema_type: s.is_group ? "artist" : "member",
                 starId: s.id,
@@ -140,7 +138,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
 
           const seenKw = new Set<string>();
           const uniqueKw: KeywordResult[] = [];
-          for (const kw of (kwData || []) as KeywordResult[]) {
+          for (const kw of kwData as KeywordResult[]) {
             const key = `${kw.keyword}-${kw.artist_name}`;
             if (!seenKw.has(key)) { seenKw.add(key); uniqueKw.push(kw); }
           }
