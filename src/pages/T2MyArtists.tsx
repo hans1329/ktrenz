@@ -68,17 +68,27 @@ const T2MyArtists = () => {
   useEffect(() => {
   }, []);
 
-  // Fetch watched wiki ids
+  // Fetch watched wiki ids (from both ktrenz_watched_artists and ktrenz_agent_slots)
   const { data: watchedWikiIds } = useQuery({
     queryKey: ["t2-watched-artists", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
+
+      const { data: watched } = await supabase
+        .from("ktrenz_watched_artists" as any)
+        .select("wiki_entry_id")
+        .eq("user_id", user.id)
+        .not("wiki_entry_id", "is", null);
+      const watchedIds = (watched ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+
       const { data: slots } = await supabase
         .from("ktrenz_agent_slots")
         .select("wiki_entry_id")
         .eq("user_id", user.id)
         .not("wiki_entry_id", "is", null);
-      const directIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+      const slotIds = (slots ?? []).map((d: any) => d.wiki_entry_id).filter(Boolean) as string[];
+
+      const directIds = [...new Set([...watchedIds, ...slotIds])];
       if (!directIds.length) return [];
 
       const { data: stars } = await supabase
