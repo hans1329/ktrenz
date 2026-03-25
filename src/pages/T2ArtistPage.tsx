@@ -398,7 +398,6 @@ const T2ArtistPage = () => {
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-muted">
                       <GradeIcon className="w-4.5 h-4.5 text-foreground" />
                     </div>
-                    </div>
                     <span className="text-lg font-black text-foreground">
                       {gc.label}
                     </span>
