@@ -1,6 +1,6 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ExternalLink } from "lucide-react";
+import { TrendingUp, ExternalLink, Zap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -42,65 +42,80 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
   const navigate = useNavigate();
 
   const brandName = language === "ko" && brand.brand_name_ko ? brand.brand_name_ko : brand.brand_name;
-
   const sortedKeywords = [...keywords].sort((a, b) => b.influenceIndex - a.influenceIndex);
+  const strengthPct = Math.min(totalInfluence, 100);
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] overflow-y-auto" onPointerDownOutside={(e) => e.stopPropagation()} onInteractOutside={(e) => e.stopPropagation()}>
-        <SheetHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            {/* Brand logo */}
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-border/40" style={{ background: 'hsl(0 0% 15%)' }}>
-              <T2BrandLogo
-                brandId={brand.id}
-                brandName={brand.brand_name}
-                domain={brand.domain}
-                logoUrl={brand.logo_url}
-                alt={brand.brand_name}
-                className="w-10 h-10 object-contain"
-                fallbackClassName="text-xl font-black"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <SheetTitle className="text-base font-bold text-foreground truncate">
-                {brandName}
-              </SheetTitle>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                  {BRAND_CATEGORY_LABELS[brand.category] || brand.category}
-                </Badge>
-                <span className="text-[11px] text-muted-foreground">
-                  × {artistName}
-                </span>
-              </div>
-            </div>
-            {/* Total influence */}
-            <div className="text-right shrink-0">
-              <div className="flex items-center gap-1 text-primary">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span className="text-sm font-bold font-mono">
-                  {totalInfluence.toFixed(0)}
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground">
-                {keywords.length} keyword{keywords.length > 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
-        </SheetHeader>
+      <SheetContent
+        side="bottom"
+        hideClose
+        className="rounded-t-2xl max-h-[75vh] overflow-y-auto px-5 pb-8 pt-3"
+        onPointerDownOutside={(e) => e.stopPropagation()}
+        onInteractOutside={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center mb-4">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+        </div>
 
-        {/* Connection strength bar */}
-        <div className="mb-4">
-          <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-            <span>Connection Strength</span>
-            <span className="font-mono">{Math.min(totalInfluence, 100).toFixed(0)}%</span>
-          </div>
-          <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
-              style={{ width: `${Math.min(totalInfluence, 100)}%` }}
+        {/* Brand header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden border border-border/30 shrink-0"
+            style={{ background: "hsl(0 0% 15%)" }}
+          >
+            <T2BrandLogo
+              brandId={brand.id}
+              brandName={brand.brand_name}
+              domain={brand.domain}
+              logoUrl={brand.logo_url}
+              alt={brand.brand_name}
+              className="w-9 h-9 object-contain"
+              fallbackClassName="text-lg font-black text-white"
             />
+          </div>
+          <div className="flex-1 min-w-0">
+            <SheetTitle className="text-base font-bold text-foreground truncate">
+              {brandName}
+            </SheetTitle>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                {BRAND_CATEGORY_LABELS[brand.category] || brand.category}
+              </Badge>
+              <span className="text-[11px] text-muted-foreground">× {artistName}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Influence summary card */}
+        <div className="rounded-xl border border-border/50 bg-muted/30 p-3.5 mb-4">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Connection Strength
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-primary" />
+              <span className="text-lg font-black font-mono text-primary leading-none">
+                {strengthPct.toFixed(0)}
+              </span>
+              <span className="text-[10px] text-muted-foreground">/ 100</span>
+            </div>
+          </div>
+          <div className="w-full h-2 rounded-full bg-border/40 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-700"
+              style={{ width: `${strengthPct}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-[10px] text-muted-foreground">
+              {keywords.length} keyword{keywords.length > 1 ? "s" : ""} linked
+            </span>
+            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+              <TrendingUp className="w-3 h-3" />
+              +{totalInfluence.toFixed(0)}% total influence
+            </span>
           </div>
         </div>
 
@@ -109,7 +124,7 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
             Related Keywords
           </p>
-          {sortedKeywords.map(kw => {
+          {sortedKeywords.map((kw) => {
             const config = CATEGORY_CONFIG[kw.category];
             const kwText = language === "ko" && kw.keywordKo ? kw.keywordKo : kw.keyword;
             return (
@@ -130,7 +145,7 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
                 <span className="text-xs font-medium text-foreground truncate flex-1">
                   {kwText}
                 </span>
-                <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+                <span className="text-[11px] font-mono text-primary font-bold shrink-0">
                   +{kw.influenceIndex.toFixed(0)}%
                 </span>
               </button>
