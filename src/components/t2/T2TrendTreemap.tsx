@@ -871,7 +871,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {formatAge(item.detectedAt)}
                                 </span>
                               </div>
-                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-base" : "text-sm")}>
+                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-lg" : "text-base")}>
                                 {getLocalizedKeyword(item, language)}
                               </h4>
                               {(() => {
