@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { artistName, koreanName, wikiEntryId } = body;
+    const { artistName, koreanName, wikiEntryId, starId } = body;
 
     if (!artistName) {
       return new Response(
