@@ -4730,6 +4730,7 @@ export type Database = {
           artist_name: string
           created_at: string
           id: string
+          star_id: string | null
           user_id: string
           wiki_entry_id: string | null
         }
@@ -4737,6 +4738,7 @@ export type Database = {
           artist_name: string
           created_at?: string
           id?: string
+          star_id?: string | null
           user_id: string
           wiki_entry_id?: string | null
         }
@@ -4744,10 +4746,18 @@ export type Database = {
           artist_name?: string
           created_at?: string
           id?: string
+          star_id?: string | null
           user_id?: string
           wiki_entry_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ktrenz_watched_artists_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ktrenz_watched_artists_wiki_entry_id_fkey"
             columns: ["wiki_entry_id"]
