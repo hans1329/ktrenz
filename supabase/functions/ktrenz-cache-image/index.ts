@@ -250,9 +250,7 @@ Deno.serve(async (req) => {
           url = ogUrl;
           console.log(`[cache-image] Found OG image for ${trigger.id}: ${ogUrl}`);
         } else {
-          console.warn(`[cache-image] No OG image found for ${trigger.id}`);
-          failed++;
-          continue;
+          console.warn(`[cache-image] No OG image found for ${trigger.id}, trying body images`);
         }
       }
       
