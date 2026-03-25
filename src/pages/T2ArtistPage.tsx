@@ -196,7 +196,21 @@ const T2ArtistPage = () => {
     enabled: !!starId,
   });
 
-  // Watch status
+  // Fetch artist grade
+  const { data: artistGrade } = useQuery({
+    queryKey: ["t2-artist-grade", starId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ktrenz_trend_artist_grades" as any)
+        .select("grade, grade_score, influence_score, keyword_count, grade_breakdown")
+        .eq("star_id", starId!)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!starId,
+  });
+
+
   const { data: isWatched } = useQuery({
     queryKey: ["t2-watched-check", user?.id, star?.wiki_entry_id],
     queryFn: async () => {
