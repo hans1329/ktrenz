@@ -80,63 +80,50 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
           ? `display_name.ilike.%${q}%,name_ko.ilike.%${q}%`
           : `display_name.ilike.%${q}%,name_ko.ilike.%${q}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
         try {
-          // Search ktrenz_stars directly for T2 routing
           const starsPromise = (supabase as any)
             .from("ktrenz_stars")
             .select("id, display_name, name_ko, wiki_entry_id, is_group")
             .eq("is_active", true)
             .or(starFilter)
             .limit(10)
-            .then((r: any) => r.data || [], () => []);
-
-          const wikiPromise = supabase
-            .from("wiki_entries")
-            .select("id, title, slug, image_url, schema_type")
-            .or(`title.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
-            .in("schema_type", ["artist", "member"] as const)
-            .limit(8)
-            .then((r) => r.data || [], () => [] as SearchResult[]);
+            .then((r: any) => r.data || [])
+            .then((d: any) => d, () => [] as any[]);
 
           const kwPromise = (supabase as any)
             .from("ktrenz_trend_triggers")
             .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
             .eq("status", "active")
-            .or(`keyword.ilike.%${searchQuery}%,keyword_ko.ilike.%${searchQuery}%,keyword_en.ilike.%${searchQuery}%`)
+            .or(`keyword.ilike.%${q}%,keyword_ko.ilike.%${q}%,keyword_en.ilike.%${q}%`)
             .order("detected_at", { ascending: false })
             .limit(8)
-            .then((r: any) => r.data || [], () => []);
+            .then((r: any) => r.data || [])
+            .then((d: any) => d, () => [] as any[]);
 
-          const [starsData, wikiData, kwData] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
+          const [starsData, kwData] = await Promise.all([starsPromise, kwPromise]);
 
-          // Build star lookup: wiki_entry_id -> star info
-          const wikiToStarMap = new Map<string, { starId: string; name: string }>();
+          // Build search results directly from ktrenz_stars
+          const results: (SearchResult & { starId: string })[] = [];
           for (const s of starsData) {
-            if (s.wiki_entry_id) wikiToStarMap.set(s.wiki_entry_id, { starId: s.id, name: s.display_name });
-          }
-
-          // Merge wiki results with star_id mapping
-          const resultMap = new Map<string, SearchResult & { starId?: string }>();
-          (wikiData as SearchResult[]).forEach((r) => {
-            const starInfo = wikiToStarMap.get(r.id);
-            resultMap.set(r.id, { ...r, starId: starInfo?.starId });
-          });
-
-          // Add stars that matched but weren't in wiki results
-          for (const s of starsData) {
-            const key = s.wiki_entry_id || s.id;
-            if (!resultMap.has(key)) {
-              resultMap.set(key, {
-                id: key,
-                title: s.display_name,
-                slug: key,
-                image_url: null,
-                schema_type: s.is_group ? "artist" : "member",
-                starId: s.id,
-              });
+            // Fetch image from wiki_entries if available
+            let imageUrl: string | null = null;
+            if (s.wiki_entry_id) {
+              const { data: entry } = await supabase
+                .from("wiki_entries")
+                .select("image_url")
+                .eq("id", s.wiki_entry_id)
+                .maybeSingle();
+              imageUrl = (entry as any)?.image_url ?? null;
             }
+            results.push({
+              id: s.id,
+              title: s.display_name,
+              slug: s.id,
+              image_url: imageUrl,
+              schema_type: s.is_group ? "artist" : "member",
+              starId: s.id,
+            });
           }
-
-          setSearchResults(Array.from(resultMap.values()).slice(0, 8));
+          setSearchResults(results.slice(0, 8));
 
           const seenKw = new Set<string>();
           const uniqueKw: KeywordResult[] = [];
