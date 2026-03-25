@@ -226,6 +226,22 @@ const T2ArtistPage = () => {
     enabled: !!user?.id && !!starId,
   });
 
+  const syncWatchedArtistCaches = useCallback((nextIsWatched: boolean) => {
+    if (!user?.id || !starId) return;
+
+    queryClient.setQueryData(["t2-watched-check", user.id, starId], nextIsWatched);
+    queryClient.setQueryData(["hero-has-watched", user.id], nextIsWatched);
+    queryClient.setQueryData(["t2-watched-artists-v2", user.id], (prev: { starIds?: string[] } | undefined) => {
+      const current = new Set(prev?.starIds ?? []);
+      if (nextIsWatched) {
+        current.add(starId);
+      } else {
+        current.delete(starId);
+      }
+      return { starIds: Array.from(current) };
+    });
+  }, [queryClient, starId, user?.id]);
+
   const toggleWatch = useCallback(async () => {
     if (!user?.id || !star) return;
     setWatchLoading(true);
@@ -236,6 +252,7 @@ const T2ArtistPage = () => {
           .delete()
           .eq("user_id", user.id)
           .eq("star_id", starId);
+        syncWatchedArtistCaches(false);
         toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
       } else {
         await supabase
@@ -246,6 +263,7 @@ const T2ArtistPage = () => {
             star_id: starId,
             wiki_entry_id: star.resolvedWikiEntryId || null,
           }, { onConflict: "user_id,star_id", ignoreDuplicates: true } as any);
+        syncWatchedArtistCaches(true);
         toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
       }
       queryClient.invalidateQueries({ queryKey: ["t2-watched-check"] });
@@ -257,7 +275,7 @@ const T2ArtistPage = () => {
     } finally {
       setWatchLoading(false);
     }
-  }, [user?.id, star, isWatched, language]);
+  }, [user?.id, star, isWatched, language, queryClient, starId, syncWatchedArtistCaches]);
 
   const displayName = language === "ko" && star?.name_ko ? star.name_ko : star?.display_name ?? "";
 

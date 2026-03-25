@@ -31,6 +31,10 @@ interface StarItem {
   trendCount?: number;
 }
 
+type WatchedArtistsCache = {
+  starIds?: string[];
+};
+
 const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: ArtistOnboardingDrawerProps) => {
   const { user } = useAuth();
   const { language } = useLanguage();
@@ -237,6 +241,15 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
           await supabase.from("ktrenz_watched_artists" as any).insert(inserts);
         }
       }
+
+      const nextStarIds = Array.from(selected);
+      queryClient.setQueryData(["onboarding-watched", user.id], new Set(nextStarIds));
+      queryClient.setQueryData(["t2-watched-artists-v2", user.id], (prev: WatchedArtistsCache | undefined) => {
+        const preserved = new Set(prev?.starIds ?? []);
+        nextStarIds.forEach((id) => preserved.add(id));
+        return { starIds: Array.from(preserved) };
+      });
+      queryClient.setQueryData(["hero-has-watched", user.id], nextStarIds.length > 0);
 
       queryClient.invalidateQueries({ queryKey: ["watched-artists"] });
       queryClient.invalidateQueries({ queryKey: ["onboarding-watched"] });
