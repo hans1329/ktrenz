@@ -48,6 +48,7 @@ interface ArtistGrade {
   star_id: string;
   grade: string;
   grade_score: number;
+  influence_score: number;
   keyword_count: number;
   grade_breakdown: Record<string, number>;
   computed_at: string;
