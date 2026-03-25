@@ -70,7 +70,7 @@ const T2MyArtists = () => {
 
   // Fetch watched wiki ids (from both ktrenz_watched_artists and ktrenz_agent_slots)
   const { data: watchedWikiIds } = useQuery({
-    queryKey: ["t2-watched-artists", user?.id],
+    queryKey: ["t2-watched-artists-v2", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
