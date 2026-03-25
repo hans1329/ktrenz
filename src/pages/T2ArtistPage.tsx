@@ -476,41 +476,63 @@ const T2ArtistPage = () => {
       <section>
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <Calendar className="w-4 h-4" />
-          {language === "ko" ? "다가오는 일정" : "Upcoming Schedule"}
+          {language === "ko" ? "일정" : "Schedule"}
         </h2>
 
         {schedLoading ? (
           <div className="space-y-2">
             {[1, 2].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
           </div>
-        ) : schedules && schedules.length > 0 ? (
-          <div className="space-y-2">
-            {schedules.map((sch: any) => (
-              <div
-                key={sch.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
-              >
-                <div className="shrink-0 w-12 text-center">
-                  <span className="text-xs font-bold text-primary">
-                    {formatEventDate(sch.event_date, language)}
-                  </span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground truncate">{sch.title}</p>
-                  {sch.category && (
-                    <span className="text-[10px] text-muted-foreground">{sch.category}</span>
-                  )}
-                </div>
-                {sch.event_time && (
-                  <span className="text-[10px] text-muted-foreground shrink-0">{sch.event_time}</span>
-                )}
-              </div>
-            ))}
-          </div>
         ) : (
-          <p className="text-sm text-muted-foreground italic py-4">
-            {language === "ko" ? "예정된 일정 없음" : "No upcoming events"}
-          </p>
+          <>
+            {/* Upcoming */}
+            {(scheduleData?.upcoming?.length ?? 0) > 0 && (
+              <div className="space-y-2 mb-4">
+                <p className="text-xs font-semibold text-primary mb-1">
+                  {language === "ko" ? "다가오는 일정" : "Upcoming"}
+                </p>
+                {scheduleData!.upcoming.map((sch: any) => (
+                  <div key={sch.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+                    <div className="shrink-0 w-12 text-center">
+                      <span className="text-xs font-bold text-primary">{formatEventDate(sch.event_date, language)}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{sch.title}</p>
+                      {sch.category && <span className="text-[10px] text-muted-foreground">{sch.category}</span>}
+                    </div>
+                    {sch.event_time && <span className="text-[10px] text-muted-foreground shrink-0">{sch.event_time}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Past */}
+            {(scheduleData?.past?.length ?? 0) > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">
+                  {language === "ko" ? "지난 일정" : "Past"}
+                </p>
+                {scheduleData!.past.map((sch: any) => (
+                  <div key={sch.id} className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/30 p-3 opacity-70">
+                    <div className="shrink-0 w-12 text-center">
+                      <span className="text-xs font-bold text-muted-foreground">{formatEventDate(sch.event_date, language)}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground/70 truncate">{sch.title}</p>
+                      {sch.category && <span className="text-[10px] text-muted-foreground">{sch.category}</span>}
+                    </div>
+                    {sch.event_time && <span className="text-[10px] text-muted-foreground shrink-0">{sch.event_time}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(scheduleData?.upcoming?.length ?? 0) === 0 && (scheduleData?.past?.length ?? 0) === 0 && (
+              <p className="text-sm text-muted-foreground italic py-4">
+                {language === "ko" ? "예정된 일정 없음" : "No events"}
+              </p>
+            )}
+          </>
         )}
       </section>
     </div>
