@@ -1,0 +1,1 @@
+UPDATE ktrenz_trend_triggers SET status = 'expired' WHERE status IN ('active', 'pending');
