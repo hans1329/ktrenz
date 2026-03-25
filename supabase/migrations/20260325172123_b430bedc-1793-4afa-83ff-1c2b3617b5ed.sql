@@ -1,0 +1,1 @@
+UPDATE ktrenz_trend_triggers SET source_image_url = 'https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/trend-images/stars/7161368c-69ca-4c29-8e0c-3543177103c2.jpg' WHERE id = 'a4ed4053-148a-43a5-bc1d-0c768ca5a724';
