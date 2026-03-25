@@ -63,8 +63,12 @@ function buildTrackingSparkline(
       { t: Date.now(), v: base },
     ];
   }
+  // Extend last point to current time so graph fills full width
+  const lastPt = points[points.length - 1];
+  if (lastPt && lastPt.t < Date.now() - 60000) {
+    points = [...points, { t: Date.now(), v: lastPt.v }];
+  }
 
-  const startMs = points[0]?.t ?? Date.now();
   const nowMs = Date.now();
   const spanMs = Math.max(nowMs - startMs, 60 * 60 * 1000);
   const maxVal = Math.max(...points.map((point) => point.v), 1);
