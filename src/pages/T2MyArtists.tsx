@@ -173,9 +173,9 @@ const T2MyArtists = () => {
   });
 
   const myKeywords = useMemo(() => {
-    if (!triggers?.length || !watchedSet.size) return [];
-    return triggers.filter(t => watchedSet.has(t.wikiEntryId));
-  }, [triggers, watchedSet]);
+    if (!triggers?.length || !watchedStarSet.size) return [];
+    return triggers.filter(t => t.starId ? watchedStarSet.has(t.starId) : false);
+  }, [triggers, watchedStarSet]);
 
   // Group by artist
   const artistGroups = useMemo(() => {

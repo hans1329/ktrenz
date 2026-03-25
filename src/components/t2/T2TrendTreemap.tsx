@@ -558,7 +558,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     });
 
     return Array.from(merged.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
-  }, [triggers, watchedSet, watchedStarSet, followedTriggerSet, sortMode]);
+  }, [triggers, watchedStarSet, followedTriggerSet, sortMode]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
@@ -815,12 +815,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       ) : currentViewMode === "artist" ? (
         <T2ArtistList
           items={filteredItems}
-          watchedSet={watchedSet}
+        watchedStarSet={watchedStarSet}
         />
       ) : currentViewMode === "list" ? (
         <T2TrendList
           items={visibleListItems}
-          watchedSet={watchedSet}
+          watchedStarSet={watchedStarSet}
           onTileClick={handleTileClick}
           selectedTileId={selectedTile?.id ?? null}
           hasMore={hasMoreList}
@@ -890,7 +890,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
                         const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
                         const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
-                        const isMyArtist = watchedSet.has(item.wikiEntryId);
+                        const isMyArtist = item.starId ? watchedStarSet.has(item.starId) : false;
                         const isSelected = selectedTile?.id === item.id;
 
                         const delta = sortMode === "volume"
