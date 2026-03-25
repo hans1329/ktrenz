@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +60,10 @@ const T2ArtistPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [watchLoading, setWatchLoading] = useState(false);
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [starId]);
 
   useEffect(() => {
     if (starId) track("t2_artist_view", { artist_slug: starId });
