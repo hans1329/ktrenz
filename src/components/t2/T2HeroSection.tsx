@@ -280,8 +280,8 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     );
   }
 
-  // Logged in but no watched artists and no bets
-  if (!myKeywords.length && !uniqueBetKeywords.length) {
+  // Logged in but no watched artists and no bets (and loading is complete)
+  if (!myKeywords.length && !uniqueBetKeywords.length && !isWatchedLoading && !hasWatchedArtists) {
     return (
       <div className="px-4 pt-2 pb-5">
         <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "200px" }}>
