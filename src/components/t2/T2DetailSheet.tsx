@@ -458,6 +458,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
           </SheetTitle>
+          <SheetDescription className="sr-only">{getLocalizedArtistName(tile, language)} trend detail</SheetDescription>
           {/* Artist + meta row */}
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <button
