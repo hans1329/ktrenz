@@ -186,17 +186,52 @@ async function fetchBodyImageCandidates(
   }
 }
 
-// 후보 이미지 중 가장 큰 것을 찾아 반환
-async function findLargestImage(candidates: string[]): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
+// ── OpenAI Vision: 텍스트 오버레이 이미지 감지 ──
+async function isTextHeavyImage(imageUrl: string, openaiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 20,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: 'Is this a CLEAN photo of a person/scene, or a TEXT-HEAVY image (card news, infographic, banner, chart, text overlay)? Reply ONLY "clean" or "text".' },
+            { type: "image_url", image_url: { url: imageUrl, detail: "low" } },
+          ],
+        }],
+      }),
+    });
+    if (!res.ok) return false; // API 실패 시 통과
+    const data = await res.json();
+    const answer = (data.choices?.[0]?.message?.content || "").trim().toLowerCase();
+    const isText = answer.includes("text");
+    if (isText) console.log(`[cache-image] Vision: text-heavy image detected → ${imageUrl.slice(0, 80)}`);
+    return isText;
+  } catch {
+    return false; // 에러 시 통과
+  }
+}
+
+// 후보 이미지 중 가장 큰 클린 이미지를 찾아 반환 (Vision 필터 적용)
+async function findLargestImage(
+  candidates: string[],
+  openaiKey?: string,
+): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
   let best: { url: string; data: Uint8Array; contentType: string } | null = null;
-  // 최대 6개만 시도 (속도 제한)
   for (const url of candidates.slice(0, 10)) {
     const result = await downloadImage(url);
     if (!result) continue;
+    // 30KB 이상이고 Vision 키가 있으면 텍스트 이미지 여부 검사
+    if (openaiKey && result.data.length > LOW_RES_THRESHOLD_BYTES) {
+      const isText = await isTextHeavyImage(url, openaiKey);
+      if (isText) continue; // 텍스트 이미지 건너뛰기
+    }
     if (!best || result.data.length > best.data.length) {
       best = { url, ...result };
     }
-    // 100KB 이상이면 충분히 고해상도 — 즉시 반환
     if (result.data.length > 100_000) break;
   }
   return best;
