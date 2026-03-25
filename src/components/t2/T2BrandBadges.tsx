@@ -105,25 +105,15 @@ export default function T2BrandBadges({ keywords, artistName, max = 3 }: Props) 
             >
               {/* Logo */}
               <div className="w-4 h-4 rounded-full overflow-hidden bg-background shrink-0 flex items-center justify-center">
-                {conn.brand.domain ? (
-                  <img
-                    src={`https://www.google.com/s2/favicons?domain=${conn.brand.domain}&sz=128`}
-                    alt={conn.brand.brand_name}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
-                    }}
-                  />
-                ) : null}
-                <span
-                  className={cn(
-                    "text-[8px] font-bold text-muted-foreground",
-                    conn.brand.domain && "hidden"
-                  )}
-                >
-                  {conn.brand.brand_name.charAt(0)}
-                </span>
+                <T2BrandLogo
+                  brandId={conn.brand.id}
+                  brandName={conn.brand.brand_name}
+                  domain={conn.brand.domain}
+                  logoUrl={conn.brand.logo_url}
+                  alt={conn.brand.brand_name}
+                  className="w-full h-full object-contain"
+                  fallbackClassName="text-[8px]"
+                />
               </div>
 
               {/* Name */}
