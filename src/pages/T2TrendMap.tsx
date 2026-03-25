@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect, lazy, Suspense } from "react";
 import { LayoutGrid, List, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
