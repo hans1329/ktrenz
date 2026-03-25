@@ -75,17 +75,19 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
       if (searchQuery.trim().length >= 2) {
         setIsSearching(true);
         try {
+          // Search ktrenz_stars directly for T2 routing
+          const starsPromise = (supabase as any)
+            .from("ktrenz_stars")
+            .select("id, display_name, name_ko, wiki_entry_id, is_group")
+            .eq("is_active", true)
+            .or(`display_name.ilike.%${searchQuery}%,name_ko.ilike.%${searchQuery}%`)
+            .limit(10);
+
           const wikiPromise = supabase
             .from("wiki_entries")
             .select("id, title, slug, image_url, schema_type")
             .or(`title.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
             .in("schema_type", ["artist", "member"] as const)
-            .limit(8);
-
-          const tierPromise = (supabase as any)
-            .from("v3_artist_tiers")
-            .select("wiki_entry_id, display_name, name_ko, wiki_entries:wiki_entry_id(id, title, slug, image_url, schema_type)")
-            .or(`name_ko.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
             .limit(8);
 
           const kwPromise = (supabase as any)
@@ -96,15 +98,44 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .order("detected_at", { ascending: false })
             .limit(8);
 
-          const [{ data: wikiData }, { data: tierData }, { data: kwData }] = await Promise.all([wikiPromise, tierPromise, kwPromise]);
+          const [{ data: starsData }, { data: wikiData }, { data: kwData }] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
 
-          const resultMap = new Map<string, SearchResult>();
-          (wikiData || []).forEach((r: SearchResult) => resultMap.set(r.id, r));
-          (tierData || []).forEach((t: any) => {
-            if (t.wiki_entries && !resultMap.has(t.wiki_entries.id)) {
-              resultMap.set(t.wiki_entries.id, t.wiki_entries);
-            }
+          // Build star lookup: wiki_entry_id -> star_id
+          const wikiToStarMap = new Map<string, string>();
+          for (const s of (starsData || [])) {
+            if (s.wiki_entry_id) wikiToStarMap.set(s.wiki_entry_id, s.id);
+          }
+
+          // Merge wiki results with star_id mapping
+          const resultMap = new Map<string, SearchResult & { starId?: string }>();
+          (wikiData || []).forEach((r: SearchResult) => {
+            resultMap.set(r.id, { ...r, starId: wikiToStarMap.get(r.id) });
           });
+
+          // Add stars that matched but weren't in wiki results (use wiki_entry_id for image lookup)
+          for (const s of (starsData || [])) {
+            if (s.wiki_entry_id && !resultMap.has(s.wiki_entry_id)) {
+              resultMap.set(s.wiki_entry_id, {
+                id: s.wiki_entry_id,
+                title: s.display_name,
+                slug: s.wiki_entry_id,
+                image_url: null,
+                schema_type: s.is_group ? "artist" : "member",
+                starId: s.id,
+              });
+            } else if (!s.wiki_entry_id) {
+              // Star without wiki_entry_id - still show with star_id
+              resultMap.set(s.id, {
+                id: s.id,
+                title: s.display_name,
+                slug: s.id,
+                image_url: null,
+                schema_type: s.is_group ? "artist" : "member",
+                starId: s.id,
+              });
+            }
+          }
+
           setSearchResults(Array.from(resultMap.values()).slice(0, 8));
 
           const seenKw = new Set<string>();
@@ -121,8 +152,13 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleResultClick = (slug: string) => {
-    navigate(`/artist/${slug}`);
+  const handleResultClick = (result: SearchResult & { starId?: string }) => {
+    if (result.starId) {
+      navigate(`/t2/artist/${result.starId}`);
+    } else {
+      // Fallback: try navigating by wiki_entry_id as slug
+      navigate(`/t2/artist/${result.id}`);
+    }
     setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
 
@@ -170,7 +206,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
                       {searchResults.map((result) => (
                         <button
                           key={result.id}
-                          onClick={() => handleResultClick(result.slug)}
+                          onClick={() => handleResultClick(result)}
                           className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
                         >
                           <Avatar className="w-10 h-10 rounded-lg shrink-0">

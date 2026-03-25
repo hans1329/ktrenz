@@ -106,6 +106,13 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
     if (query.trim().length < 2) { setSearchResults([]); setKeywordResults([]); return; }
     setIsSearching(true);
     try {
+      const starsPromise = (supabase as any)
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko, wiki_entry_id, is_group")
+        .eq("is_active", true)
+        .or(`display_name.ilike.%${query}%,name_ko.ilike.%${query}%`)
+        .limit(10);
+
       const wikiPromise = supabase
         .from("wiki_entries")
         .select("id, title, slug, image_url, schema_type")
@@ -121,8 +128,31 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
         .order("detected_at", { ascending: false })
         .limit(8);
 
-      const [{ data, error }, { data: kwData }] = await Promise.all([wikiPromise, kwPromise]);
-      if (!error && data) setSearchResults(data);
+      const [{ data: starsData }, { data: wikiData }, { data: kwData }] = await Promise.all([starsPromise, wikiPromise, kwPromise]);
+
+      const wikiToStarMap = new Map<string, string>();
+      for (const s of (starsData || [])) {
+        if (s.wiki_entry_id) wikiToStarMap.set(s.wiki_entry_id, s.id);
+      }
+
+      const resultMap = new Map<string, any>();
+      (wikiData || []).forEach((r: any) => {
+        resultMap.set(r.id, { ...r, starId: wikiToStarMap.get(r.id) });
+      });
+      for (const s of (starsData || [])) {
+        if (s.wiki_entry_id && !resultMap.has(s.wiki_entry_id)) {
+          resultMap.set(s.wiki_entry_id, {
+            id: s.wiki_entry_id, title: s.display_name, slug: s.wiki_entry_id,
+            image_url: null, schema_type: s.is_group ? "artist" : "member", starId: s.id,
+          });
+        } else if (!s.wiki_entry_id) {
+          resultMap.set(s.id, {
+            id: s.id, title: s.display_name, slug: s.id,
+            image_url: null, schema_type: s.is_group ? "artist" : "member", starId: s.id,
+          });
+        }
+      }
+      setSearchResults(Array.from(resultMap.values()).slice(0, 8));
 
       const seenKw = new Set<string>();
       const uniqueKw: KeywordResult[] = [];
@@ -135,8 +165,8 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
     finally { setIsSearching(false); }
   };
 
-  const handleResultClick = (slug: string) => {
-    navigate(`/artist/${slug}`);
+  const handleResultClick = (result: any) => {
+    navigate(result.starId ? `/t2/artist/${result.starId}` : `/t2/artist/${result.id}`);
     setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); setKeywordResults([]);
   };
 
@@ -212,7 +242,7 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
                         <>
                           <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">Artists</div>
                           {searchResults.map((result) => (
-                            <button key={result.id} onClick={() => handleResultClick(result.slug)}
+                            <button key={result.id} onClick={() => handleResultClick(result)}
                               className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
                               <Avatar className="w-9 h-9 rounded-lg shrink-0">
                                 <AvatarImage src={result.image_url || undefined} className="object-cover" />
