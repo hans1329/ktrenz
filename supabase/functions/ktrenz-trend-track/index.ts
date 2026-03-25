@@ -437,6 +437,26 @@ Deno.serve(async (req) => {
 
         await updateCausalMetrics(sb, trigger.id, buzzScore, isShopTrigger);
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
+
+        // ─── AI 동적 컨텍스트 생성 (변동폭 ±15% 이상일 때만) ───
+        if (Math.abs(deltaPct) >= 15) {
+          const { data: recentTracking } = await sb.from("ktrenz_trend_tracking")
+            .select("interest_score")
+            .eq("trigger_id", trigger.id)
+            .order("tracked_at", { ascending: false })
+            .limit(10);
+          const history = (recentTracking ?? []).map((r: any) => r.interest_score).reverse();
+
+          const newContext = await generateDynamicContext(trigger, buzzScore, deltaPct, history);
+          if (newContext) {
+            await sb.from("ktrenz_trend_triggers").update({
+              context: newContext,
+              context_ko: null, context_ja: null, context_zh: null,
+            }).eq("id", trigger.id);
+            console.log(`[trend-track] 🤖 Dynamic context updated: ${trigger.keyword}`);
+          }
+        }
+
         await notifyKeywordFollowers(sb, trigger, deltaPct);
 
         trackedCount++;
