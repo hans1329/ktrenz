@@ -289,6 +289,7 @@ Deno.serve(async (req) => {
     );
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
     let targets: any[] = [];
 
     // select에 artist_name, keyword, metadata 추가 (이름 매칭용)
