@@ -1304,7 +1304,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
                         user_id: user.id,
                         artist_name: activeSlot.artist_name,
                         wiki_entry_id: activeSlot.wiki_entry_id,
-                      });
+                      } as any);
                     queryClient.invalidateQueries({ queryKey: ["ktrenz-watched-artists", user.id] });
                     // Mark daily news as pending for red dot
                     localStorage.removeItem(`ktrenz-daily-news-seen-${user.id}`);
