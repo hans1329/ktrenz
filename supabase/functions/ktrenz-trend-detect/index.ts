@@ -530,7 +530,24 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
 - You must NOT use your own knowledge about the artist.
 - If "팔레트" does not appear in any article text, you CANNOT extract "팔레트" — even if you know it's the artist's song.
 - If "나의 아저씨" does not appear in any article text, you CANNOT extract it.
-- The context/context_ko fields must be written as a PUNCHY EDITORIAL NARRATIVE (1-2 sentences). Describe the SPECIFIC situation from the article, then the resulting trend phenomenon or public reaction. Include concrete details (magazine name, brand product detail, event specifics). Example: keyword="폴로 랄프 로렌" → context_ko="에스콰이어 4월호 표지 화보에서 윈터가 거의 생얼로 등장하면서, 최소 메이크업보다 폴로 랄프 로렌 레드 니트 드레스가 더 주목받는 역설적 현상이 발생." Do NOT write dry factual summaries like "폴로 랄프 로렌이 윈터와 협업했다."
+- ★★★ CONTEXT WRITING RULES (STRICTLY ENFORCED) ★★★
+  The context/context_ko fields MUST follow this exact pattern: "[Specific Event/Situation] → [Resulting Trend Phenomenon/Public Reaction/Metric Impact]"
+  
+  MANDATORY ELEMENTS:
+  1. Name the SPECIFIC source (magazine name, show name, platform, event name)
+  2. Describe the CONCRETE situation (what happened, what was shown/worn/said)
+  3. End with the TREND IMPACT (search surge, viral reaction, unexpected attention, sales spike, contrarian phenomenon)
+  
+  ❌ BAD (dry factual summary — REJECTED): "유리가 연극 '더 와스프'에서 강렬한 연기 변신을 선보이며 관객들의 이목을 집중시키고 있다."
+  ❌ BAD (generic praise — REJECTED): "윤산하가 위콘페 무대에 오르며 다양한 장르의 음악을 선보일 예정이다."
+  ❌ BAD (plain report — REJECTED): "제로베이스원이 월드 투어 앙코르를 준비하고 있다."
+  
+  ✅ GOOD: "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'로 등장했으나, 정작 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상 — 화보 공개 6시간 만에 관련 검색 급등."
+  ✅ GOOD: "연극 '더 와스프'에서 유리가 20년 만의 동창 재회를 연기하며 '소름 연기'라는 관객 반응이 쏟아져, 공연 잔여 회차 전석 매진 행렬로 이어지고 있다."
+  ✅ GOOD: "제로베이스원이 9인조→5인조 체제 첫 앙코르 투어를 공식 발표하자, 팬덤 내 '완전체 그리움' vs '새 시작 응원' 양극화 반응이 실시간 트렌드에 동시 등극."
+  
+  The GOOD examples include: specific source details, a concrete situation, and a trend/reaction outcome. If the article doesn't mention metrics, infer the likely public reaction or market impact from the context.
+  
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
 WHAT MAKES A VALID KEYWORD:

@@ -157,8 +157,14 @@ INTENT ANALYSIS (required for each keyword):
 
 TREND VALUE FILTER: Only extract keywords worth tracking. Music releases and comebacks are ALWAYS worth tracking.
 
+★★★ CONTEXT WRITING RULES (STRICTLY ENFORCED) ★★★
+context/context_ko MUST follow: "[Specific Event/Situation] → [Resulting Trend/Public Reaction/Metric Impact]"
+MANDATORY: 1) Name specific source (channel, video, platform) 2) Describe concrete situation 3) End with trend impact or audience reaction.
+❌ BAD: "브이로그에서 젠틀몬스터 선글라스 착용" (dry factual → REJECTED)
+✅ GOOD: "일상 브이로그에서 무심히 쓴 젠틀몬스터 선글라스가 댓글란에서 '인생 선글라스' 반응을 이끌어내며, 해당 모델 검색량 급등으로 이어짐."
+
 If NO entities found, return [].
-Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"wearing Gentle Monster sunglasses in vlog","context_ko":"브이로그에서 젠틀몬스터 선글라스 착용","context_ja":"Vlogでジェントルモンスターのサングラスを着用","context_zh":"在Vlog中佩戴Gentle Monster太阳镜","source_video_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.6}]`;
+Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko":"젠틀몬스터","keyword_ja":"ジェントルモンスター","keyword_zh":"Gentle Monster","category":"fashion","confidence":0.85,"context":"A Gentle Monster sunglass worn casually in a daily vlog sparked a flood of 'best sunglasses ever' comments, driving a search spike for the model.","context_ko":"일상 브이로그에서 무심히 쓴 젠틀몬스터 선글라스가 댓글란에서 '인생 선글라스' 반응을 이끌어내며, 해당 모델 검색량 급등으로 이어짐.","context_ja":"日常VlogでさりげなくかけたGENTLE MONSTERのサングラスがコメント欄で「人生サングラス」と話題になり、当該モデルの検索急増につながった。","context_zh":"在日常Vlog中随意佩戴的Gentle Monster太阳镜在评论区引发"人生太阳镜"热议，带动该款搜索量飙升。","source_video_index":2,"commercial_intent":"organic","brand_intent":"awareness","fan_sentiment":"positive","trend_potential":0.6}]`;
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
