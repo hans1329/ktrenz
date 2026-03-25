@@ -3855,6 +3855,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_schedule_predictions: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          event_date: string | null
+          event_date_end: string | null
+          event_title: string
+          expires_at: string
+          id: string
+          reasoning: string | null
+          source_headlines: Json | null
+          star_id: string | null
+          status: string
+          wiki_entry_id: string
+        }
+        Insert: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          event_date?: string | null
+          event_date_end?: string | null
+          event_title: string
+          expires_at?: string
+          id?: string
+          reasoning?: string | null
+          source_headlines?: Json | null
+          star_id?: string | null
+          status?: string
+          wiki_entry_id: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          event_date?: string | null
+          event_date_end?: string | null
+          event_title?: string
+          expires_at?: string
+          id?: string
+          reasoning?: string | null
+          source_headlines?: Json | null
+          star_id?: string | null
+          status?: string
+          wiki_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_schedule_predictions_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_schedule_predictions_wiki_entry_id_fkey"
+            columns: ["wiki_entry_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_schedules: {
         Row: {
           artist_name: string

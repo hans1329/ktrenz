@@ -443,6 +443,19 @@ const MODULE_RUNNERS: Record<string, (url: string, key: string) => Promise<any>>
     return { status: resp.ok ? "completed" : "error", module: "detect_geo_changes", ...parsed };
   },
   naver_news: runNaverNews,
+  schedule_predict: async (url, key) => {
+    console.log("[data-engine] Running Schedule Predict (batch)...");
+    const resp = await fetch(`${url}/functions/v1/ktrenz-schedule-predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ mode: "batch" }),
+    });
+    const text = await resp.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = { raw: text.slice(0, 300) }; }
+    console.log(`[data-engine] Schedule Predict: processed=${parsed?.processed ?? 0}, predicted=${parsed?.predicted ?? 0}`);
+    return { status: resp.ok ? "completed" : "error", module: "schedule_predict", ...parsed };
+  },
   apple_music_charts: async (url, key) => {
     console.log("[data-engine] Running Apple Music Charts...");
     const resp = await fetch(`${url}/functions/v1/collect-apple-music-charts`, {
@@ -660,6 +673,13 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
           body: JSON.stringify({ artistName: artist.title, koreanName: starInfo?.name_ko || null, wikiEntryId }),
+        }).then(async () => {
+          // 네이버 뉴스 수집 후 schedule predict 트리거
+          await fetch(`${supabaseUrl}/functions/v1/ktrenz-schedule-predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: JSON.stringify({ wikiEntryId, artistName: artist.title }),
+          }).catch((e) => console.warn(`[data-engine] Schedule predict for ${artist.title} error:`, e.message));
         }).catch((e) => console.warn(`[data-engine] Naver News single fire error:`, e.message));
         fireAndForget(p);
         return new Response(

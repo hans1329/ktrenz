@@ -419,6 +419,8 @@ const translations: Record<string, Record<Language, string>> = {
   "artist.musicData": { en: "Music Data", ko: "음악 데이터", ja: "音楽データ", zh: "音乐数据" },
   "artist.upcomingSchedule": { en: "Upcoming Schedule", ko: "다가오는 일정", ja: "今後のスケジュール", zh: "近期日程" },
   "artist.eventsComingUp": { en: "events coming up", ko: "개의 일정", ja: "件の予定", zh: "个日程" },
+  "artist.predictedSchedule": { en: "Predicted Schedule", ko: "예측 일정", ja: "予測スケジュール", zh: "预测日程" },
+  "artist.aiInferredFromNews": { en: "AI-inferred from recent news", ko: "최근 뉴스 기반 AI 추론", ja: "最新ニュースからAI推論", zh: "基于最新新闻AI推断" },
   "artist.today": { en: "TODAY", ko: "오늘", ja: "今日", zh: "今天" },
   "artist.tomorrow": { en: "TOMORROW", ko: "내일", ja: "明日", zh: "明天" },
   "schedule.release": { en: "Release", ko: "발매", ja: "リリース", zh: "发行" },
