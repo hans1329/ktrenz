@@ -35,6 +35,8 @@ const DELAY_AFTER: Partial<Record<Module, number>> = {
   buzz_enhancer: 60,
   energy: 5,
   detect_geo_changes: 5,
+  naver_news: 30,
+  schedule_predict: 10,
   fes_analyst: 5,
   fes_predictor: 0,
 };
