@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
 import type { TrendTile } from "./T2TrendTreemap";
 import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
+import T2BrandBadges from "./T2BrandBadges";
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)" },
@@ -129,9 +130,16 @@ const T2ArtistList = ({ items, watchedSet }: T2ArtistListProps) => {
                 {displayName(group)}
               </p>
 
+              {/* Brand badges */}
+              <T2BrandBadges
+                keywords={group.keywords}
+                artistName={displayName(group)}
+                max={3}
+              />
+
               {/* Keyword badges */}
               <div className="flex flex-wrap gap-1 mt-2">
-                {group.keywords.slice(0, 3).map((kw) => {
+                {group.keywords.filter(kw => kw.category !== "brand" && kw.category !== "product").slice(0, 3).map((kw) => {
                   const config = CATEGORY_CONFIG[kw.category];
                   const kwText = language === "ko" && kw.keywordKo ? kw.keywordKo : kw.keyword;
                   return (

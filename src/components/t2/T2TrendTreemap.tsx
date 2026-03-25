@@ -48,6 +48,7 @@ export interface TrendTile {
   status: string;
   triggerSource: string | null;
   prevApiTotal: number | null;
+  brandId: string | null;
 }
 
 export type SortMode = "rate" | "volume";
@@ -458,6 +459,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           status: t.status,
           triggerSource: t.trigger_source || null,
           prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
+          brandId: t.brand_id || null,
         };
       });
     },
