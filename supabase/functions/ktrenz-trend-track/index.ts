@@ -386,13 +386,16 @@ Deno.serve(async (req) => {
           // ─── 일반 키워드: 뉴스 + 블로그 버즈 ───
           const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
           const [newsResult, blogResult] = await Promise.all([
-            searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
-            searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
+            searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
+            searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           ]);
 
-          const newsRecent = newsResult.recent;
-          const blogRecent = blogResult.recent;
-          buzzScore = newsRecent + blogRecent;
+          // 24시간 기사수(가중 3x) + 7일 기사수로 민감도 향상
+          const news24h = newsResult.recent24h;
+          const blog24h = blogResult.recent24h;
+          const news7d = newsResult.recent7d;
+          const blog7d = blogResult.recent7d;
+          buzzScore = (news24h + blog24h) * 3 + (news7d + blog7d);
           const apiNewsTotal = newsResult.total;
           const apiBlogTotal = blogResult.total;
           apiTotal = apiNewsTotal + apiBlogTotal;
@@ -404,13 +407,14 @@ Deno.serve(async (req) => {
             : buzzScore > 0 ? 100 : 0;
 
           rawResponse = {
-            news_recent: newsRecent, blog_recent: blogRecent,
+            news_24h: news24h, blog_24h: blog24h,
+            news_7d: news7d, blog_7d: blog7d,
             news_api_total: apiNewsTotal, blog_api_total: apiBlogTotal,
             api_total: apiTotal, daily_delta: dailyDelta,
             search_query: searchQuery,
           };
 
-          console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} daily_delta=${dailyDelta} Δ=${deltaPct}%`);
+          console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} (24h:${news24h+blog24h} 7d:${news7d+blog7d}) Δ=${deltaPct}%`);
         }
 
         // tracking 레코드 저장
