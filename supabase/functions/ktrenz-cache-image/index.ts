@@ -376,7 +376,7 @@ Deno.serve(async (req) => {
         console.log(`[cache-image] No OG, trying body images for ${trigger.id} (nameVariants: ${allNameVariants.join(",")})`);
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
-          const best = await findLargestImage(candidates);
+          const best = await findLargestImage(candidates, openaiKey);
           if (best && best.data.length > LOW_RES_THRESHOLD_BYTES) {
             url = best.url;
             console.log(`[cache-image] Found body image (${best.data.length}b) for ${trigger.id}: ${best.url}`);
