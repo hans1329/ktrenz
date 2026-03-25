@@ -1,0 +1,1 @@
+UPDATE ktrenz_trend_triggers SET keyword_category = 'social' WHERE id = '85c143df-fb54-49db-9f24-9311c42dffb8';
