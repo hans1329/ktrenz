@@ -460,6 +460,7 @@ const TOOL_EXTRACT_KEYWORDS = {
                     "metaphor_comparison",// Entity used as metaphor or comparison
                     "tv_gimmick",         // TV show costume, prop, or ephemeral segment
                     "ambiguous_name",     // Artist name matches a common word in the article
+                    "non_kstar_subject",  // The article's main subject is NOT a K-star (Korean entertainer/celebrity). e.g., a brand, company, organization, or non-Korean entity is the subject
                     "noise"              // General noise that doesn't represent a meaningful trend
                   ],
                 },
