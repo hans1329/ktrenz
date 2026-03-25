@@ -904,6 +904,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                         pts = [{ t: detMs, v: bv }, { t: Date.now(), v: bv }];
                                       }
                                       if (pts.length < 2) return null;
+                                      // Extend last point to current time so graph fills full width
+                                      const lastPt = pts[pts.length - 1];
+                                      if (lastPt.t < Date.now() - 60000) {
+                                        pts = [...pts, { t: Date.now(), v: lastPt.v }];
+                                      }
                                       const startMs = pts[0].t;
                                       const nowMs = Date.now();
                                       const spanMs = Math.max(nowMs - startMs, 3600000);
