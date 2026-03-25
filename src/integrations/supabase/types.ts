@@ -2678,6 +2678,39 @@ export type Database = {
           },
         ]
       }
+      ktrenz_brand_registry: {
+        Row: {
+          brand_name: string
+          brand_name_ko: string | null
+          category: string | null
+          created_at: string | null
+          domain: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+        }
+        Insert: {
+          brand_name: string
+          brand_name_ko?: string | null
+          category?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+        }
+        Update: {
+          brand_name?: string
+          brand_name_ko?: string | null
+          category?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+        }
+        Relationships: []
+      }
       ktrenz_category_trends: {
         Row: {
           avg_30d: number | null
@@ -4270,6 +4303,7 @@ export type Database = {
         Row: {
           artist_name: string
           baseline_score: number | null
+          brand_id: string | null
           brand_intent: string | null
           commercial_intent: string | null
           confidence: number | null
@@ -4311,6 +4345,7 @@ export type Database = {
         Insert: {
           artist_name: string
           baseline_score?: number | null
+          brand_id?: string | null
           brand_intent?: string | null
           commercial_intent?: string | null
           confidence?: number | null
@@ -4352,6 +4387,7 @@ export type Database = {
         Update: {
           artist_name?: string
           baseline_score?: number | null
+          brand_id?: string | null
           brand_intent?: string | null
           commercial_intent?: string | null
           confidence?: number | null
@@ -4391,6 +4427,13 @@ export type Database = {
           wiki_entry_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_triggers_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_brand_registry"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ktrenz_trend_triggers_star_id_fkey"
             columns: ["star_id"]
