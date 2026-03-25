@@ -105,12 +105,16 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
     setSearchQuery(query);
     if (query.trim().length < 2) { setSearchResults([]); setKeywordResults([]); return; }
     setIsSearching(true);
+    const qNoSpace = query.trim().replace(/\s+/g, "");
+    const starFilter = query.trim() === qNoSpace
+      ? `display_name.ilike.%${query}%,name_ko.ilike.%${query}%`
+      : `display_name.ilike.%${query}%,name_ko.ilike.%${query}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
     try {
       const starsPromise = (supabase as any)
         .from("ktrenz_stars")
         .select("id, display_name, name_ko, wiki_entry_id, is_group")
         .eq("is_active", true)
-        .or(`display_name.ilike.%${query}%,name_ko.ilike.%${query}%`)
+        .or(starFilter)
         .limit(10)
         .then((r: any) => r.data || [])
         .then((d: any) => d, () => []);
