@@ -40,6 +40,20 @@ const T2TrendMap = () => {
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Sync viewIndex to URL searchParams for history persistence
+  const updateViewIndex = useCallback((idx: number) => {
+    setViewIndex(idx);
+    const mode = VIEW_ORDER[idx];
+    setSearchParams(prev => {
+      if (mode === VIEW_ORDER[0]) {
+        prev.delete("view");
+      } else {
+        prev.set("view", mode);
+      }
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   // Auto-open onboarding drawer after signup
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
