@@ -894,6 +894,20 @@ Deno.serve(async (req) => {
     const brandMapped = await mapBrandIds(sb);
     console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped} keywords`);
 
+    // 4.8단계: 글로벌 스타명 필터 (다른 아티스트/그룹 이름이 키워드인 경우 제거)
+    const globalNameResult = await globalStarNameFilter(sb);
+    console.log(`[postprocess] Global star name filter: expired ${globalNameResult.expired} entries`);
+    if (globalNameResult.details.length > 0) {
+      console.log(`[postprocess] Global name details: ${globalNameResult.details.join("; ")}`);
+    }
+
+    // 4.9단계: 패턴 기반 노이즈 필터 (숫자+단위, 알려진 노이즈 등)
+    const noiseResult = await noisePatternFilter(sb);
+    console.log(`[postprocess] Noise pattern filter: expired ${noiseResult.expired} entries`);
+    if (noiseResult.details.length > 0) {
+      console.log(`[postprocess] Noise details: ${noiseResult.details.join("; ")}`);
+    }
+
     // 5단계: pending → active 전환
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
