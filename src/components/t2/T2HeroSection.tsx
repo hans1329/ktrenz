@@ -119,15 +119,22 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   const { user } = useAuth();
   const { language } = useLanguage();
 
-  // Independent check: does the user have watched artists?
+  // Independent check: does the user have watched artists or agent slots?
   const { data: hasWatchedArtists, isLoading: isWatchedLoading } = useQuery({
     queryKey: ["hero-has-watched", user?.id],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("ktrenz_watched_artists" as any)
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id);
-      return (count ?? 0) > 0;
+      const [{ count: watchedCount }, { count: slotCount }] = await Promise.all([
+        supabase
+          .from("ktrenz_watched_artists" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id),
+        supabase
+          .from("ktrenz_agent_slots")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user!.id)
+          .not("wiki_entry_id", "is", null),
+      ]);
+      return ((watchedCount ?? 0) + (slotCount ?? 0)) > 0;
     },
     enabled: !!user?.id,
     staleTime: 60_000,
