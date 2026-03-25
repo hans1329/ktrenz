@@ -74,13 +74,18 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
     const timer = setTimeout(async () => {
       if (searchQuery.trim().length >= 2) {
         setIsSearching(true);
+        const q = searchQuery.trim();
+        const qNoSpace = q.replace(/\s+/g, "");
+        const starFilter = q === qNoSpace
+          ? `display_name.ilike.%${q}%,name_ko.ilike.%${q}%`
+          : `display_name.ilike.%${q}%,name_ko.ilike.%${q}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
         try {
           // Search ktrenz_stars directly for T2 routing
           const starsPromise = (supabase as any)
             .from("ktrenz_stars")
             .select("id, display_name, name_ko, wiki_entry_id, is_group")
             .eq("is_active", true)
-            .or(`display_name.ilike.%${searchQuery}%,name_ko.ilike.%${searchQuery}%`)
+            .or(starFilter)
             .limit(10)
             .then((r: any) => r.data || [])
             .catch(() => []);
