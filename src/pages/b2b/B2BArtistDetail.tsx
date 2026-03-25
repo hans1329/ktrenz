@@ -1,361 +1,321 @@
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  TrendingUp, Star, BarChart3, ArrowUpRight,
+  TrendingUp, Star, BarChart3, ArrowLeft,
   Activity, Zap, Brain, Sparkles, ChevronRight, Users,
-  Eye, ShoppingBag, Globe, Calendar, ExternalLink
+  ShoppingBag, Globe, Flame, Share2, ShoppingCart
 } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+
+const GRADE_CONFIG: Record<string, { label: string; color: string }> = {
+  spark:     { label: 'Spark',     color: '#9CA3AF' },
+  react:     { label: 'React',     color: '#3B82F6' },
+  spread:    { label: 'Spread',    color: '#10B981' },
+  intent:    { label: 'Intent',    color: '#F59E0B' },
+  commerce:  { label: 'Commerce',  color: '#8B5CF6' },
+  explosive: { label: 'Explosive', color: '#EF4444' },
+};
 
 const B2BArtistDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { org } = useOutletContext<{ org: any }>();
+  const navigate = useNavigate();
 
   const { data: star, isLoading } = useQuery({
     queryKey: ['b2b-star-detail', id],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('ktrenz_stars')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data } = await (supabase as any).from('ktrenz_stars').select('*').eq('id', id).single();
       return data;
     },
     enabled: !!id,
   });
 
-  // 관련 트렌드 — star_id 또는 artist_name 기준
+  const { data: artistGrade } = useQuery({
+    queryKey: ['b2b-artist-grade', id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('ktrenz_trend_artist_grades')
+        .select('grade, grade_score, influence_score, keyword_count, grade_breakdown, score_details')
+        .eq('star_id', id!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
   const { data: trends = [] } = useQuery({
     queryKey: ['b2b-star-trends', id, star?.display_name],
     queryFn: async () => {
       if (!star) return [];
-      // star_id 매칭 우선, fallback으로 artist_name
       const { data } = await (supabase as any)
         .from('ktrenz_trend_triggers')
-        .select('id, keyword, keyword_category, influence_index, trend_grade, source_image_url, detected_at, status, commercial_intent, purchase_stage, fan_sentiment, trend_potential')
+        .select('id, keyword, keyword_category, influence_index, trend_grade, trend_score, trend_score_details, purchase_stage, source_image_url, detected_at, status')
         .or(`star_id.eq.${id},artist_name.eq.${star.display_name}`)
-        .order('detected_at', { ascending: false })
+        .order('trend_score', { ascending: false, nullsFirst: false })
         .limit(30);
       return data || [];
     },
     enabled: !!star,
   });
 
-  // 트렌드 트래킹 스냅샷
-  const { data: trackingData = [] } = useQuery({
-    queryKey: ['b2b-star-tracking', id],
-    queryFn: async () => {
-      if (!trends.length) return [];
-      const triggerIds = trends.map((t: any) => t.id);
-      const { data } = await (supabase as any)
-        .from('ktrenz_trend_tracking')
-        .select('id, trigger_id, api_total, snapshot_at, velocity, trend_energy, commercial_depth, momentum')
-        .in('trigger_id', triggerIds.slice(0, 20))
-        .order('snapshot_at', { ascending: false })
-        .limit(50);
-      return data || [];
-    },
-    enabled: trends.length > 0,
-  });
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-6 h-6 animate-spin text-[hsl(220,10%,40%)]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#9CA3AF]" />
       </div>
     );
   }
 
   if (!star) {
     return (
-      <div className="flex items-center justify-center h-96 text-[hsl(220,10%,45%)]">
+      <div className="flex items-center justify-center h-96 text-[#9CA3AF]">
         아티스트를 찾을 수 없습니다.
       </div>
     );
   }
 
   const activeTrends = trends.filter((t: any) => t.status === 'active');
-  const avgInfluence = activeTrends.length > 0
-    ? activeTrends.reduce((s: number, t: any) => s + (t.influence_index ?? 0), 0) / activeTrends.length
-    : 0;
-  const commerceCount = trends.filter((t: any) => {
-    const g = (t.trend_grade || '').toLowerCase();
-    const ci = (t.commercial_intent || '').toLowerCase();
-    return g === 'commerce' || g === 'intent' || ci === 'ad' || ci === 'sponsorship';
-  }).length;
+  const gc = GRADE_CONFIG[artistGrade?.grade] || GRADE_CONFIG.spark;
+
+  // Grade distribution from trends
+  const gradeDistrib: Record<string, number> = {};
+  trends.forEach((t: any) => {
+    const g = (t.trend_grade || 'spark').toLowerCase();
+    gradeDistrib[g] = (gradeDistrib[g] || 0) + 1;
+  });
+
+  // Category distribution
+  const catDistrib: Record<string, number> = {};
+  activeTrends.forEach((t: any) => {
+    const c = t.keyword_category || 'other';
+    catDistrib[c] = (catDistrib[c] || 0) + 1;
+  });
+  const maxCatCount = Math.max(...Object.values(catDistrib), 1);
+
+  const CAT_COLORS: Record<string, string> = {
+    brand: '#2563EB', product: '#8B5CF6', place: '#10B981', food: '#F59E0B',
+    fashion: '#EC4899', beauty: '#EF4444', media: '#06B6D4', music: '#7C3AED',
+    event: '#F97316', social: '#6366F1',
+  };
 
   return (
-    <div className="flex min-h-full items-start">
-      {/* 중앙 메인 */}
-      <div className="min-w-0 flex-1 p-6 space-y-6">
-        {/* 프로필 헤더 */}
-        <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-6">
+    <div className="flex min-h-full">
+      {/* ── CENTER ── */}
+      <div className="flex-1 p-6 overflow-y-auto min-w-0 space-y-5">
+        {/* Back */}
+        <button onClick={() => navigate('/b2b')} className="flex items-center gap-1 text-[13px] text-[#6B7280] hover:text-[#111827] transition-colors">
+          <ArrowLeft className="w-4 h-4" /> 돌아가기
+        </button>
+
+        {/* Profile Header */}
+        <div className="bg-white rounded-[10px] border border-[#E5E7EB] p-6">
           <div className="flex items-start gap-5">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
+            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#F3F4F6] shrink-0">
               {star.image_url ? (
                 <img src={star.image_url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[hsl(220,10%,30%)]">
+                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[#D1D5DB]">
                   {star.display_name?.[0]}
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-xl font-bold text-white">{star.display_name}</h1>
+                <h1 className="text-xl font-extrabold text-[#111827]">{star.display_name}</h1>
                 {star.name_ko && star.name_ko !== star.display_name && (
-                  <span className="text-sm text-[hsl(220,10%,50%)]">{star.name_ko}</span>
+                  <span className="text-sm text-[#9CA3AF]">{star.name_ko}</span>
                 )}
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(220,15%,18%)] text-[hsl(220,10%,55%)]">
-                  {star.star_type === 'group' ? '그룹' : star.star_type === 'member' ? '멤버' : '솔로'}
-                </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-[hsl(220,10%,45%)]">
+              <div className="flex items-center gap-4 text-xs text-[#9CA3AF]">
                 {star.agency && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{star.agency}</span>}
-                {star.star_category && <span className="flex items-center gap-1"><Globe className="w-3 h-3" />{star.star_category}</span>}
+                {star.star_type && <span>{star.star_type === 'group' ? '그룹' : star.star_type === 'member' ? '멤버' : '솔로'}</span>}
               </div>
-              {/* 마지막 감지 결과 */}
-              {star.last_detect_result && (
-                <div className="flex items-center gap-3 mt-2 text-[10px] text-[hsl(220,10%,40%)]">
-                  <span>뉴스 {star.last_detect_result.news ?? 0}</span>
-                  <span>블로그 {star.last_detect_result.blog ?? 0}</span>
-                  <span>쇼핑 {star.last_detect_result.shop ?? 0}</span>
-                  <span>키워드 {star.last_detect_result.keywords ?? 0}</span>
-                  {star.last_detected_at && (
-                    <span className="ml-auto">최근 감지: {new Date(star.last_detected_at).toLocaleString('ko-KR')}</span>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* KPI 카드 */}
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: '활성 트렌드', value: activeTrends.length, icon: TrendingUp, color: 'hsl(270,80%,60%)' },
-            { label: '평균 영향력', value: avgInfluence.toFixed(1), icon: BarChart3, color: 'hsl(45,90%,55%)' },
-            { label: '상업적 의도', value: commerceCount, icon: ShoppingBag, color: 'hsl(15,90%,55%)' },
-            { label: '전체 트렌드', value: trends.length, icon: Activity, color: 'hsl(200,80%,55%)' },
-          ].map(kpi => (
-            <div key={kpi.label} className="bg-[hsl(220,15%,12%)] rounded-xl p-4 border border-[hsl(220,15%,16%)]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs text-[hsl(220,10%,45%)] font-medium">{kpi.label}</span>
-                <kpi.icon className="w-4 h-4" style={{ color: kpi.color }} />
+        {/* KIS-style Big Score Display */}
+        {artistGrade && (
+          <div className="bg-gradient-to-r from-[#1E3A8A] to-[#1E40AF] rounded-[10px] p-5 flex items-center justify-between">
+            <div>
+              <div className="text-[11px] text-white/50 mb-1 uppercase tracking-wider">Trend Influence Score</div>
+              <div className="text-[42px] font-black text-white leading-none">
+                {artistGrade.influence_score > 0 ? artistGrade.influence_score.toFixed(2) : artistGrade.grade_score}
               </div>
-              <p className="text-2xl font-bold text-white">{kpi.value}</p>
+              <div className="text-[11px] text-white/50 mt-1">{artistGrade.keyword_count} keywords tracked</div>
+            </div>
+            <div className="text-right space-y-1">
+              <span
+                className="inline-block text-[10px] font-bold px-[8px] py-[3px] rounded-[10px] bg-white/15 text-white"
+              >
+                {gc.label}
+              </span>
+              {artistGrade.grade_breakdown && Object.entries(artistGrade.grade_breakdown).map(([g, count]) => (
+                <div key={g} className="text-[10px] text-white/60">
+                  {GRADE_CONFIG[g]?.label || g}: {count as number}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-4 gap-[14px]">
+          {[
+            { label: '활성 트렌드', value: activeTrends.length, color: '#2563EB' },
+            { label: '전체 트렌드', value: trends.length, color: '#374151' },
+            { label: '상업 의도 감지', value: trends.filter((t: any) => ['intent', 'commerce'].includes((t.trend_grade || '').toLowerCase())).length, color: '#F59E0B' },
+            { label: '최고 Trend Score', value: trends.length > 0 && trends[0].trend_score != null ? (trends[0].trend_score * 100).toFixed(0) : '-', color: '#EF4444' },
+          ].map(kpi => (
+            <div key={kpi.label} className="bg-white rounded-[10px] p-4 border border-[#E5E7EB]">
+              <div className="text-[11px] text-[#9CA3AF] font-semibold uppercase tracking-[0.5px] mb-[6px]">{kpi.label}</div>
+              <p className="text-[26px] font-extrabold leading-none" style={{ color: kpi.color }}>{kpi.value}</p>
             </div>
           ))}
         </div>
 
-        {/* 트렌드 목록 */}
-        <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)]">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(220,15%,16%)]">
-            <h2 className="text-white font-semibold flex items-center gap-2">
-              <Activity className="w-4 h-4 text-[hsl(270,80%,60%)]" />
-              관련 트렌드 ({trends.length})
-            </h2>
-          </div>
-          <div className="divide-y divide-[hsl(220,15%,16%)]">
-            {trends.slice(0, 15).map((trend: any) => (
-              <div key={trend.id} className="flex items-center gap-4 px-5 py-3 hover:bg-[hsl(220,15%,14%)] transition-colors">
-                <div className="w-10 h-10 rounded-lg overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
-                  {trend.source_image_url ? (
-                    <img src={trend.source_image_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,30%)]">
-                      <TrendingUp className="w-4 h-4" />
-                    </div>
-                  )}
+        {/* Category Bars */}
+        {Object.keys(catDistrib).length > 0 && (
+          <div className="bg-white rounded-[10px] border border-[#E5E7EB] p-5">
+            <div className="text-[11px] font-bold text-[#9CA3AF] mb-3 uppercase tracking-[0.5px]">카테고리별 트렌드</div>
+            {Object.entries(catDistrib).sort(([,a],[,b]) => b - a).map(([cat, count]) => (
+              <div key={cat} className="mb-[10px] last:mb-0">
+                <div className="flex justify-between text-[12px] mb-1">
+                  <span className="font-semibold text-[#374151] capitalize">{cat}</span>
+                  <span className="font-bold text-[#111827]">{count}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{trend.keyword}</p>
-                  <p className="text-xs text-[hsl(220,10%,45%)]">
-                    {trend.keyword_category} · {new Date(trend.detected_at).toLocaleDateString('ko-KR')}
-                  </p>
+                <div className="bg-[#F3F4F6] rounded h-[5px]">
+                  <div
+                    className="rounded h-[5px] transition-all"
+                    style={{ width: `${(count / maxCatCount) * 100}%`, backgroundColor: CAT_COLORS[cat] || '#9CA3AF' }}
+                  />
                 </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                  (() => { const g = (trend.trend_grade || 'spark').toLowerCase(); return (
-                    g === 'explosive' ? 'bg-[hsl(0,80%,50%,0.2)] text-[hsl(0,80%,65%)]' :
-                    g === 'commerce' ? 'bg-[hsl(270,80%,50%,0.2)] text-[hsl(270,80%,70%)]' :
-                    g === 'intent' ? 'bg-[hsl(45,80%,50%,0.2)] text-[hsl(45,80%,65%)]' :
-                    g === 'spread' ? 'bg-[hsl(200,70%,50%,0.2)] text-[hsl(200,70%,65%)]' :
-                    g === 'react' ? 'bg-[hsl(150,60%,50%,0.2)] text-[hsl(150,60%,65%)]' :
-                    'bg-[hsl(220,15%,20%)] text-[hsl(220,10%,55%)]'
-                  )})()
-                }`}>
-                  {trend.trend_grade || 'Spark'}
-                </span>
-                <div className="text-right w-16">
-                  <p className="text-sm font-bold text-white">{(trend.influence_index ?? 0).toFixed(0)}</p>
-                  <p className="text-[10px] text-[hsl(220,10%,40%)]">영향력</p>
-                </div>
-                {trend.purchase_stage && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,50%,0.15)] text-[hsl(270,80%,65%)]">
-                    {trend.purchase_stage}
-                  </span>
-                )}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                  trend.status === 'active'
-                    ? 'bg-[hsl(150,60%,40%,0.2)] text-[hsl(150,60%,55%)]'
-                    : 'bg-[hsl(220,15%,18%)] text-[hsl(220,10%,40%)]'
-                }`}>
-                  {trend.status === 'active' ? '활성' : '종료'}
-                </span>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Trend List */}
+        <div className="bg-white rounded-[10px] border border-[#E5E7EB] overflow-hidden">
+          <div className="px-[18px] py-[14px] border-b border-[#F3F4F6] flex items-center justify-between">
+            <div className="text-[14px] font-bold text-[#111827] flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#2563EB]" />
+              관련 트렌드 ({trends.length})
+            </div>
+          </div>
+          <div className="divide-y divide-[#F9FAFB]">
+            {trends.slice(0, 15).map((trend: any) => {
+              const tgc = GRADE_CONFIG[(trend.trend_grade || 'spark').toLowerCase()] || GRADE_CONFIG.spark;
+              return (
+                <div key={trend.id} className="flex items-center gap-4 px-5 py-3 hover:bg-[#F9FAFB] transition-colors">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F3F4F6] shrink-0">
+                    {trend.source_image_url ? (
+                      <img src={trend.source_image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#D1D5DB]">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] text-[#111827] font-medium truncate">{trend.keyword}</p>
+                    <p className="text-[11px] text-[#9CA3AF]">
+                      {trend.keyword_category} · {new Date(trend.detected_at).toLocaleDateString('ko-KR')}
+                      {trend.purchase_stage && ` · ${trend.purchase_stage}`}
+                    </p>
+                  </div>
+                  <span
+                    className="text-[10px] font-bold px-2 py-[2px] rounded-[10px]"
+                    style={{ backgroundColor: `${tgc.color}20`, color: tgc.color }}
+                  >
+                    {tgc.label}
+                  </span>
+                  <div className="text-right w-16">
+                    <p className="text-[14px] font-bold text-[#111827]">
+                      {trend.trend_score != null ? (trend.trend_score * 100).toFixed(0) : (trend.influence_index ?? 0).toFixed(0)}
+                    </p>
+                    <p className="text-[10px] text-[#9CA3AF]">score</p>
+                  </div>
+                  <span className={`text-[10px] px-[6px] py-[2px] rounded ${
+                    trend.status === 'active' ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#F3F4F6] text-[#9CA3AF]'
+                  }`}>
+                    {trend.status === 'active' ? '활성' : '종료'}
+                  </span>
+                </div>
+              );
+            })}
             {trends.length === 0 && (
-              <div className="px-5 py-12 text-center text-[hsl(220,10%,40%)]">
-                <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">이 아티스트와 관련된 트렌드가 아직 없습니다.</p>
+              <div className="px-5 py-12 text-center text-[#9CA3AF]">
+                <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">관련 트렌드가 없습니다.</p>
               </div>
             )}
           </div>
         </div>
-
-        {/* 트래킹 스냅샷 */}
-        {trackingData.length > 0 && (
-          <div className="bg-[hsl(220,15%,12%)] rounded-xl border border-[hsl(220,15%,16%)] p-5">
-            <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[hsl(15,90%,55%)]" />
-              트렌드 트래킹 스냅샷 (최근)
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-[hsl(220,10%,45%)] border-b border-[hsl(220,15%,18%)]">
-                    <th className="text-left py-2 px-2">키워드</th>
-                    <th className="text-right py-2 px-2">API Total</th>
-                    <th className="text-right py-2 px-2">Velocity</th>
-                    <th className="text-right py-2 px-2">Energy</th>
-                    <th className="text-right py-2 px-2">Commerce</th>
-                    <th className="text-right py-2 px-2">Momentum</th>
-                    <th className="text-right py-2 px-2">시간</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trackingData.slice(0, 20).map((t: any) => {
-                    const trigger = trends.find((tr: any) => tr.id === t.trigger_id);
-                    return (
-                      <tr key={t.id} className="border-b border-[hsl(220,15%,16%)] hover:bg-[hsl(220,15%,14%)]">
-                        <td className="py-2 px-2 text-white truncate max-w-[150px]">{trigger?.keyword ?? '-'}</td>
-                        <td className="py-2 px-2 text-right text-white font-mono">{t.api_total?.toLocaleString() ?? '-'}</td>
-                        <td className="py-2 px-2 text-right">
-                          <span className={t.velocity > 0 ? 'text-[hsl(150,60%,55%)]' : t.velocity < 0 ? 'text-[hsl(0,60%,55%)]' : 'text-[hsl(220,10%,45%)]'}>
-                            {t.velocity != null ? t.velocity.toFixed(1) : '-'}
-                          </span>
-                        </td>
-                        <td className="py-2 px-2 text-right text-white">{t.trend_energy?.toFixed(1) ?? '-'}</td>
-                        <td className="py-2 px-2 text-right text-white">{t.commercial_depth?.toFixed(1) ?? '-'}</td>
-                        <td className="py-2 px-2 text-right text-white">{t.momentum?.toFixed(1) ?? '-'}</td>
-                        <td className="py-2 px-2 text-right text-[hsl(220,10%,40%)]">
-                          {t.snapshot_at ? new Date(t.snapshot_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* 우측: AI 인사이트 */}
-      <aside className="w-[340px] shrink-0 p-6 pl-0 sticky top-14 h-[calc(100vh-56px)]">
-        <div className="h-full overflow-hidden rounded-2xl border border-[hsl(220,15%,16%)] bg-[hsl(220,18%,9%)] shadow-[0_20px_60px_-24px_hsl(220_40%_2%_/_0.65)]">
-          <div className="px-4 py-3 border-b border-[hsl(220,15%,15%)] bg-[hsl(220,18%,10%)]">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(270,80%,55%,0.16)] text-[hsl(270,80%,68%)]">
-                <Brain className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white">AI 인사이트</h3>
-                <p className="text-[10px] text-[hsl(220,10%,42%)]">B2B decision summary</p>
-              </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(270,80%,55%,0.2)] text-[hsl(270,80%,70%)] font-medium ml-auto">
-                {trends.length > 0 ? `${trends.length}건` : '대기'}
-              </span>
-            </div>
+      {/* ── AI INSIGHT PANEL ── */}
+      <aside className="w-[320px] min-w-[320px] bg-white border-l border-[#E5E7EB] flex flex-col shrink-0 sticky top-[52px] h-[calc(100vh-52px)]">
+        <div className="px-[18px] py-4 border-b border-[#E5E7EB] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-[#10B981] rounded-full animate-pulse" />
+            <span className="text-[14px] font-bold text-[#111827]">AI Analyst</span>
+          </div>
+          <span className="text-[11px] text-[#9CA3AF]">{trends.length}건</span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Summary */}
+          <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-[10px]">
+            <div className="text-[10px] font-bold text-[#2563EB] mb-1 uppercase">종합 평가</div>
+            <p className="text-[12px] text-[#1E40AF] leading-[1.5]">
+              {activeTrends.length > 0
+                ? `${star.display_name} — ${activeTrends.length}개 활성 트렌드. ${
+                    artistGrade?.influence_score > 0 ? `Influence Score ${artistGrade.influence_score.toFixed(2)}.` : ''
+                  } ${trends.filter((t: any) => ['intent', 'commerce'].includes((t.trend_grade || '').toLowerCase())).length}건의 상업적 의도 감지.`
+                : `${star.display_name}의 현재 활성 트렌드 없음.`}
+            </p>
           </div>
 
-          <div className="h-[calc(100%-57px)] overflow-y-auto p-4 space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: '활성 트렌드', value: activeTrends.length, color: 'hsl(150,60%,55%)' },
-                { label: '평균 영향력', value: avgInfluence > 0 ? avgInfluence.toFixed(0) : '-', color: 'hsl(270,80%,65%)' },
-                { label: '상업 의도', value: commerceCount || '-', color: 'hsl(45,90%,55%)' },
-                { label: '전체 트렌드', value: trends.length, color: 'hsl(200,80%,55%)' },
-              ].map(s => (
-                <div key={s.label} className="rounded-xl p-2.5 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)]">
-                  <p className="text-[10px] text-[hsl(220,10%,42%)] mb-0.5">{s.label}</p>
-                  <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-xl bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-[hsl(45,90%,55%)]" />
-                <span className="text-xs font-semibold text-white">종합 평가</span>
-              </div>
-              <p className="text-xs text-[hsl(220,10%,55%)] leading-relaxed">
-                {activeTrends.length > 0
-                  ? `${star.display_name} — ${activeTrends.length}개 활성 트렌드, 평균 영향력 ${avgInfluence.toFixed(0)}. ${avgInfluence > 60 ? '시장 관심이 높은 구간.' : '일반적인 노출 수준.'} 상업 의도 감지 ${commerceCount}건.`
-                  : `${star.display_name}의 현재 활성 트렌드 없음. 수집 주기에 따라 자동 갱신됩니다.`}
-              </p>
-            </div>
-
-            {trends.length > 0 && (
-              <div className="rounded-xl bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,16%)] p-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className="w-3.5 h-3.5 text-[hsl(200,80%,55%)]" />
-                  <span className="text-xs font-semibold text-white">등급 분포</span>
-                </div>
-                {['explosive', 'commerce', 'intent', 'spread', 'react', 'spark'].map(grade => {
-                  const count = trends.filter((t: any) => (t.trend_grade || 'spark').toLowerCase() === grade).length;
-                  const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
-                  if (count === 0) return null;
-                  const colorMap: Record<string, string> = {
-                    explosive: 'hsl(0,80%,55%)', commerce: 'hsl(270,80%,60%)', intent: 'hsl(45,80%,55%)',
-                    spread: 'hsl(200,70%,55%)', react: 'hsl(150,60%,55%)', spark: 'hsl(220,10%,35%)',
-                  };
-                  const labelMap: Record<string, string> = {
-                    explosive: 'Explosive', commerce: 'Commerce', intent: 'Intent',
-                    spread: 'Spread', react: 'React', spark: 'Spark',
-                  };
-                  return (
-                    <div key={grade} className="flex items-center gap-2 mb-2 last:mb-0">
-                      <span className="text-[10px] font-medium w-16" style={{ color: colorMap[grade] }}>{labelMap[grade]}</span>
-                      <div className="flex-1 h-2 bg-[hsl(220,15%,18%)] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: colorMap[grade] }} />
-                      </div>
-                      <span className="text-[10px] text-[hsl(220,10%,50%)] w-6 text-right font-mono">{count}</span>
+          {/* Grade Distribution */}
+          {Object.keys(gradeDistrib).length > 0 && (
+            <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-3">
+              <div className="text-[10px] font-bold text-[#9CA3AF] mb-2 uppercase tracking-[0.5px]">등급 분포</div>
+              {Object.entries(gradeDistrib).sort(([,a],[,b]) => b - a).map(([grade, count]) => {
+                const g = GRADE_CONFIG[grade];
+                const pct = trends.length > 0 ? (count / trends.length) * 100 : 0;
+                return (
+                  <div key={grade} className="flex items-center gap-2 mb-2 last:mb-0">
+                    <span className="text-[10px] font-semibold w-16" style={{ color: g?.color }}>{g?.label || grade}</span>
+                    <div className="flex-1 h-[5px] bg-[#F3F4F6] rounded overflow-hidden">
+                      <div className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: g?.color }} />
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    <span className="text-[10px] text-[#9CA3AF] w-6 text-right font-mono">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-            <div className="pt-1">
-              <p className="text-[10px] text-[hsl(220,10%,30%)] font-medium uppercase tracking-wider mb-2">빠른 실행</p>
-              <div className="space-y-1.5">
-                {[
-                  { label: 'Pre/Post 분석', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-                  { label: '경쟁사 벤치마크', icon: <Eye className="w-3.5 h-3.5" /> },
-                  { label: '캠페인 시뮬레이션', icon: <Zap className="w-3.5 h-3.5" /> },
-                ].map(action => (
-                  <button
-                    key={action.label}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[hsl(220,15%,18%)] bg-[hsl(220,15%,12%)] text-xs text-[hsl(220,10%,55%)] hover:border-[hsl(270,80%,55%,0.3)] hover:text-white transition-colors"
-                  >
-                    <span className="text-[hsl(270,80%,60%)]">{action.icon}</span>
-                    {action.label}
-                    <ChevronRight className="w-3 h-3 ml-auto opacity-30" />
-                  </button>
-                ))}
-              </div>
+          {/* Quick Actions */}
+          <div>
+            <p className="text-[10px] text-[#9CA3AF] font-semibold mb-2 uppercase tracking-wider">빠른 실행</p>
+            <div className="space-y-1.5">
+              {[
+                { label: 'Pre/Post 분석', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                { label: '경쟁사 벤치마크', icon: <Globe className="w-3.5 h-3.5" /> },
+                { label: '캠페인 시뮬레이션', icon: <Zap className="w-3.5 h-3.5" /> },
+              ].map(action => (
+                <button
+                  key={action.label}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] text-xs text-[#374151] hover:bg-[#EFF6FF] hover:border-[#BFDBFE] hover:text-[#2563EB] transition-colors"
+                >
+                  <span className="text-[#2563EB]">{action.icon}</span>
+                  {action.label}
+                  <ChevronRight className="w-3 h-3 ml-auto opacity-30" />
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -5,41 +5,41 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, TrendingUp, Users, BarChart3, Search, Bell,
-  Settings, LogOut, ChevronLeft, Building2, Target, Zap,
-  Star, GitCompare, Brain, LineChart, ShoppingBag, Menu, X
+  Settings, LogOut, ChevronLeft, Star, Target, Zap,
+  GitCompare, LineChart, Menu, Globe, Lightbulb, Rocket
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 const entertainmentNav = [
-  { label: '대시보드', path: '/b2b', icon: LayoutDashboard },
-  { label: '소속 아티스트', path: '/b2b/my-artists', icon: Star },
-  { label: '트렌드 모니터', path: '/b2b/trends', icon: TrendingUp },
-  { label: 'Pre/Post 분석', path: '/b2b/pre-post', icon: GitCompare },
-  { label: '경쟁사 모니터링', path: '/b2b/competitors', icon: Target },
-  { label: '캠페인 임팩트', path: '/b2b/campaigns', icon: Zap },
-  { label: '시장 인텔리전스', path: '/b2b/market', icon: LineChart },
+  { section: 'Overview', items: [
+    { label: '대시보드', path: '/b2b', icon: LayoutDashboard },
+    { label: 'Radar', path: '/b2b/radar', icon: Target, badge: 3 },
+  ]},
+  { section: 'Intelligence', items: [
+    { label: 'Artists', path: '/b2b/artists', icon: Star },
+    { label: 'Brands', path: '/b2b/brands', icon: BarChart3 },
+    { label: 'Campaigns', path: '/b2b/campaigns', icon: Zap },
+    { label: 'Benchmark', path: '/b2b/benchmark', icon: GitCompare },
+  ]},
+  { section: 'Markets', items: [
+    { label: 'Markets', path: '/b2b/markets', icon: Globe },
+    { label: 'Recommendations', path: '/b2b/rec', icon: Lightbulb },
+  ]},
+  { section: 'Activation', items: [
+    { label: 'Activation Studio', path: '/b2b/studio', icon: Rocket },
+  ]},
 ];
 
-const brandNav = [
-  { label: '대시보드', path: '/b2b', icon: LayoutDashboard },
-  { label: '스타 탐색', path: '/b2b/discovery', icon: Search },
-  { label: '트렌드 모니터', path: '/b2b/trends', icon: TrendingUp },
-  { label: 'Pre/Post 분석', path: '/b2b/pre-post', icon: GitCompare },
-  { label: '벤치마크', path: '/b2b/benchmark', icon: BarChart3 },
-  { label: '캠페인 ROI', path: '/b2b/campaigns', icon: Zap },
-  { label: '시장 인텔리전스', path: '/b2b/market', icon: LineChart },
-];
+const brandNav = entertainmentNav; // Same for now
 
 const B2BLayout = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -57,7 +57,6 @@ const B2BLayout = () => {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
@@ -66,34 +65,23 @@ const B2BLayout = () => {
   });
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/b2b/login', { replace: true });
-    }
-    if (!authLoading && user && isFetched && !memLoading && !membership) {
+    if (!authLoading && !user) navigate('/b2b/login', { replace: true });
+    if (!authLoading && user && isFetched && !memLoading && !membership)
       navigate('/b2b/onboarding', { replace: true });
-    }
   }, [authLoading, memLoading, isFetched, user, membership, navigate]);
 
-  // Close search on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Debounced search
   const handleSearch = useCallback((q: string) => {
     setSearchQuery(q);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (!q.trim()) {
-      setSearchResults([]);
-      setSearchOpen(false);
-      return;
-    }
+    if (!q.trim()) { setSearchResults([]); setSearchOpen(false); return; }
     searchTimerRef.current = setTimeout(async () => {
       const { data } = await (supabase as any)
         .from('ktrenz_stars')
@@ -108,8 +96,8 @@ const B2BLayout = () => {
 
   if (authLoading || memLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(220,20%,8%)]">
-        <Loader2 className="w-6 h-6 animate-spin text-[hsl(220,10%,40%)]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5]">
+        <Loader2 className="w-6 h-6 animate-spin text-[#9CA3AF]" />
       </div>
     );
   }
@@ -117,169 +105,170 @@ const B2BLayout = () => {
   if (!user || !membership) return null;
 
   const org = membership.org;
-  const navItems = org.org_type === 'entertainment' ? entertainmentNav : brandNav;
+  const navGroups = org.org_type === 'entertainment' ? entertainmentNav : brandNav;
+  const sideW = sidebarCollapsed ? 'w-[56px]' : 'w-[220px]';
+  const mainML = sidebarCollapsed ? 'ml-[56px]' : 'ml-[220px]';
 
   return (
-    <div className="min-h-screen flex bg-[hsl(220,20%,8%)]">
-      {/* 사이드바 */}
+    <div className="min-h-screen bg-[#F0F2F5]">
+      {/* ── SIDEBAR ── */}
       <aside className={cn(
-        "fixed left-0 top-0 h-full z-40 bg-[hsl(220,18%,10%)] border-r border-[hsl(220,15%,15%)] flex flex-col transition-all duration-200",
-        sidebarOpen ? "w-56" : "w-14"
+        "fixed left-0 top-0 h-full z-40 bg-[#0F1B35] flex flex-col transition-all duration-200",
+        sideW
       )}>
-        {/* 로고 */}
-        <div className="h-14 flex items-center px-3 border-b border-[hsl(220,15%,15%)] gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[hsl(270,80%,60%)] to-[hsl(200,80%,50%)] flex items-center justify-center shrink-0">
-            <TrendingUp className="w-4 h-4 text-white" />
-          </div>
-          {sidebarOpen && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-bold text-white truncate">K·TrenZ</span>
-              <span className="text-[10px] text-[hsl(270,80%,60%)] font-medium">B2B 플랫폼</span>
-            </div>
+        {/* Logo */}
+        <div className="px-5 pt-5 pb-4 border-b border-white/[0.08]">
+          {!sidebarCollapsed ? (
+            <>
+              <div className="text-lg font-extrabold text-white tracking-tight">Ktrenz</div>
+              <div className="text-[10px] text-white/40 mt-0.5 uppercase tracking-[1.5px]">Business Intelligence</div>
+            </>
+          ) : (
+            <div className="text-lg font-extrabold text-white text-center">K</div>
           )}
         </div>
 
-        {/* 조직 정보 */}
-        {sidebarOpen && (
-          <div className="px-3 py-3 border-b border-[hsl(220,15%,15%)]">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-[hsl(220,15%,18%)] flex items-center justify-center text-xs">
-                {org.org_type === 'entertainment' ? '🏢' : '🏷️'}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{org.name}</p>
-                <p className="text-[10px] text-[hsl(220,10%,45%)]">
-                  {org.org_type === 'entertainment' ? '엔터테인먼트' : '브랜드'}
-                </p>
-              </div>
+        {/* Nav groups */}
+        <nav className="flex-1 overflow-y-auto">
+          {navGroups.map(group => (
+            <div key={group.section}>
+              {!sidebarCollapsed && (
+                <div className="px-5 pt-[18px] pb-[6px] text-[9px] font-bold text-white/30 uppercase tracking-[1.5px]">
+                  {group.section}
+                </div>
+              )}
+              {group.items.map(item => {
+                const active = location.pathname === item.path || (item.path === '/b2b' && location.pathname === '/b2b');
+                const isExactActive = item.path === '/b2b' ? location.pathname === '/b2b' : location.pathname.startsWith(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    title={item.label}
+                    className={cn(
+                      "relative flex items-center gap-[10px] px-5 py-[9px] text-[13px] transition-all",
+                      isExactActive
+                        ? "bg-[rgba(59,130,246,0.18)] text-[#60A5FA] font-semibold"
+                        : "text-white/60 hover:bg-white/[0.06] hover:text-white"
+                    )}
+                  >
+                    {isExactActive && (
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#3B82F6] rounded-r" />
+                    )}
+                    <item.icon className="w-[15px] h-[15px] shrink-0" />
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                    {!sidebarCollapsed && 'badge' in item && item.badge && (
+                      <span className="ml-auto bg-[#EF4444] text-white text-[10px] font-bold px-[6px] py-px rounded-[10px]">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
-          </div>
-        )}
-
-        {/* 네비게이션 */}
-        <nav className="flex-1 p-2 space-y-0.5 overflow-auto">
-          {navItems.map(item => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                title={item.label}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
-                  active
-                    ? 'bg-[hsl(270,80%,55%,0.15)] text-[hsl(270,80%,70%)] font-semibold'
-                    : 'text-[hsl(220,10%,50%)] hover:bg-[hsl(220,15%,15%)] hover:text-white'
-                )}
-              >
-                <item.icon className="w-4 h-4 shrink-0" />
-                {sidebarOpen && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
+          ))}
         </nav>
 
-        {/* 하단 */}
-        <div className="p-2 border-t border-[hsl(220,15%,15%)] space-y-1">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[hsl(220,10%,50%)] hover:bg-[hsl(220,15%,15%)] hover:text-white w-full"
-          >
-            {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            {sidebarOpen && <span>접기</span>}
-          </button>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[hsl(220,10%,50%)] hover:bg-[hsl(220,15%,15%)] hover:text-white w-full"
-          >
-            <LogOut className="w-4 h-4" />
-            {sidebarOpen && <span>로그아웃</span>}
-          </button>
+        {/* Bottom */}
+        <div className="mt-auto px-5 py-4 border-t border-white/[0.08]">
+          {!sidebarCollapsed && (
+            <>
+              <div className="bg-[rgba(59,130,246,0.2)] border border-[rgba(59,130,246,0.4)] text-[#60A5FA] text-[11px] font-semibold px-3 py-[6px] rounded-[6px] text-center mb-[10px]">
+                Pro Plan
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+                  {user.email?.[0]?.toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs text-white/70 font-medium truncate">{org.name}</div>
+                  <div className="text-[10px] text-white/35 truncate">{user.email}</div>
+                </div>
+              </div>
+            </>
+          )}
+          <div className="flex gap-1 mt-3">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-white/50 hover:bg-white/[0.06] hover:text-white text-xs"
+            >
+              {sidebarCollapsed ? <Menu className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={signOut}
+              className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-white/50 hover:bg-white/[0.06] hover:text-white text-xs"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* 메인 영역 */}
-      <div className={cn("flex-1 flex flex-col transition-all duration-200", sidebarOpen ? "ml-56" : "ml-14")}>
-        {/* 상단 바 */}
-        <header className="h-14 border-b border-[hsl(220,15%,15%)] bg-[hsl(220,18%,10%)] flex items-center px-4 gap-4 sticky top-0 z-30">
-          {/* AI 검색 */}
-          <div className="flex-1 max-w-xl relative" ref={searchRef}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(220,10%,35%)]" />
-            <Input
-              value={searchQuery}
-              onChange={e => handleSearch(e.target.value)}
-              onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
-              placeholder="스타 검색 — 이름으로 검색하세요..."
-              className="pl-10 bg-[hsl(220,15%,12%)] border-[hsl(220,15%,18%)] text-white placeholder:text-[hsl(220,10%,30%)] h-9 text-sm"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[hsl(220,10%,30%)] bg-[hsl(220,15%,18%)] px-1.5 py-0.5 rounded">⌘K</span>
-
-            {/* Search dropdown */}
-            {searchOpen && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,20%)] rounded-lg shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
-                {searchResults.map((star: any) => (
-                  <button
-                    key={star.id}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[hsl(220,15%,16%)] transition-colors text-left"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearchQuery('');
-                      // Navigate to star detail or add to tracked
-                      navigate(`/b2b/artist/${star.id}`);
-                    }}
-                  >
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[hsl(220,15%,18%)] shrink-0">
-                      {star.image_url ? (
-                        <img src={star.image_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[hsl(220,10%,35%)] text-sm font-bold">
-                          {star.display_name?.[0]}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-white font-medium truncate">{star.display_name}</p>
-                      <p className="text-xs text-[hsl(220,10%,45%)] truncate">
-                        {star.name_ko && star.name_ko !== star.display_name ? `${star.name_ko} · ` : ''}
-                        {star.star_type === 'group' ? '그룹' : star.star_type === 'member' ? '멤버' : '솔로'}
-                        {star.agency ? ` · ${star.agency}` : ''}
-                      </p>
-                    </div>
-                    <Star className="w-3.5 h-3.5 text-[hsl(220,10%,30%)] shrink-0" />
-                  </button>
-                ))}
-              </div>
-            )}
-            {searchOpen && searchQuery && searchResults.length === 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,20%)] rounded-lg shadow-2xl p-4 z-50">
-                <p className="text-sm text-[hsl(220,10%,40%)] text-center">검색 결과가 없습니다</p>
-              </div>
-            )}
-          </div>
-
-          {/* 필터 */}
+      {/* ── MAIN ── */}
+      <div className={cn("flex flex-col min-h-screen transition-all duration-200", mainML)}>
+        {/* Topbar */}
+        <header className="h-[52px] bg-white border-b border-[#E5E7EB] flex items-center justify-between px-6 sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <select className="bg-[hsl(220,15%,12%)] border border-[hsl(220,15%,18%)] text-[hsl(220,10%,60%)] text-xs rounded-md px-2 py-1.5">
-              <option>최근 7일</option>
-              <option>최근 30일</option>
-              <option>최근 90일</option>
-            </select>
+            <span className="text-xs text-[#9CA3AF]">
+              Stars Intelligence › <span className="text-[#374151] font-semibold">Overview</span>
+            </span>
           </div>
-
-          {/* 알림 */}
-          <button className="relative p-2 rounded-lg hover:bg-[hsl(220,15%,15%)] text-[hsl(220,10%,50%)]">
-            <Bell className="w-4 h-4" />
-          </button>
-
-          {/* 사용자 */}
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[hsl(270,60%,50%)] to-[hsl(200,60%,50%)] flex items-center justify-center text-white text-xs font-bold">
-              {user.email?.[0]?.toUpperCase()}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative w-72" ref={searchRef}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9CA3AF]" />
+              <input
+                value={searchQuery}
+                onChange={e => handleSearch(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+                placeholder="스타 검색..."
+                className="w-full pl-9 pr-3 py-[6px] rounded-[6px] border border-[#E5E7EB] bg-[#F9FAFB] text-[13px] text-[#374151] placeholder:text-[#9CA3AF] outline-none focus:border-[#93C5FD]"
+              />
+              {searchOpen && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] rounded-lg shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+                  {searchResults.map((star: any) => (
+                    <button
+                      key={star.id}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB] transition-colors text-left"
+                      onClick={() => { setSearchOpen(false); setSearchQuery(''); navigate(`/b2b/artist/${star.id}`); }}
+                    >
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#F3F4F6] shrink-0">
+                        {star.image_url ? (
+                          <img src={star.image_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">
+                            {star.display_name?.[0]}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] text-[#111827] font-medium truncate">{star.display_name}</p>
+                        <p className="text-[11px] text-[#9CA3AF] truncate">
+                          {star.name_ko && star.name_ko !== star.display_name ? `${star.name_ko} · ` : ''}
+                          {star.agency || ''}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            <button className="relative w-8 h-8 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-[#6B7280] hover:bg-[#E5E7EB]">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-[5px] right-[5px] w-[7px] h-[7px] bg-[#EF4444] rounded-full border border-white" />
+            </button>
+
+            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB] hover:bg-[#E5E7EB]">
+              ROI 시뮬레이터
+            </button>
+            <button className="px-[14px] py-[6px] rounded-[6px] text-[12px] font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8]">
+              + 캠페인 등록
+            </button>
           </div>
         </header>
 
-        {/* 콘텐츠 */}
+        {/* Content */}
         <main className="flex-1 overflow-auto">
           <Outlet context={{ org, membership }} />
         </main>
