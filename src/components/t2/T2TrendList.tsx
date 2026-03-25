@@ -73,7 +73,7 @@ function formatAge(dateStr: string): string {
 
 interface T2TrendListProps {
   items: TrendTile[];
-  watchedSet: Set<string>;
+  watchedStarSet: Set<string>;
   onTileClick: (tile: TrendTile) => void;
   selectedTileId: string | null;
   hasMore?: boolean;
@@ -81,7 +81,7 @@ interface T2TrendListProps {
   gridMode?: boolean;
 }
 
-const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, onLoadMore, gridMode }: T2TrendListProps) => {
+const T2TrendList = ({ items, watchedStarSet, onTileClick, selectedTileId, hasMore, onLoadMore, gridMode }: T2TrendListProps) => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const track = useTrackEvent();
@@ -171,7 +171,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
     )}>
       {items.map((item, idx) => {
         const catConfig = CATEGORY_CONFIG[item.category];
-        const isMyArtist = watchedSet.has(item.wikiEntryId);
+        const isMyArtist = item.starId ? watchedStarSet.has(item.starId) : false;
         const isSelected = selectedTileId === item.id;
         const rank = idx + 1;
         const rawSourceImg = sanitizeImageUrl(item.sourceImageUrl);
