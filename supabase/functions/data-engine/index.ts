@@ -336,28 +336,23 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
   const stars = await getActiveStars(sb);
   if (stars.length === 0) return { status: "no_artists" };
 
-  // name_ko 매핑 (ktrenz_stars에서 직접)
-  const koNameMap = new Map<string, string>();
-  for (const s of stars) {
-    if (s.name_ko) koNameMap.set(s.wiki_entry_id, s.name_ko);
-  }
-
-  const wikiIds = stars.map(s => s.wiki_entry_id);
-  const { data: artists } = await sb.from("wiki_entries").select("id, title").in("schema_type", ["artist", "member"]).in("id", wikiIds);
-  if (!artists?.length) return { status: "no_artists" };
-
-  const totalCount = artists.length;
+  const totalCount = stars.length;
   const groupSize = Math.max(5, Math.ceil(totalCount / 10));
   const totalGroups = Math.ceil(totalCount / groupSize);
   const delayMs = totalGroups > 1 ? Math.min(500, Math.floor(15_000 / (totalGroups - 1))) : 0;
 
   let launched = 0;
-  for (const artist of artists) {
+  for (const star of stars) {
     const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ artistName: artist.title, koreanName: koNameMap.get(artist.id) || null, wikiEntryId: artist.id }),
-    }).catch((e) => console.warn(`[data-engine] Naver News for ${artist.title} error:`, e.message));
+      body: JSON.stringify({
+        artistName: star.display_name,
+        koreanName: star.name_ko || null,
+        starId: star.id,
+        wikiEntryId: star.wiki_entry_id || null,
+      }),
+    }).catch((e) => console.warn(`[data-engine] Naver News for ${star.display_name} error:`, e.message));
     fireAndForget(p);
     launched++;
     if (launched % groupSize === 0 && launched < totalCount) {
