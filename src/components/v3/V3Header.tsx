@@ -206,7 +206,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
                       {searchResults.map((result) => (
                         <button
                           key={result.id}
-                          onClick={() => handleResultClick(result.slug)}
+                          onClick={() => handleResultClick(result)}
                           className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
                         >
                           <Avatar className="w-10 h-10 rounded-lg shrink-0">
