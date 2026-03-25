@@ -270,7 +270,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate">
                   {progressText && !claimed ? `${progressText} · ` : ""}{t(mission.descKey)}
                 </p>
               </div>
