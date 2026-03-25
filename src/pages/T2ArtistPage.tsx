@@ -11,7 +11,16 @@ import { ArrowLeft, Calendar, Clock, ExternalLink, Flame, MessageCircle, Share2,
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+
+const GRADE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  spark: { label: "Spark", icon: Zap, color: "hsl(45 100% 55%)" },
+  react: { label: "React", icon: TrendingUp, color: "hsl(200 80% 55%)" },
+  spread: { label: "Spread", icon: Share2, color: "hsl(130 60% 45%)" },
+  intent: { label: "Intent", icon: ShoppingCart, color: "hsl(30 90% 55%)" },
+  commerce: { label: "Commerce", icon: Star, color: "hsl(340 80% 55%)" },
+  explosive: { label: "Explosive", icon: Flame, color: "hsl(0 85% 55%)" },
+};
 
 const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa: string; labelZh: string; color: string }> = {
   brand:   { label: "Brand",   labelKo: "브랜드",  labelJa: "ブランド",    labelZh: "品牌",   color: "hsl(210, 70%, 55%)" },
