@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CATEGORY_CONFIG } from "./T2TrendTreemap";
+import T2BrandLogo from "./T2BrandLogo";
 import type { TrendTile } from "./T2TrendTreemap";
 
 interface BrandInfo {
@@ -51,17 +52,15 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
           <div className="flex items-center gap-3">
             {/* Brand logo */}
             <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden border border-border/40">
-              {brand.domain ? (
-                <img
-                  src={`https://www.google.com/s2/favicons?domain=${brand.domain}&sz=128`}
-                  alt={brand.brand_name}
-                  className="w-10 h-10 object-contain"
-                />
-              ) : (
-                <span className="text-xl font-black text-muted-foreground">
-                  {brand.brand_name.charAt(0)}
-                </span>
-              )}
+              <T2BrandLogo
+                brandId={brand.id}
+                brandName={brand.brand_name}
+                domain={brand.domain}
+                logoUrl={brand.logo_url}
+                alt={brand.brand_name}
+                className="w-10 h-10 object-contain"
+                fallbackClassName="text-xl font-black"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <SheetTitle className="text-base font-bold text-foreground truncate">
