@@ -349,6 +349,22 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
 
+  const { data: followedTriggerIds } = useQuery({
+    queryKey: ["t2-keyword-follows-list", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("trigger_id")
+        .eq("user_id", user.id);
+      return (data ?? []).map((row: any) => row.trigger_id).filter(Boolean) as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 10_000,
+  });
+
+  const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
+
   const { data: isCollecting = false } = useQuery({
     queryKey: ["t2-pipeline-running"],
     queryFn: async () => {
