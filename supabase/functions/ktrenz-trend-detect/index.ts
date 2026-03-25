@@ -562,6 +562,7 @@ async function extractCommercialKeywords(
   starCategory: string = "kpop",
   nameKo: string | null = null,
   groupNameKo: string | null = null,
+  globalStarNames?: Map<string, string>,
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
