@@ -111,44 +111,30 @@ const V3DesktopHeader = ({ activeTab, onTabChange }: V3DesktopHeaderProps) => {
       ? `display_name.ilike.%${q}%,name_ko.ilike.%${q}%`
       : `display_name.ilike.%${q}%,name_ko.ilike.%${q}%,display_name.ilike.%${qNoSpace}%,name_ko.ilike.%${qNoSpace}%`;
     try {
-      const starsPromise = (supabase as any)
+      const { data: starsData } = await (supabase as any)
         .from("ktrenz_stars")
-        .select("id, display_name, name_ko, wiki_entry_id, is_group")
+        .select("id, display_name, name_ko, wiki_entry_id, star_type, image_url")
         .eq("is_active", true)
         .or(starFilter)
-        .limit(10)
-        .then((r: any) => r.data || [])
-        .then((d: any) => d, () => [] as any[]);
+        .limit(10);
 
-      const kwPromise = (supabase as any)
+      const { data: kwData } = await (supabase as any)
         .from("ktrenz_trend_triggers")
         .select("id, keyword, keyword_ko, artist_name, keyword_category, star_id")
         .eq("status", "active")
         .or(`keyword.ilike.%${q}%,keyword_ko.ilike.%${q}%,keyword_en.ilike.%${q}%`)
         .order("detected_at", { ascending: false })
-        .limit(8)
-        .then((r: any) => r.data || [])
-        .then((d: any) => d, () => [] as any[]);
+        .limit(8);
 
-      const [starsData, kwData] = await Promise.all([starsPromise, kwPromise]);
+      const stars = starsData ?? [];
+      const kws = kwData ?? [];
 
-      // Build results directly from ktrenz_stars
-      const results: any[] = [];
-      for (const s of starsData) {
-        let imageUrl: string | null = null;
-        if (s.wiki_entry_id) {
-          const { data: entry } = await supabase
-            .from("wiki_entries")
-            .select("image_url")
-            .eq("id", s.wiki_entry_id)
-            .maybeSingle();
-          imageUrl = (entry as any)?.image_url ?? null;
-        }
-        results.push({
-          id: s.id, title: s.display_name, slug: s.id,
-          image_url: imageUrl, schema_type: s.is_group ? "artist" : "member", starId: s.id,
-        });
-      }
+      const results: any[] = stars.map((s: any) => ({
+        id: s.id, title: s.display_name, slug: s.id,
+        image_url: s.image_url ?? null,
+        schema_type: s.star_type === "group" ? "artist" : "member",
+        starId: s.id,
+      }));
       setSearchResults(results.slice(0, 8));
 
       const seenKw = new Set<string>();
