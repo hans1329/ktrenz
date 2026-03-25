@@ -1,5 +1,6 @@
 // ktrenz-schedule-predict: 네이버 뉴스 기반 AI 일정 추론
 // OpenAI tool calling으로 고확률 이벤트만 추출
+// SSOT: ktrenz_stars.id (star_id) 기반
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { wikiEntryId, artistName, mode } = await req.json();
+    const { starId, wikiEntryId, artistName, mode } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -79,9 +80,8 @@ Deno.serve(async (req) => {
     if (mode === "batch") {
       const { data: stars } = await sb
         .from("ktrenz_stars")
-        .select("wiki_entry_id, display_name, name_ko, id")
-        .eq("is_active", true)
-        .not("wiki_entry_id", "is", null);
+        .select("id, display_name, name_ko")
+        .eq("is_active", true);
 
       if (!stars?.length) {
         return new Response(
@@ -95,8 +95,7 @@ Deno.serve(async (req) => {
 
       for (const star of stars) {
         try {
-          // 최근 72시간 뉴스 스냅샷 가져오기
-          const newsData = await getRecentNews(sb, star.wiki_entry_id);
+          const newsData = await getRecentNews(sb, star.id);
           if (!newsData || newsData.length === 0) continue;
 
           const predictions = await runAIPrediction(
@@ -107,7 +106,7 @@ Deno.serve(async (req) => {
           );
 
           if (predictions.length > 0) {
-            await savePredictions(sb, star.wiki_entry_id, star.id, predictions, newsData);
+            await savePredictions(sb, star.id, predictions, newsData);
             predicted += predictions.length;
           }
           processed++;
@@ -126,26 +125,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 단일 아티스트 모드
-    if (!wikiEntryId) {
-      return new Response(
-        JSON.stringify({ success: false, error: "wikiEntryId required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // 단일 아티스트 모드 - starId 우선, wikiEntryId fallback
+    let resolvedStarId = starId || null;
+
+    if (!resolvedStarId && wikiEntryId) {
+      const { data: starRow } = await sb
+        .from("ktrenz_stars")
+        .select("id, display_name, name_ko")
+        .eq("wiki_entry_id", wikiEntryId)
+        .eq("is_active", true)
+        .maybeSingle();
+      resolvedStarId = starRow?.id || null;
     }
 
-    // star_id 조회
-    const { data: starRow } = await sb
+    if (!resolvedStarId) {
+      // starId도 wikiEntryId도 없으면 에러
+      if (starId) {
+        // starId가 직접 전달된 경우 star 정보 조회
+      } else {
+        return new Response(
+          JSON.stringify({ success: false, error: "starId or wikiEntryId required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // star 정보 조회
+    const { data: starInfo } = await sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko")
-      .eq("wiki_entry_id", wikiEntryId)
-      .eq("is_active", true)
+      .eq("id", resolvedStarId)
       .maybeSingle();
 
-    const name = artistName || starRow?.display_name || "Unknown";
-    const nameKo = starRow?.name_ko || null;
+    const name = artistName || starInfo?.display_name || "Unknown";
+    const nameKo = starInfo?.name_ko || null;
 
-    const newsData = await getRecentNews(sb, wikiEntryId);
+    const newsData = await getRecentNews(sb, resolvedStarId);
     if (!newsData || newsData.length === 0) {
       return new Response(
         JSON.stringify({ success: true, predictions: [], message: "No recent news" }),
@@ -155,7 +170,7 @@ Deno.serve(async (req) => {
 
     const predictions = await runAIPrediction(openaiKey, name, nameKo, newsData);
     if (predictions.length > 0) {
-      await savePredictions(sb, wikiEntryId, starRow?.id || null, predictions, newsData);
+      await savePredictions(sb, resolvedStarId, predictions, newsData);
     }
 
     return new Response(
@@ -171,7 +186,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// ── 최근 뉴스 데이터 가져오기 ──
+// ── 최근 뉴스 데이터 가져오기 (star_id 기반, collected_at 사용) ──
 interface NewsItem {
   title: string;
   description: string;
@@ -179,16 +194,17 @@ interface NewsItem {
   image: string | null;
 }
 
-async function getRecentNews(sb: any, wikiEntryId: string): Promise<NewsItem[]> {
+async function getRecentNews(sb: any, starId: string): Promise<NewsItem[]> {
   const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
 
+  // star_id 기반으로 조회 (collected_at 사용)
   const { data: snapshots } = await sb
     .from("ktrenz_data_snapshots")
-    .select("raw_response, created_at")
-    .eq("wiki_entry_id", wikiEntryId)
+    .select("raw_response, collected_at")
+    .eq("star_id", starId)
     .eq("platform", "naver_news")
-    .gte("created_at", cutoff)
-    .order("created_at", { ascending: false })
+    .gte("collected_at", cutoff)
+    .order("collected_at", { ascending: false })
     .limit(5);
 
   if (!snapshots?.length) return [];
@@ -219,61 +235,54 @@ async function runAIPrediction(
   openaiKey: string,
   artistName: string,
   nameKo: string | null,
-  newsData: { title: string; description: string }[],
+  newsData: NewsItem[],
 ): Promise<any[]> {
-  const today = new Date().toISOString().split("T")[0];
-  const headlineText = newsData
-    .map((n, i) => `${i + 1}. ${n.title}${n.description ? ` — ${n.description}` : ""}`)
+  const today = new Date().toISOString().slice(0, 10);
+  const headlines = newsData
+    .slice(0, 30)
+    .map((n, i) => `${i + 1}. ${n.title}${n.description ? ` - ${n.description}` : ""}`)
     .join("\n");
 
-  const systemPrompt = `You are a K-pop industry schedule analyst. Your task is to extract ONLY high-confidence upcoming event predictions from news headlines about a specific artist.
-
-Rules:
-- Only extract events with concrete evidence (dates, official announcements, confirmed plans)
-- Minimum confidence: 0.7 (reject anything below)
-- Examples of HIGH confidence: "3월 28일 컴백 확정" → 0.95, "다음주 일본 투어" → 0.85
-- Examples of LOW confidence (SKIP): "컴백 가능성", "소문", speculation without dates
-- Travel predictions: If news mentions the artist is in a foreign city for X days, predict return date
-- If no high-confidence predictions exist, return empty array — this is perfectly fine
-- Today's date: ${today}
-- Do NOT predict past events`;
-
-  const userPrompt = `Artist: ${artistName}${nameKo ? ` (${nameKo})` : ""}
-
-Recent news headlines:
-${headlineText}
-
-Extract schedule predictions (only confidence >= 0.7):`;
-
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openaiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [TOOL_DEF],
-      tool_choice: { type: "function", function: { name: "predict_schedule" } },
-      temperature: 0.1,
-    }),
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    console.error("[schedule-predict] OpenAI error:", resp.status, errText);
-    return [];
-  }
-
-  const data = await resp.json();
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-  if (!toolCall?.function?.arguments) return [];
+  const systemPrompt = `You are a K-pop schedule prediction AI. Today is ${today}. 
+Analyze news headlines for "${artistName}"${nameKo ? ` (${nameKo})` : ""} and extract upcoming schedule predictions.
+Only predict events with HIGH confidence (≥ 0.7). Focus on:
+- Concert/tour dates
+- Album/single release dates  
+- TV show appearances
+- Fan meetings
+- Award show appearances
+- Travel/arrival schedules
+Do NOT predict past events. All predictions must be for dates on or after ${today}.`;
 
   try {
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Here are the recent news headlines:\n\n${headlines}\n\nExtract any high-confidence schedule predictions.` },
+        ],
+        tools: [TOOL_DEF],
+        tool_choice: { type: "function", function: { name: "predict_schedule" } },
+        temperature: 0.1,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.warn("[schedule-predict] OpenAI error:", err.slice(0, 200));
+      return [];
+    }
+
+    const data = await resp.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) return [];
+
     const parsed = JSON.parse(toolCall.function.arguments);
     const predictions = (parsed.predictions || []).filter(
       (p: any) => p.confidence >= 0.7 && p.event_title,
@@ -286,11 +295,10 @@ Extract schedule predictions (only confidence >= 0.7):`;
   }
 }
 
-// ── 예측 결과 저장 ──
+// ── 예측 결과 저장 (star_id 기반) ──
 async function savePredictions(
   sb: any,
-  wikiEntryId: string,
-  starId: string | null,
+  starId: string,
   predictions: any[],
   newsData: NewsItem[],
 ) {
@@ -298,11 +306,10 @@ async function savePredictions(
   await sb
     .from("ktrenz_schedule_predictions")
     .update({ status: "expired" })
-    .eq("wiki_entry_id", wikiEntryId)
+    .eq("star_id", starId)
     .eq("status", "active");
 
   const rows = predictions.map((p: any) => ({
-    wiki_entry_id: wikiEntryId,
     star_id: starId,
     event_title: p.event_title,
     event_date: p.event_date || null,

@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { artistName, koreanName, wikiEntryId } = body;
+    const { artistName, koreanName, wikiEntryId, starId } = body;
 
     if (!artistName) {
       return new Response(
@@ -232,14 +232,15 @@ Deno.serve(async (req) => {
     );
 
     // DB 업데이트
-    if (wikiEntryId) {
+    if (starId || wikiEntryId) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const sb = createClient(supabaseUrl, supabaseKey);
 
-      // 스냅샷 저장
+      // 스냅샷 저장 (star_id 우선, wiki_entry_id fallback)
       await sb.from("ktrenz_data_snapshots").insert({
-        wiki_entry_id: wikiEntryId,
+        star_id: starId || null,
+        wiki_entry_id: wikiEntryId || null,
         platform: "naver_news",
         metrics: {
           mention_count: mentionCount,
@@ -249,9 +250,6 @@ Deno.serve(async (req) => {
         },
         raw_response: { top_items: topMentions },
       });
-
-      // buzz_multi 스냅샷의 source_breakdown에 naver 데이터 반영
-      // → crawl-x-mentions의 naver 소스 대신 이 데이터가 사용됨
     }
 
     return new Response(

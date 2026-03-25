@@ -2953,6 +2953,7 @@ export type Database = {
           metrics: Json
           platform: string
           raw_response: Json | null
+          star_id: string | null
           wiki_entry_id: string | null
         }
         Insert: {
@@ -2963,6 +2964,7 @@ export type Database = {
           metrics?: Json
           platform: string
           raw_response?: Json | null
+          star_id?: string | null
           wiki_entry_id?: string | null
         }
         Update: {
@@ -2973,6 +2975,7 @@ export type Database = {
           metrics?: Json
           platform?: string
           raw_response?: Json | null
+          star_id?: string | null
           wiki_entry_id?: string | null
         }
         Relationships: [
@@ -2981,6 +2984,13 @@ export type Database = {
             columns: ["guard_log_id"]
             isOneToOne: false
             referencedRelation: "ktrenz_guard_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_data_snapshots_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
             referencedColumns: ["id"]
           },
           {

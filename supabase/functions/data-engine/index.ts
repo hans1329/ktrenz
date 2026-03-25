@@ -336,28 +336,23 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
   const stars = await getActiveStars(sb);
   if (stars.length === 0) return { status: "no_artists" };
 
-  // name_ko 매핑 (ktrenz_stars에서 직접)
-  const koNameMap = new Map<string, string>();
-  for (const s of stars) {
-    if (s.name_ko) koNameMap.set(s.wiki_entry_id, s.name_ko);
-  }
-
-  const wikiIds = stars.map(s => s.wiki_entry_id);
-  const { data: artists } = await sb.from("wiki_entries").select("id, title").in("schema_type", ["artist", "member"]).in("id", wikiIds);
-  if (!artists?.length) return { status: "no_artists" };
-
-  const totalCount = artists.length;
+  const totalCount = stars.length;
   const groupSize = Math.max(5, Math.ceil(totalCount / 10));
   const totalGroups = Math.ceil(totalCount / groupSize);
   const delayMs = totalGroups > 1 ? Math.min(500, Math.floor(15_000 / (totalGroups - 1))) : 0;
 
   let launched = 0;
-  for (const artist of artists) {
+  for (const star of stars) {
     const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-      body: JSON.stringify({ artistName: artist.title, koreanName: koNameMap.get(artist.id) || null, wikiEntryId: artist.id }),
-    }).catch((e) => console.warn(`[data-engine] Naver News for ${artist.title} error:`, e.message));
+      body: JSON.stringify({
+        artistName: star.display_name,
+        koreanName: star.name_ko || null,
+        starId: star.id,
+        wikiEntryId: star.wiki_entry_id || null,
+      }),
+    }).catch((e) => console.warn(`[data-engine] Naver News for ${star.display_name} error:`, e.message));
     fireAndForget(p);
     launched++;
     if (launched % groupSize === 0 && launched < totalCount) {
@@ -662,26 +657,40 @@ Deno.serve(async (req) => {
         );
       }
 
-      // naver_news (개별 아티스트)
+      // naver_news (개별 아티스트 - star_id 기반)
       if (module === "naver_news") {
-        const { data: artist } = await sb.from("wiki_entries").select("title").eq("id", wikiEntryId).single();
-        if (!artist) {
+        // starId가 직접 전달된 경우 사용, 아니면 wikiEntryId로 star 조회
+        let resolvedStarId = body.starId || null;
+        let resolvedName = body.artistName || null;
+        let resolvedNameKo: string | null = null;
+
+        if (!resolvedStarId && wikiEntryId) {
+          const { data: starInfo } = await sb.from("ktrenz_stars").select("id, display_name, name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
+          resolvedStarId = starInfo?.id || null;
+          resolvedName = resolvedName || starInfo?.display_name || null;
+          resolvedNameKo = starInfo?.name_ko || null;
+        } else if (resolvedStarId) {
+          const { data: starInfo } = await sb.from("ktrenz_stars").select("display_name, name_ko").eq("id", resolvedStarId).maybeSingle();
+          resolvedName = resolvedName || starInfo?.display_name || null;
+          resolvedNameKo = starInfo?.name_ko || null;
+        }
+
+        if (!resolvedName) {
           return new Response(JSON.stringify({ success: false, error: "Artist not found" }),
             { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        // ktrenz_stars에서 name_ko 가져오기
-        const { data: starInfo } = await sb.from("ktrenz_stars").select("name_ko").eq("wiki_entry_id", wikiEntryId).maybeSingle();
+
         const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-          body: JSON.stringify({ artistName: artist.title, koreanName: starInfo?.name_ko || null, wikiEntryId }),
+          body: JSON.stringify({ artistName: resolvedName, koreanName: resolvedNameKo, starId: resolvedStarId, wikiEntryId: wikiEntryId || null }),
         }).then(async () => {
           // 네이버 뉴스 수집 후 schedule predict 트리거
           await fetch(`${supabaseUrl}/functions/v1/ktrenz-schedule-predict`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
-            body: JSON.stringify({ wikiEntryId, artistName: artist.title }),
-          }).catch((e) => console.warn(`[data-engine] Schedule predict for ${artist.title} error:`, e.message));
+            body: JSON.stringify({ starId: resolvedStarId }),
+          }).catch((e) => console.warn(`[data-engine] Schedule predict for ${resolvedName} error:`, e.message));
         }).catch((e) => console.warn(`[data-engine] Naver News single fire error:`, e.message));
         fireAndForget(p);
         return new Response(
