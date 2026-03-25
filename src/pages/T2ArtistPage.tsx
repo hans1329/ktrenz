@@ -212,23 +212,23 @@ const T2ArtistPage = () => {
 
 
   const { data: isWatched } = useQuery({
-    queryKey: ["t2-watched-check", user?.id, star?.wiki_entry_id],
+    queryKey: ["t2-watched-check", user?.id, star?.resolvedWikiEntryId],
     queryFn: async () => {
-      if (!user?.id || !star?.wiki_entry_id) return false;
+      if (!user?.id || !star?.resolvedWikiEntryId) return false;
       const { data } = await supabase
         .from("ktrenz_watched_artists")
         .select("id")
         .eq("user_id", user.id)
-        .eq("wiki_entry_id", star.wiki_entry_id)
+        .eq("wiki_entry_id", star.resolvedWikiEntryId)
         .maybeSingle();
       return !!data;
     },
-    enabled: !!user?.id && !!star?.wiki_entry_id,
+    enabled: !!user?.id && !!star?.resolvedWikiEntryId,
   });
 
   const toggleWatch = useCallback(async () => {
     if (!user?.id || !star) return;
-    if (!star.wiki_entry_id) {
+    if (!star.resolvedWikiEntryId) {
       toast.error(language === "ko" ? "이 아티스트는 아직 연동되지 않았습니다" : "This artist is not linked yet");
       return;
     }
@@ -239,20 +239,20 @@ const T2ArtistPage = () => {
           .from("ktrenz_watched_artists")
           .delete()
           .eq("user_id", user.id)
-          .eq("wiki_entry_id", star.wiki_entry_id);
+          .eq("wiki_entry_id", star.resolvedWikiEntryId);
         toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
       } else {
         await supabase
           .from("ktrenz_watched_artists")
           .delete()
           .eq("user_id", user.id)
-          .eq("wiki_entry_id", star.wiki_entry_id);
+          .eq("wiki_entry_id", star.resolvedWikiEntryId);
         await supabase
           .from("ktrenz_watched_artists")
           .insert({
             user_id: user.id,
             artist_name: star.display_name,
-            wiki_entry_id: star.wiki_entry_id,
+            wiki_entry_id: star.resolvedWikiEntryId,
           });
         toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
       }
