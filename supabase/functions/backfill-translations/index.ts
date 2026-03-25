@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       .not("context", "is", null)
       .is("context_ko", null)
       .order("influence_index", { ascending: false })
-      .limit(5);
+      .limit(20);
 
     if (error) throw error;
     if (!rows?.length) {
