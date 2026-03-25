@@ -349,6 +349,22 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   const watchedSet = useMemo(() => new Set(watchedWikiIds ?? []), [watchedWikiIds]);
 
+  const { data: followedTriggerIds } = useQuery({
+    queryKey: ["t2-keyword-follows-list", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [] as string[];
+      const { data } = await supabase
+        .from("ktrenz_keyword_follows" as any)
+        .select("trigger_id")
+        .eq("user_id", user.id);
+      return (data ?? []).map((row: any) => row.trigger_id).filter(Boolean) as string[];
+    },
+    enabled: !!user?.id,
+    staleTime: 10_000,
+  });
+
+  const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
+
   const { data: isCollecting = false } = useQuery({
     queryKey: ["t2-pipeline-running"],
     queryFn: async () => {
@@ -476,11 +492,11 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return dedupeTrendTiles(triggers, sortMode);
   }, [triggers, sortMode]);
 
-  // My artists' keywords
+  // My picks' keywords (tracked keywords shown in main hero)
   const myKeywords = useMemo(() => {
-    if (!dedupedTriggers.length || !watchedSet.size) return [];
-    return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
-  }, [dedupedTriggers, watchedSet]);
+    if (!dedupedTriggers.length || !followedTriggerSet.size) return [];
+    return dedupedTriggers.filter(t => followedTriggerSet.has(t.id));
+  }, [dedupedTriggers, followedTriggerSet]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
@@ -492,13 +508,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     }
     if (!dedupedTriggers.length) return [];
     if (selectedCategory === "my") {
-      return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
+      return dedupedTriggers.filter(t => followedTriggerSet.has(t.id));
     }
     if (selectedCategory === "all") {
       return dedupedTriggers.filter(t => t.category !== "music");
     }
     return dedupedTriggers.filter(t => t.category === selectedCategory);
-  }, [dedupedTriggers, selectedCategory, watchedSet, mergedCategories]);
+  }, [dedupedTriggers, selectedCategory, followedTriggerSet, mergedCategories]);
 
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
