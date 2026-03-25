@@ -630,7 +630,7 @@ const T2KeywordDetail = () => {
                 {t2l("whyThisTrend", language)}
               </h2>
               {context ? (
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{context}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{context}</p>
               ) : (
                 <p className="text-xs text-muted-foreground italic">{t2l("noContext", language)}</p>
               )}
