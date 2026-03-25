@@ -55,7 +55,7 @@ function formatEventDate(dateStr: string, lang: string): string {
 const T2ArtistPage = () => {
   const { starId } = useParams<{ starId: string }>();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const track = useTrackEvent();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -350,9 +350,9 @@ const T2ArtistPage = () => {
              {star.agency && (
                <p className="text-sm text-muted-foreground">{star.agency}</p>
              )}
-             <p className="text-xs text-primary font-bold mt-0.5">
-               {keywords?.length ?? 0} {language === "ko" ? "활성 키워드" : "active keywords"}
-             </p>
+              <p className="text-xs text-primary font-bold mt-0.5">
+                {keywords?.length ?? 0} {t("artist.activeKeywords")}
+              </p>
            </div>
            {user && (
              <button
@@ -366,9 +366,7 @@ const T2ArtistPage = () => {
                )}
              >
                <Star className={cn("w-3.5 h-3.5", isWatched && "fill-amber-500")} />
-               {isWatched
-                 ? (language === "ko" ? "관심중" : "Watching")
-                 : (language === "ko" ? "관심 등록" : "Watch")}
+                {isWatched ? t("artist.watching") : t("artist.watch")}
              </button>
            )}
          </div>
@@ -382,28 +380,38 @@ const T2ArtistPage = () => {
             const GradeIcon = gc.icon;
             return (
               <div className="rounded-xl border border-border bg-card p-4">
+                {/* Header row */}
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("artist.trendGrade")}
+                  </p>
+                  {artistGrade.influence_score > 0 && (
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t("artist.influenceScore")}
+                    </p>
+                  )}
+                </div>
+
+                {/* Grade + Score */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center"
                       style={{ backgroundColor: `${gc.color}20` }}
                     >
-                      <GradeIcon className="w-4 h-4" style={{ color: gc.color }} />
+                      <GradeIcon className="w-4.5 h-4.5" style={{ color: gc.color }} />
                     </div>
-                    <div>
-                      <Badge
-                        className="text-xs px-2 py-0.5 border-0 font-bold"
-                        style={{ backgroundColor: `${gc.color}20`, color: gc.color }}
-                      >
-                        {gc.label}
-                      </Badge>
-                    </div>
+                    <span
+                      className="text-lg font-black"
+                      style={{ color: gc.color }}
+                    >
+                      {gc.label}
+                    </span>
                   </div>
                   {artistGrade.influence_score > 0 && (
-                    <div className="text-right">
-                      <div className="text-lg font-black text-foreground">{artistGrade.influence_score.toFixed(2)}</div>
-                      <div className="text-[10px] text-muted-foreground">Influence Score</div>
-                    </div>
+                    <span className="text-2xl font-black text-foreground tabular-nums">
+                      {artistGrade.influence_score.toFixed(2)}
+                    </span>
                   )}
                 </div>
 
@@ -415,7 +423,7 @@ const T2ArtistPage = () => {
                       return (
                         <span
                           key={grade}
-                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full"
                           style={{ backgroundColor: `${g?.color || 'hsl(0 0% 50%)'}15`, color: g?.color || 'hsl(var(--muted-foreground))' }}
                         >
                           {g?.label || grade}: {count as number}
@@ -434,7 +442,7 @@ const T2ArtistPage = () => {
       <section className="mb-8">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <MessageCircle className="w-4 h-4 -scale-x-100" />
-          {language === "ko" ? "트렌드 키워드" : "Trend Keywords"}
+          {t("artist.trendKeywords")}
         </h2>
 
         {kwLoading ? (
