@@ -189,21 +189,20 @@ Deno.serve(async (req) => {
     if (triggerId) {
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url, source_url")
+        .select("id, source_image_url, source_url, star_id")
         .eq("id", triggerId)
         .single();
       if (data) targets = [data];
     } else if (triggerIds?.length) {
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url, source_url")
+        .select("id, source_image_url, source_url, star_id")
         .in("id", triggerIds);
       if (data) targets = data;
     } else if (backfill) {
-      // 백필: active 트리거 중 아직 Supabase Storage에 없는 것 (null 포함)
       const { data } = await sb
         .from("ktrenz_trend_triggers")
-        .select("id, source_image_url, source_url")
+        .select("id, source_image_url, source_url, star_id")
         .eq("status", "active")
         .order("detected_at", { ascending: false })
         .limit(limit);
