@@ -508,7 +508,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     }
     if (!dedupedTriggers.length) return [];
     if (selectedCategory === "my") {
-      return dedupedTriggers.filter(t => watchedSet.has(t.wikiEntryId));
+      return dedupedTriggers.filter(t => followedTriggerSet.has(t.id));
     }
     if (selectedCategory === "all") {
       return dedupedTriggers.filter(t => t.category !== "music");
