@@ -1945,6 +1945,16 @@ async function detectForMember(
       continue;
     }
 
+    // 글로벌 스타 이름과 일치하는 키워드 차단 (크로스 아티스트 오염 방지)
+    if (globalStarNames) {
+      const matchedStar = globalStarNames.get(kwLower) || globalStarNames.get(kwKoLower) || globalStarNames.get(kwEnLower)
+        || globalStarNames.get(kwStripped);
+      if (matchedStar) {
+        console.warn(`[trend-detect] Global star name keyword filtered at insert: "${candidate.row.keyword}" (matches star: ${matchedStar})`);
+        continue;
+      }
+    }
+
     // 노이즈 필터
     if (INSERT_NOISE_BLACKLIST.has(kwLower) || INSERT_NOISE_BLACKLIST.has(kwKoLower)) {
       console.warn(`[trend-detect] Noise keyword filtered at insert: "${candidate.row.keyword}"`);
