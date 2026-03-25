@@ -402,16 +402,7 @@ async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
     console.error(`[cron] Auto-settle failed:`, e);
   }
 
-  // 2. Crawl blip.kr schedules
-  try {
-    const resp = await fetch(`${supabaseUrl}/functions/v1/crawl-blip-schedule`, {
-      method: "POST", headers, body: JSON.stringify({}),
-    });
-    const result = await resp.json();
-    console.log(`[cron] Blip schedule crawl result:`, result);
-  } catch (e) {
-    console.error(`[cron] Blip crawl failed:`, e);
-  }
+  // 2. Blip schedule crawl removed — replaced by AI schedule prediction (ktrenz-schedule-predict)
 }
 
 function getNextPhase(currentPhase: string): string | null {
