@@ -4182,7 +4182,9 @@ export type Database = {
           grade_breakdown: Json | null
           grade_score: number
           id: string
+          influence_score: number | null
           keyword_count: number
+          score_details: Json | null
           star_id: string
           updated_at: string
         }
@@ -4193,7 +4195,9 @@ export type Database = {
           grade_breakdown?: Json | null
           grade_score?: number
           id?: string
+          influence_score?: number | null
           keyword_count?: number
+          score_details?: Json | null
           star_id: string
           updated_at?: string
         }
@@ -4204,7 +4208,9 @@ export type Database = {
           grade_breakdown?: Json | null
           grade_score?: number
           id?: string
+          influence_score?: number | null
           keyword_count?: number
+          score_details?: Json | null
           star_id?: string
           updated_at?: string
         }
@@ -4404,6 +4410,8 @@ export type Database = {
           status: string
           trend_grade: string | null
           trend_potential: number | null
+          trend_score: number | null
+          trend_score_details: Json | null
           trigger_source: string
           trigger_type: string
           wiki_entry_id: string | null
@@ -4446,6 +4454,8 @@ export type Database = {
           status?: string
           trend_grade?: string | null
           trend_potential?: number | null
+          trend_score?: number | null
+          trend_score_details?: Json | null
           trigger_source?: string
           trigger_type?: string
           wiki_entry_id?: string | null
@@ -4488,6 +4498,8 @@ export type Database = {
           status?: string
           trend_grade?: string | null
           trend_potential?: number | null
+          trend_score?: number | null
+          trend_score_details?: Json | null
           trigger_source?: string
           trigger_type?: string
           wiki_entry_id?: string | null
