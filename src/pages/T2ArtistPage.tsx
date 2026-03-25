@@ -55,7 +55,7 @@ function formatEventDate(dateStr: string, lang: string): string {
 const T2ArtistPage = () => {
   const { starId } = useParams<{ starId: string }>();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const track = useTrackEvent();
   const { user } = useAuth();
   const queryClient = useQueryClient();
