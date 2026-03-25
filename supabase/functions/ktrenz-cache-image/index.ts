@@ -186,17 +186,52 @@ async function fetchBodyImageCandidates(
   }
 }
 
-// 후보 이미지 중 가장 큰 것을 찾아 반환
-async function findLargestImage(candidates: string[]): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
+// ── OpenAI Vision: 텍스트 오버레이 이미지 감지 ──
+async function isTextHeavyImage(imageUrl: string, openaiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 20,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: 'Is this a CLEAN photo of a person/scene, or a TEXT-HEAVY image (card news, infographic, banner, chart, text overlay)? Reply ONLY "clean" or "text".' },
+            { type: "image_url", image_url: { url: imageUrl, detail: "low" } },
+          ],
+        }],
+      }),
+    });
+    if (!res.ok) return false; // API 실패 시 통과
+    const data = await res.json();
+    const answer = (data.choices?.[0]?.message?.content || "").trim().toLowerCase();
+    const isText = answer.includes("text");
+    if (isText) console.log(`[cache-image] Vision: text-heavy image detected → ${imageUrl.slice(0, 80)}`);
+    return isText;
+  } catch {
+    return false; // 에러 시 통과
+  }
+}
+
+// 후보 이미지 중 가장 큰 클린 이미지를 찾아 반환 (Vision 필터 적용)
+async function findLargestImage(
+  candidates: string[],
+  openaiKey?: string,
+): Promise<{ url: string; data: Uint8Array; contentType: string } | null> {
   let best: { url: string; data: Uint8Array; contentType: string } | null = null;
-  // 최대 6개만 시도 (속도 제한)
   for (const url of candidates.slice(0, 10)) {
     const result = await downloadImage(url);
     if (!result) continue;
+    // 30KB 이상이고 Vision 키가 있으면 텍스트 이미지 여부 검사
+    if (openaiKey && result.data.length > LOW_RES_THRESHOLD_BYTES) {
+      const isText = await isTextHeavyImage(url, openaiKey);
+      if (isText) continue; // 텍스트 이미지 건너뛰기
+    }
     if (!best || result.data.length > best.data.length) {
       best = { url, ...result };
     }
-    // 100KB 이상이면 충분히 고해상도 — 즉시 반환
     if (result.data.length > 100_000) break;
   }
   return best;
@@ -254,6 +289,7 @@ Deno.serve(async (req) => {
     );
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
     let targets: any[] = [];
 
     // select에 artist_name, keyword, metadata 추가 (이름 매칭용)
@@ -340,7 +376,7 @@ Deno.serve(async (req) => {
         console.log(`[cache-image] No OG, trying body images for ${trigger.id} (nameVariants: ${allNameVariants.join(",")})`);
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
-          const best = await findLargestImage(candidates);
+          const best = await findLargestImage(candidates, openaiKey);
           if (best && best.data.length > LOW_RES_THRESHOLD_BYTES) {
             url = best.url;
             console.log(`[cache-image] Found body image (${best.data.length}b) for ${trigger.id}: ${best.url}`);
@@ -377,27 +413,30 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // og:image가 저해상도(30KB 이하)이면 본문에서 더 큰 이미지를 찾는다
+      // og:image 품질 검사: 저해상도이거나 텍스트 오버레이 이미지면 본문에서 더 나은 이미지를 찾는다
       let finalImage = image;
       let finalUrl = url;
-      if (image.data.length < LOW_RES_THRESHOLD_BYTES && trigger.source_url) {
-        console.log(`[cache-image] Low-res og:image (${image.data.length}b) for ${trigger.id}, scanning body images with name filter`);
+      const isLowRes = image.data.length < LOW_RES_THRESHOLD_BYTES;
+      const isTextOverlay = !isLowRes && openaiKey ? await isTextHeavyImage(url!, openaiKey) : false;
+      const needsBetterImage = isLowRes || isTextOverlay;
+      if (needsBetterImage && trigger.source_url) {
+        console.log(`[cache-image] ${isTextOverlay ? 'Text-heavy' : 'Low-res'} og:image (${image.data.length}b) for ${trigger.id}, scanning body images`);
         // 1차: 이름 매칭 본문 이미지
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         if (candidates.length > 0) {
-          const better = await findLargestImage(candidates);
+          const better = await findLargestImage(candidates, openaiKey);
           if (better && better.data.length > image.data.length * 1.5) {
             console.log(`[cache-image] ✓ Found better name-matched image (${better.data.length}b vs ${image.data.length}b) for ${trigger.id}: ${better.url}`);
             finalImage = better;
             finalUrl = better.url;
           }
         }
-        // 2차: 이름 매칭 실패 시, 필터 없이 본문 최대 이미지 시도 (저해상도 og보다는 나은 이미지 확보)
-        if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES) {
+        // 2차: 1차에서 개선 못 했으면 필터 없이 본문 최대 이미지 시도
+        if (finalImage === image) {
           console.log(`[cache-image] Name-matched images insufficient, trying unfiltered body images for ${trigger.id}`);
           const unfilteredCandidates = await fetchBodyImageCandidates(trigger.source_url, []);
           if (unfilteredCandidates.length > 0) {
-            const bestUnfiltered = await findLargestImage(unfilteredCandidates);
+            const bestUnfiltered = await findLargestImage(unfilteredCandidates, openaiKey);
             if (bestUnfiltered && bestUnfiltered.data.length > image.data.length * 1.5) {
               console.log(`[cache-image] ✓ Found better unfiltered body image (${bestUnfiltered.data.length}b) for ${trigger.id}: ${bestUnfiltered.url}`);
               finalImage = bestUnfiltered;
@@ -405,8 +444,8 @@ Deno.serve(async (req) => {
             }
           }
         }
-        // 3차: 본문 이미지도 저해상도면 아티스트 이미지로 폴백
-        if (finalImage.data.length < LOW_RES_THRESHOLD_BYTES && trigger.star_id) {
+        // 3차: 여전히 개선 못 했으면 아티스트 이미지로 폴백
+        if (finalImage === image && trigger.star_id) {
           const { data: starData } = await sb
             .from("ktrenz_stars")
             .select("image_url")
