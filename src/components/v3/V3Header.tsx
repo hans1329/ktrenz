@@ -92,7 +92,7 @@ const V3Header = ({ centerSlot, rightSlot }: { centerSlot?: React.ReactNode; rig
             .in("schema_type", ["artist", "member"] as const)
             .limit(8)
             .then((r) => r.data || [])
-            .catch(() => [] as SearchResult[]);
+            .then(d => d, () => [] as SearchResult[]);
 
           const kwPromise = (supabase as any)
             .from("ktrenz_trend_triggers")
