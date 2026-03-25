@@ -129,6 +129,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
       return new Set((data ?? []).map((d: any) => d.trigger_id as string));
     },
     enabled: !!user?.id,
+  });
   const followedIds = followedIdsRaw instanceof Set ? followedIdsRaw : new Set<string>();
 
   const handleToggleFollow = async (item: TrendTile) => {
