@@ -1947,7 +1947,9 @@ async function trackExistingKeywords(
           updates.peak_at = new Date().toISOString();
         }
         const currentPeak = updates.peak_score ?? trigger.peak_score ?? rawCount;
-        updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
+        // 최소 분모 10으로 설정하여 낮은 baseline에서의 influence_index 과대 팽창 방지
+        const effectiveBaseline = Math.max(baseline, 10);
+        updates.influence_index = Math.round(((currentPeak - baseline) / effectiveBaseline) * 10000) / 100;
       }
       await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
 
