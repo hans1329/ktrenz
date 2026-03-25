@@ -350,6 +350,62 @@ const T2ArtistPage = () => {
          </div>
       ) : null}
 
+      {/* Trend Grade Card */}
+      {artistGrade && (
+        <section className="mb-6">
+          {(() => {
+            const gc = GRADE_CONFIG[artistGrade.grade] || GRADE_CONFIG.spark;
+            const GradeIcon = gc.icon;
+            return (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${gc.color}20` }}
+                    >
+                      <GradeIcon className="w-4 h-4" style={{ color: gc.color }} />
+                    </div>
+                    <div>
+                      <Badge
+                        className="text-xs px-2 py-0.5 border-0 font-bold"
+                        style={{ backgroundColor: `${gc.color}20`, color: gc.color }}
+                      >
+                        {gc.label}
+                      </Badge>
+                    </div>
+                  </div>
+                  {artistGrade.influence_score > 0 && (
+                    <div className="text-right">
+                      <div className="text-lg font-black text-foreground">{artistGrade.influence_score.toFixed(2)}</div>
+                      <div className="text-[10px] text-muted-foreground">Influence Score</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grade breakdown */}
+                {artistGrade.grade_breakdown && Object.keys(artistGrade.grade_breakdown).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(artistGrade.grade_breakdown).map(([grade, count]) => {
+                      const g = GRADE_CONFIG[grade];
+                      return (
+                        <span
+                          key={grade}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${g?.color || 'hsl(0 0% 50%)'}15`, color: g?.color || 'hsl(var(--muted-foreground))' }}
+                        >
+                          {g?.label || grade}: {count as number}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </section>
+      )}
+
       {/* Keywords section */}
       <section className="mb-8">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
