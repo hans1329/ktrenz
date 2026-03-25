@@ -238,6 +238,23 @@ const AdminKeywordMonitor = () => {
           })}
         </div>
 
+        {/* Category filter chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {CATEGORY_FILTERS.filter(cf => cf.key === "all" || (categoryCounts[cf.key] || 0) > 0).map(cf => (
+            <button
+              key={cf.key}
+              onClick={() => setFilterCategory(cf.key)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                filterCategory === cf.key
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
+              }`}
+            >
+              {cf.label} ({cf.key === "all" ? triggers?.length ?? 0 : categoryCounts[cf.key] || 0})
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="text-center text-muted-foreground py-12">데이터 로딩 중...</div>
         ) : (
