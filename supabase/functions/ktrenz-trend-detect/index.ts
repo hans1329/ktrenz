@@ -940,6 +940,12 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         console.warn(`[trend-detect] Blocked measurement keyword: "${k.keyword}"`);
         return false;
       }
+      // 체중/신체/다이어트 관련 비상업적 키워드 차단
+      const BODY_PATTERN = /(?:체중|몸무게|키\s?\d|다이어트\s?인증|살\s?빠|감량|식단\s?공개|체지방|bmi|body\s?weight)/i;
+      if (BODY_PATTERN.test(kwLower) || BODY_PATTERN.test(kwKo)) {
+        console.warn(`[trend-detect] Blocked body/weight keyword: "${k.keyword}"`);
+        return false;
+      }
       if (NOISE_BLACKLIST.has(kwLower) || NOISE_BLACKLIST.has(kwKo)) {
         console.warn(`[trend-detect] Blocked noise keyword: "${k.keyword}"`);
         return false;
