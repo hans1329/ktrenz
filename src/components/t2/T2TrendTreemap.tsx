@@ -311,7 +311,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   // Fetch user's watched artists (including group members) — returns { wikiIds, starIds }
   const { data: watchedData } = useQuery({
-    queryKey: ["t2-watched-artists", user?.id],
+    queryKey: ["t2-watched-artists-v2", user?.id],
     queryFn: async () => {
       if (!user?.id) return { wikiIds: [] as string[], starIds: [] as string[] };
 
