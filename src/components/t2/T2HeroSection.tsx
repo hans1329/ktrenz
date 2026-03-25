@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -114,8 +114,16 @@ interface T2HeroSectionProps {
 
 const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => {
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { language } = useLanguage();
+
+  const handleCardClick = useCallback((item: TrendTile) => {
+    setSearchParams((prev) => {
+      prev.set("modal", item.id);
+      return prev;
+    });
+  }, [setSearchParams]);
 
   // Fetch user's active bet keywords
   const { data: betKeywords = [] } = useQuery({
@@ -324,10 +332,11 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           );
 
           return (
-            <div
+            <button
               key={item.id}
+              onClick={() => handleCardClick(item)}
               className={cn(
-                "flex-none snap-start rounded-[20px] overflow-hidden text-left relative flex flex-col pointer-events-none select-none",
+                "flex-none snap-start rounded-[20px] overflow-hidden text-left relative flex flex-col cursor-pointer active:scale-[0.97] transition-transform",
                 idx === 0 ? "w-[260px]" : "w-[180px]"
               )}
               style={{ background: gradient }}
@@ -404,7 +413,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                   ))}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
