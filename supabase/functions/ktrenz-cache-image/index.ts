@@ -433,7 +433,7 @@ Deno.serve(async (req) => {
           console.log(`[cache-image] Name-matched images insufficient, trying unfiltered body images for ${trigger.id}`);
           const unfilteredCandidates = await fetchBodyImageCandidates(trigger.source_url, []);
           if (unfilteredCandidates.length > 0) {
-            const bestUnfiltered = await findLargestImage(unfilteredCandidates);
+            const bestUnfiltered = await findLargestImage(unfilteredCandidates, openaiKey);
             if (bestUnfiltered && bestUnfiltered.data.length > image.data.length * 1.5) {
               console.log(`[cache-image] ✓ Found better unfiltered body image (${bestUnfiltered.data.length}b) for ${trigger.id}: ${bestUnfiltered.url}`);
               finalImage = bestUnfiltered;
