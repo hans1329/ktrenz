@@ -167,6 +167,58 @@ function sanitizeImageUrl(url: string | null): string | null {
   return url.replace(/&amp;/g, "&");
 }
 
+function normalizeForCompare(value: string): string {
+  return value.toLowerCase().replace(/[()\[\]{}'"`“”‘’·,\-_\s]+/g, "");
+}
+
+function collectNameVariants(...inputs: Array<string | null | undefined>): Set<string> {
+  const variants = new Set<string>();
+
+  for (const input of inputs) {
+    if (!input) continue;
+    const trimmed = input.trim();
+    if (!trimmed) continue;
+
+    variants.add(trimmed.toLowerCase());
+
+    const normalized = normalizeForCompare(trimmed);
+    if (normalized) variants.add(normalized);
+
+    const withoutParen = trimmed.replace(/\([^)]*\)/g, " ").trim();
+    if (withoutParen && withoutParen !== trimmed) {
+      variants.add(withoutParen.toLowerCase());
+      const normalizedWithoutParen = normalizeForCompare(withoutParen);
+      if (normalizedWithoutParen) variants.add(normalizedWithoutParen);
+    }
+
+    for (const match of trimmed.matchAll(/\(([^)]+)\)/g)) {
+      const inner = match[1]?.trim();
+      if (!inner) continue;
+      variants.add(inner.toLowerCase());
+      const normalizedInner = normalizeForCompare(inner);
+      if (normalizedInner) variants.add(normalizedInner);
+    }
+  }
+
+  return variants;
+}
+
+function matchesBlockedNameKeyword(
+  candidate: { keyword?: string | null; keyword_ko?: string | null; keyword_en?: string | null },
+  blockedNames: Set<string>,
+): boolean {
+  for (const value of [candidate.keyword, candidate.keyword_ko, candidate.keyword_en]) {
+    if (!value) continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    if (blockedNames.has(trimmed.toLowerCase()) || blockedNames.has(normalizeForCompare(trimmed))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 interface NaverNewsItem {
   title: string;
   originallink: string;
@@ -1776,12 +1828,24 @@ async function detectForMember(
   const backfillPromises: PromiseLike<unknown>[] = [];
   const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
-  // 아티스트/그룹명과 일치하는 키워드 차단용 셋 (정규화 포함)
-  const artistNameSet = new Set<string>();
-  for (const n of [member.display_name, member.name_ko, member.group_name, member.group_name_ko]) {
-    if (n) {
-      artistNameSet.add(n.toLowerCase());
-      artistNameSet.add(n.toLowerCase().replace(/[\s·,\-]+/g, ""));
+  // 아티스트/그룹/멤버 이름과 일치하는 키워드 차단용 셋 (정규화 + 괄호 변형 포함)
+  const artistNameSet = collectNameVariants(
+    member.display_name,
+    member.name_ko,
+    member.group_name,
+    member.group_name_ko,
+  );
+
+  if (member.id) {
+    const { data: relatedMembers } = await sb
+      .from("ktrenz_stars")
+      .select("display_name, name_ko")
+      .eq("group_star_id", member.id);
+
+    for (const related of relatedMembers || []) {
+      for (const variant of collectNameVariants(related.display_name, related.name_ko)) {
+        artistNameSet.add(variant);
+      }
     }
   }
 
@@ -1805,11 +1869,9 @@ async function detectForMember(
     const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
     const kwStripped = kwLower.replace(/[\s·,\-]+/g, "");
 
-    // 아티스트/그룹명과 일치하는 키워드 차단 (정규화 포함)
-    if (artistNameSet.has(kwLower) || artistNameSet.has(kwStripped) ||
-        (kwKoLower && (artistNameSet.has(kwKoLower) || artistNameSet.has(kwKoLower.replace(/[\s·,\-]+/g, "")))) ||
-        (kwEnLower && (artistNameSet.has(kwEnLower) || artistNameSet.has(kwEnLower.replace(/[\s·,\-]+/g, ""))))) {
-      console.warn(`[trend-detect] Artist name keyword filtered: "${candidate.row.keyword}"`);
+    // 아티스트/그룹/그룹 멤버 이름과 일치하는 키워드 차단
+    if (matchesBlockedNameKeyword(candidate.row, artistNameSet)) {
+      console.warn(`[trend-detect] Artist/member name keyword filtered: "${candidate.row.keyword}" (${member.display_name})`);
       continue;
     }
 
