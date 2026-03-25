@@ -159,6 +159,7 @@ const T2TrendList = ({ items, watchedSet, onTileClick, selectedTileId, hasMore, 
     }
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", item.id, user.id] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-tracked-keywords", user.id] });
   };
 
   return (
