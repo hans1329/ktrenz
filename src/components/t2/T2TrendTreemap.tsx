@@ -361,7 +361,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const watchedStarIds = watchedData?.starIds;
   const watchedStarSet = useMemo(() => new Set(watchedStarIds ?? []), [watchedStarIds]);
 
-  const { data: followedTriggerIds } = useQuery({
+  const { data: followedTriggerIds = [] } = useQuery({
     queryKey: ["t2-keyword-follows-list", user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as string[];
@@ -373,11 +373,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     },
     enabled: !!user?.id,
     staleTime: 10_000,
+    placeholderData: [],
   });
 
   const followedTriggerSet = useMemo(() => new Set(followedTriggerIds ?? []), [followedTriggerIds]);
 
-  const { data: predictedTriggerIds } = useQuery({
+  const { data: predictedTriggerIds = [] } = useQuery({
     queryKey: ["t2-predicted-trigger-ids", user?.id],
     queryFn: async () => {
       if (!user?.id) return [] as string[];
@@ -402,6 +403,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     },
     enabled: !!user?.id,
     staleTime: 10_000,
+    placeholderData: [],
   });
 
   const predictedTriggerSet = useMemo(() => new Set(predictedTriggerIds ?? []), [predictedTriggerIds]);
@@ -497,7 +499,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     queryKey: ["t2-trend-triggers", followedKey, predictedKey],
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
-    enabled: followedTriggerIds !== undefined && predictedTriggerIds !== undefined,
+    enabled: true,
     queryFn: async () => {
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
