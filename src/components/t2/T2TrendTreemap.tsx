@@ -492,11 +492,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     return dedupeTrendTiles(triggers, sortMode);
   }, [triggers, sortMode]);
 
-  // My picks' keywords (tracked keywords shown in main hero)
+  // My picks: keep existing watched-artist keywords and append explicitly tracked keywords
   const myKeywords = useMemo(() => {
-    if (!dedupedTriggers.length || !followedTriggerSet.size) return [];
-    return dedupedTriggers.filter(t => followedTriggerSet.has(t.id));
-  }, [dedupedTriggers, followedTriggerSet]);
+    if (!triggers?.length) return [];
+
+    const watchedKeywords = dedupedTriggers.filter((t) => watchedSet.has(t.wikiEntryId));
+    const trackedKeywords = triggers.filter((t) => followedTriggerSet.has(t.id));
+
+    const merged = new Map<string, TrendTile>();
+    [...watchedKeywords, ...trackedKeywords].forEach((item) => {
+      merged.set(item.id, item);
+    });
+
+    return Array.from(merged.values()).sort((a, b) => compareTrendPriority(a, b, sortMode));
+  }, [triggers, dedupedTriggers, watchedSet, followedTriggerSet, sortMode]);
 
   const filteredItems = useMemo(() => {
     // If mergedCategories provided, filter by multiple categories
@@ -508,13 +517,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     }
     if (!dedupedTriggers.length) return [];
     if (selectedCategory === "my") {
-      return dedupedTriggers.filter(t => followedTriggerSet.has(t.id));
+      return myKeywords;
     }
     if (selectedCategory === "all") {
       return dedupedTriggers.filter(t => t.category !== "music");
     }
     return dedupedTriggers.filter(t => t.category === selectedCategory);
-  }, [dedupedTriggers, selectedCategory, followedTriggerSet, mergedCategories]);
+  }, [dedupedTriggers, selectedCategory, followedTriggerSet, mergedCategories, myKeywords, dedupedShopTriggers]);
 
   const visibleBoxItems = useMemo(() => {
     // Treemap: prefer 1 keyword per artist, but fill up to 60 with extras if needed
