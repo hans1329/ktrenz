@@ -417,7 +417,7 @@ const T2ArtistPage = () => {
 
                 {/* Grade breakdown */}
                 {artistGrade.grade_breakdown && Object.keys(artistGrade.grade_breakdown).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <p className="text-[10px] text-muted-foreground mb-1.5">{t("artist.gradeBreakdownDesc")}</p>
                     {Object.entries(artistGrade.grade_breakdown).map(([grade, count]) => {
                       const g = GRADE_CONFIG[grade];
                       return (
