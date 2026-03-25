@@ -425,7 +425,7 @@ const T2ArtistPage = () => {
                         const hintKey = `artist.gradeHint.${grade}` as any;
                         return (
                           <div key={grade} className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-                            <span className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0 bg-foreground/10 text-foreground">
+                            <span className="text-xs font-bold text-foreground shrink-0">
                               {g?.label || grade}: {count as number}
                             </span>
                             <span className="text-[10px] text-muted-foreground truncate">
