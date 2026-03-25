@@ -212,26 +212,22 @@ const T2ArtistPage = () => {
 
 
   const { data: isWatched } = useQuery({
-    queryKey: ["t2-watched-check", user?.id, star?.resolvedWikiEntryId],
+    queryKey: ["t2-watched-check", user?.id, starId],
     queryFn: async () => {
-      if (!user?.id || !star?.resolvedWikiEntryId) return false;
+      if (!user?.id || !starId) return false;
       const { data } = await supabase
         .from("ktrenz_watched_artists")
         .select("id")
         .eq("user_id", user.id)
-        .eq("wiki_entry_id", star.resolvedWikiEntryId)
+        .eq("star_id", starId)
         .maybeSingle();
       return !!data;
     },
-    enabled: !!user?.id && !!star?.resolvedWikiEntryId,
+    enabled: !!user?.id && !!starId,
   });
 
   const toggleWatch = useCallback(async () => {
     if (!user?.id || !star) return;
-    if (!star.resolvedWikiEntryId) {
-      toast.error(language === "ko" ? "이 아티스트는 아직 연동되지 않았습니다" : "This artist is not linked yet");
-      return;
-    }
     setWatchLoading(true);
     try {
       if (isWatched) {
@@ -239,21 +235,17 @@ const T2ArtistPage = () => {
           .from("ktrenz_watched_artists")
           .delete()
           .eq("user_id", user.id)
-          .eq("wiki_entry_id", star.resolvedWikiEntryId);
+          .eq("star_id", starId);
         toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
       } else {
         await supabase
           .from("ktrenz_watched_artists")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("wiki_entry_id", star.resolvedWikiEntryId);
-        await supabase
-          .from("ktrenz_watched_artists")
-          .insert({
+          .upsert({
             user_id: user.id,
             artist_name: star.display_name,
-            wiki_entry_id: star.resolvedWikiEntryId,
-          });
+            star_id: starId,
+            wiki_entry_id: star.resolvedWikiEntryId || null,
+          }, { onConflict: "user_id,star_id", ignoreDuplicates: true } as any);
         toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
       }
       queryClient.invalidateQueries({ queryKey: ["t2-watched-check"] });
