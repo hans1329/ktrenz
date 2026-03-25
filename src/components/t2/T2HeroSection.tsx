@@ -43,6 +43,7 @@ function buildTrackingSparkline(
   baselineScore?: number | null,
   _expiredAt?: string | null,
 ) {
+  const nowMs = Date.now();
   let points: { t: number; v: number }[] = [];
 
   if (history && history.length >= 2) {
@@ -60,24 +61,28 @@ function buildTrackingSparkline(
     const base = Number(baselineScore ?? 0);
     points = [
       { t: start, v: base },
-      { t: Date.now(), v: base },
+      { t: nowMs, v: base },
     ];
   }
-  // Extend last point to current time so graph fills full width
-  const lastPt = points[points.length - 1];
-  if (lastPt && lastPt.t < Date.now() - 60000) {
-    points = [...points, { t: Date.now(), v: lastPt.v }];
+
+  const lastPoint = points[points.length - 1];
+  if (lastPoint && lastPoint.t < nowMs) {
+    points = [...points, { t: nowMs, v: lastPoint.v }];
+  } else if (lastPoint && lastPoint.t > nowMs) {
+    points[points.length - 1] = { ...lastPoint, t: nowMs };
   }
 
-  const startMs = points[0]?.t ?? Date.now();
-  const nowMs = Date.now();
+  const startMs = Math.min(points[0]?.t ?? nowMs, nowMs);
   const spanMs = Math.max(nowMs - startMs, 60 * 60 * 1000);
   const maxVal = Math.max(...points.map((point) => point.v), 1);
-  const stepX = (time: number) => Math.min(((time - startMs) / spanMs) * 100, 100);
+  const stepX = (time: number, index: number) => {
+    if (index === points.length - 1) return 100;
+    return Math.max(0, Math.min(((time - startMs) / spanMs) * 100, 100));
+  };
   const stepY = (value: number) => 36 - (value / maxVal) * 28;
 
   const path = points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${stepX(point.t).toFixed(1)},${stepY(point.v).toFixed(1)}`)
+    .map((point, index) => `${index === 0 ? "M" : "L"}${stepX(point.t, index).toFixed(1)},${stepY(point.v).toFixed(1)}`)
     .join(" ");
 
   const totalHours = Math.round(spanMs / (60 * 60 * 1000));
