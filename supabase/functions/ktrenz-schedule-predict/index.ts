@@ -292,7 +292,7 @@ async function savePredictions(
   wikiEntryId: string,
   starId: string | null,
   predictions: any[],
-  newsData: { title: string }[],
+  newsData: NewsItem[],
 ) {
   // 기존 active 예측 만료 처리
   await sb
@@ -311,6 +311,12 @@ async function savePredictions(
     confidence: p.confidence,
     reasoning: p.reasoning || null,
     source_headlines: newsData.map((n) => n.title).slice(0, 10),
+    source_articles: newsData.slice(0, 10).map((n) => ({
+      title: n.title,
+      description: n.description,
+      url: n.url,
+      image: n.image,
+    })),
     status: "active",
     expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   }));
