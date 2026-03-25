@@ -892,33 +892,37 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                     </defs>
                                     {(() => {
                                       const history = carouselTrackingMap?.get(item.id) ?? [];
+                                      const nowMs = Date.now();
                                       let pts: { t: number; v: number }[] = [];
                                       if (history.length >= 2) {
-                                        pts = history.map((h: any) => ({ t: new Date(h.tracked_at).getTime(), v: h.interest_score ?? 0 }));
+                                        pts = history.map((h: any) => ({ t: new Date(h.tracked_at).getTime(), v: Number(h.interest_score ?? 0) }));
                                       } else if (history.length === 1) {
                                         pts = [
-                                          { t: new Date(item.detectedAt).getTime(), v: item.baselineScore ?? 0 },
-                                          { t: new Date(history[0].tracked_at).getTime(), v: history[0].interest_score ?? 0 },
+                                          { t: new Date(item.detectedAt).getTime(), v: Number(item.baselineScore ?? 0) },
+                                          { t: new Date(history[0].tracked_at).getTime(), v: Number(history[0].interest_score ?? 0) },
                                         ];
                                       } else {
                                         const detMs = new Date(item.detectedAt).getTime();
-                                        const bv = item.baselineScore ?? 0;
-                                        pts = [{ t: detMs, v: bv }, { t: Date.now(), v: bv }];
+                                        const bv = Number(item.baselineScore ?? 0);
+                                        pts = [{ t: detMs, v: bv }, { t: nowMs, v: bv }];
                                       }
                                       if (pts.length < 2) return null;
-                                      // Extend last point to current time so graph fills full width
                                       const lastPt = pts[pts.length - 1];
-                                      if (lastPt.t < Date.now() - 60000) {
-                                        pts = [...pts, { t: Date.now(), v: lastPt.v }];
+                                      if (lastPt.t < nowMs) {
+                                        pts = [...pts, { t: nowMs, v: lastPt.v }];
+                                      } else if (lastPt.t > nowMs) {
+                                        pts[pts.length - 1] = { ...lastPt, t: nowMs };
                                       }
-                                      const startMs = pts[0].t;
-                                      const nowMs = Date.now();
+                                      const startMs = Math.min(pts[0].t, nowMs);
                                       const spanMs = Math.max(nowMs - startMs, 3600000);
                                       const maxVal = Math.max(...pts.map(p => p.v), 1);
-                                      const toX = (t: number) => Math.min(((t - startMs) / spanMs) * 100, 100);
+                                      const toX = (t: number, index: number) => {
+                                        if (index === pts.length - 1) return 100;
+                                        return Math.max(0, Math.min(((t - startMs) / spanMs) * 100, 100));
+                                      };
                                       const toY = (v: number) => 18 - (v / maxVal) * 14;
                                       const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
-                                      const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
+                                      const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t, i).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
                                       return (
                                         <>
                                           <path d={`${path} L100,20 L0,20 Z`} fill={`url(#cat-spark-${item.id})`} />

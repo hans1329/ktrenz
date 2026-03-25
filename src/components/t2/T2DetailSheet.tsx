@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -458,6 +458,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             <TrendingUp className="w-5 h-5 text-primary" />
             {getLocalizedKeyword(tile, language)}
           </SheetTitle>
+          <SheetDescription className="sr-only">{getLocalizedArtistName(tile, language)} trend detail</SheetDescription>
           {/* Artist + meta row */}
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <button
@@ -522,7 +523,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           className={cn("w-full h-full object-cover", isLogoOnly && "object-contain p-8 bg-muted")}
                           loading="lazy"
                           onError={(e) => {
-                            // On image load error, try artist image or hide
                             const target = e.currentTarget;
                             if (tile.artistImageUrl && target.src !== tile.artistImageUrl) {
                               target.src = tile.artistImageUrl;
@@ -531,8 +531,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                             }
                           }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                        {/* Track/Follow button — top-right corner */}
                         <button
                           onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
                           className={cn(
@@ -545,17 +543,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           <Crosshair className="w-3 h-3" />
                           {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
                         </button>
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                          <p className="text-[11px] font-bold text-white/90 line-clamp-2 leading-snug drop-shadow">
-                            {getLocalizedSourceTitle(tile, language)}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <ExternalLink className="w-2.5 h-2.5 text-white/60" />
-                            <span className="text-[10px] text-white/60">
-                              {tile.sourceUrl ? new URL(tile.sourceUrl).hostname.replace("www.", "") : ""}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     );
                   }
