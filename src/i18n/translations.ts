@@ -416,7 +416,7 @@ const translations: Record<string, Record<Language, string>> = {
   "artist.trendKeywords": { en: "Trend Keywords", ko: "트렌드 키워드", ja: "トレンドキーワード", zh: "趋势关键词" },
   "artist.watching": { en: "Watching", ko: "관심중", ja: "注目中", zh: "关注中" },
   "artist.watch": { en: "Watch", ko: "관심 등록", ja: "注目する", zh: "关注" },
-  "artist.gradeBreakdown": { en: "Grade Breakdown", ko: "등급 분포", ja: "グレード分布", zh: "等级分布" },
+  "artist.gradeBreakdownDesc": { en: "Keywords by trend stage", ko: "등급별 키워드 수", ja: "グレード別キーワード数", zh: "各等级关键词数" },
   "artist.popularVideos": { en: "Popular Videos", ko: "인기 영상", ja: "人気動画", zh: "热门视频" },
   "artist.recentVideoSummary": { en: "Recent Video Summary", ko: "최근 영상 요약", ja: "最近の動画まとめ", zh: "近期视频概要" },
   "artist.musicVideos": { en: "Music Videos", ko: "뮤직비디오", ja: "ミュージックビデオ", zh: "音乐视频" },
