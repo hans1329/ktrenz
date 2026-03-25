@@ -410,6 +410,13 @@ const translations: Record<string, Record<Language, string>> = {
   "deck.features": { en: "Features:", ko: "주요 기능:", ja: "機能:", zh: "功能:" },
 
   // ── Artist Detail Sections ──
+  "artist.trendGrade": { en: "Trend Grade", ko: "트렌드 등급", ja: "トレンドグレード", zh: "趋势等级" },
+  "artist.influenceScore": { en: "Influence Score", ko: "영향력 지수", ja: "影響力スコア", zh: "影响力指数" },
+  "artist.activeKeywords": { en: "active keywords", ko: "활성 키워드", ja: "アクティブキーワード", zh: "活跃关键词" },
+  "artist.trendKeywords": { en: "Trend Keywords", ko: "트렌드 키워드", ja: "トレンドキーワード", zh: "趋势关键词" },
+  "artist.watching": { en: "Watching", ko: "관심중", ja: "注目中", zh: "关注中" },
+  "artist.watch": { en: "Watch", ko: "관심 등록", ja: "注目する", zh: "关注" },
+  "artist.gradeBreakdown": { en: "Grade Breakdown", ko: "등급 분포", ja: "グレード分布", zh: "等级分布" },
   "artist.popularVideos": { en: "Popular Videos", ko: "인기 영상", ja: "人気動画", zh: "热门视频" },
   "artist.recentVideoSummary": { en: "Recent Video Summary", ko: "최근 영상 요약", ja: "最近の動画まとめ", zh: "近期视频概要" },
   "artist.musicVideos": { en: "Music Videos", ko: "뮤직비디오", ja: "ミュージックビデオ", zh: "音乐视频" },
