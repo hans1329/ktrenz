@@ -104,7 +104,7 @@ export default function T2BrandBadges({ keywords, artistName, max = 3 }: Props) 
               )}
             >
               {/* Logo */}
-              <div className="w-4 h-4 rounded-full overflow-hidden bg-background shrink-0 flex items-center justify-center">
+              <div className="w-4 h-4 rounded-full overflow-hidden bg-neutral-800 shrink-0 flex items-center justify-center">
                 <T2BrandLogo
                   brandId={conn.brand.id}
                   brandName={conn.brand.brand_name}

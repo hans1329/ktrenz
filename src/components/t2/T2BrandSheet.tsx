@@ -51,7 +51,7 @@ export default function T2BrandSheet({ brand, keywords, totalInfluence, artistNa
         <SheetHeader className="pb-3">
           <div className="flex items-center gap-3">
             {/* Brand logo */}
-            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center overflow-hidden border border-border/40">
+            <div className="w-12 h-12 rounded-xl bg-neutral-800 flex items-center justify-center overflow-hidden border border-border/40">
               <T2BrandLogo
                 brandId={brand.id}
                 brandName={brand.brand_name}
