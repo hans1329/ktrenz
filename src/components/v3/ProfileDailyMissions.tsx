@@ -256,7 +256,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className={cn("text-xs font-bold truncate", claimed ? "text-muted-foreground line-through" : "text-foreground")}>
+                  <p className={cn("text-sm font-bold truncate", claimed ? "text-muted-foreground line-through" : "text-foreground")}>
                     {t(mission.labelKey)}
                   </p>
                   {mission.bonus && !claimed && (
