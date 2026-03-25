@@ -424,7 +424,7 @@ const T2ArtistPage = () => {
                         const g = GRADE_CONFIG[grade];
                         const hintKey = `artist.gradeHint.${grade}` as any;
                         return (
-                          <div key={grade} className="flex items-center gap-2">
+                          <div key={grade} className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
                             <span
                               className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0"
                               style={{ backgroundColor: `${g?.color || 'hsl(0 0% 50%)'}15`, color: g?.color || 'hsl(var(--muted-foreground))' }}
