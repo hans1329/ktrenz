@@ -370,7 +370,14 @@ const T2ArtistPage = () => {
                           className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm text-white shrink-0"
                           style={{ background: catConfig?.color || "hsl(var(--muted-foreground))" }}
                         >
-                          {language === "ko" ? catConfig?.labelKo || kw.keyword_category : catConfig?.label || kw.keyword_category}
+                          {(() => {
+                            switch (language) {
+                              case "ko": return catConfig?.labelKo || kw.keyword_category;
+                              case "ja": return catConfig?.labelJa || kw.keyword_category;
+                              case "zh": return catConfig?.labelZh || kw.keyword_category;
+                              default: return catConfig?.label || kw.keyword_category;
+                            }
+                          })()}
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                           <Clock className="w-2.5 h-2.5" />
