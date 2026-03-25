@@ -52,9 +52,10 @@ function buildTrackingSparkline(
       v: Number(entry.interest_score ?? 0),
     }));
   } else if (history && history.length === 1) {
+    const score = Number(history[0].interest_score ?? 0);
     points = [
-      { t: new Date(detectedAt).getTime(), v: Number(baselineScore ?? 0) },
-      { t: new Date(history[0].tracked_at).getTime(), v: Number(history[0].interest_score ?? 0) },
+      { t: new Date(detectedAt).getTime(), v: score },
+      { t: new Date(history[0].tracked_at).getTime(), v: score },
     ];
   } else {
     const start = new Date(detectedAt).getTime();
