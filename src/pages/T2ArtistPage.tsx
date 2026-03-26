@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +71,7 @@ const T2ArtistPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [watchLoading, setWatchLoading] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
@@ -825,8 +827,9 @@ const T2ArtistPage = () => {
                   return (
                     <div
                       key={sch.id}
+                      onClick={() => setSelectedSchedule(sch)}
                       className={cn(
-                        "relative overflow-hidden rounded-xl border p-3 transition-all",
+                        "relative overflow-hidden rounded-xl border p-3 transition-all cursor-pointer active:scale-[0.98]",
                         "bg-muted/40 border-border/30",
                         isToday && "border-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
                       )}
@@ -928,6 +931,88 @@ const T2ArtistPage = () => {
       <SEO title={`${displayName} – Kinterest`} description={`${displayName} trend keywords and schedule`} path={`/t2/artist/${starId}`} />
       {subHeader}
       <div className="pt-14 pb-10">{content}</div>
+
+      {/* Schedule detail drawer */}
+      <Drawer open={!!selectedSchedule} onOpenChange={(open) => !open && setSelectedSchedule(null)}>
+        <DrawerContent className="max-h-[85vh] mx-2 mb-2 rounded-2xl">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="text-base font-bold text-foreground">
+              {selectedSchedule?.title}
+            </DrawerTitle>
+          </DrawerHeader>
+          {selectedSchedule && (
+            <div className="px-4 pb-6 space-y-4 overflow-y-auto">
+              {/* Date & Category */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(selectedSchedule.event_date).toLocaleDateString(
+                    language === "ko" ? "ko-KR" : "en-US",
+                    { year: "numeric", month: "long", day: "numeric" }
+                  )}
+                </div>
+                {selectedSchedule.category && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
+                    {(() => {
+                      const emojis: Record<string, string> = { release: "💿", broadcast: "📡", event: "✨", travel: "✈️", concert: "🎤", fanmeeting: "💕", award: "🏆", variety: "📺" };
+                      return emojis[selectedSchedule.category] || "📅";
+                    })()}{" "}
+                    {selectedSchedule.category}
+                  </span>
+                )}
+                {selectedSchedule.confidence && (
+                  <span className="text-xs font-bold text-primary">
+                    {Math.round(selectedSchedule.confidence * 100)}%
+                  </span>
+                )}
+              </div>
+
+              {/* Reasoning - full text */}
+              {selectedSchedule.reasoning && (
+                <div className="rounded-xl bg-muted/40 border border-border/30 p-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1.5">
+                    {language === "ko" ? "추론 근거" : "Reasoning"}
+                  </p>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {selectedSchedule.reasoning}
+                  </p>
+                </div>
+              )}
+
+              {/* Source articles */}
+              {selectedSchedule.source_articles && selectedSchedule.source_articles.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    {language === "ko" ? "관련 뉴스" : "Related News"}
+                  </p>
+                  <div className="space-y-2">
+                    {selectedSchedule.source_articles.slice(0, 5).map((article: any, i: number) => (
+                      <a
+                        key={i}
+                        href={article.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-3 rounded-lg border border-border/30 bg-card p-2.5 hover:bg-muted/30 transition-colors"
+                      >
+                        {article.image && (
+                          <img src={article.image} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-foreground line-clamp-2">{article.title}</p>
+                          {article.description && (
+                            <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{article.description}</p>
+                          )}
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };
