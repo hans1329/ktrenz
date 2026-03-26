@@ -3880,7 +3880,7 @@ export type Database = {
           source_headlines: Json | null
           star_id: string | null
           status: string
-          wiki_entry_id: string
+          wiki_entry_id: string | null
         }
         Insert: {
           category?: string
@@ -3896,7 +3896,7 @@ export type Database = {
           source_headlines?: Json | null
           star_id?: string | null
           status?: string
-          wiki_entry_id: string
+          wiki_entry_id?: string | null
         }
         Update: {
           category?: string
@@ -3912,7 +3912,7 @@ export type Database = {
           source_headlines?: Json | null
           star_id?: string | null
           status?: string
-          wiki_entry_id?: string
+          wiki_entry_id?: string | null
         }
         Relationships: [
           {
