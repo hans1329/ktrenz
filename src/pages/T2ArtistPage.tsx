@@ -543,7 +543,7 @@ const T2ArtistPage = () => {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black text-foreground truncate">{getBrandLabel(connection.brand)}</p>
+                    <button onClick={() => navigate(`/t2/brand/${connection.brand.id}`)} className="text-sm font-black text-foreground truncate hover:text-primary transition-colors cursor-pointer">{getBrandLabel(connection.brand)}</button>
                     <p className="text-[11px] text-muted-foreground">
                       {connection.productKeywords.length} {language === "ko" ? "products" : "products"}
                       {connection.brandKeywords.length > 0 ? ` · ${connection.brandKeywords.length} ${language === "ko" ? "brand mentions" : "brand mentions"}` : ""}
