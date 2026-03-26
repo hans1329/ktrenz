@@ -450,7 +450,16 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           const ownImg = s.wiki_entry_id ? imgMap.get(s.wiki_entry_id) : null;
           const gWikiId = s.group_star_id ? gwMap.get(s.group_star_id) : null;
           const gImg = gWikiId ? imgMap.get(gWikiId) : null;
-          sMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko, image_url: ownImg || s.image_url || gImg || null, wiki_entry_id: s.wiki_entry_id || gWikiId });
+          const sDirectImg = s.image_url && s.image_url !== "" ? s.image_url : null;
+          sMap.set(s.id, {
+            display_name: s.display_name,
+            name_ko: s.name_ko,
+            image_url: (ownImg && !isBlockedImageDomain(ownImg) ? ownImg : null)
+              || (sDirectImg && !isBlockedImageDomain(sDirectImg) ? sDirectImg : null)
+              || (gImg && !isBlockedImageDomain(gImg) ? gImg : null)
+              || null,
+            wiki_entry_id: s.wiki_entry_id || gWikiId,
+          });
         });
       }
 
