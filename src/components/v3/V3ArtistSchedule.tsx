@@ -44,14 +44,35 @@ const V3ArtistSchedule = ({ starId, wikiEntryId, artistName }: V3ArtistScheduleP
   const lookupId = starId || wikiEntryId;
   const lookupField = starId ? "star_id" : "wiki_entry_id";
 
-  const { data: predictions, isLoading } = useQuery({
-    queryKey: ["schedule-predictions", lookupId],
+  // Resolve star_id from wiki_entry_id for querying predictions
+  const { data: starRecord } = useQuery({
+    queryKey: ["star-for-schedule", lookupId],
     queryFn: async () => {
-      if (!lookupId) return [];
+      if (!lookupId) return null;
+      if (starId) return { id: starId };
+      // Lookup star_id from wiki_entry_id
+      const { data } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("id")
+        .eq("wiki_entry_id", lookupId)
+        .eq("is_active", true)
+        .maybeSingle() as { data: any };
+      return data;
+    },
+    enabled: !!lookupId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const resolvedStarId = starRecord?.id || null;
+
+  const { data: predictions, isLoading } = useQuery({
+    queryKey: ["schedule-predictions", resolvedStarId],
+    queryFn: async () => {
+      if (!resolvedStarId) return [];
       const { data } = await supabase
         .from("ktrenz_schedule_predictions" as any)
         .select("*")
-        .eq(lookupField, lookupId)
+        .eq("star_id", resolvedStarId)
         .eq("status", "active")
         .gte("expires_at", new Date().toISOString())
         .gte("confidence", 0.7)
@@ -59,7 +80,7 @@ const V3ArtistSchedule = ({ starId, wikiEntryId, artistName }: V3ArtistScheduleP
         .limit(8) as { data: any[] | null };
       return data || [];
     },
-    enabled: !!lookupId,
+    enabled: !!resolvedStarId,
     staleTime: 5 * 60 * 1000,
   });
 
