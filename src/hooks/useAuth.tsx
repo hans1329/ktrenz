@@ -12,15 +12,11 @@ interface UserProfile {
   available_points: number;
 }
 
-const AUTH_STORAGE_KEY = 'sb-jguylowswwgjvotdcsfj-auth-token';
-
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-  // Simple dedup set (recreated per mount, no useRef needed to avoid HMR hook-order issues)
-  const [signedInHandled] = useState(() => ({ current: new Set<string>() }));
 
   const { data: profile = null } = useQuery({
     queryKey: ['profile', user?.id],
@@ -56,12 +52,7 @@ export const useAuth = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Fire-and-forget login side effects (DO NOT await inside onAuthStateChange)
-    const handleSignedIn = (uid: string) => {
-      // Deduplicate within this mount cycle
-      if (signedInHandled.current.has(uid)) return;
-      signedInHandled.current.add(uid);
-
+    const recordSignedInSideEffects = (uid: string) => {
       supabase
         .from('ktrenz_user_logins')
         .upsert(
@@ -104,44 +95,36 @@ export const useAuth = () => {
       } catch {}
     };
 
-    // 1. Register listener FIRST (Supabase recommended pattern)
-    // INITIAL_SESSION fires synchronously during registration and includes
-    // the result of any token exchange (OAuth hash params, PKCE code, etc.).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
-      // Always update state from the event
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
-
-      if (event === 'INITIAL_SESSION') {
-        // Session fully resolved (including OAuth redirect token exchange)
-        setLoading(false);
-      }
+      setLoading(false);
 
       if (event === 'SIGNED_IN' && nextSession?.user?.id) {
-        handleSignedIn(nextSession.user.id);
+        recordSignedInSideEffects(nextSession.user.id);
       }
 
       if (event === 'SIGNED_OUT') {
-        // Clean up stale tokens
-        try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch {}
         queryClient.clear();
-      }
-
-      if (event === 'TOKEN_REFRESHED') {
-        // Session successfully refreshed — no action needed
       }
     });
 
-    // 2. Safety fallback: if INITIAL_SESSION hasn't fired within 3s, force loading=false
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 3000);
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+      setSession(currentSession ?? null);
+      setUser(currentSession?.user ?? null);
+      setLoading(false);
+    }).catch(() => {
+      if (!mounted) return;
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+    });
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [queryClient]);
@@ -149,7 +132,6 @@ export const useAuth = () => {
   const signOut = async () => {
     setUser(null);
     setSession(null);
-    try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch {}
     queryClient.clear();
     try { await supabase.auth.signOut(); } catch {}
     window.location.href = '/';
