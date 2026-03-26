@@ -785,14 +785,11 @@ const T2ArtistPage = () => {
 
       {/* Schedule section */}
       <section>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 text-secondary-foreground">
             <Calendar className="w-4 h-4" />
-            {language === "ko" ? "AI 예측 일정" : "AI Predicted Schedule"}
+            {language === "ko" ? "예측 일정" : "Predicted Schedule"}
           </h2>
-          <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
-            AI
-          </span>
         </div>
 
         {schedLoading ? (
@@ -830,9 +827,7 @@ const T2ArtistPage = () => {
                       key={sch.id}
                       className={cn(
                         "relative overflow-hidden rounded-xl border p-3 transition-all",
-                        idx === 0
-                          ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20"
-                          : "bg-card border-border/40",
+                        "bg-muted/40 border-border/30",
                         isToday && "border-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
                       )}
                     >
