@@ -522,7 +522,7 @@ const T2ArtistPage = () => {
 
       {(relatedCommerce.length > 0 || standaloneProducts.length > 0) && (
         <section className="mb-8">
-          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <h2 className="text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5 text-secondary-foreground">
             <ShoppingCart className="w-4 h-4" />
             {language === "ko" ? "Related Brands & Products" : "Related Brands & Products"}
           </h2>
