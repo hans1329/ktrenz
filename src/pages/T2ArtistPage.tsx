@@ -524,7 +524,7 @@ const T2ArtistPage = () => {
         <section className="mb-8">
           <h2 className="text-sm font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5 text-secondary-foreground">
             <ShoppingCart className="w-4 h-4" />
-            {language === "ko" ? "Related Brands & Products" : "Related Brands & Products"}
+            {language === "ko" ? "연관 브랜드 & 제품" : language === "ja" ? "関連ブランド＆製品" : language === "zh" ? "相关品牌与产品" : "Related Brands & Products"}
           </h2>
 
           <div className="space-y-3">
