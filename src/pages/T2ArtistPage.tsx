@@ -826,8 +826,9 @@ const T2ArtistPage = () => {
                   return (
                     <div
                       key={sch.id}
+                      onClick={() => setSelectedSchedule(sch)}
                       className={cn(
-                        "relative overflow-hidden rounded-xl border p-3 transition-all",
+                        "relative overflow-hidden rounded-xl border p-3 transition-all cursor-pointer active:scale-[0.98]",
                         "bg-muted/40 border-border/30",
                         isToday && "border-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
                       )}
