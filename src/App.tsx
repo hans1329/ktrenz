@@ -59,79 +59,81 @@ import B2BArtistDetail from "./pages/b2b/B2BArtistDetail";
 import T2CategoryDetail from "./pages/T2CategoryDetail";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient({});
 
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PWAUpdatePrompt />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<T2TrendMap />} />
-            
-            <Route path="/artist/:slug" element={<V3ArtistDetail />} />
-            <Route path="/rankings" element={<V3Rankings />} />
-            <Route path="/fes-engine" element={<FesEngine />} />
-            <Route path="/agent" element={<FanAgent />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/k-pass" element={<KPass />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/dashboard" element={<UserDashboard />} />
-            <Route path="/pitchdeck" element={<PitchDeck />} />
-            <Route path="/deck" element={<Deck />} />
-            <Route path="/signal" element={<SignalRadar />} />
-            <Route path="/t2" element={<T2TrendMap />} />
-            <Route path="/t2/my" element={<T2MyArtists />} />
-            <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
-            <Route path="/t2/category/:categoryKey" element={<T2CategoryDetail />} />
-            <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
-            <Route path="/pd" element={<T2PitchDeck />} />
-            <Route path="/t2/grades" element={<T2TrendGrades />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="rankings" element={<AdminRankings />} />
-              <Route path="points" element={<AdminPoints />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="entries" element={<AdminEntries />} />
-              <Route path="v3-artists" element={<AdminV3Artists />} />
-              <Route path="data-health" element={<AdminDataHealth />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="intents" element={<AdminIntents />} />
-              <Route path="intent-monitor" element={<AdminIntentMonitor />} />
-              <Route path="watched-channels" element={<AdminWatchedChannels />} />
-              <Route path="agency-sample" element={<AdminAgencySample />} />
-              <Route path="collection-monitor" element={<AdminCollectionMonitor />} />
-              <Route path="fes-analyst" element={<AdminFesAnalyst />} />
-              <Route path="data-quality" element={<AdminDataQuality />} />
-              <Route path="pipeline-guard" element={<AdminPipelineGuard />} />
-              <Route path="signal-events" element={<AdminSignalEvents />} />
-              <Route path="listing-requests" element={<AdminListingRequests />} />
-              <Route path="stars" element={<AdminStars />} />
-              <Route path="trend-intel" element={<AdminTrendIntel />} />
-              <Route path="shopping-keywords" element={<AdminShoppingKeywords />} />
-              <Route path="user-analytics" element={<AdminUserAnalytics />} />
-              <Route path="keyword-monitor" element={<AdminKeywordMonitor />} />
-            </Route>
-            <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
-            <Route path="/b2b/login" element={<B2BLogin />} />
-            <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
-            <Route path="/b2b" element={<B2BLayout />}>
-              <Route index element={<B2BDashboard />} />
-              <Route path="artist/:id" element={<B2BArtistDetail />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-      </LanguageProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <PWAUpdatePrompt />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<T2TrendMap />} />
+                <Route path="/artist/:slug" element={<V3ArtistDetail />} />
+                <Route path="/rankings" element={<V3Rankings />} />
+                <Route path="/fes-engine" element={<FesEngine />} />
+                <Route path="/agent" element={<FanAgent />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/k-pass" element={<KPass />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/dashboard" element={<UserDashboard />} />
+                <Route path="/pitchdeck" element={<PitchDeck />} />
+                <Route path="/deck" element={<Deck />} />
+                <Route path="/signal" element={<SignalRadar />} />
+                <Route path="/t2" element={<T2TrendMap />} />
+                <Route path="/t2/my" element={<T2MyArtists />} />
+                <Route path="/t2/artist/:starId" element={<T2ArtistPage />} />
+                <Route path="/t2/category/:categoryKey" element={<T2CategoryDetail />} />
+                <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
+                <Route path="/pd" element={<T2PitchDeck />} />
+                <Route path="/t2/grades" element={<T2TrendGrades />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="rankings" element={<AdminRankings />} />
+                  <Route path="points" element={<AdminPoints />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="entries" element={<AdminEntries />} />
+                  <Route path="v3-artists" element={<AdminV3Artists />} />
+                  <Route path="data-health" element={<AdminDataHealth />} />
+                  <Route path="products" element={<AdminProducts />} />
+                  <Route path="intents" element={<AdminIntents />} />
+                  <Route path="intent-monitor" element={<AdminIntentMonitor />} />
+                  <Route path="watched-channels" element={<AdminWatchedChannels />} />
+                  <Route path="agency-sample" element={<AdminAgencySample />} />
+                  <Route path="collection-monitor" element={<AdminCollectionMonitor />} />
+                  <Route path="fes-analyst" element={<AdminFesAnalyst />} />
+                  <Route path="data-quality" element={<AdminDataQuality />} />
+                  <Route path="pipeline-guard" element={<AdminPipelineGuard />} />
+                  <Route path="signal-events" element={<AdminSignalEvents />} />
+                  <Route path="listing-requests" element={<AdminListingRequests />} />
+                  <Route path="stars" element={<AdminStars />} />
+                  <Route path="trend-intel" element={<AdminTrendIntel />} />
+                  <Route path="shopping-keywords" element={<AdminShoppingKeywords />} />
+                  <Route path="user-analytics" element={<AdminUserAnalytics />} />
+                  <Route path="keyword-monitor" element={<AdminKeywordMonitor />} />
+                </Route>
+                <Route path="/agency-dashboard" element={<AgencyDashboardSample />} />
+                <Route path="/b2b/login" element={<B2BLogin />} />
+                <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
+                <Route path="/b2b" element={<B2BLayout />}>
+                  <Route index element={<B2BDashboard />} />
+                  <Route path="artist/:id" element={<B2BArtistDetail />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LanguageProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </HelmetProvider>
 );
