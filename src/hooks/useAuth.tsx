@@ -19,7 +19,7 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-  const signedInHandled = useRef(new Set<string>());
+  const signedInHandledRef = { current: new Set<string>() };
 
   const { data: profile = null } = useQuery({
     queryKey: ['profile', user?.id],
