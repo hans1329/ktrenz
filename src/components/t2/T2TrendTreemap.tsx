@@ -584,7 +584,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           starMap.set(s.id, {
             display_name: s.display_name,
             name_ko: s.name_ko,
-            image_url: ownImage || starDirectImage || groupImage || null,
+            image_url: (ownImage && !isBlockedImageDomain(ownImage) ? ownImage : null)
+              || (starDirectImage && !isBlockedImageDomain(starDirectImage) ? starDirectImage : null)
+              || (groupImage && !isBlockedImageDomain(groupImage) ? groupImage : null)
+              || null,
             wiki_entry_id: s.wiki_entry_id || groupWikiId,
           });
         });
