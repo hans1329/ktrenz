@@ -92,9 +92,11 @@ const T2ArtistList = ({ items, watchedStarSet }: T2ArtistListProps) => {
             {/* Artist image — large */}
             <div className="relative w-full aspect-square bg-muted overflow-hidden">
               {(() => {
+                // Artist profile image first, then content image as fallback
+                const profileImg = group.artistImageUrl && !isBlockedImageDomain(group.artistImageUrl) ? group.artistImageUrl : null;
                 const rawImg = sanitizeImageUrl(group.keywords[0]?.sourceImageUrl);
-                const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
-                const imgSrc = safeImg || group.artistImageUrl;
+                const contentImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
+                const imgSrc = profileImg || contentImg;
                 return imgSrc ? (
                   <img
                     src={imgSrc}
