@@ -762,19 +762,19 @@ async function noisePatternFilter(sb: any): Promise<{ expired: number; details: 
 // ── 5. pending → active 전환 ──
 // ── brand_id 자동 매핑 ──
 // brand/product 카테고리 키워드에 brand_id가 없으면 ktrenz_brand_registry에서 매칭
-async function mapBrandIds(sb: any): Promise<number> {
+async function mapBrandIds(sb: any): Promise<{ mapped: number; registered: number }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   // brand_id가 없는 brand/product 키워드 조회
   const { data: unmapped } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword_en, keyword, keyword_category")
+    .select("id, keyword_en, keyword, keyword_ko, keyword_category, context")
     .in("keyword_category", ["brand", "product"])
     .is("brand_id", null)
     .in("status", ["pending", "active"])
     .gte("detected_at", threeDaysAgo);
 
-  if (!unmapped?.length) return 0;
+  if (!unmapped?.length) return { mapped: 0, registered: 0 };
 
   // 브랜드 레지스트리 전체 로드
   const { data: brands } = await sb
@@ -782,33 +782,66 @@ async function mapBrandIds(sb: any): Promise<number> {
     .select("id, brand_name, brand_name_ko")
     .eq("is_active", true);
 
-  if (!brands?.length) return 0;
-
+  const brandList = brands || [];
   let mapped = 0;
-  for (const trigger of unmapped) {
-    const kwEn = (trigger.keyword_en || "").toLowerCase();
-    const kwKo = (trigger.keyword || "").toLowerCase();
+  let registered = 0;
 
-    // 1) 정확 매칭 (brand 카테고리)
-    let match = brands.find((b: any) =>
-      b.brand_name.toLowerCase() === kwEn || (b.brand_name_ko && b.brand_name_ko.toLowerCase() === kwKo)
+  for (const trigger of unmapped) {
+    const kwEn = (trigger.keyword_en || "").toLowerCase().trim();
+    const kwKo = (trigger.keyword || "").toLowerCase().trim();
+    const kwKoAlt = (trigger.keyword_ko || "").toLowerCase().trim();
+
+    // 1) 정확 매칭
+    let match = brandList.find((b: any) =>
+      b.brand_name.toLowerCase() === kwEn ||
+      (b.brand_name_ko && b.brand_name_ko.toLowerCase() === kwKo) ||
+      (b.brand_name_ko && b.brand_name_ko.toLowerCase() === kwKoAlt)
     );
 
-    // 2) 포함 매칭 (product 카테고리 — 브랜드명이 키워드에 포함)
-    if (!match && trigger.keyword_category === "product") {
-      match = brands.find((b: any) =>
-        kwEn.includes(b.brand_name.toLowerCase()) ||
-        (b.brand_name_ko && kwKo.includes(b.brand_name_ko.toLowerCase()))
-      );
+    // 2) 포함 매칭 (brand & product 모두 — 키워드에 브랜드명이 포함되거나 브랜드명에 키워드가 포함)
+    if (!match) {
+      match = brandList.find((b: any) => {
+        const bn = b.brand_name.toLowerCase();
+        const bnKo = (b.brand_name_ko || "").toLowerCase();
+        // 최소 2글자 이상인 브랜드만 포함 매칭
+        if (bn.length < 2 && bnKo.length < 2) return false;
+        return (
+          (bn.length >= 2 && (kwEn.includes(bn) || kwKo.includes(bn) || kwKoAlt.includes(bn))) ||
+          (bnKo.length >= 2 && (kwKo.includes(bnKo) || kwKoAlt.includes(bnKo) || kwEn.includes(bnKo)))
+        );
+      });
     }
 
     if (match) {
       await sb.from("ktrenz_trend_triggers").update({ brand_id: match.id }).eq("id", trigger.id);
       mapped++;
+    } else if (trigger.keyword_category === "brand") {
+      // 3) 자동 등록: brand 카테고리인데 레지스트리에 없으면 새로 등록
+      const newBrandName = kwEn || kwKo || kwKoAlt;
+      const newBrandNameKo = kwKoAlt || kwKo || kwEn;
+      if (newBrandName) {
+        const { data: inserted } = await sb
+          .from("ktrenz_brand_registry")
+          .insert({
+            brand_name: trigger.keyword_en || trigger.keyword_ko || trigger.keyword,
+            brand_name_ko: trigger.keyword_ko || trigger.keyword,
+            category: "etc",
+            is_active: true,
+          })
+          .select("id")
+          .single();
+        if (inserted) {
+          await sb.from("ktrenz_trend_triggers").update({ brand_id: inserted.id }).eq("id", trigger.id);
+          brandList.push({ id: inserted.id, brand_name: newBrandName, brand_name_ko: newBrandNameKo });
+          mapped++;
+          registered++;
+          console.log(`[brand-auto-register] New brand: ${trigger.keyword_en || trigger.keyword}`);
+        }
+      }
     }
   }
 
-  return mapped;
+  return { mapped, registered };
 }
 
 async function activatePending(sb: any): Promise<number> {
