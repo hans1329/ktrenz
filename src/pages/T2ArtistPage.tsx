@@ -13,6 +13,7 @@ import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import T2BrandLogo from "@/components/t2/T2BrandLogo";
 
 const GRADE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   spark: { label: "Spark", icon: Zap, color: "hsl(45 100% 55%)" },
@@ -35,6 +36,15 @@ const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa:
   event:   { label: "Event",   labelKo: "이벤트",  labelJa: "イベント",    labelZh: "活动",   color: "hsl(45, 85%, 50%)" },
   social:  { label: "Social",  labelKo: "소셜",    labelJa: "ソーシャル",  labelZh: "社交",   color: "hsl(200, 65%, 50%)" },
 };
+
+interface BrandRegistryItem {
+  id: string;
+  brand_name: string;
+  brand_name_ko: string | null;
+  logo_url: string | null;
+  domain: string | null;
+  category: string | null;
+}
 
 function formatAge(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -172,6 +182,68 @@ const T2ArtistPage = () => {
     enabled: !!keywords && keywords.length > 0,
   });
 
+  const relatedBrandIds = useMemo(() => {
+    const ids = new Set<string>();
+    (keywords ?? []).forEach((kw: any) => {
+      if (kw.brand_id && (kw.keyword_category === "brand" || kw.keyword_category === "product")) {
+        ids.add(kw.brand_id);
+      }
+    });
+    return Array.from(ids);
+  }, [keywords]);
+
+  const { data: relatedBrands = [] } = useQuery({
+    queryKey: ["t2-artist-related-brands", relatedBrandIds.join(",")],
+    enabled: relatedBrandIds.length > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("ktrenz_brand_registry")
+        .select("id, brand_name, brand_name_ko, logo_url, domain, category")
+        .in("id", relatedBrandIds);
+      return (data ?? []) as BrandRegistryItem[];
+    },
+  });
+
+  const relatedCommerce = useMemo(() => {
+    const brandMap = new Map(relatedBrands.map((brand) => [brand.id, brand]));
+    const connectionMap = new Map<string, {
+      brand: BrandRegistryItem;
+      brandKeywords: any[];
+      productKeywords: any[];
+      score: number;
+    }>();
+
+    (keywords ?? []).forEach((kw: any) => {
+      if (!kw.brand_id || (kw.keyword_category !== "brand" && kw.keyword_category !== "product")) return;
+      const brand = brandMap.get(kw.brand_id);
+      if (!brand) return;
+
+      if (!connectionMap.has(brand.id)) {
+        connectionMap.set(brand.id, {
+          brand,
+          brandKeywords: [],
+          productKeywords: [],
+          score: 0,
+        });
+      }
+
+      const connection = connectionMap.get(brand.id)!;
+      if (kw.keyword_category === "brand") connection.brandKeywords.push(kw);
+      if (kw.keyword_category === "product") connection.productKeywords.push(kw);
+      connection.score += Math.max(Number(kw.influence_index) || 0, 0) + ((Number(kw.baseline_score) || 0) * 0.25);
+    });
+
+    return Array.from(connectionMap.values()).sort((a, b) => b.score - a.score);
+  }, [keywords, relatedBrands]);
+
+  const standaloneProducts = useMemo(() => {
+    return (keywords ?? [])
+      .filter((kw: any) => kw.keyword_category === "product" && !kw.brand_id)
+      .sort((a: any, b: any) => (Number(b.influence_index) || 0) - (Number(a.influence_index) || 0))
+      .slice(0, 8);
+  }, [keywords]);
+
   // Fetch schedules using star_id - upcoming + recent past separately
   const { data: scheduleData, isLoading: schedLoading } = useQuery({
     queryKey: ["t2-artist-schedules", starId],
@@ -290,6 +362,17 @@ const T2ArtistPage = () => {
   }, [user?.id, star, isWatched, language, queryClient, starId, syncWatchedArtistCaches]);
 
   const displayName = language === "ko" && star?.name_ko ? star.name_ko : star?.display_name ?? "";
+  const getKeywordLabel = useCallback((kw: any) => {
+    switch (language) {
+      case "ko": return kw.keyword_ko || kw.keyword;
+      case "ja": return kw.keyword_ja || kw.keyword;
+      case "zh": return kw.keyword_zh || kw.keyword;
+      default: return kw.keyword;
+    }
+  }, [language]);
+  const getBrandLabel = useCallback((brand: BrandRegistryItem) => {
+    return language === "ko" && brand.brand_name_ko ? brand.brand_name_ko : brand.brand_name;
+  }, [language]);
 
   const subHeader = (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 pt-[env(safe-area-inset-top)]">
@@ -434,6 +517,93 @@ const T2ArtistPage = () => {
               </div>
             );
           })()}
+        </section>
+      )}
+
+      {(relatedCommerce.length > 0 || standaloneProducts.length > 0) && (
+        <section className="mb-8">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <ShoppingCart className="w-4 h-4" />
+            {language === "ko" ? "Related Brands & Products" : "Related Brands & Products"}
+          </h2>
+
+          <div className="space-y-3">
+            {relatedCommerce.map((connection) => (
+              <div key={connection.brand.id} className="rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl border border-border/60 bg-muted/40 overflow-hidden flex items-center justify-center shrink-0">
+                    <T2BrandLogo
+                      brandId={connection.brand.id}
+                      brandName={connection.brand.brand_name}
+                      domain={connection.brand.domain}
+                      logoUrl={connection.brand.logo_url}
+                      alt={connection.brand.brand_name}
+                      className="w-full h-full object-contain"
+                      fallbackClassName="text-sm"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black text-foreground truncate">{getBrandLabel(connection.brand)}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {connection.productKeywords.length} {language === "ko" ? "products" : "products"}
+                      {connection.brandKeywords.length > 0 ? ` · ${connection.brandKeywords.length} ${language === "ko" ? "brand mentions" : "brand mentions"}` : ""}
+                    </p>
+                  </div>
+                </div>
+
+                {connection.productKeywords.length > 0 && (
+                  <div className="mb-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Products</p>
+                    <div className="flex flex-wrap gap-2">
+                      {connection.productKeywords.slice(0, 8).map((kw: any) => (
+                        <button
+                          key={kw.id}
+                          onClick={() => navigate(`/t2/${kw.id}`)}
+                          className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                        >
+                          {getKeywordLabel(kw)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {connection.brandKeywords.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Brand Keywords</p>
+                    <div className="flex flex-wrap gap-2">
+                      {connection.brandKeywords.slice(0, 6).map((kw: any) => (
+                        <button
+                          key={kw.id}
+                          onClick={() => navigate(`/t2/${kw.id}`)}
+                          className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {getKeywordLabel(kw)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {standaloneProducts.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Products</p>
+                <div className="flex flex-wrap gap-2">
+                  {standaloneProducts.map((kw: any) => (
+                    <button
+                      key={kw.id}
+                      onClick={() => navigate(`/t2/${kw.id}`)}
+                      className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                    >
+                      {getKeywordLabel(kw)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </section>
       )}
 
