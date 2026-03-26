@@ -329,20 +329,31 @@ async function runBuzzSource(supabaseUrl: string, serviceKey: string, buzzModule
   return { status: "launched", source: sourceName, artists: launched };
 }
 
-// ── 네이버 뉴스 전용 모듈 ──
+// ── 네이버 뉴스 전용 모듈 (star_id 기반, wiki_entry_id 불필요) ──
 async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<any> {
-  console.log("[data-engine] Launching Naver News (ktrenz_stars based)...");
+  console.log("[data-engine] Launching Naver News (all active ktrenz_stars)...");
   const sb = createClient(supabaseUrl, serviceKey);
-  const stars = await getActiveStars(sb);
+
+  // wiki_entry_id 여부와 관계없이 모든 활성 스타 가져오기
+  const { data: starRows } = await sb
+    .from("ktrenz_stars")
+    .select("id, wiki_entry_id, display_name, name_ko")
+    .eq("is_active", true)
+    .order("display_name", { ascending: true });
+
+  const stars = (starRows || []) as { id: string; wiki_entry_id: string | null; display_name: string; name_ko: string | null }[];
   if (stars.length === 0) return { status: "no_artists" };
 
-  const totalCount = stars.length;
+  // name_ko가 있는 스타만 뉴스 검색 가능 (네이버는 한국어 검색이므로)
+  const searchableStars = stars.filter(s => s.name_ko || s.display_name);
+
+  const totalCount = searchableStars.length;
   const groupSize = Math.max(5, Math.ceil(totalCount / 10));
   const totalGroups = Math.ceil(totalCount / groupSize);
   const delayMs = totalGroups > 1 ? Math.min(500, Math.floor(15_000 / (totalGroups - 1))) : 0;
 
   let launched = 0;
-  for (const star of stars) {
+  for (const star of searchableStars) {
     const p = fetch(`${supabaseUrl}/functions/v1/crawl-naver-news`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
@@ -359,7 +370,7 @@ async function runNaverNews(supabaseUrl: string, serviceKey: string): Promise<an
       await new Promise(r => setTimeout(r, delayMs));
     }
   }
-  console.log(`[data-engine] Naver News: launched ${launched} artists`);
+  console.log(`[data-engine] Naver News: launched ${launched}/${totalCount} artists`);
   return { status: "launched", artists: launched };
 }
 
