@@ -244,30 +244,38 @@ const T2ArtistPage = () => {
       .slice(0, 8);
   }, [keywords]);
 
-  // Fetch schedules using star_id - upcoming + recent past separately
+  // Fetch AI-predicted schedules using star_id from ktrenz_schedule_predictions
   const { data: scheduleData, isLoading: schedLoading } = useQuery({
     queryKey: ["t2-artist-schedules", starId],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const now = new Date().toISOString();
+      const today = now.split("T")[0];
 
-      const [{ data: upcoming }, { data: past }] = await Promise.all([
-        supabase
-          .from("ktrenz_schedules" as any)
-          .select("*")
-          .eq("star_id", starId!)
-          .gte("event_date", today)
-          .order("event_date", { ascending: true })
-          .limit(20),
-        supabase
-          .from("ktrenz_schedules" as any)
-          .select("*")
-          .eq("star_id", starId!)
-          .lt("event_date", today)
-          .order("event_date", { ascending: false })
-          .limit(3),
-      ]);
+      const { data: predictions } = await supabase
+        .from("ktrenz_schedule_predictions" as any)
+        .select("*")
+        .eq("star_id", starId!)
+        .eq("status", "active")
+        .gte("expires_at", now)
+        .gte("confidence", 0.7)
+        .order("confidence", { ascending: false })
+        .limit(20) as { data: any[] | null };
 
-      return { upcoming: (upcoming ?? []) as any[], past: (past ?? []) as any[] };
+      const all = (predictions ?? []) as any[];
+      // Map prediction fields to match the expected schedule shape
+      const mapped = all.map((p: any) => ({
+        ...p,
+        title: p.event_title,
+        event_date: p.event_date || today,
+      }));
+
+      const upcoming = mapped.filter((s: any) => s.event_date >= today)
+        .sort((a: any, b: any) => a.event_date.localeCompare(b.event_date));
+      const past = mapped.filter((s: any) => s.event_date < today)
+        .sort((a: any, b: any) => b.event_date.localeCompare(a.event_date))
+        .slice(0, 3);
+
+      return { upcoming, past };
     },
     enabled: !!starId,
   });
