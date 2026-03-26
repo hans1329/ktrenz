@@ -334,7 +334,7 @@ const T2BrandPage = () => {
         </div>
       </div>
 
-      <V3TabBar />
+      <V3TabBar activeTab="rankings" onTabChange={() => {}} />
     </>
   );
 };
