@@ -279,15 +279,10 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
   };
 
   const handleOpenChange = (val: boolean) => {
-    if (!val && !user?.id) {
-      navigate("/login");
-      return;
-    }
     onOpenChange(val);
   };
 
-  if (open && !user) {
-    navigate("/login");
+  if (open && (authLoading || !user)) {
     return null;
   }
 
