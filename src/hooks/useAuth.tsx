@@ -16,6 +16,8 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  // Stable hook slot — keeps hook count consistent across HMR updates
+  const [_hmrStable] = useState(0);
   const queryClient = useQueryClient();
 
   const { data: profile = null } = useQuery({
