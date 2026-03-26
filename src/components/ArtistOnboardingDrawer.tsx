@@ -37,7 +37,7 @@ type WatchedArtistsCache = {
 };
 
 const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: ArtistOnboardingDrawerProps) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -164,6 +164,12 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
     }
   }, [watchedIds]);
 
+  useEffect(() => {
+    if (open && !authLoading && !user) {
+      onOpenChange(false);
+    }
+  }, [open, authLoading, user, onOpenChange]);
+
   // Popular: groups first (star_type=group), then solo, sorted by active trend count
   const popular = useMemo(() => {
     if (!stars) return [];
@@ -273,15 +279,10 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
   };
 
   const handleOpenChange = (val: boolean) => {
-    if (!val && !user?.id) {
-      navigate("/login");
-      return;
-    }
     onOpenChange(val);
   };
 
-  if (open && !user) {
-    navigate("/login");
+  if (open && (authLoading || !user)) {
     return null;
   }
 
