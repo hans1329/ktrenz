@@ -78,6 +78,11 @@ const T2ArtistList = ({ items, watchedStarSet }: T2ArtistListProps) => {
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 px-4">
       {artistGroups.map((group, idx) => {
         const isWatched = group.starId ? watchedStarSet.has(group.starId) : false;
+        const profileImg = sanitizeImageUrl(group.artistImageUrl);
+        const safeProfileImg = profileImg && !isBlockedImageDomain(profileImg) ? profileImg : null;
+        const fallbackContentImg = group.keywords
+          .map((kw) => sanitizeImageUrl(kw.sourceImageUrl))
+          .find((url) => !!url && !isBlockedImageDomain(url)) || null;
         return (
           <button
             key={group.groupKey}
@@ -91,24 +96,36 @@ const T2ArtistList = ({ items, watchedStarSet }: T2ArtistListProps) => {
           >
             {/* Artist image — large */}
             <div className="relative w-full aspect-square bg-muted overflow-hidden">
-              {(() => {
-                // Artist profile image first, then content image as fallback
-                const profileImg = group.artistImageUrl && !isBlockedImageDomain(group.artistImageUrl) ? group.artistImageUrl : null;
-                const rawImg = sanitizeImageUrl(group.keywords[0]?.sourceImageUrl);
-                const contentImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
-                const imgSrc = profileImg || contentImg;
-                return imgSrc ? (
+              {safeProfileImg || fallbackContentImg ? (
+                <>
                   <img
-                    src={imgSrc}
+                    src={safeProfileImg || fallbackContentImg!}
                     alt={displayName(group)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (fallbackContentImg && target.src !== fallbackContentImg) {
+                        target.src = fallbackContentImg;
+                        return;
+                      }
+                      target.style.display = "none";
+                      const fallback = target.nextElementSibling as HTMLElement | null;
+                      if (fallback) fallback.style.display = "flex";
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground">
+                  <div
+                    className="w-full h-full items-center justify-center text-4xl font-black text-muted-foreground"
+                    style={{ display: "none" }}
+                  >
                     {displayName(group).charAt(0)}
                   </div>
-                );
-              })()}
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-muted-foreground">
+                  {displayName(group).charAt(0)}
+                </div>
+              )}
               {/* Rank badge */}
               <span className="absolute top-2 left-2 text-xs font-black text-white bg-black/60 backdrop-blur-sm rounded-full w-7 h-7 flex items-center justify-center">
                 {idx + 1}
