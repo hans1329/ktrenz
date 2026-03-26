@@ -164,6 +164,12 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
     }
   }, [watchedIds]);
 
+  useEffect(() => {
+    if (open && !authLoading && !user) {
+      onOpenChange(false);
+    }
+  }, [open, authLoading, user, onOpenChange]);
+
   // Popular: groups first (star_type=group), then solo, sorted by active trend count
   const popular = useMemo(() => {
     if (!stars) return [];
