@@ -785,63 +785,142 @@ const T2ArtistPage = () => {
 
       {/* Schedule section */}
       <section>
-        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Calendar className="w-4 h-4" />
-          {language === "ko" ? "일정" : "Schedule"}
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 text-secondary-foreground">
+            <Calendar className="w-4 h-4" />
+            {language === "ko" ? "AI 예측 일정" : "AI Predicted Schedule"}
+          </h2>
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
+            AI
+          </span>
+        </div>
 
         {schedLoading ? (
           <div className="space-y-2">
-            {[1, 2].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
+            {[1, 2].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
           </div>
         ) : (
           <>
-            {/* Upcoming */}
             {(scheduleData?.upcoming?.length ?? 0) > 0 && (
               <div className="space-y-2 mb-4">
-                <p className="text-xs font-semibold text-primary mb-1">
-                  {language === "ko" ? "다가오는 일정" : "Upcoming"}
-                </p>
-                {scheduleData!.upcoming.map((sch: any) => (
-                  <div key={sch.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-                    <div className="shrink-0 w-12 text-center">
-                      <span className="text-xs font-bold text-primary">{formatEventDate(sch.event_date, language)}</span>
+                {scheduleData!.upcoming.map((sch: any, idx: number) => {
+                  const catEmojis: Record<string, string> = {
+                    release: "💿", broadcast: "📡", event: "✨", travel: "✈️",
+                    concert: "🎤", fanmeeting: "💕", award: "🏆", variety: "📺",
+                  };
+                  const catLabels: Record<string, string> = {
+                    release: language === "ko" ? "발    매" : "Release",
+                    broadcast: language === "ko" ? "방송" : "Broadcast",
+                    event: language === "ko" ? "이벤트" : "Event",
+                    travel: language === "ko" ? "여행" : "Travel",
+                    concert: language === "ko" ? "콘서트" : "Concert",
+                    fanmeeting: language === "ko" ? "팬미팅" : "Fan Meeting",
+                    award: language === "ko" ? "시상식" : "Award",
+                    variety: language === "ko" ? "예능" : "Variety",
+                  };
+                  const emoji = catEmojis[sch.category] || "📅";
+                  const label = catLabels[sch.category] || sch.category;
+                  const daysAway = Math.ceil((new Date(sch.event_date).getTime() - Date.now()) / 86400000);
+                  const isToday = daysAway === 0;
+                  const isSoon = daysAway >= 1 && daysAway <= 3;
+                  const confidence = sch.confidence ? Math.round(sch.confidence * 100) : null;
+
+                  return (
+                    <div
+                      key={sch.id}
+                      className={cn(
+                        "relative overflow-hidden rounded-xl border p-3 transition-all",
+                        idx === 0
+                          ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20"
+                          : "bg-card border-border/40",
+                        isToday && "border-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Date block */}
+                        <div className={cn(
+                          "shrink-0 w-12 h-12 rounded-lg flex flex-col items-center justify-center",
+                          isToday ? "bg-primary text-primary-foreground" :
+                          isSoon ? "bg-accent text-accent-foreground" :
+                          "bg-muted text-muted-foreground"
+                        )}>
+                          <span className="text-[10px] font-medium leading-none">
+                            {new Date(sch.event_date).toLocaleDateString(language === "ko" ? "ko" : "en", { month: "short" })}
+                          </span>
+                          <span className="text-lg font-black leading-tight">
+                            {new Date(sch.event_date).getDate()}
+                          </span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground line-clamp-2 leading-snug">
+                            {sch.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+                              {emoji} {label}
+                            </span>
+                            {confidence && (
+                              <span className={cn(
+                                "text-[10px] font-semibold",
+                                confidence >= 90 ? "text-emerald-500" :
+                                confidence >= 80 ? "text-blue-500" : "text-amber-500"
+                              )}>
+                                {confidence}%
+                              </span>
+                            )}
+                          </div>
+                          {sch.reasoning && (
+                            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 italic">
+                              {sch.reasoning}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* D-day badge */}
+                        <div className={cn(
+                          "shrink-0 text-xs font-extrabold px-2 py-1 rounded-lg",
+                          isToday ? "bg-primary text-primary-foreground" :
+                          isSoon ? "bg-accent text-accent-foreground" :
+                          "bg-muted/60 text-muted-foreground"
+                        )}>
+                          {isToday ? "TODAY" : daysAway < 0 ? `D+${Math.abs(daysAway)}` : `D-${daysAway}`}
+                        </div>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate">{sch.title}</p>
-                      {sch.category && <span className="text-[10px] text-muted-foreground">{sch.category}</span>}
-                    </div>
-                    {sch.event_time && <span className="text-[10px] text-muted-foreground shrink-0">{sch.event_time}</span>}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
             {/* Past */}
             {(scheduleData?.past?.length ?? 0) > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground mb-1">
-                  {language === "ko" ? "지난 일정" : "Past"}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  {language === "ko" ? "지난 예측" : "Past Predictions"}
                 </p>
                 {scheduleData!.past.map((sch: any) => (
-                  <div key={sch.id} className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/30 p-3 opacity-70">
-                    <div className="shrink-0 w-12 text-center">
-                      <span className="text-xs font-bold text-muted-foreground">{formatEventDate(sch.event_date, language)}</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground/70 truncate">{sch.title}</p>
-                      {sch.category && <span className="text-[10px] text-muted-foreground">{sch.category}</span>}
-                    </div>
-                    {sch.event_time && <span className="text-[10px] text-muted-foreground shrink-0">{sch.event_time}</span>}
+                  <div key={sch.id} className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-muted/20 p-2.5 opacity-60">
+                    <span className="text-[10px] font-bold text-muted-foreground shrink-0 w-10 text-center">
+                      {formatEventDate(sch.event_date, language)}
+                    </span>
+                    <p className="text-xs text-muted-foreground truncate flex-1">{sch.title}</p>
                   </div>
                 ))}
               </div>
             )}
 
             {(scheduleData?.upcoming?.length ?? 0) === 0 && (scheduleData?.past?.length ?? 0) === 0 && (
-              <p className="text-sm text-muted-foreground italic py-4">
-                {language === "ko" ? "예정된 일정 없음" : "No events"}
-              </p>
+              <div className="text-center py-6 rounded-xl border border-dashed border-border/40">
+                <Calendar className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {language === "ko" ? "예측된 일정이 없습니다" : "No predicted events"}
+                </p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  {language === "ko" ? "뉴스 데이터가 수집되면 자동으로 표시됩니다" : "Will appear when news data is collected"}
+                </p>
+              </div>
             )}
           </>
         )}
