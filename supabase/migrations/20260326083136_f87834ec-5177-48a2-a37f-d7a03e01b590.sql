@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_schedule_predictions ALTER COLUMN wiki_entry_id DROP NOT NULL;
