@@ -37,7 +37,7 @@ type WatchedArtistsCache = {
 };
 
 const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: ArtistOnboardingDrawerProps) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
