@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,7 +19,8 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
-  const signedInHandled = useRef(new Set<string>());
+  // Simple dedup set (recreated per mount, no useRef needed to avoid HMR hook-order issues)
+  const [signedInHandled] = useState(() => ({ current: new Set<string>() }));
 
   const { data: profile = null } = useQuery({
     queryKey: ['profile', user?.id],
