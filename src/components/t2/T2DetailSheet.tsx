@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,6 +120,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   const [betOutcome, setBetOutcome] = useState<"mild" | "strong" | "explosive">("mild");
   const [betAmount, setBetAmount] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Market data
   const { data: marketData } = useQuery({
@@ -498,7 +499,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
         </SheetHeader>
 
-        <div className="space-y-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide -mx-6 px-6 pt-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div ref={scrollContainerRef} className="space-y-4 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide -mx-6 px-6 pt-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
@@ -911,6 +912,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         const params = new URLSearchParams(window.location.search);
                         params.set("modal", rk.id);
                         navigate(`?${params.toString()}`, { replace: true });
+                        setTimeout(() => {
+                          scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                        }, 100);
                       }}
                     >
                       {language === "ko" && rk.keyword_ko ? rk.keyword_ko : rk.keyword}
