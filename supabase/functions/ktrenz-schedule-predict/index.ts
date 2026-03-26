@@ -48,8 +48,13 @@ const TOOL_DEF = {
                 type: "string",
                 description: "Brief reasoning for the prediction based on specific news headlines (1-2 sentences in Korean)",
               },
+              source_headline_indices: {
+                type: "array",
+                items: { type: "number" },
+                description: "1-based indices of the news headlines that directly support this prediction. Only include headlines that are actually about this specific event.",
+              },
             },
-            required: ["event_title", "category", "confidence", "reasoning"],
+            required: ["event_title", "category", "confidence", "reasoning", "source_headline_indices"],
           },
         },
       },
@@ -304,24 +309,34 @@ async function savePredictions(
     .eq("star_id", starId)
     .eq("status", "active");
 
-  const rows = predictions.map((p: any) => ({
-    star_id: starId,
-    event_title: p.event_title,
-    event_date: p.event_date || null,
-    event_date_end: p.event_date_end || null,
-    category: p.category || "event",
-    confidence: p.confidence,
-    reasoning: p.reasoning || null,
-    source_headlines: newsData.map((n) => n.title).slice(0, 10),
-    source_articles: newsData.slice(0, 10).map((n) => ({
-      title: n.title,
-      description: n.description,
-      url: n.url,
-      image: n.image,
-    })),
-    status: "active",
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-  }));
+  const rows = predictions.map((p: any) => {
+    // Filter source articles to only those relevant to this prediction
+    const indices: number[] = (p.source_headline_indices || [])
+      .map((i: number) => i - 1) // convert 1-based to 0-based
+      .filter((i: number) => i >= 0 && i < newsData.length);
+    const relevant = indices.length > 0
+      ? indices.map((i: number) => newsData[i])
+      : newsData.slice(0, 3); // fallback: first 3 if AI didn't return indices
+
+    return {
+      star_id: starId,
+      event_title: p.event_title,
+      event_date: p.event_date || null,
+      event_date_end: p.event_date_end || null,
+      category: p.category || "event",
+      confidence: p.confidence,
+      reasoning: p.reasoning || null,
+      source_headlines: relevant.map((n) => n.title),
+      source_articles: relevant.map((n) => ({
+        title: n.title,
+        description: n.description,
+        url: n.url,
+        image: n.image,
+      })),
+      status: "active",
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+  });
 
   const { error } = await sb.from("ktrenz_schedule_predictions").insert(rows);
   if (error) console.error("[schedule-predict] Insert error:", error.message);
