@@ -912,6 +912,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         const params = new URLSearchParams(window.location.search);
                         params.set("modal", rk.id);
                         navigate(`?${params.toString()}`, { replace: true });
+                        setTimeout(() => {
+                          scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                        }, 100);
                       }}
                     >
                       {language === "ko" && rk.keyword_ko ? rk.keyword_ko : rk.keyword}
