@@ -139,15 +139,10 @@ Deno.serve(async (req) => {
     }
 
     if (!resolvedStarId) {
-      // starId도 wikiEntryId도 없으면 에러
-      if (starId) {
-        // starId가 직접 전달된 경우 star 정보 조회
-      } else {
-        return new Response(
-          JSON.stringify({ success: false, error: "starId or wikiEntryId required" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+      return new Response(
+        JSON.stringify({ success: false, error: "starId or wikiEntryId required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // star 정보 조회
