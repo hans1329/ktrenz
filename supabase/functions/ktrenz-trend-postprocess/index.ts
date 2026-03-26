@@ -925,7 +925,7 @@ Deno.serve(async (req) => {
 
     // 4.7단계: brand_id 자동 매핑
     const brandMapped = await mapBrandIds(sb);
-    console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped} keywords`);
+    console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped.mapped}, auto-registered ${brandMapped.registered} new brands`);
 
     // 4.8단계: 글로벌 스타명 필터 (다른 아티스트/그룹 이름이 키워드인 경우 제거)
     const globalNameResult = await globalStarNameFilter(sb);
