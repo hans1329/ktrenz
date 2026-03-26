@@ -827,9 +827,7 @@ const T2ArtistPage = () => {
                       key={sch.id}
                       className={cn(
                         "relative overflow-hidden rounded-xl border p-3 transition-all",
-                        idx === 0
-                          ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20"
-                          : "bg-card border-border/40",
+                        "bg-muted/40 border-border/30",
                         isToday && "border-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
                       )}
                     >
