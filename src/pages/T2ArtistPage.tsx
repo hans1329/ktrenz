@@ -71,6 +71,7 @@ const T2ArtistPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [watchLoading, setWatchLoading] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
