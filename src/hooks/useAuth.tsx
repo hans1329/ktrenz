@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+  const signedInHandled = useRef(new Set<string>());
 
   const { data: profile = null } = useQuery({
     queryKey: ['profile', user?.id],
@@ -53,9 +54,13 @@ export const useAuth = () => {
 
   useEffect(() => {
     let mounted = true;
-    let initialSessionHandled = false;
 
-    const handleSignedIn = async (uid: string) => {
+    // Fire-and-forget login side effects (DO NOT await inside onAuthStateChange)
+    const handleSignedIn = (uid: string) => {
+      // Deduplicate within this mount cycle
+      if (signedInHandled.current.has(uid)) return;
+      signedInHandled.current.add(uid);
+
       supabase
         .from('ktrenz_user_logins')
         .upsert(
@@ -82,7 +87,7 @@ export const useAuth = () => {
         const parts = lang.split('-');
         const countryCode = parts[1]?.toUpperCase() || LANG_TO_COUNTRY[parts[0]] || null;
 
-        await (supabase as any)
+        (supabase as any)
           .from('ktrenz_user_locales')
           .upsert(
             {
@@ -93,60 +98,49 @@ export const useAuth = () => {
               updated_at: new Date().toISOString(),
             },
             { onConflict: 'user_id' }
-          );
+          )
+          .then(() => {});
       } catch {}
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    // 1. Register listener FIRST (Supabase recommended pattern)
+    // INITIAL_SESSION fires synchronously during registration and includes
+    // the result of any token exchange (OAuth hash params, PKCE code, etc.).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
+      // Always update state from the event
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
 
       if (event === 'INITIAL_SESSION') {
-        initialSessionHandled = true;
+        // Session fully resolved (including OAuth redirect token exchange)
         setLoading(false);
-        return;
       }
 
       if (event === 'SIGNED_IN' && nextSession?.user?.id) {
-        await handleSignedIn(nextSession.user.id);
+        handleSignedIn(nextSession.user.id);
       }
 
       if (event === 'SIGNED_OUT') {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+        // Clean up stale tokens
+        try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch {}
+        queryClient.clear();
       }
 
-      setLoading(false);
+      if (event === 'TOKEN_REFRESHED') {
+        // Session successfully refreshed — no action needed
+      }
     });
 
-    const initSession = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!mounted) return;
-
-        if (!currentSession) {
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-        }
-
-        setSession(currentSession ?? null);
-        setUser(currentSession?.user ?? null);
-      } catch {
-        if (!mounted) return;
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        setSession(null);
-        setUser(null);
-      } finally {
-        if (mounted && !initialSessionHandled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initSession();
+    // 2. Safety fallback: if INITIAL_SESSION hasn't fired within 3s, force loading=false
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 3000);
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [queryClient]);
@@ -154,7 +148,7 @@ export const useAuth = () => {
   const signOut = async () => {
     setUser(null);
     setSession(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch {}
     queryClient.clear();
     try { await supabase.auth.signOut(); } catch {}
     window.location.href = '/';
