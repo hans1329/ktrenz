@@ -365,6 +365,14 @@ Deno.serve(async (req) => {
         const kwQuery = trigger.keyword_ko || trigger.keyword;
         const isShopTrigger = trigger.trigger_source === "naver_shop";
 
+        // 이전 추적 기록의 interest_score를 가져와서 delta 계산에 사용
+        const { data: prevTracking } = await sb.from("ktrenz_trend_tracking")
+          .select("interest_score")
+          .eq("trigger_id", trigger.id)
+          .order("tracked_at", { ascending: false })
+          .limit(1);
+        const prevTrackScore = prevTracking?.[0]?.interest_score ?? null;
+
         let buzzScore: number;
         let apiTotal: number;
         let dailyDelta: number;
@@ -382,9 +390,10 @@ Deno.serve(async (req) => {
           apiTotal = shopResult.total;
           const prevApiTotal = trigger.prev_api_total || 0;
           dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
-          const prevScore = trigger.baseline_score || 0;
-          deltaPct = prevScore > 0
-            ? Math.round(((buzzScore - prevScore) / prevScore) * 10000) / 100
+          // 이전 추적 점수 대비 변동률 (baseline 아닌 직전 추적값 기준)
+          const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
+          deltaPct = refScore > 0
+            ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
             : buzzScore > 0 ? 100 : 0;
 
           rawResponse = {
@@ -419,9 +428,10 @@ Deno.serve(async (req) => {
           apiTotal = apiNewsTotal + apiBlogTotal;
           const prevApiTotal = trigger.prev_api_total || 0;
           dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
-          const prevScore = trigger.baseline_score || 0;
-          deltaPct = prevScore > 0
-            ? Math.round(((buzzScore - prevScore) / prevScore) * 10000) / 100
+          // 이전 추적 점수 대비 변동률 (baseline 아닌 직전 추적값 기준)
+          const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
+          deltaPct = refScore > 0
+            ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
             : buzzScore > 0 ? 100 : 0;
 
           rawResponse = {
