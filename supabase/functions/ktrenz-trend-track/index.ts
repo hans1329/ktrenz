@@ -365,6 +365,14 @@ Deno.serve(async (req) => {
         const kwQuery = trigger.keyword_ko || trigger.keyword;
         const isShopTrigger = trigger.trigger_source === "naver_shop";
 
+        // 이전 추적 기록의 interest_score를 가져와서 delta 계산에 사용
+        const { data: prevTracking } = await sb.from("ktrenz_trend_tracking")
+          .select("interest_score")
+          .eq("trigger_id", trigger.id)
+          .order("tracked_at", { ascending: false })
+          .limit(1);
+        const prevTrackScore = prevTracking?.[0]?.interest_score ?? null;
+
         let buzzScore: number;
         let apiTotal: number;
         let dailyDelta: number;
