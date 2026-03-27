@@ -221,8 +221,9 @@ async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number
   const updates: any = {};
   const baseline = trigger.baseline_score ?? 0;
 
-  // 쇼핑 키워드: composite score는 0~100 스케일인데 baseline이 100 초과면 스케일 불일치 → 리셋
-  const needsBaselineReset = isShopTrigger && baseline > 100;
+  // 쇼핑 키워드: 스케일 변경 감지 → baseline이 새 스코어와 50% 이상 차이나면 리셋
+  const scaleDiff = baseline > 0 ? Math.abs(buzzScore - baseline) / baseline : 0;
+  const needsBaselineReset = isShopTrigger && scaleDiff > 0.5;
 
   if ((baseline <= 0 || needsBaselineReset) && buzzScore > 0) {
     // baseline 미설정 또는 스케일 불일치 → 지금 설정
