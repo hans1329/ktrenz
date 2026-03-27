@@ -428,9 +428,10 @@ Deno.serve(async (req) => {
           apiTotal = apiNewsTotal + apiBlogTotal;
           const prevApiTotal = trigger.prev_api_total || 0;
           dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
-          const prevScore = trigger.baseline_score || 0;
-          deltaPct = prevScore > 0
-            ? Math.round(((buzzScore - prevScore) / prevScore) * 10000) / 100
+          // 이전 추적 점수 대비 변동률 (baseline 아닌 직전 추적값 기준)
+          const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
+          deltaPct = refScore > 0
+            ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
             : buzzScore > 0 ? 100 : 0;
 
           rawResponse = {
