@@ -151,9 +151,13 @@ async function searchNaverDatalab(
 function computeShopScore(datalabRatio: number, shopTotal: number): number {
   // datalabRatio: 0~100 (네이버 상대값)
   const searchScore = datalabRatio; // 이미 0~100 스케일
-  // shopTotal: 상품 수 → 로그 정규화 (max ~100k 기준)
-  const shopNorm = shopTotal > 0 ? (Math.log10(shopTotal + 1) / Math.log10(100001)) * 100 : 0;
-  return Math.round(Math.min(searchScore * 0.6 + shopNorm * 0.4, 100));
+  // shopTotal: 상품 수 → 로그 정규화 (max ~1M 기준)
+  const shopNorm = shopTotal > 0 ? (Math.log10(shopTotal + 1) / Math.log10(1000001)) * 100 : 0;
+  // datalab이 0이면 shop 가중치를 높여서 변동 반영
+  const w = searchScore > 0 ? 0.6 : 0;
+  const shopW = searchScore > 0 ? 0.4 : 1.0;
+  const raw = searchScore * w + shopNorm * shopW;
+  return Math.round(Math.min(raw, 100) * 100) / 100; // 소수점 2자리 유지
 }
 
 // ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
@@ -217,8 +221,9 @@ async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number
   const updates: any = {};
   const baseline = trigger.baseline_score ?? 0;
 
-  // 쇼핑 키워드: composite score는 0~100 스케일인데 baseline이 100 초과면 스케일 불일치 → 리셋
-  const needsBaselineReset = isShopTrigger && baseline > 100;
+  // 쇼핑 키워드: 스케일 변경 감지 → baseline이 새 스코어와 50% 이상 차이나면 리셋
+  const scaleDiff = baseline > 0 ? Math.abs(buzzScore - baseline) / baseline : 0;
+  const needsBaselineReset = isShopTrigger && scaleDiff > 0.5;
 
   if ((baseline <= 0 || needsBaselineReset) && buzzScore > 0) {
     // baseline 미설정 또는 스케일 불일치 → 지금 설정
