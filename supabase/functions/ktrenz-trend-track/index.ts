@@ -151,9 +151,13 @@ async function searchNaverDatalab(
 function computeShopScore(datalabRatio: number, shopTotal: number): number {
   // datalabRatio: 0~100 (네이버 상대값)
   const searchScore = datalabRatio; // 이미 0~100 스케일
-  // shopTotal: 상품 수 → 로그 정규화 (max ~100k 기준)
-  const shopNorm = shopTotal > 0 ? (Math.log10(shopTotal + 1) / Math.log10(100001)) * 100 : 0;
-  return Math.round(Math.min(searchScore * 0.6 + shopNorm * 0.4, 100));
+  // shopTotal: 상품 수 → 로그 정규화 (max ~1M 기준)
+  const shopNorm = shopTotal > 0 ? (Math.log10(shopTotal + 1) / Math.log10(1000001)) * 100 : 0;
+  // datalab이 0이면 shop 가중치를 높여서 변동 반영
+  const w = searchScore > 0 ? 0.6 : 0;
+  const shopW = searchScore > 0 ? 0.4 : 1.0;
+  const raw = searchScore * w + shopNorm * shopW;
+  return Math.round(Math.min(raw, 100) * 100) / 100; // 소수점 2자리 유지
 }
 
 // ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
