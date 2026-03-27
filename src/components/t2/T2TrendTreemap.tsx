@@ -1104,12 +1104,21 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                       }
                                       const startMs = Math.min(pts[0].t, nowMs);
                                       const spanMs = Math.max(nowMs - startMs, 3600000);
-                                      const maxVal = Math.max(...pts.map(p => p.v), 1);
+                                      const vals = pts.map(p => p.v);
+                                      const minVal = Math.min(...vals);
+                                      const maxVal = Math.max(...vals, 1);
+                                      const range = maxVal - minVal;
+                                      // If range is tiny relative to max (<5%), amplify to show variation
+                                      const effectiveMin = range < maxVal * 0.05 ? maxVal * 0.8 : minVal;
+                                      const effectiveRange = maxVal - effectiveMin || 1;
                                       const toX = (t: number, index: number) => {
                                         if (index === pts.length - 1) return 100;
                                         return Math.max(0, Math.min(((t - startMs) / spanMs) * 100, 100));
                                       };
-                                      const toY = (v: number) => 18 - (v / maxVal) * 14;
+                                      const toY = (v: number) => {
+                                        const normalized = Math.max(0, Math.min((v - effectiveMin) / effectiveRange, 1));
+                                        return 18 - normalized * 14;
+                                      };
                                       const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
                                       const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t, i).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
                                       return (
