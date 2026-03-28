@@ -1033,25 +1033,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
                             )}
                           >
-                            {/* Top: keyword + artist + sparkline */}
-                            <div className={cn("flex flex-col gap-1", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
-                              <div className="flex items-center justify-between">
-                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-sm" : "text-xs")}>
-                                  {getLocalizedArtistName(item, language)}
-                                </span>
-                                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
-                                  <Clock className="w-2.5 h-2.5" />
-                                  {formatAge(item.detectedAt)}
-                                </span>
-                              </div>
-                              <div className="flex items-start gap-1.5">
-                                <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-[3px]" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
-                                <h4 className={cn("font-black text-foreground leading-snug whitespace-nowrap overflow-hidden text-ellipsis", idx === 0 ? (getLocalizedKeyword(item, language).length > 20 ? "text-sm" : getLocalizedKeyword(item, language).length > 14 ? "text-base" : "text-lg") : (getLocalizedKeyword(item, language).length > 20 ? "text-xs" : getLocalizedKeyword(item, language).length > 14 ? "text-sm" : "text-base"))}>
-                                  {getLocalizedKeyword(item, language)}
-                                </h4>
-                              </div>
-                            </div>
-                            {/* Image area with rank badge + sparkline overlay */}
+                            {/* Full image card with centered keyword overlay */}
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[300px]" : "h-[280px]")}>
                               {bgImg ? (
                                 <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-center" loading="lazy" referrerPolicy="no-referrer" />
@@ -1060,14 +1042,38 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {getLocalizedArtistName(item, language).charAt(0)}
                                 </div>
                               )}
-                              {idx < 3 && (
-                                <span className={cn("absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-8 h-8 text-sm" : "w-6 h-6 text-[10px]")}>
-                                  {idx + 1}
+                              {/* Dark overlay for text readability */}
+                              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 via-[45%] to-transparent" />
+                              {/* Top-left: rank badge + artist */}
+                              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                                {idx < 3 && (
+                                  <span className={cn("rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-7 h-7 text-sm" : "w-6 h-6 text-[10px]")}>
+                                    {idx + 1}
+                                  </span>
+                                )}
+                                <span className={cn("font-medium text-white/80 truncate drop-shadow-md", idx === 0 ? "text-sm" : "text-xs")}>
+                                  {getLocalizedArtistName(item, language)}
                                 </span>
-                              )}
-                              {isMyArtist && (
-                                <Star className="w-4 h-4 text-amber-400 fill-amber-400 absolute top-2 right-2 drop-shadow-md" />
-                              )}
+                              </div>
+                              {/* Top-right: age + star */}
+                              <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+                                <span className="flex items-center gap-0.5 text-[9px] text-white/70 shrink-0 drop-shadow-md">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {formatAge(item.detectedAt)}
+                                </span>
+                                {isMyArtist && (
+                                  <Star className="w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-md" />
+                                )}
+                              </div>
+                              {/* Centered keyword */}
+                              <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
+                                <div className="flex items-start gap-1.5">
+                                  <MessageCircle className="w-4 h-4 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
+                                  <h4 className={cn("font-black text-white leading-snug drop-shadow-md text-center", idx === 0 ? (getLocalizedKeyword(item, language).length > 20 ? "text-base" : getLocalizedKeyword(item, language).length > 14 ? "text-lg" : "text-xl") : (getLocalizedKeyword(item, language).length > 20 ? "text-sm" : getLocalizedKeyword(item, language).length > 14 ? "text-base" : "text-lg"))}>
+                                    {getLocalizedKeyword(item, language)}
+                                  </h4>
+                                </div>
+                              </div>
                               {/* Sparkline overlay at bottom of image */}
                               <div className="absolute inset-x-0 bottom-0">
                                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
