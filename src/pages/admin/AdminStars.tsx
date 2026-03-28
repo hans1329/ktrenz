@@ -172,6 +172,10 @@ const AdminStars = () => {
         star_type: parsed.star_type || prev.star_type,
         namuwiki_url: url,
         agency: parsed.agency || prev.agency,
+        social_instagram: parsed.social_handles?.instagram || prev.social_instagram,
+        social_youtube: parsed.social_handles?.youtube || prev.social_youtube,
+        social_tiktok: parsed.social_handles?.tiktok || prev.social_tiktok,
+        social_x: parsed.social_handles?.twitter || parsed.social_handles?.x || prev.social_x,
       }));
 
       // Try to find group_star_id if member
