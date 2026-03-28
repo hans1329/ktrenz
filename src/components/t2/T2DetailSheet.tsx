@@ -586,7 +586,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           </div>
 
           {/* Context body — separate card */}
-          <div className="rounded-xl bg-background border border-border overflow-hidden">
+          <div className="overflow-hidden">
             <div className="p-3 space-y-1.5">
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 <Target className="w-4.5 h-4.5 text-primary" />
@@ -625,7 +625,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Ranking explanation: Why this rank? */}
           {rank != null && (
-            <div className="rounded-xl bg-background border border-border p-3 space-y-2">
+            <div className="space-y-2">
               <h3 className="text-base font-bold text-foreground">
                 {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
               </h3>
