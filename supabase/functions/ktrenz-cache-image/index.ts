@@ -91,7 +91,24 @@ function textMatchesNames(text: string, nameVariants: string[]): boolean {
   return nameVariants.some(v => lower.includes(v));
 }
 
-// 본문 HTML에서 <img> 후보를 추출하되, alt 텍스트/캡션에 아티스트명이 있는 것만 반환
+// URL이 유효한 이미지 URL인지 검증하고 정규화
+function resolveImageUrl(src: string, pageUrl: string): string | null {
+  if (!src) return null;
+  if (/\.(gif|svg|ico)(\?|$)/i.test(src)) return null;
+  if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|emoticon|emoji/i.test(src)) return null;
+
+  let resolved = src.replace(/&amp;/g, "&");
+  if (resolved.startsWith("//")) resolved = "https:" + resolved;
+  else if (resolved.startsWith("/")) {
+    try { resolved = new URL(resolved, pageUrl).href; } catch { return null; }
+  }
+  if (!resolved.startsWith("https://")) return null;
+  if (IMAGE_DOMAIN_BLACKLIST.some(domain => resolved.includes(domain))) return null;
+  return resolved;
+}
+
+// 본문 HTML에서 이미지 후보를 추출 — <img src>, srcset, data-src, 인라인 URL 패턴 모두 지원
+// SPA 등 <img> 태그가 없는 사이트에서도 이미지를 찾을 수 있도록 확장
 // nameVariants가 빈 배열이면 (이름 정보 없으면) 기존처럼 전부 반환
 async function fetchBodyImageCandidates(
   pageUrl: string,
@@ -107,12 +124,12 @@ async function fetchBodyImageCandidates(
     });
     if (!res.ok) return [];
 
-    // 본문 앞 100KB만 읽기
+    // 본문 앞 200KB 읽기 (SPA 사이트는 JSON/인라인 데이터가 길 수 있음)
     const reader = res.body?.getReader();
     if (!reader) return [];
     let html = "";
     const decoder = new TextDecoder();
-    while (html.length < 100_000) {
+    while (html.length < 200_000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
@@ -122,55 +139,154 @@ async function fetchBodyImageCandidates(
     const hasFilter = nameVariants.length > 0;
     const matched: string[] = [];
     const unmatched: string[] = [];
+    const seenUrls = new Set<string>();
 
-    // 각 img 태그를 순회하며 alt + 후방 캡션 텍스트 검사
-    const imgRegex = /<img[^>]*src=["']([^"']+)["'][^>]*>/gi;
-    let imgMatch: RegExpExecArray | null;
-    while ((imgMatch = imgRegex.exec(html)) !== null) {
-      const fullTag = imgMatch[0];
-      const src = imgMatch[1];
-
-      // 기본 필터
-      if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
-      if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|emoticon|emoji/i.test(src)) continue;
-      if (/width=["']?([1-9]|[1-9]\d)["'\s>]/i.test(fullTag) && !/width=["']?[1-9]\d{2,}/i.test(fullTag)) continue;
-
-      let resolved = src.replace(/&amp;/g, "&");
-      if (resolved.startsWith("//")) resolved = "https:" + resolved;
-      else if (resolved.startsWith("/")) {
-        try { resolved = new URL(resolved, pageUrl).href; } catch { continue; }
-      }
-      if (!resolved.startsWith("http")) continue;
-      if (IMAGE_DOMAIN_BLACKLIST.some(domain => resolved.includes(domain))) continue;
-      if (resolved.startsWith("http://")) continue;
+    function addCandidate(resolved: string, contextText: string) {
+      if (seenUrls.has(resolved)) return;
+      seenUrls.add(resolved);
 
       if (!hasFilter) {
         matched.push(resolved);
-        continue;
+        return;
       }
-
-      // alt 텍스트 추출
-      const altMatch = fullTag.match(/alt=["']([^"']*?)["']/i);
-      const altText = altMatch?.[1] || "";
-
-      // img 태그 직후 200자 내의 텍스트(캡션)도 확인
-      const afterTagStart = imgMatch.index + fullTag.length;
-      const captionSlice = html.slice(afterTagStart, afterTagStart + 300);
-      // HTML 태그 제거하고 순수 텍스트만
-      const captionText = captionSlice.replace(/<[^>]+>/g, " ").slice(0, 200);
-
-      const combinedText = `${altText} ${captionText}`;
-
-      if (textMatchesNames(combinedText, nameVariants)) {
+      if (textMatchesNames(contextText, nameVariants)) {
         matched.push(resolved);
-        console.log(`[cache-image] ✓ Name-matched image: alt="${altText.slice(0, 60)}" → ${resolved.slice(0, 80)}`);
+        console.log(`[cache-image] ✓ Name-matched image: ctx="${contextText.slice(0, 60)}" → ${resolved.slice(0, 80)}`);
       } else {
         unmatched.push(resolved);
       }
     }
 
+    // ── 1단계: <img> 태그 파싱 (src, data-src, srcset) ──
+    const imgTagRegex = /<img[^>]*>/gi;
+    let imgTagMatch: RegExpExecArray | null;
+    while ((imgTagMatch = imgTagRegex.exec(html)) !== null) {
+      const fullTag = imgTagMatch[0];
+
+      // 소형 이미지 필터
+      if (/width=["']?([1-9]|[1-9]\d)["'\s>]/i.test(fullTag) && !/width=["']?[1-9]\d{2,}/i.test(fullTag)) continue;
+
+      // alt 텍스트 추출
+      const altMatch = fullTag.match(/alt=["']([^"']*?)["']/i);
+      const altText = altMatch?.[1] || "";
+
+      // img 태그 직후 200자 캡션
+      const afterTagStart = imgTagMatch.index + fullTag.length;
+      const captionSlice = html.slice(afterTagStart, afterTagStart + 300);
+      const captionText = captionSlice.replace(/<[^>]+>/g, " ").slice(0, 200);
+      const combinedText = `${altText} ${captionText}`;
+
+      // src 속성
+      const srcMatch = fullTag.match(/\bsrc=["']([^"']+)["']/i);
+      if (srcMatch) {
+        const resolved = resolveImageUrl(srcMatch[1], pageUrl);
+        if (resolved) addCandidate(resolved, combinedText);
+      }
+
+      // data-src 속성 (lazy load)
+      const dataSrcMatch = fullTag.match(/data-src=["']([^"']+)["']/i);
+      if (dataSrcMatch) {
+        const resolved = resolveImageUrl(dataSrcMatch[1], pageUrl);
+        if (resolved) addCandidate(resolved, combinedText);
+      }
+
+      // srcset 속성 (가장 큰 것)
+      const srcsetMatch = fullTag.match(/srcset=["']([^"']+)["']/i);
+      if (srcsetMatch) {
+        const srcsetEntries = srcsetMatch[1].split(",").map(s => s.trim().split(/\s+/));
+        // 가장 큰 width descriptor 또는 마지막 항목
+        let bestSrc = "";
+        let bestW = 0;
+        for (const entry of srcsetEntries) {
+          const url = entry[0];
+          const descriptor = entry[1] || "";
+          const wMatch = descriptor.match(/(\d+)w/);
+          const w = wMatch ? parseInt(wMatch[1]) : 0;
+          if (w >= bestW) { bestW = w; bestSrc = url; }
+        }
+        if (bestSrc) {
+          const resolved = resolveImageUrl(bestSrc, pageUrl);
+          if (resolved) addCandidate(resolved, combinedText);
+        }
+      }
+    }
+
+    // ── 2단계: <source> 태그의 srcset (picture 요소) ──
+    const sourceRegex = /<source[^>]*srcset=["']([^"']+)["'][^>]*>/gi;
+    let sourceMatch: RegExpExecArray | null;
+    while ((sourceMatch = sourceRegex.exec(html)) !== null) {
+      const srcsetEntries = sourceMatch[1].split(",").map(s => s.trim().split(/\s+/));
+      let bestSrc = "";
+      let bestW = 0;
+      for (const entry of srcsetEntries) {
+        const wMatch = (entry[1] || "").match(/(\d+)w/);
+        const w = wMatch ? parseInt(wMatch[1]) : 0;
+        if (w >= bestW) { bestW = w; bestSrc = entry[0]; }
+      }
+      if (bestSrc) {
+        const resolved = resolveImageUrl(bestSrc, pageUrl);
+        if (resolved) {
+          const afterStart = sourceMatch.index + sourceMatch[0].length;
+          const ctx = html.slice(afterStart, afterStart + 300).replace(/<[^>]+>/g, " ").slice(0, 200);
+          addCandidate(resolved, ctx);
+        }
+      }
+    }
+
+    // ── 3단계: 인라인 URL 패턴 (SPA/SSR JSON 내 이미지 URL) ──
+    // <img> 태그가 0개이거나 매칭 이미지가 부족한 경우에만 실행
+    if (matched.length === 0) {
+      const inlineUrlRegex = /(https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp|avif)(?:\?[^\s"'<>]*)?)/gi;
+      let inlineMatch: RegExpExecArray | null;
+      const inlineCandidates: string[] = [];
+      while ((inlineMatch = inlineUrlRegex.exec(html)) !== null) {
+        let url = inlineMatch[1].replace(/&amp;/g, "&");
+        // 작은 크기 표시가 있으면 건너뛰기
+        if (/width=([1-9]|[1-9]\d)(?:&|$)/i.test(url)) continue;
+        if (/\/icon|\/logo|\/button|\/banner|\/pixel/i.test(url)) continue;
+        if (IMAGE_DOMAIN_BLACKLIST.some(domain => url.includes(domain))) continue;
+        if (!url.startsWith("https://")) continue;
+        if (seenUrls.has(url)) continue;
+
+        // 가장 큰 width 버전 선택 (e.g. width=2560)
+        const widthMatch = url.match(/width=(\d+)/);
+        const width = widthMatch ? parseInt(widthMatch[1]) : 0;
+        // 최소 200px 이상
+        if (widthMatch && width < 200) continue;
+
+        inlineCandidates.push(url);
+        seenUrls.add(url);
+      }
+
+      // 인라인 URL은 주변 컨텍스트 확인이 어렵기 때문에 고해상도(width≥400)만 필터 없이 추가
+      // 중복 URL 패턴 그룹핑: 같은 base path의 다양한 width 중 가장 큰 것만 선택
+      const basePathMap = new Map<string, { url: string; width: number }>();
+      for (const url of inlineCandidates) {
+        const basePath = url.replace(/[?&]width=\d+/, "").replace(/[?&]height=\d+/, "");
+        const widthMatch = url.match(/width=(\d+)/);
+        const w = widthMatch ? parseInt(widthMatch[1]) : 500; // width 없으면 기본값
+        const existing = basePathMap.get(basePath);
+        if (!existing || w > existing.width) {
+          basePathMap.set(basePath, { url, width: w });
+        }
+      }
+
+      for (const { url } of basePathMap.values()) {
+        // 인라인 URL 주변 ±300자 컨텍스트 확인
+        const urlIdx = html.indexOf(url.replace(/&/g, "&amp;"));
+        const ctx = urlIdx >= 0
+          ? html.slice(Math.max(0, urlIdx - 200), urlIdx + url.length + 200).replace(/<[^>]+>/g, " ").slice(0, 400)
+          : "";
+        addCandidate(url, ctx);
+      }
+
+      if (matched.length > 0) {
+        console.log(`[cache-image] Inline URL scan found ${matched.length} matches`);
+      }
+    }
+
     if (matched.length > 0) {
-      console.log(`[cache-image] Name filter: ${matched.length} matched, ${unmatched.length} excluded`);
+      console.log(`[cache-image] Name filter: ${matched.length} matched, ${unmatched.length} excluded (methods: img+srcset+data-src+inline)`);
       return matched;
     }
 
