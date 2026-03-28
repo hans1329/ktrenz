@@ -48,7 +48,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
     const aVol = (a.prevApiTotal ?? a.peakScore ?? 0) - (a.baselineScore ?? 0);
     const bVol = (b.prevApiTotal ?? b.peakScore ?? 0) - (b.baselineScore ?? 0);
     return bVol - aVol;
-  }).slice(0, 4);
+  }).slice(0, 3);
 
   if (top4.length === 0) return null;
 
