@@ -292,6 +292,7 @@ const AdminStars = () => {
 
   const openEdit = (s: StarRow) => {
     setEditingStar(s);
+    const handles = s.social_handles || {};
     setForm({
       display_name: s.display_name,
       name_ko: s.name_ko ?? "",
@@ -302,6 +303,10 @@ const AdminStars = () => {
       agency: (s as any).agency ?? "",
       star_category: (s as any).star_category ?? "kpop",
       is_active: s.is_active ?? true,
+      social_instagram: handles.instagram ?? "",
+      social_youtube: handles.youtube ?? "",
+      social_tiktok: handles.tiktok ?? "",
+      social_x: handles.x ?? "",
     });
     setNamuUrl((s as any).namuwiki_url ?? "");
     setNamuResult(null);
