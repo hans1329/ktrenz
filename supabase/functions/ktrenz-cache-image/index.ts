@@ -506,7 +506,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── 같은 아티스트의 동일 기사(source_url) 중복 체크 ──
+      // ── 같은 아티스트의 동일 기사 또는 동일 이미지 중복 체크 ──
       const isDuplicateSource = trigger.star_id && trigger.source_url && (() => {
         const existing = artistCachedImages.get(trigger.star_id);
         const batchUsed = batchUsedSourceUrls.get(trigger.star_id);
@@ -525,9 +525,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── 중복 기사 감지: 같은 아티스트가 같은 source_url을 이미 사용 중이면 본문에서 다른 이미지 시도 ──
-      if (isDuplicateSource && url && trigger.source_url) {
-        console.log(`[cache-image] ⚠ Duplicate source_url for star ${trigger.star_id}, trying body images for variety: ${trigger.id}`);
+      // ── 동일 og:image URL 중복 체크 (다른 기사지만 같은 이미지를 쓰는 경우) ──
+      const isImageAlreadyUsed = trigger.star_id && url && (() => {
+        const cachedUrls = artistCachedImageUrls.get(trigger.star_id);
+        const batchUrls = batchUsedSourceUrls.get(trigger.star_id);
+        // 정확한 URL 매치 또는 같은 이미지 경로 패턴
+        const urlBase = url!.split("?")[0];
+        return cachedUrls?.has(urlBase) || batchUrls?.has(urlBase);
+      })();
+
+      // ── 중복 감지 시 본문에서 대체 이미지 시도 ──
+      if ((isDuplicateSource || isImageAlreadyUsed) && url && trigger.source_url) {
+        const reason = isDuplicateSource ? "duplicate source_url" : "duplicate image URL";
+        console.log(`[cache-image] ⚠ ${reason} for star ${trigger.star_id}, trying body images for variety: ${trigger.id}`);
         const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
         // 기존 og:image(url)와 다른 이미지만 필터링
         const altCandidates = candidates.filter(c => c !== url);
