@@ -114,7 +114,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         ) : (
           <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
 
         <div className="absolute inset-x-0 bottom-0">
           <svg viewBox="0 0 100 20" className="w-full h-[18px]" preserveAspectRatio="none">
@@ -137,23 +137,23 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
           </svg>
         </div>
 
-        <div className={cn("relative z-10 flex flex-col justify-end h-full", opts.padClass)}>
-          <div className="flex items-center gap-1.5 mb-0.5">
+        {/* Top-left: rank badge + keyword */}
+        <div className={cn("relative z-10 flex flex-col justify-start h-full", opts.padClass)}>
+          <div className="flex items-center gap-1.5 mb-1">
             <span
-              className={cn("rounded-full flex items-center justify-center font-black text-black shrink-0", opts.rankSize)}
-              style={{ backgroundColor: RANK_COLORS[rank - 1] }}
+              className={cn("rounded-full flex items-center justify-center font-black text-white bg-black/60 backdrop-blur-sm shrink-0", opts.rankSize)}
             >
               {rank}
             </span>
             {opts.showArtist !== false && (
-              <span className="text-[11px] font-medium text-white/70 truncate">
+              <span className="text-[11px] font-medium text-white/80 truncate drop-shadow-md">
                 {getLocalizedArtistName(item, language)}
               </span>
             )}
           </div>
           <div className="flex items-start gap-1">
             <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
-            <h4 className={cn("font-black text-white leading-tight", opts.titleClass)}>
+            <h4 className={cn("font-black text-white leading-tight drop-shadow-md", opts.titleClass)}>
               {getLocalizedKeyword(item, language)}
             </h4>
           </div>
