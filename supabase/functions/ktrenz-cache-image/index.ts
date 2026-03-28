@@ -448,6 +448,33 @@ Deno.serve(async (req) => {
 
     console.log(`[cache-image] Processing ${targets.length} triggers`);
 
+    // ── 중복 이미지 방지: 같은 아티스트의 기존 캐시 이미지 수집 ──
+    // star_id 별로 이미 캐시된 이미지 원본 URL을 추적
+    const artistCachedImages = new Map<string, Set<string>>(); // star_id → Set<original source_url or storage path base>
+    const starIds = [...new Set(targets.map((t: any) => t.star_id).filter(Boolean))];
+    if (starIds.length > 0) {
+      // 같은 아티스트의 다른 트리거 중 이미 캐시된 이미지 URL 조회
+      const { data: existingTriggers } = await sb
+        .from("ktrenz_trend_triggers")
+        .select("star_id, source_image_url, source_url")
+        .in("star_id", starIds)
+        .eq("status", "active")
+        .not("source_image_url", "is", null);
+      if (existingTriggers) {
+        for (const t of existingTriggers) {
+          if (!t.star_id) continue;
+          if (!artistCachedImages.has(t.star_id)) artistCachedImages.set(t.star_id, new Set());
+          const imgSet = artistCachedImages.get(t.star_id)!;
+          // source_url을 키로 사용 (같은 기사 = 같은 이미지 가능성 높음)
+          if (t.source_url) imgSet.add(t.source_url);
+          // 캐시된 이미지의 원본 URL 패턴도 추적 (storage path에서 trigger id 추출)
+          if (t.source_image_url) imgSet.add(t.source_image_url.split("?")[0]);
+        }
+      }
+    }
+    // 현재 배치 내에서도 중복 방지를 위한 로컬 트래커
+    const batchUsedSourceUrls = new Map<string, Set<string>>(); // star_id → Set<source_url>
+
     let cached = 0;
     let failed = 0;
 
