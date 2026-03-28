@@ -450,12 +450,11 @@ Deno.serve(async (req) => {
 
     // ── 중복 이미지 방지: 같은 아티스트의 기존 캐시 이미지 수집 ──
     // star_id 별로 이미 캐시된 이미지 원본 URL을 추적
-    const artistCachedImages = new Map<string, Set<string>>(); // star_id → Set<original source_url or storage path base>
+    const artistCachedImages = new Map<string, Set<string>>(); // star_id → Set<source_url>
+    const artistCachedImageUrls = new Map<string, Set<string>>(); // star_id → Set<cached image url base>
     const starIds = [...new Set(targets.map((t: any) => t.star_id).filter(Boolean))];
     if (starIds.length > 0) {
-    // 같은 아티스트의 다른 트리거 중 이미 캐시된 이미지 URL 조회
-    const artistCachedImageUrls = new Map<string, Set<string>>(); // star_id → Set<og image url base>
-    if (starIds.length > 0) {
+      // 같은 아티스트의 다른 트리거 중 이미 캐시된 이미지 URL 조회
       const { data: existingTriggers } = await sb
         .from("ktrenz_trend_triggers")
         .select("star_id, source_image_url, source_url")
@@ -470,8 +469,6 @@ Deno.serve(async (req) => {
           const srcSet = artistCachedImages.get(t.star_id)!;
           const imgUrlSet = artistCachedImageUrls.get(t.star_id)!;
           if (t.source_url) srcSet.add(t.source_url);
-          // 캐시된 이미지 URL에서 trigger id를 제거하고 원본 이미지 URL 패턴으로 추적할 수 없으므로
-          // storage URL 자체를 중복 키로 사용
           if (t.source_image_url) imgUrlSet.add(t.source_image_url.split("?")[0]);
         }
       }
