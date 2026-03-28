@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import KeywordProbePanel from '@/components/b2b/KeywordProbePanel';
+import { MOCK_ARTIST_GRADES, MOCK_ACTIVE_TRENDS } from '@/data/b2b-mock-data';
 
 const GRADE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   spark:     { label: 'Spark',     color: '#9CA3AF', icon: Zap },
@@ -24,7 +25,7 @@ const B2BDashboard = () => {
   const [gradeFilter, setGradeFilter] = useState<string>('all');
 
   // Fetch active trends with trend_score
-  const { data: activeTrends = [] } = useQuery({
+  const { data: rawTrends = [] } = useQuery({
     queryKey: ['b2b-active-trends'],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -38,8 +39,7 @@ const B2BDashboard = () => {
     },
   });
 
-  // Fetch artist grades
-  const { data: artistGrades = [] } = useQuery({
+  const { data: rawArtistGrades = [] } = useQuery({
     queryKey: ['b2b-artist-grades'],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -57,6 +57,11 @@ const B2BDashboard = () => {
       return data.map((a: any) => ({ ...a, star: starMap.get(a.star_id) }));
     },
   });
+
+  // Use mock data when real data is empty
+  const activeTrends = rawTrends.length > 0 ? rawTrends : MOCK_ACTIVE_TRENDS;
+  const artistGrades = rawArtistGrades.length > 0 ? rawArtistGrades : MOCK_ARTIST_GRADES;
+  const usingMock = rawTrends.length === 0 && rawArtistGrades.length === 0;
 
   // Stats
   const gradeStats = useMemo(() => {
@@ -84,6 +89,13 @@ const B2BDashboard = () => {
       <div className="flex-1 p-6 overflow-y-auto min-w-0">
         <h1 className="text-xl font-extrabold text-[#111827] mb-1">Stars Intelligence</h1>
         <p className="text-[13px] text-[#6B7280] mb-5">Trend Score 기반 스타 분석 · 라이프사이클 추적 · 상업적 전환 모니터링</p>
+
+        {usingMock && (
+          <div className="mb-4 px-4 py-2.5 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[12px] text-[#92400E] font-medium flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#F59E0B] shrink-0" />
+            목업 데이터로 표시 중입니다. 실제 수집 데이터가 확보되면 자동 전환됩니다.
+          </div>
+        )}
 
         {/* Stat Row */}
         <div className="grid grid-cols-4 gap-[14px] mb-5">
