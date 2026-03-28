@@ -121,7 +121,7 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   social:  { label: "Social", color: "hsl(290, 65%, 55%)", tileColor: "hsla(290, 14%, 42%, 0.72)" },
 };
 
-export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "food", "fashion", "beauty", "media", "event", "shopping", "social"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "restaurant", "food", "fashion", "beauty", "media", "event", "shopping", "social"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
