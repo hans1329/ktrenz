@@ -628,6 +628,7 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - TV gimmicks, costumes, ephemeral segments
 - Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
+- ⚠️ FASHION ITEM EXCEPTION: Clothing items like "비키니" (bikini), "수영복" (swimwear), "란제리" (lingerie), "크롭탑" etc. are FASHION items, NOT body/physical stats. Classify them as "fashion" and extract normally. These represent commercial fashion trends, not personal body data.
 
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
@@ -1371,6 +1372,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { starId, memberName, groupName, wikiEntryId, artistName, batchSize = 5, batchOffset = 0 } = body;
+    // star_id 단독 파라미터 지원 (body.star_id도 허용)
+    const resolvedStarId = starId || body.star_id || null;
 
     if (COLLECTION_PAUSED) {
       console.warn(`[trend-detect] Collection paused. Ignoring request offset=${batchOffset}, size=${batchSize}`);
@@ -1416,17 +1419,52 @@ Deno.serve(async (req) => {
     }
     console.log(`[trend-detect] Loaded ${globalStarNames.size} global star name variants for cross-reference`);
 
-    // 단일 멤버 모드 (수동 테스트용)
-    if (starId && memberName) {
-      const result = await detectForMember(
-        sb, openaiKey, naverClientId, naverClientSecret,
-        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null, star_category: body.starCategory || "kpop" },
-        globalStarNames
-      );
-      return new Response(
-        JSON.stringify({ success: true, ...result }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // 단일 스타 모드: star_id만으로도 DB에서 조회하여 실행
+    if (resolvedStarId) {
+      let singleMemberName = memberName;
+      let singleGroupName = groupName || null;
+      let singleGroupNameKo: string | null = null;
+      let singleNameKo: string | null = null;
+      let singleGroupWikiEntryId = wikiEntryId || null;
+      let singleStarCategory = body.starCategory || "kpop";
+
+      // memberName이 없으면 DB에서 조회
+      if (!singleMemberName) {
+        const { data: starData } = await sb
+          .from("ktrenz_stars")
+          .select("display_name, name_ko, group_star_id, star_category")
+          .eq("id", resolvedStarId)
+          .single();
+        if (starData) {
+          singleMemberName = starData.display_name;
+          singleNameKo = starData.name_ko;
+          singleStarCategory = starData.star_category || "kpop";
+          if (starData.group_star_id) {
+            const { data: groupData } = await sb
+              .from("ktrenz_stars")
+              .select("display_name, name_ko, wiki_entry_id")
+              .eq("id", starData.group_star_id)
+              .single();
+            if (groupData) {
+              singleGroupName = groupData.display_name;
+              singleGroupNameKo = groupData.name_ko;
+              singleGroupWikiEntryId = groupData.wiki_entry_id;
+            }
+          }
+        }
+      }
+
+      if (singleMemberName) {
+        const result = await detectForMember(
+          sb, openaiKey, naverClientId, naverClientSecret,
+          { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, group_wiki_entry_id: singleGroupWikiEntryId, star_category: singleStarCategory },
+          globalStarNames
+        );
+        return new Response(
+          JSON.stringify({ success: true, ...result }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // 레거시 호환: wikiEntryId + artistName으로 호출 시
