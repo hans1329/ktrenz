@@ -973,7 +973,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
               { key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color },
               { key: "beauty_fashion", label: "Beauty · Fashion", color: CATEGORY_CONFIG.beauty.color },
               { key: "place", label: "Place", color: CATEGORY_CONFIG.place.color },
-              { key: "food", label: "Food", color: CATEGORY_CONFIG.food.color },
+              { key: "restaurant_food", label: "Restaurant · Food", color: CATEGORY_CONFIG.restaurant.color },
               { key: "event_social", label: "Event · Social", color: CATEGORY_CONFIG.event.color },
               { key: "music_media", label: "Music · Media", color: CATEGORY_CONFIG.music.color },
             ];
