@@ -475,6 +475,66 @@ async function sameImageDedup(sb: any): Promise<{ expired: number; merged: numbe
   return { expired: expireIds.length, merged: mergedCount, details };
 }
 
+// ── 3d. 동일 아티스트 + source_image_url 모두 null → 프로필 폴백 중복제거 ──
+// 같은 아티스트의 여러 키워드가 모두 고유 이미지 없이 프로필 이미지로 폴백되면 하나만 유지
+async function noImageDedup(sb: any): Promise<{ expired: number; merged: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, star_id, artist_name, source_image_url, baseline_score, detected_at")
+    .in("status", ["active", "pending"])
+    .gte("detected_at", threeDaysAgo)
+    .is("source_image_url", null);
+
+  if (!active?.length) return { expired: 0, merged: 0, details: [] };
+
+  // star_id 기준 그룹화 (source_image_url이 null인 것들만)
+  const byStar = new Map<string, any[]>();
+  for (const e of active) {
+    if (!e.star_id) continue;
+    const list = byStar.get(e.star_id) || [];
+    list.push(e);
+    byStar.set(e.star_id, list);
+  }
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+  let mergedCount = 0;
+
+  for (const [_starId, entries] of byStar) {
+    if (entries.length <= 1) continue;
+
+    // baseline_score가 가장 높은 것을 유지
+    entries.sort((a: any, b: any) => {
+      const scoreDiff = (b.baseline_score || 0) - (a.baseline_score || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime();
+    });
+
+    const kept = entries[0];
+    const removed = entries.slice(1);
+    const mergedKeywords = removed.map((e: any) => e.keyword_ko || e.keyword);
+
+    for (const r of removed) {
+      expireIds.push(r.id);
+    }
+    mergedCount += removed.length;
+    details.push(`"${kept.keyword_ko || kept.keyword}" 유지, "${mergedKeywords.join(", ")}" 제거 (${kept.artist_name}, 이미지 없음 → 프로필 폴백 중복)`);
+  }
+
+  if (expireIds.length > 0) {
+    for (let i = 0; i < expireIds.length; i += 500) {
+      const batch = expireIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ status: "merged", expired_at: new Date().toISOString() })
+        .in("id", batch);
+    }
+  }
+
+  return { expired: expireIds.length, merged: mergedCount, details };
+}
+
 async function aiClassification(sb: any): Promise<{ reclassified: number; details: string[] }> {
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openaiKey) {
