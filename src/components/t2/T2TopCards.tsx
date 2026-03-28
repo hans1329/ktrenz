@@ -114,7 +114,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         ) : (
           <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 via-[45%] to-transparent" />
 
         <div className="absolute inset-x-0 bottom-0">
           <svg viewBox="0 0 100 20" className="w-full h-[18px]" preserveAspectRatio="none">
