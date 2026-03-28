@@ -987,7 +987,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: color }}
                       />
-                      <h3 className="text-lg font-black text-foreground flex-1">{label}</h3>
+                      <h3 className="text-lg font-medium text-foreground flex-1">{label}</h3>
                       <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
 
@@ -1041,17 +1041,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {getLocalizedKeyword(item, language)}
                                 </h4>
                               </div>
-                              {(() => {
-                                const ctx = language === "ko" ? (item.contextKo || item.context)
-                                  : language === "ja" ? (item.contextJa || item.context)
-                                  : language === "zh" ? (item.contextZh || item.context)
-                                  : item.context;
-                                return ctx ? (
-                                  <p className="text-[10px] text-muted-foreground mt-0.5 min-w-0 pl-5 line-clamp-2">
-                                    {ctx.replace(/\[\d+\]/g, "").trim()}
-                                  </p>
-                                ) : null;
-                              })()}
                             </div>
                             {/* Image area with rank badge + sparkline overlay */}
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[300px]" : "h-[280px]")}>
