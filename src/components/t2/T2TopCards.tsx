@@ -143,7 +143,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         </div>
 
         {/* Top-left: rank badge + keyword */}
-        <div className={cn("relative z-10 flex flex-col justify-start h-full", opts.padClass)}>
+        <div className={cn("relative z-10 flex flex-col justify-start h-full", opts.padClass, "pt-2.5 pl-2.5")}>
           <div className="flex items-center gap-1.5 mb-1">
             <span
               className={cn("rounded-full flex items-center justify-center font-black text-white bg-black/60 backdrop-blur-sm shrink-0", opts.rankSize)}
