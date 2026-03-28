@@ -446,6 +446,25 @@ const AdminStars = () => {
                       {(s as any).agency ?? "—"}
                     </td>
                     <td className="px-3 py-2">
+                      <div className="flex gap-1">
+                        {s.social_handles?.instagram && s.social_handles.instagram !== "_not_found" && (
+                          <Badge variant="outline" className="text-[9px] px-1">IG</Badge>
+                        )}
+                        {s.social_handles?.youtube && (
+                          <Badge variant="outline" className="text-[9px] px-1">YT</Badge>
+                        )}
+                        {s.social_handles?.tiktok && (
+                          <Badge variant="outline" className="text-[9px] px-1">TT</Badge>
+                        )}
+                        {s.social_handles?.x && (
+                          <Badge variant="outline" className="text-[9px] px-1">X</Badge>
+                        )}
+                        {(!s.social_handles || Object.keys(s.social_handles).filter(k => !["instagram_pk", "instagram_followers", "_not_found"].includes(k) && s.social_handles![k] && s.social_handles![k] !== "_not_found").length === 0) && (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
                       {(s as any).namuwiki_url ? (
                         <a
                           href={(s as any).namuwiki_url}
