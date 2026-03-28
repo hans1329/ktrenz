@@ -1821,7 +1821,7 @@ async function detectForMember(
         wiki_entry_id: member.group_wiki_entry_id || null,
         star_id: member.id || null,
         trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
-        trigger_source: keywordData.category === "social" ? "tiktok" : "naver_shop",
+        trigger_source: keywordData.category === "social" ? "tiktok" : (["brand", "product", "goods", "shopping"].includes(keywordData.category) ? "naver_shop" : "naver_news"),
         artist_name: member.display_name,
         keyword: keywordData.keyword,
         keyword_en: keywordData.keyword_en || null,
