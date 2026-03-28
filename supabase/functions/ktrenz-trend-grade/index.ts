@@ -125,9 +125,10 @@ Deno.serve(async (req) => {
     const { data: activeTriggers, error: fetchErr } = await sb
       .from("ktrenz_trend_triggers")
       .select(
-        "id, star_id, keyword_category, influence_index, baseline_score, peak_score, prev_api_total, trend_potential, purchase_stage, metadata, trend_grade, trend_score, detected_at",
+        "id, star_id, keyword_category, influence_index, baseline_score, peak_score, prev_api_total, trend_potential, purchase_stage, metadata, trend_grade, trend_score, detected_at, trigger_source",
       )
       .eq("status", "active")
+      .neq("trigger_source", "naver_shop")
       .order("detected_at", { ascending: false });
 
     if (fetchErr) {
