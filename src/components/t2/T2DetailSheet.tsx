@@ -711,7 +711,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <div className="text-lg">{emoji}</div>
                     <div className="text-sm font-bold text-foreground">{label}</div>
                     <div className={cn("text-sm font-black", color === "amber" ? "text-amber-600" : `text-${color}-400`)}>{multi}</div>
-                    <div className="text-[9px] text-teal-400 mt-0.5">{threshold}</div>
+                    <div className="text-[9px] text-foreground mt-0.5">{threshold}</div>
                   </div>
                 ))}
               </div>
@@ -846,7 +846,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       </>
                     ) : (
                       <>
-                        <Coins className="w-4 h-4" />
                         {language === "ko" ? "예측하기" : "Predict"}
                       </>
                     )}
