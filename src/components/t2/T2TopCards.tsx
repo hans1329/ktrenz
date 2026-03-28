@@ -44,12 +44,12 @@ const RANK_COLORS = [
 
 const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
   const { language } = useLanguage();
-  const top5 = items.slice(0, 5);
+  const top4 = items.slice(0, 4);
 
-  if (top5.length === 0) return null;
+  if (top4.length === 0) return null;
 
-  const first = top5[0];
-  const rest = top5.slice(1);
+  const first = top4[0];
+  const rest = top4.slice(1);
 
   const getBgImg = (item: TrendTile) => {
     const rawSourceImg = sanitizeImageUrl(
@@ -100,11 +100,11 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         <h3 className="text-base font-medium text-foreground">Top 5</h3>
       </div>
 
-      <div className="flex gap-2 h-[340px]">
+      <div className="flex gap-2 h-[420px]">
         {/* #1 — tall vertical card on the left */}
         <button
           onClick={() => onTileClick(first)}
-          className="relative rounded-2xl overflow-hidden text-left flex-1 min-w-0 active:scale-[0.98] transition-transform"
+          className="relative rounded-2xl overflow-hidden text-left w-[52%] shrink-0 active:scale-[0.98] transition-transform"
         >
           {getBgImg(first) ? (
             <img
@@ -170,7 +170,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         </button>
 
         {/* #2–#5 — stacked vertically on the right */}
-        <div className="flex flex-col gap-2 w-[45%] shrink-0">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
           {rest.map((item, idx) => {
             const rank = idx + 2;
             const bgImg = getBgImg(item);
