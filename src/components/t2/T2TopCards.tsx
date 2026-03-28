@@ -170,7 +170,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         </button>
 
         {/* #2–#5 — stacked vertically on the right */}
-        <div className="flex flex-col gap-2 w-[45%] shrink-0">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
           {rest.map((item, idx) => {
             const rank = idx + 2;
             const bgImg = getBgImg(item);
