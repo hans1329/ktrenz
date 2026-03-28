@@ -957,6 +957,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             const mergeMap: Record<string, string> = {
               brand: "brand_product", product: "brand_product",
               beauty: "beauty_fashion", fashion: "beauty_fashion",
+              restaurant: "restaurant_food", food: "restaurant_food",
               event: "event_social", social: "event_social",
               music: "music_media", media: "music_media",
             };

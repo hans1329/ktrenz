@@ -19,6 +19,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; labelKo: string; labelJa:
   fashion: { label: "Fashion", labelKo: "패션",    labelJa: "ファッション", labelZh: "时尚", color: "hsl(330, 65%, 55%)" },
   beauty:  { label: "Beauty",  labelKo: "뷰티",    labelJa: "ビューティー", labelZh: "美妆", color: "hsl(350, 60%, 55%)" },
   media:   { label: "Media",   labelKo: "미디어",  labelJa: "メディア",  labelZh: "媒体",   color: "hsl(190, 70%, 45%)" },
+  restaurant: { label: "Restaurant", labelKo: "레스토랑", labelJa: "レストラン", labelZh: "餐厅", color: "hsl(15, 75%, 50%)" },
 };
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {

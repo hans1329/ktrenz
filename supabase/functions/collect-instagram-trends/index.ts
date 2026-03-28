@@ -211,19 +211,21 @@ POSTS:
 ${postSummaries}
 
 RULES:
-- Extract brand names, product names, place names (restaurants, cafes, venues), fashion items, beauty products, collaboration partners
+- Extract brand names, product names, place names, restaurant/cafe names, fashion items, beauty products, collaboration partners
 - Location tags from stories are HIGH VALUE signals (artist visited locations)
 - ⚠️ AIRPORT keywords (인천공항, 공항패션, airport fashion) → classify as "fashion"
+- 🍴 RESTAURANT/CAFE: Any restaurant, cafe, bar, bakery, or dining establishment the artist visited → classify as "restaurant" (NOT "place" or "food")
+- "food" category is for food brands, packaged food products, or food-related campaigns — NOT for specific restaurants
+- "place" category is for non-dining venues (concert halls, travel destinations, shops, landmarks)
 - Exclude: generic hashtags (#kpop, #love), the artist's own name, platform names
 - Each keyword must have real commercial or cultural significance
-- For places/restaurants: classify as "place" category with "organic" commercial_intent
 
 Return JSON array:
 [{
   "keyword": "original keyword",
   "keyword_en": "English translation",
   "keyword_ko": "Korean translation",
-  "category": "brand|product|place|food|fashion|beauty|media|music|event|social",
+  "category": "brand|product|place|restaurant|food|fashion|beauty|media|music|event|social",
   "context": "English context sentence",
   "context_ko": "Korean context sentence",
   "confidence": 0.0-1.0,
