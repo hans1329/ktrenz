@@ -1047,7 +1047,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   : language === "zh" ? (item.contextZh || item.context)
                                   : item.context;
                                 return ctx ? (
-                                  <p className="text-[10px] text-muted-foreground mt-0.5 min-w-0 pl-5 truncate">
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 min-w-0 pl-5 line-clamp-2">
                                     {ctx.replace(/\[\d+\]/g, "").trim()}
                                   </p>
                                 ) : null;
