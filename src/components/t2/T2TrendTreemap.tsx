@@ -987,7 +987,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: color }}
                       />
-                      <h3 className="text-lg font-medium text-foreground flex-1">{label}</h3>
+                      <h3 className="text-base font-medium text-foreground flex-1">{label}</h3>
                       <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
 
