@@ -45,7 +45,7 @@ const AdminShoppingKeywords = () => {
       const { data, error } = await supabase
         .from('ktrenz_trend_triggers')
         .select('id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, status, prev_api_total')
-        .eq('trigger_source', 'naver_shop')
+        .in('keyword_category', ['brand', 'product', 'goods', 'shopping'])
         .eq('status', 'active')
         .order('detected_at', { ascending: false })
         .limit(500);
