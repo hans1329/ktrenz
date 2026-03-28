@@ -57,6 +57,14 @@ import B2BOnboarding from "./pages/b2b/B2BOnboarding";
 import B2BLayout from "./pages/b2b/B2BLayout";
 import B2BDashboard from "./pages/b2b/B2BDashboard";
 import B2BArtistDetail from "./pages/b2b/B2BArtistDetail";
+import B2BRadar from "./pages/b2b/B2BRadar";
+import B2BArtists from "./pages/b2b/B2BArtists";
+import B2BBrands from "./pages/b2b/B2BBrands";
+import B2BCampaigns from "./pages/b2b/B2BCampaigns";
+import B2BBenchmark from "./pages/b2b/B2BBenchmark";
+import B2BMarkets from "./pages/b2b/B2BMarkets";
+import B2BRecommendations from "./pages/b2b/B2BRecommendations";
+import B2BActivation from "./pages/b2b/B2BActivation";
 import T2CategoryDetail from "./pages/T2CategoryDetail";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -128,6 +136,14 @@ const App = () => (
                 <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
                 <Route path="/b2b" element={<B2BLayout />}>
                   <Route index element={<B2BDashboard />} />
+                  <Route path="radar" element={<B2BRadar />} />
+                  <Route path="artists" element={<B2BArtists />} />
+                  <Route path="brands" element={<B2BBrands />} />
+                  <Route path="campaigns" element={<B2BCampaigns />} />
+                  <Route path="benchmark" element={<B2BBenchmark />} />
+                  <Route path="markets" element={<B2BMarkets />} />
+                  <Route path="rec" element={<B2BRecommendations />} />
+                  <Route path="studio" element={<B2BActivation />} />
                   <Route path="artist/:id" element={<B2BArtistDetail />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
