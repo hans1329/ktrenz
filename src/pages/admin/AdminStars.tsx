@@ -303,6 +303,9 @@ const AdminStars = () => {
   const openCreate = () => {
     setEditingStar(null);
     setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true, social_instagram: "", social_youtube: "", social_tiktok: "", social_x: "" });
+    setNamuUrl("");
+    setNamuResult(null);
+    setDialogOpen(true);
   };
 
   const openEdit = (s: StarRow) => {
