@@ -607,13 +607,6 @@ Deno.serve(async (req) => {
         .eq("id", trigger.id);
 
       cached++;
-      // 배치 내 중복 추적 업데이트 (source_url + image URL 모두)
-      if (trigger.star_id) {
-        if (!batchUsedSourceUrls.has(trigger.star_id)) batchUsedSourceUrls.set(trigger.star_id, new Set());
-        const batchSet = batchUsedSourceUrls.get(trigger.star_id)!;
-        if (trigger.source_url) batchSet.add(trigger.source_url);
-        batchSet.add(cachedUrl.split("?")[0]); // 캐시된 이미지 URL도 추적
-      }
       console.log(`[cache-image] ✓ ${trigger.id} → ${cachedUrl}`);
 
       // Rate limit
