@@ -100,11 +100,11 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         <h3 className="text-base font-medium text-foreground">Top 5</h3>
       </div>
 
-      <div className="flex gap-2 h-[340px]">
+      <div className="flex gap-2 h-[420px]">
         {/* #1 — tall vertical card on the left */}
         <button
           onClick={() => onTileClick(first)}
-          className="relative rounded-2xl overflow-hidden text-left flex-1 min-w-0 active:scale-[0.98] transition-transform"
+          className="relative rounded-2xl overflow-hidden text-left w-[52%] shrink-0 active:scale-[0.98] transition-transform"
         >
           {getBgImg(first) ? (
             <img
