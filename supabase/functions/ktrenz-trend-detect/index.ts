@@ -622,7 +622,8 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - The artist's own name: ${nameListStr}
 - Agency/label names, platform names (YouTube, Spotify, Naver, etc.)
 - Chart names, generic K-pop terms (컴백, 앨범, 콘서트, 팬미팅)
-- Generic locations (city names, country names, airports)
+- Generic locations (city names, country names)
+- ⚠️ AIRPORT EXCEPTION: "인천공항", "공항패션", "airport fashion" → These are NOT generic locations. When an artist is spotted at an airport wearing notable outfits, classify as "fashion" (e.g., "인천공항룩", "공항 패션"). Only reject airports when there is NO fashion/styling context.
 - TV gimmicks, costumes, ephemeral segments
 - Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
