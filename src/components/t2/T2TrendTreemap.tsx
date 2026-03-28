@@ -1033,33 +1033,37 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 : "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
                             )}
                           >
-                            {/* Top: keyword + artist + sparkline */}
-                            <div className={cn("flex flex-col gap-1", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
-                              <div className="flex items-center justify-between">
-                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-sm" : "text-xs")}>
-                                  {getLocalizedArtistName(item, language)}
-                                </span>
-                                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
-                                  <Clock className="w-2.5 h-2.5" />
-                                  {formatAge(item.detectedAt)}
-                                </span>
-                              </div>
-                              <div className="flex items-start gap-1.5">
-                                <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-[3px]" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
-                                <h4 className={cn("font-black text-foreground leading-snug whitespace-nowrap overflow-hidden text-ellipsis", idx === 0 ? (getLocalizedKeyword(item, language).length > 20 ? "text-sm" : getLocalizedKeyword(item, language).length > 14 ? "text-base" : "text-lg") : (getLocalizedKeyword(item, language).length > 20 ? "text-xs" : getLocalizedKeyword(item, language).length > 14 ? "text-sm" : "text-base"))}>
-                                  {getLocalizedKeyword(item, language)}
-                                </h4>
-                              </div>
+                            {/* Top: artist name + time */}
+                            <div className={cn("flex items-center justify-between", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
+                              <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-sm" : "text-xs")}>
+                                {getLocalizedArtistName(item, language)}
+                              </span>
+                              <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
+                                <Clock className="w-2.5 h-2.5" />
+                                {formatAge(item.detectedAt)}
+                              </span>
                             </div>
-                            {/* Image area with rank badge + sparkline overlay */}
+                            {/* Image area with keyword centered + rank badge + sparkline overlay */}
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[300px]" : "h-[280px]")}>
                               {bgImg ? (
-                                <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-center" loading="lazy" referrerPolicy="no-referrer" />
+                                <>
+                                  <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-center" loading="lazy" referrerPolicy="no-referrer" />
+                                  <div className="absolute inset-0 bg-black/25" />
+                                </>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center font-black text-white/20" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))", fontSize: idx === 0 ? "56px" : "40px" }}>
                                   {getLocalizedArtistName(item, language).charAt(0)}
                                 </div>
                               )}
+                              {/* Keyword centered on image */}
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-3">
+                                <div className="flex items-center gap-1.5">
+                                  <MessageCircle className="w-4 h-4 shrink-0 -scale-x-100 text-white drop-shadow-md" />
+                                  <h4 className={cn("font-black text-white leading-snug drop-shadow-lg whitespace-nowrap overflow-hidden text-ellipsis", idx === 0 ? (getLocalizedKeyword(item, language).length > 20 ? "text-base" : getLocalizedKeyword(item, language).length > 14 ? "text-lg" : "text-xl") : (getLocalizedKeyword(item, language).length > 20 ? "text-sm" : getLocalizedKeyword(item, language).length > 14 ? "text-base" : "text-lg"))}>
+                                    {getLocalizedKeyword(item, language)}
+                                  </h4>
+                                </div>
+                              </div>
                               {idx < 3 && (
                                 <span className={cn("absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm text-white font-black flex items-center justify-center", idx === 0 ? "w-8 h-8 text-sm" : "w-6 h-6 text-[10px]")}>
                                   {idx + 1}
