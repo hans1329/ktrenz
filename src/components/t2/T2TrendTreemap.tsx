@@ -1056,10 +1056,17 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 </div>
                               )}
                               {/* Keyword centered on image */}
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-3">
-                                <div className="flex items-center gap-1.5">
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+                                <div className="flex items-center gap-1.5 max-w-full">
                                   <MessageCircle className="w-4 h-4 shrink-0 -scale-x-100 text-white drop-shadow-md" />
-                                  <h4 className={cn("font-black text-white leading-snug drop-shadow-lg whitespace-nowrap overflow-hidden text-ellipsis", idx === 0 ? (getLocalizedKeyword(item, language).length > 20 ? "text-base" : getLocalizedKeyword(item, language).length > 14 ? "text-lg" : "text-xl") : (getLocalizedKeyword(item, language).length > 20 ? "text-sm" : getLocalizedKeyword(item, language).length > 14 ? "text-base" : "text-lg"))}>
+                                  <h4 className={cn("font-black text-white leading-snug drop-shadow-lg", 
+                                    getLocalizedKeyword(item, language).length > 20 
+                                      ? "text-xs break-keep" 
+                                      : getLocalizedKeyword(item, language).length > 14 
+                                        ? (idx === 0 ? "text-base" : "text-sm") 
+                                        : (idx === 0 ? "text-xl" : "text-lg"),
+                                    "whitespace-normal text-center"
+                                  )}>
                                     {getLocalizedKeyword(item, language)}
                                   </h4>
                                 </div>
