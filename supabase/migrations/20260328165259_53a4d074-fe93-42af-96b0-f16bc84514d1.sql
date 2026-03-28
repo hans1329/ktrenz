@@ -1,0 +1,31 @@
+INSERT INTO ktrenz_trend_triggers (
+  star_id, wiki_entry_id, trigger_type, trigger_source, artist_name,
+  keyword, keyword_en, keyword_ko, keyword_ja, keyword_zh,
+  keyword_category, context, context_ko,
+  confidence, source_url, source_title, source_image_url,
+  detected_at, status, baseline_score,
+  commercial_intent, metadata
+) VALUES (
+  'aade8930-cc77-4884-baa2-40908ae0ea05',
+  NULL,
+  'news_mention',
+  'naver_news',
+  'Lisa',
+  '비키니',
+  'Bikini',
+  '비키니',
+  'ビキニ',
+  '比基尼',
+  'fashion',
+  'Lisa posted bikini vacation photos from Bali on SNS, sparking a massive online buzz — multiple media outlets covered her daring swimwear look, making "리사 비키니" one of the top trending topics overnight.',
+  '리사가 발리 휴양 중 비키니 사진을 SNS에 공개하자 온라인이 폭발적으로 반응 — 손바닥 비키니, 물구나무 자세 등 키워드가 실검에 오르며, 다수 매체가 일제히 보도하는 이례적 화제성을 기록했다.',
+  0.95,
+  'https://sports.donga.com/ent/article/all/20260327/133619518/1',
+  '블랙핑크 리사, 손바닥 비키니 입고 물구나무 아찔',
+  'https://dimg.donga.com/wps/SPORTS/IMAGE/2026/03/27/133619515.1.jpg',
+  NOW(),
+  'active',
+  0,
+  'organic',
+  '{"source_type": "manual_insert", "note": "AI missed due to body/fashion classification ambiguity"}'::jsonb
+);
