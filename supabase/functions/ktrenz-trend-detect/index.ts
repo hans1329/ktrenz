@@ -1419,17 +1419,52 @@ Deno.serve(async (req) => {
     }
     console.log(`[trend-detect] Loaded ${globalStarNames.size} global star name variants for cross-reference`);
 
-    // 단일 멤버 모드 (수동 테스트용)
-    if (starId && memberName) {
-      const result = await detectForMember(
-        sb, openaiKey, naverClientId, naverClientSecret,
-        { id: starId, display_name: memberName, name_ko: null, group_name: groupName || null, group_name_ko: null, group_wiki_entry_id: wikiEntryId || null, star_category: body.starCategory || "kpop" },
-        globalStarNames
-      );
-      return new Response(
-        JSON.stringify({ success: true, ...result }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // 단일 스타 모드: star_id만으로도 DB에서 조회하여 실행
+    if (resolvedStarId) {
+      let singleMemberName = memberName;
+      let singleGroupName = groupName || null;
+      let singleGroupNameKo: string | null = null;
+      let singleNameKo: string | null = null;
+      let singleGroupWikiEntryId = wikiEntryId || null;
+      let singleStarCategory = body.starCategory || "kpop";
+
+      // memberName이 없으면 DB에서 조회
+      if (!singleMemberName) {
+        const { data: starData } = await sb
+          .from("ktrenz_stars")
+          .select("display_name, name_ko, group_star_id, star_category")
+          .eq("id", resolvedStarId)
+          .single();
+        if (starData) {
+          singleMemberName = starData.display_name;
+          singleNameKo = starData.name_ko;
+          singleStarCategory = starData.star_category || "kpop";
+          if (starData.group_star_id) {
+            const { data: groupData } = await sb
+              .from("ktrenz_stars")
+              .select("display_name, name_ko, wiki_entry_id")
+              .eq("id", starData.group_star_id)
+              .single();
+            if (groupData) {
+              singleGroupName = groupData.display_name;
+              singleGroupNameKo = groupData.name_ko;
+              singleGroupWikiEntryId = groupData.wiki_entry_id;
+            }
+          }
+        }
+      }
+
+      if (singleMemberName) {
+        const result = await detectForMember(
+          sb, openaiKey, naverClientId, naverClientSecret,
+          { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, group_wiki_entry_id: singleGroupWikiEntryId, star_category: singleStarCategory },
+          globalStarNames
+        );
+        return new Response(
+          JSON.stringify({ success: true, ...result }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // 레거시 호환: wikiEntryId + artistName으로 호출 시
