@@ -632,18 +632,49 @@ const AdminStars = () => {
                 className="h-9 text-xs font-mono"
                 placeholder="내부 위키 연결 (선택)"
               />
-            </div>
-
-            {/* agency */}
+            {/* social handles */}
             <div>
-              <label className="text-xs font-medium mb-1 block">소속사</label>
-              <Input
-                value={form.agency}
-                onChange={(e) => setForm({ ...form, agency: e.target.value })}
-                className="h-9"
-                placeholder="예: SM엔터테인먼트"
-              />
+              <label className="text-xs font-medium mb-1 block">📱 소셜 핸들</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Instagram</label>
+                  <Input
+                    value={form.social_instagram}
+                    onChange={(e) => setForm({ ...form, social_instagram: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="@username"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">YouTube</label>
+                  <Input
+                    value={form.social_youtube}
+                    onChange={(e) => setForm({ ...form, social_youtube: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="채널ID 또는 @handle"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">TikTok</label>
+                  <Input
+                    value={form.social_tiktok}
+                    onChange={(e) => setForm({ ...form, social_tiktok: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="@username"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">X (Twitter)</label>
+                  <Input
+                    value={form.social_x}
+                    onChange={(e) => setForm({ ...form, social_x: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="@username"
+                  />
+                </div>
+              </div>
             </div>
+          </div>
           </div>
 
           <DialogFooter className="gap-2">
