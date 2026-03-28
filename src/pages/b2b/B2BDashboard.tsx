@@ -25,7 +25,7 @@ const B2BDashboard = () => {
   const [gradeFilter, setGradeFilter] = useState<string>('all');
 
   // Fetch active trends with trend_score
-  const { data: activeTrends = [] } = useQuery({
+  const { data: rawTrends = [] } = useQuery({
     queryKey: ['b2b-active-trends'],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -39,8 +39,7 @@ const B2BDashboard = () => {
     },
   });
 
-  // Fetch artist grades
-  const { data: artistGrades = [] } = useQuery({
+  const { data: rawArtistGrades = [] } = useQuery({
     queryKey: ['b2b-artist-grades'],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -58,6 +57,11 @@ const B2BDashboard = () => {
       return data.map((a: any) => ({ ...a, star: starMap.get(a.star_id) }));
     },
   });
+
+  // Use mock data when real data is empty
+  const activeTrends = rawTrends.length > 0 ? rawTrends : MOCK_ACTIVE_TRENDS;
+  const artistGrades = rawArtistGrades.length > 0 ? rawArtistGrades : MOCK_ARTIST_GRADES;
+  const usingMock = rawTrends.length === 0 && rawArtistGrades.length === 0;
 
   // Stats
   const gradeStats = useMemo(() => {
