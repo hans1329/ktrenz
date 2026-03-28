@@ -44,12 +44,12 @@ const RANK_COLORS = [
 
 const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
   const { language } = useLanguage();
-  const top5 = items.slice(0, 5);
+  const top4 = items.slice(0, 4);
 
-  if (top5.length === 0) return null;
+  if (top4.length === 0) return null;
 
-  const first = top5[0];
-  const rest = top5.slice(1);
+  const first = top4[0];
+  const rest = top4.slice(1);
 
   const getBgImg = (item: TrendTile) => {
     const rawSourceImg = sanitizeImageUrl(
