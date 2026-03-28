@@ -104,7 +104,7 @@ export function sanitizeImageUrl(url: string | null): string | null {
   return url.replace(/&amp;/g, '&');
 }
 
-export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping" | "social";
+export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "restaurant" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping" | "social";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 15%, 42%, 0.72)" },
@@ -116,11 +116,12 @@ export const CATEGORY_CONFIG: Record<string, { label: string; color: string; til
   media:   { label: "Media",   color: "hsl(190, 70%, 45%)", tileColor: "hsla(190, 14%, 38%, 0.72)" },
   music:   { label: "Music",   color: "hsl(260, 70%, 60%)", tileColor: "hsla(260, 14%, 42%, 0.72)" },
   event:   { label: "Event",   color: "hsl(45, 85%, 50%)",  tileColor: "hsla(45, 18%, 40%, 0.72)" },
+  restaurant:{ label: "Restaurant", color: "hsl(15, 75%, 50%)", tileColor: "hsla(15, 16%, 40%, 0.72)" },
   shopping:{ label: "Goods", color: "hsl(160, 60%, 45%)", tileColor: "hsla(160, 10%, 38%, 0.72)" },
   social:  { label: "Social", color: "hsl(290, 65%, 55%)", tileColor: "hsla(290, 14%, 42%, 0.72)" },
 };
 
-export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "food", "fashion", "beauty", "media", "event", "shopping", "social"];
+export const ALL_CATEGORIES: TrendCategory[] = ["all", "my", "music", "brand", "product", "place", "restaurant", "food", "fashion", "beauty", "media", "event", "shopping", "social"];
 
 // ── Age formatter ──
 function formatAge(dateStr: string): string {
@@ -956,6 +957,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             const mergeMap: Record<string, string> = {
               brand: "brand_product", product: "brand_product",
               beauty: "beauty_fashion", fashion: "beauty_fashion",
+              restaurant: "restaurant_food", food: "restaurant_food",
               event: "event_social", social: "event_social",
               music: "music_media", media: "music_media",
             };
@@ -972,7 +974,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
               { key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color },
               { key: "beauty_fashion", label: "Beauty · Fashion", color: CATEGORY_CONFIG.beauty.color },
               { key: "place", label: "Place", color: CATEGORY_CONFIG.place.color },
-              { key: "food", label: "Food", color: CATEGORY_CONFIG.food.color },
+              { key: "restaurant_food", label: "Restaurant · Food", color: CATEGORY_CONFIG.restaurant.color },
               { key: "event_social", label: "Event · Social", color: CATEGORY_CONFIG.event.color },
               { key: "music_media", label: "Music · Media", color: CATEGORY_CONFIG.music.color },
             ];

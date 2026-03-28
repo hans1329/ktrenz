@@ -37,6 +37,7 @@ const categoryColors: Record<string, string> = {
   fashion: "bg-rose-500/15 text-rose-400 border-rose-500/30",
   beauty: "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30",
   food: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  restaurant: "bg-red-500/15 text-red-400 border-red-500/30",
 };
 
 const categoryEmoji: Record<string, string> = {
@@ -48,6 +49,7 @@ const categoryEmoji: Record<string, string> = {
   fashion: "👗",
   beauty: "💄",
   food: "🍽️",
+  restaurant: "🍴",
 };
 
 const V3TrendKeywordCards: React.FC<V3TrendKeywordCardsProps> = ({ keywords, onKeywordClick, onLoadMore, loadMoreLabel }) => {
