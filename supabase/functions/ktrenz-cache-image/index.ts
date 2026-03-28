@@ -475,13 +475,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── 같은 아티스트의 동일 기사 또는 동일 이미지 중복 체크 ──
-      const isDuplicateSource = trigger.star_id && trigger.source_url && (() => {
-        const existing = artistCachedImages.get(trigger.star_id);
-        const batchUsed = batchUsedSourceUrls.get(trigger.star_id);
-        return (existing?.has(trigger.source_url) || batchUsed?.has(trigger.source_url));
-      })();
-
       // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
       if (!url && trigger.source_url) {
         console.log(`[cache-image] No image for ${trigger.id}, fetching OG from ${trigger.source_url}`);
@@ -492,32 +485,6 @@ Deno.serve(async (req) => {
         } else {
           console.warn(`[cache-image] No OG image found for ${trigger.id}, trying body images`);
         }
-      }
-
-      // ── 동일 og:image URL 중복 체크 (다른 기사지만 같은 이미지를 쓰는 경우) ──
-      const isImageAlreadyUsed = trigger.star_id && url && (() => {
-        const cachedUrls = artistCachedImageUrls.get(trigger.star_id);
-        const batchUrls = batchUsedSourceUrls.get(trigger.star_id);
-        // 정확한 URL 매치 또는 같은 이미지 경로 패턴
-        const urlBase = url!.split("?")[0];
-        return cachedUrls?.has(urlBase) || batchUrls?.has(urlBase);
-      })();
-
-      // ── 중복 감지 시 본문에서 대체 이미지 시도 ──
-      if ((isDuplicateSource || isImageAlreadyUsed) && url && trigger.source_url) {
-        const reason = isDuplicateSource ? "duplicate source_url" : "duplicate image URL";
-        console.log(`[cache-image] ⚠ ${reason} for star ${trigger.star_id}, trying body images for variety: ${trigger.id}`);
-        const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
-        // 기존 og:image(url)와 다른 이미지만 필터링
-        const altCandidates = candidates.filter(c => c !== url);
-        if (altCandidates.length > 0) {
-          const alt = await findLargestImage(altCandidates, openaiKey);
-          if (alt && alt.data.length > LOW_RES_THRESHOLD_BYTES) {
-            url = alt.url;
-            console.log(`[cache-image] ✓ Found alternative body image for dedup: ${alt.url.slice(0, 80)}`);
-          }
-        }
-        // 대안을 못 찾으면 og:image 유지 (중복이지만 이미지 없는 것보단 나음)
       }
       
       // url이 없으면 본문 이미지 스캔 시도 (아티스트명 필터 적용)
