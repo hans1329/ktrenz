@@ -1027,7 +1027,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             {/* Top: keyword + artist + sparkline */}
                             <div className={cn("flex flex-col gap-1", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
                               <div className="flex items-center justify-between">
-                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-xs" : "text-[11px]")}>
+                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-sm" : "text-xs")}>
                                   {getLocalizedArtistName(item, language)}
                                 </span>
                                 <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
