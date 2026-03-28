@@ -960,9 +960,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             const myItems = myKeywords.length > 0 ? myKeywords : [];
             const sectionDefs: { key: string; label: string; color: string }[] = [
               { key: "brand_product", label: "Brand · Product", color: CATEGORY_CONFIG.brand.color },
+              { key: "beauty_fashion", label: "Beauty · Fashion", color: CATEGORY_CONFIG.beauty.color },
               { key: "place", label: "Place", color: CATEGORY_CONFIG.place.color },
               { key: "food", label: "Food", color: CATEGORY_CONFIG.food.color },
-              { key: "beauty_fashion", label: "Beauty · Fashion", color: CATEGORY_CONFIG.beauty.color },
               { key: "event_social", label: "Event · Social", color: CATEGORY_CONFIG.event.color },
               { key: "music_media", label: "Music · Media", color: CATEGORY_CONFIG.music.color },
             ];
