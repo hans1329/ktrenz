@@ -940,7 +940,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           gridMode={gridMode}
         />
       ) : (
-        <div className="px-4 md:px-0 space-y-6">
+        <div className="px-0 md:px-0 space-y-6">
+          {/* Top 5 Featured Cards */}
+          <T2TopCards
+            items={dedupedTriggers.filter(t => t.category !== "music")}
+            onTileClick={handleTileClick}
+            trackingMap={carouselTrackingMap}
+          />
+
           {/* Carousel Card View — grouped by category */}
           {(() => {
             // Group items by merged categories
