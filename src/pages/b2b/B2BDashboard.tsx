@@ -90,6 +90,13 @@ const B2BDashboard = () => {
         <h1 className="text-xl font-extrabold text-[#111827] mb-1">Stars Intelligence</h1>
         <p className="text-[13px] text-[#6B7280] mb-5">Trend Score 기반 스타 분석 · 라이프사이클 추적 · 상업적 전환 모니터링</p>
 
+        {usingMock && (
+          <div className="mb-4 px-4 py-2.5 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[12px] text-[#92400E] font-medium flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#F59E0B] shrink-0" />
+            목업 데이터로 표시 중입니다. 실제 수집 데이터가 확보되면 자동 전환됩니다.
+          </div>
+        )}
+
         {/* Stat Row */}
         <div className="grid grid-cols-4 gap-[14px] mb-5">
           {[
