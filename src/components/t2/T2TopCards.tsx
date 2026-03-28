@@ -180,19 +180,13 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
           {renderCard(first, 1, { rankSize: "w-7 h-7 text-sm", titleClass: "text-lg line-clamp-3", padClass: "p-4" })}
         </div>
 
-        {/* Right column: #2 on top (larger), #3 & #4 side by side on bottom */}
+        {/* Right column: #2 on top, #3 on bottom */}
         <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
-          {/* #2 — takes ~60% height */}
-          <div className="h-[58%]">
+          <div className="h-[55%]">
             {second && renderCard(second, 2, { rankSize: "w-6 h-6 text-[11px]", titleClass: "text-base line-clamp-2", padClass: "p-3" })}
           </div>
-          {/* #3 & #4 side by side — remaining ~40% */}
-          <div className="flex-1 flex gap-2 min-h-0">
-            {bottomTwo.map((item, idx) => (
-              <div key={item.id} className="flex-1 min-w-0 h-full">
-                {renderCard(item, idx + 3, { rankSize: "w-5 h-5 text-[10px]", titleClass: "text-xs line-clamp-1", padClass: "p-2.5", showArtist: false })}
-              </div>
-            ))}
+          <div className="flex-1 min-h-0">
+            {third && renderCard(third, 3, { rankSize: "w-5 h-5 text-[10px]", titleClass: "text-sm line-clamp-2", padClass: "p-3" })}
           </div>
         </div>
       </div>
