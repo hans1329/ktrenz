@@ -684,10 +684,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     ? new Date(marketData.expires_at).getTime()
                     : Date.now() + 14 * 24 * 60 * 60 * 1000; // default 14 days if no market yet
                   const diff = expiresAt - Date.now();
-                  if (diff <= 0) return <p className="text-xs text-muted-foreground mt-1">⏳ {language === "ko" ? "마감됨" : "Expired"}</p>;
+                  if (diff <= 0) return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? "마감됨" : "Expired"}</p>;
                   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  return <p className="text-xs text-muted-foreground mt-1">⏳ {language === "ko" ? `${days}일 ${hours}시간 남음` : `${days}d ${hours}h left`}</p>;
+                  return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? `${days}일 ${hours}시간 남음` : `${days}d ${hours}h left`}</p>;
                 })()}
               </div>
 
@@ -704,7 +704,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       "rounded-lg p-2.5 text-center cursor-pointer transition-all border",
                       betOutcome === key
                         ? "border-primary bg-primary/10 shadow-sm"
-                        : `bg-${color}-500/5 border-border/30 hover:border-primary/40`
+                        : "bg-muted border-border/30 hover:border-primary/40"
                     )}
                     onClick={() => setBetOutcome(key)}
                   >
