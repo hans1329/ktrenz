@@ -166,7 +166,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
     <div className="px-4 md:px-0 mb-6">
       <div className="flex items-center gap-1.5 mb-3 pl-0">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h3 className="text-base font-medium text-foreground">Top 4</h3>
+        <h3 className="text-base font-medium text-foreground">가장 트렌디한 K·Culture를 만나보세요!</h3>
       </div>
 
       <div className="flex gap-2 h-[460px]">
