@@ -987,6 +987,13 @@ Deno.serve(async (req) => {
     const crossArtistResult = await crossArtistSourceUrlDedup(sb);
     console.log(`[postprocess] Cross-artist source_url dedup: expired ${crossArtistResult.expired} duplicates`);
 
+    // 4.65단계: 동일 아티스트 + 동일 이미지 중복제거
+    const sameImageResult = await sameImageDedup(sb);
+    console.log(`[postprocess] Same image dedup: expired ${sameImageResult.expired} duplicates (${sameImageResult.merged} merged)`);
+    if (sameImageResult.details.length > 0) {
+      console.log(`[postprocess] Same image details: ${sameImageResult.details.join("; ")}`);
+    }
+
     // 4.7단계: brand_id 자동 매핑
     const brandMapped = await mapBrandIds(sb);
     console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped.mapped}, auto-registered ${brandMapped.registered} new brands`);
