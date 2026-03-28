@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     // Use more content for groups to capture member section
     const truncated = markdown.slice(0, 15000);
 
-    const extractPrompt = `아래는 나무위키에서 스크래핑한 K-POP 아티스트 페이지의 마크다운 내용입니다.
+    const extractPrompt = `아래는 나무위키에서 스크래핑한 K-POP 아티스트/배우 페이지의 마크다운 내용입니다.
 
 이 내용에서 다음 정보를 정확히 추출하여 JSON 형식으로 반환하세요:
 
@@ -95,13 +95,21 @@ Deno.serve(async (req) => {
 
 규칙:
 - 영문명이 없으면 한글명을 공식 로마자 표기로 변환
-- star_type: 그룹이면 "group", 솔로 가수면 "solo", 그룹 멤버 개인 페이지면 "member"
+- star_type: 그룹이면 "group", 솔로 가수/배우면 "solo", 그룹 멤버 개인 페이지면 "member"
 - members 배열: 그룹인 경우 현재 활동 중인 멤버만 포함. 탈퇴/졸업 멤버 제외
   - namuwiki_path는 나무위키에서 해당 멤버 문서로 이동할 때 사용되는 문서 제목 (예: "장원영", "카리나(에스파)")
   - 멤버의 영문명과 한글명을 반드시 포함
 - 솔로/멤버인 경우 members는 빈 배열
-- social_handles에서 찾을 수 없는 항목은 null
 - JSON만 반환하세요, 다른 텍스트 없이
+
+⚠️ social_handles 추출 핵심 규칙:
+- 마크다운의 "링크" 행에 소셜 미디어 URL이 포함되어 있습니다
+- instagram.com/USERNAME → instagram에 USERNAME 기록
+- x.com/USERNAME 또는 twitter.com/USERNAME → twitter에 USERNAME 기록 (공식 본인 계정만, "스태프"나 "staff" 표시가 있으면 제외)
+- youtube.com/channel/ID 또는 youtube.com/@HANDLE → youtube에 기록
+- tiktok.com/@USERNAME → tiktok에 기록
+- URL에서 핸들만 추출하세요 (@ 기호 제외)
+- 찾을 수 없는 항목은 null
 
 마크다운 내용:
 ${truncated}`;
