@@ -190,7 +190,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
             </p>
             <button
               onClick={() => (window.location.href = "/login")}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl text-primary-foreground text-sm font-bold transition-all self-start bg-[#a428bd]/[0.22] border border-white/40"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl text-primary-foreground text-sm font-bold transition-all self-start bg-[#a428bd]/[0.22] border border-white/20"
             >
               <LogIn className="w-4 h-4" />
               {language === "ko" ? "시작하기" : "Get Started"}
