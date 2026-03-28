@@ -1054,6 +1054,13 @@ Deno.serve(async (req) => {
       console.log(`[postprocess] Same image details: ${sameImageResult.details.join("; ")}`);
     }
 
+    // 4.66단계: 동일 아티스트 + 이미지 없음(프로필 폴백) 중복제거
+    const noImageResult = await noImageDedup(sb);
+    console.log(`[postprocess] No-image dedup: expired ${noImageResult.expired} duplicates (${noImageResult.merged} merged)`);
+    if (noImageResult.details.length > 0) {
+      console.log(`[postprocess] No-image details: ${noImageResult.details.join("; ")}`);
+    }
+
     // 4.7단계: brand_id 자동 매핑
     const brandMapped = await mapBrandIds(sb);
     console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped.mapped}, auto-registered ${brandMapped.registered} new brands`);
