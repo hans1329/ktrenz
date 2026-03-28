@@ -648,7 +648,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           )}
 
           {/* Influence metrics */}
-          <div className="grid grid-cols-3 border border-border divide-x divide-border">
+          <div className="grid grid-cols-3 border border-border divide-x divide-border rounded-lg overflow-hidden">
             <div className="p-3">
               <div className="text-[11px] text-muted-foreground mb-1">{t("influence", language)}</div>
               <div className="text-xl font-bold text-foreground">
