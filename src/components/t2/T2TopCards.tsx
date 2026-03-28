@@ -114,7 +114,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         ) : (
           <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 via-[45%] to-transparent" />
 
         <div className="absolute inset-x-0 bottom-0">
           <svg viewBox="0 0 100 20" className="w-full h-[18px]" preserveAspectRatio="none">
@@ -166,7 +166,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
     <div className="px-4 md:px-0 mb-6">
       <div className="flex items-center gap-1.5 mb-3 pl-0">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h3 className="text-base font-medium text-foreground">Top 4</h3>
+        <h3 className="text-base font-medium text-foreground">가장 트렌디한 K·Culture를 만나보세요!</h3>
       </div>
 
       <div className="flex gap-2 h-[460px]">
