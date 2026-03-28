@@ -142,8 +142,8 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
           </svg>
         </div>
 
-        {/* Top-left: rank badge + keyword */}
-        <div className={cn("relative z-10 flex flex-col justify-start h-full", opts.padClass, "pt-2.5 pl-2.5")}>
+        {/* Top-left: rank badge + artist */}
+        <div className={cn("relative z-10 flex flex-col h-full", opts.padClass, "pt-2.5 pl-2.5")}>
           <div className="flex items-center gap-1.5 mb-1">
             <span
               className={cn("rounded-full flex items-center justify-center font-black text-white bg-black/60 backdrop-blur-sm shrink-0", opts.rankSize)}
@@ -156,11 +156,13 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
               </span>
             )}
           </div>
-          <div className="flex items-start gap-1 pl-3">
-            <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
-            <h4 className={cn("font-black text-white leading-tight drop-shadow-md", opts.titleClass)}>
-              {getLocalizedKeyword(item, language)}
-            </h4>
+          <div className="flex-1 flex items-center justify-center px-2">
+            <div className="flex items-start gap-1">
+              <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
+              <h4 className={cn("font-black text-white leading-tight drop-shadow-md", opts.titleClass)}>
+                {getLocalizedKeyword(item, language)}
+              </h4>
+            </div>
           </div>
         </div>
       </button>
