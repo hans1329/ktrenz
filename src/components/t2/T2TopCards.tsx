@@ -98,7 +98,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
   };
 
   const second = top4[1];
-  const bottomTwo = top4.slice(2);
+  const third = top4[2];
 
   const renderCard = (
     item: TrendTile,
