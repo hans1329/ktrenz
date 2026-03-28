@@ -4,6 +4,40 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type SocialHandles = {
+  instagram: string | null;
+  twitter: string | null;
+  youtube: string | null;
+  tiktok: string | null;
+};
+
+function firstMatch(markdown: string, regex: RegExp): string | null {
+  const match = markdown.match(regex);
+  return match?.[1] ?? null;
+}
+
+function extractSocialHandlesFromMarkdown(markdown: string): SocialHandles {
+  const instagram = firstMatch(markdown, /https?:\/\/(?:www\.)?instagram\.com\/([A-Za-z0-9._]+)/i);
+  const tiktok = firstMatch(markdown, /https?:\/\/(?:www\.)?tiktok\.com\/@?([A-Za-z0-9._]+)/i);
+
+  const youtubeMatch = markdown.match(
+    /https?:\/\/(?:www\.)?youtube\.com\/(?:@([A-Za-z0-9._-]+)|channel\/([A-Za-z0-9_-]+)|c\/([A-Za-z0-9._-]+)|user\/([A-Za-z0-9._-]+))/i,
+  );
+  const youtube = youtubeMatch?.[1] || youtubeMatch?.[2] || youtubeMatch?.[3] || youtubeMatch?.[4] || null;
+
+  let twitter: string | null = null;
+  for (const match of markdown.matchAll(/https?:\/\/(?:www\.)?(?:x|twitter)\.com\/([A-Za-z0-9_]+)/gi)) {
+    const handle = match[1] || null;
+    const start = match.index ?? 0;
+    const context = markdown.slice(Math.max(0, start - 40), Math.min(markdown.length, start + 120)).toLowerCase();
+    if (context.includes("스태프") || context.includes("staff")) continue;
+    twitter = handle;
+    break;
+  }
+
+  return { instagram, twitter, youtube, tiktok };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -18,7 +52,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 1: Scrape
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     if (!firecrawlKey) {
       return new Response(
@@ -59,7 +92,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 2: AI extraction (텍스트 분석이므로 OpenAI 사용, 웹검색이 아님)
+    const extractedHandles = extractSocialHandlesFromMarkdown(markdown);
+    console.log("Extracted social handles:", JSON.stringify(extractedHandles));
+
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
       return new Response(
@@ -68,7 +103,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use more content for groups to capture member section
     const truncated = markdown.slice(0, 15000);
 
     const extractPrompt = `아래는 나무위키에서 스크래핑한 K-POP 아티스트/배우 페이지의 마크다운 내용입니다.
@@ -97,19 +131,9 @@ Deno.serve(async (req) => {
 - 영문명이 없으면 한글명을 공식 로마자 표기로 변환
 - star_type: 그룹이면 "group", 솔로 가수/배우면 "solo", 그룹 멤버 개인 페이지면 "member"
 - members 배열: 그룹인 경우 현재 활동 중인 멤버만 포함. 탈퇴/졸업 멤버 제외
-  - namuwiki_path는 나무위키에서 해당 멤버 문서로 이동할 때 사용되는 문서 제목 (예: "장원영", "카리나(에스파)")
-  - 멤버의 영문명과 한글명을 반드시 포함
 - 솔로/멤버인 경우 members는 빈 배열
 - JSON만 반환하세요, 다른 텍스트 없이
-
-⚠️ social_handles 추출 핵심 규칙:
-- 마크다운의 "링크" 행에 소셜 미디어 URL이 포함되어 있습니다
-- instagram.com/USERNAME → instagram에 USERNAME 기록
-- x.com/USERNAME 또는 twitter.com/USERNAME → twitter에 USERNAME 기록 (공식 본인 계정만, "스태프"나 "staff" 표시가 있으면 제외)
-- youtube.com/channel/ID 또는 youtube.com/@HANDLE → youtube에 기록
-- tiktok.com/@USERNAME → tiktok에 기록
-- URL에서 핸들만 추출하세요 (@ 기호 제외)
-- 찾을 수 없는 항목은 null
+- social_handles는 문서에 없으면 null 허용
 
 마크다운 내용:
 ${truncated}`;
@@ -126,7 +150,7 @@ ${truncated}`;
           {
             role: "system",
             content:
-              "당신은 나무위키 K-POP 아티스트 페이지에서 구조화된 데이터를 추출하는 전문가입니다. 반드시 유효한 JSON만 반환하세요. 웹 검색을 하지 말고, 제공된 마크다운 텍스트에서만 정보를 추출하세요.",
+              "당신은 나무위키 아티스트/배우 페이지에서 구조화된 데이터를 추출하는 전문가입니다. 반드시 유효한 JSON만 반환하세요. 웹 검색을 하지 말고, 제공된 마크다운 텍스트에서만 정보를 추출하세요.",
           },
           { role: "user", content: extractPrompt },
         ],
@@ -136,7 +160,7 @@ ${truncated}`;
 
     const aiData = await aiRes.json();
     if (!aiRes.ok) {
-      console.error("Perplexity error:", aiData);
+      console.error("OpenAI error:", aiData);
       return new Response(
         JSON.stringify({ error: `AI 파싱 실패: ${aiRes.status}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -159,7 +183,6 @@ ${truncated}`;
       );
     }
 
-    // Normalize members to have namuwiki_url
     if (parsed.members && Array.isArray(parsed.members)) {
       parsed.members = parsed.members.map((m: any) => {
         if (typeof m === "string") {
@@ -173,6 +196,13 @@ ${truncated}`;
         };
       });
     }
+
+    parsed.social_handles = {
+      instagram: extractedHandles.instagram || parsed.social_handles?.instagram || null,
+      twitter: extractedHandles.twitter || parsed.social_handles?.twitter || null,
+      youtube: extractedHandles.youtube || parsed.social_handles?.youtube || null,
+      tiktok: extractedHandles.tiktok || parsed.social_handles?.tiktok || null,
+    };
 
     console.log("Parsed artist data:", JSON.stringify(parsed));
 
