@@ -846,7 +846,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       </>
                     ) : (
                       <>
-                        <Coins className="w-4 h-4" />
                         {language === "ko" ? "예측하기" : "Predict"}
                       </>
                     )}
