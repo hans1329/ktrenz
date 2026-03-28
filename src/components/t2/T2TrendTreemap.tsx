@@ -1045,7 +1045,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               </div>
                               <div className="flex items-start gap-1.5">
                                 <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-[3px]" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
-                                <h4 className={cn("font-black text-foreground line-clamp-1 leading-snug", idx === 0 ? "text-lg" : "text-base")}>
+                                <h4 className={cn("font-black text-foreground leading-snug whitespace-nowrap overflow-hidden text-ellipsis", idx === 0 ? (getLocalizedKeyword(item, language).length > 20 ? "text-sm" : getLocalizedKeyword(item, language).length > 14 ? "text-base" : "text-lg") : (getLocalizedKeyword(item, language).length > 20 ? "text-xs" : getLocalizedKeyword(item, language).length > 14 ? "text-sm" : "text-base"))}>
                                   {getLocalizedKeyword(item, language)}
                                 </h4>
                               </div>
