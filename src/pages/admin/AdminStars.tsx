@@ -197,6 +197,20 @@ const AdminStars = () => {
   /* ───── batch save members ───── */
   const saveWithMembers = useMutation({
     mutationFn: async ({ isEdit, includeMembers }: { isEdit: boolean; includeMembers: boolean }) => {
+      // Build social_handles from form
+      const socialHandles: Record<string, string> = {};
+      if (form.social_instagram) socialHandles.instagram = form.social_instagram;
+      if (form.social_youtube) socialHandles.youtube = form.social_youtube;
+      if (form.social_tiktok) socialHandles.tiktok = form.social_tiktok;
+      if (form.social_x) socialHandles.x = form.social_x;
+
+      // Preserve existing instagram_pk etc. from previous data
+      if (isEdit && editingStar?.social_handles) {
+        const prev = editingStar.social_handles;
+        if (prev.instagram_pk) socialHandles.instagram_pk = prev.instagram_pk;
+        if (prev.instagram_followers) socialHandles.instagram_followers = prev.instagram_followers;
+      }
+
       const payload: any = {
         display_name: form.display_name,
         name_ko: form.name_ko || null,
@@ -207,6 +221,7 @@ const AdminStars = () => {
         namuwiki_url: form.namuwiki_url || null,
         agency: form.agency || null,
         is_active: form.is_active,
+        social_handles: Object.keys(socialHandles).length > 0 ? socialHandles : null,
       };
 
       let groupId: string | null = null;
