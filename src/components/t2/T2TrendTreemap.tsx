@@ -1174,7 +1174,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       )}
       </div>
 
-          <div className="h-4" />
+          
 
       {/* Detail Sheet */}
       <T2DetailSheet
