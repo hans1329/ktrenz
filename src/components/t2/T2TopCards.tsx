@@ -100,11 +100,11 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         <h3 className="text-base font-medium text-foreground">Top 5</h3>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {/* #1 — featured large card spanning full width */}
+      <div className="flex gap-2 h-[340px]">
+        {/* #1 — tall vertical card on the left */}
         <button
           onClick={() => onTileClick(first)}
-          className="col-span-2 relative rounded-2xl overflow-hidden text-left h-[200px] active:scale-[0.98] transition-transform"
+          className="relative rounded-2xl overflow-hidden text-left flex-1 min-w-0 active:scale-[0.98] transition-transform"
         >
           {getBgImg(first) ? (
             <img
@@ -147,7 +147,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
           <div className="relative z-10 flex flex-col justify-end h-full p-4">
             <div className="flex items-center gap-2 mb-1">
               <span
-                className="w-7 h-7 rounded-full flex items-center justify-center font-black text-sm text-black"
+                className="w-7 h-7 rounded-full flex items-center justify-center font-black text-sm text-black shrink-0"
                 style={{ backgroundColor: RANK_COLORS[0] }}
               >
                 1
@@ -155,92 +155,91 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
               <span className="text-xs font-medium text-white/70 truncate">
                 {getLocalizedArtistName(first, language)}
               </span>
-              <span className="flex items-center gap-0.5 text-[9px] text-white/50 ml-auto shrink-0">
-                <Clock className="w-2.5 h-2.5" />
-                {formatAge(first.detectedAt)}
-              </span>
             </div>
             <div className="flex items-start gap-1.5">
               <MessageCircle className="w-4 h-4 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
-              <h4 className="text-xl font-black text-white leading-tight line-clamp-2">
+              <h4 className="text-lg font-black text-white leading-tight line-clamp-3">
                 {getLocalizedKeyword(first, language)}
               </h4>
             </div>
+            <span className="flex items-center gap-0.5 text-[9px] text-white/50 mt-1.5">
+              <Clock className="w-2.5 h-2.5" />
+              {formatAge(first.detectedAt)}
+            </span>
           </div>
         </button>
 
-        {/* #2–#5 — smaller grid cards */}
-        {rest.map((item, idx) => {
-          const rank = idx + 2;
-          const bgImg = getBgImg(item);
-          const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
+        {/* #2–#5 — stacked vertically on the right */}
+        <div className="flex flex-col gap-2 w-[45%] shrink-0">
+          {rest.map((item, idx) => {
+            const rank = idx + 2;
+            const bgImg = getBgImg(item);
+            const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => onTileClick(item)}
-              className="relative rounded-2xl overflow-hidden text-left h-[160px] active:scale-[0.97] transition-transform"
-            >
-              {bgImg ? (
-                <img
-                  src={bgImg}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div
-                  className="absolute inset-0 w-full h-full"
-                  style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }}
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+            return (
+              <button
+                key={item.id}
+                onClick={() => onTileClick(item)}
+                className="relative rounded-xl overflow-hidden text-left flex-1 min-h-0 active:scale-[0.97] transition-transform"
+              >
+                {bgImg ? (
+                  <img
+                    src={bgImg}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0 w-full h-full"
+                    style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
 
-              {/* Sparkline */}
-              <div className="absolute inset-x-0 bottom-0">
-                <svg viewBox="0 0 100 20" className="w-full h-[18px]" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id={`top-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={catColor} stopOpacity="0.5" />
-                      <stop offset="100%" stopColor={catColor} stopOpacity="0.08" />
-                    </linearGradient>
-                  </defs>
-                  {(() => {
-                    const path = buildSparkPath(item);
-                    if (!path) return null;
-                    return (
-                      <>
-                        <path d={`${path} L100,20 L0,20 Z`} fill={`url(#top-spark-${item.id})`} />
-                        <path d={path} fill="none" stroke={catColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
-                      </>
-                    );
-                  })()}
-                </svg>
-              </div>
-
-              <div className="relative z-10 flex flex-col justify-end h-full p-3">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] text-black"
-                    style={{ backgroundColor: RANK_COLORS[rank - 1] }}
-                  >
-                    {rank}
-                  </span>
-                  <span className="text-[10px] font-medium text-white/70 truncate">
-                    {getLocalizedArtistName(item, language)}
-                  </span>
+                {/* Sparkline */}
+                <div className="absolute inset-x-0 bottom-0">
+                  <svg viewBox="0 0 100 20" className="w-full h-[14px]" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id={`top-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={catColor} stopOpacity="0.5" />
+                        <stop offset="100%" stopColor={catColor} stopOpacity="0.08" />
+                      </linearGradient>
+                    </defs>
+                    {(() => {
+                      const path = buildSparkPath(item);
+                      if (!path) return null;
+                      return (
+                        <>
+                          <path d={`${path} L100,20 L0,20 Z`} fill={`url(#top-spark-${item.id})`} />
+                          <path d={path} fill="none" stroke={catColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+                        </>
+                      );
+                    })()}
+                  </svg>
                 </div>
-                <div className="flex items-start gap-1">
-                  <MessageCircle className="w-3 h-3 shrink-0 -scale-x-100 mt-0.5 text-white/70" />
-                  <h4 className="text-sm font-black text-white leading-tight line-clamp-2">
+
+                <div className="relative z-10 flex flex-col justify-end h-full p-2.5">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span
+                      className="w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] text-black shrink-0"
+                      style={{ backgroundColor: RANK_COLORS[rank - 1] }}
+                    >
+                      {rank}
+                    </span>
+                    <span className="text-[10px] font-medium text-white/70 truncate">
+                      {getLocalizedArtistName(item, language)}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-white leading-tight line-clamp-1 pl-0.5">
                     {getLocalizedKeyword(item, language)}
                   </h4>
                 </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
