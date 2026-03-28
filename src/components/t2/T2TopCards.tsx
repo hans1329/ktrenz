@@ -44,7 +44,11 @@ const RANK_COLORS = [
 
 const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
   const { language } = useLanguage();
-  const top4 = items.slice(0, 4);
+  const top4 = [...items].sort((a, b) => {
+    const aVol = (a.prevApiTotal ?? a.peakScore ?? 0) - (a.baselineScore ?? 0);
+    const bVol = (b.prevApiTotal ?? b.peakScore ?? 0) - (b.baselineScore ?? 0);
+    return bVol - aVol;
+  }).slice(0, 4);
 
   if (top4.length === 0) return null;
 
