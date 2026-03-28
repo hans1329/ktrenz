@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import KeywordProbePanel from '@/components/b2b/KeywordProbePanel';
+import { MOCK_ARTIST_GRADES, MOCK_ACTIVE_TRENDS } from '@/data/b2b-mock-data';
 
 const GRADE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   spark:     { label: 'Spark',     color: '#9CA3AF', icon: Zap },
