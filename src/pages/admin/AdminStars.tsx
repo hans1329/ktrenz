@@ -111,6 +111,10 @@ const AdminStars = () => {
     namuwiki_url: "",
     agency: "",
     is_active: true,
+    social_instagram: "",
+    social_youtube: "",
+    social_tiktok: "",
+    social_x: "",
   });
   const [namuUrl, setNamuUrl] = useState("");
   const [namuLoading, setNamuLoading] = useState(false);
