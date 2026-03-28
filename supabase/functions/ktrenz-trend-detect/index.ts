@@ -1372,6 +1372,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const { starId, memberName, groupName, wikiEntryId, artistName, batchSize = 5, batchOffset = 0 } = body;
+    // star_id 단독 파라미터 지원 (body.star_id도 허용)
+    const resolvedStarId = starId || body.star_id || null;
 
     if (COLLECTION_PAUSED) {
       console.warn(`[trend-detect] Collection paused. Ignoring request offset=${batchOffset}, size=${batchSize}`);
