@@ -409,8 +409,72 @@ async function crossArtistSourceUrlDedup(sb: any): Promise<{ expired: number; de
   return { expired: expireIds.length, details };
 }
 
+// ── 3c. 동일 아티스트 + 동일 이미지(source_image_url) 중복제거 ──
+// 같은 아티스트의 서로 다른 키워드가 동일 이미지를 사용하면 baseline_score가 높은 것만 유지
+// (예: "프랭키스 비키니", "비키니 컬렉션", "JENNIE x Frankies Bikinis" → 같은 제니 이미지)
+async function sameImageDedup(sb: any): Promise<{ expired: number; merged: number; details: string[] }> {
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-// pending 키워드 중 그룹/멤버 귀속이 모호한 것들을 AI로 판단
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, star_id, artist_name, source_image_url, baseline_score, detected_at")
+    .in("status", ["active", "pending"])
+    .gte("detected_at", threeDaysAgo)
+    .not("source_image_url", "is", null);
+
+  if (!active?.length) return { expired: 0, merged: 0, details: [] };
+
+  // star_id + source_image_url(base, ?v= 제거) 기준 그룹화
+  const byKey = new Map<string, any[]>();
+  for (const e of active) {
+    if (!e.source_image_url || !e.star_id) continue;
+    // 캐시 URL에서 쿼리 파라미터 제거하여 동일 이미지 판별
+    const imgBase = e.source_image_url.split("?")[0];
+    const key = `${e.star_id}::${imgBase}`;
+    const list = byKey.get(key) || [];
+    list.push(e);
+    byKey.set(key, list);
+  }
+
+  const expireIds: string[] = [];
+  const details: string[] = [];
+  let mergedCount = 0;
+
+  for (const [_key, entries] of byKey) {
+    if (entries.length <= 1) continue;
+
+    // baseline_score가 가장 높은 것을 유지, 동점이면 최신 것 유지
+    entries.sort((a: any, b: any) => {
+      const scoreDiff = (b.baseline_score || 0) - (a.baseline_score || 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      return new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime();
+    });
+
+    const kept = entries[0];
+    const removed = entries.slice(1);
+
+    // 제거되는 키워드 목록을 유지 키워드의 metadata에 병합 기록
+    const mergedKeywords = removed.map((e: any) => e.keyword_ko || e.keyword);
+
+    for (const r of removed) {
+      expireIds.push(r.id);
+    }
+    mergedCount += removed.length;
+    details.push(`"${kept.keyword_ko || kept.keyword}" 유지, "${mergedKeywords.join(", ")}" 제거 (${kept.artist_name}, 동일 이미지)`);
+  }
+
+  if (expireIds.length > 0) {
+    for (let i = 0; i < expireIds.length; i += 500) {
+      const batch = expireIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ status: "merged", expired_at: new Date().toISOString() })
+        .in("id", batch);
+    }
+  }
+
+  return { expired: expireIds.length, merged: mergedCount, details };
+}
+
 async function aiClassification(sb: any): Promise<{ reclassified: number; details: string[] }> {
   const openaiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openaiKey) {
@@ -923,6 +987,13 @@ Deno.serve(async (req) => {
     const crossArtistResult = await crossArtistSourceUrlDedup(sb);
     console.log(`[postprocess] Cross-artist source_url dedup: expired ${crossArtistResult.expired} duplicates`);
 
+    // 4.65단계: 동일 아티스트 + 동일 이미지 중복제거
+    const sameImageResult = await sameImageDedup(sb);
+    console.log(`[postprocess] Same image dedup: expired ${sameImageResult.expired} duplicates (${sameImageResult.merged} merged)`);
+    if (sameImageResult.details.length > 0) {
+      console.log(`[postprocess] Same image details: ${sameImageResult.details.join("; ")}`);
+    }
+
     // 4.7단계: brand_id 자동 매핑
     const brandMapped = await mapBrandIds(sb);
     console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped.mapped}, auto-registered ${brandMapped.registered} new brands`);
@@ -950,7 +1021,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -963,6 +1034,7 @@ Deno.serve(async (req) => {
         domesticPriority: srcDedupResult,
         sameSourceUrlDedup: sameUrlResult,
         crossArtistDedup: crossArtistResult,
+        sameImageDedup: sameImageResult,
         brandMapped,
         globalStarNameFilter: globalNameResult,
         noisePatternFilter: noiseResult,
