@@ -170,7 +170,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         <h3 className="text-base font-medium text-foreground">가장 트렌디한 K·Culture를 만나보세요!</h3>
       </div>
 
-      <div className="flex gap-2 h-[460px]">
+      <div className="flex gap-2 h-[320px] md:h-[460px]">
         {/* #1 — tall vertical card, left half */}
         <div className="w-[48%] shrink-0 h-full">
           {renderCard(first, 1, { rankSize: "w-7 h-7 text-sm", titleClass: "text-lg line-clamp-3", padClass: "p-4" })}
