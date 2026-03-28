@@ -136,6 +136,14 @@ const App = () => (
                 <Route path="/b2b/onboarding" element={<B2BOnboarding />} />
                 <Route path="/b2b" element={<B2BLayout />}>
                   <Route index element={<B2BDashboard />} />
+                  <Route path="radar" element={<B2BRadar />} />
+                  <Route path="artists" element={<B2BArtists />} />
+                  <Route path="brands" element={<B2BBrands />} />
+                  <Route path="campaigns" element={<B2BCampaigns />} />
+                  <Route path="benchmark" element={<B2BBenchmark />} />
+                  <Route path="markets" element={<B2BMarkets />} />
+                  <Route path="rec" element={<B2BRecommendations />} />
+                  <Route path="studio" element={<B2BActivation />} />
                   <Route path="artist/:id" element={<B2BArtistDetail />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
