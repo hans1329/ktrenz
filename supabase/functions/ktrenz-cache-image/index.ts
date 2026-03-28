@@ -453,7 +453,9 @@ Deno.serve(async (req) => {
     const artistCachedImages = new Map<string, Set<string>>(); // star_id → Set<original source_url or storage path base>
     const starIds = [...new Set(targets.map((t: any) => t.star_id).filter(Boolean))];
     if (starIds.length > 0) {
-      // 같은 아티스트의 다른 트리거 중 이미 캐시된 이미지 URL 조회
+    // 같은 아티스트의 다른 트리거 중 이미 캐시된 이미지 URL 조회
+    const artistCachedImageUrls = new Map<string, Set<string>>(); // star_id → Set<og image url base>
+    if (starIds.length > 0) {
       const { data: existingTriggers } = await sb
         .from("ktrenz_trend_triggers")
         .select("star_id, source_image_url, source_url")
@@ -464,11 +466,13 @@ Deno.serve(async (req) => {
         for (const t of existingTriggers) {
           if (!t.star_id) continue;
           if (!artistCachedImages.has(t.star_id)) artistCachedImages.set(t.star_id, new Set());
-          const imgSet = artistCachedImages.get(t.star_id)!;
-          // source_url을 키로 사용 (같은 기사 = 같은 이미지 가능성 높음)
-          if (t.source_url) imgSet.add(t.source_url);
-          // 캐시된 이미지의 원본 URL 패턴도 추적 (storage path에서 trigger id 추출)
-          if (t.source_image_url) imgSet.add(t.source_image_url.split("?")[0]);
+          if (!artistCachedImageUrls.has(t.star_id)) artistCachedImageUrls.set(t.star_id, new Set());
+          const srcSet = artistCachedImages.get(t.star_id)!;
+          const imgUrlSet = artistCachedImageUrls.get(t.star_id)!;
+          if (t.source_url) srcSet.add(t.source_url);
+          // 캐시된 이미지 URL에서 trigger id를 제거하고 원본 이미지 URL 패턴으로 추적할 수 없으므로
+          // storage URL 자체를 중복 키로 사용
+          if (t.source_image_url) imgUrlSet.add(t.source_image_url.split("?")[0]);
         }
       }
     }
