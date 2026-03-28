@@ -88,7 +88,11 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
     const spanMs = Math.max(nowMs - startMs, 3600000);
     const vals = pts.map(p => p.v);
     const minVal = Math.min(...vals);
-    const maxVal = Math.max(...vals, 1);
+    const maxVal = Math.max(...vals);
+    if (maxVal === 0) {
+      // all zeros — draw flat line at vertical center
+      return pts.map((p, i) => `${i === 0 ? "M" : "L"}${(i === pts.length - 1 ? 100 : Math.max(0, Math.min(((p.t - startMs) / spanMs) * 100, 100))).toFixed(1)},11`).join(" ");
+    }
     const range = maxVal - minVal;
     const effectiveMin = range < maxVal * 0.05 ? maxVal * 0.8 : minVal;
     const effectiveRange = maxVal - effectiveMin || 1;
