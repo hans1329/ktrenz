@@ -8,6 +8,76 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function stripHtmlTags(text: string | null | undefined): string {
+  return (text || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function summarizeHistoryPattern(history: number[], deltaPct: number): string {
+  if (history.length < 2) return "초기 반응을 형성 중인 단계";
+
+  const first = history[0] ?? 0;
+  const last = history[history.length - 1] ?? 0;
+  const max = Math.max(...history);
+  const min = Math.min(...history);
+  const spread = max - min;
+
+  if (history.length >= 4) {
+    const lastThree = history.slice(-3);
+    const isRebound = lastThree[2] > lastThree[1] && lastThree[1] <= lastThree[0];
+    const isCooling = lastThree[2] < lastThree[1] && lastThree[1] <= lastThree[0];
+    const isHolding = spread <= Math.max(5, last * 0.15);
+
+    if (isRebound) return "한 차례 반응이 잦아든 뒤 다시 언급이 붙는 재상승 국면";
+    if (isCooling) return "초기 반응 이후 열기가 서서히 정리되는 흐름";
+    if (isHolding) return "짧은 기간 동안 관심도가 일정하게 유지되는 흐름";
+  }
+
+  if (deltaPct >= 35) return "짧은 시간 안에 반응이 빠르게 커진 확산 구간";
+  if (deltaPct <= -35) return "직전 대비 화제성이 눈에 띄게 빠진 조정 구간";
+  if (last > first) return "완만하게 저변을 넓혀가는 상승 흐름";
+  if (last < first) return "집중 반응 이후 진폭을 줄여가는 정리 흐름";
+  return "특정 계기 이후 비슷한 강도로 언급이 이어지는 상태";
+}
+
+function describeFreshness(ageDays: number): string {
+  if (ageDays <= 1) return "방금 포착된 신규 이슈";
+  if (ageDays <= 3) return "최근 며칠 사이 급부상한 이슈";
+  if (ageDays <= 7) return "이번 주 내내 반응을 이어가는 이슈";
+  return "단기 화제를 지나 잔존 관심을 확인하는 이슈";
+}
+
+function describeCategory(keywordCategory: string | null | undefined): string {
+  switch (keywordCategory) {
+    case "brand":
+      return "브랜드·광고 접점에서 반응을 읽어야 하는 키워드";
+    case "product":
+    case "goods":
+    case "shopping":
+      return "소비 전환 맥락과 분리해 화제 자체를 봐야 하는 키워드";
+    case "event":
+      return "행사·출연 계기로 움직이는 키워드";
+    case "social":
+      return "팬 커뮤니티 반응이 빠르게 번지는 키워드";
+    default:
+      return "기사·콘텐츠 맥락에서 해석해야 하는 키워드";
+  }
+}
+
+function buildContextFacts(trigger: any): string[] {
+  const facts = [
+    stripHtmlTags(trigger.source_title),
+    stripHtmlTags(trigger.keyword_ko || trigger.keyword),
+    stripHtmlTags(trigger.artist_name),
+  ].filter(Boolean);
+
+  return Array.from(new Set(facts)).slice(0, 3);
+}
+
 // ─── AI 동적 컨텍스트 생성 ───
 async function generateDynamicContext(
   trigger: any,
@@ -27,6 +97,10 @@ async function generateDynamicContext(
     const trendDirection = trackingHistory.length >= 3
       ? (trackingHistory[trackingHistory.length - 1] > trackingHistory[0] ? "rising" : "declining")
       : "stable";
+    const historyPattern = summarizeHistoryPattern(trackingHistory, deltaPct);
+    const freshness = describeFreshness(ageDays);
+    const categoryGuide = describeCategory(trigger.keyword_category);
+    const contextFacts = buildContextFacts(trigger);
 
     // 트렌드 방향성을 정성적으로 변환
     const momentum = deltaPct > 30 ? "급격히 상승 중"
@@ -40,27 +114,35 @@ async function generateDynamicContext(
       : peak > 0 ? "피크 대비 낮은 수준"
       : "초기 단계";
 
-    const prompt = `당신은 K-pop 트렌드 편집자입니다. 아래 추적 정보를 기반으로, 이 키워드 트렌드의 현재 상태를 1-2문장의 편집자 톤(Editorial Narrative)으로 작성하세요.
+    const prompt = `당신은 K-pop 트렌드 편집자입니다. 아래 추적 정보를 기반으로, 이 키워드 트렌드의 현재 상태를 2문장 이하의 편집자 톤(Editorial Narrative)으로 작성하세요.
 
 ★ 절대 금지 사항:
 - 내부 점수, 수치, 퍼센트, 스코어, 지수 등 구체적 숫자를 일절 언급하지 마세요.
 - "점수가 31", "244% 변화", "influence index" 같은 표현을 절대 사용하지 마세요.
-- 대신 정성적 표현("급격히 주목받고 있다", "화제성이 지속되고 있다", "관심이 식어가고 있다" 등)을 사용하세요.
+- 아래 금지 문구를 그대로 반복하지 마세요: "현재는 그 관심이 급격히 하락하고 있다", "초기의 뜨거운 반응과는 달리", "팬들의 열기가 다소 식어가며 안정세를 보이고 있다".
+- 이전 컨텍스트의 문장을 재사용하거나 어순만 바꾸는 것도 금지합니다.
 
 ★ 작성 규칙:
 - '[구체적 상황/배경] → [현재 트렌드 현상/대중 반응]' 패턴을 따르세요.
-- 기사에서 나올 법한 구체적 맥락(브랜드명, 행사, 콜라보 등)을 포함하세요.
+- 기사에서 나올 법한 구체적 맥락(브랜드명, 행사, 콜라보, 콘텐츠 장면, 팬 반응 포인트 등)을 포함하세요.
+- 문장마다 서로 다른 정보 역할을 가지세요. 1문장은 계기/맥락, 2문장은 현재 반응의 질감과 흐름을 설명하세요.
+- 하락 국면이라도 무조건 "식었다"고 쓰지 말고, 잔존 화제·담론 이동·반응 정리·재상승 여지 중 실제 흐름에 맞는 표현을 고르세요.
+- 아래 핵심 사실 중 최소 1개를 자연스럽게 반영하세요: ${contextFacts.length ? contextFacts.join(" / ") : "키워드와 아티스트의 결합 맥락"}
 - 반드시 한국어로 작성하세요.
 
 아티스트: ${trigger.artist_name}
 키워드: ${trigger.keyword}
 카테고리: ${trigger.keyword_category || "general"}
 분야: ${isShop ? "쇼핑/커머스" : "뉴스/블로그"}
+카테고리 해석 가이드: ${categoryGuide}
+이슈 신선도: ${freshness}
+히스토리 패턴: ${historyPattern}
 현재 추세: ${momentum}
 피크 대비 상태: ${peakStatus}
 트렌드 방향 (최근 추이): ${trendDirection}
 감지 후 경과일: ${ageDays}일
-${trigger.context ? `이전 컨텍스트: ${trigger.context}` : ""}
+ ${trigger.source_title ? `소스 제목: ${stripHtmlTags(trigger.source_title)}` : ""}
+ ${trigger.context ? `이전 컨텍스트(내용만 참고, 문장 재사용 금지): ${stripHtmlTags(trigger.context)}` : ""}
 
 해석만 작성하세요. 라벨이나 접두사 없이.`;
 
@@ -74,7 +156,7 @@ ${trigger.context ? `이전 컨텍스트: ${trigger.context}` : ""}
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 150,
-        temperature: 0.7,
+        temperature: 0.95,
       }),
     });
 
