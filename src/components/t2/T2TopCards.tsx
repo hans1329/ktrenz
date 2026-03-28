@@ -125,8 +125,8 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 via-[45%] to-transparent" />
 
         <div className="absolute inset-x-0 bottom-0">
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-          <svg viewBox="0 0 100 20" className="w-full h-[18px]" preserveAspectRatio="none">
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+          <svg viewBox="0 0 100 20" className="w-full h-[40px]" preserveAspectRatio="none">
             <defs>
               <linearGradient id={`top-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={rank === 1 ? "white" : catColor} stopOpacity={rank === 1 ? 0.35 : 0.5} />
