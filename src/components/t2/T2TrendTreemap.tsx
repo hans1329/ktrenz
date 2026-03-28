@@ -1001,9 +1001,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
                     {/* Horizontal carousel */}
                     <div
-                      className="flex items-start gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide pl-4"
+                      className="flex items-start gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
                       style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                     >
+                      <div className="shrink-0 w-4" aria-hidden />
                       {items.slice(0, 20).map((item, idx) => {
                         const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
                         const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
