@@ -448,6 +448,34 @@ Deno.serve(async (req) => {
 
     console.log(`[cache-image] Processing ${targets.length} triggers`);
 
+    // ── 중복 이미지 방지: 같은 아티스트의 기존 캐시 이미지 수집 ──
+    // star_id 별로 이미 캐시된 이미지 원본 URL을 추적
+    const artistCachedImages = new Map<string, Set<string>>(); // star_id → Set<source_url>
+    const artistCachedImageUrls = new Map<string, Set<string>>(); // star_id → Set<cached image url base>
+    const starIds = [...new Set(targets.map((t: any) => t.star_id).filter(Boolean))];
+    if (starIds.length > 0) {
+      // 같은 아티스트의 다른 트리거 중 이미 캐시된 이미지 URL 조회
+      const { data: existingTriggers } = await sb
+        .from("ktrenz_trend_triggers")
+        .select("star_id, source_image_url, source_url")
+        .in("star_id", starIds)
+        .eq("status", "active")
+        .not("source_image_url", "is", null);
+      if (existingTriggers) {
+        for (const t of existingTriggers) {
+          if (!t.star_id) continue;
+          if (!artistCachedImages.has(t.star_id)) artistCachedImages.set(t.star_id, new Set());
+          if (!artistCachedImageUrls.has(t.star_id)) artistCachedImageUrls.set(t.star_id, new Set());
+          const srcSet = artistCachedImages.get(t.star_id)!;
+          const imgUrlSet = artistCachedImageUrls.get(t.star_id)!;
+          if (t.source_url) srcSet.add(t.source_url);
+          if (t.source_image_url) imgUrlSet.add(t.source_image_url.split("?")[0]);
+        }
+      }
+    }
+    // 현재 배치 내에서도 중복 방지를 위한 로컬 트래커
+    const batchUsedSourceUrls = new Map<string, Set<string>>(); // star_id → Set<source_url>
+
     let cached = 0;
     let failed = 0;
 
@@ -474,7 +502,14 @@ Deno.serve(async (req) => {
           continue;
         }
       }
-      
+
+      // ── 같은 아티스트의 동일 기사 또는 동일 이미지 중복 체크 ──
+      const isDuplicateSource = trigger.star_id && trigger.source_url && (() => {
+        const existing = artistCachedImages.get(trigger.star_id);
+        const batchUsed = batchUsedSourceUrls.get(trigger.star_id);
+        return (existing?.has(trigger.source_url) || batchUsed?.has(trigger.source_url));
+      })();
+
       // source_image_url이 null이면 source_url에서 OG 이미지 추출 시도
       if (!url && trigger.source_url) {
         console.log(`[cache-image] No image for ${trigger.id}, fetching OG from ${trigger.source_url}`);
@@ -485,6 +520,32 @@ Deno.serve(async (req) => {
         } else {
           console.warn(`[cache-image] No OG image found for ${trigger.id}, trying body images`);
         }
+      }
+
+      // ── 동일 og:image URL 중복 체크 (다른 기사지만 같은 이미지를 쓰는 경우) ──
+      const isImageAlreadyUsed = trigger.star_id && url && (() => {
+        const cachedUrls = artistCachedImageUrls.get(trigger.star_id);
+        const batchUrls = batchUsedSourceUrls.get(trigger.star_id);
+        // 정확한 URL 매치 또는 같은 이미지 경로 패턴
+        const urlBase = url!.split("?")[0];
+        return cachedUrls?.has(urlBase) || batchUrls?.has(urlBase);
+      })();
+
+      // ── 중복 감지 시 본문에서 대체 이미지 시도 ──
+      if ((isDuplicateSource || isImageAlreadyUsed) && url && trigger.source_url) {
+        const reason = isDuplicateSource ? "duplicate source_url" : "duplicate image URL";
+        console.log(`[cache-image] ⚠ ${reason} for star ${trigger.star_id}, trying body images for variety: ${trigger.id}`);
+        const candidates = await fetchBodyImageCandidates(trigger.source_url, allNameVariants);
+        // 기존 og:image(url)와 다른 이미지만 필터링
+        const altCandidates = candidates.filter(c => c !== url);
+        if (altCandidates.length > 0) {
+          const alt = await findLargestImage(altCandidates, openaiKey);
+          if (alt && alt.data.length > LOW_RES_THRESHOLD_BYTES) {
+            url = alt.url;
+            console.log(`[cache-image] ✓ Found alternative body image for dedup: ${alt.url.slice(0, 80)}`);
+          }
+        }
+        // 대안을 못 찾으면 og:image 유지 (중복이지만 이미지 없는 것보단 나음)
       }
       
       // url이 없으면 본문 이미지 스캔 시도 (아티스트명 필터 적용)
@@ -607,6 +668,13 @@ Deno.serve(async (req) => {
         .eq("id", trigger.id);
 
       cached++;
+      // 배치 내 중복 추적 업데이트 (source_url + image URL 모두)
+      if (trigger.star_id) {
+        if (!batchUsedSourceUrls.has(trigger.star_id)) batchUsedSourceUrls.set(trigger.star_id, new Set());
+        const batchSet = batchUsedSourceUrls.get(trigger.star_id)!;
+        if (trigger.source_url) batchSet.add(trigger.source_url);
+        batchSet.add(cachedUrl.split("?")[0]); // 캐시된 이미지 URL도 추적
+      }
       console.log(`[cache-image] ✓ ${trigger.id} → ${cachedUrl}`);
 
       // Rate limit
