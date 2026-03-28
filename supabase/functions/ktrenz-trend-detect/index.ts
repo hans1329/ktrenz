@@ -628,6 +628,7 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - TV gimmicks, costumes, ephemeral segments
 - Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
+- ⚠️ FASHION ITEM EXCEPTION: Clothing items like "비키니" (bikini), "수영복" (swimwear), "란제리" (lingerie), "크롭탑" etc. are FASHION items, NOT body/physical stats. Classify them as "fashion" and extract normally. These represent commercial fashion trends, not personal body data.
 
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
