@@ -1035,18 +1035,20 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {formatAge(item.detectedAt)}
                                 </span>
                               </div>
-                              <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-lg" : "text-base")}>
-                                {getLocalizedKeyword(item, language)}
-                              </h4>
+                              <div className="flex items-start gap-1.5">
+                                <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-[3px]" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
+                                <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-lg" : "text-base")}>
+                                  {getLocalizedKeyword(item, language)}
+                                </h4>
+                              </div>
                               {(() => {
                                 const ctx = language === "ko" ? (item.contextKo || item.context)
                                   : language === "ja" ? (item.contextJa || item.context)
                                   : language === "zh" ? (item.contextZh || item.context)
                                   : item.context;
                                 return ctx ? (
-                                  <p className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 min-w-0">
-                                    <MessageCircle className="w-3 h-3 shrink-0 -scale-x-100" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
-                                    <span className="truncate">{ctx.replace(/\[\d+\]/g, "").trim()}</span>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 min-w-0 pl-5 truncate">
+                                    {ctx.replace(/\[\d+\]/g, "").trim()}
                                   </p>
                                 ) : null;
                               })()}
