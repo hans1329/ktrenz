@@ -93,152 +93,102 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
     return pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t, i).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
   };
 
+  const second = top4[1];
+  const bottomTwo = top4.slice(2);
+
+  const renderCard = (
+    item: TrendTile,
+    rank: number,
+    opts: { rankSize: string; titleClass: string; padClass: string; showArtist?: boolean }
+  ) => {
+    const bgImg = getBgImg(item);
+    const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
+    return (
+      <button
+        key={item.id}
+        onClick={() => onTileClick(item)}
+        className="relative rounded-2xl overflow-hidden text-left w-full h-full active:scale-[0.97] transition-transform"
+      >
+        {bgImg ? (
+          <img src={bgImg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+        ) : (
+          <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }} />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+        <div className="absolute inset-x-0 bottom-0">
+          <svg viewBox="0 0 100 20" className="w-full h-[18px]" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id={`top-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={rank === 1 ? "white" : catColor} stopOpacity={rank === 1 ? 0.35 : 0.5} />
+                <stop offset="100%" stopColor={rank === 1 ? "white" : catColor} stopOpacity={rank === 1 ? 0.05 : 0.08} />
+              </linearGradient>
+            </defs>
+            {(() => {
+              const path = buildSparkPath(item);
+              if (!path) return null;
+              return (
+                <>
+                  <path d={`${path} L100,20 L0,20 Z`} fill={`url(#top-spark-${item.id})`} />
+                  <path d={path} fill="none" stroke={rank === 1 ? "white" : catColor} strokeWidth="1.3" strokeLinecap="round" opacity="0.8" />
+                </>
+              );
+            })()}
+          </svg>
+        </div>
+
+        <div className={cn("relative z-10 flex flex-col justify-end h-full", opts.padClass)}>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span
+              className={cn("rounded-full flex items-center justify-center font-black text-black shrink-0", opts.rankSize)}
+              style={{ backgroundColor: RANK_COLORS[rank - 1] }}
+            >
+              {rank}
+            </span>
+            {opts.showArtist !== false && (
+              <span className="text-[11px] font-medium text-white/70 truncate">
+                {getLocalizedArtistName(item, language)}
+              </span>
+            )}
+          </div>
+          <div className="flex items-start gap-1">
+            <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
+            <h4 className={cn("font-black text-white leading-tight", opts.titleClass)}>
+              {getLocalizedKeyword(item, language)}
+            </h4>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="px-4 md:px-0 mb-6">
       <div className="flex items-center gap-1.5 mb-3 pl-0">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h3 className="text-base font-medium text-foreground">Top 5</h3>
+        <h3 className="text-base font-medium text-foreground">Top 4</h3>
       </div>
 
-      <div className="flex gap-2 h-[420px]">
-        {/* #1 — tall vertical card on the left */}
-        <button
-          onClick={() => onTileClick(first)}
-          className="relative rounded-2xl overflow-hidden text-left w-[52%] shrink-0 active:scale-[0.98] transition-transform"
-        >
-          {getBgImg(first) ? (
-            <img
-              src={getBgImg(first)!}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div
-              className="absolute inset-0 w-full h-full"
-              style={{ backgroundColor: CATEGORY_CONFIG[first.category]?.tileColor || "hsl(var(--muted))" }}
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+      <div className="flex gap-2 h-[460px]">
+        {/* #1 — tall vertical card, left half */}
+        <div className="w-[48%] shrink-0 h-full">
+          {renderCard(first, 1, { rankSize: "w-7 h-7 text-sm", titleClass: "text-lg line-clamp-3", padClass: "p-4" })}
+        </div>
 
-          {/* Sparkline overlay */}
-          <div className="absolute inset-x-0 bottom-0">
-            <svg viewBox="0 0 100 20" className="w-full h-[24px]" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="top1-spark" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="white" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="white" stopOpacity="0.05" />
-                </linearGradient>
-              </defs>
-              {(() => {
-                const path = buildSparkPath(first);
-                if (!path) return null;
-                return (
-                  <>
-                    <path d={`${path} L100,20 L0,20 Z`} fill="url(#top1-spark)" />
-                    <path d={path} fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-                  </>
-                );
-              })()}
-            </svg>
+        {/* Right column: #2 on top (larger), #3 & #4 side by side on bottom */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+          {/* #2 — takes ~60% height */}
+          <div className="h-[58%]">
+            {second && renderCard(second, 2, { rankSize: "w-6 h-6 text-[11px]", titleClass: "text-base line-clamp-2", padClass: "p-3" })}
           </div>
-
-          <div className="relative z-10 flex flex-col justify-end h-full p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className="w-7 h-7 rounded-full flex items-center justify-center font-black text-sm text-black shrink-0"
-                style={{ backgroundColor: RANK_COLORS[0] }}
-              >
-                1
-              </span>
-              <span className="text-xs font-medium text-white/70 truncate">
-                {getLocalizedArtistName(first, language)}
-              </span>
-            </div>
-            <div className="flex items-start gap-1.5">
-              <MessageCircle className="w-4 h-4 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
-              <h4 className="text-lg font-black text-white leading-tight line-clamp-3">
-                {getLocalizedKeyword(first, language)}
-              </h4>
-            </div>
-            <span className="flex items-center gap-0.5 text-[9px] text-white/50 mt-1.5">
-              <Clock className="w-2.5 h-2.5" />
-              {formatAge(first.detectedAt)}
-            </span>
+          {/* #3 & #4 side by side — remaining ~40% */}
+          <div className="flex-1 flex gap-2 min-h-0">
+            {bottomTwo.map((item, idx) => (
+              <div key={item.id} className="flex-1 min-w-0 h-full">
+                {renderCard(item, idx + 3, { rankSize: "w-5 h-5 text-[10px]", titleClass: "text-xs line-clamp-1", padClass: "p-2.5", showArtist: false })}
+              </div>
+            ))}
           </div>
-        </button>
-
-        {/* #2–#5 — stacked vertically on the right */}
-        <div className="flex flex-col gap-2 flex-1 min-w-0">
-          {rest.map((item, idx) => {
-            const rank = idx + 2;
-            const bgImg = getBgImg(item);
-            const catColor = CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))";
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTileClick(item)}
-                className="relative rounded-xl overflow-hidden text-left flex-1 min-h-0 active:scale-[0.97] transition-transform"
-              >
-                {bgImg ? (
-                  <img
-                    src={bgImg}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div
-                    className="absolute inset-0 w-full h-full"
-                    style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
-
-                {/* Sparkline */}
-                <div className="absolute inset-x-0 bottom-0">
-                  <svg viewBox="0 0 100 20" className="w-full h-[14px]" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id={`top-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={catColor} stopOpacity="0.5" />
-                        <stop offset="100%" stopColor={catColor} stopOpacity="0.08" />
-                      </linearGradient>
-                    </defs>
-                    {(() => {
-                      const path = buildSparkPath(item);
-                      if (!path) return null;
-                      return (
-                        <>
-                          <path d={`${path} L100,20 L0,20 Z`} fill={`url(#top-spark-${item.id})`} />
-                          <path d={path} fill="none" stroke={catColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
-                        </>
-                      );
-                    })()}
-                  </svg>
-                </div>
-
-                <div className="relative z-10 flex flex-col justify-end h-full p-2.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span
-                      className="w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] text-black shrink-0"
-                      style={{ backgroundColor: RANK_COLORS[rank - 1] }}
-                    >
-                      {rank}
-                    </span>
-                    <span className="text-[10px] font-medium text-white/70 truncate">
-                      {getLocalizedArtistName(item, language)}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-bold text-white leading-tight line-clamp-1 pl-0.5">
-                    {getLocalizedKeyword(item, language)}
-                  </h4>
-                </div>
-              </button>
-            );
-          })}
         </div>
       </div>
     </div>
