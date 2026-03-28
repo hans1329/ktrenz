@@ -54,32 +54,35 @@ const AdminShoppingKeywords = () => {
 
       if (data && data.length > 0) {
         const ids = data.map(t => t.id);
-        const { data: trackingData } = await supabase
-          .from('ktrenz_trend_tracking')
-          .select('trigger_id, interest_score, tracked_at, raw_response')
+        // 쇼핑 데이터는 별도 테이블에서 조회
+        const { data: shopTrackingData } = await supabase
+          .from('ktrenz_shopping_tracking' as any)
+          .select('trigger_id, composite_score, tracked_at, datalab_ratio, datalab_trend_7d, shop_total, shop_recent_items')
           .in('trigger_id', ids)
           .order('tracked_at', { ascending: false });
 
         const latestMap = new Map<string, ShopTracking>();
-        for (const t of trackingData || []) {
+        for (const t of (shopTrackingData || []) as any[]) {
           if (!latestMap.has(t.trigger_id)) {
             latestMap.set(t.trigger_id, {
-              interest_score: t.interest_score,
+              interest_score: t.composite_score,
               tracked_at: t.tracked_at,
-              raw_response: t.raw_response as ShopTracking['raw_response'],
+              raw_response: {
+                source: 'ktrenz_shopping_tracking',
+                datalab_ratio: t.datalab_ratio,
+                datalab_trend_7d: t.datalab_trend_7d,
+                shop_total: t.shop_total,
+                shop_recent_items: t.shop_recent_items,
+                composite_score: t.composite_score,
+              },
             });
           }
         }
 
-        return data.map(t => {
-          const latest = latestMap.get(t.id) ?? null;
-          // baseline이 리셋(0)된 상태면 이전 추적 데이터를 무효로 표시
-          const isReset = (t.baseline_score ?? 0) === 0 && (t.prev_api_total ?? 0) === 0;
-          return {
-            ...t,
-            latest: isReset ? null : latest,
-          } as ShopTrigger;
-        });
+        return data.map(t => ({
+          ...t,
+          latest: latestMap.get(t.id) ?? null,
+        })) as ShopTrigger[];
       }
 
       return (data || []) as ShopTrigger[];
