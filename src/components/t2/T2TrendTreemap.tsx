@@ -1027,7 +1027,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             {/* Top: keyword + artist + sparkline */}
                             <div className={cn("flex flex-col gap-1", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
                               <div className="flex items-center justify-between">
-                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-xs" : "text-[11px]")}>
+                                <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-sm" : "text-xs")}>
                                   {getLocalizedArtistName(item, language)}
                                 </span>
                                 <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
@@ -1037,7 +1037,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                               </div>
                               <div className="flex items-start gap-1.5">
                                 <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-[3px]" style={{ color: CATEGORY_CONFIG[item.category]?.color || "hsl(var(--primary))" }} />
-                                <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-lg" : "text-base")}>
+                                <h4 className={cn("font-black text-foreground line-clamp-2 leading-snug", idx === 0 ? "text-xl" : "text-lg")}>
                                   {getLocalizedKeyword(item, language)}
                                 </h4>
                               </div>
@@ -1047,7 +1047,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   : language === "zh" ? (item.contextZh || item.context)
                                   : item.context;
                                 return ctx ? (
-                                  <p className="text-[10px] text-muted-foreground mt-0.5 min-w-0 pl-5 truncate">
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 min-w-0 pl-5 line-clamp-2">
                                     {ctx.replace(/\[\d+\]/g, "").trim()}
                                   </p>
                                 ) : null;
