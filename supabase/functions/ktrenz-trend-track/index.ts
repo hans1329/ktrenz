@@ -368,7 +368,7 @@ Deno.serve(async (req) => {
     for (const trigger of dedupTriggers) {
       try {
         const kwQuery = trigger.keyword_ko || trigger.keyword;
-        const isShopTrigger = trigger.trigger_source === "naver_shop";
+        const isShoppingCategory = ["brand", "product", "goods", "shopping"].includes(trigger.keyword_category || "");
 
         // 이전 추적 기록의 interest_score를 가져와서 delta 계산에 사용
         const { data: prevTracking } = await sb.from("ktrenz_trend_tracking")
@@ -378,85 +378,78 @@ Deno.serve(async (req) => {
           .limit(1);
         const prevTrackScore = prevTracking?.[0]?.interest_score ?? null;
 
-        let buzzScore: number;
-        let apiTotal: number;
-        let dailyDelta: number;
-        let deltaPct: number;
-        let rawResponse: any;
+        // ─── 모든 키워드: 뉴스 + 블로그 버즈 점수 (통합) ───
+        const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
+        const [newsResult, blogResult] = await Promise.all([
+          searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
+          searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
+        ]);
 
-        if (isShopTrigger) {
-          // ─── 쇼핑 키워드: 데이터랩 검색트렌드 + 네이버 쇼핑 상품수 ───
-          const [datalabResult, shopResult] = await Promise.all([
-            searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-            searchNaverShop(naverClientId, naverClientSecret, kwQuery),
-          ]);
+        const news24h = newsResult.recent24h;
+        const blog24h = blogResult.recent24h;
+        const news7d = newsResult.recent7d;
+        const blog7d = blogResult.recent7d;
+        const buzzScore = (news24h + blog24h) * 3 + (news7d + blog7d);
+        const apiNewsTotal = newsResult.total;
+        const apiBlogTotal = blogResult.total;
+        const apiTotal = apiNewsTotal + apiBlogTotal;
+        const prevApiTotal = trigger.prev_api_total || 0;
+        const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
+        const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
+        const deltaPct = refScore > 0
+          ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
+          : buzzScore > 0 ? 100 : 0;
 
-          buzzScore = computeShopScore(datalabResult.latestRatio, shopResult.total);
-          apiTotal = shopResult.total;
-          const prevApiTotal = trigger.prev_api_total || 0;
-          dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
-          // 이전 추적 점수 대비 변동률 (baseline 아닌 직전 추적값 기준)
-          const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
-          deltaPct = refScore > 0
-            ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
-            : buzzScore > 0 ? 100 : 0;
+        const rawResponse = {
+          news_24h: news24h, blog_24h: blog24h,
+          news_7d: news7d, blog_7d: blog7d,
+          news_api_total: apiNewsTotal, blog_api_total: apiBlogTotal,
+          api_total: apiTotal, daily_delta: dailyDelta,
+          search_query: searchQuery,
+        };
 
-          rawResponse = {
-            source: "naver_shop_composite",
-            datalab_ratio: datalabResult.latestRatio,
-            datalab_trend_7d: datalabResult.trend,
-            datalab_period: datalabResult.period,
-            shop_total: shopResult.total,
-            shop_recent_items: shopResult.recentItems,
-            composite_score: buzzScore,
-            daily_delta: dailyDelta,
-            search_keyword: kwQuery,
-          };
+        console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} (24h:${news24h+blog24h} 7d:${news7d+blog7d}) Δ=${deltaPct}%`);
 
-          console.log(`[trend-track] 🛒 "${trigger.artist_name}/${kwQuery}" datalab=${datalabResult.latestRatio} shop=${shopResult.total} composite=${buzzScore} Δ=${deltaPct}%`);
-        } else {
-          // ─── 일반 키워드: 뉴스 + 블로그 버즈 ───
-          const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
-          const [newsResult, blogResult] = await Promise.all([
-            searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
-            searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
-          ]);
+        // ─── 쇼핑 카테고리: 별도 테이블에 쇼핑 데이터 수집 ───
+        if (isShoppingCategory) {
+          try {
+            const [datalabResult, shopResult] = await Promise.all([
+              searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
+              searchNaverShop(naverClientId, naverClientSecret, kwQuery),
+            ]);
+            const compositeScore = computeShopScore(datalabResult.latestRatio, shopResult.total);
 
-          // 24시간 기사수(가중 3x) + 7일 기사수로 민감도 향상
-          const news24h = newsResult.recent24h;
-          const blog24h = blogResult.recent24h;
-          const news7d = newsResult.recent7d;
-          const blog7d = blogResult.recent7d;
-          buzzScore = (news24h + blog24h) * 3 + (news7d + blog7d);
-          const apiNewsTotal = newsResult.total;
-          const apiBlogTotal = blogResult.total;
-          apiTotal = apiNewsTotal + apiBlogTotal;
-          const prevApiTotal = trigger.prev_api_total || 0;
-          dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
-          // 이전 추적 점수 대비 변동률 (baseline 아닌 직전 추적값 기준)
-          const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
-          deltaPct = refScore > 0
-            ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
-            : buzzScore > 0 ? 100 : 0;
-
-          rawResponse = {
-            news_24h: news24h, blog_24h: blog24h,
-            news_7d: news7d, blog_7d: blog7d,
-            news_api_total: apiNewsTotal, blog_api_total: apiBlogTotal,
-            api_total: apiTotal, daily_delta: dailyDelta,
-            search_query: searchQuery,
-          };
-
-          console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} (24h:${news24h+blog24h} 7d:${news7d+blog7d}) Δ=${deltaPct}%`);
+            await sb.from("ktrenz_shopping_tracking").insert({
+              trigger_id: trigger.id,
+              star_id: trigger.star_id || null,
+              keyword: kwQuery,
+              keyword_category: trigger.keyword_category,
+              datalab_ratio: datalabResult.latestRatio,
+              datalab_trend_7d: datalabResult.trend,
+              shop_total: shopResult.total,
+              shop_recent_items: shopResult.recentItems,
+              composite_score: compositeScore,
+              search_volume: datalabResult.latestRatio,
+              raw_response: {
+                datalab_period: datalabResult.period,
+                datalab_trend: datalabResult.trend,
+                shop_total: shopResult.total,
+                shop_recent_items: shopResult.recentItems,
+              },
+            });
+            console.log(`[trend-track] 🛒 Shopping data saved: "${kwQuery}" datalab=${datalabResult.latestRatio} shop=${shopResult.total} composite=${compositeScore}`);
+          } catch (shopErr) {
+            console.warn(`[trend-track] Shopping tracking error for "${kwQuery}": ${(shopErr as Error).message}`);
+          }
         }
 
-        // tracking 레코드 저장
+        // tracking 레코드 저장 (뉴스/블로그 기반 점수)
         await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: trigger.id,
           wiki_entry_id: trigger.wiki_entry_id,
           keyword: trigger.keyword,
           interest_score: buzzScore,
-          region: isShopTrigger ? "naver_shop" : "naver",
+          region: "naver",
           delta_pct: deltaPct,
           raw_response: rawResponse,
         });
@@ -467,15 +460,15 @@ Deno.serve(async (req) => {
           if (dup) {
             await sb.from("ktrenz_trend_tracking").insert({
               trigger_id: dupId, wiki_entry_id: dup.wiki_entry_id, keyword: dup.keyword,
-              interest_score: buzzScore, region: isShopTrigger ? "naver_shop" : "naver",
+              interest_score: buzzScore, region: "naver",
               delta_pct: deltaPct, raw_response: rawResponse,
             });
-            await updateCausalMetrics(sb, dupId, buzzScore, isShopTrigger);
+            await updateCausalMetrics(sb, dupId, buzzScore, false);
             await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", dupId);
           }
         }
 
-        await updateCausalMetrics(sb, trigger.id, buzzScore, isShopTrigger);
+        await updateCausalMetrics(sb, trigger.id, buzzScore, false);
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
 
         // ─── AI 동적 컨텍스트 생성 (변동폭 ±15% 이상일 때만) ───
@@ -500,7 +493,7 @@ Deno.serve(async (req) => {
         await notifyKeywordFollowers(sb, trigger, deltaPct);
 
         trackedCount++;
-        results.push({ keyword: trigger.keyword, artist: trigger.artist_name, buzz_score: buzzScore, daily_delta: dailyDelta, delta_pct: deltaPct, api_total: apiTotal, source: isShopTrigger ? "shop_composite" : "news_blog" });
+        results.push({ keyword: trigger.keyword, artist: trigger.artist_name, buzz_score: buzzScore, daily_delta: dailyDelta, delta_pct: deltaPct, api_total: apiTotal, source: "news_blog", has_shopping: isShoppingCategory });
 
         await new Promise(r => setTimeout(r, 500)); // rate limit
       } catch (e) {
