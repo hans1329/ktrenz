@@ -481,7 +481,7 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_ko: { type: "string", description: "Korean name" },
               keyword_ja: { type: "string", description: "Japanese translation" },
               keyword_zh: { type: "string", description: "Chinese translation" },
-              category: { type: "string", enum: ["brand", "product", "place", "food", "fashion", "beauty", "media", "music", "event"] },
+              category: { type: "string", enum: ["brand", "product", "place", "restaurant", "food", "fashion", "beauty", "media", "music", "event"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
               context: { type: "string", description: "1-2 sentences in Korean (한국어): 기사의 구체적 상황을 서술하고, 그로 인한 트렌드 현상이나 대중 반응을 편집자 톤으로 작성. 매체명·제품 디테일·수치 등 구체적 정보를 포함. e.g. '에스콰이어 4월호 표지 화보에서 윈터가 거의 생얼로 등장하면서, 최소 메이크업보다 폴로 랄프 로렌 레드 니트 드레스가 더 주목받는 역설적 현상이 발생. 화보 공개 6시간 만에 관련 검색 급등.'" },
               context_ko: { type: "string", description: "MUST be identical to the 'context' field (since context is already in Korean). Copy the same Korean text here." },
