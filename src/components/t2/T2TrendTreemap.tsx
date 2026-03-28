@@ -104,7 +104,7 @@ export function sanitizeImageUrl(url: string | null): string | null {
   return url.replace(/&amp;/g, '&');
 }
 
-export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping" | "social";
+export type TrendCategory = "all" | "my" | "brand" | "product" | "place" | "food" | "restaurant" | "fashion" | "beauty" | "media" | "music" | "event" | "shopping" | "social";
 
 export const CATEGORY_CONFIG: Record<string, { label: string; color: string; tileColor: string }> = {
   brand:   { label: "Brand",   color: "hsl(210, 70%, 55%)", tileColor: "hsla(210, 15%, 42%, 0.72)" },
