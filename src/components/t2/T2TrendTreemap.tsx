@@ -1001,7 +1001,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
                     {/* Horizontal carousel */}
                     <div
-                      className="flex items-start gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+                      className="flex items-start gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide pl-4"
                       style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
                     >
                       {items.slice(0, 20).map((item, idx) => {
