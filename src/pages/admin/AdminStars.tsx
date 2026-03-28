@@ -111,6 +111,10 @@ const AdminStars = () => {
     namuwiki_url: "",
     agency: "",
     is_active: true,
+    social_instagram: "",
+    social_youtube: "",
+    social_tiktok: "",
+    social_x: "",
   });
   const [namuUrl, setNamuUrl] = useState("");
   const [namuLoading, setNamuLoading] = useState(false);
@@ -193,6 +197,20 @@ const AdminStars = () => {
   /* ───── batch save members ───── */
   const saveWithMembers = useMutation({
     mutationFn: async ({ isEdit, includeMembers }: { isEdit: boolean; includeMembers: boolean }) => {
+      // Build social_handles from form
+      const socialHandles: Record<string, string> = {};
+      if (form.social_instagram) socialHandles.instagram = form.social_instagram;
+      if (form.social_youtube) socialHandles.youtube = form.social_youtube;
+      if (form.social_tiktok) socialHandles.tiktok = form.social_tiktok;
+      if (form.social_x) socialHandles.x = form.social_x;
+
+      // Preserve existing instagram_pk etc. from previous data
+      if (isEdit && editingStar?.social_handles) {
+        const prev = editingStar.social_handles;
+        if (prev.instagram_pk) socialHandles.instagram_pk = prev.instagram_pk;
+        if (prev.instagram_followers) socialHandles.instagram_followers = prev.instagram_followers;
+      }
+
       const payload: any = {
         display_name: form.display_name,
         name_ko: form.name_ko || null,
@@ -203,6 +221,7 @@ const AdminStars = () => {
         namuwiki_url: form.namuwiki_url || null,
         agency: form.agency || null,
         is_active: form.is_active,
+        social_handles: Object.keys(socialHandles).length > 0 ? socialHandles : null,
       };
 
       let groupId: string | null = null;
@@ -283,7 +302,7 @@ const AdminStars = () => {
   /* ───── helpers ───── */
   const openCreate = () => {
     setEditingStar(null);
-    setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true });
+    setForm({ display_name: "", name_ko: "", star_type: "group", star_category: "kpop", wiki_entry_id: "", group_star_id: "", namuwiki_url: "", agency: "", is_active: true, social_instagram: "", social_youtube: "", social_tiktok: "", social_x: "" });
     setNamuUrl("");
     setNamuResult(null);
     setDialogOpen(true);
@@ -291,6 +310,7 @@ const AdminStars = () => {
 
   const openEdit = (s: StarRow) => {
     setEditingStar(s);
+    const handles = s.social_handles || {};
     setForm({
       display_name: s.display_name,
       name_ko: s.name_ko ?? "",
@@ -301,6 +321,10 @@ const AdminStars = () => {
       agency: (s as any).agency ?? "",
       star_category: (s as any).star_category ?? "kpop",
       is_active: s.is_active ?? true,
+      social_instagram: handles.instagram ?? "",
+      social_youtube: handles.youtube ?? "",
+      social_tiktok: handles.tiktok ?? "",
+      social_x: handles.x ?? "",
     });
     setNamuUrl((s as any).namuwiki_url ?? "");
     setNamuResult(null);
@@ -397,8 +421,9 @@ const AdminStars = () => {
                   <th className="text-left px-3 py-2 font-medium">분류</th>
                   <th className="text-left px-3 py-2 font-medium">타입</th>
                   <th className="text-left px-3 py-2 font-medium">소속 그룹</th>
-                  <th className="text-left px-3 py-2 font-medium">소속사</th>
-                  <th className="text-left px-3 py-2 font-medium">나무위키</th>
+                   <th className="text-left px-3 py-2 font-medium">소속사</th>
+                   <th className="text-left px-3 py-2 font-medium">소셜</th>
+                   <th className="text-left px-3 py-2 font-medium">나무위키</th>
                   <th className="text-left px-3 py-2 font-medium">상태</th>
                   <th className="text-right px-3 py-2 font-medium">관리</th>
                 </tr>
@@ -423,6 +448,25 @@ const AdminStars = () => {
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs">
                       {(s as any).agency ?? "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1">
+                        {s.social_handles?.instagram && s.social_handles.instagram !== "_not_found" && (
+                          <Badge variant="outline" className="text-[9px] px-1">IG</Badge>
+                        )}
+                        {s.social_handles?.youtube && (
+                          <Badge variant="outline" className="text-[9px] px-1">YT</Badge>
+                        )}
+                        {s.social_handles?.tiktok && (
+                          <Badge variant="outline" className="text-[9px] px-1">TT</Badge>
+                        )}
+                        {s.social_handles?.x && (
+                          <Badge variant="outline" className="text-[9px] px-1">X</Badge>
+                        )}
+                        {(!s.social_handles || Object.keys(s.social_handles).filter(k => !["instagram_pk", "instagram_followers", "_not_found"].includes(k) && s.social_handles![k] && s.social_handles![k] !== "_not_found").length === 0) && (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2">
                       {(s as any).namuwiki_url ? (
@@ -462,7 +506,7 @@ const AdminStars = () => {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={10} className="text-center py-8 text-muted-foreground">
                       검색 결과 없음
                     </td>
                   </tr>
@@ -611,18 +655,49 @@ const AdminStars = () => {
                 className="h-9 text-xs font-mono"
                 placeholder="내부 위키 연결 (선택)"
               />
-            </div>
-
-            {/* agency */}
+            {/* social handles */}
             <div>
-              <label className="text-xs font-medium mb-1 block">소속사</label>
-              <Input
-                value={form.agency}
-                onChange={(e) => setForm({ ...form, agency: e.target.value })}
-                className="h-9"
-                placeholder="예: SM엔터테인먼트"
-              />
+              <label className="text-xs font-medium mb-1 block">📱 소셜 핸들</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Instagram</label>
+                  <Input
+                    value={form.social_instagram}
+                    onChange={(e) => setForm({ ...form, social_instagram: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="@username"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">YouTube</label>
+                  <Input
+                    value={form.social_youtube}
+                    onChange={(e) => setForm({ ...form, social_youtube: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="채널ID 또는 @handle"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">TikTok</label>
+                  <Input
+                    value={form.social_tiktok}
+                    onChange={(e) => setForm({ ...form, social_tiktok: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="@username"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">X (Twitter)</label>
+                  <Input
+                    value={form.social_x}
+                    onChange={(e) => setForm({ ...form, social_x: e.target.value })}
+                    className="h-8 text-xs"
+                    placeholder="@username"
+                  />
+                </div>
+              </div>
             </div>
+          </div>
           </div>
 
           <DialogFooter className="gap-2">
