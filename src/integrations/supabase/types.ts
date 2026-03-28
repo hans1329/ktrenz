@@ -3991,6 +3991,69 @@ export type Database = {
           },
         ]
       }
+      ktrenz_shopping_tracking: {
+        Row: {
+          composite_score: number | null
+          datalab_ratio: number | null
+          datalab_trend_7d: Json | null
+          id: string
+          keyword: string
+          keyword_category: string | null
+          raw_response: Json | null
+          search_volume: number | null
+          shop_recent_items: number | null
+          shop_total: number | null
+          star_id: string | null
+          tracked_at: string
+          trigger_id: string
+        }
+        Insert: {
+          composite_score?: number | null
+          datalab_ratio?: number | null
+          datalab_trend_7d?: Json | null
+          id?: string
+          keyword: string
+          keyword_category?: string | null
+          raw_response?: Json | null
+          search_volume?: number | null
+          shop_recent_items?: number | null
+          shop_total?: number | null
+          star_id?: string | null
+          tracked_at?: string
+          trigger_id: string
+        }
+        Update: {
+          composite_score?: number | null
+          datalab_ratio?: number | null
+          datalab_trend_7d?: Json | null
+          id?: string
+          keyword?: string
+          keyword_category?: string | null
+          raw_response?: Json | null
+          search_volume?: number | null
+          shop_recent_items?: number | null
+          shop_total?: number | null
+          star_id?: string | null
+          tracked_at?: string
+          trigger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_shopping_tracking_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_shopping_tracking_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_social_snapshots: {
         Row: {
           collected_at: string
