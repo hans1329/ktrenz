@@ -625,7 +625,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Ranking explanation: Why this rank? */}
           {rank != null && (
-            <div className="rounded-xl bg-background border border-border p-3 space-y-2">
+            <div className="space-y-2">
               <h3 className="text-base font-bold text-foreground">
                 {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
               </h3>
