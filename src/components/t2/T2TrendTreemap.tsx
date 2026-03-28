@@ -1043,7 +1043,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                 </div>
                               )}
                               {/* Dark overlay for text readability */}
-                              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/25 via-[45%] to-transparent" />
+                              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 via-[40%] to-transparent" />
                               {/* Top-left: rank badge + artist */}
                               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
                                 {idx < 3 && (
