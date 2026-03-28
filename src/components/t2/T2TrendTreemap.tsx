@@ -15,6 +15,7 @@ import BoxParticles from "@/components/v3/BoxParticles";
 import T2AdminControls from "./T2AdminControls";
 import T2TrendList from "./T2TrendList";
 import T2ArtistList from "./T2ArtistList";
+import T2TopCards from "./T2TopCards";
 
 // ── Types ──
 export interface TrendTile {
