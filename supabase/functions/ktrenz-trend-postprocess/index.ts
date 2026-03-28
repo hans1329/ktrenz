@@ -1102,6 +1102,7 @@ Deno.serve(async (req) => {
         sameSourceUrlDedup: sameUrlResult,
         crossArtistDedup: crossArtistResult,
         sameImageDedup: sameImageResult,
+        noImageDedup: noImageResult,
         brandMapped,
         globalStarNameFilter: globalNameResult,
         noisePatternFilter: noiseResult,
