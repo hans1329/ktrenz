@@ -948,7 +948,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
             trackingMap={carouselTrackingMap}
           />
 
-          <div className="h-8" />
+          <div className="h-4" />
 
           {/* Carousel Card View — grouped by category */}
           {(() => {
