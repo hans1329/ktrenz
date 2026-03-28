@@ -156,7 +156,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
               </span>
             )}
           </div>
-          <div className="flex-1 flex items-center justify-center px-2">
+          <div className="flex-1 flex items-center justify-center px-2 -mt-6">
             <div className="flex items-start gap-1">
               <MessageCircle className="w-3.5 h-3.5 shrink-0 -scale-x-100 mt-0.5 text-white/80" />
               <h4 className={cn("font-black text-white leading-tight drop-shadow-md", opts.titleClass)}>
