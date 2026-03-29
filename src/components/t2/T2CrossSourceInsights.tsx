@@ -15,7 +15,7 @@ interface CrossInsight {
   category: string;
   naverBuzz: number;
   socialScore: number;
-  gapType: "social_only" | "naver_only" | "cross_confirmed";
+  gapType: "social_only" | "cross_confirmed";
   gapLabel: string;
   gapLabelKo: string;
 }
