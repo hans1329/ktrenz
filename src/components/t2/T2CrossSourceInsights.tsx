@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Layers, ArrowRight, ChevronRight } from "lucide-react";
+import { Layers, ChevronRight } from "lucide-react";
 
 interface CrossInsight {
   id: string;
   keyword: string;
   keywordKo: string | null;
   artistName: string;
+  artistImage: string | null;
   triggerSource: string;
   category: string;
   naverBuzz: number;
@@ -19,10 +20,17 @@ interface CrossInsight {
   gapLabelKo: string;
 }
 
-const GAP_CONFIG: Record<string, { icon: string; label: string; labelKo: string; tagColor: string }> = {
-  social_only: { icon: "🚀", label: "Social Early", labelKo: "소셜 선행", tagColor: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400" },
-  naver_only: { icon: "📰", label: "News Only", labelKo: "뉴스 중심", tagColor: "bg-green-500/15 text-green-600 dark:text-green-400" },
-  cross_confirmed: { icon: "🔥", label: "Confirmed", labelKo: "교차 확인", tagColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+const GAP_CONFIG: Record<string, { label: string; labelKo: string; tagColor: string }> = {
+  social_only: { label: "Social Early", labelKo: "소셜 선행", tagColor: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400" },
+  naver_only: { label: "News Only", labelKo: "뉴스 중심", tagColor: "bg-green-500/15 text-green-600 dark:text-green-400" },
+  cross_confirmed: { label: "Confirmed", labelKo: "교차 확인", tagColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  youtube_search: "YouTube",
+  naver_news: "Naver",
 };
 
 function getKeyword(item: CrossInsight, lang: string) {
@@ -37,7 +45,6 @@ const T2CrossSourceInsights = () => {
   const { data: insights } = useQuery({
     queryKey: ["cross-source-insights"],
     queryFn: async () => {
-      // Get active triggers with metadata containing buzz data
       const { data: triggers } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("id, keyword, keyword_ko, artist_name, trigger_source, keyword_category, metadata, baseline_score, peak_score")
@@ -46,6 +53,15 @@ const T2CrossSourceInsights = () => {
         .limit(200);
 
       if (!triggers?.length) return [];
+
+      // Collect unique artist names to fetch images
+      const artistNames = [...new Set((triggers as any[]).map((t) => t.artist_name))];
+      const { data: stars } = await supabase
+        .from("ktrenz_stars" as any)
+        .select("display_name, image_url")
+        .in("display_name", artistNames);
+
+      const imageMap = new Map((stars || []).map((s: any) => [s.display_name, s.image_url]));
 
       const results: CrossInsight[] = [];
 
@@ -63,8 +79,9 @@ const T2CrossSourceInsights = () => {
 
         if (isSocialSource && naverBuzz < 5 && (t.peak_score ?? 0) > 0) {
           gapType = "social_only";
-          gapLabel = `Trending on ${t.trigger_source === "tiktok" ? "TikTok" : t.trigger_source === "instagram" ? "Instagram" : "YouTube"}, not yet in news`;
-          gapLabelKo = `${t.trigger_source === "tiktok" ? "틱톡" : t.trigger_source === "instagram" ? "인스타" : "유튜브"}에서 화제, 뉴스는 아직`;
+          const src = SOURCE_LABEL[t.trigger_source] || t.trigger_source;
+          gapLabel = `Trending on ${src}, not yet in news`;
+          gapLabelKo = `${src}에서 화제, 뉴스는 아직`;
         } else if (!isSocialSource && naverBuzz > 20 && socialScore < 10) {
           gapType = "naver_only";
           gapLabel = "Strong in news, quiet on social";
@@ -81,6 +98,7 @@ const T2CrossSourceInsights = () => {
             keyword: t.keyword,
             keywordKo: t.keyword_ko,
             artistName: t.artist_name,
+            artistImage: imageMap.get(t.artist_name) || null,
             triggerSource: t.trigger_source,
             category: t.keyword_category,
             naverBuzz,
@@ -92,7 +110,6 @@ const T2CrossSourceInsights = () => {
         }
       }
 
-      // Prioritize: social_only first (early signals), then cross_confirmed, then naver_only
       const priority: Record<string, number> = { social_only: 0, cross_confirmed: 1, naver_only: 2 };
       results.sort((a, b) => priority[a.gapType] - priority[b.gapType]);
       return results.slice(0, 5);
@@ -128,34 +145,45 @@ const T2CrossSourceInsights = () => {
             <button
               key={item.id}
               onClick={() => handleClick(item)}
-              className="w-full text-left rounded-2xl p-4 bg-card border border-border transition-all active:scale-[0.98] hover:shadow-md"
+              className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 p-3">
+                {/* Artist image */}
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0">
+                  {item.artistImage ? (
+                    <img
+                      src={item.artistImage}
+                      alt={item.artistName}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted-foreground">
+                      {item.artistName.charAt(0)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base">{config.icon}</span>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[11px] font-semibold text-muted-foreground truncate">
                       {item.artistName}
                     </span>
-                    <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full", config.tagColor)}>
+                    <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0", config.tagColor)}>
                       {language === "ko" ? config.labelKo : config.label}
                     </span>
                   </div>
-                  <h3 className="text-[15px] font-bold text-foreground leading-snug truncate">
+                  <h3 className="text-sm font-bold text-foreground leading-snug truncate">
                     {getKeyword(item, language)}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                     {language === "ko" ? item.gapLabelKo : item.gapLabel}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <span>📰 {item.naverBuzz}</span>
-                    {item.socialScore > 0 && <span>📱 {item.socialScore}</span>}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </div>
+                {/* Right side */}
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
               </div>
             </button>
           );
