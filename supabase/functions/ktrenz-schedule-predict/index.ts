@@ -130,22 +130,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 단일 아티스트 모드 - starId 우선, wikiEntryId fallback
-    let resolvedStarId = starId || null;
-
-    if (!resolvedStarId && wikiEntryId) {
-      const { data: starRow } = await sb
-        .from("ktrenz_stars")
-        .select("id, display_name, name_ko")
-        .eq("wiki_entry_id", wikiEntryId)
-        .eq("is_active", true)
-        .maybeSingle();
-      resolvedStarId = starRow?.id || null;
-    }
+    // 단일 아티스트 모드 - starId만 지원
+    const resolvedStarId = starId || null;
 
     if (!resolvedStarId) {
       return new Response(
-        JSON.stringify({ success: false, error: "starId or wikiEntryId required" }),
+        JSON.stringify({ success: false, error: "starId required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
