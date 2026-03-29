@@ -10,6 +10,8 @@ const corsHeaders = {
 
 const RAPIDAPI_HOST = "instagram-api-fast-reliable-data-scraper.p.rapidapi.com";
 const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
+const DAILY_API_BUDGET = 400; // Pro plan daily limit
+const MAX_RESOLVE_PER_RUN = 10; // 미검색 아티스트 프로필 검색 제한
 
 interface InstaPost {
   caption_text: string;
@@ -52,14 +54,13 @@ async function resolveInstagramProfile(
     const variants = [
       artistName.toLowerCase().replace(/[^a-z0-9]/g, ""),
       artistName.toLowerCase().replace(/[^a-z0-9]/g, "") + "official",
-      artistName.toLowerCase().replace(/\s+/g, "_"),
-      artistName.toLowerCase().replace(/\s+/g, "."),
     ];
 
     for (const username of variants) {
       try {
         const profile = await instaFetch(`profile?username=${username}`, rapidApiKey);
-        if (profile?.pk && profile?.is_verified) {
+        // verified 또는 팔로워 1만 이상이면 공식 계정으로 간주
+        if (profile?.pk && (profile?.is_verified || (profile?.follower_count || 0) >= 10000)) {
           return {
             pk: String(profile.pk),
             username: profile.username,
@@ -344,10 +345,31 @@ Deno.serve(async (req) => {
     let totalKeywords = 0;
     let profilesResolved = 0;
     let apiCalls = 0;
+    let resolveAttempts = 0; // 프로필 검색 시도 카운터
     const results: string[] = [];
     const errors: string[] = [];
 
+    // 일일 API 사용량 조회 (ktrenz_social_snapshots에서 오늘 인스타 수집 건수로 추정)
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const { count: todayUsage } = await sb
+      .from("ktrenz_social_snapshots")
+      .select("id", { count: "exact", head: true })
+      .eq("platform", "instagram")
+      .gte("collected_at", todayStart.toISOString());
+    // 아티스트당 약 2 API 호출(feed+profile) → 사용량 추정
+    const estimatedUsedCalls = (todayUsage || 0) * 2;
+    let remainingBudget = DAILY_API_BUDGET - estimatedUsedCalls;
+    console.log(`[instagram] Daily budget: ${remainingBudget}/${DAILY_API_BUDGET} remaining (estimated ${estimatedUsedCalls} used today)`);
+
     for (const star of stars) {
+      // 예산 소진 시 즉시 중단
+      if (apiCalls >= remainingBudget) {
+        console.log(`[instagram] Daily API budget exhausted (${apiCalls} calls). Stopping.`);
+        results.push(`BUDGET_EXHAUSTED after ${apiCalls} API calls`);
+        break;
+      }
+
       try {
         const socialHandles = (star.social_handles || {}) as Record<string, string>;
         let igUsername = socialHandles.instagram || null;
@@ -355,7 +377,12 @@ Deno.serve(async (req) => {
 
         // ── 1. 인스타 핸들 자동 검색 (캐싱 안 된 경우) ──
         if (!igUsername) {
-          apiCalls++;
+          // 프로필 검색은 런당 MAX_RESOLVE_PER_RUN 명으로 제한 (각 최대 2 API 호출)
+          if (resolveAttempts >= MAX_RESOLVE_PER_RUN) {
+            continue; // 다음 실행에서 재시도
+          }
+          resolveAttempts++;
+          apiCalls += 2; // 최대 2개 변형 시도
           const profile = await resolveInstagramProfile(star.display_name, rapidApiKey);
 
           if (profile) {
@@ -363,7 +390,6 @@ Deno.serve(async (req) => {
             igUserId = profile.pk;
             profilesResolved++;
 
-            // social_handles에 캐싱
             const updatedHandles = {
               ...socialHandles,
               instagram: profile.username,
@@ -378,7 +404,6 @@ Deno.serve(async (req) => {
 
             console.log(`[instagram] Resolved ${star.display_name} → @${profile.username} (${profile.follower_count} followers)`);
           } else {
-            // 검색 실패 시 타임스탬프와 함께 캐싱 (7일 후 재시도)
             const updatedHandles = { ...socialHandles, instagram: "_not_found", instagram_checked_at: new Date().toISOString() };
             await sb
               .from("ktrenz_stars")
@@ -395,7 +420,6 @@ Deno.serve(async (req) => {
           const checkedAt = socialHandles.instagram_checked_at;
           const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
           if (checkedAt && (Date.now() - new Date(checkedAt).getTime()) > sevenDaysMs) {
-            // 7일 경과 → 리셋하여 다음 실행 시 재검색
             const updatedHandles = { ...socialHandles };
             delete updatedHandles.instagram;
             delete updatedHandles.instagram_checked_at;
@@ -426,10 +450,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        // ── 2. 피드 + 스토리 수집 ──
+        // ── 2. 피드 수집 (스토리 생략하여 API 절약) ──
         let allPosts: InstaPost[] = [];
 
-        // 피드 (최근 포스트)
         try {
           apiCalls++;
           const feedData = await instaFetch(`feed?user_id=${igUserId}`, rapidApiKey);
@@ -439,18 +462,8 @@ Deno.serve(async (req) => {
           console.warn(`[instagram] Feed fetch failed for @${igUsername}: ${(e as Error).message}`);
         }
 
-        // 스토리
-        try {
-          apiCalls++;
-          const storyData = await instaFetch(`stories?user_id=${igUserId}`, rapidApiKey);
-          const storyPosts = parseStoryItems(storyData);
-          allPosts.push(...storyPosts);
-        } catch (e) {
-          console.warn(`[instagram] Stories fetch failed for @${igUsername}: ${(e as Error).message}`);
-        }
-
         if (allPosts.length === 0) {
-          results.push(`${star.display_name}: no recent posts/stories`);
+          results.push(`${star.display_name}: no recent posts`);
           continue;
         }
 
@@ -597,7 +610,9 @@ Deno.serve(async (req) => {
         success: true,
         processed: stars.length,
         profiles_resolved: profilesResolved,
+        resolve_attempts: resolveAttempts,
         api_calls: apiCalls,
+        budget_remaining: Math.max(0, remainingBudget - apiCalls),
         keywords_saved: totalKeywords,
         results: results.slice(0, 30),
         errors: errors.slice(0, 10),
