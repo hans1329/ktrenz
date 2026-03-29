@@ -1425,7 +1425,6 @@ Deno.serve(async (req) => {
       let singleGroupName = groupName || null;
       let singleGroupNameKo: string | null = null;
       let singleNameKo: string | null = null;
-      let singleGroupWikiEntryId = wikiEntryId || null;
       let singleStarCategory = body.starCategory || "kpop";
 
       // memberName이 없으면 DB에서 조회
@@ -1442,13 +1441,12 @@ Deno.serve(async (req) => {
           if (starData.group_star_id) {
             const { data: groupData } = await sb
               .from("ktrenz_stars")
-              .select("display_name, name_ko, wiki_entry_id")
+              .select("display_name, name_ko")
               .eq("id", starData.group_star_id)
               .single();
             if (groupData) {
               singleGroupName = groupData.display_name;
               singleGroupNameKo = groupData.name_ko;
-              singleGroupWikiEntryId = groupData.wiki_entry_id;
             }
           }
         }
@@ -1457,7 +1455,7 @@ Deno.serve(async (req) => {
       if (singleMemberName) {
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
-          { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, group_wiki_entry_id: singleGroupWikiEntryId, star_category: singleStarCategory },
+          { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, star_category: singleStarCategory },
           globalStarNames
         );
         return new Response(
@@ -1467,18 +1465,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 레거시 호환: wikiEntryId + artistName으로 호출 시
-    if (wikiEntryId && artistName) {
-      const result = await detectForMember(
-        sb, openaiKey, naverClientId, naverClientSecret,
-        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId, star_category: "kpop" },
-        globalStarNames
-      );
-      return new Response(
-        JSON.stringify({ success: true, ...result }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // 레거시 호환 (wikiEntryId) 경로 제거 — star_id만 지원
 
     // 배치 모드: ktrenz_stars의 group/solo/member 타입 순회
     const { data: allStars } = await sb
@@ -1492,14 +1479,14 @@ Deno.serve(async (req) => {
 
     // group_star_id로 그룹 정보 일괄 조회 (member 타입용)
     const groupIds = [...new Set(allCandidates.map((m: any) => m.group_star_id).filter(Boolean))];
-    let groupMap: Record<string, { display_name: string; name_ko: string | null; wiki_entry_id: string | null }> = {};
+    let groupMap: Record<string, { display_name: string; name_ko: string | null }> = {};
     if (groupIds.length > 0) {
       const { data: groups } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name, name_ko, wiki_entry_id")
+        .select("id, display_name, name_ko")
         .in("id", groupIds);
       for (const g of (groups || [])) {
-        groupMap[g.id] = { display_name: g.display_name, name_ko: g.name_ko, wiki_entry_id: g.wiki_entry_id };
+        groupMap[g.id] = { display_name: g.display_name, name_ko: g.name_ko };
       }
     }
 
@@ -1547,7 +1534,6 @@ Deno.serve(async (req) => {
           name_ko: star.name_ko,
           group_name: isGroup ? null : (isSolo ? null : (group?.display_name || null)),
           group_name_ko: isGroup ? null : (isSolo ? null : (group?.name_ko || null)),
-          group_wiki_entry_id: isGroup ? null : (isSolo ? null : (group?.wiki_entry_id || null)),
           star_category: star.star_category || "kpop",
         };
 
@@ -1649,7 +1635,6 @@ interface MemberInfo {
   name_ko: string | null;
   group_name: string | null;
   group_name_ko: string | null;
-  group_wiki_entry_id: string | null;
   star_category: string;
 }
 
@@ -1858,7 +1843,7 @@ async function detectForMember(
     return {
       extractedKeyword: keywordData,
       row: {
-        wiki_entry_id: member.group_wiki_entry_id || null,
+        wiki_entry_id: null,
         star_id: member.id || null,
         trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
         trigger_source: keywordData.category === "social" ? "tiktok" : "naver_news",

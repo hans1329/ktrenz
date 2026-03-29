@@ -524,7 +524,7 @@ Deno.serve(async (req) => {
         // tracking 레코드 저장 (뉴스/블로그 기반 점수)
         await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: trigger.id,
-          wiki_entry_id: trigger.wiki_entry_id,
+          wiki_entry_id: null,
           keyword: trigger.keyword,
           interest_score: buzzScore,
           region: "naver",
@@ -537,7 +537,7 @@ Deno.serve(async (req) => {
           const dup = triggers.find((t: any) => t.id === dupId);
           if (dup) {
             await sb.from("ktrenz_trend_tracking").insert({
-              trigger_id: dupId, wiki_entry_id: dup.wiki_entry_id, keyword: dup.keyword,
+              trigger_id: dupId, wiki_entry_id: null, keyword: dup.keyword,
               interest_score: buzzScore, region: "naver",
               delta_pct: deltaPct, raw_response: rawResponse,
             });

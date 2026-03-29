@@ -235,7 +235,6 @@ interface MemberInfo {
   display_name: string;
   name_ko: string | null;
   group_name: string | null;
-  group_wiki_entry_id: string | null;
 }
 
 async function detectForMember(
@@ -309,7 +308,7 @@ async function detectForMember(
       }
       batchInsertedKeys.add(kwLower);
       rowsToInsert.push({
-        wiki_entry_id: member.group_wiki_entry_id || null,
+        wiki_entry_id: null,
         star_id: member.id || null,
         trigger_type: "youtube_mention",
         trigger_source: "youtube_search",
@@ -438,7 +437,6 @@ Deno.serve(async (req) => {
         display_name: memberName,
         name_ko: null,
         group_name: groupName || null,
-        group_wiki_entry_id: null,
       });
       return new Response(
         JSON.stringify({ success: true, ...result }),
@@ -458,14 +456,14 @@ Deno.serve(async (req) => {
 
     // 그룹 정보 일괄 조회
     const groupIds = [...new Set(allCandidates.map((m: any) => m.group_star_id).filter(Boolean))];
-    let groupMap: Record<string, { display_name: string; wiki_entry_id: string | null }> = {};
+    let groupMap: Record<string, { display_name: string }> = {};
     if (groupIds.length > 0) {
       const { data: groups } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name, wiki_entry_id")
+        .select("id, display_name")
         .in("id", groupIds);
       for (const g of (groups || [])) {
-        groupMap[g.id] = { display_name: g.display_name, wiki_entry_id: g.wiki_entry_id };
+        groupMap[g.id] = { display_name: g.display_name };
       }
     }
 
@@ -492,7 +490,6 @@ Deno.serve(async (req) => {
           display_name: star.display_name,
           name_ko: star.name_ko,
           group_name: isGroupOrSolo ? null : (group?.display_name || null),
-          group_wiki_entry_id: isGroupOrSolo ? null : (group?.wiki_entry_id || null),
         });
         successCount++;
         totalKeywords += result.keywordsFound;
