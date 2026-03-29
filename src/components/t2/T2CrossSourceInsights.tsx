@@ -167,12 +167,6 @@ const T2CrossSourceInsights = () => {
 
               {/* Right content */}
               <div className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-1">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md", config.tagBg, config.tagColor)}>
-                    {language === "ko" ? config.labelKo : config.label}
-                  </span>
-                  <span className="text-[10px] font-medium text-muted-foreground">{sourceName}</span>
-                </div>
                 <h3 className="text-sm font-bold text-foreground leading-snug truncate">
                   {getKeyword(item, language)}
                 </h3>
