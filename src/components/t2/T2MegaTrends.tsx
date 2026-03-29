@@ -10,6 +10,7 @@ interface MegaTrendCluster {
   category: string;
   artistCount: number;
   artists: string[];
+  artistNameKoMap: Record<string, string>;
   keywords: { keyword: string; keywordKo: string; artistName: string; influenceIndex: number; imageUrl: string | null }[];
   totalInfluence: number;
 }
