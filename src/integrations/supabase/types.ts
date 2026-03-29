@@ -4462,6 +4462,7 @@ export type Database = {
           fan_sentiment: string | null
           id: string
           influence_index: number | null
+          is_mega_trend: boolean | null
           keyword: string
           keyword_category: string
           keyword_en: string | null
@@ -4469,6 +4470,7 @@ export type Database = {
           keyword_ko: string | null
           keyword_zh: string | null
           lifetime_hours: number | null
+          mega_trend_cluster: string | null
           metadata: Json | null
           peak_at: string | null
           peak_delay_hours: number | null
@@ -4506,6 +4508,7 @@ export type Database = {
           fan_sentiment?: string | null
           id?: string
           influence_index?: number | null
+          is_mega_trend?: boolean | null
           keyword: string
           keyword_category?: string
           keyword_en?: string | null
@@ -4513,6 +4516,7 @@ export type Database = {
           keyword_ko?: string | null
           keyword_zh?: string | null
           lifetime_hours?: number | null
+          mega_trend_cluster?: string | null
           metadata?: Json | null
           peak_at?: string | null
           peak_delay_hours?: number | null
@@ -4550,6 +4554,7 @@ export type Database = {
           fan_sentiment?: string | null
           id?: string
           influence_index?: number | null
+          is_mega_trend?: boolean | null
           keyword?: string
           keyword_category?: string
           keyword_en?: string | null
@@ -4557,6 +4562,7 @@ export type Database = {
           keyword_ko?: string | null
           keyword_zh?: string | null
           lifetime_hours?: number | null
+          mega_trend_cluster?: string | null
           metadata?: Json | null
           peak_at?: string | null
           peak_delay_hours?: number | null
