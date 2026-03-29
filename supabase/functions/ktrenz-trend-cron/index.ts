@@ -261,11 +261,43 @@ async function executeBatch(
   const totalCandidates = result.totalCandidates || 0;
   const nextOffset = offset + batchSize;
   const isThrottled = result.throttled === true;
-  const isLastBatch = (result.success && nextOffset >= totalCandidates) || isThrottled;
+  const isSingleCall = SINGLE_CALL_PHASES.has(phase);
+  const isLastBatch = isSingleCall || (result.success && nextOffset >= totalCandidates) || isThrottled;
 
   if (isLastBatch) {
-    // 이 phase 배치 완료
-    if (DETECT_PHASES.has(phase)) {
+    if (isSingleCall) {
+      // 단일 호출 phase → 바로 done & 다음 phase
+      const nextPhase = getNextPhase(phase);
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: "done",
+          current_offset: 1,
+          total_candidates: 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", runId)
+        .eq("phase", phase)
+        .eq("status", "running");
+
+      if (nextPhase) {
+        const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+          .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
+        if (!existingNext?.length) {
+          await sb.from("ktrenz_pipeline_state").insert({
+            run_id: runId,
+            phase: nextPhase,
+            status: "running",
+            current_offset: 0,
+            batch_size: batchSize,
+          });
+        }
+      }
+      console.log(`[cron] Single-call phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
+
+      if (!nextPhase) {
+        await runEndOfPipelineJobs(supabaseUrl, supabaseKey);
+      }
+    } else if (DETECT_PHASES.has(phase)) {
       // detect 계열 → postprocess 요청
       await sb.from("ktrenz_pipeline_state")
         .update({
