@@ -168,7 +168,7 @@ const AdminDashboard = () => {
             >
               전체 ({activeKeywords?.length ?? 0})
             </button>
-            {Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]).map(([src, count]) => {
+            {Object.entries(sourceCounts).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([src, count]) => {
               const info = SOURCE_LABELS[src] || { label: src, color: 'bg-muted text-muted-foreground border-border' };
               return (
                 <button
@@ -179,7 +179,7 @@ const AdminDashboard = () => {
                     sourceFilter === src ? info.color : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                   )}
                 >
-                  {info.label} ({count})
+                  {info.label} ({count as number})
                 </button>
               );
             })}
