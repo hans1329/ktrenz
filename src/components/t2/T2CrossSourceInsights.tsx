@@ -146,9 +146,10 @@ const T2CrossSourceInsights = () => {
             <button
               key={item.id}
               onClick={() => handleClick(item)}
-              className="w-full max-w-[22rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
+              className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md flex"
             >
-              <div className="relative h-32 overflow-hidden rounded-t-2xl bg-muted">
+              {/* Square image on the left */}
+              <div className="w-20 h-20 flex-shrink-0 bg-muted">
                 <SmartImage
                   src={item.imageUrl}
                   alt={item.artistName}
@@ -158,40 +159,25 @@ const T2CrossSourceInsights = () => {
                   decoding="async"
                   fallback={
                     <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <span className="text-2xl font-black text-muted-foreground/40">{item.artistName.charAt(0)}</span>
+                      <span className="text-xl font-black text-muted-foreground/40">{item.artistName.charAt(0)}</span>
                     </div>
                   }
                 />
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                {/* Gap type badge */}
-                <div className="absolute top-2.5 left-2.5">
-                  <span className={cn("text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-sm", config.tagBg, config.tagColor)}>
-                    {language === "ko" ? config.labelKo : config.label}
-                  </span>
-                </div>
-
-                {/* Source badge */}
-                <div className="absolute top-2.5 right-2.5">
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-black/40 text-white backdrop-blur-sm">
-                    {sourceName}
-                  </span>
-                </div>
-
-                {/* Bottom text on image */}
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="text-[11px] font-semibold text-white/80 mb-0.5">{item.artistName}</p>
-                  <h3 className="text-base font-bold text-white leading-snug truncate">
-                    {getKeyword(item, language)}
-                  </h3>
-                </div>
               </div>
 
-              {/* Insight detail bar */}
-              <div className="px-3 py-2.5">
-                <p className="text-xs text-muted-foreground truncate">
-                  {language === "ko" ? item.gapLabelKo : item.gapLabel}
+              {/* Right content */}
+              <div className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md", config.tagBg, config.tagColor)}>
+                    {language === "ko" ? config.labelKo : config.label}
+                  </span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{sourceName}</span>
+                </div>
+                <h3 className="text-sm font-bold text-foreground leading-snug truncate">
+                  {getKeyword(item, language)}
+                </h3>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {item.artistName} · {language === "ko" ? item.gapLabelKo : item.gapLabel}
                 </p>
               </div>
             </button>
