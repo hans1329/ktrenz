@@ -103,10 +103,10 @@ function parseFeedItems(data: any): InstaPost[] {
     const imageVersions = item.image_versions2?.candidates || [];
     const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : null;
 
-    // 24시간 이내 포스트만
+    // 3일 이내 포스트만
     const takenAt = item.taken_at || 0;
-    const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
-    if (takenAt < oneDayAgo) continue;
+    const threeDaysAgo = Math.floor(Date.now() / 1000) - 86400 * 3;
+    if (takenAt < threeDaysAgo) continue;
 
     posts.push({
       caption_text: captionText,
