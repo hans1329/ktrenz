@@ -524,7 +524,7 @@ Deno.serve(async (req) => {
         // tracking 레코드 저장 (뉴스/블로그 기반 점수)
         await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: trigger.id,
-          wiki_entry_id: trigger.wiki_entry_id,
+          wiki_entry_id: null,
           keyword: trigger.keyword,
           interest_score: buzzScore,
           region: "naver",
