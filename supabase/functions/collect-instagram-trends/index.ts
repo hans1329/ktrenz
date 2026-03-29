@@ -297,7 +297,8 @@ Deno.serve(async (req) => {
 
       let resetCount = 0;
       for (const star of (notFoundStars || [])) {
-        const handles = { ...(star.social_handles as Record<string, any>) };
+        const handles = (star.social_handles || {}) as Record<string, any>;
+        if (handles.instagram !== "_not_found") continue;
         delete handles.instagram;
         delete handles.instagram_checked_at;
         await sb.from("ktrenz_stars").update({ social_handles: handles }).eq("id", star.id);
