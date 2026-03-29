@@ -1466,18 +1466,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 레거시 호환: wikiEntryId + artistName으로 호출 시
-    if (wikiEntryId && artistName) {
-      const result = await detectForMember(
-        sb, openaiKey, naverClientId, naverClientSecret,
-        { id: null, display_name: artistName, name_ko: null, group_name: null, group_name_ko: null, group_wiki_entry_id: wikiEntryId, star_category: "kpop" },
-        globalStarNames
-      );
-      return new Response(
-        JSON.stringify({ success: true, ...result }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // 레거시 호환 (wikiEntryId) 경로 제거 — star_id만 지원
 
     // 배치 모드: ktrenz_stars의 group/solo/member 타입 순회
     const { data: allStars } = await sb
