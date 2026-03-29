@@ -133,7 +133,12 @@ export default function V3AIPredictionCard({ wikiEntryId, artistName }: AIPredic
             {t("prediction.aiLabel")}
           </span>
           <span className="text-xs text-muted-foreground/50">
-            {new Date(prediction.predicted_at).toLocaleDateString()}
+            {(() => {
+              const hours = Math.floor((Date.now() - new Date(prediction.predicted_at).getTime()) / 3_600_000);
+              if (hours < 1) return language === "ko" ? "방금" : "Just now";
+              if (hours < 24) return language === "ko" ? `${hours}시간 전` : `${hours}h ago`;
+              return new Date(prediction.predicted_at).toLocaleDateString();
+            })()}
           </span>
         </div>
 
