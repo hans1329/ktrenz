@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const batchSize = body.batch_size || 20;
+    const batchSize = body.batchSize || body.batch_size || 20;
     const offset = body.offset || 0;
     const targetStarId = body.star_id || null; // 특정 스타만 처리
 
