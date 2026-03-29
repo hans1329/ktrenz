@@ -127,7 +127,7 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ktrenz_trend_triggers' as any)
-        .select('id, keyword, keyword_ko, keyword_category, artist_name, trigger_source, influence_index, baseline_score, peak_score, detected_at, status, source_url, source_image_url, prev_api_total, commercial_intent')
+        .select('id, keyword, keyword_ko, keyword_category, artist_name, trigger_source, influence_index, baseline_score, peak_score, detected_at, status, source_url, source_image_url, prev_api_total, commercial_intent, metadata')
         .in('status', ['active', 'pending'])
         .order('detected_at', { ascending: false })
         .limit(500);
