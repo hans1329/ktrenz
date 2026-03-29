@@ -38,27 +38,6 @@ function getKeyword(item: CrossInsight, lang: string) {
   return item.keyword;
 }
 
-const CardImage = ({ src, alt }: { src: string | null; alt: string }) => {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) {
-    return (
-      <div className="w-full h-full bg-muted flex items-center justify-center">
-        <span className="text-2xl font-black text-muted-foreground/40">{alt.charAt(0)}</span>
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className="w-full h-full object-cover"
-      referrerPolicy="no-referrer"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  );
-};
-
 const T2CrossSourceInsights = () => {
   const { language } = useLanguage();
   const [, setSearchParams] = useSearchParams();
