@@ -76,7 +76,7 @@ const T2CrossSourceInsights = () => {
         let gapLabel = "";
         let gapLabelKo = "";
 
-        if (isSocialSource && naverBuzz < 5 && (t.peak_score ?? 0) > 0) {
+        if (isSocialSource && naverBuzz < 5) {
           gapType = "social_only";
           const src = SOURCE_LABEL[t.trigger_source] || t.trigger_source;
           gapLabel = `Trending on ${src}, not yet in news`;
