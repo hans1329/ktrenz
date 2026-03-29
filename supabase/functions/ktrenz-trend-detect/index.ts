@@ -1844,7 +1844,7 @@ async function detectForMember(
     return {
       extractedKeyword: keywordData,
       row: {
-        wiki_entry_id: member.group_wiki_entry_id || null,
+        wiki_entry_id: null,
         star_id: member.id || null,
         trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
         trigger_source: keywordData.category === "social" ? "tiktok" : "naver_news",
