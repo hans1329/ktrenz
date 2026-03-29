@@ -423,36 +423,82 @@ Deno.serve(async (req) => {
 
         // ── 4. ktrenz_trend_triggers에 저장 ──
         const now = new Date().toISOString();
-        const triggers = keywords.map((kw) => ({
+
+        // 소셜 스냅샷 저장 (트래킹 시 소셜 점수 참조용)
+        const totalLikes = allPosts.reduce((s, p) => s + p.like_count, 0);
+        const totalComments = allPosts.reduce((s, p) => s + p.comment_count, 0);
+        const avgEngagement = allPosts.length > 0
+          ? Math.round((totalLikes + totalComments) / allPosts.length)
+          : 0;
+        const instaActivityScore = Math.min(100, Math.round(
+          Math.log10(Math.max(1, totalLikes)) * 8 +
+          Math.log10(Math.max(1, totalComments)) * 12 +
+          Math.min(20, allPosts.length * 5)
+        ));
+
+        await sb.from("ktrenz_social_snapshots").insert({
           star_id: star.id,
           wiki_entry_id: null,
-          trigger_type: "keyword",
-          trigger_source: "instagram",
-          artist_name: star.display_name,
-          keyword: kw.keyword,
-          keyword_en: kw.keyword_en || kw.keyword,
-          keyword_ko: kw.keyword_ko || kw.keyword,
-          keyword_category: kw.category || "brand",
-          context: kw.context || "",
-          context_ko: kw.context_ko || "",
-          confidence: kw.confidence || 0.7,
-          source_url: `https://www.instagram.com/${igUsername}/`,
-          source_title: `Instagram @${igUsername}`,
-          detected_at: now,
-          status: "pending",
-          baseline_score: 0,
-          commercial_intent: kw.commercial_intent || "organic",
-          source_snippet: allPosts
-            .filter((p) => p.caption_text.includes(kw.keyword) || p.location_name === kw.keyword)
-            .map((p) => p.caption_text.slice(0, 100))
-            .join(" | ")
-            .slice(0, 500),
-          metadata: {
-            source_type: kw.source_type || "feed_post",
-            instagram_username: igUsername,
-            instagram_pk: igUserId,
+          platform: "instagram",
+          keyword: star.display_name,
+          keyword_type: "artist_feed",
+          metrics: {
+            post_count: allPosts.length,
+            total_likes: totalLikes,
+            total_comments: totalComments,
+            avg_engagement: avgEngagement,
+            instagram_activity_score: instaActivityScore,
           },
-        }));
+          top_posts: allPosts.slice(0, 5).map(p => ({
+            caption: p.caption_text.slice(0, 200),
+            location: p.location_name,
+            likes: p.like_count,
+            comments: p.comment_count,
+            media_type: p.media_type,
+            media_url: p.media_url,
+            taken_at: new Date(p.taken_at * 1000).toISOString(),
+          })),
+        });
+
+        const triggers = keywords.map((kw) => {
+          // 해당 키워드와 관련된 포스트에서 이미지 URL 추출
+          const matchingPost = allPosts.find(
+            (p) => p.caption_text.toLowerCase().includes(kw.keyword.toLowerCase()) || p.location_name === kw.keyword
+          );
+          const sourceImageUrl = matchingPost?.media_url || allPosts[0]?.media_url || null;
+
+          return {
+            star_id: star.id,
+            wiki_entry_id: null,
+            trigger_type: "keyword",
+            trigger_source: "instagram",
+            artist_name: star.display_name,
+            keyword: kw.keyword,
+            keyword_en: kw.keyword_en || kw.keyword,
+            keyword_ko: kw.keyword_ko || kw.keyword,
+            keyword_category: kw.category || "brand",
+            context: kw.context || "",
+            context_ko: kw.context_ko || "",
+            confidence: kw.confidence || 0.7,
+            source_url: `https://www.instagram.com/${igUsername}/`,
+            source_title: `Instagram @${igUsername}`,
+            detected_at: now,
+            status: "pending",
+            baseline_score: 0,
+            commercial_intent: kw.commercial_intent || "organic",
+            source_image_url: sourceImageUrl,
+            source_snippet: allPosts
+              .filter((p) => p.caption_text.includes(kw.keyword) || p.location_name === kw.keyword)
+              .map((p) => p.caption_text.slice(0, 100))
+              .join(" | ")
+              .slice(0, 500),
+            metadata: {
+              source_type: kw.source_type || "feed_post",
+              instagram_username: igUsername,
+              instagram_pk: igUserId,
+            },
+          };
+        });
 
         // 중복 체크: 같은 star_id + keyword + trigger_source(instagram) + 3일 이내
         const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();

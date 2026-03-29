@@ -369,39 +369,48 @@ Deno.serve(async (req) => {
               const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
               const now = new Date().toISOString();
 
+              // 키워드별 관련 영상의 커버 이미지 추출
               const newTriggers = keywords
                 .filter((kw) => !existingKws.has(kw.keyword.toLowerCase()))
-                .map((kw) => ({
-                  star_id: star.id,
-                  wiki_entry_id: null,
-                  trigger_type: "keyword",
-                  trigger_source: "tiktok",
-                  artist_name: star.display_name,
-                  keyword: kw.keyword,
-                  keyword_en: kw.keyword_en || kw.keyword,
-                  keyword_ko: kw.keyword_ko || kw.keyword,
-                  keyword_category: kw.category || "social",
-                  context: kw.context || "",
-                  context_ko: kw.context_ko || "",
-                  confidence: kw.confidence || 0.7,
-                  source_url: `https://www.tiktok.com/search?q=${encodeURIComponent(star.display_name)}`,
-                  source_title: `TikTok search: ${star.display_name}`,
-                  detected_at: now,
-                  status: "pending",
-                  baseline_score: 10, // 소셜 키워드는 네이버 버즈 조회 건너뛰고 baseline=10
-                  commercial_intent: kw.commercial_intent || "organic",
-                  source_snippet: videos
-                    .filter((v) => v.desc.toLowerCase().includes(kw.keyword.toLowerCase()))
-                    .map((v) => v.desc.slice(0, 100))
-                    .join(" | ")
-                    .slice(0, 500),
-                  metadata: {
-                    source_type: kw.source_type || "tiktok_video",
-                    tiktok_search_keyword: searchKeyword,
-                    tiktok_video_count: metrics.video_count,
-                    tiktok_total_views: metrics.total_views,
-                  },
-                }));
+                .map((kw) => {
+                  const matchingVideo = videos.find(
+                    (v) => v.desc.toLowerCase().includes(kw.keyword.toLowerCase())
+                  );
+                  const sourceImageUrl = matchingVideo?.coverUrl || topPosts[0]?.cover || null;
+
+                  return {
+                    star_id: star.id,
+                    wiki_entry_id: null,
+                    trigger_type: "keyword",
+                    trigger_source: "tiktok",
+                    artist_name: star.display_name,
+                    keyword: kw.keyword,
+                    keyword_en: kw.keyword_en || kw.keyword,
+                    keyword_ko: kw.keyword_ko || kw.keyword,
+                    keyword_category: kw.category || "social",
+                    context: kw.context || "",
+                    context_ko: kw.context_ko || "",
+                    confidence: kw.confidence || 0.7,
+                    source_url: `https://www.tiktok.com/search?q=${encodeURIComponent(star.display_name)}`,
+                    source_title: `TikTok search: ${star.display_name}`,
+                    detected_at: now,
+                    status: "pending",
+                    baseline_score: 10,
+                    commercial_intent: kw.commercial_intent || "organic",
+                    source_image_url: sourceImageUrl,
+                    source_snippet: videos
+                      .filter((v) => v.desc.toLowerCase().includes(kw.keyword.toLowerCase()))
+                      .map((v) => v.desc.slice(0, 100))
+                      .join(" | ")
+                      .slice(0, 500),
+                    metadata: {
+                      source_type: kw.source_type || "tiktok_video",
+                      tiktok_search_keyword: searchKeyword,
+                      tiktok_video_count: metrics.video_count,
+                      tiktok_total_views: metrics.total_views,
+                    },
+                  };
+                });
 
               if (newTriggers.length > 0) {
                 const { error: insertErr } = await sb.from("ktrenz_trend_triggers").insert(newTriggers);

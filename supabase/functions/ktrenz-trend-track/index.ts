@@ -396,6 +396,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 소셜 소스 키워드의 소셜 점수 조회 헬퍼 ──
+    async function getSocialScore(starId: string, platform: string): Promise<number> {
+      try {
+        const { data } = await sb.from("ktrenz_social_snapshots")
+          .select("metrics")
+          .eq("star_id", starId)
+          .eq("platform", platform)
+          .order("collected_at", { ascending: false })
+          .limit(1);
+        if (!data?.length) return 0;
+        const m = data[0].metrics as any;
+        if (platform === "tiktok") return m?.tiktok_activity_score ?? 0;
+        if (platform === "instagram") return m?.instagram_activity_score ?? 0;
+        return 0;
+      } catch { return 0; }
+    }
+
     // ─── 대상 조회: 모든 active 키워드 (trigger_source 구분 없이) ───
     let triggers: any[];
     let totalTriggers = 0;
@@ -467,12 +484,28 @@ Deno.serve(async (req) => {
         const blog24h = blogResult.recent24h;
         const news7d = newsResult.recent7d;
         const blog7d = blogResult.recent7d;
-        const buzzScore = (news24h + blog24h) * 3 + (news7d + blog7d);
+        const naverBuzzScore = (news24h + blog24h) * 3 + (news7d + blog7d);
         const apiNewsTotal = newsResult.total;
         const apiBlogTotal = blogResult.total;
         const apiTotal = apiNewsTotal + apiBlogTotal;
         const prevApiTotal = trigger.prev_api_total || 0;
         const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
+
+        // ─── 소셜 소스 키워드: 하이브리드 점수 (소셜 50% + 네이버 50%) ───
+        const isSocialSource = ["tiktok", "instagram"].includes(trigger.trigger_source || "");
+        let buzzScore: number;
+        let socialScore = 0;
+
+        if (isSocialSource) {
+          socialScore = await getSocialScore(trigger.star_id, trigger.trigger_source);
+          // 네이버 버즈를 0-100 정규화
+          const naverNorm = normalizeBuzzScore(news7d, blog7d);
+          // 하이브리드: 소셜 자체 지표 50% + 네이버 버즈 50%
+          buzzScore = Math.round(socialScore * 0.5 + naverNorm * 0.5);
+        } else {
+          buzzScore = naverBuzzScore;
+        }
+
         const refScore = prevTrackScore ?? trigger.baseline_score ?? 0;
         const deltaPct = refScore > 0
           ? Math.round(((buzzScore - refScore) / refScore) * 10000) / 100
@@ -484,9 +517,15 @@ Deno.serve(async (req) => {
           news_api_total: apiNewsTotal, blog_api_total: apiBlogTotal,
           api_total: apiTotal, daily_delta: dailyDelta,
           search_query: searchQuery,
+          ...(isSocialSource ? {
+            scoring_mode: "hybrid",
+            social_score: socialScore,
+            naver_normalized: normalizeBuzzScore(news7d, blog7d),
+            social_platform: trigger.trigger_source,
+          } : { scoring_mode: "naver_only" }),
         };
 
-        console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore} (24h:${news24h+blog24h} 7d:${news7d+blog7d}) Δ=${deltaPct}%`);
+        console.log(`[trend-track] ✓ "${trigger.artist_name}/${trigger.keyword}" buzz=${buzzScore}${isSocialSource ? ` (hybrid: social=${socialScore} naver=${normalizeBuzzScore(news7d, blog7d)})` : ` (24h:${news24h+blog24h} 7d:${news7d+blog7d})`} Δ=${deltaPct}%`);
 
         // ─── 쇼핑 카테고리: 별도 테이블에 쇼핑 데이터 수집 ───
         if (isShoppingCategory) {
