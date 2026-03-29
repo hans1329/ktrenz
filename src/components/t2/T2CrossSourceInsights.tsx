@@ -62,6 +62,7 @@ const ArtistThumb = ({ name, src }: { name: string; src: string | null }) => {
   );
 };
 
+const T2CrossSourceInsights = () => {
   const { language } = useLanguage();
   const [, setSearchParams] = useSearchParams();
 
