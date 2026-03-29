@@ -149,7 +149,7 @@ const T2CrossSourceInsights = () => {
               className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md flex"
             >
               {/* Square image on the left */}
-              <div className="w-20 h-20 flex-shrink-0 bg-muted">
+              <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-2xl overflow-hidden">
                 <SmartImage
                   src={item.imageUrl}
                   alt={item.artistName}
