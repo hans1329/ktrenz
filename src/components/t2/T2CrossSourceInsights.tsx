@@ -150,20 +150,7 @@ const T2CrossSourceInsights = () => {
             >
               <div className="flex items-center gap-3 p-3">
                 {/* Artist image */}
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0">
-                  {item.artistImage ? (
-                    <img
-                      src={item.artistImage}
-                      alt={item.artistName}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg font-bold text-muted-foreground">
-                      {item.artistName.charAt(0)}
-                    </div>
-                  )}
-                </div>
+                <ArtistThumb name={item.artistName} src={item.artistImage} />
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
