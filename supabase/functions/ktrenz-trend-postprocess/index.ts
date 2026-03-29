@@ -981,6 +981,83 @@ async function activatePending(sb: any): Promise<number> {
   return data?.length || 0;
 }
 
+// ── 메가트렌드 태깅 ──
+// 1) exact match: 동일 keyword가 2+ 아티스트에서 감지
+// 2) category trend: 같은 카테고리에 5+ 아티스트 활성
+async function tagMegaTrends(sb: any): Promise<{ tagged: number; clusters: number; details: string[] }> {
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_category, star_id, artist_name")
+    .eq("status", "active");
+
+  if (!active?.length) return { tagged: 0, clusters: 0, details: [] };
+
+  // Reset all mega trend flags first
+  await sb.from("ktrenz_trend_triggers")
+    .update({ is_mega_trend: false, mega_trend_cluster: null })
+    .eq("status", "active")
+    .eq("is_mega_trend", true);
+
+  const tagIds: string[] = [];
+  const details: string[] = [];
+  const clusterNames = new Set<string>();
+
+  // 1) Exact keyword match across 2+ artists
+  const byKeyword = new Map<string, any[]>();
+  for (const e of active) {
+    const key = e.keyword.toLowerCase();
+    const list = byKeyword.get(key) || [];
+    list.push(e);
+    byKeyword.set(key, list);
+  }
+
+  for (const [kw, entries] of byKeyword) {
+    const uniqueStars = new Set(entries.map((e: any) => e.star_id));
+    if (uniqueStars.size < 2) continue;
+
+    clusterNames.add(kw);
+    for (const e of entries) {
+      tagIds.push(e.id);
+    }
+    const artists = [...new Set(entries.map((e: any) => e.artist_name))].join(", ");
+    details.push(`[exact] "${kw}" → ${uniqueStars.size} artists (${artists})`);
+  }
+
+  // 2) Category trend: 5+ unique artists in same commercial category
+  const commercialCats = ["fashion", "beauty", "brand", "product", "goods", "food", "restaurant"];
+  const byCategory = new Map<string, any[]>();
+  for (const e of active) {
+    if (!commercialCats.includes(e.keyword_category)) continue;
+    const list = byCategory.get(e.keyword_category) || [];
+    list.push(e);
+    byCategory.set(e.keyword_category, list);
+  }
+
+  for (const [cat, entries] of byCategory) {
+    const uniqueStars = new Set(entries.map((e: any) => e.star_id));
+    if (uniqueStars.size < 5) continue;
+
+    const clusterName = `${cat}_category_trend`;
+    clusterNames.add(clusterName);
+    for (const e of entries) {
+      if (!tagIds.includes(e.id)) tagIds.push(e.id);
+    }
+    details.push(`[category] "${cat}" wave → ${uniqueStars.size} artists`);
+  }
+
+  // Batch update
+  if (tagIds.length > 0) {
+    for (let i = 0; i < tagIds.length; i += 500) {
+      const batch = tagIds.slice(i, i + 500);
+      await sb.from("ktrenz_trend_triggers")
+        .update({ is_mega_trend: true })
+        .in("id", batch);
+    }
+  }
+
+  return { tagged: tagIds.length, clusters: clusterNames.size, details };
+}
+
 // ── 메인 핸들러 ──
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -1083,12 +1160,19 @@ Deno.serve(async (req) => {
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
 
+    // 5.5단계: 메가트렌드 태깅
+    const megaTrendResult = await tagMegaTrends(sb);
+    console.log(`[postprocess] Mega trend tagging: ${megaTrendResult.tagged} entries in ${megaTrendResult.clusters} clusters`);
+    if (megaTrendResult.details.length > 0) {
+      console.log(`[postprocess] Mega trend details: ${megaTrendResult.details.join("; ")}`);
+    }
+
     // 완료 로그 기록
     await sb.from("ktrenz_collection_log").insert({
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, mega_trend=${megaTrendResult.tagged}/${megaTrendResult.clusters}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -1106,6 +1190,7 @@ Deno.serve(async (req) => {
         brandMapped,
         globalStarNameFilter: globalNameResult,
         noisePatternFilter: noiseResult,
+        megaTrends: megaTrendResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),

@@ -9,6 +9,7 @@ import T2TrendTreemap, { type TrendCategory, type SortMode, type TrendTile, ALL_
 import T2HeroSection from "@/components/t2/T2HeroSection";
 import T2AdminControls from "@/components/t2/T2AdminControls";
 import T2MomentumSignals from "@/components/t2/T2MomentumSignals";
+import T2MegaTrends from "@/components/t2/T2MegaTrends";
 import T2CrossSourceInsights from "@/components/t2/T2CrossSourceInsights";
 import T2TrendBetCTA from "@/components/t2/T2TrendBetCTA";
 import T2SettlementResultModal from "@/components/t2/T2SettlementResultModal";
@@ -341,6 +342,9 @@ const T2TrendMap = () => {
             <div className="md:max-w-[90%] mx-auto relative z-10">
               {/* Hero section */}
               <T2HeroSection myKeywords={myKeywords} onOpenOnboarding={() => setShowOnboarding(true)} />
+
+              {/* Mega Trends — cross-artist trend detection */}
+              <T2MegaTrends />
 
               <div
                 style={{
