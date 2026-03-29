@@ -119,6 +119,7 @@ function parseFeedItems(data: any): InstaPost[] {
       like_count: item.like_count || 0,
       comment_count: item.comment_count || 0,
       media_type: item.media_type === 2 ? "video" : "image",
+      shortcode: item.code || item.shortcode || null,
     });
   }
 
