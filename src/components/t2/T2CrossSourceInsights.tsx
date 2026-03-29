@@ -39,7 +39,29 @@ function getKeyword(item: CrossInsight, lang: string) {
   return item.keyword;
 }
 
-const T2CrossSourceInsights = () => {
+const ArtistThumb = ({ name, src }: { name: string; src: string | null }) => {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-muted shrink-0 flex items-center justify-center text-lg font-bold text-muted-foreground">
+        {name.charAt(0)}
+      </div>
+    );
+  }
+  return (
+    <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0">
+      <img
+        src={src}
+        alt={name}
+        className="w-full h-full object-cover"
+        referrerPolicy="no-referrer"
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+};
+
   const { language } = useLanguage();
   const [, setSearchParams] = useSearchParams();
 
