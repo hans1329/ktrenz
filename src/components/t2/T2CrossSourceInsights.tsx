@@ -201,11 +201,3 @@ const T2CrossSourceInsights = () => {
 };
 
 export default T2CrossSourceInsights;
-          );
-        })}
-      </div>
-    </section>
-  );
-};
-
-export default T2CrossSourceInsights;
