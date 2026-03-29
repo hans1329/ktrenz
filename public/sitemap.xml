@@ -39,4 +39,12 @@
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
+  <url>
+    <loc>https://ktrenz.lovable.app/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://ktrenz.lovable.app/about" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://ktrenz.lovable.app/about" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://ktrenz.lovable.app/about" />
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
