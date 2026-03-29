@@ -1,6 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
-import { V3Header } from "@/components/v3/V3Header";
+import V3Header from "@/components/v3/V3Header";
 import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";

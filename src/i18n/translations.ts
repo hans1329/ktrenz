@@ -571,6 +571,67 @@ const translations: Record<string, Record<Language, string>> = {
   "trend.tracking": { en: "Tracking", ko: "추적 중", ja: "追跡中", zh: "追踪中" },
   "trend.trackFollowed": { en: "Following", ko: "추적 시작", ja: "フォロー中", zh: "已关注" },
   "trend.trackUnfollowed": { en: "Unfollowed", ko: "추적 해제", ja: "フォロー解除", zh: "已取消关注" },
+
+  // ── About Page ──
+  "about.badge": { en: "K-Pop Trend Intelligence", ko: "K-Pop 트렌드 인텔리전스", ja: "K-Popトレンドインテリジェンス", zh: "K-Pop趋势情报" },
+  "about.heroTitle": { en: "Discover Trends Before\nThey Go Viral", ko: "바이럴 전에\n트렌드를 발견하세요", ja: "バイラルになる前に\nトレンドを発見", zh: "在病毒传播之前\n发现趋势" },
+  "about.heroDesc": {
+    en: "KTrenZ tracks real-time keyword trends created by K-Pop stars, scores them with AI, and rewards fans who predict what's next.",
+    ko: "KTrenZ는 K-Pop 스타가 만든 실시간 키워드 트렌드를 추적하고 AI로 스코어링하며, 다음 트렌드를 예측한 팬에게 리워드를 지급합니다.",
+    ja: "KTrenZはK-Popスターが生み出すリアルタイムキーワードトレンドを追跡し、AIでスコアリング。次のトレンドを予測したファンにリワードを提供します。",
+    zh: "KTrenZ追踪K-Pop明星创造的实时关键词趋势，用AI评分，并奖励预测下一个趋势的粉丝。",
+  },
+  "about.cta": { en: "Explore Trends", ko: "트렌드 탐색", ja: "トレンドを探す", zh: "探索趋势" },
+  "about.howTitle": { en: "How It Works", ko: "이렇게 동작합니다", ja: "仕組み", zh: "工作原理" },
+  "about.step1Title": { en: "Keyword Detection", ko: "키워드 감지", ja: "キーワード検出", zh: "关键词检测" },
+  "about.step1Desc": {
+    en: "We scan news, blogs, and social media to detect trending keywords linked to K-Pop artists in real time.",
+    ko: "뉴스, 블로그, 소셜 미디어를 스캔하여 K-Pop 아티스트와 연결된 트렌딩 키워드를 실시간으로 감지합니다.",
+    ja: "ニュース、ブログ、SNSをスキャンし、K-Popアーティストに関連するトレンドキーワードをリアルタイムで検出します。",
+    zh: "我们扫描新闻、博客和社交媒体，实时检测与K-Pop艺人相关的热门关键词。",
+  },
+  "about.step2Title": { en: "Trend Scoring", ko: "트렌드 스코어링", ja: "トレンドスコアリング", zh: "趋势评分" },
+  "about.step2Desc": {
+    en: "Each keyword gets a dynamic score based on volume, velocity, and influence index — updated every tracking cycle.",
+    ko: "각 키워드는 볼륨, 속도, 영향력 지수를 기반으로 동적 점수를 부여받으며, 매 추적 주기마다 업데이트됩니다.",
+    ja: "各キーワードはボリューム、速度、影響力指数に基づいて動的スコアが付与され、追跡サイクルごとに更新されます。",
+    zh: "每个关键词根据量级、速度和影响力指数获得动态评分，每个追踪周期更新。",
+  },
+  "about.step3Title": { en: "Real-Time Tracking", ko: "실시간 추적", ja: "リアルタイム追跡", zh: "实时追踪" },
+  "about.step3Desc": {
+    en: "Active trends are continuously tracked — we monitor peak scores, momentum shifts, and grade progression from Spark to Explosive.",
+    ko: "활성 트렌드는 지속적으로 추적됩니다 — 피크 점수, 모멘텀 변화, Spark에서 Explosive까지의 등급 진행을 모니터링합니다.",
+    ja: "アクティブなトレンドは継続的に追跡 — ピークスコア、モメンタムの変化、SparkからExplosiveまでのグレード推移を監視します。",
+    zh: "活跃趋势持续追踪——我们监控峰值分数、动量变化，以及从Spark到Explosive的等级进展。",
+  },
+  "about.step4Title": { en: "AI Prediction", ko: "AI 예측", ja: "AI予測", zh: "AI预测" },
+  "about.step4Desc": {
+    en: "Our AI models forecast which trends will peak next — fans can place Trend Bets and earn points for correct predictions.",
+    ko: "AI 모델이 다음에 어떤 트렌드가 정점에 도달할지 예측합니다 — 팬은 트렌드 베팅으로 포인트를 획득할 수 있습니다.",
+    ja: "AIモデルが次にピークを迎えるトレンドを予測 — ファンはトレンドベットでポイントを獲得できます。",
+    zh: "AI模型预测哪些趋势将达到下一个高峰——粉丝可以进行趋势投注并通过正确预测获得积分。",
+  },
+  "about.step5Title": { en: "Fan Rewards", ko: "팬 리워드", ja: "ファンリワード", zh: "粉丝奖励" },
+  "about.step5Desc": {
+    en: "Earn K-Points by predicting trends, completing missions, and engaging with the platform. Your fan activity has real value.",
+    ko: "트렌드 예측, 미션 완료, 플랫폼 활동을 통해 K-Points를 획득하세요. 팬 활동이 실질적 가치를 갖습니다.",
+    ja: "トレンド予測、ミッション完了、プラットフォームへの参加でK-Pointsを獲得。ファン活動に実際の価値があります。",
+    zh: "通过预测趋势、完成任务和参与平台活动赚取K-Points。您的粉丝活动具有真实价值。",
+  },
+  "about.step6Title": { en: "Redeem for Goods", ko: "굿즈 교환", ja: "グッズ交換", zh: "兑换商品" },
+  "about.step6Desc": {
+    en: "Use your K-Points to purchase exclusive K-Pop merchandise, digital collectibles, and premium features.",
+    ko: "K-Points로 독점 K-Pop 굿즈, 디지털 컬렉터블, 프리미엄 기능을 구매하세요.",
+    ja: "K-Pointsで限定K-Popグッズ、デジタルコレクティブル、プレミアム機能を購入できます。",
+    zh: "使用K-Points购买独家K-Pop商品、数字收藏品和高级功能。",
+  },
+  "about.valueTitle": { en: "Why KTrenZ?", ko: "왜 KTrenZ인가?", ja: "なぜKTrenZ?", zh: "为什么选择KTrenZ？" },
+  "about.valueDesc": {
+    en: "We bridge the gap between fan passion and market intelligence. Every streaming, every share, every mention — KTrenZ turns fan energy into measurable trend signals, helping you stay ahead of the curve.",
+    ko: "팬의 열정과 시장 인텔리전스를 연결합니다. 모든 스트리밍, 공유, 언급 — KTrenZ는 팬 에너지를 측정 가능한 트렌드 신호로 변환하여 시장을 선도할 수 있게 합니다.",
+    ja: "ファンの情熱と市場インテリジェンスを繋ぎます。すべてのストリーミング、シェア、メンション — KTrenZはファンエネルギーを測定可能なトレンドシグナルに変換し、市場を先取りできるようサポートします。",
+    zh: "我们弥合了粉丝热情与市场情报之间的差距。每一次播放、分享、提及——KTrenZ将粉丝能量转化为可衡量的趋势信号，帮助您走在潮流前面。",
+  },
 };
 
 export default translations;

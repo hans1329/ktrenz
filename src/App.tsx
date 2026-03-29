@@ -106,6 +106,7 @@ const App = () => (
                 <Route path="/t2/:triggerId" element={<T2KeywordDetail />} />
                 <Route path="/pd" element={<T2PitchDeck />} />
                 <Route path="/t2/grades" element={<T2TrendGrades />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
