@@ -194,7 +194,7 @@ const T2MegaTrends = () => {
                 <div className="mt-2 flex flex-wrap gap-1">
                   {cluster.artists.slice(0, 4).map((name) => (
                     <span key={name} className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">
-                      {name}
+                      {cluster.artistNameKoMap[name] || name}
                     </span>
                   ))}
                   {cluster.artists.length > 4 && (
