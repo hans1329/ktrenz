@@ -366,6 +366,7 @@ const T2TrendMap = () => {
               <T2MomentumSignals />
               <T2CrossSourceInsights />
               <T2TrendBetCTA />
+            </div>
 
             {shouldRenderSwipeOverlay && (
               <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
