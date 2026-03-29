@@ -28,20 +28,29 @@ interface InstaPost {
 }
 
 // ── RapidAPI 호출 헬퍼 ──
-async function instaFetch(endpoint: string, rapidApiKey: string): Promise<any> {
-  const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
-    headers: {
-      "X-RapidAPI-Key": rapidApiKey,
-      "X-RapidAPI-Host": RAPIDAPI_HOST,
-    },
-  });
+async function instaFetch(endpoint: string, rapidApiKey: string, retries = 1): Promise<any> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
+      headers: {
+        "X-RapidAPI-Key": rapidApiKey,
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+      },
+    });
 
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Instagram API [${res.status}]: ${body}`);
+    if (res.status === 429 && attempt < retries) {
+      await res.text(); // consume body
+      console.warn(`[instagram] 429 rate limit, waiting 3s before retry...`);
+      await new Promise((r) => setTimeout(r, 3000));
+      continue;
+    }
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Instagram API [${res.status}]: ${body}`);
+    }
+
+    return res.json();
   }
-
-  return res.json();
 }
 
 // ── 프로필 조회 → pk(user_id) + username 캐싱 ──
@@ -319,6 +328,9 @@ Deno.serve(async (req) => {
     const targetStarId = body.star_id || null; // 특정 스타만 처리
 
     // ── 대상 아티스트 조회 ──
+    // skipResolve: 핸들이 있는 아티스트만 처리 (프로필 검색 비활성화)
+    const skipResolve = body.skipResolve !== false; // 기본값 true
+
     let query = sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, social_handles, star_type, group_star_id")
@@ -328,6 +340,12 @@ Deno.serve(async (req) => {
     if (targetStarId) {
       query = query.eq("id", targetStarId);
     } else {
+      // 핸들이 있는 아티스트만 필터링 (skipResolve 모드)
+      if (skipResolve) {
+        query = query.not("social_handles->instagram", "is", null)
+          .neq("social_handles->>instagram" as any, "_not_found")
+          .neq("social_handles->>instagram" as any, "");
+      }
       query = query.range(offset, offset + batchSize - 1).order("display_name");
     }
 
@@ -582,8 +600,8 @@ Deno.serve(async (req) => {
           results.push(`${star.display_name}: all keywords already exist`);
         }
 
-        // Rate limiting: 500ms 대기
-        await new Promise((r) => setTimeout(r, 500));
+        // Rate limiting: 1.5s 대기 (Pro plan 초당 제한 대응)
+        await new Promise((r) => setTimeout(r, 1500));
       } catch (e) {
         const msg = (e as Error).message;
         console.error(`[instagram] Error processing ${star.display_name}: ${msg}`);
