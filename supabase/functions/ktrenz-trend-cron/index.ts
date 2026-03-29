@@ -11,12 +11,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["detect", "track"] as const;
+const PHASE_ORDER = ["collect_social", "detect", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
+  collect_social: "ktrenz-collect-social",
   detect: "ktrenz-trend-detect",
   track: "ktrenz-trend-track",
 };
 const DETECT_PHASES = new Set(["detect"]);
+const SINGLE_CALL_PHASES = new Set(["collect_social"]); // 배치 없이 단일 호출 후 완료
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
