@@ -1,9 +1,13 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
-import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target } from "lucide-react";
+import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import aboutHero from "@/assets/about-hero.jpg";
+import aboutDetection from "@/assets/about-detection.jpg";
+import aboutScoring from "@/assets/about-scoring.jpg";
+import aboutRewards from "@/assets/about-rewards.jpg";
 
 const About = () => {
   const { t } = useLanguage();
@@ -20,6 +24,13 @@ const About = () => {
     foundingDate: "2025",
     knowsAbout: ["K-Pop", "Trend Analysis", "Fan Intelligence", "Music Industry Analytics"],
   };
+
+  const stats = [
+    { value: "500+", labelKey: "about.statKeywords" },
+    { value: "24/7", labelKey: "about.statTracking" },
+    { value: "6", labelKey: "about.statGrades" },
+    { value: "100K+", labelKey: "about.statDataPoints" },
+  ];
 
   const steps = [
     {
@@ -44,7 +55,7 @@ const About = () => {
       bg: "bg-emerald-500/10",
     },
     {
-      icon: Brain,
+      icon: Activity,
       titleKey: "about.step4Title",
       descKey: "about.step4Desc",
       color: "text-amber-500",
@@ -66,13 +77,20 @@ const About = () => {
     },
   ];
 
+  const differentiators = [
+    { icon: Globe, titleKey: "about.diffMultiSource", descKey: "about.diffMultiSourceDesc" },
+    { icon: Brain, titleKey: "about.diffSmartScoring", descKey: "about.diffSmartScoringDesc" },
+    { icon: Users, titleKey: "about.diffFanFirst", descKey: "about.diffFanFirstDesc" },
+    { icon: Award, titleKey: "about.diffRewards", descKey: "about.diffRewardsDesc" },
+  ];
+
   return (
     <>
       <SEO
         title="About KTrenZ — K-Pop Trend Intelligence Platform"
         titleKo="KTrenZ 소개 — K-Pop 트렌드 인텔리전스 플랫폼"
-        description="KTrenZ tracks K-Pop star trends via keyword scoring, AI prediction, and rewards fans with points redeemable for goods."
-        descriptionKo="KTrenZ는 K-Pop 스타의 트렌드를 키워드 스코어링, AI 예측으로 추적하고 팬에게 굿즈 교환 가능한 포인트를 제공합니다."
+        description="KTrenZ tracks K-Pop star trends via keyword scoring, real-time tracking, prediction, and rewards fans with points redeemable for goods."
+        descriptionKo="KTrenZ는 K-Pop 스타의 트렌드를 키워드 스코어링, 실시간 추적, 예측으로 분석하고 팬에게 굿즈 교환 가능한 포인트를 제공합니다."
         path="/about"
         type="website"
         jsonLd={jsonLd}
@@ -81,18 +99,21 @@ const About = () => {
       <div className="min-h-screen bg-background">
         <V3Header />
 
-        {/* Hero */}
-        <section className="relative overflow-hidden pt-20 pb-16 px-4">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5" />
-          <div className="relative max-w-3xl mx-auto text-center space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+        {/* Hero with image */}
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0">
+            <img src={aboutHero} alt="KTrenZ Dashboard" className="w-full h-full object-cover" width={1920} height={960} />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+          </div>
+          <div className="relative max-w-4xl mx-auto text-center px-4 pt-28 pb-20 space-y-6">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 backdrop-blur-sm text-primary text-xs font-semibold border border-primary/20">
               <Zap className="w-3.5 h-3.5" />
               {t("about.badge")}
             </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight whitespace-pre-line">
               {t("about.heroTitle")}
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               {t("about.heroDesc")}
             </p>
             <Button
@@ -106,19 +127,72 @@ const About = () => {
           </div>
         </section>
 
-        {/* How It Works */}
-        <section className="max-w-4xl mx-auto px-4 pb-20">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground text-center mb-10">
+        {/* Stats bar */}
+        <section className="border-y border-border bg-card/50 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+            {stats.map((stat, i) => (
+              <div key={i} className="py-6 text-center">
+                <div className="text-2xl md:text-3xl font-extrabold text-primary">{stat.value}</div>
+                <div className="text-xs text-muted-foreground mt-1">{t(stat.labelKey)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Section 1: Detection — image left, text right */}
+        <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+          <div className="grid md:grid-cols-2 gap-10 items-center">
+            <div className="rounded-2xl overflow-hidden border border-border shadow-lg">
+              <img src={aboutDetection} alt="Multi-source keyword detection" className="w-full h-auto" loading="lazy" width={1280} height={720} />
+            </div>
+            <div className="space-y-4">
+              <span className="text-xs font-bold text-primary uppercase tracking-widest">{t("about.sectionLabel1")}</span>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-snug">
+                {t("about.section1Title")}
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                {t("about.section1Desc")}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 2: Scoring — text left, image right */}
+        <section className="bg-muted/30">
+          <div className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              <div className="space-y-4 md:order-1">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest">{t("about.sectionLabel2")}</span>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-snug">
+                  {t("about.section2Title")}
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                  {t("about.section2Desc")}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden border border-border shadow-lg md:order-2">
+                <img src={aboutScoring} alt="Trend scoring dashboard" className="w-full h-auto" loading="lazy" width={1280} height={720} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works — 6 steps */}
+        <section className="max-w-5xl mx-auto px-4 py-16 md:py-24">
+          <h2 className="text-xl md:text-3xl font-bold text-foreground text-center mb-4">
             {t("about.howTitle")}
           </h2>
+          <p className="text-sm text-muted-foreground text-center mb-12 max-w-xl mx-auto">
+            {t("about.howSubtitle")}
+          </p>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {steps.map((step, i) => (
               <article
                 key={i}
-                className="group relative rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-lg"
+                className="group relative rounded-2xl border border-border bg-card p-6 transition-shadow hover:shadow-lg"
               >
-                <div className="flex items-start gap-3.5">
-                  <div className={`shrink-0 w-10 h-10 rounded-xl ${step.bg} flex items-center justify-center`}>
+                <div className="flex items-start gap-4">
+                  <div className={`shrink-0 w-11 h-11 rounded-xl ${step.bg} flex items-center justify-center`}>
                     <step.icon className={`w-5 h-5 ${step.color}`} />
                   </div>
                   <div className="space-y-1.5 min-w-0">
@@ -138,15 +212,58 @@ const About = () => {
           </div>
         </section>
 
-        {/* Value Prop */}
-        <section className="bg-muted/50 py-16 px-4">
-          <div className="max-w-3xl mx-auto text-center space-y-4">
+        {/* Section 3: Rewards — image + text */}
+        <section className="bg-muted/30">
+          <div className="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              <div className="rounded-2xl overflow-hidden border border-border shadow-lg">
+                <img src={aboutRewards} alt="K-Points rewards system" className="w-full h-auto" loading="lazy" width={1280} height={720} />
+              </div>
+              <div className="space-y-4">
+                <span className="text-xs font-bold text-primary uppercase tracking-widest">{t("about.sectionLabel3")}</span>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-snug">
+                  {t("about.section3Title")}
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                  {t("about.section3Desc")}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Differentiators */}
+        <section className="max-w-5xl mx-auto px-4 py-16 md:py-24">
+          <h2 className="text-xl md:text-3xl font-bold text-foreground text-center mb-12">
+            {t("about.valueTitle")}
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {differentiators.map((d, i) => (
+              <div key={i} className="flex gap-4 p-5 rounded-xl border border-border bg-card">
+                <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <d.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground mb-1">{t(d.titleKey)}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t(d.descKey)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-16 px-4">
+          <div className="max-w-3xl mx-auto text-center space-y-5">
             <h2 className="text-xl md:text-2xl font-bold text-foreground">
-              {t("about.valueTitle")}
+              {t("about.ctaTitle")}
             </h2>
-            <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-xl mx-auto">
-              {t("about.valueDesc")}
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              {t("about.ctaDesc")}
             </p>
+            <Button size="lg" className="rounded-full px-10" onClick={() => navigate("/")}>
+              {t("about.cta")}
+            </Button>
           </div>
         </section>
 
