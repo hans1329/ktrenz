@@ -22,6 +22,7 @@ interface InstaPost {
   like_count: number;
   comment_count: number;
   media_type: string;
+  shortcode: string | null;
 }
 
 // ── RapidAPI 호출 헬퍼 ──
