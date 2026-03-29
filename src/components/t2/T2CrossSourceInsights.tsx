@@ -108,7 +108,7 @@ const T2CrossSourceInsights = () => {
         }
       }
 
-      const priority: Record<string, number> = { social_only: 0, cross_confirmed: 1, naver_only: 2 };
+      const priority: Record<string, number> = { social_only: 0, cross_confirmed: 1 };
       results.sort((a, b) => priority[a.gapType] - priority[b.gapType]);
       return results.slice(0, 10);
     },
