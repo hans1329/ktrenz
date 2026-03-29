@@ -167,11 +167,14 @@ const T2CrossSourceInsights = () => {
 
               {/* Right content */}
               <div className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-1">
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {language === "ko" ? item.gapLabelKo : item.gapLabel}
+                </p>
                 <h3 className="text-sm font-bold text-foreground leading-snug truncate">
                   {getKeyword(item, language)}
                 </h3>
                 <p className="text-[11px] text-muted-foreground truncate">
-                  {item.artistName} · {language === "ko" ? item.gapLabelKo : item.gapLabel}
+                  {item.artistName}
                 </p>
               </div>
             </button>
