@@ -53,7 +53,7 @@ const T2MegaTrends = () => {
       // 1) exact match: 동일 키워드가 2+ 아티스트
       const { data: exactMatches } = await supabase
         .from("ktrenz_trend_triggers")
-        .select("keyword, keyword_ko, keyword_category, artist_name, star_id, influence_index, source_image_url")
+        .select("keyword, keyword_ko, keyword_category, artist_name, star_id, influence_index, source_image_url, mega_trend_cluster")
         .eq("status", "active")
         .eq("is_mega_trend", true);
 
@@ -100,10 +100,10 @@ const T2MegaTrends = () => {
         return results.sort((a, b) => b.totalInfluence - a.totalInfluence);
       }
 
-      // DB tagged mega trends
+      // DB tagged mega trends - group by mega_trend_cluster
       const byCluster = new Map<string, any[]>();
       for (const row of exactMatches) {
-        const key = (row as any).keyword.toLowerCase();
+        const key = (row as any).mega_trend_cluster || (row as any).keyword.toLowerCase();
         const list = byCluster.get(key) || [];
         list.push(row);
         byCluster.set(key, list);
