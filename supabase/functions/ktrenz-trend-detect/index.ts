@@ -1425,7 +1425,6 @@ Deno.serve(async (req) => {
       let singleGroupName = groupName || null;
       let singleGroupNameKo: string | null = null;
       let singleNameKo: string | null = null;
-      let singleGroupWikiEntryId = wikiEntryId || null;
       let singleStarCategory = body.starCategory || "kpop";
 
       // memberName이 없으면 DB에서 조회
