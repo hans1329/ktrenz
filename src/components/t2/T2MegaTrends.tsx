@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Flame, Users, TrendingUp } from "lucide-react";
+import { Users, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORY_CONFIG, sanitizeImageUrl, isBlockedImageDomain } from "@/components/t2/T2TrendTreemap";
 
