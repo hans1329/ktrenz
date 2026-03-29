@@ -420,24 +420,30 @@ async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Pro
 
 // ── 파이프라인 완료 후 실행할 작업들 ──
 async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || supabaseKey;
   const headers = {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${anonKey}`,
+    "Authorization": `Bearer ${supabaseKey}`,
   };
 
-  // 1. Settle expired prediction markets
-  try {
-    const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-settle`, {
-      method: "POST", headers, body: JSON.stringify({}),
-    });
-    const result = await resp.json();
-    console.log(`[cron] Auto-settle result:`, result);
-  } catch (e) {
-    console.error(`[cron] Auto-settle failed:`, e);
-  }
+  const jobs = [
+    { name: "settle", fn: "ktrenz-trend-settle" },
+    { name: "schedule-predict", fn: "ktrenz-schedule-predict" },
+    { name: "data-auditor", fn: "ktrenz-data-auditor" },
+  ];
 
-  // 2. Blip schedule crawl removed — replaced by AI schedule prediction (ktrenz-schedule-predict)
+  for (const job of jobs) {
+    try {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/${job.fn}`, {
+        method: "POST", headers, body: JSON.stringify({}),
+      });
+      const text = await resp.text();
+      let result: any;
+      try { result = JSON.parse(text); } catch { result = { raw: text.slice(0, 200) }; }
+      console.log(`[cron] End-of-pipeline ${job.name}:`, result);
+    } catch (e) {
+      console.error(`[cron] End-of-pipeline ${job.name} failed:`, e);
+    }
+  }
 }
 
 function getNextPhase(currentPhase: string): string | null {
