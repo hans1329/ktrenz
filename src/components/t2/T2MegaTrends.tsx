@@ -80,23 +80,6 @@ const T2MegaTrends = () => {
           results.push(buildCluster(kw, entries[0].keyword_category, entries));
         }
 
-        // 2) 카테고리 트렌드
-        const byCategory = new Map<string, any[]>();
-        for (const row of all) {
-          const cat = (row as any).keyword_category;
-          if (!cat || cat === "social" || cat === "music" || cat === "event") continue;
-          const list = byCategory.get(cat) || [];
-          list.push(row);
-          byCategory.set(cat, list);
-        }
-
-        for (const [cat, entries] of byCategory) {
-          const uniqueStars = new Set(entries.map((e: any) => e.star_id));
-          if (uniqueStars.size < 5) continue;
-          const topEntries = entries.sort((a: any, b: any) => (Number(b.influence_index) || 0) - (Number(a.influence_index) || 0)).slice(0, 6);
-          results.push(buildCluster(`${cat}_category_trend`, cat, topEntries));
-        }
-
         return results.sort((a, b) => b.totalInfluence - a.totalInfluence);
       }
 

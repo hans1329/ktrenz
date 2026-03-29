@@ -1020,25 +1020,8 @@ async function tagMegaTrends(sb: any): Promise<{ tagged: number; clusters: numbe
     details.push(`[exact] "${kw}" → ${uniqueStars.size} artists (${artists})`);
   }
 
-  // 2) Category trend: 5+ unique artists in same commercial category
-  const commercialCats = ["fashion", "beauty", "brand", "product", "goods", "food", "restaurant"];
-  const byCategory = new Map<string, any[]>();
-  for (const e of active) {
-    if (!commercialCats.includes(e.keyword_category)) continue;
-    const list = byCategory.get(e.keyword_category) || [];
-    list.push(e);
-    byCategory.set(e.keyword_category, list);
-  }
-
-  for (const [cat, entries] of byCategory) {
-    const uniqueStars = new Set(entries.map((e: any) => e.star_id));
-    if (uniqueStars.size < 5) continue;
-
-    const clusterName = `${cat}_category_trend`;
-    const ids = entries.map((e: any) => e.id);
-    clusterMap.set(clusterName, ids);
-    details.push(`[category] "${cat}" wave → ${uniqueStars.size} artists`);
-  }
+  // Category Wave 로직 제거 - 카테고리 자체는 트렌드가 아님
+  // 메가 트렌드는 동일 키워드 2+ 아티스트만 인정
 
   // Batch update with cluster name
   let totalTagged = 0;
