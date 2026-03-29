@@ -422,9 +422,14 @@ const AdminDashboard = () => {
                   const tracking = recentTracking?.get(kw.id);
                   const deltaPct = tracking?.delta_pct ?? 0;
                   const influence = Number(kw.influence_index) || 0;
-                  const srcInfo = SOURCE_LABELS[kw.trigger_source] || { label: kw.trigger_source || '?', color: 'bg-muted text-muted-foreground border-border' };
+                  const displaySrc = getDisplaySource(kw);
+                  const srcInfo = SOURCE_LABELS[displaySrc] || { label: displaySrc, color: 'bg-muted text-muted-foreground border-border' };
                   const catLabel = CATEGORY_LABELS[kw.keyword_category] || kw.keyword_category || '-';
                   const isPending = kw.status === 'pending';
+                  const meta = kw.metadata as any;
+                  const newsTotal = meta?.buzz_news_total ?? 0;
+                  const blogTotal = meta?.buzz_blog_total ?? 0;
+                  const showBuzzSplit = kw.trigger_source === 'naver_news' && (newsTotal > 0 || blogTotal > 0);
 
                   return (
                     <tr
@@ -447,9 +452,16 @@ const AdminDashboard = () => {
                         <span className="text-xs">{kw.artist_name}</span>
                       </td>
                       <td className="py-2.5 px-2 text-center">
-                        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", srcInfo.color)}>
-                          {srcInfo.label}
-                        </Badge>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", srcInfo.color)}>
+                            {srcInfo.label}
+                          </Badge>
+                          {showBuzzSplit && (
+                            <span className="text-[9px] text-muted-foreground">
+                              뉴스{newsTotal} / 블로그{blogTotal}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-2 text-center hidden sm:table-cell">
                         <span className="text-xs text-muted-foreground">{catLabel}</span>
