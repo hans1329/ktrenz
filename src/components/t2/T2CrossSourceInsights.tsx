@@ -148,9 +148,8 @@ const T2CrossSourceInsights = () => {
               onClick={() => handleClick(item)}
               className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
-              {/* Large image area */}
-              <div className="relative w-full h-36 overflow-hidden">
-                <CardImage src={item.imageUrl} alt={item.artistName} />
+              <div className="relative h-32 overflow-hidden rounded-t-2xl bg-muted">
+                <SmartImage src={item.imageUrl} alt={item.artistName} className="w-full h-full object-cover" loading="lazy" />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
