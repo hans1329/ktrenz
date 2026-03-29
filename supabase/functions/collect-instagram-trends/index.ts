@@ -351,8 +351,8 @@ Deno.serve(async (req) => {
 
             console.log(`[instagram] Resolved ${star.display_name} → @${profile.username} (${profile.follower_count} followers)`);
           } else {
-            // 검색 실패 시 빈 값으로 캐싱 (재시도 방지)
-            const updatedHandles = { ...socialHandles, instagram: "_not_found" };
+            // 검색 실패 시 타임스탬프와 함께 캐싱 (7일 후 재시도)
+            const updatedHandles = { ...socialHandles, instagram: "_not_found", instagram_checked_at: new Date().toISOString() };
             await sb
               .from("ktrenz_stars")
               .update({ social_handles: updatedHandles })
@@ -363,7 +363,20 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (igUsername === "_not_found") continue;
+        // _not_found 캐싱: 7일 경과 시 재시도
+        if (igUsername === "_not_found") {
+          const checkedAt = socialHandles.instagram_checked_at;
+          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+          if (checkedAt && (Date.now() - new Date(checkedAt).getTime()) > sevenDaysMs) {
+            // 7일 경과 → 리셋하여 다음 실행 시 재검색
+            const updatedHandles = { ...socialHandles };
+            delete updatedHandles.instagram;
+            delete updatedHandles.instagram_checked_at;
+            await sb.from("ktrenz_stars").update({ social_handles: updatedHandles }).eq("id", star.id);
+            console.log(`[instagram] Reset _not_found for ${star.display_name} (7d expired)`);
+          }
+          continue;
+        }
 
         // pk가 없으면 프로필 조회
         if (!igUserId) {
