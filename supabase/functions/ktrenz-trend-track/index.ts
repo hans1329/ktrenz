@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        await updateCausalMetrics(sb, trigger.id, buzzScore, false);
+        await updateCausalMetrics(sb, trigger.id, apiTotal, false);
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
 
         // ─── AI 동적 컨텍스트 생성 (변동폭 ±15% 이상일 때만) ───
