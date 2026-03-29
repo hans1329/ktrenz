@@ -103,10 +103,10 @@ function parseFeedItems(data: any): InstaPost[] {
     const imageVersions = item.image_versions2?.candidates || [];
     const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : null;
 
-    // 24시간 이내 포스트만
+    // 3일 이내 포스트만
     const takenAt = item.taken_at || 0;
-    const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
-    if (takenAt < oneDayAgo) continue;
+    const threeDaysAgo = Math.floor(Date.now() / 1000) - 86400 * 3;
+    if (takenAt < threeDaysAgo) continue;
 
     posts.push({
       caption_text: captionText,
@@ -286,6 +286,33 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json().catch(() => ({}));
+
+    // ── 리셋 모드: _not_found 캐싱 일괄 초기화 ──
+    if (body.action === "reset_not_found") {
+      const resetLimit = body.limit || 50;
+      const { data: allStars } = await sb
+        .from("ktrenz_stars")
+        .select("id, social_handles")
+        .eq("is_active", true)
+        .limit(500);
+
+      let resetCount = 0;
+      for (const star of (allStars || [])) {
+        if (resetCount >= resetLimit) break;
+        const handles = (star.social_handles || {}) as Record<string, any>;
+        if (handles.instagram !== "_not_found") continue;
+        delete handles.instagram;
+        delete handles.instagram_checked_at;
+        await sb.from("ktrenz_stars").update({ social_handles: handles }).eq("id", star.id);
+        resetCount++;
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, action: "reset_not_found", reset_count: resetCount }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const batchSize = body.batch_size || 20;
     const offset = body.offset || 0;
     const targetStarId = body.star_id || null; // 특정 스타만 처리
@@ -351,8 +378,8 @@ Deno.serve(async (req) => {
 
             console.log(`[instagram] Resolved ${star.display_name} → @${profile.username} (${profile.follower_count} followers)`);
           } else {
-            // 검색 실패 시 빈 값으로 캐싱 (재시도 방지)
-            const updatedHandles = { ...socialHandles, instagram: "_not_found" };
+            // 검색 실패 시 타임스탬프와 함께 캐싱 (7일 후 재시도)
+            const updatedHandles = { ...socialHandles, instagram: "_not_found", instagram_checked_at: new Date().toISOString() };
             await sb
               .from("ktrenz_stars")
               .update({ social_handles: updatedHandles })
@@ -363,7 +390,20 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (igUsername === "_not_found") continue;
+        // _not_found 캐싱: 7일 경과 시 재시도
+        if (igUsername === "_not_found") {
+          const checkedAt = socialHandles.instagram_checked_at;
+          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+          if (checkedAt && (Date.now() - new Date(checkedAt).getTime()) > sevenDaysMs) {
+            // 7일 경과 → 리셋하여 다음 실행 시 재검색
+            const updatedHandles = { ...socialHandles };
+            delete updatedHandles.instagram;
+            delete updatedHandles.instagram_checked_at;
+            await sb.from("ktrenz_stars").update({ social_handles: updatedHandles }).eq("id", star.id);
+            console.log(`[instagram] Reset _not_found for ${star.display_name} (7d expired)`);
+          }
+          continue;
+        }
 
         // pk가 없으면 프로필 조회
         if (!igUserId) {
