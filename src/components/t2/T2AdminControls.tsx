@@ -22,7 +22,7 @@ import {
 
 interface PipelineRun {
   startedAt: Date;
-  phase: "detect" | "postprocess";
+  phase: "collect_social" | "detect" | "postprocess";
 }
 
 const STORAGE_KEY = "t2-pipeline-active-runs";
@@ -125,12 +125,12 @@ const T2AdminControls = () => {
   const runMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-cron", {
-        body: { action: "start", phase: "detect", batchSize: 15 },
+        body: { action: "start", phase: "collect_social", batchSize: 15 },
       });
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
-    onMutate: () => startRun("detect"),
+    onMutate: () => startRun("collect_social"),
     onSuccess: (data) => {
       toast.success(`트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}`);
       queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });

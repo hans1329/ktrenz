@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface PipelineRun {
   startedAt: Date;
-  phase: "detect" | "detect_global" | "track" | "postprocess";
+  phase: "collect_social" | "detect" | "detect_global" | "track" | "postprocess";
 }
 
 interface RecentKeyword {
