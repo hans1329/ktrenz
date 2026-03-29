@@ -53,7 +53,7 @@ const T2MegaTrends = () => {
       // 1) exact match: 동일 키워드가 2+ 아티스트
       const { data: exactMatches } = await supabase
         .from("ktrenz_trend_triggers")
-        .select("keyword, keyword_ko, keyword_category, artist_name, star_id, influence_index, source_image_url")
+        .select("keyword, keyword_ko, keyword_category, artist_name, star_id, influence_index, source_image_url, mega_trend_cluster")
         .eq("status", "active")
         .eq("is_mega_trend", true);
 
