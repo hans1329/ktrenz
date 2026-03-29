@@ -176,11 +176,6 @@ const T2MegaTrends = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-                {/* Badge */}
-                <div className="absolute top-2 left-2 flex items-center gap-1 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  🔥
-                  {isCategoryTrend ? "Category Wave" : "Mega"}
-                </div>
 
                 {/* Artist count */}
                 <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full">
