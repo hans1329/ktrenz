@@ -149,7 +149,7 @@ const T2CrossSourceInsights = () => {
               className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md flex"
             >
               {/* Square image on the left */}
-              <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-2xl overflow-hidden">
+              <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-2xl overflow-hidden relative">
                 <SmartImage
                   src={item.imageUrl}
                   alt={item.artistName}
@@ -163,6 +163,9 @@ const T2CrossSourceInsights = () => {
                     </div>
                   }
                 />
+                <span className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-sm">
+                  {sourceName}
+                </span>
               </div>
 
               {/* Right content */}
