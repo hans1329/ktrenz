@@ -114,7 +114,7 @@ const T2CrossSourceInsights = () => {
 
       const priority: Record<string, number> = { social_only: 0, cross_confirmed: 1, naver_only: 2 };
       results.sort((a, b) => priority[a.gapType] - priority[b.gapType]);
-      return results.slice(0, 5);
+      return results.slice(0, 10);
     },
     staleTime: 1000 * 60 * 5,
   });
@@ -146,7 +146,7 @@ const T2CrossSourceInsights = () => {
             <button
               key={item.id}
               onClick={() => handleClick(item)}
-              className="w-full max-w-[28rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
+              className="w-full max-w-[22rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
               <div className="relative h-32 overflow-hidden rounded-t-2xl bg-muted">
                 <SmartImage
@@ -189,22 +189,10 @@ const T2CrossSourceInsights = () => {
               </div>
 
               {/* Insight detail bar */}
-              <div className="px-3 py-2.5 flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground truncate flex-1">
+              <div className="px-3 py-2.5">
+                <p className="text-xs text-muted-foreground truncate">
                   {language === "ko" ? item.gapLabelKo : item.gapLabel}
                 </p>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground shrink-0">
-                  {item.naverBuzz > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      📰 <span className="font-semibold">{item.naverBuzz}</span>
-                    </span>
-                  )}
-                  {item.socialScore > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      📱 <span className="font-semibold">{item.socialScore}</span>
-                    </span>
-                  )}
-                </div>
               </div>
             </button>
           );
