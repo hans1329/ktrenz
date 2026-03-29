@@ -100,25 +100,26 @@ const About = () => {
         <V3Header />
 
         {/* Hero with image */}
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden min-h-[420px] md:min-h-[520px]">
           <div className="absolute inset-0">
-            <img src={aboutHero} alt="KTrenZ Dashboard" className="w-full h-full object-cover" width={1920} height={960} />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+            <img src={aboutHero} alt="K-Pop concert with light sticks" className="w-full h-full object-cover" width={1920} height={960} />
+            <div className="absolute inset-0 bg-black/50" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
           <div className="relative max-w-4xl mx-auto text-center px-4 pt-28 pb-20 space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 backdrop-blur-sm text-primary text-xs font-semibold border border-primary/20">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-xs font-semibold border border-white/20">
               <Zap className="w-3.5 h-3.5" />
               {t("about.badge")}
             </div>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight whitespace-pre-line">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight tracking-tight whitespace-pre-line drop-shadow-lg">
               {t("about.heroTitle")}
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto leading-relaxed drop-shadow-md">
               {t("about.heroDesc")}
             </p>
             <Button
               size="lg"
-              className="mt-4 rounded-full px-8"
+              className="mt-4 rounded-full px-8 bg-white/15 border border-white/25 text-white hover:bg-white/25 backdrop-blur-sm"
               onClick={() => navigate("/")}
             >
               <Target className="w-4 h-4 mr-2" />
