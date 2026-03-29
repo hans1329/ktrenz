@@ -291,8 +291,8 @@ async function searchNaverRecent(
   } catch { return { recent24h: 0, recent7d: 0, total: 0 }; }
 }
 
-// peak/influence 갱신
-async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number, isShopTrigger = false) {
+// peak/influence 갱신 — apiTotal (raw API 건수)로 비교해야 detect의 baseline_score와 스케일 일치
+async function updateCausalMetrics(sb: any, triggerId: string, apiTotal: number, isShopTrigger = false) {
   const { data: trigger } = await sb
     .from("ktrenz_trend_triggers")
     .select("baseline_score, peak_score")
@@ -303,22 +303,18 @@ async function updateCausalMetrics(sb: any, triggerId: string, buzzScore: number
   const updates: any = {};
   const baseline = trigger.baseline_score ?? 0;
 
-  // 쇼핑 키워드: 스케일 변경 감지 → baseline이 새 스코어와 50% 이상 차이나면 리셋
-  const scaleDiff = baseline > 0 ? Math.abs(buzzScore - baseline) / baseline : 0;
-  const needsBaselineReset = isShopTrigger && scaleDiff > 0.5;
-
-  if ((baseline <= 0 || needsBaselineReset) && buzzScore > 0) {
-    // baseline 미설정 또는 스케일 불일치 → 지금 설정
-    updates.baseline_score = buzzScore;
-    updates.peak_score = buzzScore;
+  if (baseline <= 0 && apiTotal > 0) {
+    updates.baseline_score = apiTotal;
+    updates.peak_score = apiTotal;
     updates.influence_index = 0;
   } else if (baseline > 0) {
-    if (buzzScore > (trigger.peak_score || 0)) {
-      updates.peak_score = buzzScore;
+    if (apiTotal > (trigger.peak_score || 0)) {
+      updates.peak_score = apiTotal;
       updates.peak_at = new Date().toISOString();
     }
-    const currentPeak = updates.peak_score ?? trigger.peak_score ?? buzzScore;
-    updates.influence_index = Math.round(((currentPeak - baseline) / baseline) * 10000) / 100;
+    const currentPeak = updates.peak_score ?? trigger.peak_score ?? apiTotal;
+    const effectiveBaseline = Math.max(baseline, 10);
+    updates.influence_index = Math.round(((currentPeak - baseline) / effectiveBaseline) * 10000) / 100;
   }
 
   if (Object.keys(updates).length > 0) {
@@ -545,12 +541,12 @@ Deno.serve(async (req) => {
               interest_score: buzzScore, region: "naver",
               delta_pct: deltaPct, raw_response: rawResponse,
             });
-            await updateCausalMetrics(sb, dupId, buzzScore, false);
+            await updateCausalMetrics(sb, dupId, apiTotal, false);
             await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", dupId);
           }
         }
 
-        await updateCausalMetrics(sb, trigger.id, buzzScore, false);
+        await updateCausalMetrics(sb, trigger.id, apiTotal, false);
         await sb.from("ktrenz_trend_triggers").update({ prev_api_total: apiTotal }).eq("id", trigger.id);
 
         // ─── AI 동적 컨텍스트 생성 (변동폭 ±15% 이상일 때만) ───
