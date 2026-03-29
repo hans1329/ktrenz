@@ -173,6 +173,7 @@ function parseStoryItems(data: any): InstaPost[] {
       like_count: 0,
       comment_count: 0,
       media_type: "story",
+      shortcode: item.code || item.shortcode || null,
     });
   }
 
