@@ -80,23 +80,6 @@ const T2MegaTrends = () => {
           results.push(buildCluster(kw, entries[0].keyword_category, entries));
         }
 
-        // 2) 카테고리 트렌드
-        const byCategory = new Map<string, any[]>();
-        for (const row of all) {
-          const cat = (row as any).keyword_category;
-          if (!cat || cat === "social" || cat === "music" || cat === "event") continue;
-          const list = byCategory.get(cat) || [];
-          list.push(row);
-          byCategory.set(cat, list);
-        }
-
-        for (const [cat, entries] of byCategory) {
-          const uniqueStars = new Set(entries.map((e: any) => e.star_id));
-          if (uniqueStars.size < 5) continue;
-          const topEntries = entries.sort((a: any, b: any) => (Number(b.influence_index) || 0) - (Number(a.influence_index) || 0)).slice(0, 6);
-          results.push(buildCluster(`${cat}_category_trend`, cat, topEntries));
-        }
-
         return results.sort((a, b) => b.totalInfluence - a.totalInfluence);
       }
 
@@ -128,10 +111,7 @@ const T2MegaTrends = () => {
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
         {clusters.map((cluster) => {
           const config = CATEGORY_CONFIG[cluster.category as keyof typeof CATEGORY_CONFIG];
-          const isCategoryTrend = cluster.cluster.endsWith("_category_trend");
-          const displayName = isCategoryTrend
-            ? (config?.label || cluster.category)
-            : (language === "ko" ? cluster.keywords[0]?.keywordKo : cluster.keywords[0]?.keyword) || cluster.cluster;
+          const displayName = (language === "ko" ? cluster.keywords[0]?.keywordKo : cluster.keywords[0]?.keyword) || cluster.cluster;
 
           // Get best image from cluster
           const bestImage = cluster.keywords
