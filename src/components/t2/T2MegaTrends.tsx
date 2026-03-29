@@ -134,19 +134,9 @@ const T2MegaTrends = () => {
 
   return (
     <section className="px-4 py-5">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/15">
-          <Flame className="w-4 h-4 text-orange-500" />
-        </div>
-        <div>
-          <h3 className="text-sm font-bold text-foreground">
-            {language === "ko" ? "메가 트렌드" : "Mega Trends"}
-          </h3>
-          <p className="text-[10px] text-muted-foreground">
-            {language === "ko" ? "여러 아티스트에서 동시에 감지된 트렌드" : "Trends detected across multiple artists"}
-          </p>
-        </div>
-      </div>
+      <h2 className="text-xl font-black text-foreground mb-3">
+        {language === "ko" ? "🔥 메가 트렌드" : "🔥 Mega Trends"}
+      </h2>
 
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
         {clusters.map((cluster) => {
