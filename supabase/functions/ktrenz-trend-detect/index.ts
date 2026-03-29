@@ -1886,6 +1886,7 @@ async function detectForMember(
         trend_potential: keywordData.trend_potential ?? null,
         purchase_stage: keywordData.purchase_stage || null,
         baseline_score: keywordData.category === "social" ? 10 : (buzz.newsTotal + buzz.blogTotal),
+        peak_score: keywordData.category === "social" ? 10 : (buzz.newsTotal + buzz.blogTotal),
         status: "pending",
         metadata: keywordData.category === "social" ? {
           source: "tiktok",
