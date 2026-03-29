@@ -132,7 +132,7 @@ const T2CrossSourceInsights = () => {
     <section className="px-4 py-6">
       <div className="flex items-center gap-2 mb-4">
         <ArrowLeftRight className="w-5 h-5 text-primary" />
-        <h2 className="text-base font-black text-foreground">
+        <h2 className="font-black text-foreground text-lg">
           {language === "ko" ? "소스 교차 인사이트 > 어디서 유행 중일까요?" : "Cross-Source Insights > Where is it trending?"}
         </h2>
       </div>
