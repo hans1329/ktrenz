@@ -54,8 +54,6 @@ async function resolveInstagramProfile(
     const variants = [
       artistName.toLowerCase().replace(/[^a-z0-9]/g, ""),
       artistName.toLowerCase().replace(/[^a-z0-9]/g, "") + "official",
-      artistName.toLowerCase().replace(/\s+/g, "_"),
-      artistName.toLowerCase().replace(/\s+/g, "."),
     ];
 
     for (const username of variants) {
