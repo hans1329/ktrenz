@@ -437,7 +437,6 @@ Deno.serve(async (req) => {
         display_name: memberName,
         name_ko: null,
         group_name: groupName || null,
-        group_wiki_entry_id: null,
       });
       return new Response(
         JSON.stringify({ success: true, ...result }),
