@@ -9,7 +9,8 @@ import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus
 import { cn } from '@/lib/utils';
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  naver_news: { label: '네이버', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
+  naver_news: { label: '네이버뉴스', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
+  naver_blog: { label: '블로그/카페', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
   instagram: { label: '인스타', color: 'bg-pink-500/15 text-pink-400 border-pink-500/30' },
   tiktok: { label: '틱톡', color: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
   youtube: { label: '유튜브', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
