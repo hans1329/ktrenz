@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Layers, ArrowRight, TrendingUp } from "lucide-react";
+import { Layers, ArrowRight, ChevronRight } from "lucide-react";
 
 interface CrossInsight {
   id: string;
