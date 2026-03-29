@@ -130,12 +130,9 @@ const T2CrossSourceInsights = () => {
 
   return (
     <section className="px-4 py-6">
-      <div className="flex items-center gap-2 mb-4">
-        <ArrowLeftRight className="w-5 h-5 text-primary" />
-        <h2 className="font-black text-foreground text-lg">
-          {language === "ko" ? "어디서 유행 중일까요?" : "Where is it trending?"}
-        </h2>
-      </div>
+      <h2 className="font-black text-foreground text-lg mb-4">
+        {language === "ko" ? "어디서 유행 중일까요?" : "Where is it trending?"}
+      </h2>
 
       <div className="space-y-3">
         {insights.map((item) => {
