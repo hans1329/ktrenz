@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_trend_triggers ADD COLUMN IF NOT EXISTS source_image_url TEXT;
