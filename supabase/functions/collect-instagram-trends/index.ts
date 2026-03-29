@@ -289,14 +289,16 @@ Deno.serve(async (req) => {
 
     // ── 리셋 모드: _not_found 캐싱 일괄 초기화 ──
     if (body.action === "reset_not_found") {
-      const { data: notFoundStars } = await sb
+      const resetLimit = body.limit || 50;
+      const { data: allStars } = await sb
         .from("ktrenz_stars")
         .select("id, social_handles")
         .eq("is_active", true)
         .limit(500);
 
       let resetCount = 0;
-      for (const star of (notFoundStars || [])) {
+      for (const star of (allStars || [])) {
+        if (resetCount >= resetLimit) break;
         const handles = (star.social_handles || {}) as Record<string, any>;
         if (handles.instagram !== "_not_found") continue;
         delete handles.instagram;
