@@ -145,7 +145,7 @@ const T2MegaTrends = () => {
               className="flex-shrink-0 w-[200px] rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden"
             >
               {/* Image or gradient header */}
-              <div className="relative h-24 overflow-hidden">
+              <div className="relative h-32 overflow-hidden">
                 {bestImage ? (
                   <img
                     src={bestImage}
@@ -174,7 +174,20 @@ const T2MegaTrends = () => {
               {/* Content */}
               <div className="p-3">
                 <h4 className="text-sm font-bold text-foreground truncate">{displayName}</h4>
-                <div className="flex items-center gap-1 mt-1">
+                {/* Top keywords */}
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {cluster.keywords
+                    .slice(0, 3)
+                    .map((kw, i) => {
+                      const label = language === "ko" ? kw.keywordKo : kw.keyword;
+                      return (
+                        <span key={i} className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[120px]">
+                          {label}
+                        </span>
+                      );
+                    })}
+                </div>
+                <div className="flex items-center gap-1 mt-1.5">
                   <span
                     className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                     style={{
