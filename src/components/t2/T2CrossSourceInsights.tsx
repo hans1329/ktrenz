@@ -19,10 +19,10 @@ interface CrossInsight {
   gapLabelKo: string;
 }
 
-const GAP_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  social_only: { icon: "🚀", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" },
-  naver_only: { icon: "📰", color: "text-green-400", bg: "bg-green-500/10 border-green-500/20" },
-  cross_confirmed: { icon: "🔥", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+const GAP_CONFIG: Record<string, { icon: string; label: string; labelKo: string; tagColor: string }> = {
+  social_only: { icon: "🚀", label: "Social Early", labelKo: "소셜 선행", tagColor: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400" },
+  naver_only: { icon: "📰", label: "News Only", labelKo: "뉴스 중심", tagColor: "bg-green-500/15 text-green-600 dark:text-green-400" },
+  cross_confirmed: { icon: "🔥", label: "Confirmed", labelKo: "교차 확인", tagColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
 };
 
 function getKeyword(item: CrossInsight, lang: string) {
