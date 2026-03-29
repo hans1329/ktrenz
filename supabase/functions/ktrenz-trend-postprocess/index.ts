@@ -1160,12 +1160,19 @@ Deno.serve(async (req) => {
     const activated = await activatePending(sb);
     console.log(`[postprocess] Activated ${activated} pending entries`);
 
+    // 5.5단계: 메가트렌드 태깅
+    const megaTrendResult = await tagMegaTrends(sb);
+    console.log(`[postprocess] Mega trend tagging: ${megaTrendResult.tagged} entries in ${megaTrendResult.clusters} clusters`);
+    if (megaTrendResult.details.length > 0) {
+      console.log(`[postprocess] Mega trend details: ${megaTrendResult.details.join("; ")}`);
+    }
+
     // 완료 로그 기록
     await sb.from("ktrenz_collection_log").insert({
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, mega_trend=${megaTrendResult.tagged}/${megaTrendResult.clusters}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
