@@ -516,7 +516,7 @@ Deno.serve(async (req) => {
         const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
 
         // ─── 소셜 소스 키워드: 하이브리드 점수 (소셜 50% + 네이버 50%) ───
-        const isSocialSource = ["tiktok", "instagram"].includes(trigger.trigger_source || "");
+        const isSocialSource = ["tiktok", "instagram", "youtube_search"].includes(trigger.trigger_source || "");
         let buzzScore: number;
         let socialScore = 0;
 
