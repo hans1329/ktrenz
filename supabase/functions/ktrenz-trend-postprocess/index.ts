@@ -998,9 +998,8 @@ async function tagMegaTrends(sb: any): Promise<{ tagged: number; clusters: numbe
     .eq("status", "active")
     .eq("is_mega_trend", true);
 
-  const tagIds: string[] = [];
+  const clusterMap = new Map<string, string[]>(); // cluster_name -> id[]
   const details: string[] = [];
-  const clusterNames = new Set<string>();
 
   // 1) Exact keyword match across 2+ artists
   const byKeyword = new Map<string, any[]>();
@@ -1015,10 +1014,8 @@ async function tagMegaTrends(sb: any): Promise<{ tagged: number; clusters: numbe
     const uniqueStars = new Set(entries.map((e: any) => e.star_id));
     if (uniqueStars.size < 2) continue;
 
-    clusterNames.add(kw);
-    for (const e of entries) {
-      tagIds.push(e.id);
-    }
+    const ids = entries.map((e: any) => e.id);
+    clusterMap.set(kw, ids);
     const artists = [...new Set(entries.map((e: any) => e.artist_name))].join(", ");
     details.push(`[exact] "${kw}" → ${uniqueStars.size} artists (${artists})`);
   }
@@ -1038,24 +1035,24 @@ async function tagMegaTrends(sb: any): Promise<{ tagged: number; clusters: numbe
     if (uniqueStars.size < 5) continue;
 
     const clusterName = `${cat}_category_trend`;
-    clusterNames.add(clusterName);
-    for (const e of entries) {
-      if (!tagIds.includes(e.id)) tagIds.push(e.id);
-    }
+    const ids = entries.map((e: any) => e.id);
+    clusterMap.set(clusterName, ids);
     details.push(`[category] "${cat}" wave → ${uniqueStars.size} artists`);
   }
 
-  // Batch update
-  if (tagIds.length > 0) {
-    for (let i = 0; i < tagIds.length; i += 500) {
-      const batch = tagIds.slice(i, i + 500);
+  // Batch update with cluster name
+  let totalTagged = 0;
+  for (const [clusterName, ids] of clusterMap) {
+    for (let i = 0; i < ids.length; i += 500) {
+      const batch = ids.slice(i, i + 500);
       await sb.from("ktrenz_trend_triggers")
-        .update({ is_mega_trend: true })
+        .update({ is_mega_trend: true, mega_trend_cluster: clusterName })
         .in("id", batch);
     }
+    totalTagged += ids.length;
   }
 
-  return { tagged: tagIds.length, clusters: clusterNames.size, details };
+  return { tagged: totalTagged, clusters: clusterMap.size, details };
 }
 
 // ── 메인 핸들러 ──
