@@ -22,7 +22,7 @@ import {
 
 interface PipelineRun {
   startedAt: Date;
-  phase: "detect" | "postprocess";
+  phase: "collect_social" | "detect" | "postprocess";
 }
 
 const STORAGE_KEY = "t2-pipeline-active-runs";
