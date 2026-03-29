@@ -291,9 +291,9 @@ Deno.serve(async (req) => {
     if (body.action === "reset_not_found") {
       const { data: notFoundStars } = await sb
         .from("ktrenz_stars")
-        .select("id, display_name, social_handles")
+        .select("id, social_handles")
         .eq("is_active", true)
-        .like("social_handles->>instagram", "_not_found");
+        .limit(500);
 
       let resetCount = 0;
       for (const star of (notFoundStars || [])) {
