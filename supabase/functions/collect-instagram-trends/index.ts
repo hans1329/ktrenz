@@ -28,20 +28,29 @@ interface InstaPost {
 }
 
 // ── RapidAPI 호출 헬퍼 ──
-async function instaFetch(endpoint: string, rapidApiKey: string): Promise<any> {
-  const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
-    headers: {
-      "X-RapidAPI-Key": rapidApiKey,
-      "X-RapidAPI-Host": RAPIDAPI_HOST,
-    },
-  });
+async function instaFetch(endpoint: string, rapidApiKey: string, retries = 1): Promise<any> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
+      headers: {
+        "X-RapidAPI-Key": rapidApiKey,
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+      },
+    });
 
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Instagram API [${res.status}]: ${body}`);
+    if (res.status === 429 && attempt < retries) {
+      await res.text(); // consume body
+      console.warn(`[instagram] 429 rate limit, waiting 3s before retry...`);
+      await new Promise((r) => setTimeout(r, 3000));
+      continue;
+    }
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Instagram API [${res.status}]: ${body}`);
+    }
+
+    return res.json();
   }
-
-  return res.json();
 }
 
 // ── 프로필 조회 → pk(user_id) + username 캐싱 ──
