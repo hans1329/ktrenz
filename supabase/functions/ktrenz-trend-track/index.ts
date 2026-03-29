@@ -396,6 +396,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 소셜 소스 키워드의 소셜 점수 조회 헬퍼 ──
+    async function getSocialScore(starId: string, platform: string): Promise<number> {
+      try {
+        const { data } = await sb.from("ktrenz_social_snapshots")
+          .select("metrics")
+          .eq("star_id", starId)
+          .eq("platform", platform)
+          .order("collected_at", { ascending: false })
+          .limit(1);
+        if (!data?.length) return 0;
+        const m = data[0].metrics as any;
+        if (platform === "tiktok") return m?.tiktok_activity_score ?? 0;
+        if (platform === "instagram") return m?.instagram_activity_score ?? 0;
+        return 0;
+      } catch { return 0; }
+    }
+
     // ─── 대상 조회: 모든 active 키워드 (trigger_source 구분 없이) ───
     let triggers: any[];
     let totalTriggers = 0;
