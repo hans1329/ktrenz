@@ -22,6 +22,7 @@ interface InstaPost {
   like_count: number;
   comment_count: number;
   media_type: string;
+  shortcode: string | null;
 }
 
 // ── RapidAPI 호출 헬퍼 ──
@@ -118,6 +119,7 @@ function parseFeedItems(data: any): InstaPost[] {
       like_count: item.like_count || 0,
       comment_count: item.comment_count || 0,
       media_type: item.media_type === 2 ? "video" : "image",
+      shortcode: item.code || item.shortcode || null,
     });
   }
 
@@ -171,6 +173,7 @@ function parseStoryItems(data: any): InstaPost[] {
       like_count: 0,
       comment_count: 0,
       media_type: "story",
+      shortcode: item.code || item.shortcode || null,
     });
   }
 
@@ -496,6 +499,7 @@ Deno.serve(async (req) => {
               source_type: kw.source_type || "feed_post",
               instagram_username: igUsername,
               instagram_pk: igUserId,
+              embed_shortcode: matchingPost?.shortcode || allPosts.find(p => p.shortcode)?.shortcode || null,
             },
           };
         });

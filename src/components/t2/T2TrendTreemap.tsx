@@ -50,6 +50,7 @@ export interface TrendTile {
   triggerSource: string | null;
   prevApiTotal: number | null;
   brandId: string | null;
+  metadata: Record<string, any> | null;
 }
 
 export type SortMode = "rate" | "volume";
@@ -481,7 +482,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           sourceUrl: t.source_url || null, sourceTitle: t.source_title || null, sourceImageUrl: t.source_image_url || null,
           sourceSnippet: t.source_snippet || null, starId: t.star_id || null, status: t.status,
           triggerSource: t.trigger_source || null, prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
-          brandId: t.brand_id || null,
+          brandId: t.brand_id || null, metadata: t.metadata || null,
         };
       });
     },
@@ -640,6 +641,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           triggerSource: t.trigger_source || null,
           prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
           brandId: t.brand_id || null,
+          metadata: t.metadata || null,
         };
       });
     },

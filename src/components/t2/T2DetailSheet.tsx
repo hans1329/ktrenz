@@ -503,86 +503,123 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
-            {/* Source thumbnail + title card */}
-            {(tile.sourceTitle || tile.sourceImageUrl) && (
-              <div className="relative">
-                {(() => {
-                  const rawImg = sanitizeImageUrl(tile.sourceImageUrl);
-                  const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
-                  const platformLogo = detectPlatformLogo(tile.sourceUrl, tile.sourceImageUrl);
-                  // Always try artist image as primary fallback
-                  const displayImg = safeImg || tile.artistImageUrl || platformLogo;
-                  
-                  // Even if no source/platform image, show artist image or category placeholder
-                  const finalImg = displayImg || null;
-                  
-                  if (finalImg) {
-                    const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
-                    return (
-                      <div className="relative -mx-6 overflow-hidden bg-muted">
-                        <img
-                          src={finalImg}
-                          alt={tile.sourceTitle || ""}
-                          className={cn("w-full h-full object-cover", isLogoOnly && "object-contain p-8 bg-muted")}
-                          loading="lazy"
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            if (tile.artistImageUrl && target.src !== tile.artistImageUrl) {
-                              target.src = tile.artistImageUrl;
-                            } else {
-                              target.style.display = "none";
-                            }
-                          }}
-                        />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
-                          className={cn(
-                            "absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all shadow-lg",
-                            isFollowing
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-black/50 text-white/90 backdrop-blur-sm border border-white/20 hover:bg-primary hover:text-primary-foreground"
-                          )}
-                        >
-                          <Crosshair className="w-3 h-3" />
-                          {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
-                        </button>
-                      </div>
-                    );
-                  }
-                  
-                  return tile.sourceTitle ? (
-                  <div className="flex items-start gap-2.5 p-3 border-b border-border/50">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Newspaper className="w-4 h-4 text-primary" />
+          {/* Source thumbnail + title card */}
+          {(tile.sourceTitle || tile.sourceImageUrl || (tile.triggerSource && ["tiktok", "instagram"].includes(tile.triggerSource))) && (
+            <div className="relative">
+              {(() => {
+                // Social embed for TikTok/Instagram
+                const isSocialSource = tile.triggerSource && ["tiktok", "instagram"].includes(tile.triggerSource);
+                const meta = tile.metadata || {};
+                const tiktokVideoId = meta.embed_video_id;
+                const instaShortcode = meta.embed_shortcode;
+
+                if (isSocialSource && (tiktokVideoId || instaShortcode)) {
+                  const embedUrl = tiktokVideoId
+                    ? `https://www.tiktok.com/embed/v2/${tiktokVideoId}`
+                    : `https://www.instagram.com/p/${instaShortcode}/embed/`;
+                  const embedHeight = tiktokVideoId ? 580 : 480;
+
+                  return (
+                    <div className="relative -mx-6 overflow-hidden bg-muted">
+                      <iframe
+                        src={embedUrl}
+                        className="w-full border-0"
+                        style={{ height: `${embedHeight}px` }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
+                        className={cn(
+                          "absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all shadow-lg",
+                          isFollowing
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-black/50 text-white/90 backdrop-blur-sm border border-white/20 hover:bg-primary hover:text-primary-foreground"
+                        )}
+                      >
+                        <Crosshair className="w-3 h-3" />
+                        {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      {tile.sourceUrl ? (
-                        <a
-                          href={tile.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
-                          onClick={() => { track("t2_external_link_click", { artist_name: tile.artistName, artist_slug: tile.wikiEntryId, url: tile.sourceUrl || "" }); handleReadBoost(); }}
-                        >
-                          {getLocalizedSourceTitle(tile, language)}
-                        </a>
-                      ) : (
-                        <span className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
-                          {getLocalizedSourceTitle(tile, language)}
-                        </span>
-                      )}
-                      {tile.sourceUrl && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          {new URL(tile.sourceUrl).hostname.replace("www.", "")}
-                        </span>
-                      )}
+                  );
+                }
+
+                // Fallback: image thumbnail
+                const rawImg = sanitizeImageUrl(tile.sourceImageUrl);
+                const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
+                const platformLogo = detectPlatformLogo(tile.sourceUrl, tile.sourceImageUrl);
+                const displayImg = safeImg || tile.artistImageUrl || platformLogo;
+                const finalImg = displayImg || null;
+                
+                if (finalImg) {
+                  const isLogoOnly = platformLogo && !safeImg && !tile.artistImageUrl;
+                  return (
+                    <div className="relative -mx-6 overflow-hidden bg-muted">
+                      <img
+                        src={finalImg}
+                        alt={tile.sourceTitle || ""}
+                        className={cn("w-full h-full object-cover", isLogoOnly && "object-contain p-8 bg-muted")}
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (tile.artistImageUrl && target.src !== tile.artistImageUrl) {
+                            target.src = tile.artistImageUrl;
+                          } else {
+                            target.style.display = "none";
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
+                        className={cn(
+                          "absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all shadow-lg",
+                          isFollowing
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-black/50 text-white/90 backdrop-blur-sm border border-white/20 hover:bg-primary hover:text-primary-foreground"
+                        )}
+                      >
+                        <Crosshair className="w-3 h-3" />
+                        {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
+                      </button>
                     </div>
+                  );
+                }
+                
+                return tile.sourceTitle ? (
+                <div className="flex items-start gap-2.5 p-3 border-b border-border/50">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Newspaper className="w-4 h-4 text-primary" />
                   </div>
-                ) : null;
-                })()}
-              </div>
-            )}
+                  <div className="flex-1 min-w-0">
+                    {tile.sourceUrl ? (
+                      <a
+                        href={tile.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug"
+                        onClick={() => { track("t2_external_link_click", { artist_name: tile.artistName, artist_slug: tile.wikiEntryId, url: tile.sourceUrl || "" }); handleReadBoost(); }}
+                      >
+                        {getLocalizedSourceTitle(tile, language)}
+                      </a>
+                    ) : (
+                      <span className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
+                        {getLocalizedSourceTitle(tile, language)}
+                      </span>
+                    )}
+                    {tile.sourceUrl && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <ExternalLink className="w-2.5 h-2.5" />
+                        {new URL(tile.sourceUrl).hostname.replace("www.", "")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : null;
+              })()}
+            </div>
+          )}
           </div>
 
           {/* Context body — separate card */}
