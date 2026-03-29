@@ -328,6 +328,9 @@ Deno.serve(async (req) => {
     const targetStarId = body.star_id || null; // 특정 스타만 처리
 
     // ── 대상 아티스트 조회 ──
+    // skipResolve: 핸들이 있는 아티스트만 처리 (프로필 검색 비활성화)
+    const skipResolve = body.skipResolve !== false; // 기본값 true
+
     let query = sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, social_handles, star_type, group_star_id")
@@ -337,6 +340,12 @@ Deno.serve(async (req) => {
     if (targetStarId) {
       query = query.eq("id", targetStarId);
     } else {
+      // 핸들이 있는 아티스트만 필터링 (skipResolve 모드)
+      if (skipResolve) {
+        query = query.not("social_handles->instagram", "is", null)
+          .neq("social_handles->>instagram" as any, "_not_found")
+          .neq("social_handles->>instagram" as any, "");
+      }
       query = query.range(offset, offset + batchSize - 1).order("display_name");
     }
 
