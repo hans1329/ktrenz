@@ -83,16 +83,20 @@ const T2MegaTrends = () => {
         return results.sort((a, b) => b.totalInfluence - a.totalInfluence);
       }
 
-      // DB tagged mega trends - group by mega_trend_cluster
+      // DB tagged mega trends - group by mega_trend_cluster, skip category trends
       const byCluster = new Map<string, any[]>();
       for (const row of exactMatches) {
         const key = (row as any).mega_trend_cluster || (row as any).keyword.toLowerCase();
+        // Skip old category_trend entries
+        if (key.endsWith("_category_trend")) continue;
         const list = byCluster.get(key) || [];
         list.push(row);
         byCluster.set(key, list);
       }
 
+      // Only keep clusters with 2+ unique artists
       return [...byCluster.entries()]
+        .filter(([_, entries]) => new Set(entries.map((e: any) => e.star_id)).size >= 2)
         .map(([kw, entries]) => buildCluster(kw, entries[0].keyword_category, entries))
         .sort((a, b) => b.totalInfluence - a.totalInfluence);
     },
