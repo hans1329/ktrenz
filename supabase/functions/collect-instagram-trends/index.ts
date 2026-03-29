@@ -582,8 +582,8 @@ Deno.serve(async (req) => {
           results.push(`${star.display_name}: all keywords already exist`);
         }
 
-        // Rate limiting: 500ms 대기
-        await new Promise((r) => setTimeout(r, 500));
+        // Rate limiting: 1.5s 대기 (Pro plan 초당 제한 대응)
+        await new Promise((r) => setTimeout(r, 1500));
       } catch (e) {
         const msg = (e as Error).message;
         console.error(`[instagram] Error processing ${star.display_name}: ${msg}`);
