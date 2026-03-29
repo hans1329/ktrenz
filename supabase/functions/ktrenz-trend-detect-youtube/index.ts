@@ -490,7 +490,6 @@ Deno.serve(async (req) => {
           display_name: star.display_name,
           name_ko: star.name_ko,
           group_name: isGroupOrSolo ? null : (group?.display_name || null),
-          group_wiki_entry_id: isGroupOrSolo ? null : (group?.wiki_entry_id || null),
         });
         successCount++;
         totalKeywords += result.keywordsFound;
