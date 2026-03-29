@@ -11,6 +11,7 @@ import T2AdminControls from "@/components/t2/T2AdminControls";
 import T2MomentumSignals from "@/components/t2/T2MomentumSignals";
 import T2CrossSourceInsights from "@/components/t2/T2CrossSourceInsights";
 import T2TrendBetCTA from "@/components/t2/T2TrendBetCTA";
+import T2SettlementResultModal from "@/components/t2/T2SettlementResultModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -406,6 +407,7 @@ const T2TrendMap = () => {
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
+      <T2SettlementResultModal />
       <Suspense fallback={null}>
         <ArtistOnboardingDrawer open={showOnboarding} onOpenChange={setShowOnboarding} />
       </Suspense>
