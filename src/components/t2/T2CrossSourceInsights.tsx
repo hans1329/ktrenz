@@ -149,7 +149,19 @@ const T2CrossSourceInsights = () => {
               className="w-full max-w-[28rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
               <div className="relative h-32 overflow-hidden rounded-t-2xl bg-muted">
-                <SmartImage src={item.imageUrl} alt={item.artistName} className="w-full h-full object-cover" loading="lazy" />
+                <SmartImage
+                  src={item.imageUrl}
+                  alt={item.artistName}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  decoding="async"
+                  fallback={
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <span className="text-2xl font-black text-muted-foreground/40">{item.artistName.charAt(0)}</span>
+                    </div>
+                  }
+                />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
