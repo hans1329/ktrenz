@@ -50,6 +50,7 @@ export interface TrendTile {
   triggerSource: string | null;
   prevApiTotal: number | null;
   brandId: string | null;
+  metadata: Record<string, any> | null;
 }
 
 export type SortMode = "rate" | "volume";
