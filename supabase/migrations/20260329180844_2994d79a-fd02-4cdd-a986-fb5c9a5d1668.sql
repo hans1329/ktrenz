@@ -1,0 +1,1 @@
+UPDATE ktrenz_stars SET social_handles = social_handles - 'instagram' - 'instagram_pk' - 'instagram_followers' - 'instagram_verified' WHERE is_active = true AND social_handles->>'instagram' = '_not_found';
