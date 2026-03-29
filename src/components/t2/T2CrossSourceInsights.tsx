@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Layers, ChevronRight } from "lucide-react";
+import { ArrowLeftRight, ChevronRight } from "lucide-react";
 
 interface CrossInsight {
   id: string;
@@ -153,9 +153,7 @@ const T2CrossSourceInsights = () => {
   return (
     <section className="px-4 py-6">
       <div className="flex items-center gap-2 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10">
-          <Layers className="w-4.5 h-4.5 text-primary" />
-        </div>
+        <ArrowLeftRight className="w-5 h-5 text-primary" />
         <h2 className="text-base font-black text-foreground">
           {language === "ko" ? "소스 교차 인사이트" : "Cross-Source Insights"}
         </h2>
