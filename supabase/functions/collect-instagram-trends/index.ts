@@ -10,6 +10,8 @@ const corsHeaders = {
 
 const RAPIDAPI_HOST = "instagram-api-fast-reliable-data-scraper.p.rapidapi.com";
 const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
+const DAILY_API_BUDGET = 400; // Pro plan daily limit
+const MAX_RESOLVE_PER_RUN = 10; // 미검색 아티스트 프로필 검색 제한
 
 interface InstaPost {
   caption_text: string;
