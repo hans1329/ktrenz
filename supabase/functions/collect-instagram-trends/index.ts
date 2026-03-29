@@ -499,6 +499,7 @@ Deno.serve(async (req) => {
               source_type: kw.source_type || "feed_post",
               instagram_username: igUsername,
               instagram_pk: igUserId,
+              embed_shortcode: matchingPost?.shortcode || allPosts.find(p => p.shortcode)?.shortcode || null,
             },
           };
         });
