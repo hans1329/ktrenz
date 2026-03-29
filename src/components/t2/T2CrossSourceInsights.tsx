@@ -4,14 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { ArrowLeftRight, ChevronRight } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 
 interface CrossInsight {
   id: string;
   keyword: string;
   keywordKo: string | null;
   artistName: string;
-  artistImage: string | null;
+  imageUrl: string | null;
   triggerSource: string;
   category: string;
   naverBuzz: number;
@@ -21,10 +21,10 @@ interface CrossInsight {
   gapLabelKo: string;
 }
 
-const GAP_CONFIG: Record<string, { label: string; labelKo: string; tagColor: string }> = {
-  social_only: { label: "Social Early", labelKo: "소셜 선행", tagColor: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400" },
-  naver_only: { label: "News Only", labelKo: "뉴스 중심", tagColor: "bg-green-500/15 text-green-600 dark:text-green-400" },
-  cross_confirmed: { label: "Confirmed", labelKo: "교차 확인", tagColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+const GAP_CONFIG: Record<string, { label: string; labelKo: string; tagColor: string; tagBg: string }> = {
+  social_only: { label: "Social Early Signal", labelKo: "소셜 선행 시그널", tagColor: "text-cyan-700 dark:text-cyan-300", tagBg: "bg-cyan-100 dark:bg-cyan-500/20" },
+  naver_only: { label: "News Only", labelKo: "뉴스 단독", tagColor: "text-green-700 dark:text-green-300", tagBg: "bg-green-100 dark:bg-green-500/20" },
+  cross_confirmed: { label: "Cross Confirmed", labelKo: "교차 확인됨", tagColor: "text-amber-700 dark:text-amber-300", tagBg: "bg-amber-100 dark:bg-amber-500/20" },
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -39,26 +39,24 @@ function getKeyword(item: CrossInsight, lang: string) {
   return item.keyword;
 }
 
-const ArtistThumb = ({ name, src }: { name: string; src: string | null }) => {
+const CardImage = ({ src, alt }: { src: string | null; alt: string }) => {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
     return (
-      <div className="w-12 h-12 rounded-xl bg-muted shrink-0 flex items-center justify-center text-lg font-bold text-muted-foreground">
-        {name.charAt(0)}
+      <div className="w-full h-full bg-muted flex items-center justify-center">
+        <span className="text-2xl font-black text-muted-foreground/40">{alt.charAt(0)}</span>
       </div>
     );
   }
   return (
-    <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0">
-      <img
-        src={src}
-        alt={name}
-        className="w-full h-full object-cover"
-        referrerPolicy="no-referrer"
-        loading="lazy"
-        onError={() => setFailed(true)}
-      />
-    </div>
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-full object-cover"
+      referrerPolicy="no-referrer"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 };
 
@@ -71,21 +69,20 @@ const T2CrossSourceInsights = () => {
     queryFn: async () => {
       const { data: triggers } = await supabase
         .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, artist_name, trigger_source, keyword_category, metadata, baseline_score, peak_score")
+        .select("id, keyword, keyword_ko, artist_name, trigger_source, keyword_category, metadata, baseline_score, peak_score, source_image_url")
         .eq("status", "active")
         .order("detected_at", { ascending: false })
         .limit(200);
 
       if (!triggers?.length) return [];
 
-      // Collect unique artist names to fetch images
+      // Fetch artist images as fallback
       const artistNames = [...new Set((triggers as any[]).map((t) => t.artist_name))];
       const { data: stars } = await supabase
         .from("ktrenz_stars" as any)
         .select("display_name, image_url")
         .in("display_name", artistNames);
-
-      const imageMap = new Map((stars || []).map((s: any) => [s.display_name, s.image_url]));
+      const starImageMap = new Map((stars || []).map((s: any) => [s.display_name, s.image_url]));
 
       const results: CrossInsight[] = [];
 
@@ -117,12 +114,15 @@ const T2CrossSourceInsights = () => {
         }
 
         if (gapType) {
+          // Prefer source_image_url (content image), fallback to star image
+          const imageUrl = t.source_image_url || starImageMap.get(t.artist_name) || null;
+
           results.push({
             id: t.id,
             keyword: t.keyword,
             keywordKo: t.keyword_ko,
             artistName: t.artist_name,
-            artistImage: imageMap.get(t.artist_name) || null,
+            imageUrl,
             triggerSource: t.trigger_source,
             category: t.keyword_category,
             naverBuzz,
@@ -159,9 +159,10 @@ const T2CrossSourceInsights = () => {
         </h2>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {insights.map((item) => {
           const config = GAP_CONFIG[item.gapType];
+          const sourceName = SOURCE_LABEL[item.triggerSource] || item.triggerSource;
 
           return (
             <button
@@ -169,30 +170,52 @@ const T2CrossSourceInsights = () => {
               onClick={() => handleClick(item)}
               className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
-              <div className="flex items-center gap-3 p-3">
-                {/* Artist image */}
-                <ArtistThumb name={item.artistName} src={item.artistImage} />
+              {/* Large image area */}
+              <div className="relative w-full h-36 overflow-hidden">
+                <CardImage src={item.imageUrl} alt={item.artistName} />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[11px] font-semibold text-muted-foreground truncate">
-                      {item.artistName}
-                    </span>
-                    <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0", config.tagColor)}>
-                      {language === "ko" ? config.labelKo : config.label}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-foreground leading-snug truncate">
-                    {getKeyword(item, language)}
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                    {language === "ko" ? item.gapLabelKo : item.gapLabel}
-                  </p>
+                {/* Gap type badge */}
+                <div className="absolute top-2.5 left-2.5">
+                  <span className={cn("text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-sm", config.tagBg, config.tagColor)}>
+                    {language === "ko" ? config.labelKo : config.label}
+                  </span>
                 </div>
 
-                {/* Right side */}
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                {/* Source badge */}
+                <div className="absolute top-2.5 right-2.5">
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-black/40 text-white backdrop-blur-sm">
+                    {sourceName}
+                  </span>
+                </div>
+
+                {/* Bottom text on image */}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <p className="text-[11px] font-semibold text-white/80 mb-0.5">{item.artistName}</p>
+                  <h3 className="text-base font-bold text-white leading-snug truncate">
+                    {getKeyword(item, language)}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Insight detail bar */}
+              <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground truncate flex-1">
+                  {language === "ko" ? item.gapLabelKo : item.gapLabel}
+                </p>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground shrink-0">
+                  {item.naverBuzz > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      📰 <span className="font-semibold">{item.naverBuzz}</span>
+                    </span>
+                  )}
+                  {item.socialScore > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      📱 <span className="font-semibold">{item.socialScore}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </button>
           );
