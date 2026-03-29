@@ -344,8 +344,22 @@ Deno.serve(async (req) => {
     let totalKeywords = 0;
     let profilesResolved = 0;
     let apiCalls = 0;
+    let resolveAttempts = 0; // 프로필 검색 시도 카운터
     const results: string[] = [];
     const errors: string[] = [];
+
+    // 일일 API 사용량 조회 (ktrenz_social_snapshots에서 오늘 인스타 수집 건수로 추정)
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const { count: todayUsage } = await sb
+      .from("ktrenz_social_snapshots")
+      .select("id", { count: "exact", head: true })
+      .eq("platform", "instagram")
+      .gte("collected_at", todayStart.toISOString());
+    // 아티스트당 약 2 API 호출(feed+profile) → 사용량 추정
+    const estimatedUsedCalls = (todayUsage || 0) * 2;
+    let remainingBudget = DAILY_API_BUDGET - estimatedUsedCalls;
+    console.log(`[instagram] Daily budget: ${remainingBudget}/${DAILY_API_BUDGET} remaining (estimated ${estimatedUsedCalls} used today)`);
 
     for (const star of stars) {
       try {
