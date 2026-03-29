@@ -115,14 +115,9 @@ const T2CrossSourceInsights = () => {
         <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10">
           <Layers className="w-4.5 h-4.5 text-primary" />
         </div>
-        <div>
-          <h2 className="text-base font-black text-foreground">
-            {language === "ko" ? "소스 교차 인사이트" : "Cross-Source Insights"}
-          </h2>
-          <p className="text-[11px] text-muted-foreground">
-            {language === "ko" ? "네이버에서 못 보는 멀티소스 분석" : "Multi-source gap analysis"}
-          </p>
-        </div>
+        <h2 className="text-base font-black text-foreground">
+          {language === "ko" ? "소스 교차 인사이트" : "Cross-Source Insights"}
+        </h2>
       </div>
 
       <div className="space-y-2.5">
@@ -133,39 +128,33 @@ const T2CrossSourceInsights = () => {
             <button
               key={item.id}
               onClick={() => handleClick(item)}
-              className={cn(
-                "w-full text-left rounded-2xl p-4 border transition-all active:scale-[0.98]",
-                config.bg
-              )}
+              className="w-full text-left rounded-2xl p-4 bg-card border border-border transition-all active:scale-[0.98] hover:shadow-md"
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-lg">{config.icon}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-base">{config.icon}</span>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       {item.artistName}
+                    </span>
+                    <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded-full", config.tagColor)}>
+                      {language === "ko" ? config.labelKo : config.label}
                     </span>
                   </div>
                   <h3 className="text-[15px] font-bold text-foreground leading-snug truncate">
                     {getKeyword(item, language)}
                   </h3>
-                  <p className={cn("text-xs mt-1", config.color)}>
+                  <p className="text-xs text-muted-foreground mt-1">
                     {language === "ko" ? item.gapLabelKo : item.gapLabel}
                   </p>
                 </div>
 
-                <div className="flex flex-col items-end gap-1.5 shrink-0 pt-1">
+                <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      📰 {item.naverBuzz}
-                    </span>
-                    {item.socialScore > 0 && (
-                      <span className="flex items-center gap-1">
-                        📱 {item.socialScore}
-                      </span>
-                    )}
+                    <span>📰 {item.naverBuzz}</span>
+                    {item.socialScore > 0 && <span>📱 {item.socialScore}</span>}
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </div>
             </button>
