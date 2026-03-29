@@ -343,6 +343,9 @@ const T2TrendMap = () => {
               {/* Hero section */}
               <T2HeroSection myKeywords={myKeywords} onOpenOnboarding={() => setShowOnboarding(true)} />
 
+              {/* Mega Trends — cross-artist trend detection */}
+              <T2MegaTrends />
+
               <div
                 style={{
                   transform: shouldRenderSwipeOverlay ? `translate3d(${dragOffsetX}px, 0, 0)` : 'none',
