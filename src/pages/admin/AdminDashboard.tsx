@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus, ExternalLink } from 'lucide-react';
+import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus, CheckCircle, Loader2, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
@@ -22,13 +22,30 @@ const CATEGORY_LABELS: Record<string, string> = {
   music: '음악', event: '이벤트', social: '소셜', goods: '굿즈',
 };
 
+const PHASE_LABELS: Record<string, { label: string; icon: string }> = {
+  collect_social: { label: '소셜 수집', icon: '📱' },
+  detect: { label: '네이버 감지', icon: '🔍' },
+  detect_youtube: { label: '유튜브 감지', icon: '🎬' },
+  track: { label: '추적', icon: '📊' },
+  settle: { label: '정산', icon: '💰' },
+  'schedule-predict': { label: '일정 추론', icon: '📅' },
+  'data-auditor': { label: '품질 검사', icon: '🔎' },
+};
+
 const formatAge = (dateStr: string): string => {
   const diff = Date.now() - new Date(dateStr).getTime();
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return '방금';
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '방금';
+  if (mins < 60) return `${mins}분 전`;
+  const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h 전`;
   const days = Math.floor(hours / 24);
   return `${days}d 전`;
+};
+
+const formatTime = (dateStr: string): string => {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' });
 };
 
 const AdminDashboard = () => {
@@ -49,7 +66,61 @@ const AdminDashboard = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // 활성 키워드 전체 조회
+  // 파이프라인 상태 (DB 기반 실시간)
+  const { data: pipelineRuns } = useQuery({
+    queryKey: ['admin-pipeline-state'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_pipeline_state' as any)
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(20);
+
+      // run_id별로 그룹핑하여 최신 런의 모든 phase 표시
+      const runs = new Map<string, any[]>();
+      for (const row of (data || []) as any[]) {
+        const runId = row.run_id || 'unknown';
+        if (!runs.has(runId)) runs.set(runId, []);
+        runs.get(runId)!.push(row);
+      }
+
+      // 최신 2개 런만
+      const sorted = Array.from(runs.entries())
+        .sort((a, b) => {
+          const aLatest = Math.max(...a[1].map((r: any) => new Date(r.updated_at).getTime()));
+          const bLatest = Math.max(...b[1].map((r: any) => new Date(r.updated_at).getTime()));
+          return bLatest - aLatest;
+        })
+        .slice(0, 2);
+
+      return sorted.map(([runId, phases]) => ({
+        runId,
+        phases: phases.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+        latestUpdate: phases.reduce((latest: string, p: any) =>
+          new Date(p.updated_at) > new Date(latest) ? p.updated_at : latest, phases[0].updated_at),
+        isRunning: phases.some((p: any) => p.status === 'running'),
+      }));
+    },
+    refetchInterval: 15000, // 15초마다 갱신
+    staleTime: 10000,
+  });
+
+  // 소셜 수집 로그
+  const { data: socialLogs } = useQuery({
+    queryKey: ['admin-social-collection-logs'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ktrenz_collection_log' as any)
+        .select('platform, status, records_collected, error_message, collected_at')
+        .in('platform', ['instagram', 'tiktok', 'collect_social'])
+        .order('collected_at', { ascending: false })
+        .limit(10);
+      return (data || []) as any[];
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  // 활성 키워드
   const { data: activeKeywords } = useQuery({
     queryKey: ['admin-active-keywords'],
     queryFn: async () => {
@@ -65,7 +136,7 @@ const AdminDashboard = () => {
     staleTime: 1000 * 60 * 2,
   });
 
-  // 최근 추적 기록 (delta 확인용)
+  // 최근 추적 기록
   const { data: recentTracking } = useQuery({
     queryKey: ['admin-recent-tracking'],
     queryFn: async () => {
@@ -74,7 +145,6 @@ const AdminDashboard = () => {
         .select('trigger_id, interest_score, delta_pct, tracked_at')
         .order('tracked_at', { ascending: false })
         .limit(1000);
-      // trigger_id별 최신 1건만
       const map = new Map<string, any>();
       for (const r of (data || []) as any[]) {
         if (!map.has(r.trigger_id)) map.set(r.trigger_id, r);
@@ -87,14 +157,12 @@ const AdminDashboard = () => {
   const totalActive = activeKeywords?.filter(k => k.status === 'active').length ?? 0;
   const totalPending = activeKeywords?.filter(k => k.status === 'pending').length ?? 0;
 
-  // 소스별 카운트
   const sourceCounts = (activeKeywords || []).reduce((acc: Record<string, number>, k: any) => {
     const src = k.trigger_source || 'unknown';
     acc[src] = (acc[src] || 0) + 1;
     return acc;
   }, {});
 
-  // 필터링
   const filtered = (activeKeywords || []).filter((k: any) => {
     if (sourceFilter && k.trigger_source !== sourceFilter) return false;
     if (search) {
@@ -106,9 +174,140 @@ const AdminDashboard = () => {
     return true;
   });
 
+  const currentRun = pipelineRuns?.[0];
+  const prevRun = pipelineRuns?.[1];
+  const isAnyRunning = currentRun?.isRunning;
+
+  // 다음 실행 시간 계산 (6시간 간격: 03:30, 09:30, 15:30, 21:30 KST)
+  const getNextRunTime = (): string => {
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 3600000);
+    const h = kst.getUTCHours();
+    const schedules = [3.5, 9.5, 15.5, 21.5]; // 03:30, 09:30, 15:30, 21:30
+    const currentH = h + kst.getUTCMinutes() / 60;
+    const next = schedules.find(s => s > currentH) || schedules[0] + 24;
+    const diff = next - currentH;
+    const diffH = Math.floor(diff);
+    const diffM = Math.round((diff - diffH) * 60);
+    if (diffH === 0) return `${diffM}분 후`;
+    return `${diffH}h ${diffM}분 후`;
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">대시보드</h1>
+
+      {/* Pipeline Status Banner */}
+      <Card className={cn(
+        "border-l-4",
+        isAnyRunning ? "border-l-blue-500 bg-blue-500/5" : "border-l-green-500/50"
+      )}>
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {isAnyRunning ? (
+                <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4 text-green-500" />
+              )}
+              <span className="text-sm font-semibold">
+                {isAnyRunning ? '파이프라인 실행 중' : '파이프라인 대기 중'}
+              </span>
+              {currentRun && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {currentRun.runId.replace('run_', '').slice(0, 10)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              {!isAnyRunning && (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  다음: {getNextRunTime()}
+                </span>
+              )}
+              {currentRun && (
+                <span>갱신: {formatAge(currentRun.latestUpdate)}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Phase progress */}
+          {currentRun && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {currentRun.phases.map((phase: any) => {
+                const info = PHASE_LABELS[phase.phase] || { label: phase.phase, icon: '⚙️' };
+                const progress = phase.total_candidates > 0
+                  ? Math.min(100, Math.round((phase.current_offset / phase.total_candidates) * 100))
+                  : phase.status === 'done' ? 100 : 0;
+                const isDone = phase.status === 'done' || phase.status === 'postprocess_done';
+                const isRunning = phase.status === 'running';
+
+                return (
+                  <div key={phase.id} className={cn(
+                    "rounded-lg px-3 py-2 border",
+                    isRunning ? "border-blue-500/30 bg-blue-500/5" :
+                    isDone ? "border-border bg-muted/30" :
+                    "border-border bg-muted/20"
+                  )}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-medium flex items-center gap-1">
+                        <span>{info.icon}</span>
+                        {info.label}
+                      </span>
+                      {isRunning ? (
+                        <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+                      ) : isDone ? (
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                      ) : (
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                      )}
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          isRunning ? "bg-blue-500" : isDone ? "bg-green-500/70" : "bg-muted-foreground/20"
+                        )}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-muted-foreground">
+                        {phase.current_offset}/{phase.total_candidates}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatTime(phase.updated_at)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Social collection status */}
+          {socialLogs && socialLogs.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-border/50">
+              <div className="flex flex-wrap gap-3 text-[11px]">
+                {socialLogs.slice(0, 4).map((log: any, i: number) => (
+                  <span key={i} className="flex items-center gap-1 text-muted-foreground">
+                    {log.status === 'success' ? (
+                      <CheckCircle className="w-3 h-3 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="w-3 h-3 text-amber-500" />
+                    )}
+                    <span className="font-medium">{log.platform}</span>
+                    {log.records_collected > 0 && <span>({log.records_collected}건)</span>}
+                    <span>{formatAge(log.collected_at)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -157,7 +356,6 @@ const AdminDashboard = () => {
             <CardTitle className="text-base">수집/추적 중인 키워드</CardTitle>
             <span className="text-xs text-muted-foreground">{filtered.length}건</span>
           </div>
-          {/* Source filter chips */}
           <div className="flex flex-wrap gap-1.5 mt-2">
             <button
               onClick={() => setSourceFilter(null)}
@@ -184,7 +382,6 @@ const AdminDashboard = () => {
               );
             })}
           </div>
-          {/* Search */}
           <div className="relative mt-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -222,7 +419,7 @@ const AdminDashboard = () => {
                     <tr
                       key={kw.id}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/admin/keyword-monitor`)}
+                      onClick={() => navigate('/admin/keyword-monitor')}
                     >
                       <td className="py-2.5 px-3">
                         <div className="flex items-center gap-2">
