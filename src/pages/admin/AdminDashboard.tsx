@@ -175,7 +175,7 @@ const AdminDashboard = () => {
   }, {});
 
   const filtered = (activeKeywords || []).filter((k: any) => {
-    if (sourceFilter && k.trigger_source !== sourceFilter) return false;
+    if (sourceFilter && getDisplaySource(k) !== sourceFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       return k.keyword.toLowerCase().includes(q) ||
