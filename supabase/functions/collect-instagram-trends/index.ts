@@ -59,7 +59,8 @@ async function resolveInstagramProfile(
     for (const username of variants) {
       try {
         const profile = await instaFetch(`profile?username=${username}`, rapidApiKey);
-        if (profile?.pk && profile?.is_verified) {
+        // verified 또는 팔로워 1만 이상이면 공식 계정으로 간주
+        if (profile?.pk && (profile?.is_verified || (profile?.follower_count || 0) >= 10000)) {
           return {
             pk: String(profile.pk),
             username: profile.username,
