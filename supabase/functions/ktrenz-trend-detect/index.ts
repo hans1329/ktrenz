@@ -1456,7 +1456,7 @@ Deno.serve(async (req) => {
       if (singleMemberName) {
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
-          { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, group_wiki_entry_id: singleGroupWikiEntryId, star_category: singleStarCategory },
+          { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, star_category: singleStarCategory },
           globalStarNames
         );
         return new Response(
