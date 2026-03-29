@@ -1,5 +1,6 @@
 // TikTok Trend Collector: RapidAPI tiktok-api23를 통해 아티스트별 TikTok 검색 데이터 수집
-// 검색 결과에서 조회수/좋아요/댓글/공유 통계 집계 → ktrenz_social_snapshots 저장 (T2 전용, star_id 기반)
+// 1) 검색 결과에서 조회수/좋아요/댓글/공유 통계 집계 → ktrenz_social_snapshots 저장
+// 2) 영상 설명(desc)에서 AI 키워드 추출 → ktrenz_trend_triggers 저장 (인스타와 동일 패턴)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -179,6 +180,96 @@ function calculateTikTokActivityScore(metrics: TikTokMetrics): number {
   return viewScore + engagementScore + recencyScore + verifiedScore + volumeScore;
 }
 
+// ── AI 키워드 추출 (인스타와 동일 패턴) ──
+async function extractKeywordsFromVideos(
+  videos: TikTokVideo[],
+  artistName: string,
+  openaiKey: string,
+): Promise<Array<{
+  keyword: string;
+  keyword_en: string;
+  keyword_ko: string;
+  category: string;
+  context: string;
+  context_ko: string;
+  confidence: number;
+  commercial_intent: string;
+  source_type: string;
+}>> {
+  if (videos.length === 0) return [];
+
+  // 영상 설명 요약 생성
+  const videoSummaries = videos.map((v, i) => {
+    const parts = [`[${i + 1}] Views: ${v.stats.playCount.toLocaleString()}`];
+    if (v.desc) parts.push(`Desc: "${v.desc.slice(0, 300)}"`);
+    if (v.author.uniqueId) parts.push(`@${v.author.uniqueId}${v.author.verified ? " ✓" : ""}`);
+    // desc에서 해시태그 추출
+    const hashtags = (v.desc.match(/#[\w가-힣]+/g) || []).map((h: string) => h.slice(1));
+    if (hashtags.length) parts.push(`#Tags: ${hashtags.join(", ")}`);
+    return parts.join(" | ");
+  }).join("\n");
+
+  const prompt = `You are a K-Pop commercial trend analyst. Analyze the following TikTok videos related to ${artistName} and extract commercially significant keywords.
+
+VIDEOS:
+${videoSummaries}
+
+RULES:
+- Extract brand names, product names, place names, fashion items, beauty products, collaboration partners, viral challenges, dance trends
+- Hashtags that reference specific brands, products, or trends are HIGH VALUE
+- ⚠️ AIRPORT keywords (인천공항, 공항패션, airport fashion) → classify as "fashion"
+- 🍴 RESTAURANT/CAFE: Any restaurant, cafe, bar, bakery → classify as "restaurant" (NOT "place" or "food")
+- "food" category is for food brands, packaged food products — NOT specific restaurants
+- "place" category is for non-dining venues (concert halls, shops, landmarks)
+- "social" category is for viral challenges, fan trends, dance trends specific to TikTok
+- Exclude: generic hashtags (#fyp, #foryou, #kpop, #viral, #tiktok), the artist's own name, platform names
+- Each keyword must have real commercial or cultural significance
+
+Return JSON array:
+[{
+  "keyword": "original keyword",
+  "keyword_en": "English translation",
+  "keyword_ko": "Korean translation",
+  "category": "brand|product|place|restaurant|food|fashion|beauty|media|music|event|social",
+  "context": "English context sentence",
+  "context_ko": "Korean context sentence",
+  "confidence": 0.0-1.0,
+  "commercial_intent": "ad|sponsorship|collaboration|organic|rumor",
+  "source_type": "tiktok_video|tiktok_hashtag|tiktok_challenge"
+}]
+
+If no meaningful commercial keywords found, return [].`;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn(`[tiktok] OpenAI API error: ${res.status}`);
+      return [];
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content || "{}";
+    const parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? parsed : (parsed.keywords || parsed.results || []);
+  } catch (e) {
+    console.warn(`[tiktok] AI extraction failed: ${(e as Error).message}`);
+    return [];
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -196,11 +287,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) {
+      console.warn("[tiktok] OPENAI_API_KEY not configured — keyword extraction will be skipped");
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ktrenz_stars에서 활성 아티스트 (star_id 기반, wiki_entry_id 불필요)
+    // ktrenz_stars에서 활성 아티스트 (star_id 기반)
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, star_type")
@@ -221,6 +317,7 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
+    let totalKeywords = 0;
 
     for (const star of stars as any[]) {
       try {
@@ -240,6 +337,7 @@ Deno.serve(async (req) => {
         });
 
         if (!dryRun) {
+          // 1) 스냅샷 저장 (기존 통계 수집)
           snapshotsToInsert.push({
             star_id: star.id,
             wiki_entry_id: null,
@@ -253,6 +351,69 @@ Deno.serve(async (req) => {
             },
             top_posts: topPosts,
           });
+
+          // 2) AI 키워드 추출 → ktrenz_trend_triggers 저장
+          if (openaiKey && videos.length > 0) {
+            const keywords = await extractKeywordsFromVideos(videos, star.display_name, openaiKey);
+
+            if (keywords.length > 0) {
+              // 중복 체크: 같은 star_id + keyword + trigger_source(tiktok) + 3일 이내
+              const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+              const { data: existing } = await sb
+                .from("ktrenz_trend_triggers")
+                .select("keyword")
+                .eq("star_id", star.id)
+                .eq("trigger_source", "tiktok")
+                .gte("detected_at", threeDaysAgo);
+
+              const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
+              const now = new Date().toISOString();
+
+              const newTriggers = keywords
+                .filter((kw) => !existingKws.has(kw.keyword.toLowerCase()))
+                .map((kw) => ({
+                  star_id: star.id,
+                  wiki_entry_id: null,
+                  trigger_type: "keyword",
+                  trigger_source: "tiktok",
+                  artist_name: star.display_name,
+                  keyword: kw.keyword,
+                  keyword_en: kw.keyword_en || kw.keyword,
+                  keyword_ko: kw.keyword_ko || kw.keyword,
+                  keyword_category: kw.category || "social",
+                  context: kw.context || "",
+                  context_ko: kw.context_ko || "",
+                  confidence: kw.confidence || 0.7,
+                  source_url: `https://www.tiktok.com/search?q=${encodeURIComponent(star.display_name)}`,
+                  source_title: `TikTok search: ${star.display_name}`,
+                  detected_at: now,
+                  status: "pending",
+                  baseline_score: 10, // 소셜 키워드는 네이버 버즈 조회 건너뛰고 baseline=10
+                  commercial_intent: kw.commercial_intent || "organic",
+                  source_snippet: videos
+                    .filter((v) => v.desc.toLowerCase().includes(kw.keyword.toLowerCase()))
+                    .map((v) => v.desc.slice(0, 100))
+                    .join(" | ")
+                    .slice(0, 500),
+                  metadata: {
+                    source_type: kw.source_type || "tiktok_video",
+                    tiktok_search_keyword: searchKeyword,
+                    tiktok_video_count: metrics.video_count,
+                    tiktok_total_views: metrics.total_views,
+                  },
+                }));
+
+              if (newTriggers.length > 0) {
+                const { error: insertErr } = await sb.from("ktrenz_trend_triggers").insert(newTriggers);
+                if (insertErr) {
+                  console.error(`[tiktok] Trigger insert error for ${star.display_name}: ${insertErr.message}`);
+                } else {
+                  totalKeywords += newTriggers.length;
+                  console.log(`[tiktok] ${star.display_name}: ${newTriggers.length} keywords extracted & saved`);
+                }
+              }
+            }
+          }
         }
 
         console.log(`  ${star.display_name}: ${metrics.video_count} videos, ${metrics.total_views} views, score=${tikTokActivityScore}`);
@@ -283,7 +444,15 @@ Deno.serve(async (req) => {
       ? Math.round(results.reduce((s, r) => s + (r.tiktok_score || 0), 0) / results.length)
       : 0;
 
-    console.log(`[tiktok] Done: ${results.length} artists, ${snapshotsToInsert.length} snapshots, totalViews=${totalViews}`);
+    // 로그 기록
+    await sb.from("ktrenz_collection_log").insert({
+      platform: "tiktok",
+      status: "success",
+      records_collected: totalKeywords,
+      error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}`,
+    }).catch(() => {});
+
+    console.log(`[tiktok] Done: ${results.length} artists, ${snapshotsToInsert.length} snapshots, ${totalKeywords} keywords, totalViews=${totalViews}`);
 
     return new Response(
       JSON.stringify({
@@ -291,6 +460,7 @@ Deno.serve(async (req) => {
         dryRun: !!dryRun,
         processed: results.length,
         snapshotsInserted: dryRun ? 0 : snapshotsToInsert.length,
+        keywordsSaved: totalKeywords,
         totalViews,
         avgScore,
         results: results.slice(0, 20),
