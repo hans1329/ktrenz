@@ -408,6 +408,7 @@ Deno.serve(async (req) => {
                       tiktok_search_keyword: searchKeyword,
                       tiktok_video_count: metrics.video_count,
                       tiktok_total_views: metrics.total_views,
+                      embed_video_id: matchingVideo?.id || videos[0]?.id || null,
                     },
                   };
                 });
