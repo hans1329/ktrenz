@@ -1190,6 +1190,7 @@ Deno.serve(async (req) => {
         brandMapped,
         globalStarNameFilter: globalNameResult,
         noisePatternFilter: noiseResult,
+        megaTrends: megaTrendResult,
         activated,
         pendingBefore: pendingBefore ?? 0,
       }),
