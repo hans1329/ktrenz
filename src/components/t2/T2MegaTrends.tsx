@@ -145,7 +145,7 @@ const T2MegaTrends = () => {
               className="flex-shrink-0 w-[200px] rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden"
             >
               {/* Image or gradient header */}
-              <div className="relative h-24 overflow-hidden">
+              <div className="relative h-32 overflow-hidden">
                 {bestImage ? (
                   <img
                     src={bestImage}
