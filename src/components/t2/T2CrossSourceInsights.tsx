@@ -15,14 +15,14 @@ interface CrossInsight {
   category: string;
   naverBuzz: number;
   socialScore: number;
-  gapType: "social_only" | "naver_only" | "cross_confirmed";
+  gapType: "social_only" | "cross_confirmed";
   gapLabel: string;
   gapLabelKo: string;
 }
 
 const GAP_CONFIG: Record<string, { label: string; labelKo: string; tagColor: string; tagBg: string }> = {
   social_only: { label: "Social Early Signal", labelKo: "소셜 선행 시그널", tagColor: "text-cyan-700 dark:text-cyan-300", tagBg: "bg-cyan-100 dark:bg-cyan-500/20" },
-  naver_only: { label: "News Only", labelKo: "뉴스 단독", tagColor: "text-green-700 dark:text-green-300", tagBg: "bg-green-100 dark:bg-green-500/20" },
+  
   cross_confirmed: { label: "Cross Confirmed", labelKo: "교차 확인됨", tagColor: "text-amber-700 dark:text-amber-300", tagBg: "bg-amber-100 dark:bg-amber-500/20" },
 };
 
@@ -81,10 +81,6 @@ const T2CrossSourceInsights = () => {
           const src = SOURCE_LABEL[t.trigger_source] || t.trigger_source;
           gapLabel = `Trending on ${src}, not yet in news`;
           gapLabelKo = `${src}에서 화제, 뉴스는 아직`;
-        } else if (!isSocialSource && naverBuzz > 20 && socialScore < 10) {
-          gapType = "naver_only";
-          gapLabel = "Strong in news, quiet on social";
-          gapLabelKo = "뉴스에서 강세, 소셜은 조용";
         } else if (isSocialSource && naverBuzz > 10 && socialScore > 30) {
           gapType = "cross_confirmed";
           gapLabel = "Confirmed across social + news";
@@ -112,7 +108,7 @@ const T2CrossSourceInsights = () => {
         }
       }
 
-      const priority: Record<string, number> = { social_only: 0, cross_confirmed: 1, naver_only: 2 };
+      const priority: Record<string, number> = { social_only: 0, cross_confirmed: 1 };
       results.sort((a, b) => priority[a.gapType] - priority[b.gapType]);
       return results.slice(0, 10);
     },
