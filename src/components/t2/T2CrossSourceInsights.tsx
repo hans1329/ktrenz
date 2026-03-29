@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { ArrowLeftRight } from "lucide-react";
+
 import SmartImage from "@/components/SmartImage";
 interface CrossInsight {
   id: string;
