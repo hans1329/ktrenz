@@ -146,7 +146,7 @@ const T2CrossSourceInsights = () => {
             <button
               key={item.id}
               onClick={() => handleClick(item)}
-              className="w-full max-w-[28rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
+              className="w-full max-w-[22rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
               <div className="relative h-32 overflow-hidden rounded-t-2xl bg-muted">
                 <SmartImage
