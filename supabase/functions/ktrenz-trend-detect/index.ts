@@ -1535,7 +1535,6 @@ Deno.serve(async (req) => {
           name_ko: star.name_ko,
           group_name: isGroup ? null : (isSolo ? null : (group?.display_name || null)),
           group_name_ko: isGroup ? null : (isSolo ? null : (group?.name_ko || null)),
-          group_wiki_entry_id: isGroup ? null : (isSolo ? null : (group?.wiki_entry_id || null)),
           star_category: star.star_category || "kpop",
         };
 
