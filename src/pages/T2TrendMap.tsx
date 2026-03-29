@@ -361,7 +361,11 @@ const T2TrendMap = () => {
                   onMyKeywordsChange={setMyKeywords}
                 />
               </div>
-            </div>
+
+              {/* New intelligence sections */}
+              <T2MomentumSignals />
+              <T2CrossSourceInsights />
+              <T2TrendBetCTA />
 
             {shouldRenderSwipeOverlay && (
               <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
