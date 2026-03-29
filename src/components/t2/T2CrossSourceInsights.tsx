@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ArrowLeftRight } from "lucide-react";
-
+import SmartImage from "@/components/SmartImage";
 interface CrossInsight {
   id: string;
   keyword: string;
@@ -38,27 +37,6 @@ function getKeyword(item: CrossInsight, lang: string) {
   if (lang === "ko" && item.keywordKo) return item.keywordKo;
   return item.keyword;
 }
-
-const CardImage = ({ src, alt }: { src: string | null; alt: string }) => {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) {
-    return (
-      <div className="w-full h-full bg-muted flex items-center justify-center">
-        <span className="text-2xl font-black text-muted-foreground/40">{alt.charAt(0)}</span>
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className="w-full h-full object-cover"
-      referrerPolicy="no-referrer"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  );
-};
 
 const T2CrossSourceInsights = () => {
   const { language } = useLanguage();
@@ -155,7 +133,7 @@ const T2CrossSourceInsights = () => {
       <div className="flex items-center gap-2 mb-4">
         <ArrowLeftRight className="w-5 h-5 text-primary" />
         <h2 className="text-base font-black text-foreground">
-          {language === "ko" ? "소스 교차 인사이트" : "Cross-Source Insights"}
+          {language === "ko" ? "소스 교차 인사이트 > 어디서 유행 중일까요?" : "Cross-Source Insights > Where is it trending?"}
         </h2>
       </div>
 
@@ -168,11 +146,10 @@ const T2CrossSourceInsights = () => {
             <button
               key={item.id}
               onClick={() => handleClick(item)}
-              className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
+              className="w-full max-w-[28rem] text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md"
             >
-              {/* Large image area */}
-              <div className="relative w-full h-36 overflow-hidden">
-                <CardImage src={item.imageUrl} alt={item.artistName} />
+              <div className="relative h-32 overflow-hidden rounded-t-2xl bg-muted">
+                <SmartImage src={item.imageUrl} alt={item.artistName} className="w-full h-full object-cover" loading="lazy" />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
