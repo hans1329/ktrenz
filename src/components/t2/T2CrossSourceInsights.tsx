@@ -189,22 +189,10 @@ const T2CrossSourceInsights = () => {
               </div>
 
               {/* Insight detail bar */}
-              <div className="px-3 py-2.5 flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground truncate flex-1">
+              <div className="px-3 py-2.5">
+                <p className="text-xs text-muted-foreground truncate">
                   {language === "ko" ? item.gapLabelKo : item.gapLabel}
                 </p>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground shrink-0">
-                  {item.naverBuzz > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      📰 <span className="font-semibold">{item.naverBuzz}</span>
-                    </span>
-                  )}
-                  {item.socialScore > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      📱 <span className="font-semibold">{item.socialScore}</span>
-                    </span>
-                  )}
-                </div>
               </div>
             </button>
           );
