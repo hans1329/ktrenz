@@ -396,9 +396,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── 소셜 소스 키워드의 소셜 점수 조회 헬퍼 ──
+    // ── 소셜/유튜브 소스 키워드의 플랫폼 점수 조회 헬퍼 ──
     async function getSocialScore(starId: string, platform: string): Promise<number> {
       try {
+        if (platform === "youtube_search") {
+          // YouTube: 키워드 검색 결과 수 기반 활성도 (YouTube Data API)
+          const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
+          if (!ytApiKey) return 0;
+          const { data: trigger } = await sb.from("ktrenz_trend_triggers")
+            .select("keyword, artist_name")
+            .eq("star_id", starId)
+            .eq("trigger_source", "youtube_search")
+            .limit(1)
+            .single();
+          if (!trigger) return 0;
+          const q = `${trigger.artist_name} ${trigger.keyword}`;
+          const params = new URLSearchParams({
+            part: "snippet", q, type: "video", order: "date",
+            publishedAfter: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            maxResults: "1", relevanceLanguage: "ko", key: ytApiKey,
+          });
+          const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+          if (!res.ok) return 0;
+          const json = await res.json();
+          const totalResults = json.pageInfo?.totalResults ?? 0;
+          // 0~100 정규화: log scale
+          return Math.min(100, Math.round(Math.log10(totalResults + 1) * 25));
+        }
         const { data } = await sb.from("ktrenz_social_snapshots")
           .select("metrics")
           .eq("star_id", starId)
@@ -492,7 +516,7 @@ Deno.serve(async (req) => {
         const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
 
         // ─── 소셜 소스 키워드: 하이브리드 점수 (소셜 50% + 네이버 50%) ───
-        const isSocialSource = ["tiktok", "instagram"].includes(trigger.trigger_source || "");
+        const isSocialSource = ["tiktok", "instagram", "youtube_search"].includes(trigger.trigger_source || "");
         let buzzScore: number;
         let socialScore = 0;
 
