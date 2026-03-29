@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface PipelineRun {
   startedAt: Date;
-  phase: "collect_social" | "detect" | "detect_global" | "track" | "postprocess";
+  phase: "collect_social" | "detect" | "detect_youtube" | "detect_global" | "track" | "postprocess";
 }
 
 interface RecentKeyword {
@@ -284,7 +284,9 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const elapsedSec = elapsed % 60;
 
   const phaseLabel = {
+    collect_social: "소셜 수집",
     detect: "국내 감지",
+    detect_youtube: "YouTube 감지",
     detect_global: "글로벌 감지",
     track: "트렌드 추적",
     postprocess: "후처리 분석",

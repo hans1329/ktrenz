@@ -11,13 +11,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["collect_social", "detect", "track"] as const;
+const PHASE_ORDER = ["collect_social", "detect", "detect_youtube", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   collect_social: "ktrenz-collect-social",
   detect: "ktrenz-trend-detect",
+  detect_youtube: "ktrenz-trend-detect-youtube",
   track: "ktrenz-trend-track",
 };
-const DETECT_PHASES = new Set(["detect"]);
+const DETECT_PHASES = new Set(["detect", "detect_youtube"]);
 const SINGLE_CALL_PHASES = new Set(["collect_social"]); // 배치 없이 단일 호출 후 완료
 
 Deno.serve(async (req) => {
@@ -419,24 +420,30 @@ async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Pro
 
 // ── 파이프라인 완료 후 실행할 작업들 ──
 async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || supabaseKey;
   const headers = {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${anonKey}`,
+    "Authorization": `Bearer ${supabaseKey}`,
   };
 
-  // 1. Settle expired prediction markets
-  try {
-    const resp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-settle`, {
-      method: "POST", headers, body: JSON.stringify({}),
-    });
-    const result = await resp.json();
-    console.log(`[cron] Auto-settle result:`, result);
-  } catch (e) {
-    console.error(`[cron] Auto-settle failed:`, e);
-  }
+  const jobs = [
+    { name: "settle", fn: "ktrenz-trend-settle" },
+    { name: "schedule-predict", fn: "ktrenz-schedule-predict" },
+    { name: "data-auditor", fn: "ktrenz-data-auditor" },
+  ];
 
-  // 2. Blip schedule crawl removed — replaced by AI schedule prediction (ktrenz-schedule-predict)
+  for (const job of jobs) {
+    try {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/${job.fn}`, {
+        method: "POST", headers, body: JSON.stringify({}),
+      });
+      const text = await resp.text();
+      let result: any;
+      try { result = JSON.parse(text); } catch { result = { raw: text.slice(0, 200) }; }
+      console.log(`[cron] End-of-pipeline ${job.name}:`, result);
+    } catch (e) {
+      console.error(`[cron] End-of-pipeline ${job.name} failed:`, e);
+    }
+  }
 }
 
 function getNextPhase(currentPhase: string): string | null {
