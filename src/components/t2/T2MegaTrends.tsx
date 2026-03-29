@@ -10,6 +10,7 @@ interface MegaTrendCluster {
   category: string;
   artistCount: number;
   artists: string[];
+  artistNameKoMap: Record<string, string>;
   keywords: { keyword: string; keywordKo: string; artistName: string; influenceIndex: number; imageUrl: string | null }[];
   totalInfluence: number;
 }
@@ -19,7 +20,36 @@ const T2MegaTrends = () => {
 
   const { data: clusters = [] } = useQuery<MegaTrendCluster[]>({
     queryKey: ["mega-trends"],
-    queryFn: async () => {
+    queryFn: async (): Promise<MegaTrendCluster[]> => {
+      // Fetch Korean name map
+      const { data: stars } = await supabase
+        .from("ktrenz_stars")
+        .select("display_name, name_ko");
+      const koMap: Record<string, string> = {};
+      for (const s of (stars || []) as any[]) {
+        if (s.name_ko) koMap[s.display_name] = s.name_ko;
+      }
+
+      const buildCluster = (cluster: string, category: string, entries: any[]): MegaTrendCluster => {
+        const uniqueStars = new Set(entries.map((e: any) => e.star_id));
+        const artists = [...new Set(entries.map((e: any) => e.artist_name))];
+        return {
+          cluster,
+          category,
+          artistCount: uniqueStars.size,
+          artists,
+          artistNameKoMap: koMap,
+          keywords: entries.map((e: any) => ({
+            keyword: e.keyword,
+            keywordKo: e.keyword_ko || e.keyword,
+            artistName: e.artist_name,
+            influenceIndex: Number(e.influence_index) || 0,
+            imageUrl: e.source_image_url,
+          })),
+          totalInfluence: entries.reduce((s: number, e: any) => s + (Number(e.influence_index) || 0), 0),
+        };
+      };
+
       // 1) exact match: 동일 키워드가 2+ 아티스트
       const { data: exactMatches } = await supabase
         .from("ktrenz_trend_triggers")
@@ -28,7 +58,6 @@ const T2MegaTrends = () => {
         .eq("is_mega_trend", true);
 
       if (!exactMatches?.length) {
-        // Fallback: DB에 태깅 안 됐으면 런타임 감지 (exact match)
         const { data: all } = await supabase
           .from("ktrenz_trend_triggers")
           .select("keyword, keyword_ko, keyword_category, artist_name, star_id, influence_index, source_image_url")
@@ -36,38 +65,25 @@ const T2MegaTrends = () => {
 
         if (!all?.length) return [];
 
-        const byKeyword = new Map<string, typeof all>();
+        const byKeyword = new Map<string, any[]>();
         for (const row of all) {
-          const key = row.keyword.toLowerCase();
+          const key = (row as any).keyword.toLowerCase();
           const list = byKeyword.get(key) || [];
           list.push(row);
           byKeyword.set(key, list);
         }
 
-        const exactClusters: MegaTrendCluster[] = [];
+        const results: MegaTrendCluster[] = [];
         for (const [kw, entries] of byKeyword) {
-          const uniqueStars = new Set(entries.map(e => e.star_id));
+          const uniqueStars = new Set(entries.map((e: any) => e.star_id));
           if (uniqueStars.size < 2) continue;
-          exactClusters.push({
-            cluster: kw,
-            category: entries[0].keyword_category,
-            artistCount: uniqueStars.size,
-            artists: [...new Set(entries.map(e => e.artist_name))],
-            keywords: entries.map(e => ({
-              keyword: e.keyword,
-              keywordKo: e.keyword_ko || e.keyword,
-              artistName: e.artist_name,
-              influenceIndex: Number(e.influence_index) || 0,
-              imageUrl: e.source_image_url,
-            })),
-            totalInfluence: entries.reduce((s, e) => s + (Number(e.influence_index) || 0), 0),
-          });
+          results.push(buildCluster(kw, entries[0].keyword_category, entries));
         }
 
-        // 2) 카테고리 트렌드: 같은 카테고리에 5+ 아티스트가 활성
-        const byCategory = new Map<string, typeof all>();
+        // 2) 카테고리 트렌드
+        const byCategory = new Map<string, any[]>();
         for (const row of all) {
-          const cat = row.keyword_category;
+          const cat = (row as any).keyword_category;
           if (!cat || cat === "social" || cat === "music" || cat === "event") continue;
           const list = byCategory.get(cat) || [];
           list.push(row);
@@ -75,55 +91,26 @@ const T2MegaTrends = () => {
         }
 
         for (const [cat, entries] of byCategory) {
-          const uniqueStars = new Set(entries.map(e => e.star_id));
+          const uniqueStars = new Set(entries.map((e: any) => e.star_id));
           if (uniqueStars.size < 5) continue;
-          const topEntries = entries.sort((a, b) => (Number(b.influence_index) || 0) - (Number(a.influence_index) || 0)).slice(0, 6);
-          exactClusters.push({
-            cluster: `${cat}_category_trend`,
-            category: cat,
-            artistCount: uniqueStars.size,
-            artists: [...new Set(topEntries.map(e => e.artist_name))],
-            keywords: topEntries.map(e => ({
-              keyword: e.keyword,
-              keywordKo: e.keyword_ko || e.keyword,
-              artistName: e.artist_name,
-              influenceIndex: Number(e.influence_index) || 0,
-              imageUrl: e.source_image_url,
-            })),
-            totalInfluence: entries.reduce((s, e) => s + (Number(e.influence_index) || 0), 0),
-          });
+          const topEntries = entries.sort((a: any, b: any) => (Number(b.influence_index) || 0) - (Number(a.influence_index) || 0)).slice(0, 6);
+          results.push(buildCluster(`${cat}_category_trend`, cat, topEntries));
         }
 
-        return exactClusters.sort((a, b) => b.totalInfluence - a.totalInfluence);
+        return results.sort((a, b) => b.totalInfluence - a.totalInfluence);
       }
 
       // DB tagged mega trends
-      const byCluster = new Map<string, typeof exactMatches>();
+      const byCluster = new Map<string, any[]>();
       for (const row of exactMatches) {
-        const key = row.keyword.toLowerCase();
+        const key = (row as any).keyword.toLowerCase();
         const list = byCluster.get(key) || [];
         list.push(row);
         byCluster.set(key, list);
       }
 
       return [...byCluster.entries()]
-        .map(([kw, entries]) => {
-          const uniqueStars = new Set(entries.map(e => e.star_id));
-          return {
-            cluster: kw,
-            category: entries[0].keyword_category,
-            artistCount: uniqueStars.size,
-            artists: [...new Set(entries.map(e => e.artist_name))],
-            keywords: entries.map(e => ({
-              keyword: e.keyword,
-              keywordKo: e.keyword_ko || e.keyword,
-              artistName: e.artist_name,
-              influenceIndex: Number(e.influence_index) || 0,
-              imageUrl: e.source_image_url,
-            })),
-            totalInfluence: entries.reduce((s, e) => s + (Number(e.influence_index) || 0), 0),
-          };
-        })
+        .map(([kw, entries]) => buildCluster(kw, entries[0].keyword_category, entries))
         .sort((a, b) => b.totalInfluence - a.totalInfluence);
     },
     refetchInterval: 5 * 60 * 1000,
@@ -176,11 +163,6 @@ const T2MegaTrends = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-                {/* Badge */}
-                <div className="absolute top-2 left-2 flex items-center gap-1 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  🔥
-                  {isCategoryTrend ? "Category Wave" : "Mega"}
-                </div>
 
                 {/* Artist count */}
                 <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full">
@@ -212,7 +194,7 @@ const T2MegaTrends = () => {
                 <div className="mt-2 flex flex-wrap gap-1">
                   {cluster.artists.slice(0, 4).map((name) => (
                     <span key={name} className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">
-                      {name}
+                      {cluster.artistNameKoMap[name] || name}
                     </span>
                   ))}
                   {cluster.artists.length > 4 && (
