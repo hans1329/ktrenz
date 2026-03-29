@@ -286,6 +286,30 @@ Deno.serve(async (req) => {
     const sb = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json().catch(() => ({}));
+
+    // ── 리셋 모드: _not_found 캐싱 일괄 초기화 ──
+    if (body.action === "reset_not_found") {
+      const { data: notFoundStars } = await sb
+        .from("ktrenz_stars")
+        .select("id, display_name, social_handles")
+        .eq("is_active", true)
+        .like("social_handles->>instagram", "_not_found");
+
+      let resetCount = 0;
+      for (const star of (notFoundStars || [])) {
+        const handles = { ...(star.social_handles as Record<string, any>) };
+        delete handles.instagram;
+        delete handles.instagram_checked_at;
+        await sb.from("ktrenz_stars").update({ social_handles: handles }).eq("id", star.id);
+        resetCount++;
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, action: "reset_not_found", reset_count: resetCount }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const batchSize = body.batch_size || 20;
     const offset = body.offset || 0;
     const targetStarId = body.star_id || null; // 특정 스타만 처리
