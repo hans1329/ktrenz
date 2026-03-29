@@ -250,6 +250,7 @@ const T2MyArtists = () => {
           triggerSource: t.trigger_source || null,
           prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
           brandId: t.brand_id || null,
+          metadata: t.metadata || null,
         };
       });
     },
