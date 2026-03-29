@@ -158,8 +158,18 @@ const AdminDashboard = () => {
   const totalActive = activeKeywords?.filter(k => k.status === 'active').length ?? 0;
   const totalPending = activeKeywords?.filter(k => k.status === 'pending').length ?? 0;
 
+  // 네이버 키워드의 경우 metadata에서 뉴스/블로그 비중을 파악하여 표시 소스 결정
+  const getDisplaySource = (kw: any): string => {
+    if (kw.trigger_source !== 'naver_news') return kw.trigger_source || 'unknown';
+    const meta = kw.metadata as any;
+    const newsTotal = meta?.buzz_news_total ?? 0;
+    const blogTotal = meta?.buzz_blog_total ?? 0;
+    if (newsTotal === 0 && blogTotal === 0) return 'naver_news';
+    return newsTotal >= blogTotal ? 'naver_news' : 'naver_blog';
+  };
+
   const sourceCounts = (activeKeywords || []).reduce((acc: Record<string, number>, k: any) => {
-    const src = k.trigger_source || 'unknown';
+    const src = getDisplaySource(k);
     acc[src] = (acc[src] || 0) + 1;
     return acc;
   }, {});
