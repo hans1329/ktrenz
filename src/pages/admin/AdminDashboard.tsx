@@ -9,7 +9,8 @@ import { Users, MessageSquare, Database, Search, TrendingUp, TrendingDown, Minus
 import { cn } from '@/lib/utils';
 
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  naver_news: { label: '네이버', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
+  naver_news: { label: '네이버뉴스', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
+  naver_blog: { label: '블로그/카페', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
   instagram: { label: '인스타', color: 'bg-pink-500/15 text-pink-400 border-pink-500/30' },
   tiktok: { label: '틱톡', color: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' },
   youtube: { label: '유튜브', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
@@ -126,7 +127,7 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ktrenz_trend_triggers' as any)
-        .select('id, keyword, keyword_ko, keyword_category, artist_name, trigger_source, influence_index, baseline_score, peak_score, detected_at, status, source_url, source_image_url, prev_api_total, commercial_intent')
+        .select('id, keyword, keyword_ko, keyword_category, artist_name, trigger_source, influence_index, baseline_score, peak_score, detected_at, status, source_url, source_image_url, prev_api_total, commercial_intent, metadata')
         .in('status', ['active', 'pending'])
         .order('detected_at', { ascending: false })
         .limit(500);
@@ -157,14 +158,24 @@ const AdminDashboard = () => {
   const totalActive = activeKeywords?.filter(k => k.status === 'active').length ?? 0;
   const totalPending = activeKeywords?.filter(k => k.status === 'pending').length ?? 0;
 
+  // 네이버 키워드의 경우 metadata에서 뉴스/블로그 비중을 파악하여 표시 소스 결정
+  const getDisplaySource = (kw: any): string => {
+    if (kw.trigger_source !== 'naver_news') return kw.trigger_source || 'unknown';
+    const meta = kw.metadata as any;
+    const newsTotal = meta?.buzz_news_total ?? 0;
+    const blogTotal = meta?.buzz_blog_total ?? 0;
+    if (newsTotal === 0 && blogTotal === 0) return 'naver_news';
+    return newsTotal >= blogTotal ? 'naver_news' : 'naver_blog';
+  };
+
   const sourceCounts = (activeKeywords || []).reduce((acc: Record<string, number>, k: any) => {
-    const src = k.trigger_source || 'unknown';
+    const src = getDisplaySource(k);
     acc[src] = (acc[src] || 0) + 1;
     return acc;
   }, {});
 
   const filtered = (activeKeywords || []).filter((k: any) => {
-    if (sourceFilter && k.trigger_source !== sourceFilter) return false;
+    if (sourceFilter && getDisplaySource(k) !== sourceFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       return k.keyword.toLowerCase().includes(q) ||
@@ -411,9 +422,14 @@ const AdminDashboard = () => {
                   const tracking = recentTracking?.get(kw.id);
                   const deltaPct = tracking?.delta_pct ?? 0;
                   const influence = Number(kw.influence_index) || 0;
-                  const srcInfo = SOURCE_LABELS[kw.trigger_source] || { label: kw.trigger_source || '?', color: 'bg-muted text-muted-foreground border-border' };
+                  const displaySrc = getDisplaySource(kw);
+                  const srcInfo = SOURCE_LABELS[displaySrc] || { label: displaySrc, color: 'bg-muted text-muted-foreground border-border' };
                   const catLabel = CATEGORY_LABELS[kw.keyword_category] || kw.keyword_category || '-';
                   const isPending = kw.status === 'pending';
+                  const meta = kw.metadata as any;
+                  const newsTotal = meta?.buzz_news_total ?? 0;
+                  const blogTotal = meta?.buzz_blog_total ?? 0;
+                  const showBuzzSplit = kw.trigger_source === 'naver_news' && (newsTotal > 0 || blogTotal > 0);
 
                   return (
                     <tr
@@ -436,9 +452,16 @@ const AdminDashboard = () => {
                         <span className="text-xs">{kw.artist_name}</span>
                       </td>
                       <td className="py-2.5 px-2 text-center">
-                        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", srcInfo.color)}>
-                          {srcInfo.label}
-                        </Badge>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", srcInfo.color)}>
+                            {srcInfo.label}
+                          </Badge>
+                          {showBuzzSplit && (
+                            <span className="text-[9px] text-muted-foreground">
+                              뉴스{newsTotal} / 블로그{blogTotal}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2.5 px-2 text-center hidden sm:table-cell">
                         <span className="text-xs text-muted-foreground">{catLabel}</span>
