@@ -1442,13 +1442,12 @@ Deno.serve(async (req) => {
           if (starData.group_star_id) {
             const { data: groupData } = await sb
               .from("ktrenz_stars")
-              .select("display_name, name_ko, wiki_entry_id")
+              .select("display_name, name_ko")
               .eq("id", starData.group_star_id)
               .single();
             if (groupData) {
               singleGroupName = groupData.display_name;
               singleGroupNameKo = groupData.name_ko;
-              singleGroupWikiEntryId = groupData.wiki_entry_id;
             }
           }
         }
