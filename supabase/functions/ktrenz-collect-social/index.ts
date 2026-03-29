@@ -107,9 +107,10 @@ Deno.serve(async (req) => {
         success: ttResult.success || false,
         processed: ttResult.processed || 0,
         snapshots: ttResult.snapshotsInserted || 0,
+        keywords: ttResult.keywordsSaved || 0,
         totalViews: ttResult.totalViews || 0,
       };
-      console.log(`[collect-social] TikTok: processed=${ttResult.processed}, snapshots=${ttResult.snapshotsInserted}`);
+      console.log(`[collect-social] TikTok: processed=${ttResult.processed}, snapshots=${ttResult.snapshotsInserted}, keywords=${ttResult.keywordsSaved || 0}`);
     } catch (e) {
       const msg = (e as Error).message;
       console.error(`[collect-social] TikTok error: ${msg}`);
