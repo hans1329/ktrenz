@@ -137,8 +137,25 @@ const T2CrossSourceInsights = () => {
         </h2>
       </div>
 
-      <div className="space-y-3">
-        {insights.map((item) => {
+      {/* Naver-only group */}
+      {insights.filter(i => i.gapType === "naver_only").length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs font-bold text-muted-foreground mb-2">
+            {language === "ko" ? "📰 뉴스에서 강세, 소셜은 조용" : "📰 Strong in news, quiet on social"}
+          </p>
+          <div className="space-y-2">
+            {insights.filter(i => i.gapType === "naver_only").map((item) => {
+              const config = GAP_CONFIG[item.gapType];
+              const sourceName = SOURCE_LABEL[item.triggerSource] || item.triggerSource;
+              return <InsightCard key={item.id} item={item} config={config} sourceName={sourceName} language={language} onClick={handleClick} />;
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Social / Cross-confirmed group */}
+      <div className="space-y-2">
+        {insights.filter(i => i.gapType !== "naver_only").map((item) => {
           const config = GAP_CONFIG[item.gapType];
           const sourceName = SOURCE_LABEL[item.triggerSource] || item.triggerSource;
 
