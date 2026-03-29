@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Flame, Users, TrendingUp } from "lucide-react";
+import { Users, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORY_CONFIG, sanitizeImageUrl, isBlockedImageDomain } from "@/components/t2/T2TrendTreemap";
 
@@ -134,19 +134,9 @@ const T2MegaTrends = () => {
 
   return (
     <section className="px-4 py-5">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/15">
-          <Flame className="w-4 h-4 text-orange-500" />
-        </div>
-        <div>
-          <h3 className="text-sm font-bold text-foreground">
-            {language === "ko" ? "메가 트렌드" : "Mega Trends"}
-          </h3>
-          <p className="text-[10px] text-muted-foreground">
-            {language === "ko" ? "여러 아티스트에서 동시에 감지된 트렌드" : "Trends detected across multiple artists"}
-          </p>
-        </div>
-      </div>
+      <h2 className="text-xl font-black text-foreground mb-3">
+        {language === "ko" ? "🔥 메가 트렌드" : "🔥 Mega Trends"}
+      </h2>
 
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
         {clusters.map((cluster) => {
@@ -188,7 +178,7 @@ const T2MegaTrends = () => {
 
                 {/* Badge */}
                 <div className="absolute top-2 left-2 flex items-center gap-1 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  <Flame className="w-3 h-3" />
+                  🔥
                   {isCategoryTrend ? "Category Wave" : "Mega"}
                 </div>
 
