@@ -81,6 +81,10 @@ const T2CrossSourceInsights = () => {
           const src = SOURCE_LABEL[t.trigger_source] || t.trigger_source;
           gapLabel = `Trending on ${src}, not yet in news`;
           gapLabelKo = `${src}에서 화제, 뉴스는 아직`;
+        } else if (!isSocialSource && naverBuzz > 20 && socialScore < 10) {
+          gapType = "naver_only";
+          gapLabel = "Strong in news, quiet on social";
+          gapLabelKo = "뉴스에서 강세, 소셜은 조용";
         } else if (isSocialSource && naverBuzz > 10 && socialScore > 30) {
           gapType = "cross_confirmed";
           gapLabel = "Confirmed across social + news";
