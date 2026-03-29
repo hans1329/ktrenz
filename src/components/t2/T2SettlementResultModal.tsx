@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Trophy, TrendingUp, TrendingDown, Minus, Flame, X } from "lucide-react";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Trophy, TrendingUp, TrendingDown, Minus, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SettledBet {
@@ -39,7 +39,6 @@ const T2SettlementResultModal = () => {
     queryFn: async () => {
       const lastSeen = localStorage.getItem(STORAGE_KEY) || "2000-01-01T00:00:00Z";
 
-      // Get user's bets that have been settled (payout is not null) since last seen
       const { data: bets } = await supabase
         .from("ktrenz_trend_bets" as any)
         .select("id, outcome, amount, payout, market_id, created_at")
@@ -59,7 +58,6 @@ const T2SettlementResultModal = () => {
 
       if (!markets?.length) return [];
 
-      // Filter only markets settled after lastSeen
       const newMarkets = (markets as any[]).filter(
         (m) => m.settled_at && new Date(m.settled_at) > new Date(lastSeen)
       );
@@ -101,7 +99,6 @@ const T2SettlementResultModal = () => {
     },
   });
 
-  // Auto-open when results are available
   useEffect(() => {
     if (results && results.length > 0) {
       setOpen(true);
@@ -110,7 +107,6 @@ const T2SettlementResultModal = () => {
 
   const handleClose = () => {
     setOpen(false);
-    // Mark as seen
     localStorage.setItem(STORAGE_KEY, new Date().toISOString());
   };
 
@@ -122,60 +118,57 @@ const T2SettlementResultModal = () => {
   const wins = results.filter((r) => r.payout > 0).length;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className="max-w-[92vw] sm:max-w-md rounded-2xl p-0 gap-0 border-border bg-card overflow-hidden">
-        <DialogHeader className="p-0">
-          {/* Hero banner */}
+    <Drawer open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
+      <DrawerContent className="max-h-[85dvh] bg-background rounded-t-2xl">
+        <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-muted mt-2 mb-1" />
+
+        {/* Hero */}
+        <div className={cn(
+          "px-6 pt-4 pb-5 text-center",
+          netProfit > 0
+            ? "bg-gradient-to-b from-green-500/15 to-transparent"
+            : netProfit < 0
+              ? "bg-gradient-to-b from-red-500/10 to-transparent"
+              : "bg-gradient-to-b from-muted/20 to-transparent"
+        )}>
           <div className={cn(
-            "relative px-6 pt-8 pb-6 text-center",
-            netProfit > 0
-              ? "bg-gradient-to-b from-green-500/20 to-transparent"
-              : netProfit < 0
-                ? "bg-gradient-to-b from-red-500/15 to-transparent"
-                : "bg-gradient-to-b from-muted/30 to-transparent"
+            "w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3",
+            netProfit > 0 ? "bg-green-500/15" : netProfit < 0 ? "bg-red-500/10" : "bg-muted/30"
           )}>
-            <div className="flex items-center justify-center mb-3">
-              <div className={cn(
-                "w-14 h-14 rounded-full flex items-center justify-center",
-                netProfit > 0 ? "bg-green-500/20" : netProfit < 0 ? "bg-red-500/15" : "bg-muted/30"
-              )}>
-                <Trophy className={cn(
-                  "w-7 h-7",
-                  netProfit > 0 ? "text-green-400" : netProfit < 0 ? "text-red-400" : "text-muted-foreground"
-                )} />
-              </div>
-            </div>
-            <DialogTitle className="text-lg font-black text-foreground">
-              {language === "ko" ? "예측 결과 발표!" : "Prediction Results!"}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground mt-1">
-              {language === "ko"
-                ? `${results.length}건의 예측이 정산되었습니다`
-                : `${results.length} prediction${results.length > 1 ? "s" : ""} settled`}
-            </DialogDescription>
-
-            {/* Net result */}
-            <div className={cn(
-              "mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-lg font-black",
-              netProfit > 0
-                ? "bg-green-500/15 text-green-400"
-                : netProfit < 0
-                  ? "bg-red-500/15 text-red-400"
-                  : "bg-muted/30 text-muted-foreground"
-            )}>
-              {netProfit > 0 ? "+" : ""}{netProfit} K-Point
-            </div>
-
-            <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-              <span>{language === "ko" ? "적중" : "Wins"}: <strong className="text-foreground">{wins}/{results.length}</strong></span>
-              <span>{language === "ko" ? "투자" : "Spent"}: <strong className="text-foreground">{totalSpent}</strong></span>
-              <span>{language === "ko" ? "수익" : "Earned"}: <strong className="text-foreground">{totalPayout}</strong></span>
-            </div>
+            <Trophy className={cn(
+              "w-7 h-7",
+              netProfit > 0 ? "text-green-400" : netProfit < 0 ? "text-red-400" : "text-muted-foreground"
+            )} />
           </div>
-        </DialogHeader>
+          <h2 className="text-lg font-black text-foreground">
+            {language === "ko" ? "예측 결과 발표!" : "Prediction Results!"}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {language === "ko"
+              ? `${results.length}건의 예측이 정산되었습니다`
+              : `${results.length} prediction${results.length > 1 ? "s" : ""} settled`}
+          </p>
 
-        {/* Individual results */}
-        <div className="px-4 pb-4 max-h-[40vh] overflow-y-auto space-y-2">
+          <div className={cn(
+            "mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-lg font-black",
+            netProfit > 0
+              ? "bg-green-500/15 text-green-400"
+              : netProfit < 0
+                ? "bg-red-500/15 text-red-400"
+                : "bg-muted/30 text-muted-foreground"
+          )}>
+            {netProfit > 0 ? "+" : ""}{netProfit} K-Point
+          </div>
+
+          <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+            <span>{language === "ko" ? "적중" : "Wins"}: <strong className="text-foreground">{wins}/{results.length}</strong></span>
+            <span>{language === "ko" ? "투자" : "Spent"}: <strong className="text-foreground">{totalSpent}</strong></span>
+            <span>{language === "ko" ? "수익" : "Earned"}: <strong className="text-foreground">{totalPayout}</strong></span>
+          </div>
+        </div>
+
+        {/* Results list */}
+        <div className="px-4 pb-4 overflow-y-auto flex-1 space-y-2">
           {results.map((r) => {
             const won = r.payout > 0;
             const meta = OUTCOME_META[r.outcome] || OUTCOME_META.mild;
@@ -226,7 +219,7 @@ const T2SettlementResultModal = () => {
         </div>
 
         {/* Close CTA */}
-        <div className="px-4 pb-5">
+        <div className="px-4 pb-6 pt-2">
           <button
             onClick={handleClose}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.97]"
@@ -234,8 +227,8 @@ const T2SettlementResultModal = () => {
             {language === "ko" ? "확인" : "Got it"}
           </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
