@@ -100,10 +100,10 @@ const T2MegaTrends = () => {
         return results.sort((a, b) => b.totalInfluence - a.totalInfluence);
       }
 
-      // DB tagged mega trends
+      // DB tagged mega trends - group by mega_trend_cluster
       const byCluster = new Map<string, any[]>();
       for (const row of exactMatches) {
-        const key = (row as any).keyword.toLowerCase();
+        const key = (row as any).mega_trend_cluster || (row as any).keyword.toLowerCase();
         const list = byCluster.get(key) || [];
         list.push(row);
         byCluster.set(key, list);
