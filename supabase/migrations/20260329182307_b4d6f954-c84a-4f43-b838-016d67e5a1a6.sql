@@ -1,0 +1,1 @@
+UPDATE ktrenz_pipeline_state SET status = 'done' WHERE phase = 'fill_ig_handles' AND status = 'running';
