@@ -128,6 +128,51 @@ const T2CrossSourceInsights = () => {
     });
   };
 
+  const renderCard = (item: CrossInsight) => {
+    const config = GAP_CONFIG[item.gapType];
+    const sourceName = SOURCE_LABEL[item.triggerSource] || item.triggerSource;
+    return (
+      <button
+        key={item.id}
+        onClick={() => handleClick(item)}
+        className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md flex"
+      >
+        <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-2xl overflow-hidden">
+          <SmartImage
+            src={item.imageUrl}
+            alt={item.artistName}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            decoding="async"
+            fallback={
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <span className="text-xl font-black text-muted-foreground/40">{item.artistName.charAt(0)}</span>
+              </div>
+            }
+          />
+        </div>
+        <div className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md", config.tagBg, config.tagColor)}>
+              {language === "ko" ? config.labelKo : config.label}
+            </span>
+            <span className="text-[10px] font-medium text-muted-foreground">{sourceName}</span>
+          </div>
+          <h3 className="text-sm font-bold text-foreground leading-snug truncate">
+            {getKeyword(item, language)}
+          </h3>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {item.artistName} · {language === "ko" ? item.gapLabelKo : item.gapLabel}
+          </p>
+        </div>
+      </button>
+    );
+  };
+
+  const naverItems = insights.filter(i => i.gapType === "naver_only");
+  const otherItems = insights.filter(i => i.gapType !== "naver_only");
+
   return (
     <section className="px-4 py-6">
       <div className="flex items-center gap-2 mb-4">
@@ -137,67 +182,25 @@ const T2CrossSourceInsights = () => {
         </h2>
       </div>
 
-      {/* Naver-only group */}
-      {insights.filter(i => i.gapType === "naver_only").length > 0 && (
+      {naverItems.length > 0 && (
         <div className="mb-4">
           <p className="text-xs font-bold text-muted-foreground mb-2">
             {language === "ko" ? "📰 뉴스에서 강세, 소셜은 조용" : "📰 Strong in news, quiet on social"}
           </p>
           <div className="space-y-2">
-            {insights.filter(i => i.gapType === "naver_only").map((item) => {
-              const config = GAP_CONFIG[item.gapType];
-              const sourceName = SOURCE_LABEL[item.triggerSource] || item.triggerSource;
-              return <InsightCard key={item.id} item={item} config={config} sourceName={sourceName} language={language} onClick={handleClick} />;
-            })}
+            {naverItems.map(renderCard)}
           </div>
         </div>
       )}
 
-      {/* Social / Cross-confirmed group */}
       <div className="space-y-2">
-        {insights.filter(i => i.gapType !== "naver_only").map((item) => {
-          const config = GAP_CONFIG[item.gapType];
-          const sourceName = SOURCE_LABEL[item.triggerSource] || item.triggerSource;
+        {otherItems.map(renderCard)}
+      </div>
+    </section>
+  );
+};
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleClick(item)}
-              className="w-full text-left rounded-2xl bg-card border border-border overflow-hidden transition-all active:scale-[0.98] hover:shadow-md flex"
-            >
-              {/* Square image on the left */}
-              <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-2xl overflow-hidden">
-                <SmartImage
-                  src={item.imageUrl}
-                  alt={item.artistName}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  decoding="async"
-                  fallback={
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <span className="text-xl font-black text-muted-foreground/40">{item.artistName.charAt(0)}</span>
-                    </div>
-                  }
-                />
-              </div>
-
-              {/* Right content */}
-              <div className="flex-1 min-w-0 px-3 py-2 flex flex-col justify-center gap-1">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md", config.tagBg, config.tagColor)}>
-                    {language === "ko" ? config.labelKo : config.label}
-                  </span>
-                  <span className="text-[10px] font-medium text-muted-foreground">{sourceName}</span>
-                </div>
-                <h3 className="text-sm font-bold text-foreground leading-snug truncate">
-                  {getKeyword(item, language)}
-                </h3>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {item.artistName} · {language === "ko" ? item.gapLabelKo : item.gapLabel}
-                </p>
-              </div>
-            </button>
+export default T2CrossSourceInsights;
           );
         })}
       </div>
