@@ -111,10 +111,7 @@ const T2MegaTrends = () => {
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
         {clusters.map((cluster) => {
           const config = CATEGORY_CONFIG[cluster.category as keyof typeof CATEGORY_CONFIG];
-          const isCategoryTrend = cluster.cluster.endsWith("_category_trend");
-          const displayName = isCategoryTrend
-            ? (config?.label || cluster.category)
-            : (language === "ko" ? cluster.keywords[0]?.keywordKo : cluster.keywords[0]?.keyword) || cluster.cluster;
+          const displayName = (language === "ko" ? cluster.keywords[0]?.keywordKo : cluster.keywords[0]?.keyword) || cluster.cluster;
 
           // Get best image from cluster
           const bestImage = cluster.keywords
