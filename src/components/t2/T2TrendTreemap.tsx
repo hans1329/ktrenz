@@ -504,8 +504,10 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     staleTime: 20000,
   });
 
-  const followedKey = (followedTriggerIds ?? []).slice().sort().join(",");
-  const predictedKey = (predictedTriggerIds ?? []).slice().sort().join(",");
+  const safeFollowedIds = Array.isArray(followedTriggerIds) ? followedTriggerIds : [];
+  const safePredictedIds = Array.isArray(predictedTriggerIds) ? predictedTriggerIds : [];
+  const followedKey = safeFollowedIds.slice().sort().join(",");
+  const predictedKey = safePredictedIds.slice().sort().join(",");
 
   const { data: triggers, isLoading } = useQuery({
     queryKey: ["t2-trend-triggers", followedKey, predictedKey],
