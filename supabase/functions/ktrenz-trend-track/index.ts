@@ -534,22 +534,22 @@ Deno.serve(async (req) => {
           .limit(1);
 
         const prevRaw: SourceRaw = prevTracking?.[0] ? {
-          naver_news_total: prevTracking[0].naver_news_total || 0,
-          naver_blog_total: prevTracking[0].naver_blog_total || 0,
-          naver_news_24h: prevTracking[0].naver_news_24h || 0,
-          naver_blog_24h: prevTracking[0].naver_blog_24h || 0,
-          datalab_ratio: prevTracking[0].datalab_ratio || 0,
+          naver_news_total: prevTracking[0].naver_news_total ?? null,
+          naver_blog_total: prevTracking[0].naver_blog_total ?? null,
+          naver_news_24h: prevTracking[0].naver_news_24h ?? null,
+          naver_blog_24h: prevTracking[0].naver_blog_24h ?? null,
+          datalab_ratio: prevTracking[0].datalab_ratio ?? null,
           datalab_trend_7d: [],
-          youtube_video_count: prevTracking[0].youtube_video_count || 0,
-          youtube_total_views: prevTracking[0].youtube_total_views || 0,
-          youtube_total_comments: prevTracking[0].youtube_total_comments || 0,
-          tiktok_video_count: prevTracking[0].tiktok_video_count || 0,
-          tiktok_total_views: prevTracking[0].tiktok_total_views || 0,
-          tiktok_total_likes: prevTracking[0].tiktok_total_likes || 0,
-          tiktok_total_comments: prevTracking[0].tiktok_total_comments || 0,
-          insta_post_count: prevTracking[0].insta_post_count || 0,
-          insta_total_likes: prevTracking[0].insta_total_likes || 0,
-          insta_total_comments: prevTracking[0].insta_total_comments || 0,
+          youtube_video_count: prevTracking[0].youtube_video_count ?? null,
+          youtube_total_views: prevTracking[0].youtube_total_views ?? null,
+          youtube_total_comments: prevTracking[0].youtube_total_comments ?? null,
+          tiktok_video_count: prevTracking[0].tiktok_video_count ?? null,
+          tiktok_total_views: prevTracking[0].tiktok_total_views ?? null,
+          tiktok_total_likes: prevTracking[0].tiktok_total_likes ?? null,
+          tiktok_total_comments: prevTracking[0].tiktok_total_comments ?? null,
+          insta_post_count: prevTracking[0].insta_post_count ?? null,
+          insta_total_likes: prevTracking[0].insta_total_likes ?? null,
+          insta_total_comments: prevTracking[0].insta_total_comments ?? null,
         } : emptyRaw();
 
         // ─── 5소스 병렬 수집 (미수집 소스는 null 반환) ───
