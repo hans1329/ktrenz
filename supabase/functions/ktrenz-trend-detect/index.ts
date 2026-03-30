@@ -1,5 +1,6 @@
-// T2 Trend Detect: 스타 대상 실시간 네이버 뉴스 검색 → AI 상업 키워드 추출
-// ktrenz_stars의 group/solo/member 타입 아티스트를 대상으로 직접 검색하여 ktrenz_trend_triggers에 저장
+// T2 Trend Detect: 순수 키워드 발견 엔진
+// 아티스트 대상 네이버 뉴스 검색 → AI 키워드 추출 → ktrenz_keywords + ktrenz_keyword_sources에 저장
+// 추적(tracking)은 별도 ktrenz-trend-track에서 수행 (이 함수에서는 buzz score 수집하지 않음)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -266,113 +267,14 @@ async function searchNaver(
   }
 }
 
-// ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
+// ─── Buzz Score 정규화 (UI 표시용으로 유지) ───
 function normalizeBuzzScore(newsCount: number, blogCount: number): number {
-  const newsCap = 100;  // display=100 기준 최대치
+  const newsCap = 100;
   const blogCap = 100;
   const newsNorm = newsCount > 0 ? (Math.log10(newsCount + 1) / Math.log10(newsCap + 1)) * 100 : 0;
   const blogNorm = blogCount > 0 ? (Math.log10(blogCount + 1) / Math.log10(blogCap + 1)) * 100 : 0;
   const buzzScore = Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
   return buzzScore;
-}
-
-// ─── 키워드별 Naver 뉴스/블로그 건수 조회 ───
-async function fetchKeywordBuzzCounts(
-  clientId: string,
-  clientSecret: string,
-  artistName: string,
-  keyword: string,
-): Promise<{ newsTotal: number; blogTotal: number }> {
-  const query = `"${artistName}" "${keyword}"`;
-  const [newsResult, blogResult] = await Promise.all([
-    searchNaverTotal(clientId, clientSecret, "news", query),
-    searchNaverTotal(clientId, clientSecret, "blog", query),
-  ]);
-  return { newsTotal: newsResult, blogTotal: blogResult };
-}
-
-// Naver API total 필드 사용 (display 제한 없는 전체 건수)
-async function searchNaverTotal(
-  clientId: string,
-  clientSecret: string,
-  endpoint: "news" | "blog",
-  query: string,
-  retries = 2,
-): Promise<number> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      if (attempt > 0) {
-        // 재시도 전 대기 (rate limit 회피)
-        await new Promise(r => setTimeout(r, 300 * attempt));
-      }
-      const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
-      url.searchParams.set("query", query);
-      url.searchParams.set("display", "1"); // total만 필요하므로 최소
-      url.searchParams.set("sort", "date");
-
-      const response = await fetch(url.toString(), {
-        headers: {
-          "X-Naver-Client-Id": clientId,
-          "X-Naver-Client-Secret": clientSecret,
-        },
-      });
-
-      if (response.status === 429) {
-        console.warn(`[searchNaverTotal] Rate limited on ${endpoint} "${query}", attempt ${attempt + 1}/${retries + 1}`);
-        if (attempt < retries) continue;
-        return 0;
-      }
-      if (!response.ok) {
-        console.warn(`[searchNaverTotal] HTTP ${response.status} on ${endpoint} "${query}"`);
-        if (attempt < retries) continue;
-        return 0;
-      }
-      const data = await response.json();
-      return data.total || 0;
-    } catch (e) {
-      console.warn(`[searchNaverTotal] Error on ${endpoint} "${query}": ${(e as Error).message}`);
-      if (attempt < retries) continue;
-      return 0;
-    }
-  }
-  return 0;
-}
-
-// ─── 7일 이내 기사 카운트 + API total 반환 ───
-function parseBlogPostdate(pd: string): number {
-  if (!pd || pd.length !== 8) return 0;
-  return new Date(`${pd.slice(0,4)}-${pd.slice(4,6)}-${pd.slice(6,8)}T00:00:00+09:00`).getTime();
-}
-
-async function searchNaverRecent7d(
-  clientId: string, clientSecret: string,
-  endpoint: "news" | "blog", query: string,
-): Promise<{ recent: number; total: number }> {
-  try {
-    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
-    url.searchParams.set("query", query);
-    url.searchParams.set("display", "100");
-    url.searchParams.set("sort", "date");
-    const response = await fetch(url.toString(), {
-      headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
-    });
-    if (!response.ok) return { recent: 0, total: 0 };
-    const data = await response.json();
-    const apiTotal = data.total || 0;
-    const items = data.items || [];
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    let count = 0;
-    for (const item of items) {
-      let pubTime: number;
-      if (endpoint === "blog") {
-        pubTime = parseBlogPostdate(item.postdate);
-      } else {
-        pubTime = item.pubDate ? new Date(item.pubDate).getTime() : 0;
-      }
-      if (pubTime >= sevenDaysAgo) count++;
-    }
-    return { recent: count, total: apiTotal };
-  } catch { return { recent: 0, total: 0 }; }
 }
 
 // 하위 호환용 래퍼
@@ -1592,22 +1494,13 @@ Deno.serve(async (req) => {
           filtered: result.insertStats.filtered,
         });
 
-        // ─── 기존 active 키워드 추적 (track phase 통합) ───
-        const trackResult = await trackExistingKeywords(
-          sb, naverClientId, naverClientSecret, star.id, star.display_name, star.name_ko
-        );
-        if (trackResult.tracked > 0) {
-          console.log(`[trend-detect] ⟳ ${star.display_name}: tracked ${trackResult.tracked} existing keywords`);
-        }
-
-        // ─── DB에 스타별 처리 결과 기록 ───
+        // ─── DB에 스타별 처리 결과 기록 (추적 제거됨 — track phase에서 별도 처리) ───
         const detectResult = {
           news: result.sourceStats.news,
           blog: result.sourceStats.blog,
           shop: result.sourceStats.shop,
           keywords: result.keywordsFound,
           inserted: result.insertStats.inserted,
-          tracked: trackResult.tracked,
           status: result.keywordsFound > 0 ? "found" : (result.sourceStats.news === 0 && result.sourceStats.blog === 0 ? "no_news" : "no_keywords"),
         };
         await sb.from("ktrenz_stars").update({
@@ -1851,70 +1744,29 @@ async function detectForMember(
     return sanitizeImageUrl(img);
   }
 
-  // ─── 키워드별 buzz raw counts (아티스트+키워드: 연관성 확인용) ───
-  const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
-  // ─── 키워드 단독 buzz (시장 전체 버즈: baseline용) ───
-  const keywordOnlyBuzzData = new Map<string, { newsTotal: number; blogTotal: number }>();
-
-  // 병렬 rate limit 방지: 순차 처리 with 간격
-  const nonSocialKeywords = keywords.filter(k => k.category !== "social");
-  for (const k of nonSocialKeywords) {
-    const kwQuery = k.keyword_ko || k.keyword;
-    const artistLabel = member.name_ko || member.display_name;
-    // 1) 아티스트+키워드 (기존: 연관성 확인용)
-    const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
-      naverClientId, naverClientSecret, artistLabel, kwQuery
-    );
-    const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
-    keywordBuzzData.set(k.keyword.toLowerCase(), { newsTotal, blogTotal, score: buzzScore });
-    // 2) 키워드 단독 (시장 전체 버즈 → baseline_score로 사용)
-    const kwOnlyNews = await searchNaverTotal(naverClientId, naverClientSecret, "news", `"${kwQuery}"`);
-    const kwOnlyBlog = await searchNaverTotal(naverClientId, naverClientSecret, "blog", `"${kwQuery}"`);
-    keywordOnlyBuzzData.set(k.keyword.toLowerCase(), { newsTotal: kwOnlyNews, blogTotal: kwOnlyBlog });
-    console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore} | keyword-only: news=${kwOnlyNews} blog=${kwOnlyBlog}`);
-    // 키워드 간 API 간격
-    await new Promise(r => setTimeout(r, 150));
-  }
-
+  // ─── 순수 수집: buzz score 수집 없이 키워드와 소스 정보만 준비 ───
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => {
-    const buzz = keywordBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0, score: 0 };
-    // 키워드 단독 버즈 = 시장 전체 기준 baseline
-    const kwOnlyBuzz = keywordOnlyBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0 };
-    const keywordOnlyTotal = kwOnlyBuzz.newsTotal + kwOnlyBuzz.blogTotal;
     return {
       extractedKeyword: keywordData,
-      row: {
-        wiki_entry_id: null,
-        star_id: member.id || null,
-        trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
-        trigger_source: keywordData.category === "social" ? "tiktok" : "naver_news",
-        artist_name: member.display_name,
+      // ktrenz_keywords 테이블용 데이터
+      keywordRow: {
         keyword: keywordData.keyword,
         keyword_en: keywordData.keyword_en || null,
         keyword_ko: keywordData.keyword_ko || null,
         keyword_ja: keywordData.keyword_ja || null,
         keyword_zh: keywordData.keyword_zh || null,
         keyword_category: keywordData.category,
+        status: "pending",
         context: keywordData.context,
         context_ko: keywordData.context_ko || null,
         context_ja: keywordData.context_ja || null,
         context_zh: keywordData.context_zh || null,
-        confidence: keywordData.confidence,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
         source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
           ? keywordData._tiktok_cover_url
           : selectBestImage(sourceUrl),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
-        commercial_intent: keywordData.commercial_intent || null,
-        brand_intent: keywordData.brand_intent || null,
-        fan_sentiment: keywordData.fan_sentiment || null,
-        trend_potential: keywordData.trend_potential ?? null,
-        purchase_stage: keywordData.purchase_stage || null,
-        // baseline = 키워드 단독 시장 전체 버즈 (track과 동일 스케일)
-        baseline_score: keywordData.category === "social" ? 10 : keywordOnlyTotal,
-        peak_score: keywordData.category === "social" ? 10 : keywordOnlyTotal,
-        status: "pending",
         metadata: keywordData.category === "social" ? {
           source: "tiktok",
           search_name: searchName,
@@ -1923,60 +1775,74 @@ async function detectForMember(
           article_count: articles.length,
           search_name: searchName,
           group_name: member.group_name,
-          buzz_news_total: buzz.newsTotal,
-          buzz_blog_total: buzz.blogTotal,
-          buzz_score_normalized: buzz.score,
-          keyword_only_news: kwOnlyBuzz.newsTotal,
-          keyword_only_blog: kwOnlyBuzz.blogTotal,
         },
+      },
+      // ktrenz_keyword_sources 테이블용 데이터
+      sourceRow: {
+        star_id: member.id || null,
+        artist_name: member.display_name,
+        trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
+        trigger_source: keywordData.category === "social" ? "tiktok" : "naver_news",
+        source_url: sourceUrl,
+        source_title: sourceArticle?.title || null,
+        source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
+          ? keywordData._tiktok_cover_url
+          : selectBestImage(sourceUrl),
+        source_snippet: sourceArticle?.description?.slice(0, 500) || null,
+        context: keywordData.context,
+        context_ko: keywordData.context_ko || null,
+        context_ja: keywordData.context_ja || null,
+        context_zh: keywordData.context_zh || null,
+        confidence: keywordData.confidence,
+        commercial_intent: keywordData.commercial_intent || null,
+        brand_intent: keywordData.brand_intent || null,
+        fan_sentiment: keywordData.fan_sentiment || null,
+        trend_potential: keywordData.trend_potential ?? null,
+        purchase_stage: keywordData.purchase_stage || null,
+        metadata: keywordData.category === "social" ? { source: "tiktok" } : {},
       },
     };
   });
 
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-
-  // 키워드 목록: keyword (원문) + keyword_en (영문) + keyword_ko (한글) 모두로 중복 체크
+  // ── 기존 키워드 중복 체크 (ktrenz_keywords 테이블 기준) ──
   const allKeywordVariants = keywords.flatMap((k) => [
     k.keyword, k.keyword_en, k.keyword_ko
   ].filter(Boolean) as string[]);
-  const uniqueVariants = [...new Set(allKeywordVariants)];
 
-  const { data: existing } = await sb
-    .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_en, keyword_ko, keyword_ja, keyword_zh, context, context_ko, context_ja, context_zh, source_url, source_title, source_image_url")
-    .eq("star_id", member.id)
-    .in("status", ["active", "pending"])
-    .gte("detected_at", threeDaysAgo);
+  const { data: existingKeywords } = await sb
+    .from("ktrenz_keywords")
+    .select("id, keyword, keyword_en, keyword_ko")
+    .in("status", ["active", "pending"]);
 
-  // keyword, keyword_en, keyword_ko 모두를 키로 매핑하여 크로스 소스 중복 감지
   const existingByKeyword = new Map<string, any>();
-  for (const e of (existing || [])) {
+  for (const e of (existingKeywords || [])) {
     for (const field of [e.keyword, e.keyword_en, e.keyword_ko]) {
       if (field) existingByKeyword.set(field.toLowerCase(), e);
     }
   }
 
-  // 크로스 아티스트 중복 제거 (keyword, keyword_en, keyword_ko 모두 체크)
-  const { data: crossExisting } = await sb
-    .from("ktrenz_trend_triggers")
-    .select("keyword, keyword_en, keyword_ko")
-    .neq("star_id", member.id)
-    .in("status", ["active", "pending"])
-    .gte("detected_at", threeDaysAgo);
-
-  const crossSet = new Set<string>();
-  for (const e of (crossExisting || [])) {
-    if (e.keyword) crossSet.add(e.keyword.toLowerCase());
-    if (e.keyword_en) crossSet.add(e.keyword_en.toLowerCase());
-    if (e.keyword_ko) crossSet.add(e.keyword_ko.toLowerCase());
+  // 기존 keyword_sources에서 같은 아티스트의 최근 3일 내 소스 중복 확인
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const existingKeywordIds = (existingKeywords || []).map((e: any) => e.id);
+  let existingSourceSet = new Set<string>();
+  if (existingKeywordIds.length > 0 && member.id) {
+    const { data: existingSources } = await sb
+      .from("ktrenz_keyword_sources")
+      .select("keyword_id")
+      .eq("star_id", member.id)
+      .in("keyword_id", existingKeywordIds.slice(0, 500))
+      .gte("created_at", threeDaysAgo);
+    for (const s of (existingSources || [])) {
+      existingSourceSet.add(s.keyword_id);
+    }
   }
 
-  const rowsToInsert: any[] = [];
+  const keywordsToInsert: any[] = [];
+  const sourcesToInsert: any[] = [];
   const insertedKeywords: ExtractedKeyword[] = [];
-  const backfillPromises: PromiseLike<unknown>[] = [];
-  const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
+  const batchInsertedKeys = new Set<string>();
 
-  // 아티스트/그룹/멤버 이름과 일치하는 키워드 차단용 셋 (정규화 + 괄호 변형 포함)
+  // 아티스트/그룹/멤버 이름과 일치하는 키워드 차단용 셋
   const artistNameSet = collectNameVariants(
     member.display_name,
     member.name_ko,
@@ -2012,240 +1878,154 @@ async function detectForMember(
   ]);
 
   for (const candidate of candidateRows) {
-    const kwLower = candidate.row.keyword.toLowerCase();
-    const kwEnLower = candidate.row.keyword_en?.toLowerCase() || "";
-    const kwKoLower = candidate.row.keyword_ko?.toLowerCase() || "";
+    const kwLower = candidate.keywordRow.keyword.toLowerCase();
+    const kwEnLower = candidate.keywordRow.keyword_en?.toLowerCase() || "";
+    const kwKoLower = candidate.keywordRow.keyword_ko?.toLowerCase() || "";
     const kwStripped = kwLower.replace(/[\s·,\-]+/g, "");
 
     // 아티스트/그룹/그룹 멤버 이름과 일치하는 키워드 차단
-    if (matchesBlockedNameKeyword(candidate.row, artistNameSet)) {
-      console.warn(`[trend-detect] Artist/member name keyword filtered: "${candidate.row.keyword}" (${member.display_name})`);
+    if (matchesBlockedNameKeyword(candidate.keywordRow, artistNameSet)) {
+      console.warn(`[trend-detect] Artist/member name keyword filtered: "${candidate.keywordRow.keyword}" (${member.display_name})`);
       continue;
     }
 
-    // 글로벌 스타 이름과 일치하는 키워드 차단 (크로스 아티스트 오염 방지)
+    // 글로벌 스타 이름과 일치하는 키워드 차단
     if (globalStarNames) {
       const matchedStar = globalStarNames.get(kwLower) || globalStarNames.get(kwKoLower) || globalStarNames.get(kwEnLower)
         || globalStarNames.get(kwStripped);
       if (matchedStar) {
-        console.warn(`[trend-detect] Global star name keyword filtered at insert: "${candidate.row.keyword}" (matches star: ${matchedStar})`);
+        console.warn(`[trend-detect] Global star name keyword filtered at insert: "${candidate.keywordRow.keyword}" (matches star: ${matchedStar})`);
         continue;
       }
     }
 
     // 노이즈 필터
     if (INSERT_NOISE_BLACKLIST.has(kwLower) || INSERT_NOISE_BLACKLIST.has(kwKoLower)) {
-      console.warn(`[trend-detect] Noise keyword filtered at insert: "${candidate.row.keyword}"`);
+      console.warn(`[trend-detect] Noise keyword filtered at insert: "${candidate.keywordRow.keyword}"`);
       continue;
     }
 
-    // 크로스 아티스트 중복 필터 (DB 기존 + 같은 run 내 삽입된 키워드)
-    if (crossSet.has(kwLower) || (kwEnLower && crossSet.has(kwEnLower)) || (kwKoLower && crossSet.has(kwKoLower))) {
-      console.warn(`[trend-detect] Cross-artist duplicate filtered: "${candidate.row.keyword}"`);
-      continue;
-    }
-    // 같은 run 내에서 다른 아티스트가 이미 삽입한 키워드 차단
+    // 같은 run 내 다른 아티스트가 이미 삽입한 키워드 차단
     if (runInsertedKeywords && (runInsertedKeywords.has(kwLower) || (kwKoLower && runInsertedKeywords.has(kwKoLower)) || (kwEnLower && runInsertedKeywords.has(kwEnLower)))) {
-      console.warn(`[trend-detect] Run-level cross-artist duplicate filtered: "${candidate.row.keyword}"`);
+      console.warn(`[trend-detect] Run-level cross-artist duplicate filtered: "${candidate.keywordRow.keyword}"`);
       continue;
     }
 
-    const current = existingByKeyword.get(kwLower) || (kwEnLower ? existingByKeyword.get(kwEnLower) : null) || (kwKoLower ? existingByKeyword.get(kwKoLower) : null);
+    // 기존 키워드 존재 여부 확인
+    const existingKw = existingByKeyword.get(kwLower) || (kwEnLower ? existingByKeyword.get(kwEnLower) : null) || (kwKoLower ? existingByKeyword.get(kwKoLower) : null);
 
-    if (!current) {
-      if (batchInsertedKeys.has(kwLower)) {
-        continue; // 같은 배치에서 이미 삽입 예정
+    if (existingKw) {
+      // 키워드는 이미 존재 → 이 아티스트의 소스만 추가 (3일 내 중복 아닌 경우)
+      if (!existingSourceSet.has(existingKw.id)) {
+        sourcesToInsert.push({
+          ...candidate.sourceRow,
+          keyword_id: existingKw.id,
+        });
+        console.log(`[trend-detect] Adding source for existing keyword "${candidate.keywordRow.keyword}" via ${member.display_name}`);
       }
-      batchInsertedKeys.add(kwLower);
-      // run-level 공유 Set에도 추가
-      if (runInsertedKeywords) {
-        runInsertedKeywords.add(kwLower);
-        if (kwKoLower) runInsertedKeywords.add(kwKoLower);
-        if (kwEnLower) runInsertedKeywords.add(kwEnLower);
-      }
-      rowsToInsert.push(candidate.row);
-      insertedKeywords.push(candidate.extractedKeyword);
       continue;
     }
 
-    const patch: Record<string, unknown> = {};
-    const backfillFields = [
-      "keyword_en",
-      "keyword_ko",
-      "keyword_ja",
-      "keyword_zh",
-      "context",
-      "context_ko",
-      "context_ja",
-      "context_zh",
-      "source_url",
-      "source_title",
-      "source_image_url",
-      "source_snippet",
-    ] as const;
-
-    for (const field of backfillFields) {
-      const currentValue = (current as Record<string, any>)[field];
-      const nextValue = (candidate.row as Record<string, any>)[field];
-      if ((currentValue == null || currentValue === "") && nextValue) {
-        patch[field] = nextValue;
-      }
+    if (batchInsertedKeys.has(kwLower)) {
+      continue;
     }
-
-    if (Object.keys(patch).length > 0) {
-      backfillPromises.push(
-        sb.from("ktrenz_trend_triggers").update(patch).eq("id", current.id)
-      );
+    batchInsertedKeys.add(kwLower);
+    if (runInsertedKeywords) {
+      runInsertedKeywords.add(kwLower);
+      if (kwKoLower) runInsertedKeywords.add(kwKoLower);
+      if (kwEnLower) runInsertedKeywords.add(kwEnLower);
     }
+    keywordsToInsert.push({ keywordRow: candidate.keywordRow, sourceRow: candidate.sourceRow });
+    insertedKeywords.push(candidate.extractedKeyword);
   }
 
-  if (rowsToInsert.length > 0) {
-    const { data: inserted } = await sb.from("ktrenz_trend_triggers").insert(rowsToInsert).select("id");
-    // 비동기 이미지 캐시 호출
-    if (inserted?.length) {
+  // ── 새 키워드 삽입 (ktrenz_keywords) + 소스 연결 (ktrenz_keyword_sources) ──
+  let insertedCount = 0;
+  if (keywordsToInsert.length > 0) {
+    const kwRows = keywordsToInsert.map(k => k.keywordRow);
+    const { data: inserted, error: insertError } = await sb.from("ktrenz_keywords").insert(kwRows).select("id");
+
+    if (insertError) {
+      console.error(`[trend-detect] Keyword insert error: ${insertError.message}`);
+    } else if (inserted?.length) {
+      insertedCount = inserted.length;
+      // 삽입된 키워드에 소스 연결
+      const newSources = inserted.map((kw: any, idx: number) => ({
+        ...keywordsToInsert[idx].sourceRow,
+        keyword_id: kw.id,
+      }));
+      sourcesToInsert.push(...newSources);
+
+      // 비동기 이미지 캐시 호출 (기존 호환)
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      fetch(`${supabaseUrl}/functions/v1/ktrenz-cache-image`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ triggerIds: inserted.map((r: any) => r.id) }),
-      }).catch((e) => console.warn(`[trend-detect] cache-image fire-and-forget error: ${e.message}`));
+      // ktrenz_trend_triggers에도 호환용 삽입 (기존 UI/track과 연동 유지)
+      const triggerRows = inserted.map((kw: any, idx: number) => {
+        const kr = keywordsToInsert[idx].keywordRow;
+        const sr = keywordsToInsert[idx].sourceRow;
+        return {
+          wiki_entry_id: null,
+          star_id: sr.star_id,
+          trigger_type: sr.trigger_type,
+          trigger_source: sr.trigger_source,
+          artist_name: sr.artist_name,
+          keyword: kr.keyword,
+          keyword_en: kr.keyword_en,
+          keyword_ko: kr.keyword_ko,
+          keyword_ja: kr.keyword_ja,
+          keyword_zh: kr.keyword_zh,
+          keyword_category: kr.keyword_category,
+          context: kr.context,
+          context_ko: kr.context_ko,
+          context_ja: kr.context_ja,
+          context_zh: kr.context_zh,
+          confidence: sr.confidence,
+          source_url: kr.source_url,
+          source_title: kr.source_title,
+          source_image_url: kr.source_image_url,
+          source_snippet: kr.source_snippet,
+          commercial_intent: sr.commercial_intent,
+          brand_intent: sr.brand_intent,
+          fan_sentiment: sr.fan_sentiment,
+          trend_potential: sr.trend_potential,
+          purchase_stage: sr.purchase_stage,
+          baseline_score: 0,
+          peak_score: 0,
+          status: "pending",
+          metadata: {
+            ...kr.metadata,
+            keyword_id: kw.id, // 새 테이블 참조
+          },
+        };
+      });
+      const { data: triggerInserted } = await sb.from("ktrenz_trend_triggers").insert(triggerRows).select("id");
+      if (triggerInserted?.length) {
+        fetch(`${supabaseUrl}/functions/v1/ktrenz-cache-image`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ triggerIds: triggerInserted.map((r: any) => r.id) }),
+        }).catch((e) => console.warn(`[trend-detect] cache-image fire-and-forget error: ${e.message}`));
+      }
     }
   }
 
-  if (backfillPromises.length > 0) {
-    await Promise.allSettled(backfillPromises);
+  // ── 소스 연결 삽입 ──
+  if (sourcesToInsert.length > 0) {
+    const { error: srcError } = await sb.from("ktrenz_keyword_sources").insert(sourcesToInsert);
+    if (srcError) {
+      console.error(`[trend-detect] Source insert error: ${srcError.message}`);
+    }
   }
 
-  const filteredCount = candidateRows.length - rowsToInsert.length - backfillPromises.length;
-
   console.log(
-    `[trend-detect] ${member.display_name}: inserted ${rowsToInsert.length} new, backfilled ${backfillPromises.length}, filtered ${filteredCount}`
+    `[trend-detect] ${member.display_name}: inserted ${insertedCount} new keywords, ${sourcesToInsert.length} sources`
   );
 
   return {
-    keywordsFound: rowsToInsert.length,
+    keywordsFound: insertedCount,
     articlesFound: articles.length,
     keywords: insertedKeywords,
     sourceStats: srcStats,
-    insertStats: { inserted: rowsToInsert.length, backfilled: backfillPromises.length, filtered: Math.max(0, filteredCount) },
+    insertStats: { inserted: insertedCount, backfilled: 0, filtered: Math.max(0, candidateRows.length - insertedCount) },
   };
-}
-
-// ─── 기존 active 키워드 재측정 (track phase 통합) ───
-async function trackExistingKeywords(
-  sb: any,
-  naverClientId: string,
-  naverClientSecret: string,
-  starId: string,
-  displayName: string,
-  nameKo: string | null,
-): Promise<{ tracked: number }> {
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data: activeTriggers } = await sb
-    .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, artist_name, baseline_score, peak_score, influence_index, detected_at, peak_at, trigger_source, prev_api_total")
-    .eq("star_id", starId)
-    .eq("status", "active")
-    .gte("detected_at", weekAgo)
-    ;
-
-  if (!activeTriggers?.length) return { tracked: 0 };
-
-  let tracked = 0;
-  const artistLabel = nameKo || displayName;
-
-  for (const trigger of activeTriggers) {
-    try {
-      const kwQuery = trigger.keyword_ko || trigger.keyword;
-      const searchQuery = `"${artistLabel}" "${kwQuery}"`;
-
-      const [newsResult, blogResult] = await Promise.all([
-        searchNaverRecent7d(naverClientId, naverClientSecret, "news", searchQuery),
-        searchNaverRecent7d(naverClientId, naverClientSecret, "blog", searchQuery),
-      ]);
-
-      const newsRecent = newsResult.recent;
-      const blogRecent = blogResult.recent;
-      const rawCount = newsRecent + blogRecent;
-      const buzzScore = normalizeBuzzScore(newsRecent, blogRecent);
-      const apiTotal = newsResult.total + blogResult.total;
-      const baseline = trigger.baseline_score || 0;
-      const deltaPct = baseline > 0
-        ? Math.round(((rawCount - baseline) / baseline) * 10000) / 100
-        : rawCount > 0 ? 100 : 0;
-
-      const prevApiTotal = trigger.prev_api_total || 0;
-      const dailyDelta = prevApiTotal > 0 ? apiTotal - prevApiTotal : 0;
-
-      // tracking 레코드 저장
-      await sb.from("ktrenz_trend_tracking").insert({
-        trigger_id: trigger.id,
-        keyword: trigger.keyword,
-        interest_score: rawCount,
-        region: "naver",
-        delta_pct: deltaPct,
-        raw_response: {
-          news_recent: newsRecent, blog_recent: blogRecent,
-          news_api_total: newsResult.total, blog_api_total: blogResult.total,
-          api_total: apiTotal, daily_delta: dailyDelta,
-          buzz_score_normalized: buzzScore, search_query: searchQuery,
-        },
-      });
-
-      // peak/influence 갱신 + prev_api_total 저장
-      const updates: any = { prev_api_total: apiTotal };
-      if (baseline <= 0 && rawCount > 0) {
-        updates.baseline_score = rawCount;
-        updates.peak_score = rawCount;
-      } else if (baseline > 0) {
-        if (rawCount > (trigger.peak_score || 0)) {
-          updates.peak_score = rawCount;
-          updates.peak_at = new Date().toISOString();
-        }
-        const currentPeak = updates.peak_score ?? trigger.peak_score ?? rawCount;
-        // 최소 분모 10으로 설정하여 낮은 baseline에서의 influence_index 과대 팽창 방지
-        const effectiveBaseline = Math.max(baseline, 10);
-        updates.influence_index = Math.round(((currentPeak - baseline) / effectiveBaseline) * 10000) / 100;
-      }
-      await sb.from("ktrenz_trend_triggers").update(updates).eq("id", trigger.id);
-
-      // 스마트 만료
-      const ageDays = (Date.now() - new Date(trigger.detected_at).getTime()) / 86400000;
-      const influence = trigger.influence_index ?? 0;
-      let shouldExpire = false, expireReason = "";
-
-      if (ageDays >= 3 && influence <= 5) {
-        const { data: recent } = await sb.from("ktrenz_trend_tracking")
-          .select("interest_score").eq("trigger_id", trigger.id)
-          .gte("tracked_at", new Date(Date.now() - 3 * 86400000).toISOString())
-          .order("tracked_at", { ascending: false }).limit(10);
-        const scores = (recent ?? []).map((r: any) => r.interest_score);
-        if (scores.length >= 3 && scores.every((s: number) => s <= (trigger.baseline_score ?? 10))) {
-          shouldExpire = true; expireReason = "early_decay";
-        }
-      }
-      if (!shouldExpire && ageDays > 14 && influence <= 20) { shouldExpire = true; expireReason = "lifecycle_end"; }
-      if (!shouldExpire && ageDays > 30) { shouldExpire = true; expireReason = "hard_cap_30d"; }
-
-      if (shouldExpire) {
-        const now = new Date();
-        await sb.from("ktrenz_trend_triggers").update({
-          status: "expired",
-          expired_at: now.toISOString(),
-          lifetime_hours: Math.round((now.getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10,
-          peak_delay_hours: trigger.peak_at
-            ? Math.round((new Date(trigger.peak_at).getTime() - new Date(trigger.detected_at).getTime()) / 3600000 * 10) / 10 : 0,
-        }).eq("id", trigger.id);
-      }
-
-      tracked++;
-      await new Promise(r => setTimeout(r, 300)); // rate limit
-    } catch (e) {
-      console.warn(`[trend-detect] track error: ${trigger.keyword}: ${(e as Error).message}`);
-    }
-  }
-
-  return { tracked };
 }

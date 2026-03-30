@@ -3544,6 +3544,96 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_keyword_sources: {
+        Row: {
+          artist_name: string
+          brand_intent: string | null
+          commercial_intent: string | null
+          confidence: number | null
+          context: string | null
+          context_ja: string | null
+          context_ko: string | null
+          context_zh: string | null
+          created_at: string
+          fan_sentiment: string | null
+          id: string
+          keyword_id: string
+          metadata: Json | null
+          purchase_stage: string | null
+          source_image_url: string | null
+          source_snippet: string | null
+          source_title: string | null
+          source_url: string | null
+          star_id: string | null
+          trend_potential: number | null
+          trigger_source: string
+          trigger_type: string
+        }
+        Insert: {
+          artist_name: string
+          brand_intent?: string | null
+          commercial_intent?: string | null
+          confidence?: number | null
+          context?: string | null
+          context_ja?: string | null
+          context_ko?: string | null
+          context_zh?: string | null
+          created_at?: string
+          fan_sentiment?: string | null
+          id?: string
+          keyword_id: string
+          metadata?: Json | null
+          purchase_stage?: string | null
+          source_image_url?: string | null
+          source_snippet?: string | null
+          source_title?: string | null
+          source_url?: string | null
+          star_id?: string | null
+          trend_potential?: number | null
+          trigger_source?: string
+          trigger_type?: string
+        }
+        Update: {
+          artist_name?: string
+          brand_intent?: string | null
+          commercial_intent?: string | null
+          confidence?: number | null
+          context?: string | null
+          context_ja?: string | null
+          context_ko?: string | null
+          context_zh?: string | null
+          created_at?: string
+          fan_sentiment?: string | null
+          id?: string
+          keyword_id?: string
+          metadata?: Json | null
+          purchase_stage?: string | null
+          source_image_url?: string | null
+          source_snippet?: string | null
+          source_title?: string | null
+          source_url?: string | null
+          star_id?: string | null
+          trend_potential?: number | null
+          trigger_source?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ktrenz_keyword_sources_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_keywords"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ktrenz_keyword_sources_star_id_fkey"
+            columns: ["star_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_stars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ktrenz_keyword_votes: {
         Row: {
           created_at: string
@@ -3568,6 +3658,105 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vote_type?: string
+        }
+        Relationships: []
+      }
+      ktrenz_keywords: {
+        Row: {
+          baseline_score: number | null
+          context: string | null
+          context_ja: string | null
+          context_ko: string | null
+          context_zh: string | null
+          created_at: string
+          detected_at: string
+          expired_at: string | null
+          id: string
+          influence_index: number | null
+          keyword: string
+          keyword_category: string | null
+          keyword_en: string | null
+          keyword_ja: string | null
+          keyword_ko: string | null
+          keyword_zh: string | null
+          lifetime_hours: number | null
+          metadata: Json | null
+          peak_at: string | null
+          peak_delay_hours: number | null
+          peak_score: number | null
+          prev_api_total: number | null
+          source_image_url: string | null
+          source_snippet: string | null
+          source_title: string | null
+          source_url: string | null
+          status: string
+          trend_grade: string | null
+          trend_grade_detail: Json | null
+          updated_at: string
+        }
+        Insert: {
+          baseline_score?: number | null
+          context?: string | null
+          context_ja?: string | null
+          context_ko?: string | null
+          context_zh?: string | null
+          created_at?: string
+          detected_at?: string
+          expired_at?: string | null
+          id?: string
+          influence_index?: number | null
+          keyword: string
+          keyword_category?: string | null
+          keyword_en?: string | null
+          keyword_ja?: string | null
+          keyword_ko?: string | null
+          keyword_zh?: string | null
+          lifetime_hours?: number | null
+          metadata?: Json | null
+          peak_at?: string | null
+          peak_delay_hours?: number | null
+          peak_score?: number | null
+          prev_api_total?: number | null
+          source_image_url?: string | null
+          source_snippet?: string | null
+          source_title?: string | null
+          source_url?: string | null
+          status?: string
+          trend_grade?: string | null
+          trend_grade_detail?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          baseline_score?: number | null
+          context?: string | null
+          context_ja?: string | null
+          context_ko?: string | null
+          context_zh?: string | null
+          created_at?: string
+          detected_at?: string
+          expired_at?: string | null
+          id?: string
+          influence_index?: number | null
+          keyword?: string
+          keyword_category?: string | null
+          keyword_en?: string | null
+          keyword_ja?: string | null
+          keyword_ko?: string | null
+          keyword_zh?: string | null
+          lifetime_hours?: number | null
+          metadata?: Json | null
+          peak_at?: string | null
+          peak_delay_hours?: number | null
+          peak_score?: number | null
+          prev_api_total?: number | null
+          source_image_url?: string | null
+          source_snippet?: string | null
+          source_title?: string | null
+          source_url?: string | null
+          status?: string
+          trend_grade?: string | null
+          trend_grade_detail?: Json | null
+          updated_at?: string
         }
         Relationships: []
       }
