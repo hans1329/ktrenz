@@ -154,8 +154,8 @@ const KeywordInfluence = () => {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Keyword Influence</h1>
-          <p className="text-xs text-muted-foreground">Trace how artist content seeds market trends</p>
+          <h1 className="text-lg font-bold text-foreground">키워드 영향력</h1>
+          <p className="text-xs text-muted-foreground">아티스트 컨텐츠가 시장 트렌드로 확산되는 과정을 추적합니다</p>
         </div>
       </header>
 
