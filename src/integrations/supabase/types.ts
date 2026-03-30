@@ -3663,6 +3663,7 @@ export type Database = {
       }
       ktrenz_keywords: {
         Row: {
+          baseline_raw: Json | null
           baseline_score: number | null
           context: string | null
           context_ja: string | null
@@ -3684,6 +3685,7 @@ export type Database = {
           metadata: Json | null
           peak_at: string | null
           peak_delay_hours: number | null
+          peak_raw: Json | null
           peak_score: number | null
           prev_api_total: number | null
           source_image_url: string | null
@@ -3696,6 +3698,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          baseline_raw?: Json | null
           baseline_score?: number | null
           context?: string | null
           context_ja?: string | null
@@ -3717,6 +3720,7 @@ export type Database = {
           metadata?: Json | null
           peak_at?: string | null
           peak_delay_hours?: number | null
+          peak_raw?: Json | null
           peak_score?: number | null
           prev_api_total?: number | null
           source_image_url?: string | null
@@ -3729,6 +3733,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          baseline_raw?: Json | null
           baseline_score?: number | null
           context?: string | null
           context_ja?: string | null
@@ -3750,6 +3755,7 @@ export type Database = {
           metadata?: Json | null
           peak_at?: string | null
           peak_delay_hours?: number | null
+          peak_raw?: Json | null
           peak_score?: number | null
           prev_api_total?: number | null
           source_image_url?: string | null
@@ -4589,45 +4595,99 @@ export type Database = {
       ktrenz_trend_tracking: {
         Row: {
           created_at: string
+          datalab_ratio: number | null
+          datalab_trend_7d: number[] | null
           delta_pct: number | null
           id: string
+          insta_post_count: number | null
+          insta_total_comments: number | null
+          insta_total_likes: number | null
           interest_score: number | null
           keyword: string
           keyword_id: string | null
+          naver_blog_24h: number | null
+          naver_blog_total: number | null
+          naver_news_24h: number | null
+          naver_news_total: number | null
           raw_response: Json | null
           region: string | null
           search_volume: number | null
+          source_scores: Json | null
+          tiktok_total_comments: number | null
+          tiktok_total_likes: number | null
+          tiktok_total_views: number | null
+          tiktok_video_count: number | null
           tracked_at: string
           trigger_id: string
+          weighted_delta: number | null
           wiki_entry_id: string
+          youtube_total_comments: number | null
+          youtube_total_views: number | null
+          youtube_video_count: number | null
         }
         Insert: {
           created_at?: string
+          datalab_ratio?: number | null
+          datalab_trend_7d?: number[] | null
           delta_pct?: number | null
           id?: string
+          insta_post_count?: number | null
+          insta_total_comments?: number | null
+          insta_total_likes?: number | null
           interest_score?: number | null
           keyword: string
           keyword_id?: string | null
+          naver_blog_24h?: number | null
+          naver_blog_total?: number | null
+          naver_news_24h?: number | null
+          naver_news_total?: number | null
           raw_response?: Json | null
           region?: string | null
           search_volume?: number | null
+          source_scores?: Json | null
+          tiktok_total_comments?: number | null
+          tiktok_total_likes?: number | null
+          tiktok_total_views?: number | null
+          tiktok_video_count?: number | null
           tracked_at?: string
           trigger_id: string
+          weighted_delta?: number | null
           wiki_entry_id: string
+          youtube_total_comments?: number | null
+          youtube_total_views?: number | null
+          youtube_video_count?: number | null
         }
         Update: {
           created_at?: string
+          datalab_ratio?: number | null
+          datalab_trend_7d?: number[] | null
           delta_pct?: number | null
           id?: string
+          insta_post_count?: number | null
+          insta_total_comments?: number | null
+          insta_total_likes?: number | null
           interest_score?: number | null
           keyword?: string
           keyword_id?: string | null
+          naver_blog_24h?: number | null
+          naver_blog_total?: number | null
+          naver_news_24h?: number | null
+          naver_news_total?: number | null
           raw_response?: Json | null
           region?: string | null
           search_volume?: number | null
+          source_scores?: Json | null
+          tiktok_total_comments?: number | null
+          tiktok_total_likes?: number | null
+          tiktok_total_views?: number | null
+          tiktok_video_count?: number | null
           tracked_at?: string
           trigger_id?: string
+          weighted_delta?: number | null
           wiki_entry_id?: string
+          youtube_total_comments?: number | null
+          youtube_total_views?: number | null
+          youtube_video_count?: number | null
         }
         Relationships: [
           {
