@@ -16,7 +16,7 @@ interface MegaTrendCluster {
 }
 
 const T2MegaTrends = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const { data: clusters = [] } = useQuery<MegaTrendCluster[]>({
     queryKey: ["mega-trends"],
