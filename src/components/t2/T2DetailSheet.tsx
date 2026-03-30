@@ -55,17 +55,9 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   noContext: { en: "No context available yet.", ko: "아직 맥락 정보가 없습니다.", ja: "コンテキスト情報はまだありません。", zh: "尚无相关信息。" },
   whyRank: { en: "Why", ko: "왜", ja: "なぜ", zh: "为什么" },
   whyRankSuffix: { en: "?", ko: "위인가?", ja: "位？", zh: "位？" },
-  surged: { en: "Search volume surged", ko: "검색량이", ja: "検索量が", zh: "搜索量" },
-  surgedAfter: { en: "after", ko: "이후", ja: "のニュース後", zh: "新闻后" },
-  newsMention: { en: "'s news mention.", ko: "의 뉴스 언급 이후 급등.", ja: "に急増。", zh: "急增。" },
-  baselineWas: { en: "Baseline interest was", ko: "기본 관심도", ja: "ベースライン関心度", zh: "基础关注度" },
-  peakedAt: { en: ", peaked at", ko: ", 최고", ja: ", ピーク", zh: ", 峰值" },
-  highestAmong: { en: "This is the highest influence index among", ko: "이것은", ja: "これは", zh: "这是" },
-  activeKeywords: { en: "active keywords.", ko: "개 활성 키워드 중 가장 높은 영향력 지수입니다.", ja: "件のアクティブキーワードの中で最高の影響力指数です。", zh: "个活跃关键词中最高的影响力指数。" },
-  trackingStarted: { en: "Tracking just started — waiting for trend data to calculate influence.", ko: "추적이 시작되었습니다 — 영향력 산출을 위해 트렌드 데이터를 기다리고 있습니다.", ja: "トラッキングが開始されました — 影響力算出のためトレンドデータを待っています。", zh: "追踪刚开始 — 等待趋势数据计算影响力。" },
-  influence: { en: "Growth", ko: "성장률", ja: "成長率", zh: "增长率" },
-  baseline: { en: "Start", ko: "시작", ja: "開始時", zh: "起始" },
-  peak: { en: "Now", ko: "현재", ja: "現在", zh: "当前" },
+  trackingStarted: { en: "Tracking just started — waiting for trend data.", ko: "추적이 막 시작되었습니다.", ja: "トラッキング開始 — データ待ち", zh: "追踪刚开始" },
+  momentum: { en: "Momentum", ko: "추세", ja: "モメンタム", zh: "趋势" },
+  detectedPlatforms: { en: "platforms detected", ko: "개 플랫폼 감지", ja: "プラットフォーム検出", zh: "个平台检测到" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will it trend more tomorrow?", ko: "내일 더 유행할지 맞춰 봅시다!", ja: "明日もっと流行る？当ててみよう！", zh: "明天会更火吗？来猜猜看！" },
   betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
@@ -660,51 +652,97 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             )}
           </div>
 
-          {/* Ranking explanation: Why this rank? */}
-          {rank != null && (
-            <div className="space-y-2">
-              <h3 className="text-base font-bold text-foreground">
-                {t("whyRank", language)} #{rank}{t("whyRankSuffix", language)}
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {tile.influenceIndex > 0 ? (
-                  <>
-                    {t("surged", language)} <span className="font-bold text-foreground">+{tile.influenceIndex.toFixed(1)}%</span> {t("surgedAfter", language)} {getLocalizedArtistName(tile, language)}{t("newsMention", language)}
-                    {tile.baselineScore != null && tile.peakScore != null && (
-                      <> {t("baselineWas", language)} <span className="font-bold text-foreground">{tile.baselineScore?.toLocaleString()}</span>{t("peakedAt", language)} <span className="font-bold text-foreground">{tile.peakScore?.toLocaleString()}</span>.</>
-                    )}
-                    {totalCount && totalCount > 1 && (
-                      <> {t("highestAmong", language)} {totalCount} {t("activeKeywords", language)}</>
-                    )}
-                  </>
-                ) : (
-                  <>{t("trackingStarted", language)}</>
-                )}
-              </p>
-            </div>
-          )}
+          {/* Trend Momentum Indicator */}
+          {(() => {
+            const influence = tile.influenceIndex ?? 0;
+            const ageDays = Math.max(0, Math.round((Date.now() - new Date(tile.detectedAt).getTime()) / 86400000));
+            
+            // Momentum label
+            let momentumLabel: Record<string, string>;
+            let momentumColor: string;
+            let momentumIcon: string;
+            
+            if (influence >= 100) {
+              momentumLabel = { en: "Surging", ko: "급상승 중", ja: "急上昇中", zh: "急速上升" };
+              momentumColor = "text-rose-400";
+              momentumIcon = "🔥";
+            } else if (influence >= 30) {
+              momentumLabel = { en: "Spreading", ko: "확산 중", ja: "拡散中", zh: "扩散中" };
+              momentumColor = "text-amber-400";
+              momentumIcon = "📈";
+            } else if (influence >= 10) {
+              momentumLabel = { en: "Building", ko: "형성 중", ja: "形成中", zh: "形成中" };
+              momentumColor = "text-emerald-400";
+              momentumIcon = "🌱";
+            } else if (influence > 0) {
+              momentumLabel = { en: "Steady", ko: "유지 중", ja: "安定中", zh: "稳定中" };
+              momentumColor = "text-muted-foreground";
+              momentumIcon = "➡️";
+            } else {
+              momentumLabel = { en: "Emerging", ko: "감지됨", ja: "検出済み", zh: "已检测到" };
+              momentumColor = "text-muted-foreground";
+              momentumIcon = "✨";
+            }
 
-          {/* Influence metrics */}
-          <div className="grid grid-cols-3 border border-border divide-x divide-border rounded-lg overflow-hidden">
-            <div className="p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">{t("influence", language)}</div>
-              <div className="text-xl font-bold text-foreground">
-                {tile.influenceIndex > 0 ? `+${tile.influenceIndex.toFixed(1)}%` : "—"}
+            // Age label
+            const ageLabel = ageDays === 0 
+              ? (language === "ko" ? "오늘 감지" : "Detected today")
+              : ageDays === 1
+              ? (language === "ko" ? "어제 감지" : "Yesterday")
+              : (language === "ko" ? `${ageDays}일 전 감지` : `${ageDays}d ago`);
+
+            // Trigger source info
+            const sourceLabel: Record<string, string> = {
+              naver_news: language === "ko" ? "뉴스" : "News",
+              tiktok: "TikTok",
+              instagram: "Instagram",
+              youtube_search: "YouTube",
+            };
+            const source = sourceLabel[tile.triggerSource || "naver_news"] || (language === "ko" ? "뉴스" : "News");
+
+            return (
+              <div className="rounded-xl border border-border overflow-hidden">
+                {/* Momentum header */}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{momentumIcon}</span>
+                    <div>
+                      <span className={cn("text-sm font-bold", momentumColor)}>
+                        {momentumLabel[language] || momentumLabel.en}
+                      </span>
+                      {rank != null && (
+                        <span className="text-xs text-muted-foreground ml-2">#{rank}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{ageLabel}</span>
+                </div>
+
+                {/* Source contribution bar */}
+                <div className="px-4 pb-3 space-y-1.5">
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    {language === "ko" ? "감지 소스" : "Detected via"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden flex">
+                      {/* Primary source bar */}
+                      <div 
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          tile.triggerSource === "tiktok" ? "bg-[hsl(var(--primary))]" :
+                          tile.triggerSource === "instagram" ? "bg-[hsl(var(--primary))]" :
+                          tile.triggerSource === "youtube_search" ? "bg-[hsl(var(--primary))]" :
+                          "bg-[hsl(var(--primary))]"
+                        )}
+                        style={{ width: influence > 0 ? `${Math.min(100, Math.max(20, influence))}%` : "15%" }}
+                      />
+                    </div>
+                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">{source}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">{t("baseline", language)}</div>
-              <div className="text-xl font-bold text-foreground">
-                {tile.baselineScore != null ? tile.baselineScore.toLocaleString() : "—"}
-              </div>
-            </div>
-            <div className="p-3">
-              <div className="text-[11px] text-muted-foreground mb-1">{t("peak", language)}</div>
-              <div className="text-xl font-bold text-foreground">
-                {tile.peakScore != null && tile.peakScore > 0 ? tile.peakScore.toLocaleString() : "—"}
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
 
 
