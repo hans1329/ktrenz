@@ -1509,6 +1509,8 @@ Deno.serve(async (req) => {
     let totalInserted = 0;
     let totalBackfilled = 0;
     let totalFiltered = 0;
+    // 같은 run 내 크로스 아티스트 중복 키워드 방지용 공유 Set
+    const runInsertedKeywords = new Set<string>();
     const artistResults: Array<{
       name: string;
       type: string;
@@ -1538,7 +1540,7 @@ Deno.serve(async (req) => {
         };
 
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords
         );
         successCount++;
         totalKeywords += result.keywordsFound;
@@ -1645,6 +1647,7 @@ async function detectForMember(
   naverClientSecret: string,
   member: MemberInfo,
   globalStarNames?: Map<string, string>,
+  runInsertedKeywords?: Set<string>,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
