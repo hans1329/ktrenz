@@ -877,7 +877,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   </div>
                   {/* Expected return display */}
                   {betAmount && Number(betAmount) >= 10 && (
-                    <div className="text-center text-teal-400 text-sm font-bold">
+                    <div className="text-center text-sm font-bold text-secondary-foreground">
                       {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} 💎
                       <span className="text-[10px] text-muted-foreground ml-1">(×{MULTIPLIERS[betOutcome]})</span>
                     </div>
