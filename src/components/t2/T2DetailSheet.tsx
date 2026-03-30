@@ -883,7 +883,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     </div>
                   )}
                   <Button
-                    className="w-full gap-2 py-5"
+                    className="w-full gap-2 py-5 rounded-full"
                     onClick={handlePlaceBet}
                     disabled={betMutation.isPending || !betAmount}
                   >
