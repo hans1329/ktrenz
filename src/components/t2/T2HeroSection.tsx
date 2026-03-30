@@ -179,21 +179,17 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
             <h2 className="text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
-              {language === "ko"
-                ? "K·스타가 만드는\n소비 트렌드를 발견하세요"
-                : "Discover Trends\nDriven by K-Pop"}
+              {t("t2.hero.discoverTitle")}
             </h2>
             <p className="text-sm text-white/70 mb-4">
-              {language === "ko"
-                ? "패션, 뷰티, 음식까지 — 실시간 트렌드 분석"
-                : "Fashion, beauty, food & more — real-time analysis"}
+              {t("t2.hero.discoverDesc")}
             </p>
             <button
               onClick={() => (window.location.href = "/login")}
               className="flex items-center gap-2 px-5 py-3 rounded-xl text-primary-foreground text-sm font-bold transition-all self-start bg-[#a428bd]/[0.22] border border-white/20"
             >
               <LogIn className="w-4 h-4" />
-              {language === "ko" ? "시작하기" : "Get Started"}
+              {t("t2.hero.getStarted")}
             </button>
           </div>
         </div>
