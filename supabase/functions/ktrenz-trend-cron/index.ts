@@ -68,19 +68,20 @@ Deno.serve(async (req) => {
       const newRunId = singlePhase ? `single_${Date.now()}` : `run_${Date.now()}`;
       const firstPhase = phase || "detect";
 
+      const resumeOffset = await getResumeOffset(sb, firstPhase, 0);
       await sb.from("ktrenz_pipeline_state").insert({
         run_id: newRunId,
         phase: firstPhase,
         status: "running",
-        current_offset: 0,
+        current_offset: resumeOffset,
         batch_size: batchSize,
         total_candidates: null,
       });
 
-      console.log(`[cron] Started ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}`);
+      console.log(`[cron] Started ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}, resumeOffset=${resumeOffset}`);
 
       // 즉시 첫 배치 실행
-      const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, 0, batchSize);
+      const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, resumeOffset, batchSize);
 
       return respond({
         success: true,
