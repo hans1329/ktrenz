@@ -106,6 +106,30 @@ Deno.serve(async (req) => {
         .limit(1);
 
       if (!activeRuns?.length) {
+        // ── Stale lock recovery: 30분 이상 running/postprocess_running 상태면 error로 전환 ──
+        const staleThreshold = new Date(Date.now() - STALE_LOCK_MINUTES * 60 * 1000).toISOString();
+        const { data: staleRuns } = await sb
+          .from("ktrenz_pipeline_state")
+          .select("*")
+          .in("status", ["running", "postprocess_running"])
+          .lt("updated_at", staleThreshold)
+          .limit(5);
+
+        if (staleRuns?.length) {
+          for (const stale of staleRuns) {
+            console.warn(`[cron] Stale lock detected: run=${stale.run_id}, phase=${stale.phase}, updated_at=${stale.updated_at}`);
+            await sb.from("ktrenz_pipeline_state")
+              .update({
+                status: "error",
+                last_error: `Stale lock: no progress for ${STALE_LOCK_MINUTES}+ minutes`,
+                last_error_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", stale.id);
+          }
+          return respond({ success: true, action: "tick", staleRecovered: staleRuns.length, message: `Recovered ${staleRuns.length} stale locks` });
+        }
+
         // running이 없으면 postprocess_requested 확인
         const { data: ppReqs } = await sb
           .from("ktrenz_pipeline_state")
