@@ -39,7 +39,7 @@ function getKeyword(item: CrossInsight, lang: string) {
 }
 
 const T2CrossSourceInsights = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [, setSearchParams] = useSearchParams();
 
   const { data: insights } = useQuery({
