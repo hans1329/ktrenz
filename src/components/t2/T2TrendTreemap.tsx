@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock, Star, Heart, ChevronRight, LayoutGrid, List, Users, MoreVertical, Zap, Database, MessageCircle } from "lucide-react";
