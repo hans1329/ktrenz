@@ -109,7 +109,7 @@ const T2MegaTrends = () => {
   return (
     <section className="px-4 py-5">
       <h2 className="text-xl font-black text-foreground mb-3">
-        {language === "ko" ? "🔥 메가 트렌드" : "🔥 Mega Trends"}
+        {t("t2.mega.title")}
       </h2>
 
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
