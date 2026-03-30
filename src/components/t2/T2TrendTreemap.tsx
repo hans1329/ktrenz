@@ -617,6 +617,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           id: t.id,
           keyword: t.keyword,
           keywordKo: t.keyword_ko || null,
+          keywordEn: t.keyword_en || null,
           keywordJa: t.keyword_ja || null,
           keywordZh: t.keyword_zh || null,
           category: t.keyword_category || "brand",
