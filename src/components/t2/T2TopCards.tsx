@@ -177,7 +177,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
     <div className="px-4 md:px-0 mb-6">
       <h3 className="text-lg font-bold text-foreground mb-3 pl-1">Top 3 K·Trenz</h3>
 
-      <div className="flex gap-2 h-[280px] md:h-[460px]">
+      <div className="flex gap-2 h-[280px] md:h-[540px]">
         {/* #1 — tall vertical card, left half */}
         <div className="w-[52%] md:w-[48%] shrink-0 h-full">
           {renderCard(first, 1, { rankSize: "w-7 h-7 text-sm", titleClass: "text-lg line-clamp-3", padClass: "p-4" })}
