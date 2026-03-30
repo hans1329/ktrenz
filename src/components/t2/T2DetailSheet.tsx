@@ -903,7 +903,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
             </div>
 
             {/* Boost */}
-            <div className="border-t border-border/50 pt-3">
+            <div className="pt-3">
               <h3 className="text-base font-bold text-foreground mb-2.5 flex items-center gap-1.5">
                 <Rocket className="w-4.5 h-4.5 text-primary" />
                 {t("boostTrend", language)}
