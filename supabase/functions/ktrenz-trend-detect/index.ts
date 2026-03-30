@@ -670,6 +670,13 @@ MEMBER ATTRIBUTION (CRITICAL):
 - ONLY set article_subject_match = true if the article SPECIFICALLY names or focuses on the searched member
 - Group-wide activities (tours, comebacks, group schedules) should NEVER be attributed to individual members
 
+MULTI-ARTIST ARTICLE DETECTION (★ CRITICAL ★):
+- When an article title lists MULTIPLE artist names (e.g., "제니·리사·나나, 파격 비키니"), identify who the article MAINLY focuses on by reading the FULL content — not just the first name listed.
+- The main subject is the artist who the article DESCRIBES IN MOST DETAIL (actions, quotes, events, styling details).
+- If the article gives roughly equal coverage to multiple artists, the main subject is the artist who appears first AND has the most descriptive content.
+- If you're searching for "${memberName}" but the article's main subject is a DIFFERENT artist, set article_subject_match = false, article_subject_name = the actual main subject, and add "wrong_artist" to rejection_flags.
+- Example: "제니·리사·나나, 파격적 노출 수위" — if the article body focuses on 제니's outfit and 리사/나나 are only briefly mentioned → for "리사" search → article_subject_name = "제니", article_subject_match = false, rejection_flags = ["wrong_artist"]
+
 OWNERSHIP VERIFICATION:
 - Each keyword belongs ONLY to the artist with the direct relationship
 - Set ownership_confidence below 0.5 for indirect/metaphorical/passing mentions
