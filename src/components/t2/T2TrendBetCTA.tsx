@@ -153,9 +153,7 @@ const T2TrendBetCTA = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(
-        language === "ko"
-          ? `${outcome === "mild" ? "유지" : outcome === "strong" ? "상승" : "급등"} 예측 완료! (${data.multiplier}x)`
-          : `Predicted ${outcome}! (${data.multiplier}x)`
+        `${t(`t2.bet.${outcome === "mild" ? "flat" : outcome === "strong" ? "rise" : "surge"}`)} ${t("t2.bet.predict")}! (${data.multiplier}x)`
       );
       queryClient.invalidateQueries({ queryKey: ["trend-bet-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["trend-bet-user-stats"] });
