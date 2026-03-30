@@ -175,11 +175,11 @@ const T2TrendBetCTA = () => {
           </div>
           <div>
             <h2 className="text-base font-black text-foreground">
-              {language === "ko" ? "내일의 트렌드 예측" : "Tomorrow's Trend"}
+              {t("t2.bet.title")}
             </h2>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {language === "ko" ? "24시간 후 결과 발표 · 10 K-Point" : "Results in 24h · 10 K-Point"}
+              {t("t2.bet.subtitle")}
             </p>
           </div>
         </div>
