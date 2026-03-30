@@ -271,7 +271,7 @@ const T2TrendBetCTA = () => {
                 <button
                   onClick={() => placeBet(item.id, selected)}
                   disabled={isSubmitting}
-                  className="mt-2.5 w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.97] disabled:opacity-50"
+                  className="mt-2.5 w-full py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.97] disabled:opacity-50"
                 >
                   {isSubmitting
                     ? "..."
