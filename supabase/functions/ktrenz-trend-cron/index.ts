@@ -4,6 +4,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const COLLECTION_PAUSED = false;
+const MAX_CONSECUTIVE_ERRORS = 3; // N회 연속 실패 시 파이프라인 중단
+const STALE_LOCK_MINUTES = 30; // 30분 이상 running 상태이면 stale로 간주
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,6 +106,30 @@ Deno.serve(async (req) => {
         .limit(1);
 
       if (!activeRuns?.length) {
+        // ── Stale lock recovery: 30분 이상 running/postprocess_running 상태면 error로 전환 ──
+        const staleThreshold = new Date(Date.now() - STALE_LOCK_MINUTES * 60 * 1000).toISOString();
+        const { data: staleRuns } = await sb
+          .from("ktrenz_pipeline_state")
+          .select("*")
+          .in("status", ["running", "postprocess_running"])
+          .lt("updated_at", staleThreshold)
+          .limit(5);
+
+        if (staleRuns?.length) {
+          for (const stale of staleRuns) {
+            console.warn(`[cron] Stale lock detected: run=${stale.run_id}, phase=${stale.phase}, updated_at=${stale.updated_at}`);
+            await sb.from("ktrenz_pipeline_state")
+              .update({
+                status: "error",
+                last_error: `Stale lock: no progress for ${STALE_LOCK_MINUTES}+ minutes`,
+                last_error_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", stale.id);
+          }
+          return respond({ success: true, action: "tick", staleRecovered: staleRuns.length, message: `Recovered ${staleRuns.length} stale locks` });
+        }
+
         // running이 없으면 postprocess_requested 확인
         const { data: ppReqs } = await sb
           .from("ktrenz_pipeline_state")
@@ -280,7 +306,53 @@ async function executeBatch(
     clearTimeout(timeout);
     const msg = (fetchErr as Error).message || "unknown";
     console.warn(`[cron] Fetch failed: ${msg}`);
-    result = { success: true, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true, skippedError: msg };
+    result = { success: false, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true, skippedError: msg };
+  }
+
+  // ── 에러 감지 & 연속 실패 시 파이프라인 중단 ──
+  const isBatchError = result.fallback === true || result.success === false || result.skippedError;
+  if (isBatchError) {
+    const errorMsg = result.skippedError || result.error || "Unknown batch error";
+    const { data: currentState } = await sb
+      .from("ktrenz_pipeline_state")
+      .select("error_count")
+      .eq("run_id", runId)
+      .eq("phase", phase)
+      .limit(1);
+
+    const prevErrorCount = currentState?.[0]?.error_count || 0;
+    const newErrorCount = prevErrorCount + 1;
+
+    await sb.from("ktrenz_pipeline_state")
+      .update({
+        error_count: newErrorCount,
+        last_error: errorMsg.slice(0, 500),
+        last_error_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("run_id", runId)
+      .eq("phase", phase);
+
+    if (newErrorCount >= MAX_CONSECUTIVE_ERRORS) {
+      console.error(`[cron] Phase ${phase} stopped: ${newErrorCount} consecutive errors. Last: ${errorMsg}`);
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: "error",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", runId)
+        .eq("phase", phase);
+
+      return { ...result, stopped: true, errorCount: newErrorCount };
+    }
+
+    console.warn(`[cron] Batch error (${newErrorCount}/${MAX_CONSECUTIVE_ERRORS}): ${errorMsg}`);
+  } else {
+    // 성공 시 에러 카운트 리셋
+    await sb.from("ktrenz_pipeline_state")
+      .update({ error_count: 0 })
+      .eq("run_id", runId)
+      .eq("phase", phase);
   }
 
   const totalCandidates = result.totalCandidates || 0;

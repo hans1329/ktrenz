@@ -3831,8 +3831,11 @@ export type Database = {
           batch_size: number
           created_at: string
           current_offset: number
+          error_count: number | null
           error_message: string | null
           id: string
+          last_error: string | null
+          last_error_at: string | null
           phase: string
           postprocess_done: boolean
           run_id: string
@@ -3844,8 +3847,11 @@ export type Database = {
           batch_size?: number
           created_at?: string
           current_offset?: number
+          error_count?: number | null
           error_message?: string | null
           id?: string
+          last_error?: string | null
+          last_error_at?: string | null
           phase: string
           postprocess_done?: boolean
           run_id: string
@@ -3857,8 +3863,11 @@ export type Database = {
           batch_size?: number
           created_at?: string
           current_offset?: number
+          error_count?: number | null
           error_message?: string | null
           id?: string
+          last_error?: string | null
+          last_error_at?: string | null
           phase?: string
           postprocess_done?: boolean
           run_id?: string
