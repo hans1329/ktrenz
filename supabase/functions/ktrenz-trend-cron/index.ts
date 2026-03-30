@@ -20,6 +20,29 @@ const PHASE_FUNCTION: Record<string, string> = {
 };
 const DETECT_PHASES = new Set(["detect", "detect_youtube"]);
 const SINGLE_CALL_PHASES = new Set(["collect_social"]); // 배치 없이 단일 호출 후 완료
+const ROTATING_PHASES = new Set(["detect_youtube"]); // 쿼터 제한으로 이전 offset에서 이어서 처리
+
+// 이전 실행의 마지막 offset을 조회하여 이어서 처리 (순환)
+async function getResumeOffset(sb: any, phase: string, totalCandidates: number): Promise<number> {
+  if (!ROTATING_PHASES.has(phase)) return 0;
+
+  const { data } = await sb
+    .from("ktrenz_pipeline_state")
+    .select("current_offset, total_candidates")
+    .eq("phase", phase)
+    .in("status", ["done", "postprocess_requested"])
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (!data?.length) return 0;
+
+  const lastOffset = data[0].current_offset || 0;
+  const lastTotal = data[0].total_candidates || totalCandidates;
+
+  // 순환: 마지막 offset이 전체를 넘으면 0부터
+  if (lastOffset >= lastTotal) return 0;
+  return lastOffset;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
