@@ -656,6 +656,30 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     refetchInterval: 30 * 60 * 1000,
   });
 
+  // On-demand translation: trigger for non-Korean languages when data loads
+  useEffect(() => {
+    if (!triggers?.length || language === "ko") return;
+    const langCol = language === "en" ? "keywordEn" : language === "ja" ? "keywordJa" : "keywordZh";
+    const ctxCol = language === "en" ? "context" : language === "ja" ? "contextJa" : "contextZh";
+    const needsKeyword = triggers.filter(t => t.keywordKo && !t[langCol as keyof TrendTile]).slice(0, 20);
+    const needsContext = triggers.filter(t => t.contextKo && !t[ctxCol as keyof TrendTile]).slice(0, 20);
+    
+    const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    
+    if (needsKeyword.length > 0) {
+      translateIfNeeded("ktrenz_trend_triggers", "keyword", 
+        needsKeyword.map(t => ({ id: t.id, keyword_ko: t.keywordKo, keyword_en: t.keywordEn, keyword_ja: t.keywordJa, keyword_zh: t.keywordZh })),
+        refetch
+      );
+    }
+    if (needsContext.length > 0) {
+      translateIfNeeded("ktrenz_trend_triggers", "context",
+        needsContext.map(t => ({ id: t.id, context_ko: t.contextKo, context: t.context, context_ja: t.contextJa, context_zh: t.contextZh })),
+        refetch
+      );
+    }
+  }, [triggers, language]);
+
   const dedupedShopTriggers = useMemo(() => {
     if (!triggers?.length) return [];
     return dedupeTrendTiles(triggers.filter(t => t.category === "shopping"), sortMode);
