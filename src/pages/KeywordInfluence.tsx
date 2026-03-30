@@ -227,7 +227,7 @@ const KeywordInfluence = () => {
                   <div className="px-4 pb-4 space-y-2">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5" />
-                      Origin Contents ({kw.sources.length})
+                      발견 컨텐츠 ({kw.sources.length})
                     </h4>
                     {kw.sources.map(src => (
                       <div
