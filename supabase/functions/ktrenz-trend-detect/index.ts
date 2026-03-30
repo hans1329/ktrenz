@@ -266,113 +266,14 @@ async function searchNaver(
   }
 }
 
-// ─── Buzz Score 정규화: 최근 7일 기사 건수 기반 (max 100건/소스) ───
+// ─── Buzz Score 정규화 (UI 표시용으로 유지) ───
 function normalizeBuzzScore(newsCount: number, blogCount: number): number {
-  const newsCap = 100;  // display=100 기준 최대치
+  const newsCap = 100;
   const blogCap = 100;
   const newsNorm = newsCount > 0 ? (Math.log10(newsCount + 1) / Math.log10(newsCap + 1)) * 100 : 0;
   const blogNorm = blogCount > 0 ? (Math.log10(blogCount + 1) / Math.log10(blogCap + 1)) * 100 : 0;
   const buzzScore = Math.round(Math.min(newsNorm * 0.6 + blogNorm * 0.4, 100));
   return buzzScore;
-}
-
-// ─── 키워드별 Naver 뉴스/블로그 건수 조회 ───
-async function fetchKeywordBuzzCounts(
-  clientId: string,
-  clientSecret: string,
-  artistName: string,
-  keyword: string,
-): Promise<{ newsTotal: number; blogTotal: number }> {
-  const query = `"${artistName}" "${keyword}"`;
-  const [newsResult, blogResult] = await Promise.all([
-    searchNaverTotal(clientId, clientSecret, "news", query),
-    searchNaverTotal(clientId, clientSecret, "blog", query),
-  ]);
-  return { newsTotal: newsResult, blogTotal: blogResult };
-}
-
-// Naver API total 필드 사용 (display 제한 없는 전체 건수)
-async function searchNaverTotal(
-  clientId: string,
-  clientSecret: string,
-  endpoint: "news" | "blog",
-  query: string,
-  retries = 2,
-): Promise<number> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      if (attempt > 0) {
-        // 재시도 전 대기 (rate limit 회피)
-        await new Promise(r => setTimeout(r, 300 * attempt));
-      }
-      const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
-      url.searchParams.set("query", query);
-      url.searchParams.set("display", "1"); // total만 필요하므로 최소
-      url.searchParams.set("sort", "date");
-
-      const response = await fetch(url.toString(), {
-        headers: {
-          "X-Naver-Client-Id": clientId,
-          "X-Naver-Client-Secret": clientSecret,
-        },
-      });
-
-      if (response.status === 429) {
-        console.warn(`[searchNaverTotal] Rate limited on ${endpoint} "${query}", attempt ${attempt + 1}/${retries + 1}`);
-        if (attempt < retries) continue;
-        return 0;
-      }
-      if (!response.ok) {
-        console.warn(`[searchNaverTotal] HTTP ${response.status} on ${endpoint} "${query}"`);
-        if (attempt < retries) continue;
-        return 0;
-      }
-      const data = await response.json();
-      return data.total || 0;
-    } catch (e) {
-      console.warn(`[searchNaverTotal] Error on ${endpoint} "${query}": ${(e as Error).message}`);
-      if (attempt < retries) continue;
-      return 0;
-    }
-  }
-  return 0;
-}
-
-// ─── 7일 이내 기사 카운트 + API total 반환 ───
-function parseBlogPostdate(pd: string): number {
-  if (!pd || pd.length !== 8) return 0;
-  return new Date(`${pd.slice(0,4)}-${pd.slice(4,6)}-${pd.slice(6,8)}T00:00:00+09:00`).getTime();
-}
-
-async function searchNaverRecent7d(
-  clientId: string, clientSecret: string,
-  endpoint: "news" | "blog", query: string,
-): Promise<{ recent: number; total: number }> {
-  try {
-    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
-    url.searchParams.set("query", query);
-    url.searchParams.set("display", "100");
-    url.searchParams.set("sort", "date");
-    const response = await fetch(url.toString(), {
-      headers: { "X-Naver-Client-Id": clientId, "X-Naver-Client-Secret": clientSecret },
-    });
-    if (!response.ok) return { recent: 0, total: 0 };
-    const data = await response.json();
-    const apiTotal = data.total || 0;
-    const items = data.items || [];
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    let count = 0;
-    for (const item of items) {
-      let pubTime: number;
-      if (endpoint === "blog") {
-        pubTime = parseBlogPostdate(item.postdate);
-      } else {
-        pubTime = item.pubDate ? new Date(item.pubDate).getTime() : 0;
-      }
-      if (pubTime >= sevenDaysAgo) count++;
-    }
-    return { recent: count, total: apiTotal };
-  } catch { return { recent: 0, total: 0 }; }
 }
 
 // 하위 호환용 래퍼
