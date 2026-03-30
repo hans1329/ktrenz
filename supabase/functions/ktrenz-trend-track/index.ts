@@ -468,7 +468,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[trend-track] 🚀 5-source tracking: ${keywords.length} keywords (offset=${batchOffset}, total=${totalKeywords})`);
-    console.log(`[trend-track] APIs: naver=✓ datalab=✓ youtube=${youtubeApiKey ? "✓" : "✗"} tiktok=${rapidApiKey ? "✓" : "✗"} insta=${rapidApiKey ? "✓" : "✗"}`);
+    console.log(`[trend-track] APIs: naver=✓ datalab=✓ youtube=${ytEnabled ? "✓" : "✗(quota)"} tiktok=${rapidApiKey ? "✓" : "✗"} insta=${rapidApiKey ? "✓" : "✗"}`);
 
     let trackedCount = 0;
     const results: any[] = [];
