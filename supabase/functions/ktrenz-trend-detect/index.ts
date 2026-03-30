@@ -1856,9 +1856,9 @@ async function detectForMember(
   // ─── 키워드 단독 buzz (시장 전체 버즈: baseline용) ───
   const keywordOnlyBuzzData = new Map<string, { newsTotal: number; blogTotal: number }>();
 
-  const buzzPromises = keywords
-    .filter(k => k.category !== "social") // 소셜 키워드는 Naver buzz 조회 불필요
-    .map(async (k) => {
+  // 병렬 rate limit 방지: 순차 처리 with 간격
+  const nonSocialKeywords = keywords.filter(k => k.category !== "social");
+  for (const k of nonSocialKeywords) {
     const kwQuery = k.keyword_ko || k.keyword;
     const artistLabel = member.name_ko || member.display_name;
     // 1) 아티스트+키워드 (기존: 연관성 확인용)
@@ -1872,8 +1872,9 @@ async function detectForMember(
     const kwOnlyBlog = await searchNaverTotal(naverClientId, naverClientSecret, "blog", `"${kwQuery}"`);
     keywordOnlyBuzzData.set(k.keyword.toLowerCase(), { newsTotal: kwOnlyNews, blogTotal: kwOnlyBlog });
     console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore} | keyword-only: news=${kwOnlyNews} blog=${kwOnlyBlog}`);
-  });
-  await Promise.all(buzzPromises);
+    // 키워드 간 API 간격
+    await new Promise(r => setTimeout(r, 150));
+  }
 
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => {
     const buzz = keywordBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0, score: 0 };
