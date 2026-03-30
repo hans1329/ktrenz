@@ -87,21 +87,21 @@ function emptyRaw(): SourceRaw {
   };
 }
 
-// ─── 소스별 "활동량" 단일값 산출 (delta 계산용) ───
+// ─── 소스별 "활동량" 단일값 산출 (delta 계산용, null-safe) ───
 function naverActivity(r: SourceRaw): number {
-  return (r.naver_news_24h + r.naver_blog_24h) * 3 + r.naver_news_total + r.naver_blog_total;
+  return ((r.naver_news_24h ?? 0) + (r.naver_blog_24h ?? 0)) * 3 + (r.naver_news_total ?? 0) + (r.naver_blog_total ?? 0);
 }
 function datalabActivity(r: SourceRaw): number {
-  return r.datalab_ratio;
+  return r.datalab_ratio ?? 0;
 }
 function youtubeActivity(r: SourceRaw): number {
-  return r.youtube_total_views + r.youtube_total_comments * 10;
+  return (r.youtube_total_views ?? 0) + (r.youtube_total_comments ?? 0) * 10;
 }
 function tiktokActivity(r: SourceRaw): number {
-  return r.tiktok_total_views + r.tiktok_total_likes * 2 + r.tiktok_total_comments * 5;
+  return (r.tiktok_total_views ?? 0) + (r.tiktok_total_likes ?? 0) * 2 + (r.tiktok_total_comments ?? 0) * 5;
 }
 function instaActivity(r: SourceRaw): number {
-  return r.insta_total_likes + r.insta_total_comments * 5;
+  return (r.insta_total_likes ?? 0) + (r.insta_total_comments ?? 0) * 5;
 }
 
 // ─── Delta % 계산 ───
@@ -110,37 +110,45 @@ function calcDelta(current: number, previous: number): number {
   return Math.round(((current - base) / base) * 10000) / 100;
 }
 
-// ─── 가중 합산 delta ───
+// ─── 가중 합산 delta (미수집 소스 가중치 재정규화) ───
 function computeWeightedDelta(current: SourceRaw, prev: SourceRaw): { weightedDelta: number; sourceScores: Record<string, number> } {
+  const avail = getSourceAvailability(current);
+  const activeWeights = getActiveWeights(avail);
+
   const deltas: Record<string, number> = {
-    naver: calcDelta(naverActivity(current), naverActivity(prev)),
-    datalab: calcDelta(datalabActivity(current), datalabActivity(prev)),
-    youtube: calcDelta(youtubeActivity(current), youtubeActivity(prev)),
-    tiktok: calcDelta(tiktokActivity(current), tiktokActivity(prev)),
-    insta: calcDelta(instaActivity(current), instaActivity(prev)),
+    naver: avail.naver ? calcDelta(naverActivity(current), naverActivity(prev)) : 0,
+    datalab: avail.datalab ? calcDelta(datalabActivity(current), datalabActivity(prev)) : 0,
+    youtube: avail.youtube ? calcDelta(youtubeActivity(current), youtubeActivity(prev)) : 0,
+    tiktok: avail.tiktok ? calcDelta(tiktokActivity(current), tiktokActivity(prev)) : 0,
+    insta: avail.insta ? calcDelta(instaActivity(current), instaActivity(prev)) : 0,
   };
 
   let weightedDelta = 0;
-  for (const [src, w] of Object.entries(WEIGHTS)) {
+  for (const [src, w] of Object.entries(activeWeights)) {
     weightedDelta += deltas[src] * w;
   }
 
   return { weightedDelta: Math.round(weightedDelta * 100) / 100, sourceScores: deltas };
 }
 
-// ─── 종합 buzz score (현재 활동량의 로그 스케일 합산) ───
+// ─── 종합 buzz score (가용 소스만으로 스케일링) ───
 function computeBuzzScore(r: SourceRaw): number {
-  const n = naverActivity(r);
-  const d = datalabActivity(r);
-  const y = youtubeActivity(r);
-  const t = tiktokActivity(r);
-  const i = instaActivity(r);
-  // 각 소스 활동량을 로그 스케일로 0~20 범위 후 합산 → 0~100
+  const avail = getSourceAvailability(r);
+  const activeCount = Object.values(avail).filter(Boolean).length;
+  if (activeCount === 0) return 0;
+
   const logScale = (v: number, cap: number) => v > 0 ? (Math.log10(v + 1) / Math.log10(cap + 1)) * 20 : 0;
-  return Math.round(Math.min(
-    logScale(n, 10000) + logScale(d, 100) + logScale(y, 10000000) + logScale(t, 10000000) + logScale(i, 1000000),
-    100
-  ));
+
+  let sum = 0;
+  if (avail.naver) sum += logScale(naverActivity(r), 10000);
+  if (avail.datalab) sum += logScale(datalabActivity(r), 100);
+  if (avail.youtube) sum += logScale(youtubeActivity(r), 10000000);
+  if (avail.tiktok) sum += logScale(tiktokActivity(r), 10000000);
+  if (avail.insta) sum += logScale(instaActivity(r), 1000000);
+
+  // 5소스 기준 100점 만점으로 스케일링 (가용 소스 비례)
+  const scaled = (sum / activeCount) * 5;
+  return Math.round(Math.min(scaled, 100));
 }
 
 // ══════════════════════════════════════════════
