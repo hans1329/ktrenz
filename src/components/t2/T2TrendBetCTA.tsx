@@ -279,7 +279,7 @@ const T2TrendBetCTA = () => {
 
               {item.totalVolume ? (
                 <div className="mt-1.5 text-center text-[10px] text-muted-foreground">
-                  {item.totalVolume} K-Point {language === "ko" ? "참여 중" : "wagered"}
+                  {item.totalVolume} K-Point {t("t2.bet.wagered")}
                 </div>
               ) : null}
             </div>
