@@ -691,14 +691,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               ? (language === "ko" ? "어제 감지" : "Yesterday")
               : (language === "ko" ? `${ageDays}일 전 감지` : `${ageDays}d ago`);
 
-            // Trigger source info
-            const sourceLabel: Record<string, string> = {
-              naver_news: language === "ko" ? "뉴스" : "News",
-              tiktok: "TikTok",
-              instagram: "Instagram",
-              youtube_search: "YouTube",
-            };
-            const source = sourceLabel[tile.triggerSource || "naver_news"] || (language === "ko" ? "뉴스" : "News");
 
             return (
               <div className="rounded-xl border border-border overflow-hidden">
