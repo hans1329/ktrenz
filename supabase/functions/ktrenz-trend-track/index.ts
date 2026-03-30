@@ -619,12 +619,14 @@ Deno.serve(async (req) => {
           kwUpdates.influence_index = influence;
         }
 
-        console.log(`[trend-track] ✓ "${kwQuery}" buzz=${buzzScore} Δw=${weightedDelta}% naver=${sourceScores.naver}% yt=${sourceScores.youtube}% tt=${sourceScores.tiktok}% ig=${sourceScores.insta}%${isFirstTrack ? " [FIRST]" : ""}`);
+        const avail = getSourceAvailability(currentRaw);
+        const activeCount = Object.values(avail).filter(Boolean).length;
+        console.log(`[trend-track] ✓ "${kwQuery}" buzz=${buzzScore} Δw=${weightedDelta}% sources=${activeCount}/5 [nv=${avail.naver?"✓":"✗"} dl=${avail.datalab?"✓":"✗"} yt=${avail.youtube?"✓":"✗"} tt=${avail.tiktok?"✓":"✗"} ig=${avail.insta?"✓":"✗"}]${isFirstTrack ? " [FIRST]" : ""}`);
 
         // ─── ktrenz_keywords 업데이트 ───
         await sb.from("ktrenz_keywords").update(kwUpdates).eq("id", kw.id);
 
-        // ─── ktrenz_trend_tracking 저장 (소스별 raw 포함) ───
+        // ─── ktrenz_trend_tracking 저장 (소스별 raw 포함, null=미수집) ───
         const triggerId = triggerByKeywordId.get(kw.id) || null;
         await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: triggerId,
@@ -636,7 +638,7 @@ Deno.serve(async (req) => {
           delta_pct: weightedDelta,
           weighted_delta: weightedDelta,
           source_scores: sourceScores,
-          // 소스별 원본값
+          // 소스별 원본값 (null = 미수집)
           naver_news_total: currentRaw.naver_news_total,
           naver_blog_total: currentRaw.naver_blog_total,
           naver_news_24h: currentRaw.naver_news_24h,
@@ -653,7 +655,7 @@ Deno.serve(async (req) => {
           insta_post_count: currentRaw.insta_post_count,
           insta_total_likes: currentRaw.insta_total_likes,
           insta_total_comments: currentRaw.insta_total_comments,
-          raw_response: { scoring_mode: "multi_source_v6", weights: WEIGHTS },
+          raw_response: { scoring_mode: "multi_source_v7_renorm", weights: WEIGHTS, active_sources: avail, active_count: activeCount },
         });
 
         // ─── 레거시 동기화 ───
