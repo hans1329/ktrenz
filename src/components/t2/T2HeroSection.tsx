@@ -117,7 +117,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   // Independent check: does the user have watched artists or agent slots?
   const { data: hasWatchedArtists, isLoading: isWatchedLoading } = useQuery({
