@@ -256,7 +256,7 @@ const T2TrendBetCTA = () => {
                     >
                       <Icon className="w-4 h-4" />
                       <span className="text-[11px] font-bold">{language === "ko" ? labelKo : label}</span>
-                      <span className="text-[9px] opacity-60">{mult}</span>
+                      <span className="text-[9px] opacity-60 text-black dark:text-black">{mult}</span>
                     </button>
                   );
                 })}
