@@ -767,7 +767,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {/* Probability bar */}
               <div className="flex items-center gap-0.5 h-6 rounded-full overflow-hidden">
                 {([
-                  { key: "mild" as const, color: "bg-amber-500" },
+                  { key: "mild" as const, color: "bg-[#f59f0a]/[0.68]" },
                   { key: "strong" as const, color: "bg-emerald-500" },
                   { key: "explosive" as const, color: "bg-purple-500" },
                 ]).map(({ key, color }, i) => (
