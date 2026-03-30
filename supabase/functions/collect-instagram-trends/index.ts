@@ -602,7 +602,7 @@ Deno.serve(async (req) => {
           .select("keyword")
           .eq("star_id", star.id)
           .eq("trigger_source", "instagram")
-          .gte("detected_at", threeDaysAgo);
+          .gte("detected_at", lookbackDays);
 
         const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
         const newTriggers = triggers.filter((t) => !existingKws.has(t.keyword.toLowerCase()));
