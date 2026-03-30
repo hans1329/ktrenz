@@ -932,16 +932,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   📋
                 </Button>
               </div>
-              {user && (
-                <div className="flex justify-end mt-2">
-                  <span className={cn(
-                    "text-[10px] font-medium",
-                    hasShareBoosted ? "text-emerald-400" : "text-primary"
-                  )}>
-                    {hasShareBoosted ? t("alreadyShareBoostedDone", language) : t("shareBoostReward", language)}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Related keywords */}
