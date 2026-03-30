@@ -10,8 +10,8 @@ const corsHeaders = {
 
 const RAPIDAPI_HOST = "instagram-api-fast-reliable-data-scraper.p.rapidapi.com";
 const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
-const DAILY_API_BUDGET = 400; // Pro plan daily limit
-const MAX_RESOLVE_PER_RUN = 10; // 미검색 아티스트 프로필 검색 제한
+const MAX_RESOLVE_PER_RUN = 5; // 미검색 아티스트 프로필 검색 제한 (축소)
+const POST_AGE_DAYS = 7; // 7일 이내 포스트만 수집 (기존 3일에서 완화)
 
 interface InstaPost {
   caption_text: string;
