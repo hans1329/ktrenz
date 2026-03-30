@@ -1,5 +1,6 @@
-// T2 Trend Detect: 스타 대상 실시간 네이버 뉴스 검색 → AI 상업 키워드 추출
-// ktrenz_stars의 group/solo/member 타입 아티스트를 대상으로 직접 검색하여 ktrenz_trend_triggers에 저장
+// T2 Trend Detect: 순수 키워드 발견 엔진
+// 아티스트 대상 네이버 뉴스 검색 → AI 키워드 추출 → ktrenz_keywords + ktrenz_keyword_sources에 저장
+// 추적(tracking)은 별도 ktrenz-trend-track에서 수행 (이 함수에서는 buzz score 수집하지 않음)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
