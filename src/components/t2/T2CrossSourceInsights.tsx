@@ -39,7 +39,7 @@ function getKeyword(item: CrossInsight, lang: string) {
 }
 
 const T2CrossSourceInsights = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [, setSearchParams] = useSearchParams();
 
   const { data: insights } = useQuery({
@@ -131,7 +131,7 @@ const T2CrossSourceInsights = () => {
   return (
     <section className="px-4 py-6">
       <h2 className="font-black text-foreground text-lg mb-4">
-        {language === "ko" ? "어디서 유행 중일까요?" : "Where is it trending?"}
+        {t("t2.cross.title")}
       </h2>
 
       <div className="space-y-3">

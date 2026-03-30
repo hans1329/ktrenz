@@ -117,7 +117,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   // Independent check: does the user have watched artists or agent slots?
   const { data: hasWatchedArtists, isLoading: isWatchedLoading } = useQuery({
@@ -179,21 +179,17 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
             <h2 className="text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
-              {language === "ko"
-                ? "K·스타가 만드는\n소비 트렌드를 발견하세요"
-                : "Discover Trends\nDriven by K-Pop"}
+              {t("t2.hero.discoverTitle")}
             </h2>
             <p className="text-sm text-white/70 mb-4">
-              {language === "ko"
-                ? "패션, 뷰티, 음식까지 — 실시간 트렌드 분석"
-                : "Fashion, beauty, food & more — real-time analysis"}
+              {t("t2.hero.discoverDesc")}
             </p>
             <button
               onClick={() => (window.location.href = "/login")}
               className="flex items-center gap-2 px-5 py-3 rounded-xl text-primary-foreground text-sm font-bold transition-all self-start bg-[#a428bd]/[0.22] border border-white/20"
             >
               <LogIn className="w-4 h-4" />
-              {language === "ko" ? "시작하기" : "Get Started"}
+              {t("t2.hero.getStarted")}
             </button>
           </div>
         </div>
@@ -210,16 +206,14 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "200px" }}>
             <h2 className="text-xl font-black text-white leading-tight mb-2 whitespace-pre-line">
-              {language === "ko"
-                ? "관심 아티스트를 등록하고\n맞춤 트렌드를 받아보세요"
-                : "Follow your favorite artists\nfor personalized trends"}
+              {t("t2.hero.followArtistsTitle")}
             </h2>
             <button
               onClick={() => onOpenOnboarding ? onOpenOnboarding() : navigate("/t2/my")}
               className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 text-white text-sm font-bold hover:bg-white/25 transition-all self-start"
             >
               <Heart className="w-4 h-4" />
-              {language === "ko" ? "아티스트 등록하기" : "Follow Artists"}
+              {t("t2.hero.followArtists")}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -239,7 +233,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           onClick={() => navigate("/t2/category/my")}
           className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
-          {myKeywords.length} {language === "ko" ? "개" : "trends"}
+          {myKeywords.length} {t("t2.hero.trends")}
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>

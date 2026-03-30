@@ -34,7 +34,7 @@ function getKeyword(item: BetCandidate, lang: string) {
 }
 
 const T2TrendBetCTA = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { user } = useAuth();
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -142,7 +142,7 @@ const T2TrendBetCTA = () => {
 
   const placeBet = async (triggerId: string, outcome: string) => {
     if (!user) {
-      toast.error(language === "ko" ? "로그인이 필요합니다" : "Login required");
+      toast.error(t("t2.bet.loginRequired"));
       return;
     }
     setSubmitting(triggerId);
@@ -153,9 +153,7 @@ const T2TrendBetCTA = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(
-        language === "ko"
-          ? `${outcome === "mild" ? "유지" : outcome === "strong" ? "상승" : "급등"} 예측 완료! (${data.multiplier}x)`
-          : `Predicted ${outcome}! (${data.multiplier}x)`
+        `${t(`t2.bet.${outcome === "mild" ? "flat" : outcome === "strong" ? "rise" : "surge"}`)} ${t("t2.bet.predict")}! (${data.multiplier}x)`
       );
       queryClient.invalidateQueries({ queryKey: ["trend-bet-candidates"] });
       queryClient.invalidateQueries({ queryKey: ["trend-bet-user-stats"] });
@@ -177,11 +175,11 @@ const T2TrendBetCTA = () => {
           </div>
           <div>
             <h2 className="text-base font-black text-foreground">
-              {language === "ko" ? "내일의 트렌드 예측" : "Tomorrow's Trend"}
+              {t("t2.bet.title")}
             </h2>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {language === "ko" ? "24시간 후 결과 발표 · 10 K-Point" : "Results in 24h · 10 K-Point"}
+              {t("t2.bet.subtitle")}
             </p>
           </div>
         </div>
@@ -255,7 +253,7 @@ const T2TrendBetCTA = () => {
                       )}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="text-[11px] font-bold">{language === "ko" ? labelKo : label}</span>
+                      <span className="text-[11px] font-bold">{t(`t2.bet.${key === "mild" ? "flat" : key === "strong" ? "rise" : "surge"}`)}</span>
                       <span className="text-[9px] opacity-60 text-black dark:text-black">{mult}</span>
                     </button>
                   );
@@ -265,7 +263,7 @@ const T2TrendBetCTA = () => {
               {/* Confirm / Status */}
               {hasAlreadyBet ? (
                 <div className="mt-2.5 text-center text-[11px] text-muted-foreground">
-                  ✅ {language === "ko" ? "예측 완료 — 24시간 후 결과 발표" : "Predicted — results in 24h"}
+                  ✅ {t("t2.bet.predicted")}
                 </div>
               ) : selected && !hasAlreadyBet ? (
                 <button
@@ -275,15 +273,13 @@ const T2TrendBetCTA = () => {
                 >
                   {isSubmitting
                     ? "..."
-                    : language === "ko"
-                      ? `${selected === "mild" ? "유지" : selected === "strong" ? "상승" : "급등"} 예측하기 (10 K-Point)`
-                      : `Predict ${selected} (10 K-Point)`}
+                    : `${t(`t2.bet.${selected === "mild" ? "flat" : selected === "strong" ? "rise" : "surge"}`)} ${t("t2.bet.predict")} (10 K-Point)`}
                 </button>
               ) : null}
 
               {item.totalVolume ? (
                 <div className="mt-1.5 text-center text-[10px] text-muted-foreground">
-                  {item.totalVolume} K-Point {language === "ko" ? "참여 중" : "wagered"}
+                  {item.totalVolume} K-Point {t("t2.bet.wagered")}
                 </div>
               ) : null}
             </div>

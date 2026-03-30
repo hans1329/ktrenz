@@ -28,8 +28,8 @@ const OUTCOME_META: Record<string, { label: string; labelKo: string; icon: typeo
 const STORAGE_KEY = "ktrenz_last_settlement_seen";
 
 const T2SettlementResultModal = () => {
+  const { language, t } = useLanguage();
   const { user } = useAuth();
-  const { language } = useLanguage();
   const [open, setOpen] = useState(false);
 
   const { data: results } = useQuery({
@@ -141,12 +141,10 @@ const T2SettlementResultModal = () => {
             )} />
           </div>
           <h2 className="text-lg font-black text-foreground">
-            {language === "ko" ? "예측 결과 발표!" : "Prediction Results!"}
+            {t("t2.settle.title")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {language === "ko"
-              ? `${results.length}건의 예측이 정산되었습니다`
-              : `${results.length} prediction${results.length > 1 ? "s" : ""} settled`}
+            {results.length} prediction{results.length > 1 ? "s" : ""} settled
           </p>
 
           <div className={cn(
@@ -161,9 +159,9 @@ const T2SettlementResultModal = () => {
           </div>
 
           <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-            <span>{language === "ko" ? "적중" : "Wins"}: <strong className="text-foreground">{wins}/{results.length}</strong></span>
-            <span>{language === "ko" ? "투자" : "Spent"}: <strong className="text-foreground">{totalSpent}</strong></span>
-            <span>{language === "ko" ? "수익" : "Earned"}: <strong className="text-foreground">{totalPayout}</strong></span>
+            <span>{t("t2.settle.wins")}: <strong className="text-foreground">{wins}/{results.length}</strong></span>
+            <span>{t("t2.settle.spent")}: <strong className="text-foreground">{totalSpent}</strong></span>
+            <span>{t("t2.settle.earned")}: <strong className="text-foreground">{totalPayout}</strong></span>
           </div>
         </div>
 
@@ -197,13 +195,13 @@ const T2SettlementResultModal = () => {
                   <div className="text-sm font-bold text-foreground truncate">{keyword}</div>
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-0.5">
-                      {language === "ko" ? "예측" : "Bet"}: <Icon className={cn("w-3 h-3", meta.color)} />
-                      <span className={meta.color}>{language === "ko" ? meta.labelKo : meta.label}</span>
+                      {t("t2.settle.bet")}: <Icon className={cn("w-3 h-3", meta.color)} />
+                      <span className={meta.color}>{t(`t2.bet.${r.outcome === "mild" ? "flat" : r.outcome === "strong" ? "rise" : "surge"}`)}</span>
                     </span>
                     <span>→</span>
                     <span className="flex items-center gap-0.5">
-                      {language === "ko" ? "결과" : "Result"}: 
-                      <span className={actualMeta.color}>{language === "ko" ? actualMeta.labelKo : actualMeta.label}</span>
+                      {t("t2.settle.result")}: 
+                      <span className={actualMeta.color}>{t(`t2.bet.${r.marketOutcome === "mild" ? "flat" : r.marketOutcome === "strong" ? "rise" : "surge"}`)}</span>
                     </span>
                   </div>
                 </div>
@@ -224,7 +222,7 @@ const T2SettlementResultModal = () => {
             onClick={handleClose}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.97]"
           >
-            {language === "ko" ? "확인" : "Got it"}
+            {t("t2.settle.gotIt")}
           </button>
         </div>
       </DrawerContent>

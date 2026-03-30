@@ -16,7 +16,7 @@ interface MegaTrendCluster {
 }
 
 const T2MegaTrends = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const { data: clusters = [] } = useQuery<MegaTrendCluster[]>({
     queryKey: ["mega-trends"],
@@ -109,7 +109,7 @@ const T2MegaTrends = () => {
   return (
     <section className="px-4 py-5">
       <h2 className="text-xl font-black text-foreground mb-3">
-        {language === "ko" ? "🔥 메가 트렌드" : "🔥 Mega Trends"}
+        {t("t2.mega.title")}
       </h2>
 
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
@@ -151,7 +151,7 @@ const T2MegaTrends = () => {
                 {/* Artist count */}
                 <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full">
                   <Users className="w-3 h-3" />
-                  {cluster.artistCount} artists
+                  {cluster.artistCount} {t("t2.mega.artists")}
                 </div>
               </div>
 
