@@ -22,6 +22,7 @@ export interface TrendTile {
   id: string;
   keyword: string;
   keywordKo: string | null;
+  keywordEn: string | null;
   keywordJa: string | null;
   keywordZh: string | null;
   category: string;
