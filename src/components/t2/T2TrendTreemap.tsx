@@ -312,6 +312,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const { language, t } = useLanguage();
   const { user } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const { translateIfNeeded } = useFieldTranslation();
+  const queryClient = useQueryClient();
   
   const navigate = useNavigate();
 
