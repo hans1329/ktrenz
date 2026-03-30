@@ -100,10 +100,10 @@ const T2MomentumSignals = () => {
         </div>
         <div>
           <h2 className="text-base font-black text-foreground">
-            {language === "ko" ? "지금 급등 중" : "Surging Now"}
+            {t("t2.momentum.title")}
           </h2>
           <p className="text-[11px] text-muted-foreground">
-            {language === "ko" ? "가속도가 가장 높은 키워드" : "Highest velocity keywords"}
+            {t("t2.momentum.desc")}
           </p>
         </div>
       </div>

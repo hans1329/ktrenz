@@ -151,7 +151,7 @@ const T2MegaTrends = () => {
                 {/* Artist count */}
                 <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full">
                   <Users className="w-3 h-3" />
-                  {cluster.artistCount} artists
+                  {cluster.artistCount} {t("t2.mega.artists")}
                 </div>
               </div>
 
