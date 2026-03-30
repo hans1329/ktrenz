@@ -972,12 +972,26 @@ async function mapBrandIds(sb: any): Promise<{ mapped: number; registered: numbe
 async function activatePending(sb: any): Promise<number> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
+  // 1) triggers 테이블 pending → active
   const { data } = await sb
     .from("ktrenz_trend_triggers")
     .update({ status: "active" })
     .eq("status", "pending")
     .gte("detected_at", threeDaysAgo)
     .select("id");
+
+  // 2) keywords 테이블 pending → active (추적 대상으로 전환)
+  const { data: kwData } = await sb
+    .from("ktrenz_keywords")
+    .update({ status: "active" })
+    .eq("status", "pending")
+    .gte("created_at", threeDaysAgo)
+    .select("id");
+
+  const kwCount = kwData?.length || 0;
+  if (kwCount > 0) {
+    console.log(`[postprocess] Activated ${kwCount} pending keywords`);
+  }
 
   return data?.length || 0;
 }
