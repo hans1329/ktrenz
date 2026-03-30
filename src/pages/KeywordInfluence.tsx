@@ -171,7 +171,7 @@ const KeywordInfluence = () => {
           const uniqueArtists = [...new Map(sources.map(s => [s.star_id, s])).values()];
 
           return (
-            <div key={kw.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div key={kw.id} className="rounded-2xl border bg-card overflow-hidden border-primary-foreground">
               <button
                 onClick={() => setSelectedKw(isOpen ? null : kw.id)}
                 className="w-full px-4 py-4 flex items-center gap-3 text-left"
