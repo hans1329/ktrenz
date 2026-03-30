@@ -61,6 +61,10 @@ interface YouTubeVideo {
 }
 
 // ─── YouTube Data API: 멤버 관련 최근 영상 검색 ───
+class QuotaExhaustedError extends Error {
+  constructor() { super("YouTube API quota exhausted"); this.name = "QuotaExhaustedError"; }
+}
+
 async function searchYouTubeVideos(
   ytApiKey: string,
   query: string,
@@ -83,6 +87,11 @@ async function searchYouTubeVideos(
     const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
     if (!res.ok) {
       const err = await res.text();
+      // 403 = quota exhausted → throw to stop entire batch immediately
+      if (res.status === 403) {
+        console.error(`[detect-youtube] YouTube API quota exhausted. Stopping batch.`);
+        throw new QuotaExhaustedError();
+      }
       console.warn(`[detect-youtube] YouTube search error: ${err.slice(0, 150)}`);
       return [];
     }
@@ -97,6 +106,7 @@ async function searchYouTubeVideos(
       thumbnailUrl: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.default?.url || null,
     }));
   } catch (e) {
+    if (e instanceof QuotaExhaustedError) throw e; // re-throw to stop batch
     console.warn(`[detect-youtube] YouTube search error: ${(e as Error).message}`);
     return [];
   }
@@ -480,6 +490,7 @@ Deno.serve(async (req) => {
 
     let successCount = 0;
     let totalKeywords = 0;
+    let quotaExhausted = false;
 
     for (const star of batch) {
       try {
@@ -497,6 +508,11 @@ Deno.serve(async (req) => {
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
+        if (e instanceof QuotaExhaustedError) {
+          console.error(`[detect-youtube] Quota exhausted — stopping batch immediately. Processed ${successCount}/${batch.length}`);
+          quotaExhausted = true;
+          break;
+        }
         console.error(`[detect-youtube] ✗ ${star.display_name}: ${(e as Error).message}`);
       }
     }
@@ -508,10 +524,11 @@ Deno.serve(async (req) => {
         success: true,
         batchOffset,
         batchSize,
-        processed: batch.length,
+        processed: quotaExhausted ? successCount : batch.length,
         totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
+        quotaExhausted,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
