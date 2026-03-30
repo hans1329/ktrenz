@@ -43,6 +43,7 @@ function getMomentum(kw: any) {
 const KeywordInfluence = () => {
   const navigate = useNavigate();
   const [selectedKw, setSelectedKw] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "brand" | "product" | "other">("all");
 
   // Fetch keywords with source counts
   const { data: keywords, isLoading } = useQuery({
