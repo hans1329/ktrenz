@@ -10,8 +10,8 @@ const corsHeaders = {
 
 const RAPIDAPI_HOST = "instagram-api-fast-reliable-data-scraper.p.rapidapi.com";
 const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
-const DAILY_API_BUDGET = 400; // Pro plan daily limit
-const MAX_RESOLVE_PER_RUN = 10; // 미검색 아티스트 프로필 검색 제한
+const MAX_RESOLVE_PER_RUN = 5; // 미검색 아티스트 프로필 검색 제한 (축소)
+const POST_AGE_DAYS = 7; // 7일 이내 포스트만 수집 (기존 3일에서 완화)
 
 interface InstaPost {
   caption_text: string;
@@ -113,10 +113,10 @@ function parseFeedItems(data: any): InstaPost[] {
     const imageVersions = item.image_versions2?.candidates || [];
     const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : null;
 
-    // 3일 이내 포스트만
+    // POST_AGE_DAYS 이내 포스트만
     const takenAt = item.taken_at || 0;
-    const threeDaysAgo = Math.floor(Date.now() / 1000) - 86400 * 3;
-    if (takenAt < threeDaysAgo) continue;
+    const cutoff = Math.floor(Date.now() / 1000) - 86400 * POST_AGE_DAYS;
+    if (takenAt < cutoff) continue;
 
     posts.push({
       caption_text: captionText,
@@ -367,18 +367,38 @@ Deno.serve(async (req) => {
     const results: string[] = [];
     const errors: string[] = [];
 
-    // 일일 API 사용량 조회 (ktrenz_social_snapshots에서 오늘 인스타 수집 건수로 추정)
+    // 일일 API 사용량 조회 (ktrenz_collection_log에서 오늘 인스타 api_calls 합산)
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
-    const { count: todayUsage } = await sb
-      .from("ktrenz_social_snapshots")
-      .select("id", { count: "exact", head: true })
+    const { data: todayLogs } = await sb
+      .from("ktrenz_collection_log")
+      .select("error_message")
       .eq("platform", "instagram")
       .gte("collected_at", todayStart.toISOString());
-    // 아티스트당 약 2 API 호출(feed+profile) → 사용량 추정
-    const estimatedUsedCalls = (todayUsage || 0) * 2;
-    let remainingBudget = DAILY_API_BUDGET - estimatedUsedCalls;
-    console.log(`[instagram] Daily budget: ${remainingBudget}/${DAILY_API_BUDGET} remaining (estimated ${estimatedUsedCalls} used today)`);
+
+    let estimatedUsedCalls = 0;
+    for (const log of (todayLogs || [])) {
+      const match = log.error_message?.match(/api_calls=(\d+)/);
+      if (match) estimatedUsedCalls += parseInt(match[1]);
+    }
+
+    // 하드 리밋: 하루 최대 API 호출 수 (BASIC 플랜 과금 방지)
+    const DAILY_HARD_LIMIT = 100; // 안전하게 100건으로 제한
+    let remainingBudget = DAILY_HARD_LIMIT - estimatedUsedCalls;
+    if (remainingBudget <= 0) {
+      console.warn(`[instagram] Daily hard limit reached (${estimatedUsedCalls}/${DAILY_HARD_LIMIT}). Aborting batch.`);
+      await sb.from("ktrenz_collection_log").insert({
+        platform: "instagram",
+        status: "budget_exhausted",
+        records_collected: 0,
+        error_message: `Daily limit reached: ${estimatedUsedCalls}/${DAILY_HARD_LIMIT} calls used`,
+      });
+      return new Response(
+        JSON.stringify({ success: true, processed: 0, budget_exhausted: true, api_calls_today: estimatedUsedCalls }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    console.log(`[instagram] Daily budget: ${remainingBudget}/${DAILY_HARD_LIMIT} remaining (${estimatedUsedCalls} used today)`);
 
     for (const star of stars) {
       // 예산 소진 시 즉시 중단
@@ -575,14 +595,14 @@ Deno.serve(async (req) => {
           };
         });
 
-        // 중복 체크: 같은 star_id + keyword + trigger_source(instagram) + 3일 이내
-        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+        // 중복 체크: 같은 star_id + keyword + trigger_source(instagram) + 7일 이내
+        const lookbackDays = new Date(Date.now() - POST_AGE_DAYS * 24 * 60 * 60 * 1000).toISOString();
         const { data: existing } = await sb
           .from("ktrenz_trend_triggers")
           .select("keyword")
           .eq("star_id", star.id)
           .eq("trigger_source", "instagram")
-          .gte("detected_at", threeDaysAgo);
+          .gte("detected_at", lookbackDays);
 
         const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
         const newTriggers = triggers.filter((t) => !existingKws.has(t.keyword.toLowerCase()));
