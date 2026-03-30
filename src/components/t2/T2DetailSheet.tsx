@@ -716,7 +716,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
           {/* FPMM Prediction Market */}
-          <div className="rounded-xl bg-background border border-border p-4 space-y-4">
+          <div className="rounded-xl bg-background border-border p-4 space-y-4 border-0">
             <div className="space-y-3">
               <div className="text-center">
                 <p className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
