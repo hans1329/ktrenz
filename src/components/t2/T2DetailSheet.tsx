@@ -862,7 +862,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                           className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${
                             betAmount === String(preset)
                               ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                              : "text-muted-foreground border-border bg-white/60"
                           }`}
                         >
                           {preset >= 1000 ? `${preset / 1000}K` : preset}
