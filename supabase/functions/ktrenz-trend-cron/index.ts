@@ -4,6 +4,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const COLLECTION_PAUSED = false;
+const MAX_CONSECUTIVE_ERRORS = 3; // N회 연속 실패 시 파이프라인 중단
+const STALE_LOCK_MINUTES = 30; // 30분 이상 running 상태이면 stale로 간주
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
