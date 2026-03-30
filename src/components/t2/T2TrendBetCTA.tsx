@@ -34,7 +34,7 @@ function getKeyword(item: BetCandidate, lang: string) {
 }
 
 const T2TrendBetCTA = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { user } = useAuth();
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
