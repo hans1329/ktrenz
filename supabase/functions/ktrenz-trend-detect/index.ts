@@ -1647,6 +1647,7 @@ async function detectForMember(
   naverClientSecret: string,
   member: MemberInfo,
   globalStarNames?: Map<string, string>,
+  runInsertedKeywords?: Set<string>,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
