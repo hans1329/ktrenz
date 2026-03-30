@@ -437,7 +437,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    const ytApiKey = Deno.env.get("YOUTUBE_API_KEY");
+    // YouTube API 쿼터를 track 단계에 양보하기 위해 발굴에서는 사용하지 않음
+    const ytApiKey = ""; // 의도적 비활성화: 쿼터 증가 승인 전까지
     const sb = createClient(supabaseUrl, supabaseKey);
 
     // 단일 멤버 모드 (수동 테스트)

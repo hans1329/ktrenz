@@ -389,6 +389,37 @@ Deno.serve(async (req) => {
     const rapidApiKey = Deno.env.get("RAPIDAPI_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    // ─── YouTube 일일 쿼터 로테이션 (100건/일 한도) ───
+    const YT_DAILY_LIMIT = 100;
+    let ytQuotaRemaining = 0;
+    let ytQuotaUsed = 0;
+
+    // DB에서 오늘 YouTube 사용량 조회
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: ytQuotaState } = await sb
+      .from("ktrenz_pipeline_state")
+      .select("current_offset, total_candidates, updated_at")
+      .eq("run_id", `yt_track_quota_${today}`)
+      .eq("phase", "youtube_track_quota")
+      .limit(1);
+
+    if (ytQuotaState?.length) {
+      ytQuotaUsed = ytQuotaState[0].current_offset || 0;
+    } else {
+      // 오늘 첫 실행: 쿼터 레코드 생성
+      await sb.from("ktrenz_pipeline_state").insert({
+        run_id: `yt_track_quota_${today}`,
+        phase: "youtube_track_quota",
+        status: "running",
+        current_offset: 0,
+        total_candidates: YT_DAILY_LIMIT,
+        batch_size: YT_DAILY_LIMIT,
+      });
+    }
+    ytQuotaRemaining = Math.max(0, YT_DAILY_LIMIT - ytQuotaUsed);
+    const ytEnabled = youtubeApiKey && ytQuotaRemaining > 0;
+    console.log(`[trend-track] YouTube quota: used=${ytQuotaUsed}/${YT_DAILY_LIMIT}, remaining=${ytQuotaRemaining}, enabled=${ytEnabled}`);
+
     if (!naverClientId || !naverClientSecret) {
       return new Response(JSON.stringify({ success: false, error: "NAVER credentials not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -437,7 +468,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[trend-track] 🚀 5-source tracking: ${keywords.length} keywords (offset=${batchOffset}, total=${totalKeywords})`);
-    console.log(`[trend-track] APIs: naver=✓ datalab=✓ youtube=${youtubeApiKey ? "✓" : "✗"} tiktok=${rapidApiKey ? "✓" : "✗"} insta=${rapidApiKey ? "✓" : "✗"}`);
+    console.log(`[trend-track] APIs: naver=✓ datalab=✓ youtube=${ytEnabled ? "✓" : "✗(quota)"} tiktok=${rapidApiKey ? "✓" : "✗"} insta=${rapidApiKey ? "✓" : "✗"}`);
 
     let trackedCount = 0;
     const results: any[] = [];
@@ -481,7 +512,7 @@ Deno.serve(async (req) => {
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-          youtubeApiKey ? searchYouTube(youtubeApiKey, kwQuery) : Promise.resolve({ videoCount: 0, totalViews: 0, totalComments: 0 }),
+          (ytEnabled && ytQuotaRemaining > 0) ? searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }) : Promise.resolve({ videoCount: 0, totalViews: 0, totalComments: 0 }),
           rapidApiKey ? searchTikTok(rapidApiKey, kwQuery) : Promise.resolve({ videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 }),
           rapidApiKey ? searchInstagram(rapidApiKey, kwQuery) : Promise.resolve({ postCount: 0, totalLikes: 0, totalComments: 0 }),
         ]);
@@ -664,8 +695,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── YouTube 쿼터 사용량 DB 업데이트 ───
+    if (ytQuotaUsed > 0) {
+      await sb.from("ktrenz_pipeline_state")
+        .update({ current_offset: ytQuotaUsed, updated_at: new Date().toISOString() })
+        .eq("run_id", `yt_track_quota_${today}`)
+        .eq("phase", "youtube_track_quota");
+    }
+
     return new Response(
-      JSON.stringify({ success: true, batchOffset, totalCandidates: totalKeywords, tracked: trackedCount, results }),
+      JSON.stringify({ success: true, batchOffset, totalCandidates: totalKeywords, tracked: trackedCount, ytQuotaUsed, ytQuotaRemaining, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
