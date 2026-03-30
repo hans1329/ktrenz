@@ -175,16 +175,7 @@
 
 <footer>© 2025 KTrenZ. All rights reserved.</footer>
 
-<!-- SPA hydration: load the React app for interactive experience -->
-<div id="root"></div>
-<script>
-  // Redirect to SPA for interactive users (not crawlers)
-  if (window.history && window.history.replaceState) {
-    var isCrawler = /bot|crawl|spider|slurp|facebookexternalhit|twitterbot|yeti|bingbot|googlebot/i.test(navigator.userAgent);
-    if (!isCrawler) {
-      window.location.replace('/about');
-    }
-  }
-</script>
+<!-- For interactive users, link to explore the full SPA experience -->
+<noscript><p style="text-align:center;padding:1rem;color:#64748b;">JavaScript를 활성화하면 인터랙티브 환경을 이용할 수 있습니다.</p></noscript>
 </body>
 </html>
