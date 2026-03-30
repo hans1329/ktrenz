@@ -120,9 +120,9 @@ const SAMPLE_KEYWORDS = [
 ];
 
 const MOMENTUM_CONFIG: Record<string, { label: string; icon: typeof Flame; color: string }> = {
-  surging: { label: "Surging", icon: Flame, color: "text-red-500" },
-  spreading: { label: "Spreading", icon: TrendingUp, color: "text-amber-500" },
-  building: { label: "Building", icon: Sparkles, color: "text-emerald-500" },
+  surging: { label: "🔥 급상승", icon: Flame, color: "text-red-500" },
+  spreading: { label: "📈 확산 중", icon: TrendingUp, color: "text-amber-500" },
+  building: { label: "🌱 형성 중", icon: Sparkles, color: "text-emerald-500" },
 };
 
 const SOURCE_ICON: Record<string, string> = {
@@ -135,9 +135,9 @@ const SOURCE_ICON: Record<string, string> = {
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const h = Math.floor(diff / 3600000);
-  if (h < 1) return "just now";
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 1) return "방금 전";
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
 }
 
 const KeywordInfluence = () => {
@@ -154,8 +154,8 @@ const KeywordInfluence = () => {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Keyword Influence</h1>
-          <p className="text-xs text-muted-foreground">Trace how artist content seeds market trends</p>
+          <h1 className="text-lg font-bold text-foreground">키워드 영향력</h1>
+          <p className="text-xs text-muted-foreground">아티스트 컨텐츠가 시장 트렌드로 확산되는 과정을 추적합니다</p>
         </div>
       </header>
 
@@ -227,7 +227,7 @@ const KeywordInfluence = () => {
                   <div className="px-4 pb-4 space-y-2">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5" />
-                      Origin Contents ({kw.sources.length})
+                      발견 컨텐츠 ({kw.sources.length})
                     </h4>
                     {kw.sources.map(src => (
                       <div
@@ -246,7 +246,7 @@ const KeywordInfluence = () => {
                           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                             <span>{SOURCE_ICON[src.sourceType]} {src.sourceType}</span>
                             <span>{timeAgo(src.detectedAt)}</span>
-                            <span className="text-primary font-semibold">Eng. {src.engagementScore}</span>
+                            <span className="text-primary font-semibold">참여도 {src.engagementScore}</span>
                           </div>
                         </div>
                         <a href={src.sourceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 shrink-0">
