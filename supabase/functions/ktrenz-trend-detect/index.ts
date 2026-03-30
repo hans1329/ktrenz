@@ -1851,55 +1851,23 @@ async function detectForMember(
     return sanitizeImageUrl(img);
   }
 
-  // ─── 키워드별 buzz raw counts (아티스트+키워드: 연관성 확인용) ───
-  const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
-  // ─── 키워드 단독 buzz (시장 전체 버즈: baseline용) ───
-  const keywordOnlyBuzzData = new Map<string, { newsTotal: number; blogTotal: number }>();
-
-  // 병렬 rate limit 방지: 순차 처리 with 간격
-  const nonSocialKeywords = keywords.filter(k => k.category !== "social");
-  for (const k of nonSocialKeywords) {
-    const kwQuery = k.keyword_ko || k.keyword;
-    const artistLabel = member.name_ko || member.display_name;
-    // 1) 아티스트+키워드 (기존: 연관성 확인용)
-    const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
-      naverClientId, naverClientSecret, artistLabel, kwQuery
-    );
-    const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
-    keywordBuzzData.set(k.keyword.toLowerCase(), { newsTotal, blogTotal, score: buzzScore });
-    // 2) 키워드 단독 (시장 전체 버즈 → baseline_score로 사용)
-    const kwOnlyNews = await searchNaverTotal(naverClientId, naverClientSecret, "news", `"${kwQuery}"`);
-    const kwOnlyBlog = await searchNaverTotal(naverClientId, naverClientSecret, "blog", `"${kwQuery}"`);
-    keywordOnlyBuzzData.set(k.keyword.toLowerCase(), { newsTotal: kwOnlyNews, blogTotal: kwOnlyBlog });
-    console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore} | keyword-only: news=${kwOnlyNews} blog=${kwOnlyBlog}`);
-    // 키워드 간 API 간격
-    await new Promise(r => setTimeout(r, 150));
-  }
-
+  // ─── 순수 수집: buzz score 수집 없이 키워드와 소스 정보만 준비 ───
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => {
-    const buzz = keywordBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0, score: 0 };
-    // 키워드 단독 버즈 = 시장 전체 기준 baseline
-    const kwOnlyBuzz = keywordOnlyBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0 };
-    const keywordOnlyTotal = kwOnlyBuzz.newsTotal + kwOnlyBuzz.blogTotal;
     return {
       extractedKeyword: keywordData,
-      row: {
-        wiki_entry_id: null,
-        star_id: member.id || null,
-        trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
-        trigger_source: keywordData.category === "social" ? "tiktok" : "naver_news",
-        artist_name: member.display_name,
+      // ktrenz_keywords 테이블용 데이터
+      keywordRow: {
         keyword: keywordData.keyword,
         keyword_en: keywordData.keyword_en || null,
         keyword_ko: keywordData.keyword_ko || null,
         keyword_ja: keywordData.keyword_ja || null,
         keyword_zh: keywordData.keyword_zh || null,
         keyword_category: keywordData.category,
+        status: "pending",
         context: keywordData.context,
         context_ko: keywordData.context_ko || null,
         context_ja: keywordData.context_ja || null,
         context_zh: keywordData.context_zh || null,
-        confidence: keywordData.confidence,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
         source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
