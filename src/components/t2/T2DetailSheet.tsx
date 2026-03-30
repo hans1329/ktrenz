@@ -752,7 +752,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       "rounded-lg p-2.5 text-center cursor-pointer transition-all border",
                       betOutcome === key
                         ? "border-primary bg-primary/10 shadow-sm"
-                        : "bg-muted border-border/30 hover:border-primary/40"
+                        : "bg-primary-foreground border-border/30 hover:border-primary/40"
                     )}
                     onClick={() => setBetOutcome(key)}
                   >
