@@ -141,12 +141,10 @@ const T2SettlementResultModal = () => {
             )} />
           </div>
           <h2 className="text-lg font-black text-foreground">
-            {language === "ko" ? "예측 결과 발표!" : "Prediction Results!"}
+            {t("t2.settle.title")}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {language === "ko"
-              ? `${results.length}건의 예측이 정산되었습니다`
-              : `${results.length} prediction${results.length > 1 ? "s" : ""} settled`}
+            {results.length} prediction{results.length > 1 ? "s" : ""} settled
           </p>
 
           <div className={cn(
