@@ -717,29 +717,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   </div>
                   <span className="text-xs text-muted-foreground">{ageLabel}</span>
                 </div>
-
-                {/* Source contribution bar */}
-                <div className="px-4 pb-3 space-y-1.5">
-                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                    {language === "ko" ? "감지 소스" : "Detected via"}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden flex">
-                      {/* Primary source bar */}
-                      <div 
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          tile.triggerSource === "tiktok" ? "bg-[hsl(var(--primary))]" :
-                          tile.triggerSource === "instagram" ? "bg-[hsl(var(--primary))]" :
-                          tile.triggerSource === "youtube_search" ? "bg-[hsl(var(--primary))]" :
-                          "bg-[hsl(var(--primary))]"
-                        )}
-                        style={{ width: influence > 0 ? `${Math.min(100, Math.max(20, influence))}%` : "15%" }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">{source}</span>
-                  </div>
-                </div>
               </div>
             );
           })()}
