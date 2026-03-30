@@ -159,9 +159,9 @@ const T2SettlementResultModal = () => {
           </div>
 
           <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-            <span>{language === "ko" ? "적중" : "Wins"}: <strong className="text-foreground">{wins}/{results.length}</strong></span>
-            <span>{language === "ko" ? "투자" : "Spent"}: <strong className="text-foreground">{totalSpent}</strong></span>
-            <span>{language === "ko" ? "수익" : "Earned"}: <strong className="text-foreground">{totalPayout}</strong></span>
+            <span>{t("t2.settle.wins")}: <strong className="text-foreground">{wins}/{results.length}</strong></span>
+            <span>{t("t2.settle.spent")}: <strong className="text-foreground">{totalSpent}</strong></span>
+            <span>{t("t2.settle.earned")}: <strong className="text-foreground">{totalPayout}</strong></span>
           </div>
         </div>
 
