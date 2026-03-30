@@ -28,6 +28,7 @@ const OUTCOME_META: Record<string, { label: string; labelKo: string; icon: typeo
 const STORAGE_KEY = "ktrenz_last_settlement_seen";
 
 const T2SettlementResultModal = () => {
+  const { language, t } = useLanguage();
   const { user } = useAuth();
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
