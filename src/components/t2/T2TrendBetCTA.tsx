@@ -142,7 +142,7 @@ const T2TrendBetCTA = () => {
 
   const placeBet = async (triggerId: string, outcome: string) => {
     if (!user) {
-      toast.error(language === "ko" ? "로그인이 필요합니다" : "Login required");
+      toast.error(t("t2.bet.loginRequired"));
       return;
     }
     setSubmitting(triggerId);
