@@ -1509,6 +1509,8 @@ Deno.serve(async (req) => {
     let totalInserted = 0;
     let totalBackfilled = 0;
     let totalFiltered = 0;
+    // 같은 run 내 크로스 아티스트 중복 키워드 방지용 공유 Set
+    const runInsertedKeywords = new Set<string>();
     const artistResults: Array<{
       name: string;
       type: string;
