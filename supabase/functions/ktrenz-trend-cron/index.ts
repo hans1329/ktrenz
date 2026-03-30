@@ -142,16 +142,16 @@ Deno.serve(async (req) => {
             const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
               .select("id").eq("run_id", ppState.run_id).eq("phase", nextPhase).limit(1);
             if (!existingNext?.length) {
+              const resumeOffset = await getResumeOffset(sb, nextPhase, 0);
               await sb.from("ktrenz_pipeline_state").insert({
                 run_id: ppState.run_id,
                 phase: nextPhase,
                 status: "running",
-                current_offset: 0,
+                current_offset: resumeOffset,
                 batch_size: ppState.batch_size,
               });
+              console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase} at offset=${resumeOffset}`);
             }
-
-            console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
             console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
           } else {
             // 마지막 phase or single-phase → 전부 done
