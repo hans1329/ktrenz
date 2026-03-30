@@ -2039,9 +2039,14 @@ async function detectForMember(
       continue;
     }
 
-    // 크로스 아티스트 중복 필터 (keyword, keyword_en, keyword_ko 모두 체크)
+    // 크로스 아티스트 중복 필터 (DB 기존 + 같은 run 내 삽입된 키워드)
     if (crossSet.has(kwLower) || (kwEnLower && crossSet.has(kwEnLower)) || (kwKoLower && crossSet.has(kwKoLower))) {
       console.warn(`[trend-detect] Cross-artist duplicate filtered: "${candidate.row.keyword}"`);
+      continue;
+    }
+    // 같은 run 내에서 다른 아티스트가 이미 삽입한 키워드 차단
+    if (runInsertedKeywords && (runInsertedKeywords.has(kwLower) || (kwKoLower && runInsertedKeywords.has(kwKoLower)) || (kwEnLower && runInsertedKeywords.has(kwEnLower)))) {
+      console.warn(`[trend-detect] Run-level cross-artist duplicate filtered: "${candidate.row.keyword}"`);
       continue;
     }
 
@@ -2052,6 +2057,12 @@ async function detectForMember(
         continue; // 같은 배치에서 이미 삽입 예정
       }
       batchInsertedKeys.add(kwLower);
+      // run-level 공유 Set에도 추가
+      if (runInsertedKeywords) {
+        runInsertedKeywords.add(kwLower);
+        if (kwKoLower) runInsertedKeywords.add(kwKoLower);
+        if (kwEnLower) runInsertedKeywords.add(kwEnLower);
+      }
       rowsToInsert.push(candidate.row);
       insertedKeywords.push(candidate.extractedKeyword);
       continue;
