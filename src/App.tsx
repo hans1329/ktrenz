@@ -108,6 +108,7 @@ const App = () => (
                 <Route path="/pd" element={<T2PitchDeck />} />
                 <Route path="/t2/grades" element={<T2TrendGrades />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/ag" element={<KeywordInfluence />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
