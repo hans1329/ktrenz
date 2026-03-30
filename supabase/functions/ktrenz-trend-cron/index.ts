@@ -306,7 +306,53 @@ async function executeBatch(
     clearTimeout(timeout);
     const msg = (fetchErr as Error).message || "unknown";
     console.warn(`[cron] Fetch failed: ${msg}`);
-    result = { success: true, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true, skippedError: msg };
+    result = { success: false, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true, skippedError: msg };
+  }
+
+  // ── 에러 감지 & 연속 실패 시 파이프라인 중단 ──
+  const isBatchError = result.fallback === true || result.success === false || result.skippedError;
+  if (isBatchError) {
+    const errorMsg = result.skippedError || result.error || "Unknown batch error";
+    const { data: currentState } = await sb
+      .from("ktrenz_pipeline_state")
+      .select("error_count")
+      .eq("run_id", runId)
+      .eq("phase", phase)
+      .limit(1);
+
+    const prevErrorCount = currentState?.[0]?.error_count || 0;
+    const newErrorCount = prevErrorCount + 1;
+
+    await sb.from("ktrenz_pipeline_state")
+      .update({
+        error_count: newErrorCount,
+        last_error: errorMsg.slice(0, 500),
+        last_error_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("run_id", runId)
+      .eq("phase", phase);
+
+    if (newErrorCount >= MAX_CONSECUTIVE_ERRORS) {
+      console.error(`[cron] Phase ${phase} stopped: ${newErrorCount} consecutive errors. Last: ${errorMsg}`);
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: "error",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", runId)
+        .eq("phase", phase);
+
+      return { ...result, stopped: true, errorCount: newErrorCount };
+    }
+
+    console.warn(`[cron] Batch error (${newErrorCount}/${MAX_CONSECUTIVE_ERRORS}): ${errorMsg}`);
+  } else {
+    // 성공 시 에러 카운트 리셋
+    await sb.from("ktrenz_pipeline_state")
+      .update({ error_count: 0 })
+      .eq("run_id", runId)
+      .eq("phase", phase);
   }
 
   const totalCandidates = result.totalCandidates || 0;
