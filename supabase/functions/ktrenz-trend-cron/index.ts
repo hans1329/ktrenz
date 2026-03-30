@@ -262,8 +262,13 @@ async function executeBatch(
   const totalCandidates = result.totalCandidates || 0;
   const nextOffset = offset + batchSize;
   const isThrottled = result.throttled === true;
+  const isQuotaExhausted = result.quotaExhausted === true;
   const isSingleCall = SINGLE_CALL_PHASES.has(phase);
-  const isLastBatch = isSingleCall || (result.success && nextOffset >= totalCandidates) || isThrottled;
+  const isLastBatch = isSingleCall || (result.success && nextOffset >= totalCandidates) || isThrottled || isQuotaExhausted;
+
+  if (isQuotaExhausted) {
+    console.warn(`[cron] Phase ${phase} stopped early: API quota exhausted at offset=${offset}`);
+  }
 
   if (isLastBatch) {
     if (isSingleCall) {
