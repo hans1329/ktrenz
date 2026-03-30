@@ -297,26 +297,45 @@ async function searchNaverTotal(
   clientSecret: string,
   endpoint: "news" | "blog",
   query: string,
+  retries = 2,
 ): Promise<number> {
-  try {
-    const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
-    url.searchParams.set("query", query);
-    url.searchParams.set("display", "1"); // total만 필요하므로 최소
-    url.searchParams.set("sort", "date");
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        // 재시도 전 대기 (rate limit 회피)
+        await new Promise(r => setTimeout(r, 300 * attempt));
+      }
+      const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
+      url.searchParams.set("query", query);
+      url.searchParams.set("display", "1"); // total만 필요하므로 최소
+      url.searchParams.set("sort", "date");
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        "X-Naver-Client-Id": clientId,
-        "X-Naver-Client-Secret": clientSecret,
-      },
-    });
+      const response = await fetch(url.toString(), {
+        headers: {
+          "X-Naver-Client-Id": clientId,
+          "X-Naver-Client-Secret": clientSecret,
+        },
+      });
 
-    if (!response.ok) return 0;
-    const data = await response.json();
-    return data.total || 0;
-  } catch {
-    return 0;
+      if (response.status === 429) {
+        console.warn(`[searchNaverTotal] Rate limited on ${endpoint} "${query}", attempt ${attempt + 1}/${retries + 1}`);
+        if (attempt < retries) continue;
+        return 0;
+      }
+      if (!response.ok) {
+        console.warn(`[searchNaverTotal] HTTP ${response.status} on ${endpoint} "${query}"`);
+        if (attempt < retries) continue;
+        return 0;
+      }
+      const data = await response.json();
+      return data.total || 0;
+    } catch (e) {
+      console.warn(`[searchNaverTotal] Error on ${endpoint} "${query}": ${(e as Error).message}`);
+      if (attempt < retries) continue;
+      return 0;
+    }
   }
+  return 0;
 }
 
 // ─── 7일 이내 기사 카운트 + API total 반환 ───
