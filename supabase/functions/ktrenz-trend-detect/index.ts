@@ -1848,6 +1848,9 @@ async function detectForMember(
 
   const candidateRows = keywordSources.map(({ keywordData, sourceArticle, sourceUrl }) => {
     const buzz = keywordBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0, score: 0 };
+    // 키워드 단독 버즈 = 시장 전체 기준 baseline
+    const kwOnlyBuzz = keywordOnlyBuzzData.get(keywordData.keyword.toLowerCase()) || { newsTotal: 0, blogTotal: 0 };
+    const keywordOnlyTotal = kwOnlyBuzz.newsTotal + kwOnlyBuzz.blogTotal;
     return {
       extractedKeyword: keywordData,
       row: {
@@ -1878,8 +1881,9 @@ async function detectForMember(
         fan_sentiment: keywordData.fan_sentiment || null,
         trend_potential: keywordData.trend_potential ?? null,
         purchase_stage: keywordData.purchase_stage || null,
-        baseline_score: keywordData.category === "social" ? 10 : (buzz.newsTotal + buzz.blogTotal),
-        peak_score: keywordData.category === "social" ? 10 : (buzz.newsTotal + buzz.blogTotal),
+        // baseline = 키워드 단독 시장 전체 버즈 (track과 동일 스케일)
+        baseline_score: keywordData.category === "social" ? 10 : keywordOnlyTotal,
+        peak_score: keywordData.category === "social" ? 10 : keywordOnlyTotal,
         status: "pending",
         metadata: keywordData.category === "social" ? {
           source: "tiktok",
@@ -1892,6 +1896,8 @@ async function detectForMember(
           buzz_news_total: buzz.newsTotal,
           buzz_blog_total: buzz.blogTotal,
           buzz_score_normalized: buzz.score,
+          keyword_only_news: kwOnlyBuzz.newsTotal,
+          keyword_only_blog: kwOnlyBuzz.blogTotal,
         },
       },
     };
