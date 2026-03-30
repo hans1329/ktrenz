@@ -595,8 +595,8 @@ Deno.serve(async (req) => {
           };
         });
 
-        // 중복 체크: 같은 star_id + keyword + trigger_source(instagram) + 3일 이내
-        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+        // 중복 체크: 같은 star_id + keyword + trigger_source(instagram) + 7일 이내
+        const lookbackDays = new Date(Date.now() - POST_AGE_DAYS * 24 * 60 * 60 * 1000).toISOString();
         const { data: existing } = await sb
           .from("ktrenz_trend_triggers")
           .select("keyword")
