@@ -120,9 +120,9 @@ const SAMPLE_KEYWORDS = [
 ];
 
 const MOMENTUM_CONFIG: Record<string, { label: string; icon: typeof Flame; color: string }> = {
-  surging: { label: "Surging", icon: Flame, color: "text-red-500" },
-  spreading: { label: "Spreading", icon: TrendingUp, color: "text-amber-500" },
-  building: { label: "Building", icon: Sparkles, color: "text-emerald-500" },
+  surging: { label: "🔥 급상승", icon: Flame, color: "text-red-500" },
+  spreading: { label: "📈 확산 중", icon: TrendingUp, color: "text-amber-500" },
+  building: { label: "🌱 형성 중", icon: Sparkles, color: "text-emerald-500" },
 };
 
 const SOURCE_ICON: Record<string, string> = {
@@ -135,9 +135,9 @@ const SOURCE_ICON: Record<string, string> = {
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const h = Math.floor(diff / 3600000);
-  if (h < 1) return "just now";
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 1) return "방금 전";
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
 }
 
 const KeywordInfluence = () => {
