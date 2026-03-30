@@ -955,7 +955,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
           
 
-          {/* Carousel Card View — grouped by category */}
+          <div className="h-1.5" />
           {(() => {
             // Group items by merged categories
             const mergeMap: Record<string, string> = {
