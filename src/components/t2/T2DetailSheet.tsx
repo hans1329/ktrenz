@@ -929,7 +929,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   className="gap-1.5 text-xs"
                   onClick={() => handleBoost("copy")}
                 >
-                  📋
+                  <Copy className="w-4 h-4" />
                 </Button>
               </div>
             </div>
