@@ -30,7 +30,6 @@ const STORAGE_KEY = "ktrenz_last_settlement_seen";
 const T2SettlementResultModal = () => {
   const { language, t } = useLanguage();
   const { user } = useAuth();
-  const { language } = useLanguage();
   const [open, setOpen] = useState(false);
 
   const { data: results } = useQuery({
