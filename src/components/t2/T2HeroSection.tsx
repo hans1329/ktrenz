@@ -233,7 +233,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           onClick={() => navigate("/t2/category/my")}
           className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
-          {myKeywords.length} {language === "ko" ? "개" : "trends"}
+          {myKeywords.length} {t("t2.hero.trends")}
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
