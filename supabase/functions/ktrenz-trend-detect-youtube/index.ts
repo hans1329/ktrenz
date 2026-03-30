@@ -490,6 +490,7 @@ Deno.serve(async (req) => {
 
     let successCount = 0;
     let totalKeywords = 0;
+    let quotaExhausted = false;
 
     for (const star of batch) {
       try {
@@ -507,6 +508,11 @@ Deno.serve(async (req) => {
 
         await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
+        if (e instanceof QuotaExhaustedError) {
+          console.error(`[detect-youtube] Quota exhausted — stopping batch immediately. Processed ${successCount}/${batch.length}`);
+          quotaExhausted = true;
+          break;
+        }
         console.error(`[detect-youtube] ✗ ${star.display_name}: ${(e as Error).message}`);
       }
     }
