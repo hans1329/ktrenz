@@ -1,12 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Clock, Star, Heart, ChevronRight, LayoutGrid, List, Users, MoreVertical, Zap, Database, MessageCircle } from "lucide-react";
@@ -22,6 +23,7 @@ export interface TrendTile {
   id: string;
   keyword: string;
   keywordKo: string | null;
+  keywordEn: string | null;
   keywordJa: string | null;
   keywordZh: string | null;
   category: string;
@@ -63,9 +65,10 @@ function getLocalizedArtistName(tile: TrendTile, lang: string): string {
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
     case "ko": return tile.keywordKo || tile.keyword;
-    case "ja": return tile.keywordJa || tile.keyword;
-    case "zh": return tile.keywordZh || tile.keyword;
-    default: return tile.keyword;
+    case "en": return tile.keywordEn || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keywordKo || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keywordKo || tile.keyword;
+    default: return tile.keywordEn || tile.keyword;
   }
 }
 
@@ -309,6 +312,8 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const { language, t } = useLanguage();
   const { user } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const { translateIfNeeded } = useFieldTranslation();
+  const queryClient = useQueryClient();
   
   const navigate = useNavigate();
 
@@ -469,7 +474,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       return raw.map((t: any): TrendTile => {
         const star = t.star_id ? sMap.get(t.star_id) : null;
         return {
-          id: t.id, keyword: t.keyword, keywordKo: t.keyword_ko || null, keywordJa: t.keyword_ja || null, keywordZh: t.keyword_zh || null,
+          id: t.id, keyword: t.keyword, keywordKo: t.keyword_ko || null, keywordEn: t.keyword_en || null, keywordJa: t.keyword_ja || null, keywordZh: t.keyword_zh || null,
           category: t.keyword_category || "brand", artistName: star?.display_name || t.artist_name || "Unknown",
           artistNameKo: star?.name_ko || null, artistImageUrl: star?.image_url || null,
           wikiEntryId: star?.wiki_entry_id || t.wiki_entry_id, influenceIndex: Number(t.influence_index) || 0,
@@ -615,6 +620,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
           id: t.id,
           keyword: t.keyword,
           keywordKo: t.keyword_ko || null,
+          keywordEn: t.keyword_en || null,
           keywordJa: t.keyword_ja || null,
           keywordZh: t.keyword_zh || null,
           category: t.keyword_category || "brand",
@@ -649,6 +655,30 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     },
     refetchInterval: 30 * 60 * 1000,
   });
+
+  // On-demand translation: trigger for non-Korean languages when data loads
+  useEffect(() => {
+    if (!triggers?.length || language === "ko") return;
+    const langCol = language === "en" ? "keywordEn" : language === "ja" ? "keywordJa" : "keywordZh";
+    const ctxCol = language === "en" ? "context" : language === "ja" ? "contextJa" : "contextZh";
+    const needsKeyword = triggers.filter(t => t.keywordKo && !t[langCol as keyof TrendTile]).slice(0, 20);
+    const needsContext = triggers.filter(t => t.contextKo && !t[ctxCol as keyof TrendTile]).slice(0, 20);
+    
+    const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    
+    if (needsKeyword.length > 0) {
+      translateIfNeeded("ktrenz_trend_triggers", "keyword", 
+        needsKeyword.map(t => ({ id: t.id, keyword_ko: t.keywordKo, keyword_en: t.keywordEn, keyword_ja: t.keywordJa, keyword_zh: t.keywordZh })),
+        refetch
+      );
+    }
+    if (needsContext.length > 0) {
+      translateIfNeeded("ktrenz_trend_triggers", "context",
+        needsContext.map(t => ({ id: t.id, context_ko: t.contextKo, context: t.context, context_ja: t.contextJa, context_zh: t.contextZh })),
+        refetch
+      );
+    }
+  }, [triggers, language]);
 
   const dedupedShopTriggers = useMemo(() => {
     if (!triggers?.length) return [];

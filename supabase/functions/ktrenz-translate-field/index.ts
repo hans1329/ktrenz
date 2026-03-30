@@ -1,0 +1,165 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+const SUPPORTED_LANGS = ["en", "ja", "zh"] as const;
+type Lang = (typeof SUPPORTED_LANGS)[number];
+
+// Maps table + field prefix to the source (Korean) column and target columns
+const FIELD_MAP: Record<string, { source: string; targets: Record<Lang, string> }> = {
+  "ktrenz_keywords.keyword": {
+    source: "keyword_ko",
+    targets: { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
+  },
+  "ktrenz_keywords.context": {
+    source: "context_ko",
+    targets: { en: "context", ja: "context_ja", zh: "context_zh" },
+  },
+  "ktrenz_trend_triggers.keyword": {
+    source: "keyword_ko",
+    targets: { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
+  },
+  "ktrenz_trend_triggers.context": {
+    source: "context_ko",
+    targets: { en: "context", ja: "context_ja", zh: "context_zh" },
+  },
+};
+
+const langLabel: Record<Lang, string> = {
+  en: "English",
+  ja: "Japanese",
+  zh: "Chinese (Simplified)",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { table, field, ids, language } = await req.json() as {
+      table: string;
+      field: string;
+      ids: string[];
+      language: string;
+    };
+
+    const lang = language as Lang;
+    if (!SUPPORTED_LANGS.includes(lang)) {
+      return new Response(JSON.stringify({ error: "Unsupported language" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const key = `${table}.${field}`;
+    const mapping = FIELD_MAP[key];
+    if (!mapping) {
+      return new Response(JSON.stringify({ error: `Unknown field: ${key}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!ids || ids.length === 0 || ids.length > 20) {
+      return new Response(JSON.stringify({ error: "ids must be 1-20 items" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const targetCol = mapping.targets[lang];
+
+    // Fetch rows where target is null but source exists
+    const { data: rows, error: fetchErr } = await supabase
+      .from(table)
+      .select(`id, ${mapping.source}, ${targetCol}`)
+      .in("id", ids)
+      .is(targetCol, null)
+      .not(mapping.source, "is", null);
+
+    if (fetchErr) throw fetchErr;
+    if (!rows || rows.length === 0) {
+      return new Response(JSON.stringify({ translated: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Batch translate via AI
+    const textsToTranslate = rows.map((r: any) => r[mapping.source] as string);
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+    const prompt = `Translate the following Korean texts to ${langLabel[lang]}. Return ONLY a JSON array of translated strings in the same order. Keep proper nouns, brand names, and artist names as-is (do not translate them). Keep translations concise and natural.
+
+Input:
+${JSON.stringify(textsToTranslate)}`;
+
+    const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a professional Korean translator. Output only valid JSON arrays." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.3,
+      }),
+    });
+
+    if (!aiResp.ok) {
+      const errText = await aiResp.text();
+      console.error("OpenAI error:", aiResp.status, errText);
+      throw new Error(`Translation API error: ${aiResp.status}`);
+    }
+
+    const aiData = await aiResp.json();
+    const rawContent = aiData.choices?.[0]?.message?.content || "[]";
+
+    // Extract JSON array from response
+    const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error("Could not parse translation response");
+
+    const translated: string[] = JSON.parse(jsonMatch[0]);
+    if (translated.length !== rows.length) {
+      console.warn(`Translation count mismatch: got ${translated.length}, expected ${rows.length}`);
+    }
+
+    // Update DB
+    const results: Record<string, string> = {};
+    for (let i = 0; i < Math.min(translated.length, rows.length); i++) {
+      const row = rows[i] as any;
+      const translation = translated[i];
+      if (!translation) continue;
+
+      await supabase
+        .from(table)
+        .update({ [targetCol]: translation })
+        .eq("id", row.id);
+
+      results[row.id] = translation;
+    }
+
+    return new Response(JSON.stringify({ translated: Object.keys(results).length, results }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("ktrenz-translate-field error:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
