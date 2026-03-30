@@ -67,6 +67,7 @@ import B2BRecommendations from "./pages/b2b/B2BRecommendations";
 import B2BActivation from "./pages/b2b/B2BActivation";
 import T2CategoryDetail from "./pages/T2CategoryDetail";
 import About from "./pages/About";
+import KeywordInfluence from "./pages/KeywordInfluence";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
