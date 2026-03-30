@@ -206,16 +206,14 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "200px" }}>
             <h2 className="text-xl font-black text-white leading-tight mb-2 whitespace-pre-line">
-              {language === "ko"
-                ? "관심 아티스트를 등록하고\n맞춤 트렌드를 받아보세요"
-                : "Follow your favorite artists\nfor personalized trends"}
+              {t("t2.hero.followArtistsTitle")}
             </h2>
             <button
               onClick={() => onOpenOnboarding ? onOpenOnboarding() : navigate("/t2/my")}
               className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 text-white text-sm font-bold hover:bg-white/25 transition-all self-start"
             >
               <Heart className="w-4 h-4" />
-              {language === "ko" ? "아티스트 등록하기" : "Follow Artists"}
+              {t("t2.hero.followArtists")}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
