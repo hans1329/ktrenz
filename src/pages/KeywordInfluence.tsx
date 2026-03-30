@@ -246,7 +246,7 @@ const KeywordInfluence = () => {
                           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                             <span>{SOURCE_ICON[src.sourceType]} {src.sourceType}</span>
                             <span>{timeAgo(src.detectedAt)}</span>
-                            <span className="text-primary font-semibold">Eng. {src.engagementScore}</span>
+                            <span className="text-primary font-semibold">참여도 {src.engagementScore}</span>
                           </div>
                         </div>
                         <a href={src.sourceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 shrink-0">
