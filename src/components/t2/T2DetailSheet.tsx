@@ -758,7 +758,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   >
                     <div className="text-lg">{emoji}</div>
                     <div className="text-sm font-bold text-foreground">{label}</div>
-                    <div className={cn("text-sm font-black", color === "amber" ? "text-amber-600" : `text-${color}-400`)}>{multi}</div>
+                    <div className={cn("text-sm font-black", color === "amber" ? "text-secondary-foreground" : `text-${color}-400`)}>{multi}</div>
                     <div className="text-[9px] text-foreground mt-0.5">{threshold}</div>
                   </div>
                 ))}
