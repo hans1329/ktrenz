@@ -497,8 +497,10 @@ Deno.serve(async (req) => {
           .limit(1);
         const prevTrackScore = prevTracking?.[0]?.interest_score ?? null;
 
-        // ─── 모든 키워드: 뉴스 + 블로그 버즈 점수 (통합) ───
-        const searchQuery = `"${trigger.artist_name}" "${kwQuery}"`;
+        // ─── 추적: 키워드 단독 검색 (아티스트 무관한 시장 전체 버즈 측정) ───
+        // 감지(detect)는 "아티스트+키워드"로 연관성 확인 후 키워드 확보
+        // 추적(track)은 "키워드만"으로 검색하여 시장 전체에서의 버즈량 변화를 측정
+        const searchQuery = `"${kwQuery}"`;
         const [newsResult, blogResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
