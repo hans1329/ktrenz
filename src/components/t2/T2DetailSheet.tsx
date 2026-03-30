@@ -693,7 +693,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
             return (
-              <div className="rounded-xl border border-border overflow-hidden">
+              <div className="rounded-xl border overflow-hidden border-[#dcdfe4]/[0.59]">
                 {/* Momentum header */}
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2">
