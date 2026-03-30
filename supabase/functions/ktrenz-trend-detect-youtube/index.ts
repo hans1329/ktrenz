@@ -524,10 +524,11 @@ Deno.serve(async (req) => {
         success: true,
         batchOffset,
         batchSize,
-        processed: batch.length,
+        processed: quotaExhausted ? successCount : batch.length,
         totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
+        quotaExhausted,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
