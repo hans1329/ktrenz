@@ -1822,19 +1822,27 @@ async function detectForMember(
     return sanitizeImageUrl(img);
   }
 
-  // ─── 키워드별 buzz raw counts + normalized score ───
+  // ─── 키워드별 buzz raw counts (아티스트+키워드: 연관성 확인용) ───
   const keywordBuzzData = new Map<string, { newsTotal: number; blogTotal: number; score: number }>();
+  // ─── 키워드 단독 buzz (시장 전체 버즈: baseline용) ───
+  const keywordOnlyBuzzData = new Map<string, { newsTotal: number; blogTotal: number }>();
+
   const buzzPromises = keywords
     .filter(k => k.category !== "social") // 소셜 키워드는 Naver buzz 조회 불필요
     .map(async (k) => {
     const kwQuery = k.keyword_ko || k.keyword;
     const artistLabel = member.name_ko || member.display_name;
+    // 1) 아티스트+키워드 (기존: 연관성 확인용)
     const { newsTotal, blogTotal } = await fetchKeywordBuzzCounts(
       naverClientId, naverClientSecret, artistLabel, kwQuery
     );
     const buzzScore = normalizeBuzzScore(newsTotal, blogTotal);
     keywordBuzzData.set(k.keyword.toLowerCase(), { newsTotal, blogTotal, score: buzzScore });
-    console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore}`);
+    // 2) 키워드 단독 (시장 전체 버즈 → baseline_score로 사용)
+    const kwOnlyNews = await searchNaverTotal(naverClientId, naverClientSecret, "news", `"${kwQuery}"`);
+    const kwOnlyBlog = await searchNaverTotal(naverClientId, naverClientSecret, "blog", `"${kwQuery}"`);
+    keywordOnlyBuzzData.set(k.keyword.toLowerCase(), { newsTotal: kwOnlyNews, blogTotal: kwOnlyBlog });
+    console.log(`[trend-detect] buzz: "${artistLabel} ${kwQuery}" → news=${newsTotal} blog=${blogTotal} → score=${buzzScore} | keyword-only: news=${kwOnlyNews} blog=${kwOnlyBlog}`);
   });
   await Promise.all(buzzPromises);
 
