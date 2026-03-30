@@ -552,14 +552,17 @@ Deno.serve(async (req) => {
           insta_total_comments: prevTracking[0].insta_total_comments || 0,
         } : emptyRaw();
 
-        // ─── 5소스 병렬 수집 ───
+        // ─── 5소스 병렬 수집 (미수집 소스는 null 반환) ───
+        const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0);
+        const socialSkipped = !rapidApiKey;
+
         const [newsResult, blogResult, datalabResult, ytResult, tiktokResult, instaResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-          (ytEnabled && ytQuotaRemaining > 0) ? searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }) : Promise.resolve({ videoCount: 0, totalViews: 0, totalComments: 0 }),
-          rapidApiKey ? searchTikTok(rapidApiKey, kwQuery) : Promise.resolve({ videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 }),
-          rapidApiKey ? searchInstagram(rapidApiKey, kwQuery) : Promise.resolve({ postCount: 0, totalLikes: 0, totalComments: 0 }),
+          ytSkipped ? Promise.resolve(null) : searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
+          socialSkipped ? Promise.resolve(null) : searchTikTok(rapidApiKey, kwQuery),
+          socialSkipped ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery),
         ]);
 
         const currentRaw: SourceRaw = {
@@ -569,16 +572,16 @@ Deno.serve(async (req) => {
           naver_blog_24h: blogResult.recent24h,
           datalab_ratio: datalabResult.latestRatio,
           datalab_trend_7d: datalabResult.trend,
-          youtube_video_count: ytResult.videoCount,
-          youtube_total_views: ytResult.totalViews,
-          youtube_total_comments: ytResult.totalComments,
-          tiktok_video_count: tiktokResult.videoCount,
-          tiktok_total_views: tiktokResult.totalViews,
-          tiktok_total_likes: tiktokResult.totalLikes,
-          tiktok_total_comments: tiktokResult.totalComments,
-          insta_post_count: instaResult.postCount,
-          insta_total_likes: instaResult.totalLikes,
-          insta_total_comments: instaResult.totalComments,
+          youtube_video_count: ytResult ? ytResult.videoCount : null,
+          youtube_total_views: ytResult ? ytResult.totalViews : null,
+          youtube_total_comments: ytResult ? ytResult.totalComments : null,
+          tiktok_video_count: tiktokResult ? tiktokResult.videoCount : null,
+          tiktok_total_views: tiktokResult ? tiktokResult.totalViews : null,
+          tiktok_total_likes: tiktokResult ? tiktokResult.totalLikes : null,
+          tiktok_total_comments: tiktokResult ? tiktokResult.totalComments : null,
+          insta_post_count: instaResult ? instaResult.postCount : null,
+          insta_total_likes: instaResult ? instaResult.totalLikes : null,
+          insta_total_comments: instaResult ? instaResult.totalComments : null,
         };
 
         // ─── 종합 buzz + 가중 delta 계산 ───
