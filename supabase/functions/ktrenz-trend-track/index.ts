@@ -20,24 +20,61 @@ const WEIGHTS = {
 
 const MIN_THRESHOLD = 1; // delta 계산 시 0 나눔 방지용 최소 임계
 
-// ─── 소스별 측정값 타입 ───
+// ─── 소스별 측정값 타입 (null = 미수집, 0 = 수집했으나 결과 없음) ───
 interface SourceRaw {
-  naver_news_total: number;
-  naver_blog_total: number;
-  naver_news_24h: number;
-  naver_blog_24h: number;
-  datalab_ratio: number;
+  naver_news_total: number | null;
+  naver_blog_total: number | null;
+  naver_news_24h: number | null;
+  naver_blog_24h: number | null;
+  datalab_ratio: number | null;
   datalab_trend_7d: number[];
-  youtube_video_count: number;
-  youtube_total_views: number;
-  youtube_total_comments: number;
-  tiktok_video_count: number;
-  tiktok_total_views: number;
-  tiktok_total_likes: number;
-  tiktok_total_comments: number;
-  insta_post_count: number;
-  insta_total_likes: number;
-  insta_total_comments: number;
+  youtube_video_count: number | null;
+  youtube_total_views: number | null;
+  youtube_total_comments: number | null;
+  tiktok_video_count: number | null;
+  tiktok_total_views: number | null;
+  tiktok_total_likes: number | null;
+  tiktok_total_comments: number | null;
+  insta_post_count: number | null;
+  insta_total_likes: number | null;
+  insta_total_comments: number | null;
+}
+
+// 소스별 수집 여부 (null이 아닌 값이 하나라도 있으면 수집됨)
+interface SourceAvailability {
+  naver: boolean;
+  datalab: boolean;
+  youtube: boolean;
+  tiktok: boolean;
+  insta: boolean;
+}
+
+function getSourceAvailability(r: SourceRaw): SourceAvailability {
+  return {
+    naver: r.naver_news_total !== null || r.naver_blog_total !== null,
+    datalab: r.datalab_ratio !== null,
+    youtube: r.youtube_total_views !== null,
+    tiktok: r.tiktok_total_views !== null,
+    insta: r.insta_total_likes !== null,
+  };
+}
+
+function getActiveWeights(avail: SourceAvailability): Record<string, number> {
+  const active: Record<string, number> = {};
+  let sum = 0;
+  for (const [src, w] of Object.entries(WEIGHTS)) {
+    if (avail[src as keyof SourceAvailability]) {
+      active[src] = w;
+      sum += w;
+    }
+  }
+  // 재정규화: 합계 1.0으로
+  if (sum > 0 && sum < 1) {
+    for (const src of Object.keys(active)) {
+      active[src] = active[src] / sum;
+    }
+  }
+  return active;
 }
 
 function emptyRaw(): SourceRaw {
@@ -50,21 +87,21 @@ function emptyRaw(): SourceRaw {
   };
 }
 
-// ─── 소스별 "활동량" 단일값 산출 (delta 계산용) ───
+// ─── 소스별 "활동량" 단일값 산출 (delta 계산용, null-safe) ───
 function naverActivity(r: SourceRaw): number {
-  return (r.naver_news_24h + r.naver_blog_24h) * 3 + r.naver_news_total + r.naver_blog_total;
+  return ((r.naver_news_24h ?? 0) + (r.naver_blog_24h ?? 0)) * 3 + (r.naver_news_total ?? 0) + (r.naver_blog_total ?? 0);
 }
 function datalabActivity(r: SourceRaw): number {
-  return r.datalab_ratio;
+  return r.datalab_ratio ?? 0;
 }
 function youtubeActivity(r: SourceRaw): number {
-  return r.youtube_total_views + r.youtube_total_comments * 10;
+  return (r.youtube_total_views ?? 0) + (r.youtube_total_comments ?? 0) * 10;
 }
 function tiktokActivity(r: SourceRaw): number {
-  return r.tiktok_total_views + r.tiktok_total_likes * 2 + r.tiktok_total_comments * 5;
+  return (r.tiktok_total_views ?? 0) + (r.tiktok_total_likes ?? 0) * 2 + (r.tiktok_total_comments ?? 0) * 5;
 }
 function instaActivity(r: SourceRaw): number {
-  return r.insta_total_likes + r.insta_total_comments * 5;
+  return (r.insta_total_likes ?? 0) + (r.insta_total_comments ?? 0) * 5;
 }
 
 // ─── Delta % 계산 ───
@@ -73,37 +110,45 @@ function calcDelta(current: number, previous: number): number {
   return Math.round(((current - base) / base) * 10000) / 100;
 }
 
-// ─── 가중 합산 delta ───
+// ─── 가중 합산 delta (미수집 소스 가중치 재정규화) ───
 function computeWeightedDelta(current: SourceRaw, prev: SourceRaw): { weightedDelta: number; sourceScores: Record<string, number> } {
+  const avail = getSourceAvailability(current);
+  const activeWeights = getActiveWeights(avail);
+
   const deltas: Record<string, number> = {
-    naver: calcDelta(naverActivity(current), naverActivity(prev)),
-    datalab: calcDelta(datalabActivity(current), datalabActivity(prev)),
-    youtube: calcDelta(youtubeActivity(current), youtubeActivity(prev)),
-    tiktok: calcDelta(tiktokActivity(current), tiktokActivity(prev)),
-    insta: calcDelta(instaActivity(current), instaActivity(prev)),
+    naver: avail.naver ? calcDelta(naverActivity(current), naverActivity(prev)) : 0,
+    datalab: avail.datalab ? calcDelta(datalabActivity(current), datalabActivity(prev)) : 0,
+    youtube: avail.youtube ? calcDelta(youtubeActivity(current), youtubeActivity(prev)) : 0,
+    tiktok: avail.tiktok ? calcDelta(tiktokActivity(current), tiktokActivity(prev)) : 0,
+    insta: avail.insta ? calcDelta(instaActivity(current), instaActivity(prev)) : 0,
   };
 
   let weightedDelta = 0;
-  for (const [src, w] of Object.entries(WEIGHTS)) {
+  for (const [src, w] of Object.entries(activeWeights)) {
     weightedDelta += deltas[src] * w;
   }
 
   return { weightedDelta: Math.round(weightedDelta * 100) / 100, sourceScores: deltas };
 }
 
-// ─── 종합 buzz score (현재 활동량의 로그 스케일 합산) ───
+// ─── 종합 buzz score (가용 소스만으로 스케일링) ───
 function computeBuzzScore(r: SourceRaw): number {
-  const n = naverActivity(r);
-  const d = datalabActivity(r);
-  const y = youtubeActivity(r);
-  const t = tiktokActivity(r);
-  const i = instaActivity(r);
-  // 각 소스 활동량을 로그 스케일로 0~20 범위 후 합산 → 0~100
+  const avail = getSourceAvailability(r);
+  const activeCount = Object.values(avail).filter(Boolean).length;
+  if (activeCount === 0) return 0;
+
   const logScale = (v: number, cap: number) => v > 0 ? (Math.log10(v + 1) / Math.log10(cap + 1)) * 20 : 0;
-  return Math.round(Math.min(
-    logScale(n, 10000) + logScale(d, 100) + logScale(y, 10000000) + logScale(t, 10000000) + logScale(i, 1000000),
-    100
-  ));
+
+  let sum = 0;
+  if (avail.naver) sum += logScale(naverActivity(r), 10000);
+  if (avail.datalab) sum += logScale(datalabActivity(r), 100);
+  if (avail.youtube) sum += logScale(youtubeActivity(r), 10000000);
+  if (avail.tiktok) sum += logScale(tiktokActivity(r), 10000000);
+  if (avail.insta) sum += logScale(instaActivity(r), 1000000);
+
+  // 5소스 기준 100점 만점으로 스케일링 (가용 소스 비례)
+  const scaled = (sum / activeCount) * 5;
+  return Math.round(Math.min(scaled, 100));
 }
 
 // ══════════════════════════════════════════════
@@ -489,32 +534,35 @@ Deno.serve(async (req) => {
           .limit(1);
 
         const prevRaw: SourceRaw = prevTracking?.[0] ? {
-          naver_news_total: prevTracking[0].naver_news_total || 0,
-          naver_blog_total: prevTracking[0].naver_blog_total || 0,
-          naver_news_24h: prevTracking[0].naver_news_24h || 0,
-          naver_blog_24h: prevTracking[0].naver_blog_24h || 0,
-          datalab_ratio: prevTracking[0].datalab_ratio || 0,
+          naver_news_total: prevTracking[0].naver_news_total ?? null,
+          naver_blog_total: prevTracking[0].naver_blog_total ?? null,
+          naver_news_24h: prevTracking[0].naver_news_24h ?? null,
+          naver_blog_24h: prevTracking[0].naver_blog_24h ?? null,
+          datalab_ratio: prevTracking[0].datalab_ratio ?? null,
           datalab_trend_7d: [],
-          youtube_video_count: prevTracking[0].youtube_video_count || 0,
-          youtube_total_views: prevTracking[0].youtube_total_views || 0,
-          youtube_total_comments: prevTracking[0].youtube_total_comments || 0,
-          tiktok_video_count: prevTracking[0].tiktok_video_count || 0,
-          tiktok_total_views: prevTracking[0].tiktok_total_views || 0,
-          tiktok_total_likes: prevTracking[0].tiktok_total_likes || 0,
-          tiktok_total_comments: prevTracking[0].tiktok_total_comments || 0,
-          insta_post_count: prevTracking[0].insta_post_count || 0,
-          insta_total_likes: prevTracking[0].insta_total_likes || 0,
-          insta_total_comments: prevTracking[0].insta_total_comments || 0,
+          youtube_video_count: prevTracking[0].youtube_video_count ?? null,
+          youtube_total_views: prevTracking[0].youtube_total_views ?? null,
+          youtube_total_comments: prevTracking[0].youtube_total_comments ?? null,
+          tiktok_video_count: prevTracking[0].tiktok_video_count ?? null,
+          tiktok_total_views: prevTracking[0].tiktok_total_views ?? null,
+          tiktok_total_likes: prevTracking[0].tiktok_total_likes ?? null,
+          tiktok_total_comments: prevTracking[0].tiktok_total_comments ?? null,
+          insta_post_count: prevTracking[0].insta_post_count ?? null,
+          insta_total_likes: prevTracking[0].insta_total_likes ?? null,
+          insta_total_comments: prevTracking[0].insta_total_comments ?? null,
         } : emptyRaw();
 
-        // ─── 5소스 병렬 수집 ───
+        // ─── 5소스 병렬 수집 (미수집 소스는 null 반환) ───
+        const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0);
+        const socialSkipped = !rapidApiKey;
+
         const [newsResult, blogResult, datalabResult, ytResult, tiktokResult, instaResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-          (ytEnabled && ytQuotaRemaining > 0) ? searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }) : Promise.resolve({ videoCount: 0, totalViews: 0, totalComments: 0 }),
-          rapidApiKey ? searchTikTok(rapidApiKey, kwQuery) : Promise.resolve({ videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 }),
-          rapidApiKey ? searchInstagram(rapidApiKey, kwQuery) : Promise.resolve({ postCount: 0, totalLikes: 0, totalComments: 0 }),
+          ytSkipped ? Promise.resolve(null) : searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
+          socialSkipped ? Promise.resolve(null) : searchTikTok(rapidApiKey, kwQuery),
+          socialSkipped ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery),
         ]);
 
         const currentRaw: SourceRaw = {
@@ -524,16 +572,16 @@ Deno.serve(async (req) => {
           naver_blog_24h: blogResult.recent24h,
           datalab_ratio: datalabResult.latestRatio,
           datalab_trend_7d: datalabResult.trend,
-          youtube_video_count: ytResult.videoCount,
-          youtube_total_views: ytResult.totalViews,
-          youtube_total_comments: ytResult.totalComments,
-          tiktok_video_count: tiktokResult.videoCount,
-          tiktok_total_views: tiktokResult.totalViews,
-          tiktok_total_likes: tiktokResult.totalLikes,
-          tiktok_total_comments: tiktokResult.totalComments,
-          insta_post_count: instaResult.postCount,
-          insta_total_likes: instaResult.totalLikes,
-          insta_total_comments: instaResult.totalComments,
+          youtube_video_count: ytResult ? ytResult.videoCount : null,
+          youtube_total_views: ytResult ? ytResult.totalViews : null,
+          youtube_total_comments: ytResult ? ytResult.totalComments : null,
+          tiktok_video_count: tiktokResult ? tiktokResult.videoCount : null,
+          tiktok_total_views: tiktokResult ? tiktokResult.totalViews : null,
+          tiktok_total_likes: tiktokResult ? tiktokResult.totalLikes : null,
+          tiktok_total_comments: tiktokResult ? tiktokResult.totalComments : null,
+          insta_post_count: instaResult ? instaResult.postCount : null,
+          insta_total_likes: instaResult ? instaResult.totalLikes : null,
+          insta_total_comments: instaResult ? instaResult.totalComments : null,
         };
 
         // ─── 종합 buzz + 가중 delta 계산 ───
@@ -571,12 +619,14 @@ Deno.serve(async (req) => {
           kwUpdates.influence_index = influence;
         }
 
-        console.log(`[trend-track] ✓ "${kwQuery}" buzz=${buzzScore} Δw=${weightedDelta}% naver=${sourceScores.naver}% yt=${sourceScores.youtube}% tt=${sourceScores.tiktok}% ig=${sourceScores.insta}%${isFirstTrack ? " [FIRST]" : ""}`);
+        const avail = getSourceAvailability(currentRaw);
+        const activeCount = Object.values(avail).filter(Boolean).length;
+        console.log(`[trend-track] ✓ "${kwQuery}" buzz=${buzzScore} Δw=${weightedDelta}% sources=${activeCount}/5 [nv=${avail.naver?"✓":"✗"} dl=${avail.datalab?"✓":"✗"} yt=${avail.youtube?"✓":"✗"} tt=${avail.tiktok?"✓":"✗"} ig=${avail.insta?"✓":"✗"}]${isFirstTrack ? " [FIRST]" : ""}`);
 
         // ─── ktrenz_keywords 업데이트 ───
         await sb.from("ktrenz_keywords").update(kwUpdates).eq("id", kw.id);
 
-        // ─── ktrenz_trend_tracking 저장 (소스별 raw 포함) ───
+        // ─── ktrenz_trend_tracking 저장 (소스별 raw 포함, null=미수집) ───
         const triggerId = triggerByKeywordId.get(kw.id) || null;
         await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: triggerId,
@@ -588,7 +638,7 @@ Deno.serve(async (req) => {
           delta_pct: weightedDelta,
           weighted_delta: weightedDelta,
           source_scores: sourceScores,
-          // 소스별 원본값
+          // 소스별 원본값 (null = 미수집)
           naver_news_total: currentRaw.naver_news_total,
           naver_blog_total: currentRaw.naver_blog_total,
           naver_news_24h: currentRaw.naver_news_24h,
@@ -605,7 +655,7 @@ Deno.serve(async (req) => {
           insta_post_count: currentRaw.insta_post_count,
           insta_total_likes: currentRaw.insta_total_likes,
           insta_total_comments: currentRaw.insta_total_comments,
-          raw_response: { scoring_mode: "multi_source_v6", weights: WEIGHTS },
+          raw_response: { scoring_mode: "multi_source_v7_renorm", weights: WEIGHTS, active_sources: avail, active_count: activeCount },
         });
 
         // ─── 레거시 동기화 ───
