@@ -1,0 +1,94 @@
+import { useCallback, useRef } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * On-demand field translation hook.
+ * When language is en/ja/zh and a field is null, triggers edge function
+ * to translate and cache in DB. Calls onTranslated when done so UI can refetch.
+ */
+export const useFieldTranslation = () => {
+  const { language } = useLanguage();
+  const pendingRef = useRef<Set<string>>(new Set());
+
+  const translateIfNeeded = useCallback(
+    async (
+      table: "ktrenz_keywords" | "ktrenz_trend_triggers",
+      field: "keyword" | "context",
+      items: { id: string; [key: string]: any }[],
+      onTranslated?: () => void
+    ) => {
+      if (language === "ko") return; // Korean is source, no translation needed
+
+      // Determine target column name
+      const targetColMap: Record<string, Record<string, string>> = {
+        "ktrenz_keywords.keyword": { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
+        "ktrenz_keywords.context": { en: "context", ja: "context_ja", zh: "context_zh" },
+        "ktrenz_trend_triggers.keyword": { en: "keyword_en", ja: "keyword_ja", zh: "keyword_zh" },
+        "ktrenz_trend_triggers.context": { en: "context", ja: "context_ja", zh: "context_zh" },
+      };
+
+      const key = `${table}.${field}`;
+      const targetCol = targetColMap[key]?.[language];
+      if (!targetCol) return;
+
+      // Find items that need translation (target is null but source exists)
+      const sourceCol = field === "keyword" ? "keyword_ko" : "context_ko";
+      const needTranslation = items.filter(
+        (item) => item[sourceCol] && !item[targetCol] && !pendingRef.current.has(`${item.id}-${key}-${language}`)
+      );
+
+      if (needTranslation.length === 0) return;
+
+      // Mark as pending to avoid duplicate calls
+      const batchIds = needTranslation.slice(0, 20).map((item) => {
+        const pendingKey = `${item.id}-${key}-${language}`;
+        pendingRef.current.add(pendingKey);
+        return item.id;
+      });
+
+      try {
+        const { error } = await supabase.functions.invoke("ktrenz-translate-field", {
+          body: { table, field, ids: batchIds, language },
+        });
+
+        if (error) {
+          console.warn("Translation request failed:", error);
+          // Remove from pending so it can retry
+          batchIds.forEach((id) => pendingRef.current.delete(`${id}-${key}-${language}`));
+          return;
+        }
+
+        onTranslated?.();
+      } catch (err) {
+        console.warn("Translation error:", err);
+        batchIds.forEach((id) => pendingRef.current.delete(`${id}-${key}-${language}`));
+      }
+    },
+    [language]
+  );
+
+  /**
+   * Helper to pick the right field value based on current language
+   */
+  const pickField = useCallback(
+    (item: Record<string, any>, field: "keyword" | "context"): string => {
+      if (field === "keyword") {
+        if (language === "ko") return item.keyword_ko || item.keyword || "";
+        if (language === "en") return item.keyword_en || item.keyword || item.keyword_ko || "";
+        if (language === "ja") return item.keyword_ja || item.keyword_ko || item.keyword || "";
+        if (language === "zh") return item.keyword_zh || item.keyword_ko || item.keyword || "";
+      }
+      if (field === "context") {
+        if (language === "ko") return item.context_ko || item.context || "";
+        if (language === "en") return item.context || item.context_ko || "";
+        if (language === "ja") return item.context_ja || item.context_ko || item.context || "";
+        if (language === "zh") return item.context_zh || item.context_ko || item.context || "";
+      }
+      return "";
+    },
+    [language]
+  );
+
+  return { translateIfNeeded, pickField, language };
+};
