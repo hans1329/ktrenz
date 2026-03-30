@@ -273,9 +273,7 @@ const T2TrendBetCTA = () => {
                 >
                   {isSubmitting
                     ? "..."
-                    : language === "ko"
-                      ? `${selected === "mild" ? "유지" : selected === "strong" ? "상승" : "급등"} 예측하기 (10 K-Point)`
-                      : `Predict ${selected} (10 K-Point)`}
+                    : `${t(`t2.bet.${selected === "mild" ? "flat" : selected === "strong" ? "rise" : "surge"}`)} ${t("t2.bet.predict")} (10 K-Point)`}
                 </button>
               ) : null}
 
