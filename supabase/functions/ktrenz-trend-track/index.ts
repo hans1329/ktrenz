@@ -20,24 +20,61 @@ const WEIGHTS = {
 
 const MIN_THRESHOLD = 1; // delta 계산 시 0 나눔 방지용 최소 임계
 
-// ─── 소스별 측정값 타입 ───
+// ─── 소스별 측정값 타입 (null = 미수집, 0 = 수집했으나 결과 없음) ───
 interface SourceRaw {
-  naver_news_total: number;
-  naver_blog_total: number;
-  naver_news_24h: number;
-  naver_blog_24h: number;
-  datalab_ratio: number;
+  naver_news_total: number | null;
+  naver_blog_total: number | null;
+  naver_news_24h: number | null;
+  naver_blog_24h: number | null;
+  datalab_ratio: number | null;
   datalab_trend_7d: number[];
-  youtube_video_count: number;
-  youtube_total_views: number;
-  youtube_total_comments: number;
-  tiktok_video_count: number;
-  tiktok_total_views: number;
-  tiktok_total_likes: number;
-  tiktok_total_comments: number;
-  insta_post_count: number;
-  insta_total_likes: number;
-  insta_total_comments: number;
+  youtube_video_count: number | null;
+  youtube_total_views: number | null;
+  youtube_total_comments: number | null;
+  tiktok_video_count: number | null;
+  tiktok_total_views: number | null;
+  tiktok_total_likes: number | null;
+  tiktok_total_comments: number | null;
+  insta_post_count: number | null;
+  insta_total_likes: number | null;
+  insta_total_comments: number | null;
+}
+
+// 소스별 수집 여부 (null이 아닌 값이 하나라도 있으면 수집됨)
+interface SourceAvailability {
+  naver: boolean;
+  datalab: boolean;
+  youtube: boolean;
+  tiktok: boolean;
+  insta: boolean;
+}
+
+function getSourceAvailability(r: SourceRaw): SourceAvailability {
+  return {
+    naver: r.naver_news_total !== null || r.naver_blog_total !== null,
+    datalab: r.datalab_ratio !== null,
+    youtube: r.youtube_total_views !== null,
+    tiktok: r.tiktok_total_views !== null,
+    insta: r.insta_total_likes !== null,
+  };
+}
+
+function getActiveWeights(avail: SourceAvailability): Record<string, number> {
+  const active: Record<string, number> = {};
+  let sum = 0;
+  for (const [src, w] of Object.entries(WEIGHTS)) {
+    if (avail[src as keyof SourceAvailability]) {
+      active[src] = w;
+      sum += w;
+    }
+  }
+  // 재정규화: 합계 1.0으로
+  if (sum > 0 && sum < 1) {
+    for (const src of Object.keys(active)) {
+      active[src] = active[src] / sum;
+    }
+  }
+  return active;
 }
 
 function emptyRaw(): SourceRaw {
