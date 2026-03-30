@@ -512,7 +512,7 @@ Deno.serve(async (req) => {
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-          youtubeApiKey ? searchYouTube(youtubeApiKey, kwQuery) : Promise.resolve({ videoCount: 0, totalViews: 0, totalComments: 0 }),
+          (ytEnabled && ytQuotaRemaining > 0) ? searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }) : Promise.resolve({ videoCount: 0, totalViews: 0, totalComments: 0 }),
           rapidApiKey ? searchTikTok(rapidApiKey, kwQuery) : Promise.resolve({ videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 }),
           rapidApiKey ? searchInstagram(rapidApiKey, kwQuery) : Promise.resolve({ postCount: 0, totalLikes: 0, totalComments: 0 }),
         ]);
