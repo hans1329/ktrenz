@@ -263,7 +263,7 @@ const T2TrendBetCTA = () => {
               {/* Confirm / Status */}
               {hasAlreadyBet ? (
                 <div className="mt-2.5 text-center text-[11px] text-muted-foreground">
-                  ✅ {language === "ko" ? "예측 완료 — 24시간 후 결과 발표" : "Predicted — results in 24h"}
+                  ✅ {t("t2.bet.predicted")}
                 </div>
               ) : selected && !hasAlreadyBet ? (
                 <button
