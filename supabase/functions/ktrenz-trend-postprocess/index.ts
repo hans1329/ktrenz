@@ -351,33 +351,37 @@ async function sameSourceUrlDedup(sb: any): Promise<{ expired: number; details: 
   return { expired: expireIds.length, details };
 }
 
-// ── 3b. 크로스 아티스트 동일 source_url 중복제거 ──
-// 서로 다른 아티스트가 같은 기사에서 키워드를 추출한 경우 baseline_score가 높은 것만 유지
+// ── 3b. 크로스 아티스트 동일 기사 + 동일 키워드 중복제거 ──
+// 서로 다른 아티스트가 같은 기사에서 같은 키워드를 추출한 경우만 baseline_score가 높은 것만 유지
+// 같은 기사 + 다른 키워드는 각각 유효하므로 유지
 async function crossArtistSourceUrlDedup(sb: any): Promise<{ expired: number; details: string[] }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: active } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, star_id, artist_name, source_url, baseline_score, detected_at")
+    .select("id, keyword, keyword_ko, keyword_en, star_id, artist_name, source_url, baseline_score, detected_at")
     .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo)
     .not("source_url", "is", null);
 
   if (!active?.length) return { expired: 0, details: [] };
 
-  // source_url 기준 그룹화 (star_id 무관)
-  const byUrl = new Map<string, any[]>();
+  // source_url + keyword(normalized) 기준 그룹화
+  const byUrlKeyword = new Map<string, any[]>();
   for (const e of active) {
     if (!e.source_url) continue;
-    const list = byUrl.get(e.source_url) || [];
+    // keyword, keyword_ko, keyword_en 중 대표값으로 정규화
+    const kwNorm = normalizeForCompare(e.keyword_ko || e.keyword || "");
+    const key = `${e.source_url}::${kwNorm}`;
+    const list = byUrlKeyword.get(key) || [];
     list.push(e);
-    byUrl.set(e.source_url, list);
+    byUrlKeyword.set(key, list);
   }
 
   const expireIds: string[] = [];
   const details: string[] = [];
 
-  for (const [url, entries] of byUrl) {
+  for (const [_key, entries] of byUrlKeyword) {
     // 서로 다른 star_id가 2개 이상인 경우만 처리
     const uniqueStars = new Set(entries.map((e: any) => e.star_id));
     if (uniqueStars.size <= 1) continue;
@@ -394,7 +398,7 @@ async function crossArtistSourceUrlDedup(sb: any): Promise<{ expired: number; de
     }
     const kept = entries[0];
     const removed = entries.slice(1).map((e: any) => `${e.artist_name}/${e.keyword_ko || e.keyword}`).join(", ");
-    details.push(`"${kept.artist_name}/${kept.keyword_ko || kept.keyword}" 유지, "${removed}" 제거 (크로스 아티스트 동일 기사)`);
+    details.push(`"${kept.artist_name}/${kept.keyword_ko || kept.keyword}" 유지, "${removed}" 제거 (크로스 아티스트 동일 기사+동일 키워드)`);
   }
 
   if (expireIds.length > 0) {
