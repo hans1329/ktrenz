@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, TrendingUp, ExternalLink, ChevronRight, Flame, Sparkles, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, ExternalLink, ChevronRight, Flame, Sparkles, Users, Loader2, ShoppingBag, Tag, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -43,6 +43,7 @@ function getMomentum(kw: any) {
 const KeywordInfluence = () => {
   const navigate = useNavigate();
   const [selectedKw, setSelectedKw] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "brand" | "product" | "other">("all");
 
   // Fetch keywords with source counts
   const { data: keywords, isLoading } = useQuery({
@@ -122,13 +123,43 @@ const KeywordInfluence = () => {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-3">
+        {/* Category Tabs */}
+        <div className="flex gap-2 mb-4">
+          {([
+            { key: "all" as const, label: "전체", icon: MoreHorizontal },
+            { key: "brand" as const, label: "브랜드", icon: Tag },
+            { key: "product" as const, label: "상품", icon: ShoppingBag },
+            { key: "other" as const, label: "그 외", icon: Sparkles },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                activeTab === tab.key
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+              )}
+            >
+              <tab.icon className="w-3.5 h-3.5" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         )}
 
-        {keywords?.map(kw => {
+        {keywords?.filter(kw => {
+          if (activeTab === "all") return true;
+          const cat = kw.keyword_category;
+          if (activeTab === "brand") return cat === "brand";
+          if (activeTab === "product") return ["product", "goods"].includes(cat);
+          return !["brand", "product", "goods"].includes(cat);
+        }).map(kw => {
           const sources = sourcesMap.get(kw.id) ?? [];
           const isOpen = selectedKw === kw.id;
           const m = getMomentum(kw);
