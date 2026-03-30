@@ -195,13 +195,13 @@ const T2SettlementResultModal = () => {
                   <div className="text-sm font-bold text-foreground truncate">{keyword}</div>
                   <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-0.5">
-                      {language === "ko" ? "예측" : "Bet"}: <Icon className={cn("w-3 h-3", meta.color)} />
-                      <span className={meta.color}>{language === "ko" ? meta.labelKo : meta.label}</span>
+                      {t("t2.settle.bet")}: <Icon className={cn("w-3 h-3", meta.color)} />
+                      <span className={meta.color}>{t(`t2.bet.${r.outcome === "mild" ? "flat" : r.outcome === "strong" ? "rise" : "surge"}`)}</span>
                     </span>
                     <span>→</span>
                     <span className="flex items-center gap-0.5">
-                      {language === "ko" ? "결과" : "Result"}: 
-                      <span className={actualMeta.color}>{language === "ko" ? actualMeta.labelKo : actualMeta.label}</span>
+                      {t("t2.settle.result")}: 
+                      <span className={actualMeta.color}>{t(`t2.bet.${r.marketOutcome === "mild" ? "flat" : r.marketOutcome === "strong" ? "rise" : "surge"}`)}</span>
                     </span>
                   </div>
                 </div>
