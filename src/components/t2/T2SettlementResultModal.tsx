@@ -222,7 +222,7 @@ const T2SettlementResultModal = () => {
             onClick={handleClose}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.97]"
           >
-            {language === "ko" ? "확인" : "Got it"}
+            {t("t2.settle.gotIt")}
           </button>
         </div>
       </DrawerContent>
