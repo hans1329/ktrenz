@@ -3679,6 +3679,7 @@ export type Database = {
           keyword_ja: string | null
           keyword_ko: string | null
           keyword_zh: string | null
+          last_tracked_at: string | null
           lifetime_hours: number | null
           metadata: Json | null
           peak_at: string | null
@@ -3711,6 +3712,7 @@ export type Database = {
           keyword_ja?: string | null
           keyword_ko?: string | null
           keyword_zh?: string | null
+          last_tracked_at?: string | null
           lifetime_hours?: number | null
           metadata?: Json | null
           peak_at?: string | null
@@ -3743,6 +3745,7 @@ export type Database = {
           keyword_ja?: string | null
           keyword_ko?: string | null
           keyword_zh?: string | null
+          last_tracked_at?: string | null
           lifetime_hours?: number | null
           metadata?: Json | null
           peak_at?: string | null
@@ -4590,6 +4593,7 @@ export type Database = {
           id: string
           interest_score: number | null
           keyword: string
+          keyword_id: string | null
           raw_response: Json | null
           region: string | null
           search_volume: number | null
@@ -4603,6 +4607,7 @@ export type Database = {
           id?: string
           interest_score?: number | null
           keyword: string
+          keyword_id?: string | null
           raw_response?: Json | null
           region?: string | null
           search_volume?: number | null
@@ -4616,6 +4621,7 @@ export type Database = {
           id?: string
           interest_score?: number | null
           keyword?: string
+          keyword_id?: string | null
           raw_response?: Json | null
           region?: string | null
           search_volume?: number | null
@@ -4624,6 +4630,13 @@ export type Database = {
           wiki_entry_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ktrenz_trend_tracking_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_keywords"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ktrenz_trend_tracking_trigger_id_fkey"
             columns: ["trigger_id"]
