@@ -695,8 +695,16 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── YouTube 쿼터 사용량 DB 업데이트 ───
+    if (ytQuotaUsed > 0) {
+      await sb.from("ktrenz_pipeline_state")
+        .update({ current_offset: ytQuotaUsed, updated_at: new Date().toISOString() })
+        .eq("run_id", `yt_track_quota_${today}`)
+        .eq("phase", "youtube_track_quota");
+    }
+
     return new Response(
-      JSON.stringify({ success: true, batchOffset, totalCandidates: totalKeywords, tracked: trackedCount, results }),
+      JSON.stringify({ success: true, batchOffset, totalCandidates: totalKeywords, tracked: trackedCount, ytQuotaUsed, ytQuotaRemaining, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
