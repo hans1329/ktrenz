@@ -955,7 +955,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
           
 
-          <div className="h-1.5" />
+          <div className="h-px" />
           {(() => {
             // Group items by merged categories
             const mergeMap: Record<string, string> = {
