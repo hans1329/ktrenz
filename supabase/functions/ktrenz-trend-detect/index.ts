@@ -924,7 +924,24 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         return false;
       }
 
-      // ownership_confidence 낮으면 차단 (맥락적 관련성 부족)
+      // ── 기업명 패턴 차단: 아티스트/그룹명 + 기업 접미사 조합 (엑소시스템즈, 빅히트테크 등) ──
+      const CORP_SUFFIXES = [
+        "시스템즈", "시스템", "테크", "테크놀로지", "바이오", "제약", "홀딩스",
+        "그룹", "코퍼레이션", "인터내셔널", "글로벌", "캐피탈", "파이낸스",
+        "로지스틱스", "솔루션", "솔루션즈", "엔지니어링", "건설", "산업",
+        "systems", "tech", "technology", "bio", "pharma", "holdings",
+        "corp", "corporation", "international", "global", "capital",
+        "logistics", "solutions", "engineering", "industries",
+      ];
+      const corpCheck = (kw: string) => {
+        const lower = kw.toLowerCase();
+        return CORP_SUFFIXES.some(suffix => lower.endsWith(suffix) && lower.length > suffix.length + 1);
+      };
+      if (corpCheck(kwLower) || corpCheck(kwKo)) {
+        console.warn(`[trend-detect] Blocked corporate name keyword: "${k.keyword}" (ko: "${k.keyword_ko}")`);
+        return false;
+      }
+
       if (k.ownership_confidence !== undefined && k.ownership_confidence < 0.5) {
         console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, reason=${k.ownership_reason})`);
         return false;
