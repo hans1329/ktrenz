@@ -1626,10 +1626,12 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 2소스 병렬 검색: News + Blog (Shopping 비활성화) ───
-  const [newsResult, blogResult] = await Promise.all([
+  // ─── 3소스 병렬 검색: News + Blog + YouTube ───
+  const ytSearchQuery = member.name_ko || member.display_name; // YouTube는 따옴표 없이 자연어 검색
+  const [newsResult, blogResult, ytResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
+    youtubeApiKey ? searchYouTubeForDetect(youtubeApiKey, ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
   ]);
 
   const newsItems = newsResult.items;
@@ -1648,7 +1650,13 @@ async function detectForMember(
   const filteredNews = filterByTime(newsItems);
   const filteredBlogs = filterByTime(blogItems);
 
-  // News + Blog → AI 분석용 기사 목록으로 통합
+  // YouTube 영상: 7일 이내 + 일본어 필터링
+  const filteredYT = ytResult.items.filter(item => {
+    if (isJapanese(item.title) || isJapanese(item.description)) return false;
+    return true;
+  });
+
+  // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
   const articles = [
     ...filteredNews.map((item: any) => ({
       title: stripHtml(item.title),
@@ -1660,13 +1668,18 @@ async function detectForMember(
       description: stripHtml(item.description || ""),
       url: item.link,
     })),
+    ...filteredYT.map((item) => ({
+      title: `[YouTube] ${item.title}`,
+      description: item.description,
+      url: item.url,
+    })),
   ];
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
-  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) youtube=${filteredYT.length}(total=${ytResult.totalResults}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
-  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
+  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, youtube: filteredYT.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
 
   // ─── TikTok 소셜 키워드 추출 (AI 분류) ───
   let socialKeywords: ExtractedKeyword[] = [];
