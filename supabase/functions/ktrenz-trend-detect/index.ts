@@ -1855,7 +1855,7 @@ async function detectForMember(
     return { keywordData: k, sourceArticle, sourceUrl: sourceArticle?.url || null };
   });
 
-  // 모든 기사 URL에서 OG 이미지를 수집 (최대 10개 기사)
+  // 모든 기사 URL에서 이미지 전량 수집 (캡션 포함)
   const allArticleUrls = articles
     .slice(0, 10)
     .map(a => a.url)
@@ -1865,29 +1865,56 @@ async function detectForMember(
     ...keywordSources.map((item) => item.sourceUrl).filter(Boolean) as string[],
     ...allArticleUrls,
   ])];
-  const ogImageMap = new Map<string, string | null>();
+  const articleImagesMap = new Map<string, ArticleImage[]>();
   await Promise.allSettled(
     uniqueUrls
       .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
       .map(async (url) => {
-        ogImageMap.set(url, await fetchOgImage(url));
+        articleImagesMap.set(url, await fetchArticleImages(url));
       })
   );
 
   // ── Vision API로 이미지 품질 일괄 분류 ──
-  const allOgImages = Array.from(ogImageMap.values()).filter((v): v is string => !!v);
-  const textHeavyImages = await classifyImagesWithVision(allOgImages, openaiKey);
+  const allImages = Array.from(articleImagesMap.values()).flat().map(i => i.url);
+  const uniqueImageUrls = [...new Set(allImages)];
+  const textHeavyImages = await classifyImagesWithVision(uniqueImageUrls, openaiKey);
 
-  // 키워드별 이미지 선택: 반드시 해당 키워드의 sourceUrl 기사에서만 가져온다.
-  // 다른 기사 이미지로 fallback하면 엉뚱한 썸네일이 섞일 수 있으므로 금지한다.
-  function selectBestImage(primaryUrl: string | null): string | null {
+  // 키워드별 이미지 선택: 캡션/alt에서 아티스트명·키워드명 매칭하여 가장 연관된 이미지 선택
+  function selectBestImage(primaryUrl: string | null, keywordText?: string, artistName?: string): string | null {
     if (!primaryUrl) return null;
+    const images = articleImagesMap.get(primaryUrl);
+    if (!images || images.length === 0) return null;
 
-    const img = ogImageMap.get(primaryUrl);
-    if (!img) return null;
-    if (textHeavyImages.has(img)) return null;
+    // 매칭용 검색어 리스트
+    const searchTerms: string[] = [];
+    if (artistName) searchTerms.push(artistName.toLowerCase());
+    if (keywordText) searchTerms.push(keywordText.toLowerCase());
+    if (nameKo) searchTerms.push(nameKo.toLowerCase());
+    if (memberName) searchTerms.push(memberName.toLowerCase());
 
-    return sanitizeImageUrl(img);
+    // 유효 이미지 필터 (텍스트 헤비 제외)
+    const validImages = images.filter(img => !textHeavyImages.has(img.url));
+    if (validImages.length === 0) return null;
+
+    // 1순위: 캡션/alt에 아티스트명 또는 키워드명이 포함된 이미지
+    if (searchTerms.length > 0) {
+      for (const img of validImages) {
+        const captionLower = img.caption.toLowerCase();
+        if (searchTerms.some(term => captionLower.includes(term))) {
+          console.log(`[trend-detect] 🎯 Caption-matched image: "${img.caption.slice(0, 50)}" for "${keywordText || artistName}"`);
+          return sanitizeImageUrl(img.url);
+        }
+      }
+    }
+
+    // 2순위: 본문 이미지 중 첫 번째 (og:image가 아닌 것 우선 — 보통 기사 본문 사진이 더 관련성 높음)
+    const bodyImages = validImages.filter(img => !img.isOg);
+    if (bodyImages.length > 0) {
+      return sanitizeImageUrl(bodyImages[0].url);
+    }
+
+    // 3순위: og:image 폴백
+    return sanitizeImageUrl(validImages[0].url);
   }
 
   // ─── 순수 수집: buzz score 수집 없이 키워드와 소스 정보만 준비 ───
