@@ -267,6 +267,49 @@ async function searchNaver(
   }
 }
 
+// ─── YouTube 검색 (발견용: 최근 7일 영상 제목에서 키워드 후보 추출) ───
+interface YouTubeDetectResult {
+  items: { title: string; description: string; url: string; publishedAt: string }[];
+  totalResults: number;
+}
+
+async function searchYouTubeForDetect(
+  apiKey: string,
+  query: string,
+  maxResults: number = 15,
+): Promise<YouTubeDetectResult> {
+  try {
+    const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
+    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+    searchUrl.searchParams.set("part", "snippet");
+    searchUrl.searchParams.set("q", query);
+    searchUrl.searchParams.set("type", "video");
+    searchUrl.searchParams.set("order", "relevance");
+    searchUrl.searchParams.set("publishedAfter", publishedAfter);
+    searchUrl.searchParams.set("maxResults", String(maxResults));
+    searchUrl.searchParams.set("relevanceLanguage", "ko");
+    searchUrl.searchParams.set("key", apiKey);
+
+    const response = await fetch(searchUrl.toString());
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`[trend-detect] YouTube API error: ${response.status} - ${errText.slice(0, 200)}`);
+      return { items: [], totalResults: 0 };
+    }
+    const data = await response.json();
+    const items = (data.items || []).map((item: any) => ({
+      title: item.snippet?.title || "",
+      description: (item.snippet?.description || "").slice(0, 200),
+      url: `https://www.youtube.com/watch?v=${item.id?.videoId}`,
+      publishedAt: item.snippet?.publishedAt || "",
+    }));
+    return { items, totalResults: data.pageInfo?.totalResults || items.length };
+  } catch (e) {
+    console.warn(`[trend-detect] YouTube search error: ${(e as Error).message}`);
+    return { items: [], totalResults: 0 };
+  }
+}
+
 // ─── Buzz Score 정규화 (UI 표시용으로 유지) ───
 function normalizeBuzzScore(newsCount: number, blogCount: number): number {
   const newsCap = 100;
