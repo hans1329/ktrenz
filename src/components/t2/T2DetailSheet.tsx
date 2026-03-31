@@ -513,29 +513,38 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
                 if (youtubeVideoId) {
                   const thumbnailUrl = `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
+                  const [ytPlaying, setYtPlaying] = useState(false);
                   return (
                     <div className="relative -mx-6 overflow-hidden bg-muted">
-                      <a
-                        href={`https://www.youtube.com/watch?v=${youtubeVideoId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block relative"
-                      >
-                        <img
-                          src={thumbnailUrl}
-                          alt={tile.sourceTitle || "YouTube"}
-                          className="w-full aspect-video object-cover"
-                          loading="lazy"
-                        />
-                        {/* Play button overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <div className="w-16 h-11 bg-red-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7 ml-0.5">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
+                      {ytPlaying ? (
+                        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                          <iframe
+                            src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`}
+                            className="absolute inset-0 w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
                         </div>
-                      </a>
+                      ) : (
+                        <button
+                          onClick={() => setYtPlaying(true)}
+                          className="block relative w-full text-left"
+                        >
+                          <img
+                            src={thumbnailUrl}
+                            alt={tile.sourceTitle || "YouTube"}
+                            className="w-full aspect-video object-cover"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <div className="w-16 h-11 bg-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                              <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7 ml-0.5">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
                         className={cn(
