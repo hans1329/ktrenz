@@ -1957,7 +1957,42 @@ async function detectForMember(
     "홍대", "이태원", "명동", "동대문", "압구정", "청담",
     "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
     "airport", "인천공항", "공항", "출국", "입국",
+    // 알려진 오탐 키워드
+    "바비스모", "vabysmo", "엑소시스템즈", "exo systems", "exosystems",
   ]);
+
+  // 기업/법인 접미사 → 아티스트 키워드가 아닌 기업명 차단
+  const CORP_SUFFIXES = [
+    "시스템즈", "시스템", "테크", "테크놀로지", "바이오", "제약", "홀딩스",
+    "그룹", "인더스트리", "솔루션", "솔루션즈", "캐피탈", "파이낸셜",
+    "systems", "tech", "technology", "bio", "pharma", "pharmaceutical",
+    "holdings", "industries", "solutions", "capital", "financial",
+    "inc", "corp", "corporation", "ltd", "llc", "gmbh",
+  ];
+
+  // 의약품/화학물질 접미사 → 약품 명명 규칙 (INN 접미사)
+  const PHARMA_SUFFIXES = [
+    "스모", "맙", "닙", "졸", "틴", "벨", "센트", "프릴",
+    "mab", "nib", "zol", "vir", "smo", "tin", "pril", "sartan",
+    "statin", "olol", "oxin", "azole", "gliptin", "lukast",
+    "cillin", "mycin", "cycline", "floxacin",
+  ];
+
+  function isCorpOrPharmaKeyword(kw: string): boolean {
+    const lower = kw.toLowerCase().trim();
+    if (lower.length < 4) return false;
+    // 기업 접미사 체크
+    for (const suffix of CORP_SUFFIXES) {
+      if (lower.endsWith(suffix) && lower.length > suffix.length + 1) return true;
+    }
+    // 의약품 접미사 체크 (한글은 3글자 이상, 영문은 5글자 이상일 때만)
+    for (const suffix of PHARMA_SUFFIXES) {
+      const isKorean = /[가-힣]/.test(suffix);
+      const minLen = isKorean ? 3 : 5;
+      if (lower.length >= minLen && lower.endsWith(suffix) && lower.length > suffix.length + 1) return true;
+    }
+    return false;
+  }
 
   for (const candidate of candidateRows) {
     const kwLower = candidate.keywordRow.keyword.toLowerCase();
