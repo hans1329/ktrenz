@@ -478,7 +478,12 @@ Deno.serve(async (req) => {
 
     // 단일 멤버 모드 (수동 테스트)
     if (starId && memberName) {
-      const result = await detectForMember(sb, openaiKey, ytApiKey, {
+      const kInfo = getNextYtKey();
+      if (!kInfo) {
+        return new Response(JSON.stringify({ success: false, error: "All YouTube API keys exhausted" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const result = await detectForMember(sb, openaiKey, kInfo.key, {
         id: starId,
         display_name: memberName,
         name_ko: null,
