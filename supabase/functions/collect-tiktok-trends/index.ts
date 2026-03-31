@@ -455,12 +455,14 @@ Deno.serve(async (req) => {
       : 0;
 
     // 로그 기록
-    await sb.from("ktrenz_collection_log").insert({
-      platform: "tiktok",
-      status: "success",
-      records_collected: totalKeywords,
-      error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}`,
-    }).catch(() => {});
+    try {
+      await sb.from("ktrenz_collection_log").insert({
+        platform: "tiktok",
+        status: "success",
+        records_collected: totalKeywords,
+        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}`,
+      });
+    } catch { /* ignore log errors */ }
 
     console.log(`[tiktok] Done: ${results.length} artists, ${snapshotsToInsert.length} snapshots, ${totalKeywords} keywords, totalViews=${totalViews}`);
 
