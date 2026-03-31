@@ -13,8 +13,10 @@ Updated: now
 
 ## 3단계 필터링 파이프라인
 1. **AI 툴콜링 단계**: 프롬프트에 주입된 스타 DB로 기사 주체 검증 + rejection_flags 생성
+   - **기업/제약 패턴 차단 규칙**: 프롬프트에 CORPORATE/PHARMA NAME TRAP 섹션 추가
+   - 기업 접미사(시스템즈, 테크, holdings 등), 제약 접미사(스모, 맙, mab 등) 패턴을 AI가 직접 인식하여 noise 플래그 설정
 2. **코드 레벨 후처리**: `globalStarNames` Map으로 키워드-스타이름 정확 매칭 필터 (extractCommercialKeywords 내부)
-3. **삽입 단계 필터**: `globalStarNames` + `artistNameSet`(멤버 변형 포함)으로 최종 차단
+3. **삽입 단계 필터**: `globalStarNames` + `artistNameSet`(멤버 변형 포함)으로 최종 차단 + `isCorpOrPharmaKeyword()` 패턴 필터
 
 ## 기존 검증 (유지)
 - `collectNameVariants`를 통한 현재 아티스트/멤버 이름 블랙리스트
