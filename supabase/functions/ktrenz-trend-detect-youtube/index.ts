@@ -458,10 +458,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 오늘 날짜 기준으로 키 인덱스 결정 (batchOffset으로 분산)
-    const ytKeyIndex = batchOffset % YT_KEYS.length;
-    const ytApiKey = YT_KEYS[ytKeyIndex];
-    console.log(`[detect-youtube] Using YouTube API key #${ytKeyIndex + 1} of ${YT_KEYS.length} (offset=${batchOffset})`);
+    // 키 로테이션: 아티스트별로 다른 키 사용, 403시 다음 키로 폴백
+    let globalKeyOffset = batchOffset; // 시작점 분산
+    const exhaustedKeys = new Set<number>();
+
+    function getNextYtKey(): { key: string; index: number } | null {
+      if (exhaustedKeys.size >= YT_KEYS.length) return null;
+      for (let attempt = 0; attempt < YT_KEYS.length; attempt++) {
+        const idx = globalKeyOffset % YT_KEYS.length;
+        globalKeyOffset++;
+        if (!exhaustedKeys.has(idx)) return { key: YT_KEYS[idx], index: idx };
+      }
+      return null;
+    }
+
+    function markKeyExhausted(idx: number) { exhaustedKeys.add(idx); }
+
+    console.log(`[detect-youtube] ${YT_KEYS.length} YouTube API keys available (offset=${batchOffset})`);
 
     // 단일 멤버 모드 (수동 테스트)
     if (starId && memberName) {
