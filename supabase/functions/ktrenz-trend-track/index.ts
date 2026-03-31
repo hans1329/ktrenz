@@ -192,7 +192,7 @@ async function searchNaverRecent(
 // ── 네이버 데이터랩 ──
 async function searchNaverDatalab(
   clientId: string, clientSecret: string, keyword: string,
-): Promise<{ latestRatio: number; trend: number[] }> {
+): Promise<{ latestRatio: number; trend: number[] } | null> {
   try {
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - 30 * 86400000);
@@ -208,11 +208,17 @@ async function searchNaverDatalab(
         keywordGroups: [{ groupName: keyword, keywords: [keyword] }],
       }),
     });
-    if (!response.ok) return { latestRatio: 0, trend: [] };
+    if (!response.ok) {
+      console.warn(`[datalab] API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
     const data = await response.json();
     const ratios = (data.results?.[0]?.data || []).map((d: any) => d.ratio || 0);
     return { latestRatio: ratios.length > 0 ? Math.round(ratios[ratios.length - 1] * 100) / 100 : 0, trend: ratios.slice(-7) };
-  } catch { return { latestRatio: 0, trend: [] }; }
+  } catch (e) {
+    console.warn(`[datalab] fetch error:`, e);
+    return null;
+  }
 }
 
 // ── 유튜브 검색 ──
