@@ -1,0 +1,1 @@
+UPDATE ktrenz_keywords SET status = 'removed' WHERE keyword_ko = '바비스모' OR keyword_en ILIKE '%vabysmo%';

@@ -2022,6 +2022,12 @@ async function detectForMember(
       continue;
     }
 
+    // 기업명/의약품명 패턴 필터
+    if (isCorpOrPharmaKeyword(kwLower) || isCorpOrPharmaKeyword(kwKoLower) || isCorpOrPharmaKeyword(kwEnLower)) {
+      console.warn(`[trend-detect] Corp/pharma pattern filtered: "${candidate.keywordRow.keyword}" (ko: ${kwKoLower}, en: ${kwEnLower})`);
+      continue;
+    }
+
     // 같은 run 내 다른 아티스트가 이미 삽입한 키워드 차단
     if (runInsertedKeywords && (runInsertedKeywords.has(kwLower) || (kwKoLower && runInsertedKeywords.has(kwKoLower)) || (kwEnLower && runInsertedKeywords.has(kwEnLower)))) {
       console.warn(`[trend-detect] Run-level cross-artist duplicate filtered: "${candidate.keywordRow.keyword}"`);
