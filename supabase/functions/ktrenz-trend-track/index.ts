@@ -450,7 +450,20 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID") || "";
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET") || "";
-    const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY") || "";
+    // ─── YouTube API 키 로테이션 (7개 키) ───
+    const YT_KEYS: string[] = [];
+    for (let i = 1; i <= 7; i++) {
+      const k = Deno.env.get(`YOUTUBE_API_KEY_${i}`);
+      if (k) YT_KEYS.push(k);
+    }
+    if (YT_KEYS.length === 0) {
+      const legacy = Deno.env.get("YOUTUBE_API_KEY");
+      if (legacy) YT_KEYS.push(legacy);
+    }
+    // batchOffset 기반으로 키 분산
+    const youtubeApiKey = YT_KEYS.length > 0 ? YT_KEYS[batchOffset % YT_KEYS.length] : "";
+    console.log(`[trend-track] Using YouTube API key #${(batchOffset % YT_KEYS.length) + 1} of ${YT_KEYS.length}`);
+
     const rapidApiKey = Deno.env.get("RAPIDAPI_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 

@@ -437,9 +437,31 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    // YouTube API 쿼터를 track 단계에 양보하기 위해 발굴에서는 사용하지 않음
-    const ytApiKey = ""; // 의도적 비활성화: 쿼터 증가 승인 전까지
     const sb = createClient(supabaseUrl, supabaseKey);
+
+    // ─── YouTube API 키 로테이션 (7개 키) ───
+    const YT_KEYS: string[] = [];
+    for (let i = 1; i <= 7; i++) {
+      const k = Deno.env.get(`YOUTUBE_API_KEY_${i}`);
+      if (k) YT_KEYS.push(k);
+    }
+    // fallback: 기존 단일 키
+    if (YT_KEYS.length === 0) {
+      const legacy = Deno.env.get("YOUTUBE_API_KEY");
+      if (legacy) YT_KEYS.push(legacy);
+    }
+
+    if (YT_KEYS.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "No YouTube API keys configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 오늘 날짜 기준으로 키 인덱스 결정 (batchOffset으로 분산)
+    const ytKeyIndex = batchOffset % YT_KEYS.length;
+    const ytApiKey = YT_KEYS[ytKeyIndex];
+    console.log(`[detect-youtube] Using YouTube API key #${ytKeyIndex + 1} of ${YT_KEYS.length} (offset=${batchOffset})`);
 
     // 단일 멤버 모드 (수동 테스트)
     if (starId && memberName) {
