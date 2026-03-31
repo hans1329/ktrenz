@@ -13,16 +13,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PHASE_ORDER = ["collect_social", "detect", "detect_youtube", "track"] as const;
+// 발견은 네이버(detect)만, 소셜(IG/TT/YT)은 추적(track) 단계에서만 활용
+const PHASE_ORDER = ["detect", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
-  collect_social: "ktrenz-collect-social",
   detect: "ktrenz-trend-detect",
-  detect_youtube: "ktrenz-trend-detect-youtube",
   track: "ktrenz-trend-track",
 };
-const DETECT_PHASES = new Set(["detect", "detect_youtube"]);
-const SINGLE_CALL_PHASES = new Set(["collect_social"]); // 배치 없이 단일 호출 후 완료
-const ROTATING_PHASES = new Set(["detect_youtube"]); // 쿼터 제한으로 이전 offset에서 이어서 처리
+const DETECT_PHASES = new Set(["detect"]);
+const SINGLE_CALL_PHASES = new Set<string>(); // 현재 없음
+const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 // 이전 실행의 마지막 offset을 조회하여 이어서 처리 (순환)
 async function getResumeOffset(sb: any, phase: string, totalCandidates: number): Promise<number> {
