@@ -628,7 +628,7 @@ Deno.serve(async (req) => {
 
         // ─── ktrenz_trend_tracking 저장 (소스별 raw 포함, null=미수집) ───
         const triggerId = triggerByKeywordId.get(kw.id) || null;
-        await sb.from("ktrenz_trend_tracking").insert({
+        const { error: trackInsertErr } = await sb.from("ktrenz_trend_tracking").insert({
           trigger_id: triggerId,
           keyword_id: kw.id,
           wiki_entry_id: null,
@@ -657,6 +657,9 @@ Deno.serve(async (req) => {
           insta_total_comments: currentRaw.insta_total_comments,
           raw_response: { scoring_mode: "multi_source_v7_renorm", weights: WEIGHTS, active_sources: avail, active_count: activeCount },
         });
+        if (trackInsertErr) {
+          console.error(`[trend-track] ❌ tracking insert failed for "${kw.keyword}":`, trackInsertErr.message, trackInsertErr.details);
+        }
 
         // ─── 레거시 동기화 ───
         if (triggerId) {

@@ -4627,9 +4627,9 @@ export type Database = {
           tiktok_total_views: number | null
           tiktok_video_count: number | null
           tracked_at: string
-          trigger_id: string
+          trigger_id: string | null
           weighted_delta: number | null
-          wiki_entry_id: string
+          wiki_entry_id: string | null
           youtube_total_comments: number | null
           youtube_total_views: number | null
           youtube_video_count: number | null
@@ -4659,9 +4659,9 @@ export type Database = {
           tiktok_total_views?: number | null
           tiktok_video_count?: number | null
           tracked_at?: string
-          trigger_id: string
+          trigger_id?: string | null
           weighted_delta?: number | null
-          wiki_entry_id: string
+          wiki_entry_id?: string | null
           youtube_total_comments?: number | null
           youtube_total_views?: number | null
           youtube_video_count?: number | null
@@ -4691,9 +4691,9 @@ export type Database = {
           tiktok_total_views?: number | null
           tiktok_video_count?: number | null
           tracked_at?: string
-          trigger_id?: string
+          trigger_id?: string | null
           weighted_delta?: number | null
-          wiki_entry_id?: string
+          wiki_entry_id?: string | null
           youtube_total_comments?: number | null
           youtube_total_views?: number | null
           youtube_video_count?: number | null
