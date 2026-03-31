@@ -19,6 +19,7 @@ const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
   track: "ktrenz-trend-track",
 };
+const VALID_PHASES = new Set(PHASE_ORDER); // tick에서 비-파이프라인 레코드 필터용
 const DETECT_PHASES = new Set(["detect"]);
 const SINGLE_CALL_PHASES = new Set<string>(); // 현재 없음
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
@@ -101,6 +102,7 @@ Deno.serve(async (req) => {
         .from("ktrenz_pipeline_state")
         .select("*")
         .eq("status", "running")
+        .in("phase", [...VALID_PHASES])
         .order("created_at", { ascending: true })
         .limit(1);
 
