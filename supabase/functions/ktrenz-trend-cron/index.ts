@@ -102,6 +102,7 @@ Deno.serve(async (req) => {
         .from("ktrenz_pipeline_state")
         .select("*")
         .eq("status", "running")
+        .in("phase", [...VALID_PHASES])
         .order("created_at", { ascending: true })
         .limit(1);
 
