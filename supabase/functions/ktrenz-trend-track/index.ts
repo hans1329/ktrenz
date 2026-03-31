@@ -467,8 +467,8 @@ Deno.serve(async (req) => {
     const rapidApiKey = Deno.env.get("RAPIDAPI_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ─── YouTube 일일 쿼터 로테이션 (100건/일 한도) ───
-    const YT_DAILY_LIMIT = 100;
+    // ─── YouTube 일일 쿼터 관리 (키 개수 × 100건/일) ───
+    const YT_DAILY_LIMIT = YT_KEYS.length * 100; // 7키 = 700건
     let ytQuotaRemaining = 0;
     let ytQuotaUsed = 0;
 
