@@ -113,7 +113,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const [betOutcome, setBetOutcome] = useState<"mild" | "strong" | "explosive">("mild");
   const [betAmount, setBetAmount] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [ytPlaying, setYtPlaying] = useState(false);
+  
 
   // Market data
   const { data: marketData } = useQuery({
