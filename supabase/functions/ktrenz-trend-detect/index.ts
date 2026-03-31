@@ -1938,7 +1938,7 @@ async function detectForMember(
         source_title: sourceArticle?.title || null,
         source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
           ? keywordData._tiktok_cover_url
-          : selectBestImage(sourceUrl),
+          : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         metadata: keywordData.category === "social" ? {
           source: "tiktok",
