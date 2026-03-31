@@ -1610,11 +1610,12 @@ async function detectForMember(
   member: MemberInfo,
   globalStarNames?: Map<string, string>,
   runInsertedKeywords?: Set<string>,
+  youtubeApiKey?: string | null,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
   keywords: ExtractedKeyword[];
-  sourceStats: { news: number; blog: number; shop: number; aiExtracted: number; shopExtracted: number };
+  sourceStats: { news: number; blog: number; shop: number; youtube: number; aiExtracted: number; shopExtracted: number };
   insertStats: { inserted: number; backfilled: number; filtered: number };
 }> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
