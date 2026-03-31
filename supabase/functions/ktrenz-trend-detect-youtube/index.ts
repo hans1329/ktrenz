@@ -533,61 +533,76 @@ Deno.serve(async (req) => {
     let totalKeywords = 0;
     let quotaExhausted = false;
 
-    for (const star of batch) {
-      try {
-        const kInfo = getNextYtKey();
-        if (!kInfo) {
-          console.error(`[detect-youtube] All ${YT_KEYS.length} keys exhausted — stopping. Processed ${successCount}/${batch.length}`);
-          quotaExhausted = true;
-          break;
-        }
-        const isGroupOrSolo = star.star_type === "group" || star.star_type === "solo";
-        const group = star.group_star_id ? groupMap[star.group_star_id] : null;
-        const result = await detectForMember(sb, openaiKey, kInfo.key, {
-          id: star.id,
-          display_name: star.display_name,
-          name_ko: star.name_ko,
-          group_name: isGroupOrSolo ? null : (group?.display_name || null),
-        });
-        successCount++;
-        totalKeywords += result.keywordsFound;
-        console.log(`[detect-youtube] ✓ ${star.display_name} (key#${kInfo.index + 1}): ${result.keywordsFound} keywords (${result.videosFound} videos)`);
+    // 병렬 처리: CONCURRENCY 개씩 동시 실행하여 타임아웃 내에 최대한 처리
+    const CONCURRENCY = 5;
 
-        await new Promise((r) => setTimeout(r, 1000));
-      } catch (e) {
-        if (e instanceof QuotaExhaustedError) {
-          // 현재 키만 마킹하고, 다른 키가 있으면 계속 진행
-          const lastIdx = (globalKeyOffset - 1) % YT_KEYS.length;
-          markKeyExhausted(lastIdx >= 0 ? lastIdx : 0);
-          console.warn(`[detect-youtube] Key #${lastIdx + 1} exhausted, ${YT_KEYS.length - exhaustedKeys.size} keys remaining`);
-          if (exhaustedKeys.size >= YT_KEYS.length) {
+    for (let i = 0; i < batch.length; i += CONCURRENCY) {
+      if (quotaExhausted) break;
+
+      const chunk = batch.slice(i, i + CONCURRENCY);
+      const promises = chunk.map(async (star: any) => {
+        if (quotaExhausted) return null;
+
+        const processWithKey = async (): Promise<{ keywordsFound: number; videosFound: number } | null> => {
+          const kInfo = getNextYtKey();
+          if (!kInfo) {
             quotaExhausted = true;
-            break;
+            return null;
           }
-          // retry this star with next key
           try {
-            const retryInfo = getNextYtKey();
-            if (!retryInfo) { quotaExhausted = true; break; }
             const isGroupOrSolo = star.star_type === "group" || star.star_type === "solo";
             const group = star.group_star_id ? groupMap[star.group_star_id] : null;
-            const result = await detectForMember(sb, openaiKey, retryInfo.key, {
+            const result = await detectForMember(sb, openaiKey, kInfo.key, {
               id: star.id,
               display_name: star.display_name,
               name_ko: star.name_ko,
               group_name: isGroupOrSolo ? null : (group?.display_name || null),
             });
-            successCount++;
-            totalKeywords += result.keywordsFound;
-          } catch (e2) {
-            if (e2 instanceof QuotaExhaustedError) {
-              const retryIdx = (globalKeyOffset - 1) % YT_KEYS.length;
-              markKeyExhausted(retryIdx >= 0 ? retryIdx : 0);
-              if (exhaustedKeys.size >= YT_KEYS.length) { quotaExhausted = true; break; }
+            console.log(`[detect-youtube] ✓ ${star.display_name} (key#${kInfo.index + 1}): ${result.keywordsFound} keywords (${result.videosFound} videos)`);
+            return result;
+          } catch (e) {
+            if (e instanceof QuotaExhaustedError) {
+              markKeyExhausted(kInfo.index);
+              console.warn(`[detect-youtube] Key #${kInfo.index + 1} exhausted, ${YT_KEYS.length - exhaustedKeys.size} keys remaining`);
+              if (exhaustedKeys.size >= YT_KEYS.length) {
+                quotaExhausted = true;
+                return null;
+              }
+              // Retry with next key
+              const retryInfo = getNextYtKey();
+              if (!retryInfo) { quotaExhausted = true; return null; }
+              try {
+                const isGroupOrSolo = star.star_type === "group" || star.star_type === "solo";
+                const group = star.group_star_id ? groupMap[star.group_star_id] : null;
+                const result = await detectForMember(sb, openaiKey, retryInfo.key, {
+                  id: star.id,
+                  display_name: star.display_name,
+                  name_ko: star.name_ko,
+                  group_name: isGroupOrSolo ? null : (group?.display_name || null),
+                });
+                return result;
+              } catch (e2) {
+                if (e2 instanceof QuotaExhaustedError) {
+                  markKeyExhausted(retryInfo.index);
+                  if (exhaustedKeys.size >= YT_KEYS.length) quotaExhausted = true;
+                }
+                return null;
+              }
             }
+            console.error(`[detect-youtube] ✗ ${star.display_name}: ${(e as Error).message}`);
+            return null;
           }
-          continue;
+        };
+
+        return processWithKey();
+      });
+
+      const results = await Promise.allSettled(promises);
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value) {
+          successCount++;
+          totalKeywords += r.value.keywordsFound;
         }
-        console.error(`[detect-youtube] ✗ ${star.display_name}: ${(e as Error).message}`);
       }
     }
 
