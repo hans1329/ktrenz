@@ -1429,7 +1429,7 @@ Deno.serve(async (req) => {
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
           { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, star_category: singleStarCategory },
-          globalStarNames
+          globalStarNames, undefined, youtubeApiKey
         );
         return new Response(
           JSON.stringify({ success: true, ...result }),
