@@ -586,14 +586,17 @@ Deno.serve(async (req) => {
         } : emptyRaw();
 
         // ─── 5소스 병렬 수집 (미수집 소스는 null 반환) ───
-        const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0);
+        const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0) || YT_KEYS.length === 0;
         const socialSkipped = !rapidApiKey;
+
+        // 키워드별로 다른 YouTube API 키 사용 (쿼터 분산)
+        const ytKeyForThis = YT_KEYS.length > 0 ? YT_KEYS[trackedCount % YT_KEYS.length] : "";
 
         const [newsResult, blogResult, datalabResult, ytResult, tiktokResult, instaResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-          ytSkipped ? Promise.resolve(null) : searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
+          ytSkipped ? Promise.resolve(null) : searchYouTube(ytKeyForThis, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
           socialSkipped ? Promise.resolve(null) : searchTikTok(rapidApiKey, kwQuery),
           socialSkipped ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery),
         ]);
