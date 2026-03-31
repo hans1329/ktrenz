@@ -1522,6 +1522,7 @@ Deno.serve(async (req) => {
         totalNews += result.sourceStats.news;
         totalBlogs += result.sourceStats.blog;
         totalShop += result.sourceStats.shop;
+        totalYouTube += result.sourceStats.youtube || 0;
         totalInserted += result.insertStats.inserted;
         totalBackfilled += result.insertStats.backfilled;
         totalFiltered += result.insertStats.filtered;
@@ -1532,6 +1533,7 @@ Deno.serve(async (req) => {
           news: result.sourceStats.news,
           blog: result.sourceStats.blog,
           shop: result.sourceStats.shop,
+          youtube: result.sourceStats.youtube || 0,
           tiktok: result.sourceStats.tiktok || 0,
           aiExtracted: result.sourceStats.aiExtracted,
           shopExtracted: result.sourceStats.shopExtracted,
@@ -1546,9 +1548,10 @@ Deno.serve(async (req) => {
           news: result.sourceStats.news,
           blog: result.sourceStats.blog,
           shop: result.sourceStats.shop,
+          youtube: result.sourceStats.youtube || 0,
           keywords: result.keywordsFound,
           inserted: result.insertStats.inserted,
-          status: result.keywordsFound > 0 ? "found" : (result.sourceStats.news === 0 && result.sourceStats.blog === 0 ? "no_news" : "no_keywords"),
+          status: result.keywordsFound > 0 ? "found" : (result.sourceStats.news === 0 && result.sourceStats.blog === 0 && (result.sourceStats.youtube || 0) === 0 ? "no_sources" : "no_keywords"),
         };
         await sb.from("ktrenz_stars").update({
           last_detected_at: new Date().toISOString(),
