@@ -496,14 +496,49 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
           {/* Source thumbnail + title card */}
-          {(tile.sourceTitle || tile.sourceImageUrl || (tile.triggerSource && ["tiktok", "instagram"].includes(tile.triggerSource))) && (
+          {(tile.sourceTitle || tile.sourceImageUrl || (tile.triggerSource && ["tiktok", "instagram", "youtube_search"].includes(tile.triggerSource))) && (
             <div className="relative">
               {(() => {
-                // Social embed for TikTok/Instagram
+                // Social/Video embed for TikTok/Instagram/YouTube
                 const isSocialSource = tile.triggerSource && ["tiktok", "instagram"].includes(tile.triggerSource);
+                const isYoutubeSource = tile.triggerSource === "youtube_search";
                 const meta = tile.metadata || {};
                 const tiktokVideoId = meta.embed_video_id;
                 const instaShortcode = meta.embed_shortcode;
+
+                // YouTube: extract video ID from source_url
+                const youtubeVideoId = isYoutubeSource && tile.sourceUrl
+                  ? tile.sourceUrl.match(/(?:v=|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1]
+                  : null;
+
+                if (youtubeVideoId) {
+                  return (
+                    <div className="relative -mx-6 overflow-hidden bg-muted">
+                      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                        <iframe
+                          src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0`}
+                          className="absolute inset-0 w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleFollow(); }}
+                        className={cn(
+                          "absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all shadow-lg",
+                          isFollowing
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-black/50 text-white/90 backdrop-blur-sm border border-white/20 hover:bg-primary hover:text-primary-foreground"
+                        )}
+                      >
+                        <Crosshair className="w-3 h-3" />
+                        {isFollowing ? t("unfollowKeyword", language) : t("followKeyword", language)}
+                      </button>
+                    </div>
+                  );
+                }
 
                 if (isSocialSource && (tiktokVideoId || instaShortcode)) {
                   const embedUrl = tiktokVideoId
