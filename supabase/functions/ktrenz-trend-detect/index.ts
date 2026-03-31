@@ -1479,6 +1479,7 @@ Deno.serve(async (req) => {
     let totalNews = 0;
     let totalBlogs = 0;
     let totalShop = 0;
+    let totalYouTube = 0;
     let totalInserted = 0;
     let totalBackfilled = 0;
     let totalFiltered = 0;
@@ -1490,6 +1491,7 @@ Deno.serve(async (req) => {
       news: number;
       blog: number;
       shop: number;
+      youtube: number;
       aiExtracted: number;
       shopExtracted: number;
       inserted: number;
