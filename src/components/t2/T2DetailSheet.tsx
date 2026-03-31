@@ -514,7 +514,6 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
                 if (youtubeVideoId) {
                   const thumbnailUrl = `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
-                  const [ytPlaying, setYtPlaying] = useState(false);
                   return (
                     <div className="relative -mx-6 overflow-hidden bg-muted">
                       {ytPlaying ? (
