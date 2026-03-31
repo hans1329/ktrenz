@@ -269,15 +269,19 @@ const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
 
 async function searchTikTok(
   apiKey: string, keyword: string,
-): Promise<{ videoCount: number; totalViews: number; totalLikes: number; totalComments: number }> {
+): Promise<{ videoCount: number; totalViews: number; totalLikes: number; totalComments: number } | null> {
   try {
     const url = `https://${TIKTOK_API_HOST}/api/search/general?keyword=${encodeURIComponent(keyword)}&count=10`;
     const res = await fetch(url, {
       headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": apiKey },
     });
-    if (!res.ok) return { videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 };
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`[tiktok] API error: ${res.status} - ${errText.slice(0, 200)}`);
+      return null;
+    }
     const text = await res.text();
-    if (!text.trim()) return { videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 };
+    if (!text.trim()) return null;
     const data = JSON.parse(text);
     const items = (data.data || []).filter((i: any) => i.item);
     let totalViews = 0, totalLikes = 0, totalComments = 0;
@@ -288,7 +292,10 @@ async function searchTikTok(
       totalComments += Number(s.commentCount || 0);
     }
     return { videoCount: items.length, totalViews, totalLikes, totalComments };
-  } catch { return { videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 }; }
+  } catch (e) {
+    console.warn(`[tiktok] fetch error:`, e);
+    return null;
+  }
 }
 
 // ── 인스타그램 검색 (RapidAPI) ──
