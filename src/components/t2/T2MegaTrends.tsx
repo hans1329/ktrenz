@@ -155,40 +155,34 @@ const T2MegaTrends = () => {
                 </div>
               </div>
 
+              {/* Category color bar with influence */}
+              <div
+                className="flex items-center justify-between px-3 py-1.5"
+                style={{
+                  backgroundColor: `${config?.color || "hsl(var(--muted))"}22`,
+                }}
+              >
+                <span
+                  className="text-[10px] font-medium"
+                  style={{ color: config?.color || "hsl(var(--muted-foreground))" }}
+                >
+                  {config?.label || cluster.category}
+                </span>
+                <span
+                  className="text-[10px] font-bold flex items-center gap-0.5"
+                  style={{ color: config?.color || "hsl(var(--muted-foreground))" }}
+                >
+                  <TrendingUp className="w-3 h-3" />
+                  {Math.round(cluster.totalInfluence).toLocaleString()}
+                </span>
+              </div>
+
               {/* Content */}
-              <div className="p-3">
+              <div className="p-3 pt-2">
                 <h4 className="text-sm font-bold text-foreground truncate">{displayName}</h4>
-                {/* Top keywords */}
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {cluster.keywords
-                    .slice(0, 3)
-                    .map((kw, i) => {
-                      const label = language === "ko" ? kw.keywordKo : kw.keyword;
-                      return (
-                        <span key={i} className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[120px]">
-                          {label}
-                        </span>
-                      );
-                    })}
-                </div>
-                <div className="flex items-center gap-1 mt-1.5">
-                  <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                    style={{
-                      backgroundColor: `${config?.color || "hsl(var(--muted))"}22`,
-                      color: config?.color || "hsl(var(--muted-foreground))",
-                    }}
-                  >
-                    {config?.label || cluster.category}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                    <TrendingUp className="w-3 h-3" />
-                    {Math.round(cluster.totalInfluence).toLocaleString()}
-                  </span>
-                </div>
 
                 {/* Artists list */}
-                <div className="mt-2 flex flex-wrap gap-1">
+                <div className="mt-1.5 flex flex-wrap gap-1">
                   {cluster.artists.slice(0, 4).map((name) => (
                     <span key={name} className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">
                       {cluster.artistNameKoMap[name] || name}
