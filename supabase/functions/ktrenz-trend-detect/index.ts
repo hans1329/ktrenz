@@ -1,5 +1,5 @@
 // T2 Trend Detect: 순수 키워드 발견 엔진
-// 아티스트 대상 네이버 뉴스 검색 → AI 키워드 추출 → ktrenz_keywords + ktrenz_keyword_sources에 저장
+// 아티스트 대상 네이버 뉴스/블로그 + YouTube 검색 → AI 키워드 추출 → ktrenz_keywords + ktrenz_keyword_sources에 저장
 // 추적(tracking)은 별도 ktrenz-trend-track에서 수행 (이 함수에서는 buzz score 수집하지 않음)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -264,6 +264,49 @@ async function searchNaver(
   } catch (e) {
     console.warn(`[trend-detect] Naver ${endpoint} search error: ${(e as Error).message}`);
     return { items: [], total: 0 };
+  }
+}
+
+// ─── YouTube 검색 (발견용: 최근 7일 영상 제목에서 키워드 후보 추출) ───
+interface YouTubeDetectResult {
+  items: { title: string; description: string; url: string; publishedAt: string }[];
+  totalResults: number;
+}
+
+async function searchYouTubeForDetect(
+  apiKey: string,
+  query: string,
+  maxResults: number = 15,
+): Promise<YouTubeDetectResult> {
+  try {
+    const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
+    const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+    searchUrl.searchParams.set("part", "snippet");
+    searchUrl.searchParams.set("q", query);
+    searchUrl.searchParams.set("type", "video");
+    searchUrl.searchParams.set("order", "relevance");
+    searchUrl.searchParams.set("publishedAfter", publishedAfter);
+    searchUrl.searchParams.set("maxResults", String(maxResults));
+    searchUrl.searchParams.set("relevanceLanguage", "ko");
+    searchUrl.searchParams.set("key", apiKey);
+
+    const response = await fetch(searchUrl.toString());
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn(`[trend-detect] YouTube API error: ${response.status} - ${errText.slice(0, 200)}`);
+      return { items: [], totalResults: 0 };
+    }
+    const data = await response.json();
+    const items = (data.items || []).map((item: any) => ({
+      title: item.snippet?.title || "",
+      description: (item.snippet?.description || "").slice(0, 200),
+      url: `https://www.youtube.com/watch?v=${item.id?.videoId}`,
+      publishedAt: item.snippet?.publishedAt || "",
+    }));
+    return { items, totalResults: data.pageInfo?.totalResults || items.length };
+  } catch (e) {
+    console.warn(`[trend-detect] YouTube search error: ${(e as Error).message}`);
+    return { items: [], totalResults: 0 };
   }
 }
 
@@ -1326,7 +1369,9 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID");
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
+    const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY") || null;
     const sb = createClient(supabaseUrl, supabaseKey);
+    console.log(`[trend-detect] APIs: naver=${naverClientId ? '✓' : '✗'} youtube=${youtubeApiKey ? '✓' : '✗'} openai=${openaiKey ? '✓' : '✗'}`);
 
     // 글로벌 스타 이름 DB 로드 (AI 프롬프트 컨텍스트 + 코드 레벨 필터용 — 모든 모드 공통)
     const { data: _allStarNamesData } = await sb
@@ -1384,7 +1429,7 @@ Deno.serve(async (req) => {
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
           { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, star_category: singleStarCategory },
-          globalStarNames
+          globalStarNames, undefined, youtubeApiKey
         );
         return new Response(
           JSON.stringify({ success: true, ...result }),
@@ -1434,6 +1479,7 @@ Deno.serve(async (req) => {
     let totalNews = 0;
     let totalBlogs = 0;
     let totalShop = 0;
+    let totalYouTube = 0;
     let totalInserted = 0;
     let totalBackfilled = 0;
     let totalFiltered = 0;
@@ -1445,6 +1491,7 @@ Deno.serve(async (req) => {
       news: number;
       blog: number;
       shop: number;
+      youtube: number;
       aiExtracted: number;
       shopExtracted: number;
       inserted: number;
@@ -1468,13 +1515,14 @@ Deno.serve(async (req) => {
         };
 
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, youtubeApiKey
         );
         successCount++;
         totalKeywords += result.keywordsFound;
         totalNews += result.sourceStats.news;
         totalBlogs += result.sourceStats.blog;
         totalShop += result.sourceStats.shop;
+        totalYouTube += result.sourceStats.youtube || 0;
         totalInserted += result.insertStats.inserted;
         totalBackfilled += result.insertStats.backfilled;
         totalFiltered += result.insertStats.filtered;
@@ -1485,6 +1533,7 @@ Deno.serve(async (req) => {
           news: result.sourceStats.news,
           blog: result.sourceStats.blog,
           shop: result.sourceStats.shop,
+          youtube: result.sourceStats.youtube || 0,
           tiktok: result.sourceStats.tiktok || 0,
           aiExtracted: result.sourceStats.aiExtracted,
           shopExtracted: result.sourceStats.shopExtracted,
@@ -1499,9 +1548,10 @@ Deno.serve(async (req) => {
           news: result.sourceStats.news,
           blog: result.sourceStats.blog,
           shop: result.sourceStats.shop,
+          youtube: result.sourceStats.youtube || 0,
           keywords: result.keywordsFound,
           inserted: result.insertStats.inserted,
-          status: result.keywordsFound > 0 ? "found" : (result.sourceStats.news === 0 && result.sourceStats.blog === 0 ? "no_news" : "no_keywords"),
+          status: result.keywordsFound > 0 ? "found" : (result.sourceStats.news === 0 && result.sourceStats.blog === 0 && (result.sourceStats.youtube || 0) === 0 ? "no_sources" : "no_keywords"),
         };
         await sb.from("ktrenz_stars").update({
           last_detected_at: new Date().toISOString(),
@@ -1567,11 +1617,12 @@ async function detectForMember(
   member: MemberInfo,
   globalStarNames?: Map<string, string>,
   runInsertedKeywords?: Set<string>,
+  youtubeApiKey?: string | null,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
   keywords: ExtractedKeyword[];
-  sourceStats: { news: number; blog: number; shop: number; aiExtracted: number; shopExtracted: number };
+  sourceStats: { news: number; blog: number; shop: number; youtube: number; aiExtracted: number; shopExtracted: number };
   insertStats: { inserted: number; backfilled: number; filtered: number };
 }> {
   // 검색어 결정: 한글명 우선, 없으면 영문명
@@ -1582,10 +1633,12 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 2소스 병렬 검색: News + Blog (Shopping 비활성화) ───
-  const [newsResult, blogResult] = await Promise.all([
+  // ─── 3소스 병렬 검색: News + Blog + YouTube ───
+  const ytSearchQuery = member.name_ko || member.display_name; // YouTube는 따옴표 없이 자연어 검색
+  const [newsResult, blogResult, ytResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
+    youtubeApiKey ? searchYouTubeForDetect(youtubeApiKey, ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
   ]);
 
   const newsItems = newsResult.items;
@@ -1604,7 +1657,13 @@ async function detectForMember(
   const filteredNews = filterByTime(newsItems);
   const filteredBlogs = filterByTime(blogItems);
 
-  // News + Blog → AI 분석용 기사 목록으로 통합
+  // YouTube 영상: 7일 이내 + 일본어 필터링
+  const filteredYT = ytResult.items.filter(item => {
+    if (isJapanese(item.title) || isJapanese(item.description)) return false;
+    return true;
+  });
+
+  // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
   const articles = [
     ...filteredNews.map((item: any) => ({
       title: stripHtml(item.title),
@@ -1616,13 +1675,18 @@ async function detectForMember(
       description: stripHtml(item.description || ""),
       url: item.link,
     })),
+    ...filteredYT.map((item) => ({
+      title: `[YouTube] ${item.title}`,
+      description: item.description,
+      url: item.url,
+    })),
   ];
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
-  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) youtube=${filteredYT.length}(total=${ytResult.totalResults}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
-  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
+  const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, youtube: filteredYT.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
 
   // ─── TikTok 소셜 키워드 추출 (AI 분류) ───
   let socialKeywords: ExtractedKeyword[] = [];
