@@ -906,6 +906,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         // 반복 오수집 브랜드/플랫폼
         "오픈와이와이", "open yy", "openyy",
         "트리플엑스", "triple x", "triplex",
+        "엑소시스템즈", "exo systems", "exosystems",
       ]);
       // 숫자+단위 패턴 필터 (59kg, 180cm, "59kg 인증" 등 숫자+단위가 포함된 키워드)
       const MEASUREMENT_PATTERN = /\b\d+(\.\d+)?\s*(kg|cm|mm|ml|l|g|oz|lb|lbs|m|km|cc|inch|인치|센치|킬로|그램|미리)s?\b/i;
