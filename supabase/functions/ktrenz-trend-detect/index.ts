@@ -1369,7 +1369,9 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID");
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
+    const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY") || null;
     const sb = createClient(supabaseUrl, supabaseKey);
+    console.log(`[trend-detect] APIs: naver=${naverClientId ? '✓' : '✗'} youtube=${youtubeApiKey ? '✓' : '✗'} openai=${openaiKey ? '✓' : '✗'}`);
 
     // 글로벌 스타 이름 DB 로드 (AI 프롬프트 컨텍스트 + 코드 레벨 필터용 — 모든 모드 공통)
     const { data: _allStarNamesData } = await sb
