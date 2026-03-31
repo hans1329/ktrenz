@@ -594,6 +594,13 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
 - ⚠️ FASHION ITEM EXCEPTION: Clothing items like "비키니" (bikini), "수영복" (swimwear), "란제리" (lingerie), "크롭탑" etc. are FASHION items, NOT body/physical stats. Classify them as "fashion" and extract normally. These represent commercial fashion trends, not personal body data.
 
+🚫 CORPORATE/PHARMA NAME TRAP (★ CRITICAL — COMMON FALSE POSITIVE ★):
+- When searching for an artist name (e.g., "수호", "바비", "엑소"), news results often include UNRELATED articles about companies or drugs whose names COINCIDENTALLY contain the artist's name.
+- CORPORATE names ending in: 시스템즈, 테크, 바이오, 제약, 홀딩스, systems, tech, bio, pharma, holdings, inc, corp, ltd → MUST add "noise" to rejection_flags
+- PHARMACEUTICAL/chemical names ending in: 스모, 맙, 닙, 졸, 렐, 틴, mab, nib, smo, zol, vir, tin, rel → MUST add "noise" to rejection_flags  
+- Examples: "엑소시스템즈" is a COMPANY (not EXO), "바비스모" is a DRUG (not Bobby/바비) → reject with "noise" flag
+- ASK YOURSELF: "Is this keyword a real commercial brand/product that the ARTIST is associated with, or is it a corporate/pharmaceutical entity that just happens to contain part of the artist's name?" If the latter → reject immediately.
+
 CATEGORY CLASSIFICATION GUIDE:
 - "music": Song titles, album names, mixtapes, EPs, singles, OSTs, music projects, featuring/collaboration tracks, music videos — ANY music release or music-related content
 - "event": Fan meetings, concerts, tours, award shows, festivals, exhibitions, fan signs, pop-up stores, challenges, certifications (인증), viral challenges — physical/live EVENTS or fan-driven challenges/certifications
