@@ -340,14 +340,19 @@ function isJapanese(text: string): boolean {
   return (jpChars?.length || 0) >= 3;
 }
 
-// ─── OG Image 추출 (본문 img 폴백 포함) ───
-async function fetchOgImage(url: string): Promise<string | null> {
-  // 상대 경로를 절대 URL로 변환하는 헬퍼
+// ─── 기사 이미지 전량 수집 (캡션/alt 텍스트 포함) ───
+interface ArticleImage {
+  url: string;
+  caption: string; // alt text + nearby caption text
+  isOg: boolean;   // og:image or twitter:image
+  index: number;   // position in article
+}
+
+async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
   function resolveUrl(src: string, baseUrl: string): string | null {
     if (!src || src.length < 3) return null;
     if (src.startsWith("//")) return `https:${src}`;
     if (src.startsWith("http://") || src.startsWith("https://")) return src;
-    // 상대 경로 → 절대 URL
     try {
       const base = new URL(baseUrl);
       if (src.startsWith("/")) return `${base.origin}${src}`;
@@ -360,54 +365,106 @@ async function fetchOgImage(url: string): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(url, {
+    const res = await fetch(articleUrl, {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" },
       redirect: "follow",
     });
     clearTimeout(timeout);
-    if (!res.ok) return null;
+    if (!res.ok) return [];
     const reader = res.body?.getReader();
-    if (!reader) return null;
+    if (!reader) return [];
     let html = "";
     const decoder = new TextDecoder();
-    while (html.length < 50000) {
+    while (html.length < 80000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
     }
     reader.cancel();
 
+    const images: ArticleImage[] = [];
+    const seenUrls = new Set<string>();
+    let imgIndex = 0;
+
     // 1) og:image
     const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
     if (ogMatch?.[1]) {
-      const resolved = resolveUrl(ogMatch[1].replace(/&amp;/g, "&"), url);
-      if (resolved) return resolved;
+      const resolved = resolveUrl(ogMatch[1].replace(/&amp;/g, "&"), articleUrl);
+      if (resolved && !seenUrls.has(resolved)) {
+        seenUrls.add(resolved);
+        images.push({ url: resolved, caption: "", isOg: true, index: imgIndex++ });
+      }
     }
 
     // 2) twitter:image
     const twMatch = html.match(/<meta[^>]*(?:name|property)=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["']twitter:image["']/i);
     if (twMatch?.[1]) {
-      const resolved = resolveUrl(twMatch[1].replace(/&amp;/g, "&"), url);
-      if (resolved) return resolved;
+      const resolved = resolveUrl(twMatch[1].replace(/&amp;/g, "&"), articleUrl);
+      if (resolved && !seenUrls.has(resolved)) {
+        seenUrls.add(resolved);
+        images.push({ url: resolved, caption: "", isOg: true, index: imgIndex++ });
+      }
     }
 
-    // 3) 본문 내 첫 번째 <img> 폴백
-    const imgMatches = html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/gi);
-    for (const m of imgMatches) {
-      const src = m[1];
+    // 3) 본문 내 모든 <img> + 주변 캡션 텍스트 수집
+    // <figure>, <figcaption>, <em>, <span class="caption">, alt 등에서 캡션 추출
+    const imgRegex = /<(?:figure|div)[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>[\s\S]*?(?:<(?:figcaption|em|span|p|div)[^>]*>([\s\S]*?)<\/(?:figcaption|em|span|p|div)>)?[\s\S]*?<\/(?:figure|div)>|<img[^>]*src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>/gi;
+    
+    // 더 간단하고 확실한 접근: 각 <img> 태그와 그 주변 텍스트를 수집
+    const imgTagRegex = /<img[^>]*>/gi;
+    let imgMatch;
+    while ((imgMatch = imgTagRegex.exec(html)) !== null) {
+      const imgTag = imgMatch[0];
+      const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
+      if (!srcMatch) continue;
+      
+      const src = srcMatch[1];
       if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
       if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner/i.test(src)) continue;
-      const resolved = resolveUrl(src.replace(/&amp;/g, "&"), url);
-      if (resolved) return resolved;
+      
+      const resolved = resolveUrl(src.replace(/&amp;/g, "&"), articleUrl);
+      if (!resolved || seenUrls.has(resolved)) continue;
+      seenUrls.add(resolved);
+      
+      // alt 텍스트 추출
+      const altMatch = imgTag.match(/alt=["']([^"']*)["']/i);
+      let caption = altMatch?.[1] || "";
+      
+      // 이미지 주변 200자 범위에서 캡션 텍스트 추출
+      const pos = imgMatch.index;
+      const surroundingText = html.slice(pos, Math.min(pos + 500, html.length));
+      
+      // <figcaption>, <em>, <span class="caption">, <p class="caption"> 등에서 캡션 추출
+      const captionMatch = surroundingText.match(/<(?:figcaption|em|span|p|div)[^>]*class=["'][^"']*(?:caption|desc|photo_txt|image_desc|artimg|photo-caption)[^"']*["'][^>]*>([\s\S]*?)<\/(?:figcaption|em|span|p|div)>/i)
+        || surroundingText.match(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/i)
+        || surroundingText.match(/<em[^>]*>([\s\S]*?)<\/em>/i);
+      
+      if (captionMatch?.[1]) {
+        const captionText = captionMatch[1].replace(/<[^>]*>/g, "").trim();
+        if (captionText.length > 2 && captionText.length < 200) {
+          caption = caption ? `${caption} ${captionText}` : captionText;
+        }
+      }
+      
+      images.push({ url: resolved, caption, isOg: false, index: imgIndex++ });
+      
+      // 최대 15개까지만
+      if (images.length >= 15) break;
     }
 
-    return null;
+    return images;
   } catch {
-    return null;
+    return [];
   }
+}
+
+// 하위 호환용 래퍼 (단일 이미지 반환)
+async function fetchOgImage(url: string): Promise<string | null> {
+  const images = await fetchArticleImages(url);
+  return images.length > 0 ? images[0].url : null;
 }
 // ── 카테고리 컨텍스트 라벨 ──
 function getCategoryContext(category: string): string {
@@ -1798,7 +1855,7 @@ async function detectForMember(
     return { keywordData: k, sourceArticle, sourceUrl: sourceArticle?.url || null };
   });
 
-  // 모든 기사 URL에서 OG 이미지를 수집 (최대 10개 기사)
+  // 모든 기사 URL에서 이미지 전량 수집 (캡션 포함)
   const allArticleUrls = articles
     .slice(0, 10)
     .map(a => a.url)
@@ -1808,29 +1865,56 @@ async function detectForMember(
     ...keywordSources.map((item) => item.sourceUrl).filter(Boolean) as string[],
     ...allArticleUrls,
   ])];
-  const ogImageMap = new Map<string, string | null>();
+  const articleImagesMap = new Map<string, ArticleImage[]>();
   await Promise.allSettled(
     uniqueUrls
       .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
       .map(async (url) => {
-        ogImageMap.set(url, await fetchOgImage(url));
+        articleImagesMap.set(url, await fetchArticleImages(url));
       })
   );
 
   // ── Vision API로 이미지 품질 일괄 분류 ──
-  const allOgImages = Array.from(ogImageMap.values()).filter((v): v is string => !!v);
-  const textHeavyImages = await classifyImagesWithVision(allOgImages, openaiKey);
+  const allImages = Array.from(articleImagesMap.values()).flat().map(i => i.url);
+  const uniqueImageUrls = [...new Set(allImages)];
+  const textHeavyImages = await classifyImagesWithVision(uniqueImageUrls, openaiKey);
 
-  // 키워드별 이미지 선택: 반드시 해당 키워드의 sourceUrl 기사에서만 가져온다.
-  // 다른 기사 이미지로 fallback하면 엉뚱한 썸네일이 섞일 수 있으므로 금지한다.
-  function selectBestImage(primaryUrl: string | null): string | null {
+  // 키워드별 이미지 선택: 캡션/alt에서 아티스트명·키워드명 매칭하여 가장 연관된 이미지 선택
+  function selectBestImage(primaryUrl: string | null, keywordText?: string, artistName?: string): string | null {
     if (!primaryUrl) return null;
+    const images = articleImagesMap.get(primaryUrl);
+    if (!images || images.length === 0) return null;
 
-    const img = ogImageMap.get(primaryUrl);
-    if (!img) return null;
-    if (textHeavyImages.has(img)) return null;
+    // 매칭용 검색어 리스트
+    const searchTerms: string[] = [];
+    if (artistName) searchTerms.push(artistName.toLowerCase());
+    if (keywordText) searchTerms.push(keywordText.toLowerCase());
+    if (nameKo) searchTerms.push(nameKo.toLowerCase());
+    if (memberName) searchTerms.push(memberName.toLowerCase());
 
-    return sanitizeImageUrl(img);
+    // 유효 이미지 필터 (텍스트 헤비 제외)
+    const validImages = images.filter(img => !textHeavyImages.has(img.url));
+    if (validImages.length === 0) return null;
+
+    // 1순위: 캡션/alt에 아티스트명 또는 키워드명이 포함된 이미지
+    if (searchTerms.length > 0) {
+      for (const img of validImages) {
+        const captionLower = img.caption.toLowerCase();
+        if (searchTerms.some(term => captionLower.includes(term))) {
+          console.log(`[trend-detect] 🎯 Caption-matched image: "${img.caption.slice(0, 50)}" for "${keywordText || artistName}"`);
+          return sanitizeImageUrl(img.url);
+        }
+      }
+    }
+
+    // 2순위: 본문 이미지 중 첫 번째 (og:image가 아닌 것 우선 — 보통 기사 본문 사진이 더 관련성 높음)
+    const bodyImages = validImages.filter(img => !img.isOg);
+    if (bodyImages.length > 0) {
+      return sanitizeImageUrl(bodyImages[0].url);
+    }
+
+    // 3순위: og:image 폴백
+    return sanitizeImageUrl(validImages[0].url);
   }
 
   // ─── 순수 수집: buzz score 수집 없이 키워드와 소스 정보만 준비 ───
@@ -1854,7 +1938,7 @@ async function detectForMember(
         source_title: sourceArticle?.title || null,
         source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
           ? keywordData._tiktok_cover_url
-          : selectBestImage(sourceUrl),
+          : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         metadata: keywordData.category === "social" ? {
           source: "tiktok",
@@ -1876,7 +1960,7 @@ async function detectForMember(
         source_title: sourceArticle?.title || null,
         source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
           ? keywordData._tiktok_cover_url
-          : selectBestImage(sourceUrl),
+          : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         context: keywordData.context,
         context_ko: keywordData.context_ko || null,
