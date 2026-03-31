@@ -1,5 +1,5 @@
 // T2 Trend Detect: 순수 키워드 발견 엔진
-// 아티스트 대상 네이버 뉴스 검색 → AI 키워드 추출 → ktrenz_keywords + ktrenz_keyword_sources에 저장
+// 아티스트 대상 네이버 뉴스/블로그 + YouTube 검색 → AI 키워드 추출 → ktrenz_keywords + ktrenz_keyword_sources에 저장
 // 추적(tracking)은 별도 ktrenz-trend-track에서 수행 (이 함수에서는 buzz score 수집하지 않음)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
