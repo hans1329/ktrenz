@@ -192,7 +192,7 @@ async function searchNaverRecent(
 // ── 네이버 데이터랩 ──
 async function searchNaverDatalab(
   clientId: string, clientSecret: string, keyword: string,
-): Promise<{ latestRatio: number; trend: number[] }> {
+): Promise<{ latestRatio: number; trend: number[] } | null> {
   try {
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - 30 * 86400000);
@@ -208,11 +208,17 @@ async function searchNaverDatalab(
         keywordGroups: [{ groupName: keyword, keywords: [keyword] }],
       }),
     });
-    if (!response.ok) return { latestRatio: 0, trend: [] };
+    if (!response.ok) {
+      console.warn(`[datalab] API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
     const data = await response.json();
     const ratios = (data.results?.[0]?.data || []).map((d: any) => d.ratio || 0);
     return { latestRatio: ratios.length > 0 ? Math.round(ratios[ratios.length - 1] * 100) / 100 : 0, trend: ratios.slice(-7) };
-  } catch { return { latestRatio: 0, trend: [] }; }
+  } catch (e) {
+    console.warn(`[datalab] fetch error:`, e);
+    return null;
+  }
 }
 
 // ── 유튜브 검색 ──
@@ -263,15 +269,19 @@ const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
 
 async function searchTikTok(
   apiKey: string, keyword: string,
-): Promise<{ videoCount: number; totalViews: number; totalLikes: number; totalComments: number }> {
+): Promise<{ videoCount: number; totalViews: number; totalLikes: number; totalComments: number } | null> {
   try {
     const url = `https://${TIKTOK_API_HOST}/api/search/general?keyword=${encodeURIComponent(keyword)}&count=10`;
     const res = await fetch(url, {
       headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": apiKey },
     });
-    if (!res.ok) return { videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 };
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`[tiktok] API error: ${res.status} - ${errText.slice(0, 200)}`);
+      return null;
+    }
     const text = await res.text();
-    if (!text.trim()) return { videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 };
+    if (!text.trim()) return null;
     const data = JSON.parse(text);
     const items = (data.data || []).filter((i: any) => i.item);
     let totalViews = 0, totalLikes = 0, totalComments = 0;
@@ -282,7 +292,10 @@ async function searchTikTok(
       totalComments += Number(s.commentCount || 0);
     }
     return { videoCount: items.length, totalViews, totalLikes, totalComments };
-  } catch { return { videoCount: 0, totalViews: 0, totalLikes: 0, totalComments: 0 }; }
+  } catch (e) {
+    console.warn(`[tiktok] fetch error:`, e);
+    return null;
+  }
 }
 
 // ── 인스타그램 검색 (RapidAPI) ──
@@ -290,13 +303,17 @@ const INSTA_API_HOST = "instagram-scraper-api2.p.rapidapi.com";
 
 async function searchInstagram(
   apiKey: string, keyword: string,
-): Promise<{ postCount: number; totalLikes: number; totalComments: number }> {
+): Promise<{ postCount: number; totalLikes: number; totalComments: number } | null> {
   try {
     const url = `https://${INSTA_API_HOST}/v1/hashtag?hashtag=${encodeURIComponent(keyword.replace(/\s+/g, ""))}`;
     const res = await fetch(url, {
       headers: { "x-rapidapi-host": INSTA_API_HOST, "x-rapidapi-key": apiKey },
     });
-    if (!res.ok) return { postCount: 0, totalLikes: 0, totalComments: 0 };
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`[instagram] API error: ${res.status} - ${errText.slice(0, 200)}`);
+      return null;
+    }
     const data = await res.json();
     const items = data.data?.items || [];
     let totalLikes = 0, totalComments = 0;
@@ -305,7 +322,10 @@ async function searchInstagram(
       totalComments += Number(item.comment_count || 0);
     }
     return { postCount: items.length || data.data?.count || 0, totalLikes, totalComments };
-  } catch { return { postCount: 0, totalLikes: 0, totalComments: 0 }; }
+  } catch (e) {
+    console.warn(`[instagram] fetch error:`, e);
+    return null;
+  }
 }
 
 // ── 네이버 쇼핑 ──
@@ -570,8 +590,8 @@ Deno.serve(async (req) => {
           naver_blog_total: blogResult.total,
           naver_news_24h: newsResult.recent24h,
           naver_blog_24h: blogResult.recent24h,
-          datalab_ratio: datalabResult.latestRatio,
-          datalab_trend_7d: datalabResult.trend,
+          datalab_ratio: datalabResult ? datalabResult.latestRatio : null,
+          datalab_trend_7d: datalabResult ? datalabResult.trend : [],
           youtube_video_count: ytResult ? ytResult.videoCount : null,
           youtube_total_views: ytResult ? ytResult.totalViews : null,
           youtube_total_comments: ytResult ? ytResult.totalComments : null,
