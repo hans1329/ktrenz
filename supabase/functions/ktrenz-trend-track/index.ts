@@ -303,13 +303,17 @@ const INSTA_API_HOST = "instagram-scraper-api2.p.rapidapi.com";
 
 async function searchInstagram(
   apiKey: string, keyword: string,
-): Promise<{ postCount: number; totalLikes: number; totalComments: number }> {
+): Promise<{ postCount: number; totalLikes: number; totalComments: number } | null> {
   try {
     const url = `https://${INSTA_API_HOST}/v1/hashtag?hashtag=${encodeURIComponent(keyword.replace(/\s+/g, ""))}`;
     const res = await fetch(url, {
       headers: { "x-rapidapi-host": INSTA_API_HOST, "x-rapidapi-key": apiKey },
     });
-    if (!res.ok) return { postCount: 0, totalLikes: 0, totalComments: 0 };
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`[instagram] API error: ${res.status} - ${errText.slice(0, 200)}`);
+      return null;
+    }
     const data = await res.json();
     const items = data.data?.items || [];
     let totalLikes = 0, totalComments = 0;
@@ -318,7 +322,10 @@ async function searchInstagram(
       totalComments += Number(item.comment_count || 0);
     }
     return { postCount: items.length || data.data?.count || 0, totalLikes, totalComments };
-  } catch { return { postCount: 0, totalLikes: 0, totalComments: 0 }; }
+  } catch (e) {
+    console.warn(`[instagram] fetch error:`, e);
+    return null;
+  }
 }
 
 // ── 네이버 쇼핑 ──
