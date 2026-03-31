@@ -450,12 +450,25 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID") || "";
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET") || "";
-    const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY") || "";
+    // ─── YouTube API 키 로테이션 (7개 키) ───
+    const YT_KEYS: string[] = [];
+    for (let i = 1; i <= 7; i++) {
+      const k = Deno.env.get(`YOUTUBE_API_KEY_${i}`);
+      if (k) YT_KEYS.push(k);
+    }
+    if (YT_KEYS.length === 0) {
+      const legacy = Deno.env.get("YOUTUBE_API_KEY");
+      if (legacy) YT_KEYS.push(legacy);
+    }
+    // batchOffset 기반으로 키 분산
+    const youtubeApiKey = YT_KEYS.length > 0 ? YT_KEYS[batchOffset % YT_KEYS.length] : "";
+    console.log(`[trend-track] Using YouTube API key #${(batchOffset % YT_KEYS.length) + 1} of ${YT_KEYS.length}`);
+
     const rapidApiKey = Deno.env.get("RAPIDAPI_KEY") || "";
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ─── YouTube 일일 쿼터 로테이션 (100건/일 한도) ───
-    const YT_DAILY_LIMIT = 100;
+    // ─── YouTube 일일 쿼터 관리 (키 개수 × 100건/일) ───
+    const YT_DAILY_LIMIT = YT_KEYS.length * 100; // 7키 = 700건
     let ytQuotaRemaining = 0;
     let ytQuotaUsed = 0;
 
@@ -573,14 +586,17 @@ Deno.serve(async (req) => {
         } : emptyRaw();
 
         // ─── 5소스 병렬 수집 (미수집 소스는 null 반환) ───
-        const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0);
+        const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0) || YT_KEYS.length === 0;
         const socialSkipped = !rapidApiKey;
+
+        // 키워드별로 다른 YouTube API 키 사용 (쿼터 분산)
+        const ytKeyForThis = YT_KEYS.length > 0 ? YT_KEYS[trackedCount % YT_KEYS.length] : "";
 
         const [newsResult, blogResult, datalabResult, ytResult, tiktokResult, instaResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
-          ytSkipped ? Promise.resolve(null) : searchYouTube(youtubeApiKey, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
+          ytSkipped ? Promise.resolve(null) : searchYouTube(ytKeyForThis, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
           socialSkipped ? Promise.resolve(null) : searchTikTok(rapidApiKey, kwQuery),
           socialSkipped ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery),
         ]);
