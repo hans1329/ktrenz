@@ -447,7 +447,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   if (!tile) return null;
 
   return (
-    <Sheet open={!!tile} onOpenChange={(open) => { if (!open) { setYtPlaying(false); onClose(); } }}>
+    <Sheet open={!!tile} onOpenChange={(open) => { if (!open) { onClose(); } }}>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[90dvh] overflow-hidden border-border sm:max-w-lg sm:mx-auto flex flex-col gap-0 bg-background">
         <SheetHeader className="pb-4 shrink-0 bg-background -mx-6 px-6 -mt-6 pt-6 rounded-t-2xl border-b border-border">
           <SheetTitle className="flex items-center gap-2 text-lg">
