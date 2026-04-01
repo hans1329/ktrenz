@@ -1651,10 +1651,12 @@ Deno.serve(async (req) => {
           inserted: 0, backfilled: 0, filtered: 0,
         });
         // 에러도 기록
-        await sb.from("ktrenz_stars").update({
-          last_detected_at: new Date().toISOString(),
-          last_detect_result: { status: "error", error: (e as Error).message },
-        }).eq("id", star.id).catch(() => {});
+        try {
+          await sb.from("ktrenz_stars").update({
+            last_detected_at: new Date().toISOString(),
+            last_detect_result: { status: "error", error: (e as Error).message },
+          }).eq("id", star.id);
+        } catch (_) { /* ignore */ }
       }
     }
 
