@@ -93,12 +93,16 @@ async function resolveInstagramProfile(
   }
 }
 
-// ── 피드 포스트 파싱 ──
+// ── 피드 포스트 파싱 (instagram120: edges[].node 구조) ──
 function parseFeedItems(data: any): InstaPost[] {
-  const items = data?.items || (Array.isArray(data) ? data : []);
+  const edges = data?.result?.edges || [];
   const posts: InstaPost[] = [];
 
-  for (const item of items.slice(0, 12)) { // 최근 12개 포스트만
+  for (const edge of edges.slice(0, 12)) { // 최근 12개 포스트만
+    const item = edge.node;
+    if (!item) continue;
+
+    // caption 추출 (instagram120: item.caption.text)
     const caption = item.caption;
     const captionText = typeof caption === "string" ? caption : (caption?.text || "");
 
@@ -115,7 +119,7 @@ function parseFeedItems(data: any): InstaPost[] {
 
     // 이미지 URL
     const imageVersions = item.image_versions2?.candidates || [];
-    const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : null;
+    const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : (item.display_uri || null);
 
     // POST_AGE_DAYS 이내 포스트만
     const takenAt = item.taken_at || 0;
