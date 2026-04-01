@@ -27,14 +27,17 @@ interface InstaPost {
   shortcode: string | null;
 }
 
-// ── RapidAPI 호출 헬퍼 ──
-async function instaFetch(endpoint: string, rapidApiKey: string, retries = 1): Promise<any> {
+// ── RapidAPI 호출 헬퍼 (instagram120: POST 방식) ──
+async function instaFetch(endpoint: string, body: Record<string, any>, rapidApiKey: string, retries = 1): Promise<any> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
+      method: "POST",
       headers: {
         "X-RapidAPI-Key": rapidApiKey,
         "X-RapidAPI-Host": RAPIDAPI_HOST,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(body),
     });
 
     if (res.status === 429 && attempt < retries) {
@@ -45,8 +48,8 @@ async function instaFetch(endpoint: string, rapidApiKey: string, retries = 1): P
     }
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Instagram API [${res.status}]: ${body}`);
+      const text = await res.text();
+      throw new Error(`Instagram API [${res.status}]: ${text}`);
     }
 
     return res.json();
