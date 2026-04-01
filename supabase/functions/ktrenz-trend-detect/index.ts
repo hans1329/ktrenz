@@ -1648,8 +1648,11 @@ Deno.serve(async (req) => {
           star_category: star.star_category || "kpop",
         };
 
+        const ytSearchFn = YT_KEYS.length > 0
+          ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
+          : undefined;
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, youtubeApiKey
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn
         );
         successCount++;
         totalKeywords += result.keywordsFound;
