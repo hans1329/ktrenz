@@ -294,7 +294,7 @@ async function executeBatch(
   console.log(`[cron] Executing batch: run=${runId}, phase=${phase}, offset=${offset}, size=${batchSize}`);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
+  const timeout = setTimeout(() => controller.abort(), 300000); // 5분 타임아웃
 
   let result: any;
   try {
