@@ -1889,8 +1889,8 @@ async function detectForMember(
     const searchTerms: string[] = [];
     if (artistName) searchTerms.push(artistName.toLowerCase());
     if (keywordText) searchTerms.push(keywordText.toLowerCase());
-    if (nameKo) searchTerms.push(nameKo.toLowerCase());
-    if (memberName) searchTerms.push(memberName.toLowerCase());
+    if (member.name_ko) searchTerms.push(member.name_ko.toLowerCase());
+    if (member.display_name) searchTerms.push(member.display_name.toLowerCase());
 
     // 유효 이미지 필터 (텍스트 헤비 제외)
     const validImages = images.filter(img => !textHeavyImages.has(img.url));
