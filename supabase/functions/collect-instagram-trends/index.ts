@@ -475,16 +475,17 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // pk가 없으면 프로필 조회
+        // pk가 없으면 프로필 조회 (instagram120: POST /api/instagram/profile)
         if (!igUserId) {
           apiCalls++;
           try {
-            const profile = await instaFetch(`profile?username=${igUsername}`, rapidApiKey);
-            igUserId = String(profile.pk);
+            const data = await instaFetch("api/instagram/profile", { username: igUsername }, rapidApiKey);
+            const profile = data?.result;
+            igUserId = String(profile?.id || "");
             const updatedHandles = {
               ...socialHandles,
               instagram_pk: igUserId,
-              instagram_followers: profile.follower_count || 0,
+              instagram_followers: profile?.edge_followed_by?.count || 0,
             };
             await sb
               .from("ktrenz_stars")
@@ -492,16 +493,16 @@ Deno.serve(async (req) => {
               .eq("id", star.id);
           } catch {
             console.warn(`[instagram] Failed to get pk for @${igUsername}`);
-            continue;
+            // pk 없어도 username으로 posts 조회 가능하므로 계속 진행
           }
         }
 
-        // ── 2. 피드 수집 (스토리 생략하여 API 절약) ──
+        // ── 2. 피드 수집 (instagram120: POST /api/instagram/posts, username 기반) ──
         let allPosts: InstaPost[] = [];
 
         try {
           apiCalls++;
-          const feedData = await instaFetch(`feed?user_id=${igUserId}`, rapidApiKey);
+          const feedData = await instaFetch("api/instagram/posts", { username: igUsername, maxId: "" }, rapidApiKey);
           const feedPosts = parseFeedItems(feedData);
           allPosts.push(...feedPosts);
         } catch (e) {
