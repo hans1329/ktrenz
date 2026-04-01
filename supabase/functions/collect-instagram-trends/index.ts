@@ -56,13 +56,12 @@ async function instaFetch(endpoint: string, body: Record<string, any>, rapidApiK
   }
 }
 
-// ── 프로필 조회 → pk(user_id) + username 캐싱 ──
+// ── 프로필 조회 → pk(user_id) + username 캐싱 (instagram120: POST /api/instagram/profile) ──
 async function resolveInstagramProfile(
   artistName: string,
   rapidApiKey: string,
 ): Promise<{ pk: string; username: string; follower_count: number } | null> {
   try {
-    // 아티스트명으로 직접 검색 시도 (공식 계정은 보통 그룹명 + "official")
     const variants = [
       artistName.toLowerCase().replace(/[^a-z0-9]/g, ""),
       artistName.toLowerCase().replace(/[^a-z0-9]/g, "") + "official",
@@ -70,17 +69,19 @@ async function resolveInstagramProfile(
 
     for (const username of variants) {
       try {
-        const profile = await instaFetch(`profile?username=${username}`, rapidApiKey);
-        // verified 또는 팔로워 1만 이상이면 공식 계정으로 간주
-        if (profile?.pk && (profile?.is_verified || (profile?.follower_count || 0) >= 10000)) {
+        const data = await instaFetch("api/instagram/profile", { username }, rapidApiKey);
+        const profile = data?.result;
+        if (!profile?.id) continue;
+        const followerCount = profile.edge_followed_by?.count || 0;
+        // 팔로워 1만 이상이면 공식 계정으로 간주 (instagram120은 is_verified 미제공)
+        if (followerCount >= 10000) {
           return {
-            pk: String(profile.pk),
-            username: profile.username,
-            follower_count: profile.follower_count || 0,
+            pk: String(profile.id),
+            username: profile.username || username,
+            follower_count: followerCount,
           };
         }
       } catch {
-        // 해당 username이 없으면 다음 시도
         continue;
       }
     }
