@@ -83,16 +83,23 @@ Deno.serve(async (req) => {
       await sb.from("ktrenz_pipeline_state").insert({
         run_id: newRunId,
         phase: firstPhase,
-        status: RUNNING_INFLIGHT_STATUS,
-        current_offset: resumeOffset + effectiveBatchSize,
-        batch_size: batchSize,
+        status: RUNNING_STATUS,
+        current_offset: resumeOffset,
+        batch_size: effectiveBatchSize,
         total_candidates: null,
       });
 
-      console.log(`[cron] Started ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, requestedBatchSize=${batchSize}, effectiveBatchSize=${effectiveBatchSize}, resumeOffset=${resumeOffset}`);
+      console.log(`[cron] Queued ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, requestedBatchSize=${batchSize}, effectiveBatchSize=${effectiveBatchSize}, resumeOffset=${resumeOffset}`);
 
-      // 즉시 첫 배치 실행
-      const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, resumeOffset, effectiveBatchSize);
+      // 즉시 비동기 tick 트리거 (start 응답은 즉시 반환)
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "tick" }),
+      }).catch(() => {});
 
       return respond({
         success: true,
@@ -101,7 +108,7 @@ Deno.serve(async (req) => {
         phase: firstPhase,
         requestedBatchSize: batchSize,
         effectiveBatchSize,
-        result,
+        queued: true,
         elapsed_ms: Date.now() - startTime,
       });
     }
