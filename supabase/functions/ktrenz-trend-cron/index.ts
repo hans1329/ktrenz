@@ -236,6 +236,19 @@ Deno.serve(async (req) => {
         state.run_id, state.phase, currentOffset, bs
       );
 
+      // 배치 완료 후 즉시 다음 tick을 fire-and-forget으로 트리거 (5분 대기 제거)
+      // 에러거나 마지막 배치면 다음 tick에서 자연스럽게 종료됨
+      if (!result.stopped) {
+        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "tick" }),
+        }).catch(() => {}); // fire-and-forget
+      }
+
       return respond({
         success: true,
         action: "tick",
