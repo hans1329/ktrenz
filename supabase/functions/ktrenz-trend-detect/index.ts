@@ -277,6 +277,7 @@ async function searchYouTubeForDetect(
   apiKey: string,
   query: string,
   maxResults: number = 15,
+  onQuotaExhausted?: (key: string) => void,
 ): Promise<YouTubeDetectResult> {
   try {
     const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -293,6 +294,11 @@ async function searchYouTubeForDetect(
     const response = await fetch(searchUrl.toString());
     if (!response.ok) {
       const errText = await response.text();
+      if (response.status === 403) {
+        console.warn(`[trend-detect] YouTube API key exhausted (403), marking for rotation`);
+        onQuotaExhausted?.(apiKey);
+        return { items: [], totalResults: -1 }; // -1 signals quota exhaustion for retry
+      }
       console.warn(`[trend-detect] YouTube API error: ${response.status} - ${errText.slice(0, 200)}`);
       return { items: [], totalResults: 0 };
     }
@@ -308,6 +314,24 @@ async function searchYouTubeForDetect(
     console.warn(`[trend-detect] YouTube search error: ${(e as Error).message}`);
     return { items: [], totalResults: 0 };
   }
+}
+
+// YouTube 검색 with 자동 키 로테이션 (403 시 다음 키로 재시도)
+async function searchYouTubeWithRotation(
+  getKey: () => string | null,
+  markExhausted: (key: string) => void,
+  query: string,
+  maxResults: number = 15,
+): Promise<YouTubeDetectResult> {
+  for (let attempt = 0; attempt < 7; attempt++) {
+    const key = getKey();
+    if (!key) return { items: [], totalResults: 0 }; // 모든 키 소진
+    const result = await searchYouTubeForDetect(key, query, maxResults, markExhausted);
+    if (result.totalResults === -1) continue; // 403 → 다음 키로 재시도
+    return result;
+  }
+  console.warn(`[trend-detect] All YouTube API keys exhausted`);
+  return { items: [], totalResults: 0 };
 }
 
 // ─── Buzz Score 정규화 (UI 표시용으로 유지) ───
