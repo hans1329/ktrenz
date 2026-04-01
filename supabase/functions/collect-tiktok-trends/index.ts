@@ -11,6 +11,8 @@ const corsHeaders = {
 
 const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
 const SEARCH_COUNT = 10;
+// ★ 하드 리밋: 월 500건 무료, 초과 시 개당 과금 → 일일 최대 450건으로 안전 마진 확보
+const DAILY_API_CALL_HARD_LIMIT = 450;
 
 interface TikTokVideo {
   id: string;
@@ -296,6 +298,22 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    // ★ 일일 API 호출 하드 리밋 체크 (월 500건 무료, 초과 과금 방지)
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const { data: todayLogs } = await sb
+      .from("ktrenz_collection_log")
+      .select("error_message")
+      .eq("platform", "tiktok")
+      .eq("status", "success")
+      .gte("collected_at", todayStart.toISOString());
+
+    let todayApiCalls = 0;
+    for (const log of todayLogs || []) {
+      const match = (log as any).error_message?.match(/apiCalls=(\d+)/);
+      if (match) todayApiCalls += parseInt(match[1]);
+    }
+
     // ktrenz_stars에서 활성 아티스트 (star_id 기반)
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
@@ -313,16 +331,51 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[tiktok] Processing ${stars.length} artists (dryRun=${!!dryRun})`);
+    // 하드 리밋 초과 시 즉시 중단
+    if (todayApiCalls >= DAILY_API_CALL_HARD_LIMIT) {
+      console.warn(`[tiktok] HARD LIMIT reached: ${todayApiCalls} >= ${DAILY_API_CALL_HARD_LIMIT}, aborting`);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "daily_hard_limit", todayApiCalls, limit: DAILY_API_CALL_HARD_LIMIT }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 남은 쿼터 내에서만 처리할 아티스트 수 제한
+    const remainingCalls = DAILY_API_CALL_HARD_LIMIT - todayApiCalls;
+    const safeBatchSize = Math.min(stars.length, remainingCalls);
+    const starsToProcess = stars.slice(0, safeBatchSize);
+
+    console.log(`[tiktok] Processing ${starsToProcess.length}/${stars.length} artists (dryRun=${!!dryRun}, todayApiCalls=${todayApiCalls}, remaining=${remainingCalls})`);
+
 
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
     let totalKeywords = 0;
+    let apiCallCount = 0;
+    let emptyResponseStreak = 0;
 
-    for (const star of stars as any[]) {
+    for (const star of starsToProcess as any[]) {
+      // 실행 중 하드 리밋 재확인
+      if (todayApiCalls + apiCallCount >= DAILY_API_CALL_HARD_LIMIT) {
+        console.warn(`[tiktok] Mid-batch hard limit reached at ${todayApiCalls + apiCallCount} calls, stopping`);
+        break;
+      }
+      // 빈 응답 연속 5회 시 중단 (과금만 되는 상황 방지)
+      if (emptyResponseStreak >= 5) {
+        console.warn(`[tiktok] 5 consecutive empty responses, stopping to prevent wasted calls`);
+        break;
+      }
       try {
         const searchKeyword = star.display_name;
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
+        apiCallCount++;
+
+        // 빈 응답 연속 감지
+        if (videos.length === 0) {
+          emptyResponseStreak++;
+        } else {
+          emptyResponseStreak = 0;
+        }
 
         const metrics = aggregateMetrics(videos);
         const topPosts = extractTopPosts(videos);
@@ -460,7 +513,7 @@ Deno.serve(async (req) => {
         platform: "tiktok",
         status: "success",
         records_collected: totalKeywords,
-        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}`,
+        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}`,
       });
     } catch { /* ignore log errors */ }
 
