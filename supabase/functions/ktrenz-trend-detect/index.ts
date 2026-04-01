@@ -1651,10 +1651,12 @@ Deno.serve(async (req) => {
           inserted: 0, backfilled: 0, filtered: 0,
         });
         // 에러도 기록
-        await sb.from("ktrenz_stars").update({
-          last_detected_at: new Date().toISOString(),
-          last_detect_result: { status: "error", error: (e as Error).message },
-        }).eq("id", star.id).catch(() => {});
+        try {
+          await sb.from("ktrenz_stars").update({
+            last_detected_at: new Date().toISOString(),
+            last_detect_result: { status: "error", error: (e as Error).message },
+          }).eq("id", star.id);
+        } catch (_) { /* ignore */ }
       }
     }
 
@@ -1889,8 +1891,8 @@ async function detectForMember(
     const searchTerms: string[] = [];
     if (artistName) searchTerms.push(artistName.toLowerCase());
     if (keywordText) searchTerms.push(keywordText.toLowerCase());
-    if (nameKo) searchTerms.push(nameKo.toLowerCase());
-    if (memberName) searchTerms.push(memberName.toLowerCase());
+    if (member.name_ko) searchTerms.push(member.name_ko.toLowerCase());
+    if (member.display_name) searchTerms.push(member.display_name.toLowerCase());
 
     // 유효 이미지 필터 (텍스트 헤비 제외)
     const validImages = images.filter(img => !textHeavyImages.has(img.url));
