@@ -1,0 +1,1 @@
+UPDATE ktrenz_pipeline_state SET status = 'done' WHERE status IN ('error', 'running', 'idle', 'postprocess_requested', 'postprocess_running');
