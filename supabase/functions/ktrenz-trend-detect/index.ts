@@ -277,6 +277,7 @@ async function searchYouTubeForDetect(
   apiKey: string,
   query: string,
   maxResults: number = 15,
+  onQuotaExhausted?: (key: string) => void,
 ): Promise<YouTubeDetectResult> {
   try {
     const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -293,6 +294,11 @@ async function searchYouTubeForDetect(
     const response = await fetch(searchUrl.toString());
     if (!response.ok) {
       const errText = await response.text();
+      if (response.status === 403) {
+        console.warn(`[trend-detect] YouTube API key exhausted (403), marking for rotation`);
+        onQuotaExhausted?.(apiKey);
+        return { items: [], totalResults: -1 }; // -1 signals quota exhaustion for retry
+      }
       console.warn(`[trend-detect] YouTube API error: ${response.status} - ${errText.slice(0, 200)}`);
       return { items: [], totalResults: 0 };
     }
@@ -308,6 +314,24 @@ async function searchYouTubeForDetect(
     console.warn(`[trend-detect] YouTube search error: ${(e as Error).message}`);
     return { items: [], totalResults: 0 };
   }
+}
+
+// YouTube 검색 with 자동 키 로테이션 (403 시 다음 키로 재시도)
+async function searchYouTubeWithRotation(
+  getKey: () => string | null,
+  markExhausted: (key: string) => void,
+  query: string,
+  maxResults: number = 15,
+): Promise<YouTubeDetectResult> {
+  for (let attempt = 0; attempt < 7; attempt++) {
+    const key = getKey();
+    if (!key) return { items: [], totalResults: 0 }; // 모든 키 소진
+    const result = await searchYouTubeForDetect(key, query, maxResults, markExhausted);
+    if (result.totalResults === -1) continue; // 403 → 다음 키로 재시도
+    return result;
+  }
+  console.warn(`[trend-detect] All YouTube API keys exhausted`);
+  return { items: [], totalResults: 0 };
 }
 
 // ─── Buzz Score 정규화 (UI 표시용으로 유지) ───
@@ -1451,9 +1475,34 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID");
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
-    const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY") || null;
     const sb = createClient(supabaseUrl, supabaseKey);
-    console.log(`[trend-detect] APIs: naver=${naverClientId ? '✓' : '✗'} youtube=${youtubeApiKey ? '✓' : '✗'} openai=${openaiKey ? '✓' : '✗'}`);
+
+    // ─── YouTube API 키 로테이션 (7개 키) ───
+    const YT_KEYS: string[] = [];
+    for (let i = 1; i <= 7; i++) {
+      const k = Deno.env.get(`YOUTUBE_API_KEY_${i}`);
+      if (k) YT_KEYS.push(k);
+    }
+    if (YT_KEYS.length === 0) {
+      const legacy = Deno.env.get("YOUTUBE_API_KEY");
+      if (legacy) YT_KEYS.push(legacy);
+    }
+    let ytKeyOffset = 0;
+    const ytExhaustedKeys = new Set<number>();
+    function getNextYtKey(): string | null {
+      if (YT_KEYS.length === 0 || ytExhaustedKeys.size >= YT_KEYS.length) return null;
+      for (let attempt = 0; attempt < YT_KEYS.length; attempt++) {
+        const idx = ytKeyOffset % YT_KEYS.length;
+        ytKeyOffset++;
+        if (!ytExhaustedKeys.has(idx)) return YT_KEYS[idx];
+      }
+      return null;
+    }
+    function markYtKeyExhausted(key: string) {
+      const idx = YT_KEYS.indexOf(key);
+      if (idx >= 0) ytExhaustedKeys.add(idx);
+    }
+    console.log(`[trend-detect] APIs: naver=${naverClientId ? '✓' : '✗'} youtube=${YT_KEYS.length} keys openai=${openaiKey ? '✓' : '✗'}`);
 
     // 글로벌 스타 이름 DB 로드 (AI 프롬프트 컨텍스트 + 코드 레벨 필터용 — 모든 모드 공통)
     const { data: _allStarNamesData } = await sb
@@ -1508,10 +1557,13 @@ Deno.serve(async (req) => {
       }
 
       if (singleMemberName) {
+        const ytSearchFn = YT_KEYS.length > 0
+          ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
+          : undefined;
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
           { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, star_category: singleStarCategory },
-          globalStarNames, undefined, youtubeApiKey
+          globalStarNames, undefined, ytSearchFn
         );
         return new Response(
           JSON.stringify({ success: true, ...result }),
@@ -1596,8 +1648,11 @@ Deno.serve(async (req) => {
           star_category: star.star_category || "kpop",
         };
 
+        const ytSearchFn = YT_KEYS.length > 0
+          ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
+          : undefined;
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, youtubeApiKey
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn
         );
         successCount++;
         totalKeywords += result.keywordsFound;
@@ -1701,7 +1756,7 @@ async function detectForMember(
   member: MemberInfo,
   globalStarNames?: Map<string, string>,
   runInsertedKeywords?: Set<string>,
-  youtubeApiKey?: string | null,
+  ytSearch?: (query: string, max: number) => Promise<YouTubeDetectResult>,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
@@ -1717,12 +1772,12 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 3소스 병렬 검색: News + Blog + YouTube ───
+  // ─── 3소스 병렬 검색: News + Blog + YouTube (키 로테이션 포함) ───
   const ytSearchQuery = member.name_ko || member.display_name; // YouTube는 따옴표 없이 자연어 검색
   const [newsResult, blogResult, ytResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
-    youtubeApiKey ? searchYouTubeForDetect(youtubeApiKey, ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
+    ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
   ]);
 
   const newsItems = newsResult.items;
