@@ -1557,10 +1557,13 @@ Deno.serve(async (req) => {
       }
 
       if (singleMemberName) {
+        const ytSearchFn = YT_KEYS.length > 0
+          ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
+          : undefined;
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
           { id: resolvedStarId, display_name: singleMemberName, name_ko: singleNameKo, group_name: singleGroupName, group_name_ko: singleGroupNameKo, star_category: singleStarCategory },
-          globalStarNames, undefined, youtubeApiKey
+          globalStarNames, undefined, ytSearchFn
         );
         return new Response(
           JSON.stringify({ success: true, ...result }),
