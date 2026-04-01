@@ -1451,9 +1451,34 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const naverClientId = Deno.env.get("NAVER_CLIENT_ID");
     const naverClientSecret = Deno.env.get("NAVER_CLIENT_SECRET");
-    const youtubeApiKey = Deno.env.get("YOUTUBE_API_KEY") || null;
     const sb = createClient(supabaseUrl, supabaseKey);
-    console.log(`[trend-detect] APIs: naver=${naverClientId ? '✓' : '✗'} youtube=${youtubeApiKey ? '✓' : '✗'} openai=${openaiKey ? '✓' : '✗'}`);
+
+    // ─── YouTube API 키 로테이션 (7개 키) ───
+    const YT_KEYS: string[] = [];
+    for (let i = 1; i <= 7; i++) {
+      const k = Deno.env.get(`YOUTUBE_API_KEY_${i}`);
+      if (k) YT_KEYS.push(k);
+    }
+    if (YT_KEYS.length === 0) {
+      const legacy = Deno.env.get("YOUTUBE_API_KEY");
+      if (legacy) YT_KEYS.push(legacy);
+    }
+    let ytKeyOffset = 0;
+    const ytExhaustedKeys = new Set<number>();
+    function getNextYtKey(): string | null {
+      if (YT_KEYS.length === 0 || ytExhaustedKeys.size >= YT_KEYS.length) return null;
+      for (let attempt = 0; attempt < YT_KEYS.length; attempt++) {
+        const idx = ytKeyOffset % YT_KEYS.length;
+        ytKeyOffset++;
+        if (!ytExhaustedKeys.has(idx)) return YT_KEYS[idx];
+      }
+      return null;
+    }
+    function markYtKeyExhausted(key: string) {
+      const idx = YT_KEYS.indexOf(key);
+      if (idx >= 0) ytExhaustedKeys.add(idx);
+    }
+    console.log(`[trend-detect] APIs: naver=${naverClientId ? '✓' : '✗'} youtube=${YT_KEYS.length} keys openai=${openaiKey ? '✓' : '✗'}`);
 
     // 글로벌 스타 이름 DB 로드 (AI 프롬프트 컨텍스트 + 코드 레벨 필터용 — 모든 모드 공통)
     const { data: _allStarNamesData } = await sb
