@@ -351,8 +351,20 @@ Deno.serve(async (req) => {
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
     let totalKeywords = 0;
+    let apiCallCount = 0;
+    let emptyResponseStreak = 0;
 
-    for (const star of stars as any[]) {
+    for (const star of starsToProcess as any[]) {
+      // 실행 중 하드 리밋 재확인
+      if (todayApiCalls + apiCallCount >= DAILY_API_CALL_HARD_LIMIT) {
+        console.warn(`[tiktok] Mid-batch hard limit reached at ${todayApiCalls + apiCallCount} calls, stopping`);
+        break;
+      }
+      // 빈 응답 연속 5회 시 중단 (과금만 되는 상황 방지)
+      if (emptyResponseStreak >= 5) {
+        console.warn(`[tiktok] 5 consecutive empty responses, stopping to prevent wasted calls`);
+        break;
+      }
       try {
         const searchKeyword = star.display_name;
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
