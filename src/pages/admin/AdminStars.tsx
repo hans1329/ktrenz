@@ -456,7 +456,19 @@ const AdminStars = () => {
                     <td className="px-3 py-2">
                       <div className="flex gap-1">
                         {s.social_handles?.instagram && s.social_handles.instagram !== "_not_found" && (
-                          <Badge variant="outline" className="text-[9px] px-1">IG</Badge>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[9px] px-1",
+                              s.social_handles?.instagram_unverified === "true" && "border-orange-500 text-orange-500"
+                            )}
+                            title={s.social_handles?.instagram_unverified === "true"
+                              ? `⚠️ 미검증: @${s.social_handles.instagram} (자동매칭)`
+                              : `@${s.social_handles.instagram}`
+                            }
+                          >
+                            {s.social_handles?.instagram_unverified === "true" ? "⚠️IG" : "IG"}
+                          </Badge>
                         )}
                         {s.social_handles?.youtube && (
                           <Badge variant="outline" className="text-[9px] px-1">YT</Badge>
@@ -467,7 +479,7 @@ const AdminStars = () => {
                         {s.social_handles?.x && (
                           <Badge variant="outline" className="text-[9px] px-1">X</Badge>
                         )}
-                        {(!s.social_handles || Object.keys(s.social_handles).filter(k => !["instagram_pk", "instagram_followers", "_not_found"].includes(k) && s.social_handles![k] && s.social_handles![k] !== "_not_found").length === 0) && (
+                        {(!s.social_handles || Object.keys(s.social_handles).filter(k => !["instagram_pk", "instagram_followers", "instagram_unverified", "instagram_checked_at", "_not_found"].includes(k) && s.social_handles![k] && s.social_handles![k] !== "_not_found").length === 0) && (
                           <span className="text-[10px] text-muted-foreground">—</span>
                         )}
                       </div>

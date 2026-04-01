@@ -421,44 +421,9 @@ Deno.serve(async (req) => {
         let igUsername = socialHandles.instagram || null;
         let igUserId = socialHandles.instagram_pk || null;
 
-        // ── 1. 인스타 핸들 자동 검색 (캐싱 안 된 경우) ──
+        // ── 1. 인스타 핸들이 없으면 스킵 (자동매칭 비활성화 — 부정확 매칭 방지) ──
         if (!igUsername) {
-          // 프로필 검색은 런당 MAX_RESOLVE_PER_RUN 명으로 제한 (각 최대 2 API 호출)
-          if (resolveAttempts >= MAX_RESOLVE_PER_RUN) {
-            continue; // 다음 실행에서 재시도
-          }
-          resolveAttempts++;
-          apiCalls += 2; // 최대 2개 변형 시도
-          const profile = await resolveInstagramProfile(star.display_name, rapidApiKey);
-
-          if (profile) {
-            igUsername = profile.username;
-            igUserId = profile.pk;
-            profilesResolved++;
-
-            const updatedHandles = {
-              ...socialHandles,
-              instagram: profile.username,
-              instagram_pk: profile.pk,
-              instagram_followers: profile.follower_count,
-            };
-
-            await sb
-              .from("ktrenz_stars")
-              .update({ social_handles: updatedHandles })
-              .eq("id", star.id);
-
-            console.log(`[instagram] Resolved ${star.display_name} → @${profile.username} (${profile.follower_count} followers)`);
-          } else {
-            const updatedHandles = { ...socialHandles, instagram: "_not_found", instagram_checked_at: new Date().toISOString() };
-            await sb
-              .from("ktrenz_stars")
-              .update({ social_handles: updatedHandles })
-              .eq("id", star.id);
-
-            console.log(`[instagram] Could not resolve Instagram for ${star.display_name}`);
-            continue;
-          }
+          continue;
         }
 
         // _not_found 캐싱: 7일 경과 시 재시도
