@@ -8,7 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RAPIDAPI_HOST = "instagram-api-fast-reliable-data-scraper.p.rapidapi.com";
+const RAPIDAPI_HOST = "instagram120.p.rapidapi.com";
 const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
 const MAX_RESOLVE_PER_RUN = 5; // 미검색 아티스트 프로필 검색 제한 (축소)
 const POST_AGE_DAYS = 7; // 7일 이내 포스트만 수집 (기존 3일에서 완화)
@@ -27,14 +27,17 @@ interface InstaPost {
   shortcode: string | null;
 }
 
-// ── RapidAPI 호출 헬퍼 ──
-async function instaFetch(endpoint: string, rapidApiKey: string, retries = 1): Promise<any> {
+// ── RapidAPI 호출 헬퍼 (instagram120: POST 방식) ──
+async function instaFetch(endpoint: string, body: Record<string, any>, rapidApiKey: string, retries = 1): Promise<any> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
+      method: "POST",
       headers: {
         "X-RapidAPI-Key": rapidApiKey,
         "X-RapidAPI-Host": RAPIDAPI_HOST,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(body),
     });
 
     if (res.status === 429 && attempt < retries) {
@@ -45,21 +48,20 @@ async function instaFetch(endpoint: string, rapidApiKey: string, retries = 1): P
     }
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Instagram API [${res.status}]: ${body}`);
+      const text = await res.text();
+      throw new Error(`Instagram API [${res.status}]: ${text}`);
     }
 
     return res.json();
   }
 }
 
-// ── 프로필 조회 → pk(user_id) + username 캐싱 ──
+// ── 프로필 조회 → pk(user_id) + username 캐싱 (instagram120: POST /api/instagram/profile) ──
 async function resolveInstagramProfile(
   artistName: string,
   rapidApiKey: string,
 ): Promise<{ pk: string; username: string; follower_count: number } | null> {
   try {
-    // 아티스트명으로 직접 검색 시도 (공식 계정은 보통 그룹명 + "official")
     const variants = [
       artistName.toLowerCase().replace(/[^a-z0-9]/g, ""),
       artistName.toLowerCase().replace(/[^a-z0-9]/g, "") + "official",
@@ -67,17 +69,19 @@ async function resolveInstagramProfile(
 
     for (const username of variants) {
       try {
-        const profile = await instaFetch(`profile?username=${username}`, rapidApiKey);
-        // verified 또는 팔로워 1만 이상이면 공식 계정으로 간주
-        if (profile?.pk && (profile?.is_verified || (profile?.follower_count || 0) >= 10000)) {
+        const data = await instaFetch("api/instagram/profile", { username }, rapidApiKey);
+        const profile = data?.result;
+        if (!profile?.id) continue;
+        const followerCount = profile.edge_followed_by?.count || 0;
+        // 팔로워 1만 이상이면 공식 계정으로 간주 (instagram120은 is_verified 미제공)
+        if (followerCount >= 10000) {
           return {
-            pk: String(profile.pk),
-            username: profile.username,
-            follower_count: profile.follower_count || 0,
+            pk: String(profile.id),
+            username: profile.username || username,
+            follower_count: followerCount,
           };
         }
       } catch {
-        // 해당 username이 없으면 다음 시도
         continue;
       }
     }
@@ -89,12 +93,16 @@ async function resolveInstagramProfile(
   }
 }
 
-// ── 피드 포스트 파싱 ──
+// ── 피드 포스트 파싱 (instagram120: edges[].node 구조) ──
 function parseFeedItems(data: any): InstaPost[] {
-  const items = data?.items || (Array.isArray(data) ? data : []);
+  const edges = data?.result?.edges || [];
   const posts: InstaPost[] = [];
 
-  for (const item of items.slice(0, 12)) { // 최근 12개 포스트만
+  for (const edge of edges.slice(0, 12)) { // 최근 12개 포스트만
+    const item = edge.node;
+    if (!item) continue;
+
+    // caption 추출 (instagram120: item.caption.text)
     const caption = item.caption;
     const captionText = typeof caption === "string" ? caption : (caption?.text || "");
 
@@ -111,7 +119,7 @@ function parseFeedItems(data: any): InstaPost[] {
 
     // 이미지 URL
     const imageVersions = item.image_versions2?.candidates || [];
-    const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : null;
+    const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : (item.display_uri || null);
 
     // POST_AGE_DAYS 이내 포스트만
     const takenAt = item.taken_at || 0;
@@ -467,16 +475,17 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // pk가 없으면 프로필 조회
+        // pk가 없으면 프로필 조회 (instagram120: POST /api/instagram/profile)
         if (!igUserId) {
           apiCalls++;
           try {
-            const profile = await instaFetch(`profile?username=${igUsername}`, rapidApiKey);
-            igUserId = String(profile.pk);
+            const data = await instaFetch("api/instagram/profile", { username: igUsername }, rapidApiKey);
+            const profile = data?.result;
+            igUserId = String(profile?.id || "");
             const updatedHandles = {
               ...socialHandles,
               instagram_pk: igUserId,
-              instagram_followers: profile.follower_count || 0,
+              instagram_followers: profile?.edge_followed_by?.count || 0,
             };
             await sb
               .from("ktrenz_stars")
@@ -484,16 +493,16 @@ Deno.serve(async (req) => {
               .eq("id", star.id);
           } catch {
             console.warn(`[instagram] Failed to get pk for @${igUsername}`);
-            continue;
+            // pk 없어도 username으로 posts 조회 가능하므로 계속 진행
           }
         }
 
-        // ── 2. 피드 수집 (스토리 생략하여 API 절약) ──
+        // ── 2. 피드 수집 (instagram120: POST /api/instagram/posts, username 기반) ──
         let allPosts: InstaPost[] = [];
 
         try {
           apiCalls++;
-          const feedData = await instaFetch(`feed?user_id=${igUserId}`, rapidApiKey);
+          const feedData = await instaFetch("api/instagram/posts", { username: igUsername, maxId: "" }, rapidApiKey);
           const feedPosts = parseFeedItems(feedData);
           allPosts.push(...feedPosts);
         } catch (e) {
