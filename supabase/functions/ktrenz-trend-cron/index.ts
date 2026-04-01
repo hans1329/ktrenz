@@ -6,6 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const COLLECTION_PAUSED = false;
 const MAX_CONSECUTIVE_ERRORS = 3; // N회 연속 실패 시 파이프라인 중단
 const STALE_LOCK_MINUTES = 30; // 30분 이상 running 상태이면 stale로 간주
+const RUNNING_STATUS = "running";
+const RUNNING_INFLIGHT_STATUS = "running_inflight";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +25,12 @@ const VALID_PHASES = new Set(PHASE_ORDER); // tick에서 비-파이프라인 레
 const DETECT_PHASES = new Set(["detect"]);
 const SINGLE_CALL_PHASES = new Set<string>(); // 현재 없음
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
+
+function resolveBatchSize(phase: string, requestedBatchSize: number): number {
+  const safeRequested = Math.max(1, Math.floor(requestedBatchSize || 1));
+  if (phase === "detect") return Math.min(safeRequested, 3);
+  return safeRequested;
+}
 
 // 이전 실행의 마지막 offset을 조회하여 이어서 처리 (순환)
 async function getResumeOffset(sb: any, phase: string, totalCandidates: number): Promise<number> {
@@ -69,28 +77,38 @@ Deno.serve(async (req) => {
     if (action === "start") {
       const newRunId = singlePhase ? `single_${Date.now()}` : `run_${Date.now()}`;
       const firstPhase = phase || "detect";
+      const effectiveBatchSize = resolveBatchSize(firstPhase, batchSize);
 
       const resumeOffset = await getResumeOffset(sb, firstPhase, 0);
       await sb.from("ktrenz_pipeline_state").insert({
         run_id: newRunId,
         phase: firstPhase,
-        status: "running",
+        status: RUNNING_STATUS,
         current_offset: resumeOffset,
-        batch_size: batchSize,
+        batch_size: effectiveBatchSize,
         total_candidates: null,
       });
 
-      console.log(`[cron] Started ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, batchSize=${batchSize}, resumeOffset=${resumeOffset}`);
+      console.log(`[cron] Queued ${singlePhase ? "single-phase" : "full"} run ${newRunId}, phase=${firstPhase}, requestedBatchSize=${batchSize}, effectiveBatchSize=${effectiveBatchSize}, resumeOffset=${resumeOffset}`);
 
-      // 즉시 첫 배치 실행
-      const result = await executeBatch(sb, supabaseUrl, supabaseKey, newRunId, firstPhase, resumeOffset, batchSize);
+      // 즉시 비동기 tick 트리거 (start 응답은 즉시 반환)
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "tick" }),
+      }).catch(() => {});
 
       return respond({
         success: true,
         action: "start",
         runId: newRunId,
         phase: firstPhase,
-        result,
+        requestedBatchSize: batchSize,
+        effectiveBatchSize,
+        queued: true,
         elapsed_ms: Date.now() - startTime,
       });
     }
@@ -101,7 +119,7 @@ Deno.serve(async (req) => {
       const { data: activeRuns } = await sb
         .from("ktrenz_pipeline_state")
         .select("*")
-        .eq("status", "running")
+        .eq("status", RUNNING_STATUS)
         .in("phase", [...VALID_PHASES])
         .order("created_at", { ascending: true })
         .limit(1);
@@ -112,7 +130,7 @@ Deno.serve(async (req) => {
         const { data: staleRuns } = await sb
           .from("ktrenz_pipeline_state")
           .select("*")
-          .in("status", ["running", "postprocess_running"])
+          .in("status", [RUNNING_STATUS, RUNNING_INFLIGHT_STATUS, "postprocess_running"])
           .lt("updated_at", staleThreshold)
           .limit(5);
 
@@ -205,24 +223,36 @@ Deno.serve(async (req) => {
           });
         }
 
+        const { data: inFlightRuns } = await sb
+          .from("ktrenz_pipeline_state")
+          .select("run_id, phase, updated_at")
+          .eq("status", RUNNING_INFLIGHT_STATUS)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        if (inFlightRuns?.length) {
+          return respond({ success: true, action: "tick", busy: true, message: "Batch is currently in-flight", inFlight: inFlightRuns[0] });
+        }
+
         return respond({ success: true, action: "tick", idle: true, message: "No active runs" });
       }
 
       const state = activeRuns[0];
       const currentOffset = state.current_offset;
-      const bs = state.batch_size;
+      const phaseBatchSize = resolveBatchSize(state.phase, state.batch_size);
 
       // Optimistic lock: atomically claim this batch by advancing offset BEFORE execution
       // This prevents concurrent ticks from executing the same batch
       const { data: lockResult } = await sb
         .from("ktrenz_pipeline_state")
         .update({
-          current_offset: currentOffset + bs,
+          status: RUNNING_INFLIGHT_STATUS,
+          current_offset: currentOffset + phaseBatchSize,
           updated_at: new Date().toISOString(),
         })
         .eq("run_id", state.run_id)
         .eq("phase", state.phase)
-        .eq("status", "running")
+        .eq("status", RUNNING_STATUS)
         .eq("current_offset", currentOffset) // optimistic lock: only if offset hasn't changed
         .select("id");
 
@@ -233,7 +263,7 @@ Deno.serve(async (req) => {
 
       const result = await executeBatch(
         sb, supabaseUrl, supabaseKey,
-        state.run_id, state.phase, currentOffset, bs
+        state.run_id, state.phase, currentOffset, phaseBatchSize
       );
 
       // 배치 완료 후 즉시 다음 tick을 fire-and-forget으로 트리거 (5분 대기 제거)
@@ -310,17 +340,29 @@ async function executeBatch(
     clearTimeout(timeout);
 
     const text = await response.text();
-    try {
-      result = JSON.parse(text);
-    } catch {
-      console.warn(`[cron] Non-JSON response: ${text.slice(0, 200)}`);
-      result = { success: true, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true };
+    if (!response.ok) {
+      result = {
+        success: false,
+        fallback: true,
+        error: `HTTP ${response.status} ${response.statusText}: ${text.slice(0, 200)}`,
+      };
+    } else {
+      try {
+        result = JSON.parse(text);
+      } catch {
+        console.warn(`[cron] Non-JSON response: ${text.slice(0, 200)}`);
+        result = {
+          success: false,
+          fallback: true,
+          error: `Non-JSON response: ${text.slice(0, 120)}`,
+        };
+      }
     }
   } catch (fetchErr) {
     clearTimeout(timeout);
     const msg = (fetchErr as Error).message || "unknown";
     console.warn(`[cron] Fetch failed: ${msg}`);
-    result = { success: false, totalCandidates: offset + batchSize + 1, successCount: 0, fallback: true, skippedError: msg };
+    result = { success: false, fallback: true, skippedError: msg };
   }
 
   // ── 에러 감지 & 연속 실패 시 파이프라인 중단 ──
@@ -360,6 +402,15 @@ async function executeBatch(
       return { ...result, stopped: true, errorCount: newErrorCount };
     }
 
+    await sb.from("ktrenz_pipeline_state")
+      .update({
+        status: RUNNING_STATUS,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("run_id", runId)
+      .eq("phase", phase)
+      .eq("status", RUNNING_INFLIGHT_STATUS);
+
     console.warn(`[cron] Batch error (${newErrorCount}/${MAX_CONSECUTIVE_ERRORS}): ${errorMsg}`);
   } else {
     // 성공 시 에러 카운트 리셋
@@ -369,12 +420,14 @@ async function executeBatch(
       .eq("phase", phase);
   }
 
-  const totalCandidates = result.totalCandidates || 0;
+  const totalCandidates = Number.isFinite(result.totalCandidates) && result.totalCandidates > 0
+    ? result.totalCandidates
+    : null;
   const nextOffset = offset + batchSize;
   const isThrottled = result.throttled === true;
   const isQuotaExhausted = result.quotaExhausted === true;
   const isSingleCall = SINGLE_CALL_PHASES.has(phase);
-  const isLastBatch = isSingleCall || (result.success && nextOffset >= totalCandidates) || isThrottled || isQuotaExhausted;
+  const isLastBatch = isSingleCall || (result.success && totalCandidates !== null && nextOffset >= totalCandidates) || isThrottled || isQuotaExhausted;
 
   if (isQuotaExhausted) {
     console.warn(`[cron] Phase ${phase} stopped early: API quota exhausted at offset=${offset}`);
@@ -393,7 +446,7 @@ async function executeBatch(
         })
         .eq("run_id", runId)
         .eq("phase", phase)
-        .eq("status", "running");
+        .eq("status", RUNNING_INFLIGHT_STATUS);
 
       if (nextPhase) {
         const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
@@ -420,12 +473,12 @@ async function executeBatch(
         .update({
           status: "postprocess_requested",
           current_offset: nextOffset,
-          total_candidates: totalCandidates,
+          ...(totalCandidates !== null ? { total_candidates: totalCandidates } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq("run_id", runId)
         .eq("phase", phase)
-        .eq("status", "running");
+        .eq("status", RUNNING_INFLIGHT_STATUS);
 
       console.log(`[cron] Phase ${phase} batches complete → postprocess_requested`);
     } else {
@@ -435,12 +488,12 @@ async function executeBatch(
         .update({
           status: "done",
           current_offset: nextOffset,
-          total_candidates: totalCandidates,
+          ...(totalCandidates !== null ? { total_candidates: totalCandidates } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq("run_id", runId)
         .eq("phase", phase)
-        .eq("status", "running");
+        .eq("status", RUNNING_INFLIGHT_STATUS);
 
       if (nextPhase) {
         const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
@@ -468,12 +521,13 @@ async function executeBatch(
     // Just update total_candidates for monitoring
     await sb.from("ktrenz_pipeline_state")
       .update({
-        total_candidates: totalCandidates,
+        status: RUNNING_STATUS,
+        ...(totalCandidates !== null ? { total_candidates: totalCandidates } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("run_id", runId)
       .eq("phase", phase)
-      .eq("status", "running");
+      .eq("status", RUNNING_INFLIGHT_STATUS);
   }
 
   return { ...result, isLastBatch, nextOffset };
