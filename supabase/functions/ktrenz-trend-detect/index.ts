@@ -1695,7 +1695,7 @@ Deno.serve(async (req) => {
           last_detect_result: detectResult,
         }).eq("id", star.id);
 
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 300));
       } catch (e) {
         console.error(`[trend-detect] ✗ ${star.display_name}: ${(e as Error).message}`);
         artistResults.push({
