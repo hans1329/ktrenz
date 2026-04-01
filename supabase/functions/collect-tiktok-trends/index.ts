@@ -368,6 +368,14 @@ Deno.serve(async (req) => {
       try {
         const searchKeyword = star.display_name;
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
+        apiCallCount++;
+
+        // 빈 응답 연속 감지
+        if (videos.length === 0) {
+          emptyResponseStreak++;
+        } else {
+          emptyResponseStreak = 0;
+        }
 
         const metrics = aggregateMetrics(videos);
         const topPosts = extractTopPosts(videos);
