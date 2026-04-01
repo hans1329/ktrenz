@@ -213,6 +213,8 @@ const AdminStars = () => {
         const prev = editingStar.social_handles;
         if (prev.instagram_pk) socialHandles.instagram_pk = prev.instagram_pk;
         if (prev.instagram_followers) socialHandles.instagram_followers = prev.instagram_followers;
+        // 수동 입력 시 instagram_unverified 플래그 제거 (검증 완료 간주)
+        // instagram_unverified는 의도적으로 복사하지 않음
       }
 
       const payload: any = {
