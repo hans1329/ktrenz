@@ -1750,7 +1750,7 @@ async function detectForMember(
   member: MemberInfo,
   globalStarNames?: Map<string, string>,
   runInsertedKeywords?: Set<string>,
-  youtubeApiKey?: string | null,
+  ytSearch?: (query: string, max: number) => Promise<YouTubeDetectResult>,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
@@ -1766,12 +1766,12 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 3소스 병렬 검색: News + Blog + YouTube ───
+  // ─── 3소스 병렬 검색: News + Blog + YouTube (키 로테이션 포함) ───
   const ytSearchQuery = member.name_ko || member.display_name; // YouTube는 따옴표 없이 자연어 검색
   const [newsResult, blogResult, ytResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
-    youtubeApiKey ? searchYouTubeForDetect(youtubeApiKey, ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
+    ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
   ]);
 
   const newsItems = newsResult.items;
