@@ -108,7 +108,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             {/* Prediction Tickets – ticket stub style */}
             <div className="basis-1/2 min-w-0 rounded-xl overflow-hidden text-left">
               {/* Top half */}
-              <div className="relative px-3 py-1.5" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.25), rgba(6,182,212,0.2))' }}>
+              <div className="relative px-3 py-1.5" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.55), rgba(59,130,246,0.45), rgba(6,182,212,0.35))' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Ticket className="w-5 h-5 text-primary-foreground" />
