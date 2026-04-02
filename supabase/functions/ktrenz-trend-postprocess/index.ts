@@ -545,19 +545,20 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-  // pending 상태인 것만 대상
+  // 아직 후처리되지 않은 active 엔트리 대상 (postprocessed_at IS NULL)
   const { data: pending } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_en, artist_name, star_id, context, context_ko, source_title, keyword_category, trigger_source")
-    .eq("status", "pending")
+    .eq("status", "active")
+    .is("postprocessed_at", null)
     .gte("detected_at", threeDaysAgo);
 
   if (!pending?.length) {
-    console.log(`[postprocess] No pending entries for AI classification`);
+    console.log(`[postprocess] No unprocessed entries for AI classification`);
     return { reclassified: 0, details: [] };
   }
 
-  console.log(`[postprocess] AI classification: ${pending.length} pending entries to analyze`);
+  console.log(`[postprocess] AI classification: ${pending.length} unprocessed entries to analyze`);
 
   // 스타 정보
   const starIds = [...new Set(pending.map((p: any) => p.star_id).filter(Boolean))];
