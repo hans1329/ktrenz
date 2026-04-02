@@ -1156,9 +1156,9 @@ Deno.serve(async (req) => {
       console.log(`[postprocess] Noise details: ${noiseResult.details.join("; ")}`);
     }
 
-    // 5단계: pending → active 전환
-    const activated = await activatePending(sb);
-    console.log(`[postprocess] Activated ${activated} pending entries`);
+    // 5단계: 후처리 완료 마킹
+    const activated = await markPostprocessed(sb);
+    console.log(`[postprocess] Marked ${activated} entries as postprocessed`);
 
     // 5.5단계: 메가트렌드 태깅
     const megaTrendResult = await tagMegaTrends(sb);
