@@ -545,19 +545,20 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-  // pending 상태인 것만 대상
+  // 아직 후처리되지 않은 active 엔트리 대상 (postprocessed_at IS NULL)
   const { data: pending } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_en, artist_name, star_id, context, context_ko, source_title, keyword_category, trigger_source")
-    .eq("status", "pending")
+    .eq("status", "active")
+    .is("postprocessed_at", null)
     .gte("detected_at", threeDaysAgo);
 
   if (!pending?.length) {
-    console.log(`[postprocess] No pending entries for AI classification`);
+    console.log(`[postprocess] No unprocessed entries for AI classification`);
     return { reclassified: 0, details: [] };
   }
 
-  console.log(`[postprocess] AI classification: ${pending.length} pending entries to analyze`);
+  console.log(`[postprocess] AI classification: ${pending.length} unprocessed entries to analyze`);
 
   // 스타 정보
   const starIds = [...new Set(pending.map((p: any) => p.star_id).filter(Boolean))];
@@ -969,28 +970,31 @@ async function mapBrandIds(sb: any): Promise<{ mapped: number; registered: numbe
   return { mapped, registered };
 }
 
-async function activatePending(sb: any): Promise<number> {
+async function markPostprocessed(sb: any): Promise<number> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
 
-  // 1) triggers 테이블 pending → active
+  // triggers 테이블: 후처리 완료 마킹
   const { data } = await sb
     .from("ktrenz_trend_triggers")
-    .update({ status: "active" })
-    .eq("status", "pending")
+    .update({ postprocessed_at: now })
+    .eq("status", "active")
+    .is("postprocessed_at", null)
     .gte("detected_at", threeDaysAgo)
     .select("id");
 
-  // 2) keywords 테이블 pending → active (추적 대상으로 전환)
+  // keywords 테이블: 후처리 완료 마킹
   const { data: kwData } = await sb
     .from("ktrenz_keywords")
-    .update({ status: "active" })
-    .eq("status", "pending")
+    .update({ postprocessed_at: now })
+    .eq("status", "active")
+    .is("postprocessed_at", null)
     .gte("created_at", threeDaysAgo)
     .select("id");
 
   const kwCount = kwData?.length || 0;
   if (kwCount > 0) {
-    console.log(`[postprocess] Activated ${kwCount} pending keywords`);
+    console.log(`[postprocess] Marked ${kwCount} keywords as postprocessed`);
   }
 
   return data?.length || 0;
@@ -1077,14 +1081,15 @@ Deno.serve(async (req) => {
       error_message: `triggered_by=${triggeredBy}, mode=${mode}`,
     });
 
-    // pending 건수 확인
+    // 미처리 건수 확인
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const { count: pendingBefore } = await sb
       .from("ktrenz_trend_triggers")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending")
+      .eq("status", "active")
+      .is("postprocessed_at", null)
       .gte("detected_at", threeDaysAgo);
-    console.log(`[postprocess] Pending entries before: ${pendingBefore}`);
+    console.log(`[postprocess] Unprocessed entries before: ${pendingBefore}`);
 
     let aiResult = { reclassified: 0, details: [] as string[] };
 
@@ -1151,9 +1156,9 @@ Deno.serve(async (req) => {
       console.log(`[postprocess] Noise details: ${noiseResult.details.join("; ")}`);
     }
 
-    // 5단계: pending → active 전환
-    const activated = await activatePending(sb);
-    console.log(`[postprocess] Activated ${activated} pending entries`);
+    // 5단계: 후처리 완료 마킹
+    const activated = await markPostprocessed(sb);
+    console.log(`[postprocess] Marked ${activated} entries as postprocessed`);
 
     // 5.5단계: 메가트렌드 태깅
     const megaTrendResult = await tagMegaTrends(sb);

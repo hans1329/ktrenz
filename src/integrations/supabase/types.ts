@@ -3687,6 +3687,7 @@ export type Database = {
           peak_delay_hours: number | null
           peak_raw: Json | null
           peak_score: number | null
+          postprocessed_at: string | null
           prev_api_total: number | null
           source_image_url: string | null
           source_snippet: string | null
@@ -3722,6 +3723,7 @@ export type Database = {
           peak_delay_hours?: number | null
           peak_raw?: Json | null
           peak_score?: number | null
+          postprocessed_at?: string | null
           prev_api_total?: number | null
           source_image_url?: string | null
           source_snippet?: string | null
@@ -3757,6 +3759,7 @@ export type Database = {
           peak_delay_hours?: number | null
           peak_raw?: Json | null
           peak_score?: number | null
+          postprocessed_at?: string | null
           prev_api_total?: number | null
           source_image_url?: string | null
           source_snippet?: string | null
@@ -4746,6 +4749,7 @@ export type Database = {
           peak_at: string | null
           peak_delay_hours: number | null
           peak_score: number | null
+          postprocessed_at: string | null
           prev_api_total: number | null
           purchase_stage: string | null
           source_image_url: string | null
@@ -4792,6 +4796,7 @@ export type Database = {
           peak_at?: string | null
           peak_delay_hours?: number | null
           peak_score?: number | null
+          postprocessed_at?: string | null
           prev_api_total?: number | null
           purchase_stage?: string | null
           source_image_url?: string | null
@@ -4838,6 +4843,7 @@ export type Database = {
           peak_at?: string | null
           peak_delay_hours?: number | null
           peak_score?: number | null
+          postprocessed_at?: string | null
           prev_api_total?: number | null
           purchase_stage?: string | null
           source_image_url?: string | null

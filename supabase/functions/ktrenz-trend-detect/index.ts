@@ -2058,7 +2058,7 @@ async function detectForMember(
         keyword_ja: keywordData.keyword_ja || null,
         keyword_zh: keywordData.keyword_zh || null,
         keyword_category: keywordData.category,
-        status: "pending",
+        status: "active",
         context: keywordData.context,
         context_ko: keywordData.context_ko || null,
         context_ja: keywordData.context_ja || null,
@@ -2119,7 +2119,7 @@ async function detectForMember(
   const { data: existingKeywords } = await sb
     .from("ktrenz_keywords")
     .select("id, keyword, keyword_en, keyword_ko")
-    .in("status", ["active", "pending"]);
+    .eq("status", "active");
 
   const existingByKeyword = new Map<string, any>();
   for (const e of (existingKeywords || [])) {
@@ -2339,7 +2339,7 @@ async function detectForMember(
           purchase_stage: sr.purchase_stage,
           baseline_score: 0,
           peak_score: 0,
-          status: "pending",
+          status: "active",
           metadata: {
             ...kr.metadata,
             keyword_id: kw.id, // 새 테이블 참조
