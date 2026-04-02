@@ -15,15 +15,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// 발견은 네이버(detect)만, 소셜(IG/TT/YT)은 추적(track) 단계에서만 활용
-const PHASE_ORDER = ["detect", "track"] as const;
+// detect(네이버/유튜브) → collect_social(인스타/틱톡) → track(통합 점수)
+const PHASE_ORDER = ["detect", "collect_social", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
+  collect_social: "ktrenz-collect-social",
   track: "ktrenz-trend-track",
 };
-const VALID_PHASES = new Set(PHASE_ORDER); // tick에서 비-파이프라인 레코드 필터용
+const VALID_PHASES = new Set(PHASE_ORDER);
 const DETECT_PHASES = new Set(["detect"]);
-const SINGLE_CALL_PHASES = new Set<string>(); // 현재 없음
+const SINGLE_CALL_PHASES = new Set<string>(["collect_social"]); // 내부 배치 관리
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 function resolveBatchSize(phase: string, requestedBatchSize: number): number {
