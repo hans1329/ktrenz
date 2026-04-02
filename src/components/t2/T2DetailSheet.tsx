@@ -8,7 +8,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy, CheckCircle2 } from "lucide-react";
+import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy, CheckCircle2, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -66,6 +66,8 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
   lost: { en: "Better luck next time (+10T)", ko: "다음엔 맞출 거예요 (+10T)", ja: "次こそ！(+10T)", zh: "下次加油 (+10T)" },
   openingSoon: { en: "Opening soon!", ko: "곧 열려요!", ja: "まもなくオープン！", zh: "即将开放！" },
+  noTickets: { en: "No prediction tickets left today", ko: "오늘 예측 티켓이 모두 소진되었어요", ja: "今日の予測チケットがありません", zh: "今天的预测券已用完" },
+  ticketsLeft: { en: "tickets left today", ko: "오늘 남은 티켓", ja: "本日残りチケット", zh: "今日剩余票" },
   alreadyPredicted: { en: "Prediction submitted! Check results here tomorrow!", ko: "​트렌드 예측 참여 완료!", ja: "予測済み！明日ここで結果を確認！", zh: "已预测！明天来这里查看结果！" },
   boostTrend: { en: "Spread this trend", ko: "이 트렌드 확산하기", ja: "このトレンドを広める", zh: "扩散这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
@@ -104,7 +106,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
   const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
+
+  // Prediction tickets
+  const { data: ticketInfo, refetch: refetchTickets } = useQuery({
+    queryKey: ["prediction-tickets", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      return parsed as { remaining: number; total: number; used: number } | null;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 30,
+  });
 
   // Market data
   const { data: marketData } = useQuery({
@@ -151,11 +165,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         body: { triggerId: tile.id, outcome: predictionChoice, amount: 10 },
       });
       if (error) throw new Error(error.message);
+      if (data?.error === "no_tickets") {
+        toast({ title: t("noTickets", language), variant: "destructive" });
+        refetchTickets();
+        return;
+      }
       if (data?.error) throw new Error(data.error);
       queryClient.invalidateQueries({ queryKey: ["t2-my-bets", marketData?.id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      refetchTickets();
       track("trend_bet_placed", { artist_name: tile?.artistName, section: tile?.keyword });
       toast({ title: t("betSuccess", language) });
     } catch (err: any) {
@@ -795,22 +815,36 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               )}
 
-              {/* Submit button */}
+              {/* Ticket info + Submit button */}
               {hasMarket && !hasPredicted && !isSettled && (
-                <Button
-                  className="w-full gap-2 py-5 rounded-full"
-                  onClick={handleSubmitPrediction}
-                  disabled={isSubmittingPrediction || !predictionChoice}
-                >
-                  {isSubmittingPrediction ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      {language === "ko" ? "처리 중..." : "Processing..."}
-                    </>
-                  ) : (
-                    <>{language === "ko" ? "예측하기" : "Predict"}</>
+                <div className="space-y-2">
+                  {/* Ticket counter */}
+                  {user && ticketInfo && (
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                      <Ticket className="w-3.5 h-3.5" />
+                      <span>
+                        {ticketInfo.remaining > 0
+                          ? `🎟️ ${ticketInfo.remaining}/${ticketInfo.total} ${t("ticketsLeft", language)}`
+                          : t("noTickets", language)
+                        }
+                      </span>
+                    </div>
                   )}
-                </Button>
+                  <Button
+                    className="w-full gap-2 py-5 rounded-full"
+                    onClick={handleSubmitPrediction}
+                    disabled={isSubmittingPrediction || !predictionChoice || (ticketInfo?.remaining ?? 1) <= 0}
+                  >
+                    {isSubmittingPrediction ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        {language === "ko" ? "처리 중..." : "Processing..."}
+                      </>
+                    ) : (
+                      <>{language === "ko" ? "예측하기" : "Predict"}</>
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
 

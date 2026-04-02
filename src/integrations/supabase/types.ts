@@ -4078,6 +4078,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ktrenz_prediction_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          ticket_date: string
+          total_tickets: number
+          updated_at: string
+          used_tickets: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ticket_date?: string
+          total_tickets?: number
+          updated_at?: string
+          used_tickets?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ticket_date?: string
+          total_tickets?: number
+          updated_at?: string
+          used_tickets?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ktrenz_schedule_predictions: {
         Row: {
           category: string
@@ -5169,6 +5199,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          daily_prediction_tickets: number
           icon: string | null
           id: number
           max_daily_votes: number
@@ -5181,6 +5212,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          daily_prediction_tickets?: number
           icon?: string | null
           id: number
           max_daily_votes?: number
@@ -5193,6 +5225,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          daily_prediction_tickets?: number
           icon?: string | null
           id?: number
           max_daily_votes?: number
@@ -10160,6 +10193,10 @@ export type Database = {
       ktrenz_daily_login_reward: { Args: { _user_id: string }; Returns: number }
       ktrenz_get_agent_slot_limit: { Args: { _user_id: string }; Returns: Json }
       ktrenz_get_agent_usage: { Args: { _user_id: string }; Returns: Json }
+      ktrenz_get_prediction_tickets: {
+        Args: { _user_id: string }
+        Returns: Json
+      }
       ktrenz_increment_points: {
         Args: { p_amount: number; p_user_id: string }
         Returns: undefined
@@ -10172,6 +10209,10 @@ export type Database = {
       ktrenz_record_contribution: {
         Args: { _platform: string; _user_id: string; _wiki_entry_id: string }
         Returns: undefined
+      }
+      ktrenz_use_prediction_ticket: {
+        Args: { _user_id: string }
+        Returns: Json
       }
       manage_ktrenz_schedule: {
         Args: { p_action: string; p_hour?: number; p_minute?: number }
