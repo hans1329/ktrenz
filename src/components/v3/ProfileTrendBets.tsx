@@ -6,8 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Crosshair, ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { formatDistanceToNow, differenceInHours, differenceInMinutes, format } from "date-fns";
-import { ko, ja, zhCN } from "date-fns/locale";
+import { differenceInHours, differenceInMinutes, format } from "date-fns";
 
 const outcomeConfig: Record<string, { emoji: string; label: Record<string, string>; reward: string }> = {
   mild: { emoji: "🌱", label: { en: "Mild", ko: "소폭" }, reward: "100T" },
