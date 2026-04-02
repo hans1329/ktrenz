@@ -529,7 +529,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
-        .in("status", ["active", "pending"])
+        .eq("status", "active")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
