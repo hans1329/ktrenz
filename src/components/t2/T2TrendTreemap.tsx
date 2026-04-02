@@ -431,7 +431,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
-        .in("status", ["active", "pending"])
+        .eq("status", "active")
         .in("star_id", watchedStarIds)
         .order("influence_index", { ascending: false })
         .limit(300);
@@ -529,7 +529,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       const basePromise = supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
-        .in("status", ["active", "pending"])
+        .eq("status", "active")
         .order("influence_index", { ascending: false })
         .order("baseline_score", { ascending: false })
         .order("detected_at", { ascending: false })
@@ -539,7 +539,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         ? supabase
             .from("ktrenz_trend_triggers" as any)
             .select("*")
-            .in("status", ["active", "pending"])
+            .eq("status", "active")
             .in("id", followedTriggerIds)
         : Promise.resolve({ data: [] as any[] });
 
@@ -547,7 +547,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         ? supabase
             .from("ktrenz_trend_triggers" as any)
             .select("*")
-            .in("status", ["active", "pending"])
+            .eq("status", "active")
             .in("id", predictedTriggerIds)
         : Promise.resolve({ data: [] as any[] });
 
