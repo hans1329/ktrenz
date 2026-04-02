@@ -415,7 +415,7 @@ const T2TrendMap = () => {
           </div>
         </div>
       </div>
-      <V3TabBar activeTab="rankings" onTabChange={() => {}} />
+      <V3TabBar activeTab={VIEW_ORDER[viewIndex] === "artist" ? "artistView" as any : "rankings"} onTabChange={() => {}} />
       
       <Suspense fallback={null}>
         <ArtistOnboardingDrawer open={showOnboarding} onOpenChange={setShowOnboarding} />
