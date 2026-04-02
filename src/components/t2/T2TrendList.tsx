@@ -268,6 +268,14 @@ const T2TrendList = ({ items, watchedStarSet, onTileClick, selectedTileId, hasMo
                   style={{ maxHeight: 500 }}
                   loading="lazy"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (item.artistImageUrl && target.src !== item.artistImageUrl) {
+                      target.src = item.artistImageUrl;
+                    } else {
+                      target.style.display = "none";
+                    }
+                  }}
                 />
                 {/* Category badge — bottom left */}
                 <span
