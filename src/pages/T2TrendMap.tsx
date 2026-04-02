@@ -409,7 +409,7 @@ const T2TrendMap = () => {
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
-      <T2SettlementResultModal />
+      
       <Suspense fallback={null}>
         <ArtistOnboardingDrawer open={showOnboarding} onOpenChange={setShowOnboarding} />
       </Suspense>
