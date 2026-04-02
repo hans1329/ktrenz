@@ -112,8 +112,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Ticket className="w-5 h-5 text-primary-foreground" />
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em]"
-                      style={{ background: 'linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <p className="font-semibold uppercase tracking-[0.12em] text-primary-foreground text-xs">
                       {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                     </p>
                   </div>
