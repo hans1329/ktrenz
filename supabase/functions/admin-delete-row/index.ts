@@ -25,9 +25,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Delete related trend_triggers first if deleting from ktrenz_stars
+    // Delete all FK-referencing rows before deleting from ktrenz_stars
     if (table === "ktrenz_stars" && match.id) {
-      await sb.from("ktrenz_trend_triggers").delete().eq("star_id", match.id);
+      const starId = match.id;
+      const fkTables = [
+        "ktrenz_trend_triggers",
+        "ktrenz_social_snapshots",
+        "ktrenz_trend_artist_grades",
+        "ktrenz_schedule_predictions",
+        "ktrenz_schedules",
+        "ktrenz_watched_artists",
+        "ktrenz_data_snapshots",
+        "ktrenz_shopping_tracking",
+        "ktrenz_keyword_sources",
+        "ktrenz_b2b_tracked_stars",
+        "ktrenz_b2b_ai_insights",
+      ];
+      for (const t of fkTables) {
+        await sb.from(t).delete().eq("star_id", starId);
+      }
+      // Also clear members referencing this star as group
+      await sb.from("ktrenz_stars").update({ group_star_id: null }).eq("group_star_id", starId);
     }
 
     let query = sb.from(table).delete();
