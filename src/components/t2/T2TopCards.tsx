@@ -9,9 +9,10 @@ import type { TrendTile } from "@/components/t2/T2TrendTreemap";
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
     case "ko": return tile.keywordKo || tile.keyword;
-    case "ja": return tile.keywordJa || tile.keyword;
-    case "zh": return tile.keywordZh || tile.keyword;
-    default: return tile.keyword;
+    case "en": return tile.keywordEn || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keywordKo || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keywordKo || tile.keyword;
+    default: return tile.keywordEn || tile.keyword;
   }
 }
 
