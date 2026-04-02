@@ -1081,14 +1081,15 @@ Deno.serve(async (req) => {
       error_message: `triggered_by=${triggeredBy}, mode=${mode}`,
     });
 
-    // pending 건수 확인
+    // 미처리 건수 확인
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const { count: pendingBefore } = await sb
       .from("ktrenz_trend_triggers")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending")
+      .eq("status", "active")
+      .is("postprocessed_at", null)
       .gte("detected_at", threeDaysAgo);
-    console.log(`[postprocess] Pending entries before: ${pendingBefore}`);
+    console.log(`[postprocess] Unprocessed entries before: ${pendingBefore}`);
 
     let aiResult = { reclassified: 0, details: [] as string[] };
 
