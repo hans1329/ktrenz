@@ -109,6 +109,8 @@ export function sanitizeImageUrl(url: string | null): string | null {
   if (url.includes('data:image/')) return null;
   // Reject 1x1 pixel placeholders (common base64 tracking pixels)
   if (url.includes('base64,')) return null;
+  // Reject tracking pixels (Facebook, etc.)
+  if (url.includes('facebook.com/tr') || url.includes('/tr?id=') || url.includes('&ev=PageView')) return null;
   return url.replace(/&amp;/g, '&');
 }
 
