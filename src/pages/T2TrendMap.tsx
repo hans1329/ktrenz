@@ -366,13 +366,9 @@ const T2TrendMap = () => {
                 />
               </div>
 
-              {/* Source-grouped keywords: YouTube, TikTok, Instagram */}
-              <T2SourceKeywords />
-
               {/* New intelligence sections */}
               <T2MomentumSignals />
               <T2CrossSourceInsights />
-              <T2TrendBetCTA />
             </div>
 
             {shouldRenderSwipeOverlay && (
