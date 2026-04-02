@@ -105,34 +105,32 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               </button>
 
               {/* Prediction Tickets */}
-              <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left">
+              <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
+                </p>
                 <div className="flex items-center gap-2">
-                  <Ticket className="lucide lucide-ticket text-primary mx-[10px] w-[20px] h-[20px]" />
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
-                    </p>
-                    <p className="text-base font-bold text-foreground leading-tight flex items-center gap-1.5">
-                      {ticketInfo ? <>{ticketInfo.remaining}<span className="text-[10px] font-medium text-muted-foreground">/{ticketInfo.total}</span></> : "–"}
-                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${
-                        (profile?.current_level ?? 1) >= 31
-                          ? "bg-amber-500/15 text-amber-600"
-                          : (profile?.current_level ?? 1) >= 16
-                          ? "bg-violet-500/15 text-violet-500"
-                          : (profile?.current_level ?? 1) >= 6
-                          ? "bg-blue-500/15 text-blue-500"
-                          : "bg-muted text-muted-foreground"
-                      }`}>
-                        {(profile?.current_level ?? 1) >= 31
-                          ? (language === "ko" ? "전문가" : "Expert")
-                          : (profile?.current_level ?? 1) >= 16
-                          ? (language === "ko" ? "분석가" : "Analyst")
-                          : (profile?.current_level ?? 1) >= 6
-                          ? (language === "ko" ? "탐색가" : "Explorer")
-                          : (language === "ko" ? "초보" : "Beginner")}
-                      </span>
-                    </p>
-                  </div>
+                  <Ticket className="text-primary mx-[10px] w-[20px] h-[20px]" />
+                  <p className="text-base font-bold text-foreground leading-tight flex items-center gap-1.5">
+                    {ticketInfo ? <>{ticketInfo.remaining}<span className="text-[10px] font-medium text-muted-foreground">/{ticketInfo.total}</span></> : "–"}
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${
+                      (profile?.current_level ?? 1) >= 31
+                        ? "bg-amber-500/15 text-amber-600"
+                        : (profile?.current_level ?? 1) >= 16
+                        ? "bg-violet-500/15 text-violet-500"
+                        : (profile?.current_level ?? 1) >= 6
+                        ? "bg-blue-500/15 text-blue-500"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {(profile?.current_level ?? 1) >= 31
+                        ? (language === "ko" ? "전문가" : "Expert")
+                        : (profile?.current_level ?? 1) >= 16
+                        ? (language === "ko" ? "분석가" : "Analyst")
+                        : (profile?.current_level ?? 1) >= 6
+                        ? (language === "ko" ? "탐색가" : "Explorer")
+                        : (language === "ko" ? "초보" : "Beginner")}
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
