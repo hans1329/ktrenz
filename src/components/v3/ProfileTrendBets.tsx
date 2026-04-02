@@ -73,7 +73,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
 
   if (!user) return null;
 
-  const isEmpty = !isLoading && trackedKeywords.length === 0 && bets.length === 0;
+  const isEmpty = !isLoading && bets.length === 0;
 
   return (
     <div className="space-y-2">
