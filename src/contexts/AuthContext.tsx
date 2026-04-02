@@ -21,6 +21,8 @@ interface AuthContextValue {
   kPoints: number;
   isAdmin: boolean;
   isModerator: boolean;
+  showWelcomeBonus: boolean;
+  setShowWelcomeBonus: (v: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -29,6 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showWelcomeBonus, setShowWelcomeBonus] = useState(false);
   const queryClient = useQueryClient();
   const handledSignIns = useRef(new Set<string>());
 
@@ -116,6 +119,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (event === 'SIGNED_IN' && nextSession?.user?.id) {
         recordSignedInSideEffects(nextSession.user.id);
+
+        // Show welcome bonus for first-time signup
+        const uid = nextSession.user.id;
+        const seenKey = `ktrenz-welcome-bonus-seen-${uid}`;
+        if (!localStorage.getItem(seenKey)) {
+          const createdAt = new Date(nextSession.user.created_at).getTime();
+          const now = Date.now();
+          // Only show if account was created within last 60 seconds
+          if (now - createdAt < 60_000) {
+            localStorage.setItem(seenKey, '1');
+            setTimeout(() => setShowWelcomeBonus(true), 500);
+          } else {
+            localStorage.setItem(seenKey, '1');
+          }
+        }
       }
 
       if (event === 'SIGNED_OUT') {
@@ -165,7 +183,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     kPoints,
     isAdmin: false,
     isModerator: false,
-  }), [user, session, profile, loading, kPoints]);
+    showWelcomeBonus,
+    setShowWelcomeBonus,
+  }), [user, session, profile, loading, kPoints, showWelcomeBonus]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
