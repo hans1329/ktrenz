@@ -146,6 +146,14 @@ const T2KeywordDetail = () => {
     enabled: !!triggerId,
   });
 
+  // Trigger translation on load (for non-Korean languages)
+  useEffect(() => {
+    if (!trigger || language === "ko") return;
+    const refetch = () => refetchTrigger();
+    translateIfNeeded("ktrenz_trend_triggers", "context", [trigger], refetch);
+    translateIfNeeded("ktrenz_trend_triggers", "keyword", [trigger], refetch);
+  }, [trigger?.id, language]);
+
   // Fetch artist info
   const { data: artistInfo } = useQuery({
     queryKey: ["t2-artist-info", trigger?.wiki_entry_id],
