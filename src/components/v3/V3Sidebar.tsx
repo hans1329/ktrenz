@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { Link, useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight, Activity } from "lucide-react";
+import { TrendingUp, Users, PanelLeftClose, PanelLeftOpen, ChevronRight, Activity } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import {
@@ -15,9 +15,9 @@ import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
-const v3NavItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
+const v3NavItems: { id: V3Tab | "myActivity" | "artistView"; titleKey: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
-  { id: "agent", titleKey: "nav.fanAgent", icon: Bot },
+  { id: "artistView", titleKey: "nav.artistView", icon: Users },
   { id: "myActivity", titleKey: "nav.myActivity", icon: Activity },
 ];
 
@@ -57,7 +57,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton asChild>
-                        <button onClick={() => item.id === "agent" ? navigate("/agent") : item.id === "myActivity" ? navigate("/dashboard") : onTabChange(item.id)}
+                        <button onClick={() => item.id === "artistView" ? navigate("/?view=artist") : item.id === "myActivity" ? navigate("/dashboard") : onTabChange(item.id as V3Tab)}
                           className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all w-full",
                             collapsed && "justify-center px-0",
                             active ? "bg-muted text-foreground font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
