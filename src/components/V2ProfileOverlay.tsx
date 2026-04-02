@@ -111,8 +111,25 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                   <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                   </p>
-                  <p className="text-sm font-bold text-foreground leading-tight">
+                  <p className="text-sm font-bold text-foreground leading-tight flex items-center gap-1.5">
                     {ticketInfo ? <>{ticketInfo.remaining}<span className="text-[10px] font-medium text-muted-foreground">/{ticketInfo.total}</span></> : "–"}
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${
+                      (profile?.current_level ?? 1) >= 31
+                        ? "bg-amber-500/15 text-amber-600"
+                        : (profile?.current_level ?? 1) >= 16
+                        ? "bg-violet-500/15 text-violet-500"
+                        : (profile?.current_level ?? 1) >= 6
+                        ? "bg-blue-500/15 text-blue-500"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {(profile?.current_level ?? 1) >= 31
+                        ? (language === "ko" ? "전문가" : "Expert")
+                        : (profile?.current_level ?? 1) >= 16
+                        ? (language === "ko" ? "분석가" : "Analyst")
+                        : (profile?.current_level ?? 1) >= 6
+                        ? (language === "ko" ? "탐색가" : "Explorer")
+                        : (language === "ko" ? "입문" : "Beginner")}
+                    </span>
                   </p>
                 </div>
               </div>
