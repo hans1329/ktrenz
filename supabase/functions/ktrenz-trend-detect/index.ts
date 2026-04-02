@@ -994,6 +994,12 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         "홍대", "이태원", "명동", "동대문", "압구정", "청담",
         "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
         "airport", "인천공항", "공항", "출국", "입국",
+        // 일반 명사 (고유명사 아닌 단독 사용 시 트렌드 가치 없음)
+        "게임", "game", "영상", "video", "콘텐츠", "content", "노래", "song",
+        "춤", "dance", "운동", "exercise", "요리", "cooking", "여행", "travel",
+        "사진", "photo", "영화", "movie", "드라마", "drama", "방송", "broadcast",
+        "음악", "music", "공연", "performance", "무대", "stage",
+        "채널", "channel", "라이브", "live", "스트리밍", "streaming",
         // 반복 오수집 브랜드/플랫폼
         "오픈와이와이", "open yy", "openyy",
         "트리플엑스", "triple x", "triplex",
