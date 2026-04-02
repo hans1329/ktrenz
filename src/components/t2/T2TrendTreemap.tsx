@@ -10,7 +10,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { TrendingUp, Clock, Star, Heart, ChevronRight, LayoutGrid, List, Users, MoreVertical, Zap, Database, MessageCircle } from "lucide-react";
+import { TrendingUp, Clock, Star, Heart, ChevronRight, LayoutGrid, List, Users, MoreVertical, Zap, Database, MessageCircle, Youtube, Instagram, Music2 } from "lucide-react";
 import T2DetailSheet from "./T2DetailSheet";
 import BoxParticles from "@/components/v3/BoxParticles";
 import T2AdminControls from "./T2AdminControls";
