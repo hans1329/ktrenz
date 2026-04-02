@@ -1,4 +1,4 @@
-// Fixed-multiplier settlement with loss zone
+// Reward-based settlement: fixed rewards, no betting multipliers
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,24 +7,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MULTIPLIERS: Record<string, number> = {
-  meaningful: 1.5,
-  significant: 3.0,
-  explosive: 10.0,
+// Reward amounts (T = K-Token)
+const REWARDS: Record<string, number> = {
+  mild: 100,
+  strong: 300,
+  explosive: 1000,
 };
+const CONSOLATION_REWARD = 10;
 
 /** Determine outcome based on % change from initial trend score.
- *  "flat" = loss zone (< +15%) — all bets lose.
+ *  "flat" = loss zone (< +10%) — all predictions wrong, consolation 10T.
  */
 function determineOutcome(initialScore: number, currentScore: number): string {
   const changePct = initialScore > 0
     ? ((currentScore - initialScore) / initialScore) * 100
     : currentScore > 0 ? 100 : 0;
 
-  if (changePct < 15) return "flat";             // loss zone
-  if (changePct < 50) return "meaningful";        // +15% ~ +50%
-  if (changePct < 150) return "significant";      // +50% ~ +150%
-  return "explosive";                              // +150%+
+  if (changePct < 10) return "flat";       // loss zone
+  if (changePct < 15) return "mild";       // 소폭 상승 +10% ~ +15%
+  if (changePct < 50) return "strong";     // 강세 +15% ~ +50%
+  return "explosive";                       // 폭발 +50%+
 }
 
 Deno.serve(async (req) => {
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     let settledCount = 0;
-    let totalPayouts = 0;
+    let totalRewards = 0;
 
     for (const market of markets) {
       const currentScore = Number(market.ktrenz_trend_triggers?.influence_index ?? 0);
@@ -79,35 +81,34 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // If outcome is "flat", ALL bets lose (loss zone)
-      const winningBets = outcome === "flat" ? [] : bets.filter((b: any) => b.outcome === outcome);
-      const losingBets = outcome === "flat" ? bets : bets.filter((b: any) => b.outcome !== outcome);
+      const rewardPromises: Promise<any>[] = [];
 
-      const payoutPromises: Promise<any>[] = [];
-
-      for (const bet of winningBets) {
-        const payout = Math.round(Number(bet.amount) * MULTIPLIERS[outcome]);
-        if (payout > 0) {
-          payoutPromises.push(
-            sb.rpc("ktrenz_increment_points" as any, {
-              p_user_id: bet.user_id,
-              p_amount: payout,
-            })
-          );
-          payoutPromises.push(
-            sb.from("ktrenz_trend_bets").update({ payout }).eq("id", bet.id)
-          );
-          totalPayouts += payout;
+      for (const bet of bets) {
+        let reward: number;
+        if (outcome === "flat") {
+          // Loss zone: everyone gets consolation
+          reward = CONSOLATION_REWARD;
+        } else if (bet.outcome === outcome) {
+          // Correct prediction
+          reward = REWARDS[outcome] ?? CONSOLATION_REWARD;
+        } else {
+          // Wrong prediction
+          reward = CONSOLATION_REWARD;
         }
-      }
 
-      for (const bet of losingBets) {
-        payoutPromises.push(
-          sb.from("ktrenz_trend_bets").update({ payout: 0 }).eq("id", bet.id)
+        rewardPromises.push(
+          sb.rpc("ktrenz_increment_points" as any, {
+            p_user_id: bet.user_id,
+            p_amount: reward,
+          })
         );
+        rewardPromises.push(
+          sb.from("ktrenz_trend_bets").update({ payout: reward }).eq("id", bet.id)
+        );
+        totalRewards += reward;
       }
 
-      await Promise.allSettled(payoutPromises);
+      await Promise.allSettled(rewardPromises);
 
       await sb
         .from("ktrenz_trend_markets")
@@ -118,11 +119,12 @@ Deno.serve(async (req) => {
       const changePct = initialScore > 0
         ? ((currentScore - initialScore) / initialScore * 100).toFixed(1)
         : "N/A";
-      console.log(`[trend-settle] Market ${market.id}: outcome=${outcome}, change=${changePct}%, winners=${winningBets.length}, losers=${losingBets.length}`);
+      const winners = outcome !== "flat" ? bets.filter((b: any) => b.outcome === outcome).length : 0;
+      console.log(`[trend-settle] Market ${market.id}: outcome=${outcome}, change=${changePct}%, winners=${winners}/${bets.length}`);
     }
 
     return new Response(
-      JSON.stringify({ success: true, settledCount, totalPayouts, marketsChecked: markets.length }),
+      JSON.stringify({ success: true, settledCount, totalRewards, marketsChecked: markets.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

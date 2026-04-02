@@ -1,4 +1,4 @@
-// Fixed-multiplier prediction market: 3 bettable outcomes + 1 loss zone
+// Reward-based prediction: no K-Token wagering, just pick a band
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,22 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Bettable outcomes only — "flat" is the loss zone (not bettable)
-const VALID_OUTCOMES = ["meaningful", "significant", "explosive"] as const;
-type Outcome = typeof VALID_OUTCOMES[number];
-
-// Fixed payout multipliers
-const MULTIPLIERS: Record<Outcome, number> = {
-  meaningful: 1.5,   // 유의미한 상승
-  significant: 3.0,  // 꽤 상승
-  explosive: 10.0,   // 폭등
-};
-
-// Settlement thresholds (trend_score % change from baseline)
-// flat (loss zone): < +15%  — all bets lose
-// meaningful: +15% ~ +50%
-// significant: +50% ~ +150%
-// explosive: +150%+
+const VALID_OUTCOMES = ["mild", "strong", "explosive"] as const;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -53,44 +38,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { triggerId, outcome, amount } = await req.json();
+    const { triggerId, outcome } = await req.json();
 
-    if (!triggerId || !outcome || !amount) {
+    if (!triggerId || !outcome) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (!VALID_OUTCOMES.includes(outcome)) {
-      return new Response(JSON.stringify({ error: "Invalid outcome. Must be: meaningful, significant, explosive" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const betAmount = Number(amount);
-    if (isNaN(betAmount) || betAmount < 10) {
-      return new Response(JSON.stringify({ error: "Minimum bet is 10 K-Token" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (betAmount > 1000) {
-      return new Response(JSON.stringify({ error: "Maximum bet is 1000 K-Token" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check user has enough points
-    const { data: pointsData } = await sb
-      .from("ktrenz_user_points")
-      .select("points")
-      .eq("user_id", user.id)
-      .single();
-
-    const currentPoints = pointsData?.points ?? 0;
-    if (currentPoints < betAmount) {
-      return new Response(JSON.stringify({ error: "Insufficient K-Token" }), {
+      return new Response(JSON.stringify({ error: "Invalid outcome. Must be: mild, strong, explosive" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -101,6 +58,7 @@ Deno.serve(async (req) => {
       .from("ktrenz_trend_markets")
       .select("*")
       .eq("trigger_id", triggerId)
+      .eq("status", "open")
       .single();
 
     if (!market) {
@@ -142,75 +100,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Map new outcome names to existing DB pool columns
-    const POOL_MAP: Record<Outcome, string> = {
-      meaningful: "pool_mild",
-      significant: "pool_strong",
-      explosive: "pool_explosive",
-    };
+    // Check if user already predicted for this market
+    const { data: existingBet } = await sb
+      .from("ktrenz_trend_bets")
+      .select("id")
+      .eq("market_id", market.id)
+      .eq("user_id", user.id)
+      .limit(1);
 
-    const multiplier = MULTIPLIERS[outcome as Outcome];
-    const shares = betAmount * multiplier;
-
-    // Deduct points
-    await sb.rpc("ktrenz_increment_points" as any, {
-      p_user_id: user.id,
-      p_amount: -betAmount,
-    });
-
-    // Update market pools
-    const poolKey = POOL_MAP[outcome as Outcome];
-    const currentPool = Number(market[poolKey] ?? 0);
-    const { error: updateErr } = await sb
-      .from("ktrenz_trend_markets")
-      .update({
-        [poolKey]: currentPool + betAmount,
-        total_volume: Number(market.total_volume) + betAmount,
-      })
-      .eq("id", market.id);
-
-    if (updateErr) {
-      await sb.rpc("ktrenz_increment_points" as any, {
-        p_user_id: user.id,
-        p_amount: betAmount,
-      });
-      console.error("[trend-bet] Update market error:", updateErr);
-      return new Response(JSON.stringify({ error: "Failed to update market" }), {
-        status: 500,
+    if (existingBet && existingBet.length > 0) {
+      return new Response(JSON.stringify({ error: "Already predicted for this market" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Insert bet record
+    // Insert prediction record (amount=0, no K-Token deducted)
     const { error: betErr } = await sb
       .from("ktrenz_trend_bets")
       .insert({
         market_id: market.id,
         user_id: user.id,
         outcome,
-        amount: betAmount,
-        shares,
+        amount: 0,
+        shares: 0,
       });
 
     if (betErr) {
-      console.error("[trend-bet] Insert bet error:", betErr);
+      console.error("[trend-bet] Insert prediction error:", betErr);
+      return new Response(JSON.stringify({ error: "Failed to save prediction" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Return updated pools (using new outcome names)
-    const pools = {
-      meaningful: Number(market.pool_mild ?? 0) + (outcome === "meaningful" ? betAmount : 0),
-      significant: Number(market.pool_strong ?? 0) + (outcome === "significant" ? betAmount : 0),
-      explosive: Number(market.pool_explosive ?? 0) + (outcome === "explosive" ? betAmount : 0),
-    };
+    // Update participant count in market
+    await sb
+      .from("ktrenz_trend_markets")
+      .update({
+        total_volume: Number(market.total_volume ?? 0) + 1,
+      })
+      .eq("id", market.id);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        shares: Math.round(shares * 100) / 100,
-        multiplier,
-        pools,
-        totalVolume: Number(market.total_volume) + betAmount,
-      }),
+      JSON.stringify({ success: true, outcome }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
