@@ -374,7 +374,15 @@ Deno.serve(async (req) => {
         break;
       }
       try {
-        const searchKeyword = star.display_name;
+        // ─── 동명이인 방지 검색 쿼리 ───
+        const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
+        const nameLen = (star.name_ko || star.display_name).replace(/\s/g, "").length;
+        let searchKeyword = star.display_name;
+        if (groupName) {
+          searchKeyword = `${groupName} ${star.display_name}`;
+        } else if (nameLen <= 3) {
+          searchKeyword = `${star.display_name} K-pop`;
+        }
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
         apiCallCount++;
 
