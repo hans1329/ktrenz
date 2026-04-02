@@ -139,70 +139,32 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     placeholderData: (prev) => prev,
   });
 
-  // Bet mutation
-  const betMutation = useMutation({
-    mutationFn: async ({ outcome, amount }: { outcome: string; amount: number }) => {
+  // Prediction submit (calls existing edge function with fixed amount)
+  const handleSubmitPrediction = async () => {
+    if (!user) {
+      toast.info(t("loginToBet", language));
+      return;
+    }
+    if (!predictionChoice || !tile) return;
+    setIsSubmittingPrediction(true);
+    try {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-bet", {
-        body: { triggerId: tile!.id, outcome, amount },
+        body: { triggerId: tile.id, outcome: predictionChoice, amount: 10 },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data) => {
-      const amount = Number(betAmount);
-      // Optimistic: update market data instantly from response
-      if (data && marketData) {
-        queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
-          ...(old || marketData),
-          pool_mild: data.pools?.mild,
-          pool_strong: data.pools?.strong,
-          pool_explosive: data.pools?.explosive,
-          total_volume: data.totalVolume,
-        }));
-      }
-      // Optimistic: prepend new bet to myBets
-      if (data && user) {
-        queryClient.setQueryData(["t2-my-bets", marketData?.id, user.id], (old: any[]) => [
-          {
-            id: crypto.randomUUID(),
-            market_id: marketData?.id,
-            user_id: user.id,
-            outcome: betOutcome,
-            amount,
-            shares: data.shares,
-            payout: null,
-            created_at: new Date().toISOString(),
-          },
-          ...(old || []),
-        ]);
-      }
-      // Optimistic: update points
-      queryClient.setQueryData(["ktrenz-points"], (old: any) =>
-        old != null ? old - amount : old
-      );
-      queryClient.setQueryData(["user-points"], (old: any) =>
-        old != null ? old - amount : old
-      );
-      // Background refetch for consistency
       queryClient.invalidateQueries({ queryKey: ["t2-my-bets", marketData?.id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
-      queryClient.invalidateQueries({ queryKey: ["hero-bet-keywords", user?.id] });
-      setBetAmount("");
       track("trend_bet_placed", { artist_name: tile?.artistName, section: tile?.keyword });
       toast.success(t("betSuccess", language));
-    },
-    onError: (err: Error) => {
-      if (err.message.includes("Insufficient")) {
-        toast.error(t("insufficientPoints", language));
-      } else {
-        toast.error(t("somethingWentWrong", language));
-      }
-    },
-  });
-  // Related keywords: same artist + group members (prioritize same category)
+    } catch (err: any) {
+      toast.error(t("somethingWentWrong", language));
+    } finally {
+      setIsSubmittingPrediction(false);
+    }
+  };
   const { data: relatedKeywords } = useQuery({
     queryKey: ["t2-related-keywords", tile?.wikiEntryId, tile?.starId, tile?.id, tile?.category],
     queryFn: async () => {
