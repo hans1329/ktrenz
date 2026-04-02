@@ -645,7 +645,7 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
   ✅ GOOD: "연극 '더 와스프'에서 유리가 20년 만의 동창 재회를 연기하며 '소름 연기'라는 관객 반응이 쏟아져, 공연 잔여 회차 전석 매진 행렬로 이어지고 있다."
   ✅ GOOD: "제로베이스원이 9인조→5인조 체제 첫 앙코르 투어를 공식 발표하자, 팬덤 내 '완전체 그리움' vs '새 시작 응원' 양극화 반응이 실시간 트렌드에 동시 등극."
   
-  The GOOD examples include: specific source details, a concrete situation, and a trend/reaction outcome. If the article doesn't mention metrics, infer the likely public reaction or market impact from the context.
+  The GOOD examples include: specific source details, a concrete situation, and a trend/reaction outcome. STRICTLY PROHIBITED: Do NOT infer, speculate, or fabricate any data-based judgments such as "interest is declining", "search volume surging", "attention is cooling", or any trend direction (increase/decrease) unless the article EXPLICITLY states those facts with specific numbers. If the article does not mention metrics or public reaction data, describe ONLY the factual situation from the article without adding assumed outcomes.
   
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
