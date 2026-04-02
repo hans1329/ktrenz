@@ -13,7 +13,7 @@ const SOURCE_SECTIONS = [
   { key: "instagram", label: "Instagram", sources: ["instagram"], icon: Instagram, color: "#ec4899" },
 ] as const;
 
-const VISIBLE_STATUSES = ["active", "pending"] as const;
+const VISIBLE_STATUSES = ["active"] as const;
 const SOURCE_CARD_LIMIT = 20;
 
 type SourceSectionKey = (typeof SOURCE_SECTIONS)[number]["key"];
