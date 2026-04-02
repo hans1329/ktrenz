@@ -60,7 +60,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will it trend more tomorrow?", ko: "내일 더 유행할지 맞춰 봅시다!", ja: "明日もっと流行る？当ててみよう！", zh: "明天会更火吗？来猜猜看！" },
   loginToBet: { en: "Sign in to predict", ko: "로그인하고 예측해보세요", ja: "ログインして予測しよう", zh: "登录后预测" },
-  betSuccess: { en: "Prediction locked in! ✨", ko: "예측 완료! ✨", ja: "予測完了！✨", zh: "预测成功！✨" },
+  betSuccess: { en: "Prediction locked in! ✨", ko: "예측 완료! 내일 결과를 확인하세요 ✨", ja: "予測完了！明日結果を確認してね ✨", zh: "预测成功！明天查看结果 ✨" },
   somethingWentWrong: { en: "Something went wrong, try again", ko: "문제가 발생했어요, 다시 시도해주세요", ja: "エラーが発生しました、再度お試しください", zh: "出了点问题，请重试" },
   marketSettled: { en: "Results are in!", ko: "결과가 나왔어요!", ja: "結果が出ました！", zh: "结果出来了！" },
   won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
