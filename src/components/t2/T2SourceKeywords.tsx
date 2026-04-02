@@ -93,8 +93,16 @@ const T2SourceKeywords = () => {
                     : null
                 );
                 const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+
+                // For YouTube, derive thumbnail from video URL when source_image_url is missing
+                let ytThumb: string | null = null;
+                if (!safeSourceImg && item.source_url) {
+                  const ytMatch = item.source_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+                  if (ytMatch) ytThumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+                }
+
                 const platformLogo = detectPlatformLogo(item.source_url, item.source_image_url);
-                const bgImg = safeSourceImg || platformLogo;
+                const bgImg = safeSourceImg || ytThumb || platformLogo;
                 const catConfig = CATEGORY_CONFIG[item.keyword_category as keyof typeof CATEGORY_CONFIG];
 
                 return (
