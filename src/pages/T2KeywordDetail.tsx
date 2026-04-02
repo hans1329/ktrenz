@@ -260,7 +260,7 @@ const T2KeywordDetail = () => {
   });
 
   // AI Insight query + mutation
-  const queryClient = useQueryClient();
+  // AI Insight query + mutation (queryClient already declared above)
   const { data: aiInsightData } = useQuery({
     queryKey: ["t2-ai-insight", triggerId, language],
     queryFn: async () => {
