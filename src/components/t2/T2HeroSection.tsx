@@ -136,52 +136,92 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   });
 
   // Not logged in
+  // Auto-sliding banner for logged-out users
+  const [bannerIndex, setBannerIndex] = useState(0);
+  const bannerTimer = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    if (user) return;
+    bannerTimer.current = setInterval(() => {
+      setBannerIndex((prev) => (prev === 0 ? 1 : 0));
+    }, 4000);
+    return () => clearInterval(bannerTimer.current);
+  }, [user]);
+
   if (!user) {
-    return (
-      <div className="px-4 pt-2 pb-5 space-y-3">
-        <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: "220px" }}>
-          <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" width={960} height={512} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-          <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
-            <h2 className="text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
+    const banners = [
+      // Banner 0: Spotify reward
+      <button
+        key="spotify"
+        onClick={() => (window.location.href = "/login")}
+        className="w-full min-w-full flex items-center gap-4 rounded-2xl p-4 shrink-0"
+        style={{ background: "linear-gradient(135deg, hsl(141 69% 38%), hsl(141 69% 30%))" }}
+      >
+        <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: "hsla(0,0%,0%,0.2)" }}
+        >
+          <svg viewBox="0 0 24 24" className="w-8 h-8" fill="white">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+          </svg>
+        </div>
+        <div className="flex-1 text-left">
+          <p className="text-sm font-bold text-white leading-tight">
+            {t("t2.hero.spotifyBannerTitle")}
+          </p>
+          <p className="text-xs text-white/70 mt-0.5">
+            {t("t2.hero.spotifyBannerDesc")}
+          </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-white/60 shrink-0" />
+      </button>,
+
+      // Banner 1: Discover hero
+      <div key="discover" className="w-full min-w-full shrink-0 relative rounded-2xl overflow-hidden" style={{ minHeight: "80px" }}>
+        <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" width={960} height={512} />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40" />
+        <div className="relative z-10 flex items-center gap-4 p-4">
+          <div className="flex-1">
+            <h2 className="text-base font-black text-white leading-tight whitespace-pre-line">
               {t("t2.hero.discoverTitle")}
             </h2>
-            <p className="text-sm text-white/70 mb-4">
+            <p className="text-xs text-white/70 mt-1">
               {t("t2.hero.discoverDesc")}
             </p>
-            <button
-              onClick={() => (window.location.href = "/login")}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl text-primary-foreground text-sm font-bold transition-all self-start bg-[#a428bd]/[0.22] border border-white/20"
-            >
-              <LogIn className="w-4 h-4" />
-              {t("t2.hero.getStarted")}
-            </button>
+          </div>
+          <button
+            onClick={() => (window.location.href = "/login")}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-bold shrink-0 bg-white/15 border border-white/20"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            {t("t2.hero.getStarted")}
+          </button>
+        </div>
+      </div>,
+    ];
+
+    return (
+      <div className="px-4 pt-2 pb-5">
+        <div className="overflow-hidden rounded-2xl">
+          <div
+            className="flex transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
+          >
+            {banners}
           </div>
         </div>
-
-        {/* Spotify Premium Banner */}
-        <button
-          onClick={() => (window.location.href = "/login")}
-          className="w-full flex items-center gap-4 rounded-2xl p-4 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, hsl(141 69% 38%), hsl(141 69% 30%))" }}
-        >
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "hsla(0,0%,0%,0.2)" }}
-          >
-            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="white">
-              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-            </svg>
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-bold text-white leading-tight">
-              {t("t2.hero.spotifyBannerTitle")}
-            </p>
-            <p className="text-xs text-white/70 mt-0.5">
-              {t("t2.hero.spotifyBannerDesc")}
-            </p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-white/60 shrink-0" />
-        </button>
+        {/* Dot indicators */}
+        <div className="flex justify-center gap-1.5 mt-2">
+          {[0, 1].map((i) => (
+            <button
+              key={i}
+              onClick={() => setBannerIndex(i)}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full transition-all",
+                bannerIndex === i ? "w-4 bg-primary" : "bg-muted-foreground/30"
+              )}
+            />
+          ))}
+        </div>
       </div>
     );
   }
