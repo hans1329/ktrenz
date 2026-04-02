@@ -10,7 +10,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
 import LanguagePickerDrawer from "@/components/LanguagePickerDrawer";
 import ProfileTrendBets from "@/components/v3/ProfileTrendBets";
-import ProfileDailyMissions from "@/components/v3/ProfileDailyMissions";
 import {
   Drawer,
   DrawerContent,
@@ -120,8 +119,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
-          {/* Daily Missions */}
-          <ProfileDailyMissions onClose={() => onOpenChange(false)} />
 
           {/* My Trend Bets */}
           <ProfileTrendBets onClose={() => onOpenChange(false)} />
