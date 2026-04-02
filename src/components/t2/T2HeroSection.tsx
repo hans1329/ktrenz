@@ -224,7 +224,11 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
                 }}
               >
                 <p className="text-base font-black text-white leading-none">{stat.value}</p>
-                <p className="text-[9px] text-white/60 font-medium mt-0.5">{stat.label}</p>
+                {stat.isIcon ? (
+                  <stat.icon className="w-3 h-3 text-white/60 mx-auto mt-0.5" />
+                ) : (
+                  <p className="text-[9px] text-white/60 font-medium mt-0.5">{stat.label}</p>
+                )}
               </div>
             ))}
           </div>
