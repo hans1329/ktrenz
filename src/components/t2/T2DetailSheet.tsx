@@ -517,7 +517,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <div className="relative -mx-6 overflow-hidden bg-muted">
                       <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                         <iframe
-                          src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0`}
+                          src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&autoplay=1&mute=1`}
                           className="absolute inset-0 w-full h-full border-0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
