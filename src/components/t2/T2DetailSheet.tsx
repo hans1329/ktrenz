@@ -497,12 +497,12 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           {/* Evidence: Why this trend? — Card with thumbnail */}
           <div>
           {/* Source thumbnail + title card */}
-          {(tile.sourceTitle || tile.sourceImageUrl || (tile.triggerSource && ["tiktok", "instagram", "youtube_search"].includes(tile.triggerSource))) && (
+          {(tile.sourceTitle || tile.sourceImageUrl || (tile.triggerSource && ["tiktok", "instagram", "youtube", "youtube_search"].includes(tile.triggerSource))) && (
             <div className="relative">
               {(() => {
                 // Social/Video embed for TikTok/Instagram/YouTube
                 const isSocialSource = tile.triggerSource && ["tiktok", "instagram"].includes(tile.triggerSource);
-                const isYoutubeSource = tile.triggerSource === "youtube_search";
+                const isYoutubeSource = tile.triggerSource === "youtube" || tile.triggerSource === "youtube_search";
                 const meta = tile.metadata || {};
                 const tiktokVideoId = meta.embed_video_id;
                 const instaShortcode = meta.embed_shortcode;

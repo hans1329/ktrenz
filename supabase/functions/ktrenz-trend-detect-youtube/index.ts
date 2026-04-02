@@ -379,7 +379,7 @@ async function detectForMember(
         wiki_entry_id: null,
         star_id: member.id || null,
         trigger_type: "youtube_mention",
-        trigger_source: "youtube_search",
+        trigger_source: "youtube",
         artist_name: member.display_name,
         keyword: kw.keyword,
         keyword_en: kw.keyword_en || null,
