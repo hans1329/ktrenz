@@ -2339,7 +2339,7 @@ async function detectForMember(
           purchase_stage: sr.purchase_stage,
           baseline_score: 0,
           peak_score: 0,
-          status: "pending",
+          status: "active",
           metadata: {
             ...kr.metadata,
             keyword_id: kw.id, // 새 테이블 참조
