@@ -1149,9 +1149,25 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                                   {idx + 1}
                                 </span>
                               )}
-                              {isMyArtist && (
-                                <Star className="w-4 h-4 text-amber-400 fill-amber-400 absolute top-2 right-2 drop-shadow-md" />
-                              )}
+                              {/* Source platform icon for social sources — top right */}
+                              {(() => {
+                                const ts = item.triggerSource;
+                                const isYt = ts === "youtube" || ts === "youtube_search";
+                                const isTt = ts === "tiktok" || ts === "tiktok_snapshot";
+                                const isIg = ts === "instagram";
+                                if (!isYt && !isTt && !isIg) {
+                                  return isMyArtist ? <Star className="w-4 h-4 text-amber-400 fill-amber-400 absolute top-2 right-2 drop-shadow-md" /> : null;
+                                }
+                                const SrcIcon = isYt ? Youtube : isTt ? Music2 : Instagram;
+                                return (
+                                  <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                                    {isMyArtist && <Star className="w-4 h-4 text-amber-400 fill-amber-400 drop-shadow-md" />}
+                                    <span className="rounded-full bg-black/60 backdrop-blur-sm p-1.5">
+                                      <SrcIcon className="h-3.5 w-3.5 text-white" />
+                                    </span>
+                                  </div>
+                                );
+                              })()}
                               {/* Sparkline overlay at bottom of image */}
                               <div className="absolute inset-x-0 bottom-0">
                                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
