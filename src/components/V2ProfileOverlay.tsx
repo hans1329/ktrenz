@@ -93,7 +93,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               <div className="flex items-center gap-2 mx-0">
                 <span className="mx-[10px] text-xl">💎</span>
                 <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     K·Cashes
                   </p>
                   <p className="text-sm font-bold text-foreground leading-tight">
