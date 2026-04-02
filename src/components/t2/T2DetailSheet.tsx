@@ -8,7 +8,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy } from "lucide-react";
+import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -66,7 +66,7 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
   lost: { en: "Better luck next time (+10T)", ko: "다음엔 맞출 거예요 (+10T)", ja: "次こそ！(+10T)", zh: "下次加油 (+10T)" },
   openingSoon: { en: "Opening soon!", ko: "곧 열려요!", ja: "まもなくオープン！", zh: "即将开放！" },
-  alreadyPredicted: { en: "Prediction submitted ✅ Check results here tomorrow!", ko: "예측 완료 ✅ 내일 여기서 결과를 확인하세요!", ja: "予測済み ✅ 明日ここで結果を確認！", zh: "已预测 ✅ 明天来这里查看结果！" },
+  alreadyPredicted: { en: "Prediction submitted! Check results here tomorrow!", ko: "예측 완료! 내일 여기서 결과를 확인하세요!", ja: "予測済み！明日ここで結果を確認！", zh: "已预测！明天来这里查看结果！" },
   boostTrend: { en: "Spread this trend", ko: "이 트렌드 확산하기", ja: "このトレンドを広める", zh: "扩散这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied! 📋", ko: "링크 복사했어요! 📋", ja: "リンクコピー済み！📋", zh: "链接已复制！📋" },
@@ -769,8 +769,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
               {/* Already predicted */}
               {hasPredicted && !isSettled && (
-                <div className="text-center py-2">
-                  <p className="text-sm font-bold text-primary">{t("alreadyPredicted", language)}</p>
+                <div className="flex items-center gap-2 py-2 justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                  <p className="text-sm font-bold text-foreground">{t("alreadyPredicted", language)}</p>
                 </div>
               )}
 
