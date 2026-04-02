@@ -67,7 +67,7 @@ const T2SourceKeywords = () => {
   return (
     <div className="px-4 space-y-6 mt-6">
       {SOURCE_SECTIONS.map(({ key, label, sources, icon: Icon, color }) => {
-        const items = (triggers ?? []).filter((t: any) => sources.includes(t.trigger_source));
+        const items = (triggers ?? []).filter((t: any) => (sources as readonly string[]).includes(t.trigger_source));
         if (items.length === 0) return null;
 
         return (
