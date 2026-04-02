@@ -183,7 +183,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     kPoints,
     isAdmin: false,
     isModerator: false,
-  }), [user, session, profile, loading, kPoints]);
+    showWelcomeBonus,
+    setShowWelcomeBonus,
+  }), [user, session, profile, loading, kPoints, showWelcomeBonus]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
