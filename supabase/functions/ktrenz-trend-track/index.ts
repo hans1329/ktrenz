@@ -107,7 +107,9 @@ function instaActivity(r: SourceRaw): number {
 // ─── Delta % 계산 ───
 function calcDelta(current: number, previous: number): number {
   const base = Math.max(previous, MIN_THRESHOLD);
-  return Math.round(((current - base) / base) * 10000) / 100;
+  const raw = ((current - base) / base) * 100;
+  // Cap delta at ±500% to prevent astronomical values on first/second tracking
+  return Math.round(Math.max(-500, Math.min(500, raw)) * 100) / 100;
 }
 
 // ─── 가중 합산 delta (미수집 소스 가중치 재정규화) ───
