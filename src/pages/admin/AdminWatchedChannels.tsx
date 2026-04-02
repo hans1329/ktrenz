@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, Youtube, Loader2, ExternalLink, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -55,11 +55,11 @@ const AdminWatchedChannels = () => {
     },
     onSuccess: (data) => {
       setResolved(data);
-      toast.success(`Found: ${data.channel_name}`);
+      toast({ title: `Found: ${data.channel_name}` });
     },
     onError: (e: any) => {
       setResolved(null);
-      toast.error(e.message || "Channel not found");
+      toast({ title: e.message || "Channel not found", variant: "destructive" });
     },
   });
 
@@ -80,9 +80,9 @@ const AdminWatchedChannels = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-watched-channels"] });
       setHandleInput("");
       setResolved(null);
-      toast.success("Channel added");
+      toast({ title: "Channel added" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const toggleMutation = useMutation({
@@ -94,7 +94,7 @@ const AdminWatchedChannels = () => {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-watched-channels"] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -107,9 +107,9 @@ const AdminWatchedChannels = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-watched-channels"] });
-      toast.success("Channel removed");
+      toast({ title: "Channel removed" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const { data: matchStats } = useQuery({

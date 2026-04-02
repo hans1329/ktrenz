@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home, Crosshair, RefreshCw, TrendingUp, TrendingDown, Minus, Music2, BarChart3, Target, Clock, Loader2, Zap, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface V3StreamingGuideProps {
   onBack?: () => void;
@@ -89,9 +89,9 @@ const V3StreamingGuide = ({ onBack }: V3StreamingGuideProps) => {
           .eq("user_id", user.id);
       }
       await refetch();
-      toast.success("Guide refreshed");
+      toast({ title: "Guide refreshed" });
     } catch {
-      toast.error("Failed to refresh guide");
+      toast({ title: "Failed to refresh guide", variant: "destructive" });
     } finally {
       setIsRefreshing(false);
     }

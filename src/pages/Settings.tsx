@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -86,9 +86,9 @@ const SettingsPage = () => {
       const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: urlWithCache }).eq("id", user.id);
       if (updateErr) throw updateErr;
       queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
-      toast.success("프로필 이미지가 변경되었습니다");
+      toast({ title: "프로필 이미지가 변경되었습니다" });
     } catch (e: any) {
-      toast.error(e.message || "업로드 실패");
+      toast({ title: e.message || "업로드 실패", variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -100,7 +100,7 @@ const SettingsPage = () => {
     const trimmedDisplay = displayName.trim();
 
     if (!trimmedUsername) {
-      toast.error("닉네임을 입력해주세요");
+      toast({ title: "닉네임을 입력해주세요", variant: "destructive" });
       return;
     }
 
@@ -115,7 +115,7 @@ const SettingsPage = () => {
           .neq("id", user.id)
           .maybeSingle();
         if (existing) {
-          toast.error("이미 사용 중인 닉네임입니다");
+          toast({ title: "이미 사용 중인 닉네임입니다", variant: "destructive" });
           setSaving(false);
           return;
         }
@@ -130,7 +130,7 @@ const SettingsPage = () => {
           .neq("id", user.id)
           .maybeSingle();
         if (existing) {
-          toast.error("이미 사용 중인 표시 이름입니다");
+          toast({ title: "이미 사용 중인 표시 이름입니다", variant: "destructive" });
           setSaving(false);
           return;
         }
@@ -145,9 +145,9 @@ const SettingsPage = () => {
         .eq("id", user.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
-      toast.success("프로필이 저장되었습니다");
+      toast({ title: "프로필이 저장되었습니다" });
     } catch (e: any) {
-      toast.error(e.message || "저장 실패");
+      toast({ title: e.message || "저장 실패", variant: "destructive" });
     } finally {
       setSaving(false);
     }

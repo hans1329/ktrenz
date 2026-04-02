@@ -12,7 +12,7 @@ import { ArrowLeft, Calendar, Clock, ExternalLink, Flame, MessageCircle, Share2,
 import { cn } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import T2BrandLogo from "@/components/t2/T2BrandLogo";
 
@@ -344,7 +344,7 @@ const T2ArtistPage = () => {
         if (error) throw error;
 
         syncWatchedArtistCaches(false);
-        toast.success(language === "ko" ? "관심 해제됨" : "Unfollowed");
+        toast({ title: language === "ko" ? "관심 해제됨" : "Unfollowed" });
       } else {
         const { error } = await supabase
           .from("ktrenz_watched_artists")
@@ -357,7 +357,7 @@ const T2ArtistPage = () => {
         if (error) throw error;
 
         syncWatchedArtistCaches(true);
-        toast.success(language === "ko" ? "관심 아티스트 등록!" : "Now watching!");
+        toast({ title: language === "ko" ? "관심 아티스트 등록!" : "Now watching!" });
       }
 
       queryClient.invalidateQueries({ queryKey: ["t2-watched-check", user.id, starId] });
@@ -365,7 +365,7 @@ const T2ArtistPage = () => {
       queryClient.invalidateQueries({ queryKey: ["hero-has-watched", user.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     } catch (error: any) {
-      toast.error(error?.message || "Error");
+      toast({ title: error?.message || "Error", variant: "destructive" });
     } finally {
       setWatchLoading(false);
     }

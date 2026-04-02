@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Brain, Play, TrendingUp, TrendingDown, Minus, BarChart3, Target, Zap, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -91,12 +91,12 @@ const AdminFesAnalyst = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`분석 완료: ${data.artists_processed}명 처리, 기여도 ${data.contributions_saved}건, 트렌드 ${data.trends_saved}건`);
+      toast({ title: `분석 완료: ${data.artists_processed}명 처리, 기여도 ${data.contributions_saved}건, 트렌드 ${data.trends_saved}건` });
       qc.invalidateQueries({ queryKey: ["admin-norm-stats"] });
       qc.invalidateQueries({ queryKey: ["admin-fes-contributions"] });
       qc.invalidateQueries({ queryKey: ["admin-category-trends"] });
     },
-    onError: (e) => toast.error(`분석 실패: ${e.message}`),
+    onError: (e) => toast({ title: `분석 실패: ${e.message}`, variant: "destructive" }),
   });
 
   // Predictor 실행
@@ -107,10 +107,10 @@ const AdminFesAnalyst = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`예측 완료: ${data.predictions?.length || 0}건`);
+      toast({ title: `예측 완료: ${data.predictions?.length || 0}건` });
       qc.invalidateQueries({ queryKey: ["admin-fes-predictions"] });
     },
-    onError: (e) => toast.error(`예측 실패: ${e.message}`),
+    onError: (e) => toast({ title: `예측 실패: ${e.message}`, variant: "destructive" }),
   });
 
   const dirIcon = (dir: string) => {

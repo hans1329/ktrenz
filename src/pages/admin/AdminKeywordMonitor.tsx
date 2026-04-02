@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInHours } from "date-fns";
 import { useState, useMemo, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface TrendTrigger {
   id: string;
@@ -168,10 +168,10 @@ const AdminKeywordMonitor = () => {
         body: { table: "ktrenz_trend_triggers", match: { id }, update: { status: "removed" } },
       });
       if (error) throw error;
-      toast.success(`"${label}" 제거 완료`);
+      toast({ title: `"${label}" 제거 완료` });
       queryClient.invalidateQueries({ queryKey: ["admin-keyword-monitor"] });
     } catch (e: any) {
-      toast.error(`제거 실패: ${e.message}`);
+      toast({ title: `제거 실패: ${e.message}`, variant: "destructive" });
     }
   }, [queryClient]);
 

@@ -14,7 +14,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 // 크론잡 실행 상태 확인 훅
 const useCrawlStatus = () => {
@@ -417,13 +417,13 @@ const V3TrendRankings = () => {
 
         if (snapData && new Date(snapData.collected_at).getTime() > startedAt) {
           clearInterval(interval);
-          toast.success(`${label} 수집 완료 (${elapsed}초), 스코어 재계산 중...`);
+          toast({ title: `${label} 수집 완료 (${elapsed}초), 스코어 재계산 중...` });
           setCollectionStatus(prev => ({ ...prev, [source]: { status: "scoring", runId, startedAt } }));
           
           // 에너지 스코어 재계산 후 UI 갱신
           try {
             await supabase.functions.invoke("calculate-energy-score", { body: {} });
-            toast.success("스코어 반영 완료!");
+            toast({ title: "스코어 반영 완료!" });
           } catch (e) {
             console.error("Energy score recalc error:", e);
           }
@@ -437,7 +437,7 @@ const V3TrendRankings = () => {
         } else if (elapsed > 300) {
           clearInterval(interval);
           setCollectionStatus(prev => ({ ...prev, [source]: { status: "timeout" } }));
-          toast.error(`${label} 수집 타임아웃 (5분 초과)`);
+          toast({ title: `${label} 수집 타임아웃 (5분 초과)`, variant: "destructive" });
           setTimeout(() => setCollectionStatus(prev => { const n = { ...prev }; delete n[source]; return n; }), 5000);
         } else {
           setCollectionStatus(prev => ({ ...prev, [source]: { status: "running", runId, startedAt } }));
@@ -469,7 +469,7 @@ const V3TrendRankings = () => {
     const label = labelMap[source as keyof typeof labelMap];
 
     if (!mappedModule || !label) {
-      toast.error("알 수 없는 수집 모듈입니다.");
+      toast({ title: "알 수 없는 수집 모듈입니다.", variant: "destructive" });
       return;
     }
 
@@ -479,11 +479,11 @@ const V3TrendRankings = () => {
         body: { module: mappedModule, triggerSource: "admin-front" },
       });
       if (error) throw error;
-      toast(`${label} 수집 시작됨, 진행상황을 추적합니다...`);
+      toast({ title: `${label} 수집 시작됨, 진행상황을 추적합니다...` });
       const runId = data?.runId || "unknown";
       pollCollectionStatus(source, runId);
     } catch (err: any) {
-      toast.error(`${label} 수집 실패: ${err.message}`);
+      toast({ title: `${label} 수집 실패: ${err.message}`, variant: "destructive" });
     } finally {
       setCollectingModule(null);
     }

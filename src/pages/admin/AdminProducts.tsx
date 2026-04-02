@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Save, Trash2, Package } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -60,7 +60,7 @@ const AdminProducts = () => {
           })
           .eq("id", pkg.id);
         if (error) throw error;
-        toast.success("Package updated");
+        toast({ title: "Package updated" });
       } else {
         const { error } = await (supabase as any)
           .from("ktrenz_point_packages")
@@ -75,13 +75,13 @@ const AdminProducts = () => {
             is_active: pkg.is_active ?? true,
           });
         if (error) throw error;
-        toast.success("Package created");
+        toast({ title: "Package created" });
       }
       queryClient.invalidateQueries({ queryKey: ["admin-point-packages"] });
       setEditPkg(null);
       setShowAdd(false);
     } catch (e: any) {
-      toast.error(e.message);
+      toast({ title: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -90,9 +90,9 @@ const AdminProducts = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this package?")) return;
     const { error } = await (supabase as any).from("ktrenz_point_packages").delete().eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) toast({ title: error.message, variant: "destructive" });
     else {
-      toast.success("Deleted");
+      toast({ title: "Deleted" });
       queryClient.invalidateQueries({ queryKey: ["admin-point-packages"] });
     }
   };

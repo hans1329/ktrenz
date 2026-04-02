@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   Loader2, Play, TrendingUp, Search, Clock, Globe,
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap,
@@ -78,11 +78,11 @@ const AdminTrendIntel = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}`);
+      toast({ title: `트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}` });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-tracking"] });
     },
-    onError: (err) => toast.error(`수집 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `수집 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   // Expire single trigger
@@ -95,10 +95,10 @@ const AdminTrendIntel = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("키워드 만료 처리 완료");
+      toast({ title: "키워드 만료 처리 완료" });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
     },
-    onError: (err) => toast.error(`만료 처리 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `만료 처리 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   // Expire by artist name (bulk)
@@ -112,10 +112,10 @@ const AdminTrendIntel = () => {
       if (error) throw error;
     },
     onSuccess: (_, artistName) => {
-      toast.success(`"${artistName}"의 모든 활성 키워드 만료 처리 완료`);
+      toast({ title: `"${artistName}"의 모든 활성 키워드 만료 처리 완료` });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
     },
-    onError: (err) => toast.error(`일괄 만료 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `일괄 만료 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   // Delete trigger permanently
@@ -128,10 +128,10 @@ const AdminTrendIntel = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("키워드 삭제 완료");
+      toast({ title: "키워드 삭제 완료" });
       queryClient.invalidateQueries({ queryKey: ["admin-trend-triggers"] });
     },
-    onError: (err) => toast.error(`삭제 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `삭제 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   // Group tracking by trigger

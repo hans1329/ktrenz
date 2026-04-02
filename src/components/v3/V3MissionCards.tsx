@@ -5,7 +5,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { Youtube, Newspaper, MessageCircle, Music, Check, Zap, Eye, ThumbsUp, MessageSquare } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import AgentMissionFeedback, { useAgentMissionFeedback, type MissionStatus } from "@/components/v3/AgentMissionFeedback";
 
 interface Mission {
@@ -387,7 +387,7 @@ export default function V3MissionCards({
     window.open(mission.url, "_blank", "noopener,noreferrer");
 
     if (!isLoggedIn) {
-      toast.info(t("mission.loginForReward"));
+      toast({ title: t("mission.loginForReward") });
       return;
     }
     if (alreadyDone) return;

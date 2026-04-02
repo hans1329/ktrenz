@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 export function PWAUpdatePrompt() {
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
@@ -43,16 +43,14 @@ export function PWAUpdatePrompt() {
   useEffect(() => {
     if (!waitingWorker) return;
 
-    toast("New version available", {
+    toast({
+      title: "New version available",
       description: "Refresh to apply the latest update.",
-      duration: Infinity,
-      action: {
-        label: "Refresh",
-        onClick: () => {
-          waitingWorker.postMessage({ type: "SKIP_WAITING" });
-        },
-      },
     });
+    // Auto-refresh after showing toast
+    setTimeout(() => {
+      waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    }, 2000);
   }, [waitingWorker]);
 
   return null;

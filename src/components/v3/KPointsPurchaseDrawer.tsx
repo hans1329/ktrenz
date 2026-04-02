@@ -9,7 +9,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface PointPackage {
   id: string;
@@ -69,7 +69,7 @@ const KPointsPurchaseDrawer = ({ open, onOpenChange }: KPointsPurchaseDrawerProp
         throw new Error("No checkout URL received");
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to create checkout");
+      toast({ title: e.message || "Failed to create checkout", variant: "destructive" });
     } finally {
       setLoading(null);
     }

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck, ShieldAlert, ShieldX, RefreshCw, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 const RULE_LABELS: Record<string, string> = {
   yt_view_drop: "YouTube 조회수 급락",
@@ -78,7 +78,7 @@ const AdminPipelineGuard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guard-logs"] });
       queryClient.invalidateQueries({ queryKey: ["guard-stats"] });
-      toast.success("해결 처리됨");
+      toast({ title: "해결 처리됨" });
     },
   });
 
@@ -93,9 +93,9 @@ const AdminPipelineGuard = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["guard-logs"] });
       queryClient.invalidateQueries({ queryKey: ["guard-stats"] });
-      toast.success(`Guard 검사 완료: ${data.warnings} warn, ${data.blocks} block`);
+      toast({ title: `Guard 검사 완료: ${data.warnings} warn, ${data.blocks} block` });
     },
-    onError: (err) => toast.error(`Guard 실행 실패: ${err.message}`),
+    onError: (err) => toast({ title: `Guard 실행 실패: ${err.message}`, variant: "destructive" }),
   });
 
   return (
