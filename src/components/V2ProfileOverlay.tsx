@@ -111,7 +111,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                   <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                   </p>
-                  <p className="text-sm font-bold text-foreground leading-tight flex items-center gap-1.5">
+                  <p className="text-base font-bold text-foreground leading-tight flex items-center gap-1.5">
                     {ticketInfo ? <>{ticketInfo.remaining}<span className="text-[10px] font-medium text-muted-foreground">/{ticketInfo.total}</span></> : "–"}
                     <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${
                       (profile?.current_level ?? 1) >= 31
