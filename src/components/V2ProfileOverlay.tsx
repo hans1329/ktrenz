@@ -91,7 +91,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 onClick={() => setShowPointsDrawer(true)}
                 className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left space-y-2"
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   K·Cashes
                 </p>
                 <div className="flex items-center gap-2">
@@ -104,7 +104,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
 
               {/* Prediction Tickets */}
               <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                 </p>
                 <div className="flex items-center gap-2">
