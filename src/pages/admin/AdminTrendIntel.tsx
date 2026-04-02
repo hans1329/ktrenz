@@ -149,6 +149,14 @@ const AdminTrendIntel = () => {
   });
   const expiredTriggers = (triggers ?? []).filter((t: any) => t.status === "expired");
 
+  // Source-grouped active triggers
+  const sourceGroups = [
+    { key: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "youtube") },
+    { key: "tiktok", label: "TikTok", icon: Music2, color: "text-foreground", triggers: activeTriggers.filter((t: any) => t.trigger_source === "tiktok" || t.trigger_source === "tiktok_snapshot") },
+    { key: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "instagram") },
+    { key: "naver", label: "Naver News", icon: Newspaper, color: "text-green-600", triggers: activeTriggers.filter((t: any) => t.trigger_source === "naver_news" || !t.trigger_source) },
+  ];
+
   // Unique artist names in active triggers (for bulk expire)
   const activeArtistNames = [...new Set(activeTriggers.map((t: any) => t.artist_name as string))].sort();
 
