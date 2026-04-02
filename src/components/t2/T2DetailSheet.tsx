@@ -102,8 +102,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
   const track = useTrackEvent();
 
-  const [betOutcome, setBetOutcome] = useState<"mild" | "strong" | "explosive">("mild");
-  const [betAmount, setBetAmount] = useState("");
+  const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
+  const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
 
