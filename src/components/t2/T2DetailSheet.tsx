@@ -833,7 +833,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     <span className="flex items-center gap-2">
                       {language === "ko" ? "예측하기" : "Predict"}
                       {user && ticketInfo && (
-                        <span className="text-xs opacity-80">🎟️ {ticketInfo.remaining}/{ticketInfo.total}</span>
+                        <span className="inline-flex items-center gap-1 text-xs opacity-80"><Ticket className="w-3.5 h-3.5" /> {ticketInfo.remaining}/{ticketInfo.total}</span>
                       )}
                     </span>
                   )}
