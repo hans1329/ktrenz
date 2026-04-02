@@ -2012,7 +2012,11 @@ async function detectForMember(
         star_id: member.id || null,
         artist_name: member.display_name,
         trigger_type: keywordData.category === "social" ? "social_trend" : "news_mention",
-        trigger_source: keywordData.category === "social" ? "tiktok" : "naver_news",
+        trigger_source: keywordData.category === "social"
+          ? "tiktok"
+          : sourceArticle?.title?.startsWith("[YouTube]")
+            ? "youtube"
+            : "naver_news",
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
         source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
