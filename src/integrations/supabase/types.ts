@@ -4522,13 +4522,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          amount: number
+          amount?: number
           created_at?: string
           id?: string
           market_id: string
           outcome?: string
           payout?: number | null
-          shares: number
+          shares?: number
           user_id: string
         }
         Update: {
@@ -4601,7 +4601,7 @@ export type Database = {
           {
             foreignKeyName: "ktrenz_trend_markets_trigger_id_fkey"
             columns: ["trigger_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "ktrenz_trend_triggers"
             referencedColumns: ["id"]
           },
