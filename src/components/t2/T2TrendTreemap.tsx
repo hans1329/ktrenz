@@ -547,7 +547,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         ? supabase
             .from("ktrenz_trend_triggers" as any)
             .select("*")
-            .in("status", ["active", "pending"])
+            .eq("status", "active")
             .in("id", predictedTriggerIds)
         : Promise.resolve({ data: [] as any[] });
 
