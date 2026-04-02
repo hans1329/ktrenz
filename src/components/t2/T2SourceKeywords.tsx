@@ -205,8 +205,8 @@ const T2SourceKeywords = () => {
                         </div>
                       </div>
 
-                      {/* Source icon badge */}
-                      <span className="absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm p-1.5">
+                      {/* Source icon badge — top right */}
+                      <span className="absolute top-2 right-2 rounded-full bg-black/60 backdrop-blur-sm p-1.5 z-10">
                         <Icon className="h-3.5 w-3.5 text-white" />
                       </span>
 
