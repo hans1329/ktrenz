@@ -1,0 +1,1 @@
+ALTER TABLE ktrenz_trend_bets DROP CONSTRAINT IF EXISTS ktrenz_trend_bets_amount_check;
