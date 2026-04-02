@@ -105,6 +105,10 @@ export function isBlockedImageDomain(url: string | null): boolean {
 
 export function sanitizeImageUrl(url: string | null): string | null {
   if (!url) return null;
+  // Reject malformed URLs where data: URI is appended to an HTTP URL
+  if (url.includes('data:image/')) return null;
+  // Reject 1x1 pixel placeholders (common base64 tracking pixels)
+  if (url.includes('base64,')) return null;
   return url.replace(/&amp;/g, '&');
 }
 
