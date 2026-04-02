@@ -25,6 +25,13 @@ interface ExtractedKeyword {
   brand_intent?: "awareness" | "conversion" | "association" | "loyalty";
   fan_sentiment?: "positive" | "negative" | "neutral" | "mixed";
   trend_potential?: number;
+  // ── Member attribution & rejection fields ──
+  ownership_artist?: string;
+  ownership_confidence?: number;
+  article_subject_name?: string;
+  article_subject_match?: boolean;
+  rejection_flags?: string[];
+  purchase_stage?: string;
 }
 
 const PLATFORM_BLACKLIST = new Set([
