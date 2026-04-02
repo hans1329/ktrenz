@@ -568,7 +568,8 @@ Deno.serve(async (req) => {
           .order("tracked_at", { ascending: false })
           .limit(1);
 
-        const prevRaw: SourceRaw = prevTracking?.[0] ? {
+        const hasPrevTracking = prevTracking && prevTracking.length > 0;
+        const prevRaw: SourceRaw = hasPrevTracking ? {
           naver_news_total: prevTracking[0].naver_news_total ?? null,
           naver_blog_total: prevTracking[0].naver_blog_total ?? null,
           naver_news_24h: prevTracking[0].naver_news_24h ?? null,
@@ -586,7 +587,6 @@ Deno.serve(async (req) => {
           insta_total_likes: prevTracking[0].insta_total_likes ?? null,
           insta_total_comments: prevTracking[0].insta_total_comments ?? null,
         } : emptyRaw();
-
         // ─── 5소스 병렬 수집 (미수집 소스는 null 반환) ───
         const ytSkipped = !(ytEnabled && ytQuotaRemaining > 0) || YT_KEYS.length === 0;
         const socialSkipped = !rapidApiKey;
@@ -624,7 +624,8 @@ Deno.serve(async (req) => {
 
         // ─── 종합 buzz + 가중 delta 계산 ───
         const buzzScore = computeBuzzScore(currentRaw);
-        const isFirstTrack = kw.baseline_score === 0 || kw.baseline_score === null;
+        // 첫 추적 = baseline 미설정 OR 이전 tracking 레코드 없음
+        const isFirstTrack = kw.baseline_score === 0 || kw.baseline_score === null || !hasPrevTracking;
         const { weightedDelta, sourceScores } = isFirstTrack
           ? { weightedDelta: 0, sourceScores: { naver: 0, datalab: 0, youtube: 0, tiktok: 0, insta: 0 } }
           : computeWeightedDelta(currentRaw, prevRaw);
