@@ -120,10 +120,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       context_ja: tile.contextJa,
       context_zh: tile.contextZh,
     };
-    const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trends"] });
-    translateIfNeeded("ktrenz_trend_triggers", "context", [dbItem], refetch);
-    translateIfNeeded("ktrenz_trend_triggers", "keyword", [dbItem], refetch);
-  }, [tile?.id, language]);
+    const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
+    void translateIfNeeded("ktrenz_trend_triggers", "context", [dbItem], refetch);
+    void translateIfNeeded("ktrenz_trend_triggers", "keyword", [dbItem], refetch);
+  }, [tile, language, queryClient, translateIfNeeded]);
 
   const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
   const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);

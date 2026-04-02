@@ -78,23 +78,36 @@ Deno.serve(async (req) => {
 
     const targetCol = mapping.targets[lang];
 
-    // Fetch rows where target is null but source exists
+    // Fetch rows where source exists, then filter rows that still need translation
     const { data: rows, error: fetchErr } = await supabase
       .from(table)
       .select(`id, ${mapping.source}, ${targetCol}`)
       .in("id", ids)
-      .is(targetCol, null)
       .not(mapping.source, "is", null);
 
     if (fetchErr) throw fetchErr;
-    if (!rows || rows.length === 0) {
+
+    const rowsToTranslate = (rows ?? []).filter((row: any) => {
+      const sourceValue = row[mapping.source];
+      const targetValue = row[targetCol];
+      const isEnglishContextStale =
+        field === "context" &&
+        lang === "en" &&
+        typeof sourceValue === "string" &&
+        typeof targetValue === "string" &&
+        targetValue.trim() === sourceValue.trim();
+
+      return !targetValue || isEnglishContextStale;
+    });
+
+    if (rowsToTranslate.length === 0) {
       return new Response(JSON.stringify({ translated: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Batch translate via AI
-    const textsToTranslate = rows.map((r: any) => r[mapping.source] as string);
+    const textsToTranslate = rowsToTranslate.map((r: any) => r[mapping.source] as string);
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
@@ -133,14 +146,14 @@ ${JSON.stringify(textsToTranslate)}`;
     if (!jsonMatch) throw new Error("Could not parse translation response");
 
     const translated: string[] = JSON.parse(jsonMatch[0]);
-    if (translated.length !== rows.length) {
-      console.warn(`Translation count mismatch: got ${translated.length}, expected ${rows.length}`);
+    if (translated.length !== rowsToTranslate.length) {
+      console.warn(`Translation count mismatch: got ${translated.length}, expected ${rowsToTranslate.length}`);
     }
 
     // Update DB
     const results: Record<string, string> = {};
-    for (let i = 0; i < Math.min(translated.length, rows.length); i++) {
-      const row = rows[i] as any;
+    for (let i = 0; i < Math.min(translated.length, rowsToTranslate.length); i++) {
+      const row = rowsToTranslate[i] as any;
       const translation = translated[i];
       if (!translation) continue;
 
