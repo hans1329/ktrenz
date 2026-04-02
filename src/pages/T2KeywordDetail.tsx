@@ -125,13 +125,15 @@ const T2KeywordDetail = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const track = useTrackEvent();
+  const queryClient = useQueryClient();
+  const { translateIfNeeded } = useFieldTranslation();
 
   useEffect(() => {
     if (triggerId) track("t2_keyword_detail_view", { section: triggerId });
   }, [triggerId]);
 
   // Fetch trigger data
-  const { data: trigger, isLoading: triggerLoading } = useQuery({
+  const { data: trigger, isLoading: triggerLoading, refetch: refetchTrigger } = useQuery({
     queryKey: ["t2-trigger-detail", triggerId],
     queryFn: async () => {
       const { data } = await supabase
