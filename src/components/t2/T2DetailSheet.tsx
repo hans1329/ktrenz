@@ -165,11 +165,17 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         body: { triggerId: tile.id, outcome: predictionChoice, amount: 10 },
       });
       if (error) throw new Error(error.message);
+      if (data?.error === "no_tickets") {
+        toast({ title: t("noTickets", language), variant: "destructive" });
+        refetchTickets();
+        return;
+      }
       if (data?.error) throw new Error(data.error);
       queryClient.invalidateQueries({ queryKey: ["t2-my-bets", marketData?.id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      refetchTickets();
       track("trend_bet_placed", { artist_name: tile?.artistName, section: tile?.keyword });
       toast({ title: t("betSuccess", language) });
     } catch (err: any) {
