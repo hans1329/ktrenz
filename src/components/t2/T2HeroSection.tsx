@@ -197,20 +197,8 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
 
   return (
     <div className="px-4 pt-2 pb-1">
-      {/* Header — tappable */}
-      <button
-        onClick={() => navigate("/dashboard")}
-        className="flex items-center gap-2 mb-2 group"
-      >
-        <Crosshair className="w-4 h-4 text-primary" />
-        <h2 className="text-base font-black text-foreground">
-          {lang === "ko" ? "나의 예측" : "My Predictions"}
-        </h2>
-        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-      </button>
-
-      {/* Liquid Glass container with hero bg */}
-      <div className="relative rounded-2xl overflow-hidden mb-2">
+      {/* Liquid Glass container with hero bg — tappable */}
+      <div className="relative rounded-2xl overflow-hidden mb-2 cursor-pointer active:scale-[0.98] transition-transform" onClick={() => navigate("/dashboard")}>
         <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 p-3 space-y-2.5"
