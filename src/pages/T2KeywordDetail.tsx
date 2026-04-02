@@ -78,7 +78,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 // Strip citation refs like [1], [2], [3] etc from text
 function stripCitations(text: string | null): string | null {
   if (!text) return text;
-  return text.replace(/\s*\[\d+\]/g, "").trim();
+  return text.replace(/\s*\[\d+\]/g, "").replace(/^\[YouTube\]\s*/i, "").trim();
 }
 
 // i18n translations for this page
