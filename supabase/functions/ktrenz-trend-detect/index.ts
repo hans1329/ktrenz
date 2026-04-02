@@ -674,6 +674,7 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
 - ⚠️ FASHION ITEM EXCEPTION: Clothing items like "비키니" (bikini), "수영복" (swimwear), "란제리" (lingerie), "크롭탑" etc. are FASHION items, NOT body/physical stats. Classify them as "fashion" and extract normally. These represent commercial fashion trends, not personal body data.
+- 🚫 GENERIC COMMON NOUNS (★ MUST FLAG AS generic_word ★): Single common nouns that are NOT proper nouns/brand names MUST be rejected. Examples: "게임" (game), "영상" (video), "콘텐츠" (content), "노래" (song), "춤" (dance), "운동" (exercise), "요리" (cooking), "여행" (travel), "사진" (photo), "영화" (movie as generic). These words have no commercial trend value without a specific brand/product name attached. Only extract if it's part of a SPECIFIC proper noun (e.g., "게임" ❌ but "이터널리턴" ✅, "영화" ❌ but "범죄도시4" ✅).
 
 🚫 CORPORATE/PHARMA NAME TRAP (★ CRITICAL — COMMON FALSE POSITIVE ★):
 - When searching for an artist name (e.g., "수호", "바비", "엑소"), news results often include UNRELATED articles about companies or drugs whose names COINCIDENTALLY contain the artist's name.
