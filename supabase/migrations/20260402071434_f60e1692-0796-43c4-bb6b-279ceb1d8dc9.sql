@@ -1,0 +1,1 @@
+UPDATE ktrenz_trend_triggers SET source_image_url = 'https://image.imnews.imbc.com/replay/2026/nwtoday/article/__icsFiles/afieldfile/2026/04/01/today_20260401_065147_2_14_Large_u1.jpg' WHERE id = 'd16d9c1e-720f-4be5-b560-50336cb50539'
