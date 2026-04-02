@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Youtube, Instagram, Music2, Clock } from "lucide-react";
-import { CATEGORY_CONFIG, sanitizeImageUrl, isBlockedImageDomain } from "@/components/t2/T2TrendTreemap";
+import { Youtube, Instagram, Music2, Clock, ChevronRight, MessageCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CATEGORY_CONFIG, sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "@/components/t2/T2TrendTreemap";
 
 const SOURCE_SECTIONS = [
   { key: "youtube", label: "YouTube", sources: ["youtube", "youtube_search"], icon: Youtube, color: "#ef4444" },
@@ -12,41 +13,34 @@ const SOURCE_SECTIONS = [
 ] as const;
 
 const VISIBLE_STATUSES = ["active", "pending"] as const;
-const SOURCE_CARD_LIMIT = 15;
+const SOURCE_CARD_LIMIT = 20;
 
 type SourceSectionKey = (typeof SOURCE_SECTIONS)[number]["key"];
-type SourceTrigger = {
-  id: string;
-  keyword: string;
-  keyword_ko?: string | null;
-  keyword_en?: string | null;
-  keyword_category?: string | null;
-  artist_name?: string | null;
-  trigger_source: string;
-  detected_at: string;
-  source_url?: string | null;
-  source_image_url?: string | null;
-  context?: string | null;
-};
 
 const formatAge = (dateStr: string): string => {
   const diff = Date.now() - new Date(dateStr).getTime();
   const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return "Now";
+  if (hours < 1) return "now";
   if (hours < 24) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
 };
 
+const getLocalizedKeyword = (t: any, lang: string): string => {
+  if (lang === "ko") return t.keyword_ko || t.keyword;
+  if (lang === "en") return t.keyword_en || t.keyword;
+  return t.keyword;
+};
+
 const T2SourceKeywords = () => {
   const { language } = useLanguage();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { data: sectionTriggers } = useQuery<Record<SourceSectionKey, SourceTrigger[]>>({
+  const { data: sectionTriggers } = useQuery({
     queryKey: ["t2-source-keywords"],
     queryFn: async () => {
       const results = await Promise.all(
         SOURCE_SECTIONS.map(async ({ key, sources }) => {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("ktrenz_trend_triggers" as any)
             .select("id, keyword, keyword_ko, keyword_en, keyword_category, artist_name, trigger_source, detected_at, source_url, source_image_url, context")
             .in("status", [...VISIBLE_STATUSES])
@@ -54,17 +48,16 @@ const T2SourceKeywords = () => {
             .order("detected_at", { ascending: false })
             .limit(SOURCE_CARD_LIMIT);
 
-          if (error) throw error;
-          return [key, ((data ?? []) as unknown as SourceTrigger[])] as const;
+          return [key, ((data ?? []) as unknown as any[])] as const;
         }),
       );
 
-      return Object.fromEntries(results) as Record<SourceSectionKey, SourceTrigger[]>;
+      return Object.fromEntries(results) as Record<SourceSectionKey, any[]>;
     },
     refetchInterval: 60_000,
   });
 
-  const openDetail = (triggerId: string) => {
+  const handleTileClick = (triggerId: string) => {
     setSearchParams((prev) => {
       prev.set("modal", triggerId);
       return prev;
@@ -78,83 +71,117 @@ const T2SourceKeywords = () => {
         if (items.length === 0) return null;
 
         return (
-          <section key={key} className="px-4 py-5">
-            <h2 className="mb-3 flex items-center gap-2 text-xl font-black text-foreground">
-              <Icon className="h-5 w-5" style={{ color }} />
-              {label}
-              <span className="text-sm font-normal text-muted-foreground">({items.length})</span>
-            </h2>
+          <div key={key} className="px-[10px]">
+            {/* Section header — same as category sections */}
+            <div className="flex items-center gap-1.5 mb-3 pl-4">
+              <Icon className="h-4 w-4 shrink-0" style={{ color }} />
+              <h3 className="text-base font-medium text-foreground">{label}</h3>
+              <span className="text-xs text-muted-foreground">({items.length})</span>
+            </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-              {items.map((t) => {
-                const displayKeyword = language === "ko"
-                  ? (t.keyword_ko || t.keyword)
-                  : language === "en"
-                    ? (t.keyword_en || t.keyword)
-                    : t.keyword;
-                const config = CATEGORY_CONFIG[t.keyword_category as keyof typeof CATEGORY_CONFIG];
-                const rawImg = t.source_image_url ? sanitizeImageUrl(t.source_image_url) : null;
-                const safeImg = rawImg && !isBlockedImageDomain(rawImg) ? rawImg : null;
+            {/* Horizontal carousel — identical layout to category carousels */}
+            <div
+              className="flex items-start gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+              style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+            >
+              <div className="shrink-0 w-4" aria-hidden />
+              {items.map((item: any, idx: number) => {
+                const displayKeyword = getLocalizedKeyword(item, language);
+                const rawSourceImg = sanitizeImageUrl(
+                  (item.source_image_url?.startsWith("https://") || item.source_image_url?.startsWith("http://"))
+                    ? item.source_image_url
+                    : null
+                );
+                const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                const platformLogo = detectPlatformLogo(item.source_url, item.source_image_url);
+                const bgImg = safeSourceImg || platformLogo;
+                const catConfig = CATEGORY_CONFIG[item.keyword_category as keyof typeof CATEGORY_CONFIG];
 
                 return (
-                  <div
-                    key={t.id}
-                    onClick={() => openDetail(t.id)}
-                    className="flex-shrink-0 w-[200px] cursor-pointer overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm transition-transform active:scale-[0.98]"
+                  <button
+                    key={item.id}
+                    onClick={() => handleTileClick(item.id)}
+                    className={cn(
+                      "flex-none snap-start rounded-2xl border overflow-hidden flex flex-col text-left transition-colors",
+                      idx === 0 ? "ml-4 md:ml-0 w-[280px] md:w-[320px]" : "w-[260px] md:w-[280px]",
+                      "border-border/30 bg-card/60 hover:bg-card/90 hover:border-border/50"
+                    )}
                   >
-                    <div className="relative h-28 overflow-hidden">
-                      {safeImg ? (
-                        <img
-                          src={safeImg}
-                          alt={displayKeyword}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
+                    {/* Top: artist name + time */}
+                    <div className={cn("flex items-center justify-between", idx === 0 ? "p-4 pb-2" : "p-3 pb-2")}>
+                      <span className={cn("font-medium text-muted-foreground truncate", idx === 0 ? "text-sm" : "text-xs")}>
+                        {item.artist_name || "Unknown"}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
+                        <Clock className="h-2.5 w-2.5" />
+                        {formatAge(item.detected_at)}
+                      </span>
+                    </div>
+
+                    {/* Image area with keyword centered */}
+                    <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[300px]" : "h-[280px]")}>
+                      {bgImg ? (
+                        <>
+                          <img
+                            src={bgImg}
+                            alt={displayKeyword}
+                            className="h-full w-full object-cover object-center"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-black/25" />
+                        </>
                       ) : (
                         <div
-                          className="h-full w-full"
+                          className="flex h-full w-full items-center justify-center font-black text-white/20"
                           style={{
-                            background: `linear-gradient(135deg, ${config?.color || color}, hsl(var(--background)))`,
+                            backgroundColor: catConfig?.tileColor || color,
+                            fontSize: idx === 0 ? "56px" : "40px",
                           }}
-                        />
+                        >
+                          {(item.artist_name || "?").charAt(0)}
+                        </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-                      <div className="absolute top-2 right-2 flex items-center gap-0.5 rounded-full bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
-                        <Clock className="h-2.5 w-2.5" />
-                        {formatAge(t.detected_at)}
+                      {/* Keyword centered on image */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+                        <div className="flex items-center gap-1.5 max-w-full">
+                          <MessageCircle className="w-4 h-4 shrink-0 -scale-x-100 text-white drop-shadow-md" />
+                          <h4
+                            className={cn(
+                              "font-black text-white leading-snug drop-shadow-lg whitespace-normal text-center",
+                              displayKeyword.length > 20
+                                ? "text-xs break-keep"
+                                : displayKeyword.length > 14
+                                  ? (idx === 0 ? "text-base" : "text-sm")
+                                  : (idx === 0 ? "text-xl" : "text-lg")
+                            )}
+                          >
+                            {displayKeyword}
+                          </h4>
+                        </div>
                       </div>
 
-                      <div className="absolute bottom-2 left-2 right-2">
-                        <span className="line-clamp-1 text-sm font-bold text-white drop-shadow-md">{displayKeyword}</span>
-                      </div>
-                    </div>
-
-                    <div
-                      className="flex items-center justify-between px-3 py-1.5"
-                      style={{
-                        backgroundColor: `${config?.color || color}22`,
-                      }}
-                    >
-                      <span
-                        className="text-[10px] font-medium"
-                        style={{ color: config?.color || color }}
-                      >
-                        {config?.label || t.keyword_category || key}
+                      {/* Source icon badge */}
+                      <span className="absolute top-2 left-2 rounded-full bg-black/60 backdrop-blur-sm p-1.5">
+                        <Icon className="h-3.5 w-3.5 text-white" />
                       </span>
-                      <span className="text-[10px] text-muted-foreground">{t.artist_name}</span>
-                    </div>
 
-                    {t.context && (
-                      <div className="px-3 py-2">
-                        <p className="line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">{t.context}</p>
+                      {/* Bottom gradient + context */}
+                      <div className="absolute inset-x-0 bottom-0">
+                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
+                        {item.context && (
+                          <p className="relative px-3 pb-3 pt-6 text-[10px] leading-relaxed text-white/70 line-clamp-2 drop-shadow-md">
+                            {item.context}
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          </section>
+          </div>
         );
       })}
     </>
