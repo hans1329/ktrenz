@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, LogIn, Heart, Crosshair, Trophy, Clock, Ticket } from "lucide-react";
+import { ChevronRight, LogIn, Heart, Crosshair, Trophy, Clock, Ticket, Gift } from "lucide-react";
 import heroBg from "@/assets/t2-hero-bg.jpg";
 
 const outcomeConfig: Record<string, { emoji: string; label: Record<string, string>; color: string }> = {
@@ -119,6 +119,22 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     staleTime: 30_000,
   });
 
+  // Fetch user points
+  const { data: userPoints } = useQuery({
+    queryKey: ["hero-user-points", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { data } = await supabase
+        .from("profiles")
+        .select("available_points")
+        .eq("id", user.id)
+        .single();
+      return (data as any)?.available_points ?? 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 30_000,
+  });
+
   // Not logged in
   if (!user) {
     return (
@@ -210,13 +226,51 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
         ))}
       </div>
 
+      {/* Points & Reward Goal */}
+      {(() => {
+        const points = userPoints ?? 0;
+        const goal = 9000;
+        const pct = Math.min((points / goal) * 100, 100);
+        return (
+          <div className="bg-card border border-border rounded-xl p-4 mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-base">💎</span>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {lang === "ko" ? "내 포인트" : "My Points"}
+                </span>
+              </div>
+              <span className="text-lg font-black text-foreground">{points.toLocaleString()}T</span>
+            </div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Gift className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span className="text-[11px] text-muted-foreground flex-1">
+                {lang === "ko" ? "Spotify Premium 1개월" : "Spotify Premium 1 Month"}
+              </span>
+              <span className="text-[11px] font-bold text-foreground">{points.toLocaleString()} / {goal.toLocaleString()}T</span>
+            </div>
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            {pct >= 100 && (
+              <p className="text-[11px] text-emerald-500 font-semibold mt-1.5 text-center">
+                🎉 {lang === "ko" ? "교환 가능!" : "Ready to redeem!"}
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Earned Banner */}
       {stats.earned > 0 && (
         <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 mb-3 flex items-center justify-between">
           <span className="text-xs font-semibold text-primary">
-            {lang === "ko" ? "총 획득" : "Total Earned"}
+            {lang === "ko" ? "예측 보상 누적" : "Prediction Rewards"}
           </span>
-          <span className="text-sm font-black text-primary">{stats.earned.toLocaleString()}T</span>
+          <span className="text-sm font-black text-primary">+{stats.earned.toLocaleString()}T</span>
         </div>
       )}
 
