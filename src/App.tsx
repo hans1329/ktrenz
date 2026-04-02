@@ -80,7 +80,6 @@ const App = () => (
         <LanguageProvider>
           <TooltipProvider>
             <Toaster />
-            <Sonner />
             <PWAUpdatePrompt />
             <BrowserRouter>
               <Routes>
