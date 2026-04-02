@@ -114,7 +114,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.5), rgba(59,130,246,0.5))' }}>
                       <Ticket className="w-4 h-4 text-foreground" />
                     </div>
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em]"
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em]"
                       style={{ background: 'linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                       {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                     </p>
