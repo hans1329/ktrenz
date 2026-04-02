@@ -815,36 +815,27 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               )}
 
-              {/* Ticket info + Submit button */}
+              {/* Submit button with ticket counter inside */}
               {hasMarket && !hasPredicted && !isSettled && (
-                <div className="space-y-2">
-                  {/* Ticket counter */}
-                  {user && ticketInfo && (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                      <Ticket className="w-3.5 h-3.5" />
-                      <span>
-                        {ticketInfo.remaining > 0
-                          ? `🎟️ ${ticketInfo.remaining}/${ticketInfo.total} ${t("ticketsLeft", language)}`
-                          : t("noTickets", language)
-                        }
-                      </span>
-                    </div>
+                <Button
+                  className="w-full gap-2 py-5 rounded-full"
+                  onClick={handleSubmitPrediction}
+                  disabled={isSubmittingPrediction || !predictionChoice || (ticketInfo?.remaining ?? 1) <= 0}
+                >
+                  {isSubmittingPrediction ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      {language === "ko" ? "처리 중..." : "Processing..."}
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      {language === "ko" ? "예측하기" : "Predict"}
+                      {user && ticketInfo && (
+                        <span className="text-xs opacity-80">🎟️ {ticketInfo.remaining}/{ticketInfo.total}</span>
+                      )}
+                    </span>
                   )}
-                  <Button
-                    className="w-full gap-2 py-5 rounded-full"
-                    onClick={handleSubmitPrediction}
-                    disabled={isSubmittingPrediction || !predictionChoice || (ticketInfo?.remaining ?? 1) <= 0}
-                  >
-                    {isSubmittingPrediction ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        {language === "ko" ? "처리 중..." : "Processing..."}
-                      </>
-                    ) : (
-                      <>{language === "ko" ? "예측하기" : "Predict"}</>
-                    )}
-                  </Button>
-                </div>
+                </Button>
               )}
             </div>
 
