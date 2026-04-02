@@ -726,9 +726,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               {(hasMarket || isSettled) && (
                 <div className="grid grid-cols-3 gap-2">
                   {([
-                    { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "10~15%" : "10~15%", emoji: "🌱", reward: "100T" },
-                    { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "15~50%" : "15~50%", emoji: "🔥", reward: "300T" },
-                    { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "50%+" : "50%+", emoji: "🚀", reward: "1,000T" },
+                    { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "10~15% 오름" : "10~15% rise", emoji: "🌱", reward: "100T" },
+                    { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "15~50% 오름" : "15~50% rise", emoji: "🔥", reward: "300T" },
+                    { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "50%+ 오름" : "50%+ rise", emoji: "🚀", reward: "1,000T" },
                   ]).map(({ key, label, threshold, emoji, reward }) => {
                     const isSelected = predictionChoice === key;
                     const isDisabled = !!hasPredicted;
@@ -739,7 +739,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                       <div
                         key={key}
                         className={cn(
-                          "rounded-lg p-2.5 text-center transition-all border",
+                          "rounded-lg p-3 text-center transition-all border",
                           isMyChoice
                             ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                             : isSelected
@@ -750,10 +750,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         )}
                         onClick={() => !isDisabled && setPredictionChoice(key)}
                       >
-                        <div className="text-lg">{emoji}</div>
+                        <div className="text-3xl mb-1">{emoji}</div>
                         <div className="text-sm font-bold text-foreground">{label}</div>
-                        <div className="text-sm font-black text-primary">{reward}</div>
-                        <div className="text-[9px] text-muted-foreground mt-0.5">{threshold}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{threshold}</div>
+                        <div className="text-sm font-black text-primary mt-1">{reward}</div>
                       </div>
                     );
                   })}
