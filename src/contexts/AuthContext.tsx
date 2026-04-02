@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showWelcomeBonus, setShowWelcomeBonus] = useState(false);
   const queryClient = useQueryClient();
   const handledSignIns = useRef(new Set<string>());
 
