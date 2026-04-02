@@ -139,6 +139,8 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   // Auto-sliding banner for logged-out users
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerTimer = useRef<ReturnType<typeof setInterval>>();
+  const touchStartX = useRef(0);
+  const touchDeltaX = useRef(0);
 
   useEffect(() => {
     if (user) return;
