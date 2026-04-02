@@ -36,6 +36,13 @@ const T2TrendMap = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialView = VIEW_ORDER.indexOf(searchParams.get("view") as ViewMode);
   const [viewIndex, setViewIndex] = useState(initialView >= 0 ? initialView : 0);
+
+  // Sync viewIndex when searchParams change (e.g. tab bar navigation while on same route)
+  useEffect(() => {
+    const paramView = VIEW_ORDER.indexOf(searchParams.get("view") as ViewMode);
+    if (paramView >= 0 && paramView !== viewIndex) setViewIndex(paramView);
+    else if (paramView < 0 && viewIndex !== 0) setViewIndex(0);
+  }, [searchParams]);
   const [category, setCategory] = useState<TrendCategory>("all");
   const [sortMode, setSortMode] = useState<SortMode>("volume");
   const isMobile = useIsMobile();
