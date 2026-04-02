@@ -226,7 +226,7 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
 
     const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
 
-    // 후검증: 추출된 키워드가 실제 영상 텍스트에 존재하는지 확인
+    // 후검증: 추출된 키워드 품질 검증
     const allText = videos.map((v) => `${v.title} ${v.description}`).join(" ").toLowerCase();
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
@@ -234,6 +234,25 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       const kwKo = k.keyword_ko?.toLowerCase() || "";
       const kwEn = k.keyword_en?.toLowerCase() || "";
       
+      // Rejection flags filter (same as naver detect)
+      const flags = k.rejection_flags || [];
+      if (flags.length > 0) {
+        console.warn(`[detect-youtube] Rejected "${k.keyword}" by flags: [${flags.join(",")}]`);
+        return false;
+      }
+
+      // Ownership confidence filter
+      if (typeof k.ownership_confidence === "number" && k.ownership_confidence < 0.3) {
+        console.warn(`[detect-youtube] Rejected "${k.keyword}" by low ownership: ${k.ownership_confidence}`);
+        return false;
+      }
+
+      // Article subject match filter
+      if (k.article_subject_match === false) {
+        console.warn(`[detect-youtube] Rejected "${k.keyword}" — subject mismatch (actual: ${k.article_subject_name})`);
+        return false;
+      }
+
       // Platform blacklist filter
       if (PLATFORM_BLACKLIST.has(kwLower) || PLATFORM_BLACKLIST.has(kwEn) || PLATFORM_BLACKLIST.has(kwKo)) {
         console.warn(`[detect-youtube] Blocked platform keyword: "${k.keyword}"`);
@@ -243,6 +262,23 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       // Agency blacklist filter
       if (isAgencyKeyword(kwLower) || isAgencyKeyword(kwKo) || isAgencyKeyword(kwEn)) {
         console.warn(`[detect-youtube] Blocked agency keyword: "${k.keyword}"`);
+        return false;
+      }
+
+      // Artist name as keyword filter
+      const artistNames = [memberName.toLowerCase()];
+      if (groupName) artistNames.push(groupName.toLowerCase());
+      if (artistNames.includes(kwLower) || artistNames.includes(kwKo) || artistNames.includes(kwEn)) {
+        console.warn(`[detect-youtube] ⛔ Artist name as keyword rejected: "${k.keyword}"`);
+        return false;
+      }
+
+      // Corporate/Pharma keyword filter
+      const corpSuffixes = ["시스템즈", "테크", "바이오", "제약", "홀딩스", "systems", "tech", "bio", "pharma", "holdings", "inc", "corp", "ltd"];
+      const pharmaSuffixes = ["스모", "맙", "닙", "졸", "렐", "틴", "mab", "nib", "smo", "zol", "vir", "tin", "rel"];
+      const allSuffixes = [...corpSuffixes, ...pharmaSuffixes];
+      if (allSuffixes.some(s => kwLower.endsWith(s) || kwKo.endsWith(s))) {
+        console.warn(`[detect-youtube] ⛔ Corp/pharma keyword rejected: "${k.keyword}"`);
         return false;
       }
       
