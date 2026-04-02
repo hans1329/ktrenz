@@ -119,6 +119,22 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
     staleTime: 30_000,
   });
 
+  // Fetch user points
+  const { data: userPoints } = useQuery({
+    queryKey: ["hero-user-points", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { data } = await supabase
+        .from("profiles")
+        .select("available_points")
+        .eq("id", user.id)
+        .single();
+      return (data as any)?.available_points ?? 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 30_000,
+  });
+
   // Not logged in
   if (!user) {
     return (
