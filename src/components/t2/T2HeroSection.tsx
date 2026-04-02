@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
-import { ChevronRight, LogIn, Heart, Crosshair, Trophy, Clock, Ticket } from "lucide-react";
+import { ChevronRight, LogIn, Heart, Crosshair, Trophy, Clock, Ticket, Gift } from "lucide-react";
 import heroBg from "@/assets/t2-hero-bg.jpg";
 
 const outcomeConfig: Record<string, { emoji: string; label: Record<string, string>; color: string }> = {
