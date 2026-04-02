@@ -99,34 +99,6 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
         </div>
       ) : (
         <div className="space-y-1.5">
-          {/* Tracked keywords */}
-          {trackedKeywords.map((kw) => {
-            const displayKw = language === "ko" && kw.keywordKo ? kw.keywordKo : kw.keyword;
-            const isActive = kw.status === "active";
-            return (
-              <button
-                key={kw.followId}
-                onClick={() => { onClose(); navigate(`/t2/${kw.triggerId}`); }}
-                className="w-full flex items-center gap-2.5 p-2.5 rounded-lg border border-border/50 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all text-left group"
-              >
-                <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0">
-                  <Crosshair className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground truncate">{displayKw}</p>
-                  <p className="text-xs text-muted-foreground">
-                    🔥 {kw.influenceIndex.toFixed(0)}
-                    <span className={cn("ml-1.5 font-medium", isActive ? "text-green-400" : "text-muted-foreground/60")}>
-                      {isActive ? "LIVE" : "ENDED"}
-                    </span>
-                  </p>
-                </div>
-                <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-              </button>
-            );
-          })}
-
-          {/* Predictions */}
           {bets.map((bet) => {
             const displayKeyword = language === "ko" && bet.keyword_ko ? bet.keyword_ko : bet.keyword;
             const isPending = bet.market_status === "open";

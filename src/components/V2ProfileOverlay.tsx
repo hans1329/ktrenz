@@ -119,8 +119,6 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             </div>
           </div>
 
-          {/* Daily Missions */}
-          <ProfileDailyMissions onClose={() => onOpenChange(false)} />
 
           {/* My Trend Bets */}
           <ProfileTrendBets onClose={() => onOpenChange(false)} />
