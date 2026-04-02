@@ -87,8 +87,11 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
     return `${mins}m`;
   };
 
-  const getParticipatedTime = (createdAt: string) => {
-    return format(new Date(createdAt), "MM.dd HH:mm");
+  const getParticipatedTime = (createdAt: string | null | undefined) => {
+    if (!createdAt) return "—";
+    const d = new Date(createdAt);
+    if (isNaN(d.getTime())) return "—";
+    return format(d, "MM.dd HH:mm");
   };
 
   return (
