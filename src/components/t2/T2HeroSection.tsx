@@ -177,7 +177,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
         <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" width={960} height={512} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div className="relative z-10 flex flex-col justify-end h-full p-6" style={{ minHeight: "220px" }}>
-          <h2 className="text-2xl font-black text-white leading-tight mb-2 whitespace-pre-line">
+          <h2 className="text-xl font-black text-white leading-tight mb-2 whitespace-pre-line">
             {t("t2.hero.discoverTitle")}
           </h2>
           <p className="text-sm text-white/70 mb-4">
