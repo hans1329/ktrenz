@@ -132,12 +132,12 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                     </span>
                   </p>
                 </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {language === "ko" ? "등급이 오르면 더 많은 한도가 생겨요!" : "Level up for more tickets!"}
+              </p>
               </div>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center -mt-3">
-            {language === "ko" ? "등급이 오르면 더 많은 한도가 생겨요!" : "Level up to get more prediction tickets!"}
-          </p>
 
 
           {/* My Trend Bets */}
