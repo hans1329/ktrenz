@@ -248,10 +248,10 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
             <span className="text-[10px] font-bold text-foreground">{Math.round(pct)}%</span>
           </div>
         </div>
-        <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "linear-gradient(90deg, hsl(280 45% 58%), hsl(220 50% 55%), hsl(180 40% 50%), hsl(150 45% 50%), hsl(45 55% 55%), hsl(20 50% 55%))" }}>
+        <div className="w-full h-2.5 bg-muted/40 rounded-full overflow-hidden relative">
           <div
-             className="h-full rounded-full transition-all duration-500 bg-muted"
-             style={{ marginLeft: `${pct}%`, width: `${100 - pct}%` }}
+             className="absolute inset-0 rounded-full"
+             style={{ background: "linear-gradient(90deg, hsl(280 45% 58%), hsl(220 50% 55%), hsl(180 40% 50%), hsl(150 45% 50%), hsl(45 55% 55%), hsl(20 50% 55%))", clipPath: `inset(0 ${100 - pct}% 0 0)`, transition: "clip-path 0.5s ease" }}
           />
         </div>
       </div>
