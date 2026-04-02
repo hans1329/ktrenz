@@ -93,7 +93,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               <div className="flex items-center gap-2 mx-0">
                 <span className="mx-[10px] text-xl">💎</span>
                 <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     K·Cashes
                   </p>
                   <p className="text-sm font-bold text-foreground leading-tight">
@@ -108,7 +108,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               <div className="flex items-center gap-2">
                 <Ticket className="lucide lucide-ticket text-primary mx-[10px] w-[20px] h-[20px]" />
                 <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                   </p>
                   <p className="text-base font-bold text-foreground leading-tight flex items-center gap-1.5">
