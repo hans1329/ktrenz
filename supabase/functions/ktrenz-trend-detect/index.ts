@@ -1993,11 +1993,11 @@ async function detectForMember(
         context_zh: keywordData.context_zh || null,
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
-        source_image_url: keywordData.category === "social" && keywordData._tiktok_cover_url
+        source_image_url: keywordData._tiktok_cover_url
           ? keywordData._tiktok_cover_url
           : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
-        metadata: keywordData.category === "social" ? {
+        metadata: keywordData._tiktok_source_url ? {
           source: "tiktok",
           search_name: searchName,
           group_name: member.group_name,
@@ -2005,6 +2005,7 @@ async function detectForMember(
           article_count: articles.length,
           search_name: searchName,
           group_name: member.group_name,
+          ...(sourceArticle?.title?.startsWith("[YouTube]") ? { source: "youtube" } : {}),
         },
       },
       // ktrenz_keyword_sources 테이블용 데이터
