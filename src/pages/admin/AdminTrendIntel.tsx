@@ -151,7 +151,7 @@ const AdminTrendIntel = () => {
 
   // Source-grouped active triggers
   const sourceGroups = [
-    { key: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "youtube") },
+    { key: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "youtube" || t.trigger_source === "youtube_search") },
     { key: "tiktok", label: "TikTok", icon: Music2, color: "text-foreground", triggers: activeTriggers.filter((t: any) => t.trigger_source === "tiktok" || t.trigger_source === "tiktok_snapshot") },
     { key: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "instagram") },
     { key: "naver", label: "Naver News", icon: Newspaper, color: "text-green-600", triggers: activeTriggers.filter((t: any) => t.trigger_source === "naver_news" || !t.trigger_source) },
