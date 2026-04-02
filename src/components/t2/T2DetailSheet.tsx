@@ -66,6 +66,8 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
   lost: { en: "Better luck next time (+10T)", ko: "다음엔 맞출 거예요 (+10T)", ja: "次こそ！(+10T)", zh: "下次加油 (+10T)" },
   openingSoon: { en: "Opening soon!", ko: "곧 열려요!", ja: "まもなくオープン！", zh: "即将开放！" },
+  noTickets: { en: "No prediction tickets left today", ko: "오늘 예측 티켓이 모두 소진되었어요", ja: "今日の予測チケットがありません", zh: "今天的预测券已用完" },
+  ticketsLeft: { en: "tickets left today", ko: "오늘 남은 티켓", ja: "本日残りチケット", zh: "今日剩余票" },
   alreadyPredicted: { en: "Prediction submitted! Check results here tomorrow!", ko: "​트렌드 예측 참여 완료!", ja: "予測済み！明日ここで結果を確認！", zh: "已预测！明天来这里查看结果！" },
   boostTrend: { en: "Spread this trend", ko: "이 트렌드 확산하기", ja: "このトレンドを広める", zh: "扩散这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
