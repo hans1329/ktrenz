@@ -1080,9 +1080,16 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                       <div className="shrink-0 w-4" aria-hidden />
                       {items.slice(0, 20).map((item, idx) => {
                         const rawSourceImg = sanitizeImageUrl((item.sourceImageUrl?.startsWith('https://') || item.sourceImageUrl?.startsWith('http://')) ? item.sourceImageUrl : null);
-                        const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                        const isInstaSrc = item.triggerSource === "instagram";
+                        const safeSourceImg = rawSourceImg && (isInstaSrc || !isBlockedImageDomain(rawSourceImg)) ? rawSourceImg : null;
+                        // YouTube thumbnail fallback
+                        let ytThumb: string | null = null;
+                        if (!safeSourceImg && item.sourceUrl) {
+                          const ytMatch = item.sourceUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+                          if (ytMatch) ytThumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+                        }
                         const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
-                        const bgImg = safeSourceImg || item.artistImageUrl || platformLogo;
+                        const bgImg = safeSourceImg || ytThumb || item.artistImageUrl || platformLogo;
                         const isMyArtist = item.starId ? watchedStarSet.has(item.starId) : false;
                         const isSelected = selectedTile?.id === item.id;
 
