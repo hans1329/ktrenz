@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   Loader2, Play, TrendingUp, Search, Clock, Globe,
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap,
-  XCircle, Trash2, Filter
+  XCircle, Trash2, Filter, Youtube, Instagram, Music2, Newspaper
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
