@@ -27,8 +27,8 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-primary/30 bg-gradient-to-r from-primary/90 via-primary/80 to-accent/70 text-white shadow-[0_8px_32px_hsl(var(--primary)/0.3)]",
-        destructive: "border-destructive/40 bg-gradient-to-r from-destructive/90 via-destructive/80 to-destructive/70 text-white shadow-[0_8px_32px_hsl(var(--destructive)/0.3)]",
+        default: "border-primary/20 bg-gradient-to-r from-primary/60 via-primary/50 to-accent/40 text-white shadow-[0_8px_32px_hsl(var(--primary)/0.2)]",
+        destructive: "border-destructive/25 bg-gradient-to-r from-destructive/60 via-destructive/50 to-destructive/40 text-white shadow-[0_8px_32px_hsl(var(--destructive)/0.2)]",
       },
     },
     defaultVariants: {
