@@ -107,7 +107,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
             {/* Prediction Tickets */}
             <div className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 text-left">
               <div className="flex items-center gap-2">
-                <Ticket className="w-4 h-4 text-primary" />
+                <Ticket className="lucide lucide-ticket text-primary mx-[10px] w-[20px] h-[20px]" />
                 <div>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
