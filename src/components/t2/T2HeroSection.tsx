@@ -215,44 +215,61 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
       </div>
 
       {/* Compact stats + points in one row */}
-      <div className="flex items-stretch gap-2 mb-2">
-        {/* Stats */}
-        <div className="flex-1 grid grid-cols-4 gap-1.5">
+      {/* Liquid Glass container */}
+      <div className="rounded-2xl p-3 mb-2 space-y-2.5"
+        style={{
+          background: "linear-gradient(135deg, hsla(0,0%,100%,0.06), hsla(0,0%,100%,0.02))",
+          backdropFilter: "blur(20px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+          border: "1px solid hsla(0,0%,100%,0.12)",
+          boxShadow: "inset 0 1px 1px 0 hsla(0,0%,100%,0.1), inset 0 -1px 1px 0 hsla(0,0%,0%,0.05), 0 8px 32px -8px hsla(0,0%,0%,0.15)",
+        }}
+      >
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-1.5">
           {[
             { label: lang === "ko" ? "참여" : "Joined", value: stats.total, icon: Crosshair },
             { label: lang === "ko" ? "당첨" : "Won", value: stats.won, icon: Trophy },
             { label: lang === "ko" ? "진행중" : "Active", value: stats.pending, icon: Clock },
             { label: lang === "ko" ? "티켓" : "Tickets", value: `${tickets.max - tickets.used}`, icon: Ticket },
           ].map((stat) => (
-            <div key={stat.label} className="bg-card border border-border rounded-lg py-2 text-center">
+            <div key={stat.label} className="rounded-xl py-2 text-center"
+              style={{
+                background: "hsla(0,0%,100%,0.05)",
+                border: "1px solid hsla(0,0%,100%,0.08)",
+                boxShadow: "inset 0 1px 0 hsla(0,0%,100%,0.06)",
+              }}
+            >
               <p className="text-base font-black text-foreground leading-none">{stat.value}</p>
               <p className="text-[9px] text-muted-foreground font-medium mt-0.5">{stat.label}</p>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Points + Reward goal compact */}
-      <div className="bg-card border border-border rounded-lg px-3 py-2 mb-2">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm">💎</span>
-            <span className="text-xs font-bold text-foreground">{points.toLocaleString()}T</span>
-            {stats.earned > 0 && (
-              <span className="text-[10px] text-primary font-semibold">(+{stats.earned.toLocaleString()})</span>
-            )}
+        {/* Points + Reward goal */}
+        <div className="px-0.5">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">💎</span>
+              <span className="text-xs font-bold text-foreground">{points.toLocaleString()}T</span>
+              {stats.earned > 0 && (
+                <span className="text-[10px] text-primary font-semibold">(+{stats.earned.toLocaleString()})</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <Gift className="w-3 h-3 text-emerald-500" />
+              <span className="text-[10px] text-muted-foreground">Spotify Premium</span>
+              <span className="text-[10px] font-bold text-foreground">{Math.round(pct)}%</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Gift className="w-3 h-3 text-emerald-500" />
-            <span className="text-[10px] text-muted-foreground">Spotify Premium</span>
-            <span className="text-[10px] font-bold text-foreground">{Math.round(pct)}%</span>
+          <div className="w-full h-2.5 rounded-full overflow-hidden relative"
+            style={{ background: "hsla(0,0%,100%,0.06)" }}
+          >
+            <div
+               className="absolute inset-0 rounded-full"
+               style={{ background: "linear-gradient(90deg, hsl(280 45% 58%), hsl(220 50% 55%), hsl(180 40% 50%), hsl(150 45% 50%), hsl(45 55% 55%), hsl(20 50% 55%))", clipPath: `inset(0 ${100 - pct}% 0 0)`, transition: "clip-path 0.5s ease" }}
+            />
           </div>
-        </div>
-        <div className="w-full h-2.5 bg-muted/40 rounded-full overflow-hidden relative">
-          <div
-             className="absolute inset-0 rounded-full"
-             style={{ background: "linear-gradient(90deg, hsl(280 45% 58%), hsl(220 50% 55%), hsl(180 40% 50%), hsl(150 45% 50%), hsl(45 55% 55%), hsl(20 50% 55%))", clipPath: `inset(0 ${100 - pct}% 0 0)`, transition: "clip-path 0.5s ease" }}
-          />
         </div>
       </div>
 
