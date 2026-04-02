@@ -624,7 +624,8 @@ Deno.serve(async (req) => {
 
         // ─── 종합 buzz + 가중 delta 계산 ───
         const buzzScore = computeBuzzScore(currentRaw);
-        const isFirstTrack = kw.baseline_score === 0 || kw.baseline_score === null;
+        // 첫 추적 = baseline 미설정 OR 이전 tracking 레코드 없음
+        const isFirstTrack = kw.baseline_score === 0 || kw.baseline_score === null || !hasPrevTracking;
         const { weightedDelta, sourceScores } = isFirstTrack
           ? { weightedDelta: 0, sourceScores: { naver: 0, datalab: 0, youtube: 0, tiktok: 0, insta: 0 } }
           : computeWeightedDelta(currentRaw, prevRaw);
