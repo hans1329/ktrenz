@@ -440,20 +440,58 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
     // <figure>, <figcaption>, <em>, <span class="caption">, alt 등에서 캡션 추출
     const imgRegex = /<(?:figure|div)[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>[\s\S]*?(?:<(?:figcaption|em|span|p|div)[^>]*>([\s\S]*?)<\/(?:figcaption|em|span|p|div)>)?[\s\S]*?<\/(?:figure|div)>|<img[^>]*src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>/gi;
     
-    // 더 간단하고 확실한 접근: 각 <img> 태그와 그 주변 텍스트를 수집
+    // 각 <img> 태그와 주변 텍스트 수집 (lazy-loading 대응: data-srcset, data-src 우선)
     const imgTagRegex = /<img[^>]*>/gi;
     let imgMatch;
     while ((imgMatch = imgTagRegex.exec(html)) !== null) {
       const imgTag = imgMatch[0];
-      const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
-      if (!srcMatch) continue;
       
-      const src = srcMatch[1];
+      // lazy-loading 대응: data-srcset > data-src > srcset > src 순으로 실제 이미지 URL 추출
+      let src: string | null = null;
+      
+      // data-srcset (SBS 등 lazy-load 사이트)
+      const dataSrcsetMatch = imgTag.match(/data-srcset=["']([^"']+)["']/i);
+      if (dataSrcsetMatch?.[1]) {
+        // srcset에서 첫 번째 URL 추출 (가장 큰 해상도 or 첫 항목)
+        const srcsetParts = dataSrcsetMatch[1].split(",").map(s => s.trim());
+        const bestSrc = srcsetParts[srcsetParts.length - 1]?.split(/\s+/)[0];
+        if (bestSrc && !bestSrc.startsWith("data:")) src = bestSrc;
+      }
+      
+      // data-src
+      if (!src) {
+        const dataSrcMatch = imgTag.match(/data-src=["']([^"']+)["']/i);
+        if (dataSrcMatch?.[1] && !dataSrcMatch[1].startsWith("data:")) src = dataSrcMatch[1];
+      }
+      
+      // srcset
+      if (!src) {
+        const srcsetMatch = imgTag.match(/\bsrcset=["']([^"']+)["']/i);
+        if (srcsetMatch?.[1]) {
+          const srcsetParts = srcsetMatch[1].split(",").map(s => s.trim());
+          const bestSrc = srcsetParts[srcsetParts.length - 1]?.split(/\s+/)[0];
+          if (bestSrc && !bestSrc.startsWith("data:")) src = bestSrc;
+        }
+      }
+      
+      // src (폴백, 단 base64/data URI는 스킵)
+      if (!src) {
+        const srcMatch = imgTag.match(/\bsrc=["']([^"']+)["']/i);
+        if (srcMatch?.[1] && !srcMatch[1].startsWith("data:") && !srcMatch[1].includes("data:image/")) {
+          src = srcMatch[1];
+        }
+      }
+      
+      if (!src) continue;
       if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
       if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner/i.test(src)) continue;
+      // 트래킹 픽셀 필터링
+      if (/facebook\.com\/tr|\/tr\?id=|noscript=1/i.test(src)) continue;
       
       const resolved = resolveUrl(src.replace(/&amp;/g, "&"), articleUrl);
       if (!resolved || seenUrls.has(resolved)) continue;
+      // 최종 검증: resolved URL에 data:image가 섞여있는 경우 스킵
+      if (resolved.includes("data:image/") || resolved.includes("base64,")) continue;
       seenUrls.add(resolved);
       
       // alt 텍스트 추출
