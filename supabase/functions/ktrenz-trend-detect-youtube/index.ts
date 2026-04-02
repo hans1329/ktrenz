@@ -336,6 +336,25 @@ interface MemberInfo {
   display_name: string;
   name_ko: string | null;
   group_name: string | null;
+  star_type?: string;
+}
+
+// ─── 동명이인 방지 검색 쿼리 생성 ───
+function buildSearchQuery(member: MemberInfo): string {
+  const name = member.display_name;
+  const nameLen = (member.name_ko || name).replace(/\s/g, "").length;
+  
+  if (member.group_name) {
+    // 그룹 멤버: 항상 그룹명 포함
+    return `${member.group_name} ${name}`;
+  }
+  
+  // 짧은 이름(≤3자): K-pop 컨텍스트 추가로 동명이인 방지
+  if (nameLen <= 3) {
+    return `${name} K-pop`;
+  }
+  
+  return name;
 }
 
 async function detectForMember(
@@ -344,10 +363,7 @@ async function detectForMember(
   ytApiKey: string,
   member: MemberInfo,
 ): Promise<{ keywordsFound: number; videosFound: number; keywords: ExtractedKeyword[] }> {
-  // 검색어: 영문명 사용 (YouTube는 글로벌 플랫폼)
-  const query = member.group_name
-    ? `${member.group_name} ${member.display_name}`
-    : member.display_name;
+  const query = buildSearchQuery(member);
 
   const videos = await searchYouTubeVideos(ytApiKey, query, 15);
 
