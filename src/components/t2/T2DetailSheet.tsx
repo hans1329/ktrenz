@@ -634,7 +634,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   : language === "ja" ? (tile.contextJa || tile.context)
                   : language === "zh" ? (tile.contextZh || tile.context)
                   : tile.context;
-                const ctx = rawCtx ? rawCtx.replace(/\[\d+\]/g, "").trim() : null;
+                const ctx = rawCtx ? rawCtx.replace(/\[\d+\]/g, "").replace(/^\[YouTube\]\s*/i, "").trim() : null;
                 return ctx ? (
                   <p className="text-sm text-foreground/80 leading-relaxed">{ctx}</p>
                 ) : (
