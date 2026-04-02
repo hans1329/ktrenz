@@ -32,11 +32,19 @@ export const useFieldTranslation = () => {
       const targetCol = targetColMap[key]?.[language];
       if (!targetCol) return;
 
-      // Find items that need translation (target is null but source exists)
-      const sourceCol = field === "keyword" ? "keyword_ko" : "context_ko";
-      const needTranslation = items.filter(
-        (item) => item[sourceCol] && !item[targetCol] && !pendingRef.current.has(`${item.id}-${key}-${language}`)
-      );
+      // Find items that need translation (target is missing, or English context still equals Korean source)
+      const needTranslation = items.filter((item) => {
+        const sourceValue = item[sourceCol];
+        const targetValue = item[targetCol];
+        const isEnglishContextStale =
+          field === "context" &&
+          language === "en" &&
+          typeof sourceValue === "string" &&
+          typeof targetValue === "string" &&
+          targetValue.trim() === sourceValue.trim();
+
+        return !!sourceValue && (!targetValue || isEnglishContextStale) && !pendingRef.current.has(`${item.id}-${key}-${language}`);
+      });
 
       if (needTranslation.length === 0) return;
 

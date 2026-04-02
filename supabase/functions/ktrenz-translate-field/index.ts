@@ -146,14 +146,14 @@ ${JSON.stringify(textsToTranslate)}`;
     if (!jsonMatch) throw new Error("Could not parse translation response");
 
     const translated: string[] = JSON.parse(jsonMatch[0]);
-    if (translated.length !== rows.length) {
-      console.warn(`Translation count mismatch: got ${translated.length}, expected ${rows.length}`);
+    if (translated.length !== rowsToTranslate.length) {
+      console.warn(`Translation count mismatch: got ${translated.length}, expected ${rowsToTranslate.length}`);
     }
 
     // Update DB
     const results: Record<string, string> = {};
-    for (let i = 0; i < Math.min(translated.length, rows.length); i++) {
-      const row = rows[i] as any;
+    for (let i = 0; i < Math.min(translated.length, rowsToTranslate.length); i++) {
+      const row = rowsToTranslate[i] as any;
       const translation = translated[i];
       if (!translation) continue;
 

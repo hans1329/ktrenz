@@ -668,7 +668,13 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     const langCol = language === "en" ? "keywordEn" : language === "ja" ? "keywordJa" : "keywordZh";
     const ctxCol = language === "en" ? "context" : language === "ja" ? "contextJa" : "contextZh";
     const needsKeyword = triggers.filter(t => t.keywordKo && !t[langCol as keyof TrendTile]).slice(0, 20);
-    const needsContext = triggers.filter(t => t.contextKo && !t[ctxCol as keyof TrendTile]).slice(0, 20);
+    const needsContext = triggers.filter((t) => {
+      if (!t.contextKo) return false;
+      const target = t[ctxCol as keyof TrendTile];
+      const isMissing = !target;
+      const isEnglishContextStale = language === "en" && typeof target === "string" && target.trim() === t.contextKo?.trim();
+      return isMissing || isEnglishContextStale;
+    }).slice(0, 20);
     
     const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     
