@@ -1390,7 +1390,7 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
         tools: [TOOL_EXTRACT_KEYWORDS],
         tool_choice: { type: "function", function: { name: "extract_keywords" } },
         temperature: 0.05,
-        max_tokens: 1500,
+        max_tokens: 3000,
       }),
     });
 
