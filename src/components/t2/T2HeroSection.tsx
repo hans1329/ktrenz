@@ -139,6 +139,8 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   // Auto-sliding banner for logged-out users
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerTimer = useRef<ReturnType<typeof setInterval>>();
+  const touchStartX = useRef(0);
+  const touchDeltaX = useRef(0);
 
   useEffect(() => {
     if (user) return;
@@ -194,7 +196,19 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
 
     return (
       <div className="px-4 pt-2 pb-5">
-        <div className="overflow-hidden rounded-2xl">
+        <div
+          className="overflow-hidden rounded-2xl"
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchDeltaX.current = 0; }}
+          onTouchMove={(e) => { touchDeltaX.current = e.touches[0].clientX - touchStartX.current; }}
+          onTouchEnd={() => {
+            if (Math.abs(touchDeltaX.current) > 40) {
+              const next = touchDeltaX.current < 0 ? 1 : 0;
+              setBannerIndex(next);
+              clearInterval(bannerTimer.current);
+              bannerTimer.current = setInterval(() => setBannerIndex((p) => (p === 0 ? 1 : 0)), 4000);
+            }
+          }}
+        >
           <div
             className="flex transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
