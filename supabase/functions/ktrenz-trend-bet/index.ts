@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
       .eq("id", market.id);
 
     return new Response(
-      JSON.stringify({ success: true, outcome }),
+      JSON.stringify({ success: true, outcome, remaining: ticket.remaining }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
