@@ -246,7 +246,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm">💎</span>
-                <span className="text-xs font-bold text-white">{points.toLocaleString()}T</span>
+                <span className="text-xs font-bold text-white">{points.toLocaleString()}</span>
                 {stats.earned > 0 && (
                   <span className="text-[10px] text-primary font-semibold">(+{stats.earned.toLocaleString()})</span>
                 )}
