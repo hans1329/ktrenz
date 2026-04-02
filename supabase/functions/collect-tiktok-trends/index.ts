@@ -314,14 +314,22 @@ Deno.serve(async (req) => {
       if (match) todayApiCalls += parseInt(match[1]);
     }
 
-    // ktrenz_stars에서 활성 아티스트 (star_id 기반)
+    // ktrenz_stars에서 활성 아티스트 (star_id 기반) — member 포함
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, star_type")
+      .select("id, display_name, name_ko, star_type, group_star_id")
       .eq("is_active", true)
-      .in("star_type", ["group", "solo"])
+      .in("star_type", ["group", "solo", "member"])
       .order("display_name")
       .limit(batchLimit || 50);
+
+    // 그룹명 매핑 (멤버의 group_star_id → 그룹 display_name)
+    const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
+    const tiktokGroupMap: Record<string, string> = {};
+    if (groupStarIds.length > 0) {
+      const { data: groups } = await sb.from("ktrenz_stars").select("id, display_name").in("id", groupStarIds);
+      for (const g of (groups || [])) tiktokGroupMap[g.id] = g.display_name;
+    }
 
     if (starsErr) throw starsErr;
     if (!stars?.length) {
@@ -366,7 +374,15 @@ Deno.serve(async (req) => {
         break;
       }
       try {
-        const searchKeyword = star.display_name;
+        // ─── 동명이인 방지 검색 쿼리 ───
+        const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
+        const nameLen = (star.name_ko || star.display_name).replace(/\s/g, "").length;
+        let searchKeyword = star.display_name;
+        if (groupName) {
+          searchKeyword = `${groupName} ${star.display_name}`;
+        } else if (nameLen <= 3) {
+          searchKeyword = `${star.display_name} K-pop`;
+        }
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
         apiCallCount++;
 
