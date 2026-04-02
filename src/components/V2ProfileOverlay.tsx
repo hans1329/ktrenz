@@ -89,18 +89,16 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
               {/* K·Trend Cashes */}
               <button
                 onClick={() => setShowPointsDrawer(true)}
-                className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
+                className="basis-1/2 min-w-0 rounded-xl bg-card border border-border p-3 hover:border-primary/40 hover:bg-primary/5 transition-all text-left space-y-2"
               >
-                <div className="flex items-center gap-2 mx-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  K·Cashes
+                </p>
+                <div className="flex items-center gap-2">
                   <span className="mx-[10px] text-xl">💎</span>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      K·Cashes
-                    </p>
-                    <p className="text-sm font-bold text-foreground leading-tight mt-1">
-                      {kPoints.toLocaleString()}
-                    </p>
-                  </div>
+                  <p className="text-sm font-bold text-foreground leading-tight">
+                    {kPoints.toLocaleString()}
+                  </p>
                 </div>
               </button>
 
