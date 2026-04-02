@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ktrenzLogo from "@/assets/k-trenz-logo.webp";
 import { Link, useNavigate } from "react-router-dom";
-import { TrendingUp, Bot, PanelLeftClose, PanelLeftOpen, ChevronRight, Activity } from "lucide-react";
+import { TrendingUp, Users, PanelLeftClose, PanelLeftOpen, ChevronRight, Activity } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import {
@@ -15,9 +15,9 @@ import { useAuth } from "@/hooks/useAuth";
 import V2ProfileOverlay from "@/components/V2ProfileOverlay";
 import type { V3Tab } from "@/components/v3/V3TabBar";
 
-const v3NavItems: { id: V3Tab | "myActivity"; titleKey: string; icon: typeof TrendingUp }[] = [
+const v3NavItems: { id: V3Tab | "myActivity" | "artistView"; titleKey: string; icon: typeof TrendingUp }[] = [
   { id: "rankings", titleKey: "nav.trendz", icon: TrendingUp },
-  { id: "agent", titleKey: "nav.fanAgent", icon: Bot },
+  { id: "artistView", titleKey: "nav.artistView", icon: Users },
   { id: "myActivity", titleKey: "nav.myActivity", icon: Activity },
 ];
 
