@@ -2119,7 +2119,7 @@ async function detectForMember(
   const { data: existingKeywords } = await sb
     .from("ktrenz_keywords")
     .select("id, keyword, keyword_en, keyword_ko")
-    .in("status", ["active", "pending"]);
+    .eq("status", "active");
 
   const existingByKeyword = new Map<string, any>();
   for (const e of (existingKeywords || [])) {
