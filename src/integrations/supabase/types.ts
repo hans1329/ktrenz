@@ -5172,7 +5172,9 @@ export type Database = {
           icon: string | null
           id: number
           max_daily_votes: number
+          max_level: number | null
           name: string
+          name_ko: string | null
           required_points: number
           token_reward: number | null
         }
@@ -5182,7 +5184,9 @@ export type Database = {
           icon?: string | null
           id: number
           max_daily_votes?: number
+          max_level?: number | null
           name: string
+          name_ko?: string | null
           required_points: number
           token_reward?: number | null
         }
@@ -5192,7 +5196,9 @@ export type Database = {
           icon?: string | null
           id?: number
           max_daily_votes?: number
+          max_level?: number | null
           name?: string
+          name_ko?: string | null
           required_points?: number
           token_reward?: number | null
         }
