@@ -115,6 +115,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Consume a prediction ticket
+    const { data: ticketResult, error: ticketError } = await sb.rpc(
+      "ktrenz_use_prediction_ticket",
+      { _user_id: user.id }
+    );
+    if (ticketError) {
+      console.error("[trend-bet] Ticket error:", ticketError);
+      return new Response(JSON.stringify({ error: "Failed to check tickets" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const ticket = typeof ticketResult === "string" ? JSON.parse(ticketResult) : ticketResult;
+    if (!ticket?.success) {
+      return new Response(JSON.stringify({ error: "no_tickets", remaining: 0 }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Insert prediction record (amount=0, no K-Token deducted)
     const { error: betErr } = await sb
       .from("ktrenz_trend_bets")
