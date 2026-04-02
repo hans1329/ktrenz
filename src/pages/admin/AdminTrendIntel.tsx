@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   Loader2, Play, TrendingUp, Search, Clock, Globe,
   ArrowUpRight, ArrowDownRight, Minus, RefreshCw, Zap,
-  XCircle, Trash2, Filter
+  XCircle, Trash2, Filter, Youtube, Instagram, Music2, Newspaper
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -148,6 +148,14 @@ const AdminTrendIntel = () => {
     return true;
   });
   const expiredTriggers = (triggers ?? []).filter((t: any) => t.status === "expired");
+
+  // Source-grouped active triggers
+  const sourceGroups = [
+    { key: "youtube", label: "YouTube", icon: Youtube, color: "text-red-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "youtube") },
+    { key: "tiktok", label: "TikTok", icon: Music2, color: "text-foreground", triggers: activeTriggers.filter((t: any) => t.trigger_source === "tiktok" || t.trigger_source === "tiktok_snapshot") },
+    { key: "instagram", label: "Instagram", icon: Instagram, color: "text-pink-500", triggers: activeTriggers.filter((t: any) => t.trigger_source === "instagram") },
+    { key: "naver", label: "Naver News", icon: Newspaper, color: "text-green-600", triggers: activeTriggers.filter((t: any) => t.trigger_source === "naver_news" || !t.trigger_source) },
+  ];
 
   // Unique artist names in active triggers (for bulk expire)
   const activeArtistNames = [...new Set(activeTriggers.map((t: any) => t.artist_name as string))].sort();
@@ -338,27 +346,59 @@ const AdminTrendIntel = () => {
         )}
       </div>
 
-      {/* Expired Triggers */}
-      {expiredTriggers.length > 0 && (
-        <div>
-          <h2 className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            만료 키워드 ({expiredTriggers.length})
+      {/* Source-grouped sections */}
+      {sourceGroups.map(({ key, label, icon: Icon, color, triggers: srcTriggers }) => (
+        <div key={key}>
+          <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Icon className={cn("w-4 h-4", color)} />
+            {label} 수집 키워드 ({srcTriggers.length})
           </h2>
-          <div className="space-y-1">
-            {expiredTriggers.slice(0, 20).map((trigger: any) => (
-              <div key={trigger.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
-                <span className="text-[11px] font-medium text-muted-foreground">{trigger.keyword}</span>
-                <Badge variant="outline" className={cn("text-[9px]", CATEGORY_COLORS[trigger.keyword_category] || "")}>
-                  {trigger.keyword_category}
-                </Badge>
-                <span className="text-[10px] text-muted-foreground ml-auto">{trigger.artist_name}</span>
-                <span className="text-[10px] text-muted-foreground">{formatAge(trigger.detected_at)}</span>
-              </div>
-            ))}
-          </div>
+          {srcTriggers.length === 0 ? (
+            <Card className="p-4 text-center text-xs text-muted-foreground">
+              {label} 소스에서 수집된 활성 키워드 없음
+            </Card>
+          ) : (
+            <div className="space-y-1.5">
+              {srcTriggers.map((trigger: any) => (
+                <Card key={trigger.id} className="p-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-foreground">{trigger.keyword}</span>
+                        <Badge
+                          variant="outline"
+                          className={cn("text-[9px]", CATEGORY_COLORS[trigger.keyword_category] || "bg-muted")}
+                        >
+                          {trigger.keyword_category}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {trigger.artist_name}
+                        </span>
+                      </div>
+                      {trigger.context && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{trigger.context}</p>
+                      )}
+                      {trigger.source_url && (
+                        <a
+                          href={trigger.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] text-primary/60 hover:text-primary truncate block mt-0.5"
+                        >
+                          {trigger.source_url.slice(0, 80)}…
+                        </a>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {formatAge(trigger.detected_at)}
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 };
