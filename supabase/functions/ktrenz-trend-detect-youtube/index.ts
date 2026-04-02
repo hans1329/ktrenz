@@ -226,8 +226,7 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
 
     const parsed = JSON.parse(jsonMatch[0]) as ExtractedKeyword[];
 
-    // 후검증: 추출된 키워드 품질 검증
-    const allText = videos.map((v) => `${v.title} ${v.description}`).join(" ").toLowerCase();
+    // 후검증: 추출된 키워드 품질 검증 — 각 키워드는 해당 source video에서만 검증
     return parsed.filter((k) => {
       if (!k.keyword || !k.category || typeof k.confidence !== "number") return false;
       const kwLower = k.keyword.toLowerCase();
@@ -282,11 +281,16 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
         return false;
       }
       
-      const existsInText = allText.includes(kwLower) || (kwKo && allText.includes(kwKo));
-      if (!existsInText) {
-        console.warn(`[detect-youtube] Filtered hallucinated keyword: "${k.keyword}"`);
+      // ★ 핵심 수정: 해당 키워드의 source_video_index 기준으로 특정 영상에서만 검증
+      const videoIdx = (k.source_video_index || 1) - 1;
+      const sourceVideo = videos[videoIdx] || videos[0];
+      const videoText = `${sourceVideo.title} ${sourceVideo.description}`.toLowerCase();
+      
+      const existsInVideo = videoText.includes(kwLower) || (kwKo && videoText.includes(kwKo));
+      if (!existsInVideo) {
+        console.warn(`[detect-youtube] Filtered: "${k.keyword}" not found in source video [${videoIdx + 1}] "${sourceVideo.title.slice(0, 50)}"`);
       }
-      return existsInText;
+      return existsInVideo;
     });
   } catch (e) {
     console.warn(`[detect-youtube] Extraction error: ${(e as Error).message}`);
