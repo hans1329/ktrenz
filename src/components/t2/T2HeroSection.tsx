@@ -251,7 +251,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
           <div
              className="h-full rounded-full transition-all duration-500"
-             style={{ width: `${pct}%`, background: "linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00cc00, #0066ff, #8800ff)" }}
+             style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(340 70% 55%), hsl(20 80% 58%), hsl(45 85% 55%), hsl(150 55% 48%), hsl(200 70% 52%), hsl(270 60% 58%))" }}
           />
         </div>
       </div>
