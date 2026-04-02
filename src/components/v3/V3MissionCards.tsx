@@ -423,13 +423,6 @@ export default function V3MissionCards({
         _platform: CATEGORY_CONFIG[mission.category].platform,
       });
 
-      // Award K-Points
-      await supabase.from("ktrenz_point_transactions" as any).insert({
-        user_id: userId,
-        amount: mission.points,
-        reason: "mission_reward",
-        description: `${t("mission.completed")}${mission.title} (${artistName})`,
-      });
 
       queryClient.invalidateQueries({ queryKey: ["daily-missions", wikiEntryId, today] });
 

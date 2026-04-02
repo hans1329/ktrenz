@@ -149,14 +149,7 @@ const ProfileDailyMissions: React.FC<ProfileDailyMissionsProps> = ({ onClose }) 
         if (error.code === "23505") return;
         throw error;
       }
-      await supabase.from("ktrenz_point_transactions" as any).insert({
-        user_id: user.id,
-        amount: mission.points,
-        reason: "daily_mission",
-        description: `Daily Mission: ${t(mission.labelKey)}`,
-      });
       queryClient.invalidateQueries({ queryKey: ["profile-mission-claimed", user.id, today] });
-      queryClient.invalidateQueries({ queryKey: ["ktrenz-points", user.id] });
       setCelebration({ label: t(mission.labelKey), points: mission.points, exp: mission.exp });
     } catch (e) {
       console.error("Claim mission error:", e);

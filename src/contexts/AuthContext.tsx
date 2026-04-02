@@ -80,11 +80,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           supabase.rpc('increment_ktrenz_login_count' as any, { _user_id: uid });
         });
 
-      supabase.rpc('ktrenz_daily_login_reward' as any, { _user_id: uid }).then(({ data }) => {
-        if (data && data > 0) {
-          queryClient.invalidateQueries({ queryKey: ['ktrenz-points', uid] });
-        }
-      });
 
       try {
         const lang = navigator.language || 'en';
