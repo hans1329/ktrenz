@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 export interface AgentSlot {
   id: string;
@@ -110,7 +110,7 @@ export function useAgentSlots() {
         queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user.id] });
         return null;
       }
-      toast.error(error.message);
+      toast({ title: error.message, variant: "destructive" });
       return null;
     }
     queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", user.id] });
@@ -121,16 +121,16 @@ export function useAgentSlots() {
     if (!user?.id) return false;
     const { data, error } = await supabase.rpc("ktrenz_purchase_agent_slot" as any, { _user_id: user.id });
     if (error) {
-      toast.error(error.message);
+      toast({ title: error.message, variant: "destructive" });
       return false;
     }
     if (data && !data.success) {
       if (data.reason === "insufficient_points") {
-        toast.error("Not enough points (1,000P required)");
+        toast({ title: "Not enough points (1,000P required)", variant: "destructive" });
       }
       return false;
     }
-    toast.success("Agent slot purchased!");
+    toast({ title: "Agent slot purchased!" });
     queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slot-limit", user.id] });
     queryClient.invalidateQueries({ queryKey: ["ktrenz-user-points", user.id] });
     return true;

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Plus, Youtube, Instagram, Music, Twitter } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -18,8 +18,8 @@ const ArtistListingRequestDialog = () => {
   const [form, setForm] = useState({ artist_name: "", youtube_url: "", instagram_url: "", tiktok_url: "", x_url: "", note: "" });
 
   const handleSubmit = async () => {
-    if (!user) { toast.error("Please log in to submit a request."); return; }
-    if (!form.artist_name.trim()) { toast.error("Artist name is required."); return; }
+    if (!user) { toast({ title: "Please log in to submit a request.", variant: "destructive" }); return; }
+    if (!form.artist_name.trim()) { toast({ title: "Artist name is required.", variant: "destructive" }); return; }
     setLoading(true);
     try {
       const { error } = await supabase.from("artist_listing_requests").insert({
@@ -28,10 +28,10 @@ const ArtistListingRequestDialog = () => {
         tiktok_url: form.tiktok_url.trim() || null, x_url: form.x_url.trim() || null, note: form.note.trim() || null,
       });
       if (error) throw error;
-      toast.success("Request submitted! We'll review it soon.");
+      toast({ title: "Request submitted! We'll review it soon." });
       setForm({ artist_name: "", youtube_url: "", instagram_url: "", tiktok_url: "", x_url: "", note: "" });
       setOpen(false);
-    } catch (e: any) { toast.error(e.message || "Failed to submit request."); }
+    } catch (e: any) { toast({ title: e.message || "Failed to submit request.", variant: "destructive" }); }
     finally { setLoading(false); }
   };
 
@@ -39,7 +39,7 @@ const ArtistListingRequestDialog = () => {
     return (
       <div className="text-center py-6">
         <p className="text-xs text-muted-foreground mb-2">{t("listing.cantFind")}</p>
-        <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => toast.info("Please log in first.")}>
+        <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => toast({ title: "Please log in first." })}>
           <Plus className="w-3.5 h-3.5 mr-1" /> {t("listing.request")}
         </Button>
       </div>

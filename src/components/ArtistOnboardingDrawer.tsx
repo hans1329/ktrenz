@@ -11,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Search, Check, Star, Loader2, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface ArtistOnboardingDrawerProps {
   open: boolean;
@@ -220,7 +220,7 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
       return;
     }
     if (requireMinOne && selected.size === 0) {
-      toast.error(language === "ko" ? "최소 1명의 아티스트를 선택해주세요" : "Please select at least 1 artist");
+      toast({ title: language === "ko" ? "최소 1명의 아티스트를 선택해주세요" : "Please select at least 1 artist", variant: "destructive" });
       return;
     }
 
@@ -269,10 +269,10 @@ const ArtistOnboardingDrawer = ({ open, onOpenChange, requireMinOne = true }: Ar
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
       queryClient.invalidateQueries({ queryKey: ["t2-watched-artists-v2"] });
       queryClient.invalidateQueries({ queryKey: ["hero-has-watched"] });
-      toast.success(language === "ko" ? `관심 아티스트 ${selected.size}명 저장 완료` : `Saved ${selected.size} favorite artists`);
+      toast({ title: language === "ko" ? `관심 아티스트 ${selected.size}명 저장 완료` : `Saved ${selected.size} favorite artists` });
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e.message);
+      toast({ title: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }

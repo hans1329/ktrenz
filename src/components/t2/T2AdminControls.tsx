@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
@@ -132,11 +132,11 @@ const T2AdminControls = () => {
     },
     onMutate: () => startRun("collect_social"),
     onSuccess: (data) => {
-      toast.success(`트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}`);
+      toast({ title: `트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}` });
       queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
-    onError: (err) => toast.error(`수집 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `수집 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   const shopMutation = useMutation({
@@ -148,10 +148,10 @@ const T2AdminControls = () => {
       return typeof data === "string" ? JSON.parse(data) : data;
     },
     onSuccess: (data) => {
-      toast.success(`쇼핑 키워드 추적 완료: ${data?.tracked ?? 0}건`);
+      toast({ title: `쇼핑 키워드 추적 완료: ${data?.tracked ?? 0}건` });
       queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
     },
-    onError: (err) => toast.error(`쇼핑 추적 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `쇼핑 추적 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   if (loading || !isAdmin) return null;

@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KPointsPurchaseDrawer from "@/components/v3/KPointsPurchaseDrawer";
@@ -106,7 +106,7 @@ function useAgentAvatar(
 
   const uploadAvatar = useCallback(async (file: File) => {
     if (!userId || !activeSlot?.id) {
-      toast.error("Cannot upload: missing user or agent slot");
+      toast({ title: "Cannot upload: missing user or agent slot", variant: "destructive" });
       return;
     }
 
@@ -115,7 +115,7 @@ function useAgentAvatar(
       webpBlob = await convertToWebp(file);
     } catch (err) {
       console.error("WebP conversion error:", err);
-      toast.error("Image conversion failed. Please try a different image.");
+      toast({ title: "Image conversion failed. Please try a different image.", variant: "destructive" });
       return;
     }
 
@@ -130,7 +130,7 @@ function useAgentAvatar(
 
     if (uploadErr) {
       console.error("Storage upload error:", uploadErr);
-      toast.error("Image upload failed: " + uploadErr.message);
+      toast({ title: "Image upload failed: " + uploadErr.message, variant: "destructive" });
       return;
     }
 
@@ -148,12 +148,12 @@ function useAgentAvatar(
 
     if (dbErr) {
       console.error("DB update error:", dbErr);
-      toast.error("Profile save failed: " + dbErr.message);
+      toast({ title: "Profile save failed: " + dbErr.message, variant: "destructive" });
       return;
     }
 
     queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-slots", userId] });
-    toast.success("Agent profile image updated!");
+    toast({ title: "Agent profile image updated!" });
   }, [userId, activeSlot?.id, queryClient]);
 
   return { avatarUrl, uploadAvatar };
@@ -1075,9 +1075,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       setIsStreaming(false);
       setStreamingStatus("");
       if (e.message === "LIMIT_EXCEEDED") {
-        toast.error(t("agent.limitExceeded"));
+        toast({ title: t("agent.limitExceeded"), variant: "destructive" });
       } else {
-        toast.error(e.message || "Failed to send message");
+        toast({ title: e.message || "Failed to send message", variant: "destructive" });
       }
       setMessages((prev) => prev.slice(0, -1));
     }
@@ -1094,13 +1094,13 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       if (error) throw error;
       if (data && !data.success) {
         if (data.reason === "insufficient_points") {
-          toast.error(t("agent.insufficientPoints"));
+          toast({ title: t("agent.insufficientPoints"), variant: "destructive" });
         } else {
-          toast.error("구매에 실패했습니다.");
+          toast({ title: "구매에 실패했습니다.", variant: "destructive" });
         }
         return;
       }
-      toast.success(`${bundle}${t("agent.purchaseSuccess")}`);
+      toast({ title: `${bundle}${t("agent.purchaseSuccess")}` });
       await refetchUsage();
       // 대기 중인 메시지가 있으면 바로 전송
       if (pendingPurchaseText) {
@@ -1112,7 +1112,7 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
         setShowPointPurchaseDialog(false);
       }
     } catch (e: any) {
-      toast.error(e.message || "Purchase failed");
+      toast({ title: e.message || "Purchase failed", variant: "destructive" });
     } finally {
       setIsPurchasing(false);
     }
@@ -1194,9 +1194,9 @@ const V3FanAgent = ({ onBack }: V3FanAgentProps) => {
       setBriefingTriggered(false);
       queryClient.setQueryData(["ktrenz-agent-chat", user.id, activeSlot?.id], []);
       queryClient.invalidateQueries({ queryKey: ["ktrenz-agent-chat", user.id, activeSlot?.id] });
-      toast.success(t("agent.chatCleared"));
+      toast({ title: t("agent.chatCleared") });
     } catch (e: any) {
-      toast.error(e?.message || "Failed to clear chat");
+      toast({ title: e?.message || "Failed to clear chat", variant: "destructive" });
     } finally {
       setIsClearing(false);
     }

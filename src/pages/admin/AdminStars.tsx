@@ -12,7 +12,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   Search, Plus, Users, User, Star, Pencil, Trash2, Loader2, Link as LinkIcon, ExternalLink, Globe,
@@ -149,7 +149,7 @@ const AdminStars = () => {
   const parseNamuwiki = async () => {
     const url = namuUrl.trim();
     if (!url || !url.includes("namu.wiki")) {
-      toast.error("유효한 나무위키 URL을 입력하세요");
+      toast({ title: "유효한 나무위키 URL을 입력하세요", variant: "destructive" });
       return;
     }
     setNamuLoading(true);
@@ -190,9 +190,9 @@ const AdminStars = () => {
         }
       }
 
-      toast.success(`파싱 완료: ${parsed.display_name || parsed.name_ko}`);
+      toast({ title: `파싱 완료: ${parsed.display_name || parsed.name_ko}` });
     } catch (err: any) {
-      toast.error(`파싱 실패: ${err.message}`);
+      toast({ title: `파싱 실패: ${err.message}`, variant: "destructive" });
     } finally {
       setNamuLoading(false);
     }
@@ -284,11 +284,11 @@ const AdminStars = () => {
       const msg = result.memberCount > 0
         ? `${editingStar ? "수정" : "등록"} 완료 + 멤버 ${result.memberCount}명 등록`
         : (editingStar ? "수정 완료" : "등록 완료");
-      toast.success(msg);
+      toast({ title: msg });
       qc.invalidateQueries({ queryKey: ["admin-stars"] });
       closeDialog();
     },
-    onError: (err) => toast.error(`저장 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `저장 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -300,10 +300,10 @@ const AdminStars = () => {
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
-      toast.success("삭제 완료");
+      toast({ title: "삭제 완료" });
       qc.invalidateQueries({ queryKey: ["admin-stars"] });
     },
-    onError: (err) => toast.error(`삭제 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `삭제 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   /* ───── helpers ───── */

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   Youtube, Twitter, Music, Disc3, Globe, MessageCircle,
   Loader2, RefreshCw, ChevronDown, ChevronUp, Headphones, Newspaper, Hash,
@@ -113,11 +113,11 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
       };
     },
     onSuccess: (data) => {
-      toast.success(`${artistTitle} 감사 완료: 일반 ${data.fullIssues}건 + ID ${data.idIssues}건`);
+      toast({ title: `${artistTitle} 감사 완료: 일반 ${data.fullIssues}건 + ID ${data.idIssues}건` });
       queryClient.invalidateQueries({ queryKey: ['artist-quality-issues', wikiEntryId] });
       queryClient.invalidateQueries({ queryKey: ['data-quality-issues'] });
     },
-    onError: (err) => toast.error(`감사 실패: ${(err as Error).message}`),
+    onError: (err) => toast({ title: `감사 실패: ${(err as Error).message}`, variant: "destructive" }),
   });
 
   // Fetch issues for this artist
@@ -189,11 +189,11 @@ const AdminDataSourcePanel = ({ wikiEntryId, artistTitle }: AdminDataSourcePanel
         body: { module, wikiEntryId, triggerSource: "admin-detail" },
       });
       if (error) throw error;
-      toast.success(`${sourceKey} 수집 시작됨`);
+      toast({ title: `${sourceKey} 수집 시작됨` });
       // 10초 후 리프레시
       setTimeout(() => refetch(), 10000);
     } catch (err: any) {
-      toast.error(`${sourceKey} 수집 실패: ${err.message}`);
+      toast({ title: `${sourceKey} 수집 실패: ${err.message}`, variant: "destructive" });
     } finally {
       setCollectingModules(prev => { const n = new Set(prev); n.delete(sourceKey); return n; });
     }

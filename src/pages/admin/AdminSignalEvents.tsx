@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Pencil, Trash2, Calendar, Tag } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 const EVENT_TYPES = [
   { value: "comeback", label: "컴백", emoji: "🎵" },
@@ -92,9 +92,9 @@ const AdminSignalEvents = () => {
       setDialogOpen(false);
       setEditId(null);
       setForm(EMPTY_FORM);
-      toast.success("이벤트 저장 완료");
+      toast({ title: "이벤트 저장 완료" });
     },
-    onError: (err) => toast.error(`저장 실패: ${err.message}`),
+    onError: (err) => toast({ title: `저장 실패: ${err.message}`, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -104,7 +104,7 @@ const AdminSignalEvents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["signal-events"] });
-      toast.success("삭제 완료");
+      toast({ title: "삭제 완료" });
     },
   });
 
@@ -115,7 +115,7 @@ const AdminSignalEvents = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["signal-events"] });
-      toast.success("검증 완료");
+      toast({ title: "검증 완료" });
     },
   });
 

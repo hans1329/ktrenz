@@ -7,7 +7,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import type { TrendTile } from "./T2TrendTreemap";
 import { sanitizeImageUrl, isBlockedImageDomain } from "./T2TrendTreemap";
 
@@ -137,7 +137,7 @@ const T2TrendList = ({ items, watchedStarSet, onTileClick, selectedTileId, hasMo
 
   const handleToggleFollow = async (item: TrendTile) => {
     if (!user) {
-      toast.info("Login required");
+      toast({ title: "Login required" });
       return;
     }
     const isFollowing = followedIds?.has(item.id);
@@ -147,7 +147,7 @@ const T2TrendList = ({ items, watchedStarSet, onTileClick, selectedTileId, hasMo
         .delete()
         .eq("trigger_id", item.id)
         .eq("user_id", user.id);
-      toast.info(t("trend.trackUnfollowed"));
+      toast({ title: t("trend.trackUnfollowed") });
     } else {
       await supabase.from("ktrenz_keyword_follows" as any).insert({
         user_id: user.id,
@@ -159,7 +159,7 @@ const T2TrendList = ({ items, watchedStarSet, onTileClick, selectedTileId, hasMo
         last_influence_index: item.influenceIndex || 0,
       } as any);
       track("t2_keyword_follow", { artist_name: item.artistName, section: item.keyword });
-      toast.success(t("trend.trackFollowed"));
+      toast({ title: t("trend.trackFollowed") });
     }
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user.id] });
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", item.id, user.id] });

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import type { TrendTile } from "./T2TrendTreemap";
 import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "./T2TrendTreemap";
 
@@ -141,7 +141,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   // Prediction submit (calls existing edge function with fixed amount)
   const handleSubmitPrediction = async () => {
     if (!user) {
-      toast.info(t("loginToBet", language));
+      toast({ title: t("loginToBet", language) });
       return;
     }
     if (!predictionChoice || !tile) return;
@@ -157,9 +157,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
       track("trend_bet_placed", { artist_name: tile?.artistName, section: tile?.keyword });
-      toast.success(t("betSuccess", language));
+      toast({ title: t("betSuccess", language) });
     } catch (err: any) {
-      toast.error(t("somethingWentWrong", language));
+      toast({ title: t("somethingWentWrong", language), variant: "destructive" });
     } finally {
       setIsSubmittingPrediction(false);
     }
@@ -291,7 +291,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
       window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
     } else {
       await navigator.clipboard.writeText(`${text}\n${url}`);
-      toast.success(t("copied", language));
+      toast({ title: t("copied", language) });
     }
 
     // Record boost + award points (check duplicate per platform)
@@ -309,9 +309,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
           .insert({ trigger_id: tile.id, user_id: user.id, platform } as any);
         queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile?.id] });
         queryClient.invalidateQueries({ queryKey: ["t2-share-boost", tile.id, user.id] });
-        toast.success(t("boosted", language));
+        toast({ title: t("boosted", language) });
       } else {
-        toast.info(t("alreadyShareBoosted", language));
+        toast({ title: t("alreadyShareBoosted", language) });
       }
     }
   };
@@ -324,7 +324,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     // Points now awarded via Daily Mission system only
     queryClient.invalidateQueries({ queryKey: ["t2-read-boost", tile.id, user.id] });
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-boosts", tile.id] });
-    toast.success(t("readBoosted", language));
+    toast({ title: t("readBoosted", language) });
   };
 
   // Keyword follow/track
@@ -345,7 +345,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
   const handleToggleFollow = async () => {
     if (!tile || !user) {
-      toast.info(t("loginToBet", language));
+      toast({ title: t("loginToBet", language) });
       return;
     }
     if (isFollowing) {
@@ -354,7 +354,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         .delete()
         .eq("trigger_id", tile.id)
         .eq("user_id", user.id);
-      toast.info(t("unfollowedToast", language));
+      toast({ title: t("unfollowedToast", language) });
     } else {
       await supabase.from("ktrenz_keyword_follows" as any).insert({
         user_id: user.id,
@@ -366,7 +366,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         last_influence_index: tile.influenceIndex || 0,
       } as any);
       track("t2_keyword_follow", { artist_name: tile.artistName, section: tile.keyword });
-      toast.success(t("followedToast", language));
+      toast({ title: t("followedToast", language) });
     }
     refetchFollow();
     queryClient.invalidateQueries({ queryKey: ["t2-keyword-follow", tile.id, user.id] });
