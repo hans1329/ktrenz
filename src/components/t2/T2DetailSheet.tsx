@@ -815,22 +815,36 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </div>
               )}
 
-              {/* Submit button */}
+              {/* Ticket info + Submit button */}
               {hasMarket && !hasPredicted && !isSettled && (
-                <Button
-                  className="w-full gap-2 py-5 rounded-full"
-                  onClick={handleSubmitPrediction}
-                  disabled={isSubmittingPrediction || !predictionChoice}
-                >
-                  {isSubmittingPrediction ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      {language === "ko" ? "처리 중..." : "Processing..."}
-                    </>
-                  ) : (
-                    <>{language === "ko" ? "예측하기" : "Predict"}</>
+                <div className="space-y-2">
+                  {/* Ticket counter */}
+                  {user && ticketInfo && (
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                      <Ticket className="w-3.5 h-3.5" />
+                      <span>
+                        {ticketInfo.remaining > 0
+                          ? `🎟️ ${ticketInfo.remaining}/${ticketInfo.total} ${t("ticketsLeft", language)}`
+                          : t("noTickets", language)
+                        }
+                      </span>
+                    </div>
                   )}
-                </Button>
+                  <Button
+                    className="w-full gap-2 py-5 rounded-full"
+                    onClick={handleSubmitPrediction}
+                    disabled={isSubmittingPrediction || !predictionChoice || (ticketInfo?.remaining ?? 1) <= 0}
+                  >
+                    {isSubmittingPrediction ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        {language === "ko" ? "처리 중..." : "Processing..."}
+                      </>
+                    ) : (
+                      <>{language === "ko" ? "예측하기" : "Predict"}</>
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
 
