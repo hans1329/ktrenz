@@ -220,45 +220,6 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
         </div>
       )}
 
-      {/* Recent Predictions */}
-      {stats.recent.length > 0 && (
-        <div className="space-y-2">
-          {stats.recent.map((bet: any) => {
-            const oc = outcomeConfig[bet.outcome] || outcomeConfig.mild;
-            const isPending = bet.market_status === "open" || bet.market_status === "tracking";
-            const isWon = bet.market_status === "settled" && bet.market_outcome === bet.outcome;
-            const isLost = bet.market_status === "settled" && bet.market_outcome !== bet.outcome;
-            const keyword = lang === "ko" && bet.keyword_ko ? bet.keyword_ko : bet.keyword;
-
-            return (
-              <div key={bet.id} className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
-                <span className="text-lg">{oc.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{keyword}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {oc.label[lang] || oc.label.en}
-                    {isPending && (
-                      <span className="ml-2 text-primary font-medium">
-                        {lang === "ko" ? "진행중" : "Pending"}
-                      </span>
-                    )}
-                    {isWon && (
-                      <span className="ml-2 text-emerald-500 font-medium">
-                        +{(bet.payout ?? 0).toLocaleString()}T
-                      </span>
-                    )}
-                    {isLost && (
-                      <span className="ml-2 text-muted-foreground">
-                        {lang === "ko" ? "미달성" : "Missed"}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Empty state */}
       {stats.total === 0 && (
