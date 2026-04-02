@@ -70,6 +70,7 @@ import KeywordInfluence from "./pages/KeywordInfluence";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import WelcomeBonusManager from "./components/WelcomeBonusManager";
 
 const queryClient = new QueryClient({});
 
@@ -81,6 +82,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <PWAUpdatePrompt />
+            <WelcomeBonusManager />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<T2TrendMap />} />
