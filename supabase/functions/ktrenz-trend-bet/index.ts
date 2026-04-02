@@ -1,4 +1,4 @@
-// Fixed-multiplier prediction market: 3 outcomes with tiered payouts
+// Fixed-multiplier prediction market: 3 bettable outcomes + 1 loss zone
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,25 +7,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VALID_OUTCOMES = ["mild", "strong", "explosive"] as const;
+// Bettable outcomes only — "flat" is the loss zone (not bettable)
+const VALID_OUTCOMES = ["meaningful", "significant", "explosive"] as const;
 type Outcome = typeof VALID_OUTCOMES[number];
 
 // Fixed payout multipliers
 const MULTIPLIERS: Record<Outcome, number> = {
-  mild: 1.2,
-  strong: 3.0,
-  explosive: 10.0,
+  meaningful: 1.5,   // 유의미한 상승
+  significant: 3.0,  // 꽤 상승
+  explosive: 10.0,   // 폭등
 };
 
-// Settlement thresholds (influence_index % change)
-// mild: +0% ~ +15%
-// strong: +15% ~ +50%
-// explosive: +50%+
-const THRESHOLDS = {
-  mild: { min: 0, max: 15 },
-  strong: { min: 15, max: 100 },
-  explosive: { min: 100, max: Infinity },
-};
+// Settlement thresholds (trend_score % change from baseline)
+// flat (loss zone): < +15%  — all bets lose
+// meaningful: +15% ~ +50%
+// significant: +50% ~ +150%
+// explosive: +150%+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -65,7 +62,7 @@ Deno.serve(async (req) => {
       });
     }
     if (!VALID_OUTCOMES.includes(outcome)) {
-      return new Response(JSON.stringify({ error: "Invalid outcome. Must be: mild, strong, explosive" }), {
+      return new Response(JSON.stringify({ error: "Invalid outcome. Must be: meaningful, significant, explosive" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -123,7 +120,7 @@ Deno.serve(async (req) => {
           total_volume: 0,
           status: "open",
           initial_influence: trigger?.influence_index ?? 0,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h — daily prediction
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
@@ -145,7 +142,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fixed multiplier: shares = amount * multiplier (potential payout)
+    // Map new outcome names to existing DB pool columns
+    const POOL_MAP: Record<Outcome, string> = {
+      meaningful: "pool_mild",
+      significant: "pool_strong",
+      explosive: "pool_explosive",
+    };
+
     const multiplier = MULTIPLIERS[outcome as Outcome];
     const shares = betAmount * multiplier;
 
@@ -155,8 +158,8 @@ Deno.serve(async (req) => {
       p_amount: -betAmount,
     });
 
-    // Update market pools (track total bet per outcome)
-    const poolKey = `pool_${outcome}`;
+    // Update market pools
+    const poolKey = POOL_MAP[outcome as Outcome];
     const currentPool = Number(market[poolKey] ?? 0);
     const { error: updateErr } = await sb
       .from("ktrenz_trend_markets")
@@ -193,10 +196,10 @@ Deno.serve(async (req) => {
       console.error("[trend-bet] Insert bet error:", betErr);
     }
 
-    // Return updated pools
+    // Return updated pools (using new outcome names)
     const pools = {
-      mild: Number(market.pool_mild ?? 0) + (outcome === "mild" ? betAmount : 0),
-      strong: Number(market.pool_strong ?? 0) + (outcome === "strong" ? betAmount : 0),
+      meaningful: Number(market.pool_mild ?? 0) + (outcome === "meaningful" ? betAmount : 0),
+      significant: Number(market.pool_strong ?? 0) + (outcome === "significant" ? betAmount : 0),
       explosive: Number(market.pool_explosive ?? 0) + (outcome === "explosive" ? betAmount : 0),
     };
 
