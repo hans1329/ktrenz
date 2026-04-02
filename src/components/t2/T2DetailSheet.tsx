@@ -228,33 +228,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   });
 
 
-  const handlePlaceBet = () => {
-    if (!user) {
-      toast.info(t("loginToBet", language));
-      return;
-    }
-    const amount = Number(betAmount);
-    if (isNaN(amount) || amount < 10) {
-      toast.error(t("betMinError", language));
-      return;
-    }
-    betMutation.mutate({ outcome: betOutcome, amount });
-  };
-
-  // Calculate pool distribution for 3 outcomes
-  const poolMild = Number(marketData?.pool_mild ?? 0);
-  const poolStrong = Number(marketData?.pool_strong ?? 0);
-  const poolExplosive = Number(marketData?.pool_explosive ?? 0);
-  const totalPool = poolMild + poolStrong + poolExplosive;
-  const prices = {
-    mild: totalPool > 0 ? poolMild / totalPool : 1/3,
-    strong: totalPool > 0 ? poolStrong / totalPool : 1/3,
-    explosive: totalPool > 0 ? poolExplosive / totalPool : 1/3,
-  };
-  const MULTIPLIERS = { mild: 1.2, strong: 3.0, explosive: 10.0 };
-  const totalVolume = Number(marketData?.total_volume ?? 0);
+  const hasMarket = !!marketData && marketData.status === "open";
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
+  const hasPredicted = myBets && myBets.length > 0;
 
   // Boost count
   const { data: boostCount } = useQuery({
