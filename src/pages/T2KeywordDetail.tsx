@@ -25,17 +25,19 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 function getLocalizedKeyword(tile: any, lang: string): string {
   switch (lang) {
     case "ko": return tile.keywordKo || tile.keyword_ko || tile.keyword;
-    case "ja": return tile.keywordJa || tile.keyword_ja || tile.keyword;
-    case "zh": return tile.keywordZh || tile.keyword_zh || tile.keyword;
-    default: return tile.keyword;
+    case "en": return tile.keywordEn || tile.keyword_en || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keyword_ja || tile.keywordKo || tile.keyword_ko || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keyword_zh || tile.keywordKo || tile.keyword_ko || tile.keyword;
+    default: return tile.keywordEn || tile.keyword_en || tile.keyword;
   }
 }
 
 function getLocalizedContext(tile: any, lang: string): string | null {
   switch (lang) {
     case "ko": return tile.contextKo || tile.context_ko || tile.context;
-    case "ja": return tile.contextJa || tile.context_ja || tile.context;
-    case "zh": return tile.contextZh || tile.context_zh || tile.context;
+    case "en": return tile.context;
+    case "ja": return tile.contextJa || tile.context_ja || tile.contextKo || tile.context_ko || tile.context;
+    case "zh": return tile.contextZh || tile.context_zh || tile.contextKo || tile.context_ko || tile.context;
     default: return tile.context;
   }
 }
