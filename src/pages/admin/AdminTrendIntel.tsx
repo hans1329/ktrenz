@@ -346,27 +346,59 @@ const AdminTrendIntel = () => {
         )}
       </div>
 
-      {/* Expired Triggers */}
-      {expiredTriggers.length > 0 && (
-        <div>
-          <h2 className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            만료 키워드 ({expiredTriggers.length})
+      {/* Source-grouped sections */}
+      {sourceGroups.map(({ key, label, icon: Icon, color, triggers: srcTriggers }) => (
+        <div key={key}>
+          <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+            <Icon className={cn("w-4 h-4", color)} />
+            {label} 수집 키워드 ({srcTriggers.length})
           </h2>
-          <div className="space-y-1">
-            {expiredTriggers.slice(0, 20).map((trigger: any) => (
-              <div key={trigger.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/40">
-                <span className="text-[11px] font-medium text-muted-foreground">{trigger.keyword}</span>
-                <Badge variant="outline" className={cn("text-[9px]", CATEGORY_COLORS[trigger.keyword_category] || "")}>
-                  {trigger.keyword_category}
-                </Badge>
-                <span className="text-[10px] text-muted-foreground ml-auto">{trigger.artist_name}</span>
-                <span className="text-[10px] text-muted-foreground">{formatAge(trigger.detected_at)}</span>
-              </div>
-            ))}
-          </div>
+          {srcTriggers.length === 0 ? (
+            <Card className="p-4 text-center text-xs text-muted-foreground">
+              {label} 소스에서 수집된 활성 키워드 없음
+            </Card>
+          ) : (
+            <div className="space-y-1.5">
+              {srcTriggers.map((trigger: any) => (
+                <Card key={trigger.id} className="p-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-foreground">{trigger.keyword}</span>
+                        <Badge
+                          variant="outline"
+                          className={cn("text-[9px]", CATEGORY_COLORS[trigger.keyword_category] || "bg-muted")}
+                        >
+                          {trigger.keyword_category}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {trigger.artist_name}
+                        </span>
+                      </div>
+                      {trigger.context && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{trigger.context}</p>
+                      )}
+                      {trigger.source_url && (
+                        <a
+                          href={trigger.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] text-primary/60 hover:text-primary truncate block mt-0.5"
+                        >
+                          {trigger.source_url.slice(0, 80)}…
+                        </a>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {formatAge(trigger.detected_at)}
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 };
