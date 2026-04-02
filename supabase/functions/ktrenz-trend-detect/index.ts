@@ -2069,7 +2069,7 @@ async function detectForMember(
           ? keywordData._tiktok_cover_url
           : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
-        metadata: keywordData._tiktok_source_url ? {
+        metadata: (keywordData._tiktok_source_url && sourceUrl?.includes("tiktok.com")) ? {
           source: "tiktok",
           search_name: searchName,
           group_name: member.group_name,
@@ -2084,8 +2084,8 @@ async function detectForMember(
       sourceRow: {
         star_id: member.id || null,
         artist_name: member.display_name,
-        trigger_type: keywordData._tiktok_source_url ? "social_trend" : "news_mention",
-        trigger_source: keywordData._tiktok_source_url
+        trigger_type: (keywordData._tiktok_source_url && sourceUrl?.includes("tiktok.com")) ? "social_trend" : "news_mention",
+        trigger_source: (keywordData._tiktok_source_url && sourceUrl?.includes("tiktok.com"))
           ? "tiktok"
           : sourceArticle?.title?.startsWith("[YouTube]")
             ? "youtube"
