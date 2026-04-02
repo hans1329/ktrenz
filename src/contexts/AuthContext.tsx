@@ -119,6 +119,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (event === 'SIGNED_IN' && nextSession?.user?.id) {
         recordSignedInSideEffects(nextSession.user.id);
+
+        // Show welcome bonus for first-time signup
+        const uid = nextSession.user.id;
+        const seenKey = `ktrenz-welcome-bonus-seen-${uid}`;
+        if (!localStorage.getItem(seenKey)) {
+          const createdAt = new Date(nextSession.user.created_at).getTime();
+          const now = Date.now();
+          // Only show if account was created within last 60 seconds
+          if (now - createdAt < 60_000) {
+            localStorage.setItem(seenKey, '1');
+            setTimeout(() => setShowWelcomeBonus(true), 500);
+          } else {
+            localStorage.setItem(seenKey, '1');
+          }
+        }
       }
 
       if (event === 'SIGNED_OUT') {
