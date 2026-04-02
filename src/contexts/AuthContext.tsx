@@ -21,6 +21,8 @@ interface AuthContextValue {
   kPoints: number;
   isAdmin: boolean;
   isModerator: boolean;
+  showWelcomeBonus: boolean;
+  setShowWelcomeBonus: (v: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
