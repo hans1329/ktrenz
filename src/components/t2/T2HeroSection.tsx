@@ -211,10 +211,10 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
           {/* Stats row */}
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { label: lang === "ko" ? "참여" : "Joined", value: stats.total, icon: Crosshair },
-              { label: lang === "ko" ? "당첨" : "Won", value: stats.won, icon: Trophy },
-              { label: lang === "ko" ? "진행중" : "Active", value: stats.pending, icon: Clock },
-              { label: lang === "ko" ? "티켓" : "Tickets", value: `${tickets.max - tickets.used}`, icon: Ticket },
+              { label: lang === "ko" ? "참여" : "Joined", value: stats.total, icon: Crosshair, isIcon: false },
+              { label: lang === "ko" ? "당첨" : "Won", value: stats.won, icon: Trophy, isIcon: false },
+              { label: lang === "ko" ? "진행중" : "Active", value: stats.pending, icon: Clock, isIcon: false },
+              { label: "Tickets", value: `${tickets.max - tickets.used}`, icon: Ticket, isIcon: true },
             ].map((stat) => (
               <div key={stat.label} className="rounded-xl py-2 text-center"
                 style={{
