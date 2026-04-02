@@ -8,7 +8,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Clock, ExternalLink, ChevronRight, Share2, Rocket, Copy } from "lucide-react";
+import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
