@@ -431,7 +431,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       const { data } = await supabase
         .from("ktrenz_trend_triggers" as any)
         .select("*")
-        .in("status", ["active", "pending"])
+        .eq("status", "active")
         .in("star_id", watchedStarIds)
         .order("influence_index", { ascending: false })
         .limit(300);
