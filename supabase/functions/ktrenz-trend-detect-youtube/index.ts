@@ -208,7 +208,7 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
           { role: "user", content: userPrompt },
         ],
         temperature: 0.05,
-        max_tokens: 1500,
+        max_tokens: 3000,
       }),
     });
 
