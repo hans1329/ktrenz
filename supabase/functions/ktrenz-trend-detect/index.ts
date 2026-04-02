@@ -728,6 +728,8 @@ When in doubt, DO NOT extract. False negatives are far better than false positiv
 
   const userPrompt = `Below are Korean news article titles and descriptions found by searching for "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
+★ IMPORTANT: "${memberName}" is a ${categoryContext}. If an article is about a DIFFERENT person named "${memberName}" (e.g., a gaming YouTuber, streamer, athlete, or any non-entertainment figure), you MUST set article_subject_match=false and add "wrong_artist" to rejection_flags. Only extract keywords from articles about the ${categoryContext} "${memberName}".
+
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
 - Do NOT use your general knowledge about this artist to generate keywords.
