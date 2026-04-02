@@ -674,6 +674,7 @@ Known K-stars: ${[...new Set(globalStarNames.values())].join(", ")}
 - Body measurements, weight, height, physical stats (e.g., "59kg", "170cm", "59kg 인증", "체중 공개", "몸무게") — these are personal data, NOT commercial trends
 - Diet/weight-related personal topics (e.g., "다이어트 인증", "체중 감량", "살 빠진") — unless it's a SPECIFIC diet BRAND or PRODUCT name
 - ⚠️ FASHION ITEM EXCEPTION: Clothing items like "비키니" (bikini), "수영복" (swimwear), "란제리" (lingerie), "크롭탑" etc. are FASHION items, NOT body/physical stats. Classify them as "fashion" and extract normally. These represent commercial fashion trends, not personal body data.
+- 🚫 GENERIC COMMON NOUNS (★ MUST FLAG AS generic_word ★): Single common nouns that are NOT proper nouns/brand names MUST be rejected. Examples: "게임" (game), "영상" (video), "콘텐츠" (content), "노래" (song), "춤" (dance), "운동" (exercise), "요리" (cooking), "여행" (travel), "사진" (photo), "영화" (movie as generic). These words have no commercial trend value without a specific brand/product name attached. Only extract if it's part of a SPECIFIC proper noun (e.g., "게임" ❌ but "이터널리턴" ✅, "영화" ❌ but "범죄도시4" ✅).
 
 🚫 CORPORATE/PHARMA NAME TRAP (★ CRITICAL — COMMON FALSE POSITIVE ★):
 - When searching for an artist name (e.g., "수호", "바비", "엑소"), news results often include UNRELATED articles about companies or drugs whose names COINCIDENTALLY contain the artist's name.
@@ -727,6 +728,8 @@ Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid
 When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
   const userPrompt = `Below are Korean news article titles and descriptions found by searching for "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
+
+★ IMPORTANT: "${memberName}" is a ${categoryContext}. If an article is about a DIFFERENT person named "${memberName}" (e.g., a gaming YouTuber, streamer, athlete, or any non-entertainment figure), you MUST set article_subject_match=false and add "wrong_artist" to rejection_flags. Only extract keywords from articles about the ${categoryContext} "${memberName}".
 
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
@@ -991,6 +994,12 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         "홍대", "이태원", "명동", "동대문", "압구정", "청담",
         "도쿄", "오사카", "뉴욕", "파리", "런던", "방콕", "자카르타",
         "airport", "인천공항", "공항", "출국", "입국",
+        // 일반 명사 (고유명사 아닌 단독 사용 시 트렌드 가치 없음)
+        "게임", "game", "영상", "video", "콘텐츠", "content", "노래", "song",
+        "춤", "dance", "운동", "exercise", "요리", "cooking", "여행", "travel",
+        "사진", "photo", "영화", "movie", "드라마", "drama", "방송", "broadcast",
+        "음악", "music", "공연", "performance", "무대", "stage",
+        "채널", "channel", "라이브", "live", "스트리밍", "streaming",
         // 반복 오수집 브랜드/플랫폼
         "오픈와이와이", "open yy", "openyy",
         "트리플엑스", "triple x", "triplex",
