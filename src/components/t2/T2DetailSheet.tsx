@@ -103,6 +103,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const { user, kPoints } = useAuth();
   const queryClient = useQueryClient();
   const track = useTrackEvent();
+  const { translateIfNeeded } = useFieldTranslation();
+
+  // Trigger context/keyword translation on open
+  useEffect(() => {
+    if (!tile) return;
+    const dbItem = {
+      id: tile.id,
+      keyword_ko: tile.keywordKo,
+      keyword_en: tile.keywordEn,
+      keyword_ja: tile.keywordJa,
+      keyword_zh: tile.keywordZh,
+      context_ko: tile.contextKo,
+      context: tile.context,
+      context_ja: tile.contextJa,
+      context_zh: tile.contextZh,
+    };
+    const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trends"] });
+    translateIfNeeded("ktrenz_trend_triggers", "context", [dbItem], refetch);
+    translateIfNeeded("ktrenz_trend_triggers", "keyword", [dbItem], refetch);
+  }, [tile?.id, language]);
 
   const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
   const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);
