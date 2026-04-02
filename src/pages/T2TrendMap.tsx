@@ -12,6 +12,7 @@ import T2MomentumSignals from "@/components/t2/T2MomentumSignals";
 import T2MegaTrends from "@/components/t2/T2MegaTrends";
 import T2CrossSourceInsights from "@/components/t2/T2CrossSourceInsights";
 import T2TrendBetCTA from "@/components/t2/T2TrendBetCTA";
+import T2SourceKeywords from "@/components/t2/T2SourceKeywords";
 import T2SettlementResultModal from "@/components/t2/T2SettlementResultModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -366,6 +367,9 @@ const T2TrendMap = () => {
                   onMyKeywordsChange={setMyKeywords}
                 />
               </div>
+
+              {/* Source-grouped keywords: YouTube, TikTok, Instagram */}
+              <T2SourceKeywords />
 
               {/* New intelligence sections */}
               <T2MomentumSignals />
