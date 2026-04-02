@@ -106,7 +106,19 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
   const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
+
+  // Prediction tickets
+  const { data: ticketInfo, refetch: refetchTickets } = useQuery({
+    queryKey: ["prediction-tickets", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase.rpc("ktrenz_get_prediction_tickets" as any, { _user_id: user.id });
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      return parsed as { remaining: number; total: number; used: number } | null;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 30,
+  });
 
   // Market data
   const { data: marketData } = useQuery({
