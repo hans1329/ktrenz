@@ -118,7 +118,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                       style={{ background: 'linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                       {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                     </p>
-                    <p className="text-sm font-bold text-foreground leading-tight">
+                    <p className="text-sm font-bold leading-tight" style={{ color: '#ffffff' }}>
                       {ticketInfo ? `${ticketInfo.remaining}/${ticketInfo.total}` : "–"}
                     </p>
                   </div>
