@@ -820,7 +820,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
 
   useEffect(() => {
     const modalId = searchParams.get("modal");
-    if (!modalId || !filteredItems.length) {
+    if (!modalId) {
       setSelectedTile(null);
       return;
     }
@@ -828,7 +828,36 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     const found = filteredItems.find((item) => item.id === modalId)
       ?? dedupedTriggers.find((item) => item.id === modalId)
       ?? null;
-    setSelectedTile(found);
+    if (found) {
+      setSelectedTile(found);
+      return;
+    }
+    // Fallback: fetch from DB for source-section triggers not in main lists
+    (async () => {
+      const { data } = await supabase
+        .from("ktrenz_trend_triggers" as any)
+        .select("*")
+        .eq("id", modalId)
+        .maybeSingle();
+      if (!data) { setSelectedTile(null); return; }
+      const t = data as any;
+      setSelectedTile({
+        id: t.id, keyword: t.keyword, keywordKo: t.keyword_ko || null, keywordEn: t.keyword_en || null, keywordJa: t.keyword_ja || null, keywordZh: t.keyword_zh || null,
+        category: t.keyword_category || "brand", artistName: t.artist_name || "Unknown",
+        artistNameKo: null, artistImageUrl: null,
+        wikiEntryId: t.wiki_entry_id, influenceIndex: Number(t.influence_index) || 0,
+        context: t.context, contextKo: t.context_ko || null, contextJa: t.context_ja || null, contextZh: t.context_zh || null,
+        detectedAt: t.detected_at, peakAt: t.peak_at || null, expiredAt: t.expired_at || null,
+        lifetimeHours: t.lifetime_hours != null ? Number(t.lifetime_hours) : null,
+        peakDelayHours: t.peak_delay_hours != null ? Number(t.peak_delay_hours) : null,
+        baselineScore: t.baseline_score != null ? Number(t.baseline_score) : null,
+        peakScore: t.peak_score != null ? Number(t.peak_score) : null,
+        sourceUrl: t.source_url || null, sourceTitle: t.source_title || null, sourceImageUrl: t.source_image_url || null,
+        sourceSnippet: t.source_snippet || null, starId: t.star_id || null, status: t.status,
+        triggerSource: t.trigger_source || null, prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
+        brandId: t.brand_id || null, metadata: t.metadata || null,
+      });
+    })();
   }, [filteredItems, dedupedTriggers, searchParams]);
 
   const track = useTrackEvent();
