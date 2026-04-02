@@ -3697,6 +3697,7 @@ export type Database = {
           trend_grade: string | null
           trend_grade_detail: Json | null
           updated_at: string
+          velocity: number | null
         }
         Insert: {
           baseline_raw?: Json | null
@@ -3733,6 +3734,7 @@ export type Database = {
           trend_grade?: string | null
           trend_grade_detail?: Json | null
           updated_at?: string
+          velocity?: number | null
         }
         Update: {
           baseline_raw?: Json | null
@@ -3769,6 +3771,7 @@ export type Database = {
           trend_grade?: string | null
           trend_grade_detail?: Json | null
           updated_at?: string
+          velocity?: number | null
         }
         Relationships: []
       }
@@ -4631,6 +4634,7 @@ export type Database = {
           tiktok_video_count: number | null
           tracked_at: string
           trigger_id: string | null
+          velocity: number | null
           weighted_delta: number | null
           wiki_entry_id: string | null
           youtube_total_comments: number | null
@@ -4663,6 +4667,7 @@ export type Database = {
           tiktok_video_count?: number | null
           tracked_at?: string
           trigger_id?: string | null
+          velocity?: number | null
           weighted_delta?: number | null
           wiki_entry_id?: string | null
           youtube_total_comments?: number | null
@@ -4695,6 +4700,7 @@ export type Database = {
           tiktok_video_count?: number | null
           tracked_at?: string
           trigger_id?: string | null
+          velocity?: number | null
           weighted_delta?: number | null
           wiki_entry_id?: string | null
           youtube_total_comments?: number | null
