@@ -116,7 +116,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                       {language === "ko" ? "예측 티켓" : "Prediction Tickets"}
                     </p>
                   </div>
-                  <p className="text-lg font-bold" style={{ color: '#ffffff' }}>
+                  <p className="text-primary-foreground font-semibold text-sm" style={{ color: '#ffffff' }}>
                     {ticketInfo ? `${ticketInfo.remaining}/${ticketInfo.total}` : "–"}
                   </p>
                 </div>
