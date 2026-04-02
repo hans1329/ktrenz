@@ -829,7 +829,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       ?? dedupedTriggers.find((item) => item.id === modalId)
       ?? null;
     if (found) {
-      setSelectedTile(found);
+      setSelectedTile((prev) => {
+        if (!prev || prev.id !== found.id) return found;
+        const prevText = [prev.keywordEn, prev.keywordJa, prev.keywordZh, prev.context, prev.contextJa, prev.contextZh].join("|");
+        const nextText = [found.keywordEn, found.keywordJa, found.keywordZh, found.context, found.contextJa, found.contextZh].join("|");
+        return prevText === nextText ? prev : found;
+      });
       return;
     }
     // Fallback: fetch from DB for source-section triggers not in main lists
