@@ -1,4 +1,4 @@
-// Fixed-multiplier settlement: pay winners amount * multiplier
+// Fixed-multiplier settlement with loss zone
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -8,20 +8,23 @@ const corsHeaders = {
 };
 
 const MULTIPLIERS: Record<string, number> = {
-  mild: 1.2,
-  strong: 3.0,
+  meaningful: 1.5,
+  significant: 3.0,
   explosive: 10.0,
 };
 
-/** Determine winning outcome based on % change from initial influence */
-function determineOutcome(initialInfluence: number, currentInfluence: number): string {
-  const changePct = initialInfluence > 0
-    ? ((currentInfluence - initialInfluence) / initialInfluence) * 100
-    : currentInfluence > 0 ? 100 : 0;
+/** Determine outcome based on % change from initial trend score.
+ *  "flat" = loss zone (< +15%) — all bets lose.
+ */
+function determineOutcome(initialScore: number, currentScore: number): string {
+  const changePct = initialScore > 0
+    ? ((currentScore - initialScore) / initialScore) * 100
+    : currentScore > 0 ? 100 : 0;
 
-  if (changePct < 15) return "mild";          // < +15%
-  if (changePct < 100) return "strong";       // +15% ~ +100%
-  return "explosive";                          // +100%+
+  if (changePct < 15) return "flat";             // loss zone
+  if (changePct < 50) return "meaningful";        // +15% ~ +50%
+  if (changePct < 150) return "significant";      // +50% ~ +150%
+  return "explosive";                              // +150%+
 }
 
 Deno.serve(async (req) => {
@@ -58,9 +61,9 @@ Deno.serve(async (req) => {
     let totalPayouts = 0;
 
     for (const market of markets) {
-      const currentInfluence = Number(market.ktrenz_trend_triggers?.influence_index ?? 0);
-      const initialInfluence = Number(market.initial_influence ?? 0);
-      const outcome = determineOutcome(initialInfluence, currentInfluence);
+      const currentScore = Number(market.ktrenz_trend_triggers?.influence_index ?? 0);
+      const initialScore = Number(market.initial_influence ?? 0);
+      const outcome = determineOutcome(initialScore, currentScore);
 
       const { data: bets } = await sb
         .from("ktrenz_trend_bets")
@@ -76,12 +79,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const winningBets = bets.filter((b: any) => b.outcome === outcome);
-      const losingBets = bets.filter((b: any) => b.outcome !== outcome);
+      // If outcome is "flat", ALL bets lose (loss zone)
+      const winningBets = outcome === "flat" ? [] : bets.filter((b: any) => b.outcome === outcome);
+      const losingBets = outcome === "flat" ? bets : bets.filter((b: any) => b.outcome !== outcome);
 
       const payoutPromises: Promise<any>[] = [];
 
-      // Winners get amount * multiplier
       for (const bet of winningBets) {
         const payout = Math.round(Number(bet.amount) * MULTIPLIERS[outcome]);
         if (payout > 0) {
@@ -112,10 +115,10 @@ Deno.serve(async (req) => {
         .eq("id", market.id);
 
       settledCount++;
-      const changePct = initialInfluence > 0
-        ? ((currentInfluence - initialInfluence) / initialInfluence * 100).toFixed(1)
+      const changePct = initialScore > 0
+        ? ((currentScore - initialScore) / initialScore * 100).toFixed(1)
         : "N/A";
-      console.log(`[trend-settle] Market ${market.id}: outcome=${outcome}, change=${changePct}%, winners=${winningBets.length}`);
+      console.log(`[trend-settle] Market ${market.id}: outcome=${outcome}, change=${changePct}%, winners=${winningBets.length}, losers=${losingBets.length}`);
     }
 
     return new Response(

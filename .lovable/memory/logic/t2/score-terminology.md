@@ -14,7 +14,12 @@ Updated: now
 - DB: `ktrenz_trend_artist_grades.influence_score`
 - 공식: (Top 10 트렌드 평균 × 0.7 + 전체 평균 × 0.3) × log10(트렌드 수 + 1)
 
-### 배팅(예측) 정산 기준
+### 배팅(예측) 시스템 구조
+- **배팅 불가 구간 (loss zone)**: `flat` — 변화없음~소폭상승 (< +15%) → 모든 배팅자 패배
+- **배팅 가능 3구간**:
+  - `meaningful` (유의미한 상승): +15% ~ +50%, 배당 ×1.5
+  - `significant` (꽤 상승): +50% ~ +150%, 배당 ×3.0
+  - `explosive` (폭등): +150%+, 배당 ×10.0
+- 유저는 상승 구간에만 배팅 → 안 오르면(flat) 전원 실패
 - 마켓 생성 시 `initial_influence`(= 그 시점의 influence_index) 저장
-- 24시간 후 현재 influence_index와 비교하여 **트렌드 점수의 변동폭**으로 판정
-- mild: +0~15%, strong: +15~100%, explosive: +100%+
+- 24시간 후 현재 influence_index와 비교하여 변동률로 판정
