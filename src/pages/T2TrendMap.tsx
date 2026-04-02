@@ -11,9 +11,7 @@ import T2AdminControls from "@/components/t2/T2AdminControls";
 import T2MomentumSignals from "@/components/t2/T2MomentumSignals";
 import T2MegaTrends from "@/components/t2/T2MegaTrends";
 import T2CrossSourceInsights from "@/components/t2/T2CrossSourceInsights";
-import T2TrendBetCTA from "@/components/t2/T2TrendBetCTA";
-import T2SourceKeywords from "@/components/t2/T2SourceKeywords";
-import T2SettlementResultModal from "@/components/t2/T2SettlementResultModal";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -368,13 +366,9 @@ const T2TrendMap = () => {
                 />
               </div>
 
-              {/* Source-grouped keywords: YouTube, TikTok, Instagram */}
-              <T2SourceKeywords />
-
               {/* New intelligence sections */}
               <T2MomentumSignals />
               <T2CrossSourceInsights />
-              <T2TrendBetCTA />
             </div>
 
             {shouldRenderSwipeOverlay && (
@@ -415,7 +409,7 @@ const T2TrendMap = () => {
         </div>
       </div>
       <V3TabBar activeTab="rankings" onTabChange={() => {}} />
-      <T2SettlementResultModal />
+      
       <Suspense fallback={null}>
         <ArtistOnboardingDrawer open={showOnboarding} onOpenChange={setShowOnboarding} />
       </Suspense>
