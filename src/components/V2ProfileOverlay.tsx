@@ -94,7 +94,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                 <span className="mx-[10px] text-xl">💎</span>
                 <div>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    K·Trend Cashes
+                    K·Cashes
                   </p>
                   <p className="text-sm font-bold text-foreground leading-tight">
                     {kPoints.toLocaleString()}
