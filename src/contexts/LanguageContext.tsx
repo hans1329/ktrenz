@@ -9,12 +9,24 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const detectBrowserLanguage = (): Language => {
+  try {
+    const browserLang = navigator.language || (navigator as any).userLanguage || "";
+    const prefix = browserLang.split("-")[0].toLowerCase();
+    if (prefix === "ko") return "ko";
+    if (prefix === "ja") return "ja";
+    if (prefix === "zh") return "zh";
+    if (prefix === "en") return "en";
+  } catch {}
+  return "ko";
+};
+
 const getStoredLanguage = (): Language => {
   try {
     const stored = localStorage.getItem("ktrenz-lang");
     if (stored && ["en", "ko", "ja", "zh"].includes(stored)) return stored as Language;
   } catch {}
-  return "ko";
+  return detectBrowserLanguage();
 };
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
