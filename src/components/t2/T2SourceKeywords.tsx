@@ -1,8 +1,9 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Youtube, Instagram, Music2, Clock, ChevronRight, MessageCircle } from "lucide-react";
+import { Youtube, Instagram, Music2, Clock, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORY_CONFIG, sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "@/components/t2/T2TrendTreemap";
 
@@ -42,7 +43,7 @@ const T2SourceKeywords = () => {
         SOURCE_SECTIONS.map(async ({ key, sources }) => {
           const { data } = await supabase
             .from("ktrenz_trend_triggers" as any)
-            .select("id, keyword, keyword_ko, keyword_en, keyword_category, artist_name, trigger_source, detected_at, source_url, source_image_url, context")
+            .select("id, keyword, keyword_ko, keyword_en, keyword_category, artist_name, trigger_source, detected_at, source_url, source_image_url, baseline_score")
             .in("status", [...VISIBLE_STATUSES])
             .in("trigger_source", [...sources])
             .order("detected_at", { ascending: false })
@@ -55,6 +56,37 @@ const T2SourceKeywords = () => {
       return Object.fromEntries(results) as Record<SourceSectionKey, any[]>;
     },
     refetchInterval: 60_000,
+  });
+
+  // Collect all trigger IDs for sparkline tracking data
+  const allIds = useMemo(() => {
+    if (!sectionTriggers) return [];
+    return Object.values(sectionTriggers).flat().map((i: any) => i.id);
+  }, [sectionTriggers]);
+
+  const { data: trackingMap } = useQuery({
+    queryKey: ["source-carousel-tracking", allIds.join(",")],
+    enabled: allIds.length > 0,
+    queryFn: async () => {
+      const allData: any[] = [];
+      for (let i = 0; i < allIds.length; i += 30) {
+        const batch = allIds.slice(i, i + 30);
+        const { data } = await supabase
+          .from("ktrenz_trend_tracking" as any)
+          .select("trigger_id, tracked_at, interest_score")
+          .in("trigger_id", batch)
+          .order("tracked_at", { ascending: true });
+        if (data) allData.push(...(data as any[]));
+      }
+      const map = new Map<string, any[]>();
+      allData.forEach((d: any) => {
+        const arr = map.get(d.trigger_id) || [];
+        arr.push(d);
+        map.set(d.trigger_id, arr);
+      });
+      return map;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 
   const handleTileClick = (triggerId: string) => {
@@ -104,6 +136,7 @@ const T2SourceKeywords = () => {
                 const platformLogo = detectPlatformLogo(item.source_url, item.source_image_url);
                 const bgImg = safeSourceImg || ytThumb || platformLogo;
                 const catConfig = CATEGORY_CONFIG[item.keyword_category as keyof typeof CATEGORY_CONFIG];
+                const catColor = catConfig?.color || color;
 
                 return (
                   <button
@@ -126,7 +159,7 @@ const T2SourceKeywords = () => {
                       </span>
                     </div>
 
-                    {/* Image area with keyword centered */}
+                    {/* Image area with keyword centered + sparkline overlay */}
                     <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[300px]" : "h-[280px]")}>
                       {bgImg ? (
                         <>
@@ -175,14 +208,85 @@ const T2SourceKeywords = () => {
                         <Icon className="h-3.5 w-3.5 text-white" />
                       </span>
 
-                      {/* Bottom gradient + context */}
+                      {/* Sparkline overlay at bottom (same as category cards) */}
                       <div className="absolute inset-x-0 bottom-0">
                         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
-                        {item.context && (
-                          <p className="relative px-3 pb-3 pt-6 text-[10px] leading-relaxed text-white/70 line-clamp-2 drop-shadow-md">
-                            {item.context}
-                          </p>
-                        )}
+                        <div className="relative pb-4 pt-4">
+                          <svg viewBox="0 0 100 20" className="w-full h-[20px]" preserveAspectRatio="none">
+                            <defs>
+                              <linearGradient id={`src-spark-${item.id}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={catColor} stopOpacity="0.7" />
+                                <stop offset="100%" stopColor={catColor} stopOpacity="0.12" />
+                              </linearGradient>
+                            </defs>
+                            {(() => {
+                              const history = trackingMap?.get(item.id) ?? [];
+                              const nowMs = Date.now();
+                              let pts: { t: number; v: number }[] = [];
+                              if (history.length >= 2) {
+                                pts = history.map((h: any) => ({ t: new Date(h.tracked_at).getTime(), v: Number(h.interest_score ?? 0) }));
+                              } else if (history.length === 1) {
+                                pts = [
+                                  { t: new Date(item.detected_at).getTime(), v: Number(item.baseline_score ?? 0) },
+                                  { t: new Date(history[0].tracked_at).getTime(), v: Number(history[0].interest_score ?? 0) },
+                                ];
+                              } else {
+                                const detMs = new Date(item.detected_at).getTime();
+                                const bv = Number(item.baseline_score ?? 0);
+                                pts = [{ t: detMs, v: bv }, { t: nowMs, v: bv }];
+                              }
+                              if (pts.length < 2) return null;
+                              const lastPt = pts[pts.length - 1];
+                              if (lastPt.t < nowMs) {
+                                pts = [...pts, { t: nowMs, v: lastPt.v }];
+                              } else if (lastPt.t > nowMs) {
+                                pts[pts.length - 1] = { ...lastPt, t: nowMs };
+                              }
+                              const startMs = Math.min(pts[0].t, nowMs);
+                              const spanMs = Math.max(nowMs - startMs, 3600000);
+                              const vals = pts.map(p => p.v);
+                              const minVal = Math.min(...vals);
+                              const maxVal = Math.max(...vals, 1);
+                              const range = maxVal - minVal;
+                              const effectiveMin = range < maxVal * 0.05 ? maxVal * 0.8 : minVal;
+                              const effectiveRange = maxVal - effectiveMin || 1;
+                              const toX = (t: number, index: number) => {
+                                if (index === pts.length - 1) return 100;
+                                return Math.max(0, Math.min(((t - startMs) / spanMs) * 100, 100));
+                              };
+                              const toY = (v: number) => {
+                                const normalized = Math.max(0, Math.min((v - effectiveMin) / effectiveRange, 1));
+                                return 18 - normalized * 14;
+                              };
+                              const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${toX(p.t, i).toFixed(1)},${toY(p.v).toFixed(1)}`).join(" ");
+                              return (
+                                <>
+                                  <path d={`${path} L100,20 L0,20 Z`} fill={`url(#src-spark-${item.id})`} />
+                                  <path d={path} fill="none" stroke={catColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.95" />
+                                </>
+                              );
+                            })()}
+                          </svg>
+                          {(() => {
+                            const history = trackingMap?.get(item.id) ?? [];
+                            const startMs = history.length >= 1
+                              ? new Date(history[0].tracked_at).getTime()
+                              : new Date(item.detected_at).getTime();
+                            const nowMs = Date.now();
+                            const spanMs = Math.max(nowMs - startMs, 3600000);
+                            const totalH = Math.round(spanMs / 3600000);
+                            const fmtH = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : `${Math.round(h)}h`;
+                            return (
+                              <div className="absolute bottom-1.5 left-3 right-3 flex justify-between text-[7px] font-medium text-white/50 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+                                <span>{fmtH(0)}</span>
+                                <span>{fmtH(Math.round(totalH * 0.25))}</span>
+                                <span>{fmtH(Math.round(totalH * 0.5))}</span>
+                                <span>{fmtH(Math.round(totalH * 0.75))}</span>
+                                <span>now</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </button>
