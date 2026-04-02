@@ -2058,7 +2058,7 @@ async function detectForMember(
         keyword_ja: keywordData.keyword_ja || null,
         keyword_zh: keywordData.keyword_zh || null,
         keyword_category: keywordData.category,
-        status: "pending",
+        status: "active",
         context: keywordData.context,
         context_ko: keywordData.context_ko || null,
         context_ja: keywordData.context_ja || null,
