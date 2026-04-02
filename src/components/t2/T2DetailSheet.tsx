@@ -769,8 +769,9 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
               {/* Already predicted */}
               {hasPredicted && !isSettled && (
-                <div className="text-center py-2">
-                  <p className="text-sm font-bold text-primary">{t("alreadyPredicted", language)}</p>
+                <div className="flex items-center gap-2 py-2 justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                  <p className="text-sm font-bold text-foreground">{t("alreadyPredicted", language)}</p>
                 </div>
               )}
 
