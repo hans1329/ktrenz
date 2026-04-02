@@ -118,7 +118,21 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         className="relative rounded-2xl overflow-hidden text-left w-full h-full active:scale-[0.97] transition-transform"
       >
         {bgImg ? (
-          <img src={bgImg} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+          <img
+            src={bgImg}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (item.artistImageUrl && target.src !== item.artistImageUrl) {
+                target.src = item.artistImageUrl;
+              } else {
+                target.style.display = "none";
+              }
+            }}
+          />
         ) : (
           <div className="absolute inset-0 w-full h-full" style={{ backgroundColor: CATEGORY_CONFIG[item.category]?.tileColor || "hsl(var(--muted))" }} />
         )}
