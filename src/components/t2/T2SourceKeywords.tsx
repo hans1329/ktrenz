@@ -124,7 +124,9 @@ const T2SourceKeywords = () => {
                     ? item.source_image_url
                     : null
                 );
-                const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+                // Instagram CDN images (fbcdn/cdninstagram) are blocked globally but work when loaded directly
+                const isInstagramSource = key === "instagram";
+                const safeSourceImg = rawSourceImg && (isInstagramSource || !isBlockedImageDomain(rawSourceImg)) ? rawSourceImg : null;
 
                 // For YouTube, derive thumbnail from video URL when source_image_url is missing
                 let ytThumb: string | null = null;
