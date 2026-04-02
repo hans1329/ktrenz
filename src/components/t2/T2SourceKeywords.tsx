@@ -46,7 +46,7 @@ const T2SourceKeywords = () => {
     queryFn: async () => {
       const results = await Promise.all(
         SOURCE_SECTIONS.map(async ({ key, sources }) => {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from("ktrenz_trend_triggers" as any)
             .select("id, keyword, keyword_ko, keyword_en, keyword_category, artist_name, trigger_source, detected_at, source_url, source_image_url, context")
             .in("status", [...VISIBLE_STATUSES])
@@ -54,7 +54,8 @@ const T2SourceKeywords = () => {
             .order("detected_at", { ascending: false })
             .limit(SOURCE_CARD_LIMIT);
 
-          return [key, (data ?? []) as SourceTrigger[]] as const;
+          if (error) throw error;
+          return [key, ((data ?? []) as unknown as SourceTrigger[])] as const;
         }),
       );
 
