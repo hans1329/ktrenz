@@ -33,6 +33,7 @@ export const useFieldTranslation = () => {
       if (!targetCol) return;
 
       // Find items that need translation (target is missing, or English context still equals Korean source)
+      const sourceCol = field === "keyword" ? "keyword_ko" : "context_ko";
       const needTranslation = items.filter((item) => {
         const sourceValue = item[sourceCol];
         const targetValue = item[targetCol];
