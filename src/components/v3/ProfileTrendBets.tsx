@@ -27,42 +27,6 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
 
-  // ── Tracked Keywords (up to 3) ──
-  const { data: trackedKeywords = [] } = useQuery({
-    queryKey: ["profile-tracked-keywords", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data: follows } = await supabase
-        .from("ktrenz_keyword_follows" as any)
-        .select("id, trigger_id, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(3);
-      if (!follows?.length) return [];
-
-      const triggerIds = (follows as any[]).map((f: any) => f.trigger_id);
-      const { data: triggers } = await supabase
-        .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_category, influence_index, status")
-        .in("id", triggerIds);
-      const triggerMap = new Map<string, any>();
-      (triggers ?? []).forEach((t: any) => triggerMap.set(t.id, t));
-
-      return (follows as any[]).map((f: any) => {
-        const tr = triggerMap.get(f.trigger_id);
-        return {
-          followId: f.id,
-          triggerId: f.trigger_id,
-          keyword: tr?.keyword || "—",
-          keywordKo: tr?.keyword_ko,
-          influenceIndex: Number(tr?.influence_index) || 0,
-          status: tr?.status || "expired",
-        };
-      });
-    },
-    enabled: !!user?.id,
-    staleTime: 30_000,
-  });
 
   // ── Predictions (up to 3) ──
   const { data: bets = [], isLoading } = useQuery({
