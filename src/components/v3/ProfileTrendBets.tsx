@@ -8,10 +8,10 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { differenceInHours, differenceInMinutes, format } from "date-fns";
 
-const outcomeConfig: Record<string, { emoji: string; label: Record<string, string>; reward: string }> = {
-  mild: { emoji: "🌱", label: { en: "Mild", ko: "소폭" }, reward: "100T" },
-  strong: { emoji: "🔥", label: { en: "Strong", ko: "강세" }, reward: "300T" },
-  explosive: { emoji: "🚀", label: { en: "Explosive", ko: "폭발" }, reward: "1,000T" },
+const outcomeConfig: Record<string, { emoji: string; label: Record<string, string>; threshold: Record<string, string>; reward: string }> = {
+  mild: { emoji: "🌱", label: { en: "Mild", ko: "소폭" }, threshold: { en: "10~15%", ko: "10~15%" }, reward: "100T" },
+  strong: { emoji: "🔥", label: { en: "Strong", ko: "강세" }, threshold: { en: "15~50%", ko: "15~50%" }, reward: "300T" },
+  explosive: { emoji: "🚀", label: { en: "Explosive", ko: "폭발" }, threshold: { en: "50%+", ko: "50%+" }, reward: "1,000T" },
 };
 
 interface ProfileTrendBetsProps {
@@ -126,7 +126,7 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
             const isSettled = bet.market_status === "settled";
             const isWin = bet.payout != null && bet.payout > 0;
             const isLoss = isSettled && (bet.payout == null || bet.payout === 0);
-            const config = outcomeConfig[bet.outcome] || { emoji: "❓", label: { en: bet.outcome, ko: bet.outcome }, reward: "—" };
+            const config = outcomeConfig[bet.outcome] || { emoji: "❓", label: { en: bet.outcome, ko: bet.outcome }, threshold: { en: "—", ko: "—" }, reward: "—" };
             const timeLeft = getTimeRemaining(bet.expires_at);
 
             return (
@@ -142,7 +142,8 @@ const ProfileTrendBets: React.FC<ProfileTrendBetsProps> = ({ onClose }) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-foreground truncate">{displayKeyword}</p>
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
-                    <span>{config.label[language] || config.label.en}</span>
+                    <span className="font-medium">{config.label[language] || config.label.en}</span>
+                    <span className="text-primary/70 font-bold">{config.threshold[language] || config.threshold.en}↑</span>
                     <span>·</span>
                     <span>{getParticipatedTime(bet.created_at)}</span>
                   </div>

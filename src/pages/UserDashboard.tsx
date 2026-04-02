@@ -1,30 +1,26 @@
-import { useEffect, useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
-
 import V3TabBar from "@/components/v3/V3TabBar";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-  TrendingUp, TrendingDown, ExternalLink, Eye, Bot, MousePointerClick,
-  Crown, Heart, Flame, Trophy, Clock, ChevronRight, Zap, BarChart3,
-  ChevronLeft, Target, CheckCircle2, XCircle, Timer, Crosshair, Bell
+  Crosshair, ChevronLeft, ChevronRight, CheckCircle2, XCircle, Timer,
+  BarChart3, Eye, Bot, ExternalLink, TrendingUp, Crown, Heart,
 } from "lucide-react";
-import { CATEGORY_CONFIG } from "@/components/t2/T2TrendTreemap";
+import { differenceInHours, differenceInMinutes, format } from "date-fns";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-function formatAge(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return "now";
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-}
+const OUTCOME_CONFIG: Record<string, { emoji: string; label: string; labelKo: string; threshold: string; reward: string }> = {
+  mild: { emoji: "🌱", label: "Mild", labelKo: "소폭", threshold: "10~15%", reward: "100T" },
+  strong: { emoji: "🔥", label: "Strong", labelKo: "강세", threshold: "15~50%", reward: "300T" },
+  explosive: { emoji: "🚀", label: "Explosive", labelKo: "폭발", threshold: "50%+", reward: "1,000T" },
+};
 
 const EVENT_WEIGHTS: Record<string, number> = {
   external_link_click: 3, t2_external_link_click: 3, agent_chat: 2,
@@ -34,89 +30,84 @@ const EVENT_WEIGHTS: Record<string, number> = {
   treemap_click: 1, list_click: 0.5,
 };
 
-const OUTCOME_CONFIG: Record<string, { emoji: string; label: string; labelKo: string; color: string }> = {
-  mild: { emoji: "🌱", label: "Mild", labelKo: "소폭", color: "amber" },
-  strong: { emoji: "🔥", label: "Strong", labelKo: "강세", color: "emerald" },
-  explosive: { emoji: "🚀", label: "Explosive", labelKo: "폭발", color: "purple" },
-};
+function getTimeRemaining(expiresAt: string | null) {
+  if (!expiresAt) return null;
+  const exp = new Date(expiresAt);
+  const now = new Date();
+  if (exp <= now) return null;
+  const hours = differenceInHours(exp, now);
+  const mins = differenceInMinutes(exp, now) % 60;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function safeFormat(dateStr: string | null | undefined) {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return format(d, "MM.dd HH:mm");
+}
 
 const UserDashboard = () => {
   const { user } = useAuth();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  // ── Tracked Keywords (from ktrenz_keyword_follows) ──
-  const { data: trackedKeywords, isLoading: trackedLoading } = useQuery({
-    queryKey: ["dashboard-tracked-keywords", user?.id],
+  // ── My Predictions ──
+  const { data: myBets, isLoading: betsLoading } = useQuery({
+    queryKey: ["dashboard-my-bets", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
-      if (!user?.id) return [];
-      const { data: follows } = await supabase
-        .from("ktrenz_keyword_follows" as any)
-        .select("id, trigger_id, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (!follows?.length) return [];
-
-      const triggerIds = (follows as any[]).map((f: any) => f.trigger_id);
-      const { data: triggers } = await supabase
-        .from("ktrenz_trend_triggers" as any)
-        .select("id, keyword, keyword_ko, keyword_category, artist_name, influence_index, detected_at, source_image_url, star_id, status")
-        .in("id", triggerIds);
-
-      const triggerMap = new Map<string, any>();
-      (triggers ?? []).forEach((t: any) => triggerMap.set(t.id, t));
-
-      // Get star display names
-      const starIds = [...new Set((triggers ?? []).map((t: any) => t.star_id).filter(Boolean))];
-      const starMap = new Map<string, any>();
-      if (starIds.length) {
-        const { data: stars } = await supabase
-          .from("ktrenz_stars" as any)
-          .select("id, display_name, name_ko")
-          .in("id", starIds);
-        (stars ?? []).forEach((s: any) => starMap.set(s.id, s));
+      const { data: bets } = await supabase
+        .from("ktrenz_trend_bets" as any)
+        .select("id, market_id, outcome, amount, payout, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false }).limit(30);
+      if (!bets?.length) return [];
+      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
+      const { data: markets } = await supabase
+        .from("ktrenz_trend_markets" as any)
+        .select("id, trigger_id, status, outcome, expires_at")
+        .in("id", marketIds);
+      const marketMap = new Map<string, any>();
+      (markets ?? []).forEach((m: any) => marketMap.set(m.id, m));
+      const triggerIds = [...new Set((markets ?? []).map((m: any) => m.trigger_id).filter(Boolean))];
+      let triggerMap = new Map<string, any>();
+      if (triggerIds.length) {
+        const { data: triggers } = await supabase
+          .from("ktrenz_trend_triggers" as any)
+          .select("id, keyword, keyword_ko, keyword_category, star_id")
+          .in("id", triggerIds);
+        (triggers ?? []).forEach((t: any) => triggerMap.set(t.id, t));
       }
-
-      // Get recent notifications for these triggers
-      const { data: notifs } = await supabase
-        .from("ktrenz_keyword_notifications" as any)
-        .select("trigger_id, change_type, old_value, new_value, created_at")
-        .eq("user_id", user.id)
-        .in("trigger_id", triggerIds)
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      const notifMap = new Map<string, any[]>();
-      (notifs ?? []).forEach((n: any) => {
-        const arr = notifMap.get(n.trigger_id) || [];
-        arr.push(n);
-        notifMap.set(n.trigger_id, arr);
-      });
-
-      return (follows as any[]).map((f: any) => {
-        const trigger = triggerMap.get(f.trigger_id);
-        const star = trigger ? starMap.get(trigger.star_id) : null;
+      return (bets as any[]).map((b: any) => {
+        const market = marketMap.get(b.market_id);
+        const trigger = market ? triggerMap.get(market.trigger_id) : null;
         return {
-          followId: f.id,
-          triggerId: f.trigger_id,
-          followedAt: f.created_at,
+          ...b,
+          market,
+          trigger,
           keyword: trigger?.keyword || "Unknown",
-          keywordKo: trigger?.keyword_ko,
-          category: trigger?.keyword_category || "brand",
-          artistName: star?.display_name || trigger?.artist_name || "",
-          artistNameKo: star?.name_ko,
-          influenceIndex: Number(trigger?.influence_index) || 0,
-          status: trigger?.status || "expired",
-          sourceImageUrl: trigger?.source_image_url,
-          detectedAt: trigger?.detected_at,
-          notifications: notifMap.get(f.trigger_id) || [],
+          keyword_ko: trigger?.keyword_ko,
+          trigger_id: market?.trigger_id || "",
         };
       });
     },
-    enabled: !!user?.id,
     staleTime: 30_000,
   });
+
+  const betStats = useMemo(() => {
+    if (!myBets?.length) return { total: 0, won: 0, lost: 0, pending: 0, totalEarned: 0 };
+    let won = 0, lost = 0, pending = 0, totalEarned = 0;
+    for (const b of myBets) {
+      if (!b.market || b.market.status === "open") { pending++; continue; }
+      const payout = Number(b.payout) || 0;
+      if (payout > 0) { won++; totalEarned += payout; }
+      else if (b.market.outcome) { lost++; totalEarned += 10; }
+      else pending++;
+    }
+    return { total: myBets.length, won, lost, pending, totalEarned };
+  }, [myBets]);
 
   // ── User events for stats ──
   const { data: events } = useQuery({
@@ -134,7 +125,6 @@ const UserDashboard = () => {
     staleTime: 30_000,
   });
 
-  // ── Stats ──
   const stats = useMemo(() => {
     if (!events?.length) return {
       uniqueArtists: 0, externalClicks: 0, detailViews: 0, agentChats: 0,
@@ -168,7 +158,6 @@ const UserDashboard = () => {
     };
   }, [events]);
 
-  // ── Top artist image ──
   const topArtistName = stats.topArtists[0]?.name || null;
   const { data: topArtistEntry } = useQuery({
     queryKey: ["dashboard-top-entry", topArtistName],
@@ -183,71 +172,6 @@ const UserDashboard = () => {
     },
     staleTime: 60_000,
   });
-
-  // ── My Trend Predictions (Bets) ──
-  const { data: myBets } = useQuery({
-    queryKey: ["dashboard-my-bets", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data: bets } = await supabase
-        .from("ktrenz_trend_bets" as any)
-        .select("id, market_id, outcome, amount, shares, payout, created_at")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false }).limit(20);
-      if (!bets?.length) return [];
-      const marketIds = [...new Set((bets as any[]).map((b: any) => b.market_id))];
-      const { data: markets } = await supabase
-        .from("ktrenz_trend_markets" as any)
-        .select("id, trigger_id, status, outcome, pool_mild, pool_strong, pool_explosive, total_volume, expires_at")
-        .in("id", marketIds);
-      const marketMap = new Map<string, any>();
-      (markets ?? []).forEach((m: any) => marketMap.set(m.id, m));
-      const triggerIds = [...new Set((markets ?? []).map((m: any) => m.trigger_id).filter(Boolean))];
-      let triggerMap = new Map<string, any>();
-      if (triggerIds.length) {
-        const { data: triggers } = await supabase
-          .from("ktrenz_trend_triggers" as any)
-          .select("id, keyword, keyword_ko, keyword_category, star_id")
-          .in("id", triggerIds);
-        (triggers ?? []).forEach((t: any) => triggerMap.set(t.id, t));
-        const starIds = [...new Set((triggers ?? []).map((t: any) => t.star_id).filter(Boolean))];
-        if (starIds.length) {
-          const { data: stars } = await supabase
-            .from("ktrenz_stars" as any).select("id, display_name, name_ko").in("id", starIds);
-          const starMap = new Map<string, any>();
-          (stars ?? []).forEach((s: any) => starMap.set(s.id, s));
-          (triggers ?? []).forEach((t: any) => {
-            const star = starMap.get(t.star_id);
-            if (star) { t.artistName = star.display_name; t.artistNameKo = star.name_ko; }
-          });
-        }
-      }
-      return (bets as any[]).map((b: any) => {
-        const market = marketMap.get(b.market_id);
-        return { ...b, market, trigger: market ? triggerMap.get(market.trigger_id) : null };
-      });
-    },
-    staleTime: 30_000,
-  });
-
-  const betStats = useMemo(() => {
-    if (!myBets?.length) return { total: 0, won: 0, lost: 0, pending: 0 };
-    let won = 0, lost = 0, pending = 0;
-    for (const b of myBets) {
-      if (!b.market || b.market.status === "open") { pending++; continue; }
-      if (b.market.outcome === b.outcome) won++; else if (b.market.outcome) lost++; else pending++;
-    }
-    return { total: myBets.length, won, lost, pending };
-  }, [myBets]);
-
-  const handleUntrack = async (followId: string) => {
-    await supabase.from("ktrenz_keyword_follows" as any).delete().eq("id", followId);
-    queryClient.invalidateQueries({ queryKey: ["dashboard-tracked-keywords", user?.id] });
-    queryClient.invalidateQueries({ queryKey: ["t2-keyword-follows-list", user?.id] });
-  };
-
-  const getKw = (kw: any) => language === "ko" && kw.keywordKo ? kw.keywordKo : kw.keyword;
-  const getArtist = (kw: any) => language === "ko" && kw.artistNameKo ? kw.artistNameKo : kw.artistName;
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -276,213 +200,145 @@ const UserDashboard = () => {
       ) : (
       <main className="pt-14 pb-24 px-4 max-w-2xl mx-auto">
 
-        {/* ── 1. Tracked Keywords ── */}
-        <section className="mt-4 mb-6">
+        {/* ── 1. Prediction Summary Stats ── */}
+        <section className="mt-4 mb-5">
           <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
             <Crosshair className="w-4 h-4 text-primary" />
-            {t("dash.trackedKeywords")}
+            {language === "ko" ? "내 트렌드 예측" : "My Predictions"}
           </h2>
 
-          {trackedLoading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
-          ) : !trackedKeywords?.length ? (
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <Card className="p-2.5 bg-card border-border text-center">
+              <p className="text-lg font-black text-foreground">{betStats.total}</p>
+              <p className="text-[9px] text-muted-foreground">{language === "ko" ? "전체" : "Total"}</p>
+            </Card>
+            <Card className="p-2.5 bg-card border-border text-center">
+              <p className="text-lg font-black text-emerald-500">{betStats.won}</p>
+              <p className="text-[9px] text-muted-foreground">{t("dash.won")}</p>
+            </Card>
+            <Card className="p-2.5 bg-card border-border text-center">
+              <p className="text-lg font-black text-muted-foreground">{betStats.lost}</p>
+              <p className="text-[9px] text-muted-foreground">{t("dash.lost")}</p>
+            </Card>
+            <Card className="p-2.5 bg-card border-border text-center">
+              <p className="text-lg font-black text-primary">{betStats.pending}</p>
+              <p className="text-[9px] text-muted-foreground">{t("dash.pending")}</p>
+            </Card>
+          </div>
+
+          {/* Total earned */}
+          {betStats.totalEarned > 0 && (
+            <Card className="p-3 bg-primary/5 border-primary/20 mb-4 flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                {language === "ko" ? "총 획득 보상" : "Total Earned"}
+              </span>
+              <span className="text-sm font-black text-primary">{betStats.totalEarned.toLocaleString()}T</span>
+            </Card>
+          )}
+
+          {/* Prediction list */}
+          {betsLoading ? (
+            <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+          ) : !myBets?.length ? (
             <Card className="p-6 text-center border-border bg-card">
               <Crosshair className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground">{t("dash.noTrackedKeywords")}</p>
+              <p className="text-sm text-muted-foreground">
+                {language === "ko" ? "아직 참여한 예측이 없습니다. 트렌드 맵에서 예측에 참여해보세요!" : "No predictions yet. Join a prediction from the Trend Map!"}
+              </p>
+              <button
+                onClick={() => navigate("/")}
+                className="mt-3 px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold"
+              >
+                {language === "ko" ? "트렌드 맵 보기" : "Go to Trend Map"}
+              </button>
             </Card>
           ) : (
             <div className="space-y-2">
-              {trackedKeywords.map((kw) => {
-                const config = CATEGORY_CONFIG[kw.category];
-                const isActive = kw.status === "active";
-                const latestNotif = kw.notifications[0];
-                const delta = latestNotif ? (Number(latestNotif.new_value) - Number(latestNotif.old_value)) : null;
-                const deltaPct = latestNotif && Number(latestNotif.old_value) > 0
-                  ? ((Number(latestNotif.new_value) - Number(latestNotif.old_value)) / Number(latestNotif.old_value) * 100)
-                  : null;
+              {myBets.map((bet) => {
+                const displayKw = language === "ko" && bet.keyword_ko ? bet.keyword_ko : bet.keyword;
+                const isPending = !bet.market || bet.market.status === "open";
+                const isSettled = bet.market?.status === "settled";
+                const payout = Number(bet.payout) || 0;
+                const isWin = isSettled && payout > 0;
+                const isLoss = isSettled && bet.market?.outcome && payout === 0;
+                const oc = OUTCOME_CONFIG[bet.outcome] || { emoji: "❓", label: bet.outcome, labelKo: bet.outcome, threshold: "—", reward: "—" };
+                const timeLeft = getTimeRemaining(bet.market?.expires_at);
 
                 return (
-                  <div key={kw.followId} className="rounded-xl border border-border bg-card overflow-hidden">
-                    <button
-                      onClick={() => navigate(`/t2/${kw.triggerId}`)}
-                      className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
-                    >
-                      {/* Thumbnail */}
-                      {kw.sourceImageUrl ? (
-                        <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted">
-                          <img src={kw.sourceImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      ) : (
-                        <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: config?.color || "hsl(var(--muted))" }}>
-                          <Zap className="w-5 h-5 text-white/80" />
-                        </div>
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        {/* Keyword + status */}
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-sm font-bold text-foreground truncate">{getKw(kw)}</span>
-                          <span className={cn(
-                            "text-[9px] font-bold px-1.5 py-0.5 rounded-sm shrink-0",
-                            isActive ? "bg-green-500/15 text-green-400" : "bg-muted text-muted-foreground"
-                          )}>
-                            {isActive ? "LIVE" : "ENDED"}
-                          </span>
-                        </div>
-
-                        {/* Artist + category */}
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-0.5">
-                          {kw.artistName && <span className="truncate">{getArtist(kw)}</span>}
-                          {config && (
-                            <span className="text-[9px] font-bold px-1 py-0.5 rounded text-white shrink-0" style={{ background: config.color }}>
-                              {config.label}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Influence + change */}
-                        <div className="flex items-center gap-2 text-[11px]">
-                          <span className="text-muted-foreground">
-                            🔥 {kw.influenceIndex.toFixed(0)}
-                          </span>
-                          {deltaPct != null && (
-                            <span className={cn(
-                              "flex items-center gap-0.5 font-bold",
-                              delta! > 0 ? "text-green-400" : "text-red-400"
-                            )}>
-                              {delta! > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                              {delta! > 0 ? "+" : ""}{deltaPct.toFixed(0)}%
-                            </span>
-                          )}
-                          {latestNotif && (
-                            <span className="text-muted-foreground/60 flex items-center gap-0.5 ml-auto">
-                              <Clock className="w-2.5 h-2.5" /> {formatAge(latestNotif.created_at)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-                    </button>
-
-                    {/* Notification alerts */}
-                    {kw.notifications.length > 0 && (
-                      <div className="border-t border-border/50 px-3 py-2 bg-muted/20">
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
-                          <Bell className="w-3 h-3" />
-                          <span className="font-medium">Recent changes</span>
-                        </div>
-                        <div className="space-y-1">
-                          {kw.notifications.slice(0, 2).map((n: any, i: number) => {
-                            const nDelta = Number(n.new_value) - Number(n.old_value);
-                            return (
-                              <div key={i} className="text-[10px] flex items-center gap-1.5">
-                                <span className={cn("font-bold", nDelta > 0 ? "text-green-400" : "text-red-400")}>
-                                  {nDelta > 0 ? "▲" : "▼"} {Math.abs(nDelta).toFixed(1)}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {Number(n.old_value).toFixed(0)} → {Number(n.new_value).toFixed(0)}
-                                </span>
-                                <span className="text-muted-foreground/50 ml-auto">{formatAge(n.created_at)}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                  <button
+                    key={bet.id}
+                    onClick={() => bet.trigger_id && navigate(`/t2/${bet.trigger_id}`)}
+                    className={cn(
+                      "w-full rounded-xl border p-3 flex items-center gap-3 text-left transition-all group",
+                      isWin ? "border-emerald-500/30 bg-emerald-500/5" :
+                      isLoss ? "border-border bg-card" :
+                      "border-border bg-card hover:bg-muted/30"
                     )}
-                  </div>
+                  >
+                    {/* Outcome icon */}
+                    <div className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-xl",
+                      isWin ? "bg-emerald-500/10" : isLoss ? "bg-muted" : "bg-primary/5"
+                    )}>
+                      {isWin ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> :
+                       isLoss ? <XCircle className="w-5 h-5 text-muted-foreground" /> :
+                       <span>{oc.emoji}</span>}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{displayKw}</p>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
+                        <span className="font-medium">{oc.emoji} {language === "ko" ? oc.labelKo : oc.label}</span>
+                        <span className="text-primary/70 font-bold">{oc.threshold}↑</span>
+                        <span>·</span>
+                        <span>{safeFormat(bet.created_at)}</span>
+                      </div>
+                    </div>
+
+                    {/* Status + reward */}
+                    <div className="text-right shrink-0">
+                      {isPending && (
+                        <>
+                          <p className="text-sm font-bold text-primary">{oc.reward}</p>
+                          {timeLeft ? (
+                            <span className="text-[10px] text-muted-foreground">
+                              {language === "ko" ? `${timeLeft} 남음` : `${timeLeft} left`}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-amber-500 font-medium">
+                              {language === "ko" ? "정산 대기" : "Settling"}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {isWin && (
+                        <>
+                          <p className="text-sm font-bold text-emerald-500">+{payout.toLocaleString()}T</p>
+                          <span className="text-[10px] text-emerald-500 font-medium">
+                            {language === "ko" ? "적중!" : "Won!"}
+                          </span>
+                        </>
+                      )}
+                      {isLoss && (
+                        <>
+                          <p className="text-sm font-bold text-muted-foreground">+10T</p>
+                          <span className="text-[10px] text-muted-foreground">
+                            {language === "ko" ? "참여 보상" : "Consolation"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary shrink-0" />
+                  </button>
                 );
               })}
             </div>
           )}
         </section>
 
-        {/* ── 2. My Predictions ── */}
-        {user && myBets && myBets.length > 0 && (
-          <section className="mb-6">
-            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-              <Target className="w-4 h-4 text-primary" />
-              {t("dash.predictions")}
-            </h2>
-
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-foreground">{betStats.won}</p>
-                <p className="text-[9px] text-muted-foreground">{t("dash.won")}</p>
-              </Card>
-              <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-foreground">{betStats.lost}</p>
-                <p className="text-[9px] text-muted-foreground">{t("dash.lost")}</p>
-              </Card>
-              <Card className="p-2.5 bg-card border-border text-center">
-                <p className="text-lg font-black text-foreground">{betStats.pending}</p>
-                <p className="text-[9px] text-muted-foreground">{t("dash.pending")}</p>
-              </Card>
-            </div>
-
-            <div className="space-y-2">
-              {(() => {
-                const grouped = new Map<string, { bets: any[]; trigger: any; market: any }>();
-                for (const bet of myBets) {
-                  const triggerId = bet.market?.trigger_id || bet.id;
-                  const existing = grouped.get(triggerId);
-                  if (existing) existing.bets.push(bet);
-                  else grouped.set(triggerId, { bets: [bet], trigger: bet.trigger, market: bet.market });
-                }
-                return Array.from(grouped.values()).slice(0, 6).map((group) => {
-                  const { bets: groupBets, market, trigger } = group;
-                  const isSettled = market?.status === "settled";
-                  const kw = trigger ? (language === "ko" && trigger.keyword_ko ? trigger.keyword_ko : trigger.keyword) : "Unknown";
-                  const an = trigger ? (language === "ko" && trigger.artistNameKo ? trigger.artistNameKo : (trigger.artistName || "")) : "";
-                  const cfg = trigger ? CATEGORY_CONFIG[trigger.keyword_category] : null;
-                  const hasWon = isSettled && groupBets.some((b: any) => market?.outcome === b.outcome);
-                  const hasLost = isSettled && market?.outcome && !hasWon;
-                  const totalPayout = groupBets.reduce((s: number, b: any) => s + (Number(b.payout) || 0), 0);
-                  const totalAmount = groupBets.reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0);
-                  const expiresAt = market?.expires_at ? new Date(market.expires_at).getTime() : null;
-                  const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 86400000)) : null;
-                  const outcomeBreakdown = ["mild", "strong", "explosive"]
-                    .map(o => ({ outcome: o, amount: groupBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + (Number(b.amount) || 0), 0) }))
-                    .filter(o => o.amount > 0);
-
-                  return (
-                    <button key={market?.trigger_id || groupBets[0].id}
-                      onClick={() => trigger && navigate(`/t2/${market?.trigger_id}`)}
-                      className={cn("w-full rounded-xl border p-3 flex items-center gap-3 text-left transition-all",
-                        hasWon ? "border-green-500/30 bg-green-500/5" : hasLost ? "border-red-500/30 bg-red-500/5" : "border-border bg-card hover:bg-muted/50"
-                      )}>
-                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        hasWon ? "bg-green-500/15" : hasLost ? "bg-red-500/15" : "bg-muted"
-                      )}>
-                        {hasWon ? <CheckCircle2 className="w-4 h-4 text-green-400" /> :
-                         hasLost ? <XCircle className="w-4 h-4 text-red-400" /> :
-                         <Timer className="w-4 h-4 text-primary" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-sm font-bold text-foreground truncate">{kw}</span>
-                          {cfg && <span className="text-[8px] font-bold px-1 py-0.5 rounded text-white shrink-0" style={{ background: cfg.color }}>{cfg.label}</span>}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
-                          {an && <span>{an}</span>}
-                          {outcomeBreakdown.map(({ outcome, amount }) => {
-                            const oc = OUTCOME_CONFIG[outcome];
-                            return <span key={outcome} className="font-bold text-foreground/70">{oc?.emoji} {language === "ko" ? oc?.labelKo : oc?.label} {amount.toLocaleString()}T</span>;
-                          })}
-                          {daysLeft !== null && !isSettled && <span>⏳ {daysLeft}{language === "ko" ? "일" : "d"}</span>}
-                        </div>
-                      </div>
-                      {hasWon && totalPayout > 0 && <span className="text-xs font-black text-green-400 shrink-0">+{totalPayout.toLocaleString()}</span>}
-                      {!isSettled && <span className="text-[10px] text-muted-foreground shrink-0">{totalAmount.toLocaleString()} <span className="opacity-60">T</span></span>}
-                    </button>
-                  );
-                });
-              })()}
-            </div>
-          </section>
-        )}
-
-        {/* ── 3. My Stats ── */}
+        {/* ── 2. My Stats ── */}
         {user && (stats.uniqueArtists > 0 || stats.detailViews > 0) && (
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
@@ -506,7 +362,7 @@ const UserDashboard = () => {
           </section>
         )}
 
-        {/* ── 4. Top Artist ── */}
+        {/* ── 3. Top Artist ── */}
         {topArtistEntry && stats.topArtists[0] && (
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
@@ -555,7 +411,7 @@ const UserDashboard = () => {
           </section>
         )}
 
-        {/* ── 5. Most Explored Artists ── */}
+        {/* ── 4. Most Explored Artists ── */}
         {stats.topArtists.length > 1 && (
           <section className="mb-6">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
@@ -577,7 +433,6 @@ const UserDashboard = () => {
         )}
       </main>
       )}
-
 
       <V3TabBar activeTab="activity" onTabChange={() => {}} />
     </div>
