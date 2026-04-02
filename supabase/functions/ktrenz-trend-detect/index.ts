@@ -520,6 +520,28 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       if (images.length >= 15) break;
     }
 
+    // 4) <video> poster 또는 .viewer background-image에서 영상 썸네일 추출
+    if (images.length === 0 || images.every(i => i.isOg)) {
+      // video poster attribute
+      const videoPosterMatch = html.match(/<video[^>]*\bposter=["']([^"']+)["']/i);
+      if (videoPosterMatch?.[1]) {
+        const resolved = resolveUrl(videoPosterMatch[1].replace(/&amp;/g, "&"), articleUrl);
+        if (resolved && !seenUrls.has(resolved) && !resolved.includes("data:image/")) {
+          seenUrls.add(resolved);
+          images.push({ url: resolved, caption: "video thumbnail", isOg: false, index: imgIndex++ });
+        }
+      }
+      // background-image in style (e.g. MBC/SBS video viewer div)
+      const bgImageMatch = html.match(/background-image:\s*url\(["']?([^"')]+)["']?\)/i);
+      if (bgImageMatch?.[1]) {
+        const resolved = resolveUrl(bgImageMatch[1].replace(/&amp;/g, "&"), articleUrl);
+        if (resolved && !seenUrls.has(resolved) && !resolved.includes("data:image/") && !/\.(gif|svg|ico)(\?|$)/i.test(resolved)) {
+          seenUrls.add(resolved);
+          images.push({ url: resolved, caption: "video thumbnail", isOg: false, index: imgIndex++ });
+        }
+      }
+    }
+
     return images;
   } catch {
     return [];
