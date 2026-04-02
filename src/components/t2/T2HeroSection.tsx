@@ -270,7 +270,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
             {lang === "ko" ? "아직 예측에 참여하지 않았어요" : "No predictions yet"}
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            {lang === "ko" ? "트렌드 키워드를 탭하여 예측에 참여하세요" : "Tap a trend keyword to make your first prediction"}
+            {lang === "ko" ? "트렌드를 예측하고 보상을 받으세요!" : "Predict trends and earn rewards!"}
           </p>
         </div>
       )}
