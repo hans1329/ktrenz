@@ -11,7 +11,7 @@ import T2AdminControls from "@/components/t2/T2AdminControls";
 import T2MomentumSignals from "@/components/t2/T2MomentumSignals";
 import T2MegaTrends from "@/components/t2/T2MegaTrends";
 import T2CrossSourceInsights from "@/components/t2/T2CrossSourceInsights";
-import T2SettlementResultModal from "@/components/t2/T2SettlementResultModal";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
