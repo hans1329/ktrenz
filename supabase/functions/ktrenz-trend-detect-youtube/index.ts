@@ -172,6 +172,17 @@ INTENT ANALYSIS (required for each keyword):
 18. "fan_sentiment": "positive" | "negative" | "neutral" | "mixed".
 19. "trend_potential": 0.0-1.0. Comebacks/new albums should be HIGH (0.8+).
 
+OWNERSHIP & ATTRIBUTION (required for each keyword):
+20. "ownership_artist": The artist who ACTUALLY OWNS this keyword. If a brand collab, who is the ambassador? Must be the TRUE OWNER.
+21. "ownership_confidence": 0.0-1.0 confidence that this keyword truly belongs to "${memberName}", not another artist.
+22. "article_subject_name": The person/group who is the MAIN SUBJECT of the video where this keyword was found.
+23. "article_subject_match": true ONLY if the video's main subject IS "${memberName}"${groupName ? ` or "${groupName}"` : ""}. false if it focuses on someone else.
+24. "rejection_flags": Array of applicable flags: ["wrong_member", "wrong_artist", "generic_word", "passing_mention", "noise"]. Empty [] if valid.
+25. "purchase_stage": "awareness" | "interest" | "consideration" | "purchase" | "review".
+
+🚫 GENERIC COMMON NOUNS: Single common nouns (게임, 영상, 콘텐츠, 노래, 춤) are NOT valid keywords — add "generic_word" to rejection_flags.
+🚫 CORPORATE/PHARMA NAME TRAP: Names ending in 시스템즈, 테크, 바이오, 제약, 스모, 맙, 닙 → add "noise" to rejection_flags.
+
 TREND VALUE FILTER: Only extract keywords worth tracking. Music releases and comebacks are ALWAYS worth tracking.
 
 ★★★ CONTEXT WRITING RULES (STRICTLY ENFORCED) ★★★
