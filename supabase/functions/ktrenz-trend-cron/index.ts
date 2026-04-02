@@ -598,7 +598,7 @@ async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
   };
 
   const jobs = [
-    { name: "settle", fn: "ktrenz-trend-settle" },
+    { name: "market-lifecycle", fn: "ktrenz-market-lifecycle" },
     { name: "schedule-predict", fn: "ktrenz-schedule-predict" },
     { name: "data-auditor", fn: "ktrenz-data-auditor" },
   ];
