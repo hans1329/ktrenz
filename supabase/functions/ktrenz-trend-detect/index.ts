@@ -2092,7 +2092,7 @@ async function detectForMember(
             : "naver_news",
         source_url: sourceUrl,
         source_title: sourceArticle?.title || null,
-        source_image_url: keywordData._tiktok_cover_url
+        source_image_url: (keywordData._tiktok_cover_url && sourceUrl?.includes("tiktok.com"))
           ? keywordData._tiktok_cover_url
           : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
