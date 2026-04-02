@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,17 +25,19 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 function getLocalizedKeyword(tile: any, lang: string): string {
   switch (lang) {
     case "ko": return tile.keywordKo || tile.keyword_ko || tile.keyword;
-    case "ja": return tile.keywordJa || tile.keyword_ja || tile.keyword;
-    case "zh": return tile.keywordZh || tile.keyword_zh || tile.keyword;
-    default: return tile.keyword;
+    case "en": return tile.keywordEn || tile.keyword_en || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keyword_ja || tile.keywordKo || tile.keyword_ko || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keyword_zh || tile.keywordKo || tile.keyword_ko || tile.keyword;
+    default: return tile.keywordEn || tile.keyword_en || tile.keyword;
   }
 }
 
 function getLocalizedContext(tile: any, lang: string): string | null {
   switch (lang) {
     case "ko": return tile.contextKo || tile.context_ko || tile.context;
-    case "ja": return tile.contextJa || tile.context_ja || tile.context;
-    case "zh": return tile.contextZh || tile.context_zh || tile.context;
+    case "en": return tile.context;
+    case "ja": return tile.contextJa || tile.context_ja || tile.contextKo || tile.context_ko || tile.context;
+    case "zh": return tile.contextZh || tile.context_zh || tile.contextKo || tile.context_ko || tile.context;
     default: return tile.context;
   }
 }
@@ -122,13 +125,15 @@ const T2KeywordDetail = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const track = useTrackEvent();
+  const queryClient = useQueryClient();
+  const { translateIfNeeded } = useFieldTranslation();
 
   useEffect(() => {
     if (triggerId) track("t2_keyword_detail_view", { section: triggerId });
   }, [triggerId]);
 
   // Fetch trigger data
-  const { data: trigger, isLoading: triggerLoading } = useQuery({
+  const { data: trigger, isLoading: triggerLoading, refetch: refetchTrigger } = useQuery({
     queryKey: ["t2-trigger-detail", triggerId],
     queryFn: async () => {
       const { data } = await supabase
@@ -140,6 +145,14 @@ const T2KeywordDetail = () => {
     },
     enabled: !!triggerId,
   });
+
+  // Trigger translation on load (for non-Korean languages)
+  useEffect(() => {
+    if (!trigger || language === "ko") return;
+    const refetch = () => refetchTrigger();
+    translateIfNeeded("ktrenz_trend_triggers", "context", [trigger], refetch);
+    translateIfNeeded("ktrenz_trend_triggers", "keyword", [trigger], refetch);
+  }, [trigger?.id, language]);
 
   // Fetch artist info
   const { data: artistInfo } = useQuery({
@@ -255,7 +268,7 @@ const T2KeywordDetail = () => {
   });
 
   // AI Insight query + mutation
-  const queryClient = useQueryClient();
+  // AI Insight query + mutation (queryClient already declared above)
   const { data: aiInsightData } = useQuery({
     queryKey: ["t2-ai-insight", triggerId, language],
     queryFn: async () => {
