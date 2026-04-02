@@ -162,9 +162,12 @@ No explanation needed.`,
   return textOverlaySet;
 }
 
-// URL 정규화: HTML 엔티티 디코딩
+// URL 정규화: HTML 엔티티 디코딩 + 트래킹 픽셀/오염 URL 차단
 function sanitizeImageUrl(url: string | null): string | null {
   if (!url) return null;
+  if (url.includes('data:image/') || url.includes('base64,')) return null;
+  if (url.includes('facebook.com/tr') || url.includes('/tr?id=') || url.includes('&ev=PageView')) return null;
+  if (url.includes('noscript=1')) return null;
   return url.replace(/&amp;/g, "&");
 }
 
