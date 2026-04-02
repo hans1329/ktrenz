@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,8 +8,7 @@ import { useTrackEvent } from "@/hooks/useTrackEvent";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, Info, ChevronRight, Share2, Rocket, Coins, Crosshair, Target, Copy } from "lucide-react";
+import { MessageCircle, TrendingUp, Clock, ExternalLink, Newspaper, Trophy, ChevronRight, Share2, Rocket, Crosshair, Target, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { TrendTile } from "./T2TrendTreemap";
@@ -60,22 +59,14 @@ const T2_LABELS: Record<string, Record<string, string>> = {
   detectedPlatforms: { en: "platforms detected", ko: "개 플랫폼 감지", ja: "プラットフォーム検出", zh: "个平台检测到" },
   by: { en: "by", ko: "by", ja: "by", zh: "by" },
   voteRelevance: { en: "Will it trend more tomorrow?", ko: "내일 더 유행할지 맞춰 봅시다!", ja: "明日もっと流行る？当ててみよう！", zh: "明天会更火吗？来猜猜看！" },
-  betYes: { en: "Absolutely 🔥", ko: "당연하지 🔥", ja: "もちろん 🔥", zh: "当然 🔥" },
-  betNo: { en: "Hmm 🤷", ko: "글쎄 🤷", ja: "うーん 🤷", zh: "不好说 🤷" },
-  betPlaceholder: { en: "Enter K-Token (min 10T)", ko: "K-Token 입력 (최소 10T)", ja: "K-Token入力 (最小10T)", zh: "输入K-Token (最低10T)" },
-  placeBet: { en: "Predict", ko: "예측하기", ja: "予測する", zh: "预测" },
-  yourBets: { en: "Your bets", ko: "내 예측", ja: "あなたの予測", zh: "我的预测" },
-  totalPool: { en: "Total pool", ko: "총 K-Token", ja: "合計K-Token", zh: "总K-Token" },
-  odds: { en: "Odds", ko: "확률", ja: "確率", zh: "概率" },
-  shares: { en: "shares", ko: "지분", ja: "シェア", zh: "份额" },
-  marketSettled: { en: "Results are in!", ko: "결과가 나왔어요!", ja: "結果が出ました！", zh: "结果出来了！" },
-  won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
-  lost: { en: "Better luck next time", ko: "다음엔 맞출 거예요", ja: "次こそ！", zh: "下次加油" },
-  insufficientPoints: { en: "You need more K-Token 😢", ko: "K-Token이 부족해요 😢", ja: "K-Tokenが足りません 😢", zh: "K-Token不够了 😢" },
   loginToBet: { en: "Sign in to predict", ko: "로그인하고 예측해보세요", ja: "ログインして予測しよう", zh: "登录后预测" },
   betSuccess: { en: "Prediction locked in! ✨", ko: "예측 완료! ✨", ja: "予測完了！✨", zh: "预测成功！✨" },
-  betMinError: { en: "Please enter at least 10T", ko: "최소 10T 이상 입력해주세요", ja: "10T以上を入力してください", zh: "请输入至少10T" },
   somethingWentWrong: { en: "Something went wrong, try again", ko: "문제가 발생했어요, 다시 시도해주세요", ja: "エラーが発生しました、再度お試しください", zh: "出了点问题，请重试" },
+  marketSettled: { en: "Results are in!", ko: "결과가 나왔어요!", ja: "結果が出ました！", zh: "结果出来了！" },
+  won: { en: "You got it right! 🎉", ko: "맞췄어요! 🎉", ja: "的中！🎉", zh: "猜对了！🎉" },
+  lost: { en: "Better luck next time (+10T)", ko: "다음엔 맞출 거예요 (+10T)", ja: "次こそ！(+10T)", zh: "下次加油 (+10T)" },
+  openingSoon: { en: "Opening soon!", ko: "곧 열려요!", ja: "まもなくオープン！", zh: "即将开放！" },
+  alreadyPredicted: { en: "Prediction submitted ✅", ko: "예측 완료 ✅", ja: "予測済み ✅", zh: "已预测 ✅" },
   boostTrend: { en: "Spread this trend", ko: "이 트렌드 확산하기", ja: "このトレンドを広める", zh: "扩散这个趋势" },
   shareX: { en: "Share on X", ko: "X에 공유", ja: "Xで共有", zh: "分享到X" },
   copied: { en: "Link copied! 📋", ko: "링크 복사했어요! 📋", ja: "リンクコピー済み！📋", zh: "链接已复制！📋" },
@@ -110,8 +101,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const queryClient = useQueryClient();
   const track = useTrackEvent();
 
-  const [betOutcome, setBetOutcome] = useState<"mild" | "strong" | "explosive">("mild");
-  const [betAmount, setBetAmount] = useState("");
+  const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
+  const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
 
@@ -147,70 +138,32 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     placeholderData: (prev) => prev,
   });
 
-  // Bet mutation
-  const betMutation = useMutation({
-    mutationFn: async ({ outcome, amount }: { outcome: string; amount: number }) => {
+  // Prediction submit (calls existing edge function with fixed amount)
+  const handleSubmitPrediction = async () => {
+    if (!user) {
+      toast.info(t("loginToBet", language));
+      return;
+    }
+    if (!predictionChoice || !tile) return;
+    setIsSubmittingPrediction(true);
+    try {
       const { data, error } = await supabase.functions.invoke("ktrenz-trend-bet", {
-        body: { triggerId: tile!.id, outcome, amount },
+        body: { triggerId: tile.id, outcome: predictionChoice, amount: 10 },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data) => {
-      const amount = Number(betAmount);
-      // Optimistic: update market data instantly from response
-      if (data && marketData) {
-        queryClient.setQueryData(["t2-market", tile?.id], (old: any) => ({
-          ...(old || marketData),
-          pool_mild: data.pools?.mild,
-          pool_strong: data.pools?.strong,
-          pool_explosive: data.pools?.explosive,
-          total_volume: data.totalVolume,
-        }));
-      }
-      // Optimistic: prepend new bet to myBets
-      if (data && user) {
-        queryClient.setQueryData(["t2-my-bets", marketData?.id, user.id], (old: any[]) => [
-          {
-            id: crypto.randomUUID(),
-            market_id: marketData?.id,
-            user_id: user.id,
-            outcome: betOutcome,
-            amount,
-            shares: data.shares,
-            payout: null,
-            created_at: new Date().toISOString(),
-          },
-          ...(old || []),
-        ]);
-      }
-      // Optimistic: update points
-      queryClient.setQueryData(["ktrenz-points"], (old: any) =>
-        old != null ? old - amount : old
-      );
-      queryClient.setQueryData(["user-points"], (old: any) =>
-        old != null ? old - amount : old
-      );
-      // Background refetch for consistency
       queryClient.invalidateQueries({ queryKey: ["t2-my-bets", marketData?.id, user?.id] });
       queryClient.invalidateQueries({ queryKey: ["t2-market", tile?.id] });
       queryClient.invalidateQueries({ queryKey: ["ktrenz-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
-      queryClient.invalidateQueries({ queryKey: ["hero-bet-keywords", user?.id] });
-      setBetAmount("");
       track("trend_bet_placed", { artist_name: tile?.artistName, section: tile?.keyword });
       toast.success(t("betSuccess", language));
-    },
-    onError: (err: Error) => {
-      if (err.message.includes("Insufficient")) {
-        toast.error(t("insufficientPoints", language));
-      } else {
-        toast.error(t("somethingWentWrong", language));
-      }
-    },
-  });
-  // Related keywords: same artist + group members (prioritize same category)
+    } catch (err: any) {
+      toast.error(t("somethingWentWrong", language));
+    } finally {
+      setIsSubmittingPrediction(false);
+    }
+  };
   const { data: relatedKeywords } = useQuery({
     queryKey: ["t2-related-keywords", tile?.wikiEntryId, tile?.starId, tile?.id, tile?.category],
     queryFn: async () => {
@@ -274,33 +227,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   });
 
 
-  const handlePlaceBet = () => {
-    if (!user) {
-      toast.info(t("loginToBet", language));
-      return;
-    }
-    const amount = Number(betAmount);
-    if (isNaN(amount) || amount < 10) {
-      toast.error(t("betMinError", language));
-      return;
-    }
-    betMutation.mutate({ outcome: betOutcome, amount });
-  };
-
-  // Calculate pool distribution for 3 outcomes
-  const poolMild = Number(marketData?.pool_mild ?? 0);
-  const poolStrong = Number(marketData?.pool_strong ?? 0);
-  const poolExplosive = Number(marketData?.pool_explosive ?? 0);
-  const totalPool = poolMild + poolStrong + poolExplosive;
-  const prices = {
-    mild: totalPool > 0 ? poolMild / totalPool : 1/3,
-    strong: totalPool > 0 ? poolStrong / totalPool : 1/3,
-    explosive: totalPool > 0 ? poolExplosive / totalPool : 1/3,
-  };
-  const MULTIPLIERS = { mild: 1.2, strong: 3.0, explosive: 10.0 };
-  const totalVolume = Number(marketData?.total_volume ?? 0);
+  const hasMarket = !!marketData && marketData.status === "open";
   const isSettled = marketData?.status === "settled";
   const marketOutcome = marketData?.outcome;
+  const hasPredicted = myBets && myBets.length > 0;
 
   // Boost count
   const { data: boostCount } = useQuery({
@@ -749,7 +679,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
 
 
 
-          {/* FPMM Prediction Market */}
+          {/* Prediction Section */}
           <div className="rounded-xl bg-background border-border p-4 space-y-4 border-0">
             <div className="space-y-3">
               <div className="text-center">
@@ -757,182 +687,129 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   <TrendingUp className="w-5 h-5 text-primary" />
                   {t("voteRelevance", language)}
                 </p>
-                {(() => {
-                  const expiresAt = marketData?.expires_at
-                    ? new Date(marketData.expires_at).getTime()
-                    : Date.now() + 24 * 60 * 60 * 1000; // daily model: 24h
-                  const diff = expiresAt - Date.now();
-                  if (diff <= 0) return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? "마감됨" : "Expired"}</p>;
-                  const hours = Math.floor(diff / (1000 * 60 * 60));
-                  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                  if (hours >= 24) {
-                    const days = Math.floor(hours / 24);
-                    return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? `${days}일 ${hours % 24}시간 남음` : `${days}d ${hours % 24}h left`}</p>;
-                  }
-                  return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? `${hours}시간 ${mins}분 남음` : `${hours}h ${mins}m left`}</p>;
-                })()}
-              </div>
-
-              {/* 3-outcome selector with multipliers */}
-              <div className="grid grid-cols-3 gap-2">
-                {([
-                  { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "<15% 상승" : "<15% rise", emoji: "🌱", color: "amber", multi: "1.2x" },
-                  { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "15~100% 상승" : "15~100% rise", emoji: "🔥", color: "emerald", multi: "3x" },
-                  { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "100%+ 상승" : "100%+ rise", emoji: "🚀", color: "purple", multi: "10x" },
-                ]).map(({ key, label, threshold, emoji, color, multi }) => (
-                  <div
-                    key={key}
-                    className={cn(
-                      "rounded-lg p-2.5 text-center cursor-pointer transition-all border",
-                      betOutcome === key
-                        ? "border-primary shadow-sm bg-transparent"
-                        : "bg-primary-foreground border-border/30 hover:border-primary/40"
-                    )}
-                    onClick={() => setBetOutcome(key)}
-                  >
-                    <div className="text-lg">{emoji}</div>
-                    <div className="text-sm font-bold text-foreground">{label}</div>
-                    <div className={cn("text-sm font-black", (color === "amber" || color === "emerald") ? "text-secondary-foreground" : `text-${color}-400`)}>{multi}</div>
-                    <div className="text-[9px] text-foreground mt-0.5">{threshold}</div>
+                {/* Time remaining or opening soon */}
+                {!hasMarket && !isSettled ? (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm font-semibold text-primary">{t("openingSoon", language)}</p>
+                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {(() => {
+                        const now = new Date();
+                        const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+                        const nextMidnightKST = new Date(kst);
+                        nextMidnightKST.setUTCHours(15, 0, 0, 0); // 00:00 KST = 15:00 UTC
+                        if (nextMidnightKST.getTime() <= now.getTime()) {
+                          nextMidnightKST.setUTCDate(nextMidnightKST.getUTCDate() + 1);
+                        }
+                        const diff = nextMidnightKST.getTime() - now.getTime();
+                        const hours = Math.floor(diff / (1000 * 60 * 60));
+                        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        return language === "ko" ? `약 ${hours}시간 ${mins}분 후 오픈` : `Opens in ~${hours}h ${mins}m`;
+                      })()}
+                    </p>
                   </div>
-                ))}
+                ) : hasMarket && (
+                  (() => {
+                    const expiresAt = marketData?.expires_at
+                      ? new Date(marketData.expires_at).getTime()
+                      : Date.now() + 24 * 60 * 60 * 1000;
+                    const diff = expiresAt - Date.now();
+                    if (diff <= 0) return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? "마감됨" : "Expired"}</p>;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    return <p className="text-xs text-muted-foreground mt-1">{language === "ko" ? `${hours}시간 ${mins}분 남음` : `${hours}h ${mins}m left`}</p>;
+                  })()
+                )}
               </div>
 
-              {/* Probability bar */}
-              <div className="flex items-center gap-0.5 h-6 rounded-full overflow-hidden">
-                {([
-                  { key: "mild" as const, color: "bg-[#f59f0a]/[0.68]" },
-                  { key: "strong" as const, color: "bg-emerald-500" },
-                  { key: "explosive" as const, color: "bg-purple-500" },
-                ]).map(({ key, color }, i) => (
-                  <div
-                    key={key}
-                    className={cn("h-full transition-all duration-500", color, i === 0 && "rounded-l-full", i === 2 && "rounded-r-full")}
-                    style={{ width: `${Math.max(prices[key] * 100, 8)}%` }}
-                  />
-                ))}
-              </div>
+              {/* 3-outcome selector with rewards */}
+              {(hasMarket || isSettled) && (
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { key: "mild" as const, label: language === "ko" ? "소폭" : "Mild", threshold: language === "ko" ? "10~15%" : "10~15%", emoji: "🌱", reward: "100T" },
+                    { key: "strong" as const, label: language === "ko" ? "강세" : "Strong", threshold: language === "ko" ? "15~50%" : "15~50%", emoji: "🔥", reward: "300T" },
+                    { key: "explosive" as const, label: language === "ko" ? "폭발" : "Explosive", threshold: language === "ko" ? "50%+" : "50%+", emoji: "🚀", reward: "1,000T" },
+                  ]).map(({ key, label, threshold, emoji, reward }) => {
+                    const isSelected = predictionChoice === key;
+                    const isDisabled = !!hasPredicted;
+                    const myBet = myBets?.find((b: any) => b.outcome === key);
+                    const isMyChoice = !!myBet;
 
-              {/* My Position */}
-              {myBets && myBets.length > 0 && (() => {
-                const outcomes = ["mild", "strong", "explosive"] as const;
-                const outcomeEmoji: Record<string, string> = { mild: "🌱", strong: "🔥", explosive: "🚀" };
-                const outcomeLabel: Record<string, string> = { mild: language === "ko" ? "소폭" : "Mild", strong: language === "ko" ? "강세" : "Strong", explosive: language === "ko" ? "폭발" : "Explosive" };
-                const outcomeColor: Record<string, string> = { mild: "amber", strong: "emerald", explosive: "purple" };
-                const stakes = Object.fromEntries(outcomes.map(o => [o, {
-                  amount: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.amount), 0),
-                  shares: myBets.filter((b: any) => b.outcome === o).reduce((s: number, b: any) => s + Number(b.shares), 0),
-                }]));
-                const totalInvested = outcomes.reduce((s, o) => s + stakes[o].amount, 0);
-                return (
-                  <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-foreground">{language === "ko" ? "내 포지션" : "My Position"}</p>
-                    <div className="flex justify-center gap-1.5">
-                      {outcomes.filter(o => stakes[o].amount > 0).map(o => (
-                        <div key={o} className={cn(`rounded-md bg-${outcomeColor[o]}-500/10 border border-${outcomeColor[o]}-500/20 p-2 text-center min-w-[100px]`)}>
-                          <div className={cn("text-xs font-semibold", o === "mild" ? "text-foreground" : `text-${outcomeColor[o]}-400`)}>{outcomeEmoji[o]} {outcomeLabel[o]}</div>
-                          <div className={cn("text-sm font-bold", o === "mild" ? "text-secondary-foreground" : `text-${outcomeColor[o]}-400`)}>{stakes[o].amount.toLocaleString()} <span className="text-primary" style={{ filter: "hue-rotate(-10deg) saturate(1.3)" }}>💎</span></div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {language === "ko" ? "성공시" : "If win"}{" "}
-                            <span className={cn("font-semibold", o === "mild" ? "text-secondary-foreground" : `text-${outcomeColor[o]}-400`)}>
-                              ×{MULTIPLIERS[o]} = {Math.round(stakes[o].amount * MULTIPLIERS[o]).toLocaleString()} <span className="text-primary" style={{ filter: "hue-rotate(-10deg) saturate(1.3)" }}>💎</span>
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-muted-foreground text-center text-sm">
-                      {language === "ko" ? "총 투자" : "Total invested"}: <span className="font-bold text-foreground">{totalInvested.toLocaleString()} 💎</span>
-                    </div>
-                  </div>
-                );
-              })()}
+                    return (
+                      <div
+                        key={key}
+                        className={cn(
+                          "rounded-lg p-2.5 text-center transition-all border",
+                          isMyChoice
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                            : isSelected
+                            ? "border-primary shadow-sm bg-transparent"
+                            : "bg-primary-foreground border-border/30",
+                          !isDisabled && "cursor-pointer hover:border-primary/40",
+                          isDisabled && !isMyChoice && "opacity-40"
+                        )}
+                        onClick={() => !isDisabled && setPredictionChoice(key)}
+                      >
+                        <div className="text-lg">{emoji}</div>
+                        <div className="text-sm font-bold text-foreground">{label}</div>
+                        <div className="text-sm font-black text-primary">{reward}</div>
+                        <div className="text-[9px] text-muted-foreground mt-0.5">{threshold}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Wrong = 10T consolation notice */}
+              {(hasMarket || isSettled) && !hasPredicted && (
+                <p className="text-center text-[11px] text-muted-foreground">
+                  {language === "ko" ? "틀려도 참여 보상 10T 지급!" : "Wrong? Still earn 10T for participating!"}
+                </p>
+              )}
+
+              {/* Already predicted */}
+              {hasPredicted && !isSettled && (
+                <div className="text-center py-2">
+                  <p className="text-sm font-bold text-primary">{t("alreadyPredicted", language)}</p>
+                </div>
+              )}
 
               {/* Settled state */}
-              {isSettled ? (
+              {isSettled && (
                 <div className="rounded-lg bg-muted/50 border border-border p-3 text-center space-y-1">
                   <p className="text-sm font-bold text-foreground">{t("marketSettled", language)}</p>
-                  <Badge variant="default" className="text-xs capitalize">
-                    {marketOutcome}
-                  </Badge>
                   {myBets && myBets.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {myBets.map((bet: any) => (
                         <div key={bet.id} className="text-[11px] text-muted-foreground">
-                          {bet.outcome} {Number(bet.amount).toLocaleString()} T → {bet.payout != null
+                          {bet.payout != null
                             ? (bet.payout > 0
                               ? <span className="text-emerald-400 font-bold">+{Number(bet.payout).toLocaleString()} T {t("won", language)}</span>
-                              : <span className="text-rose-400">{t("lost", language)}</span>)
+                              : <span className="text-muted-foreground">{t("lost", language)}</span>)
                             : "..."}
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-              ) : (
-                <>
-                  {/* Bet input */}
-                   <div className="flex flex-col items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">{language === "ko" ? "배팅:" : "Bet:"}</span>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        min={10}
-                        max={1000}
-                        placeholder="10~1000"
-                        value={betAmount}
-                        onChange={(e) => setBetAmount(e.target.value)}
-                        className="w-36 sm:w-44 h-12 sm:h-14 text-center text-base md:text-base lg:text-lg font-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      <span className="text-lg">💎</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {[10, 50, 100, 500, 1000].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setBetAmount(String(preset))}
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${
-                            betAmount === String(preset)
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "text-muted-foreground border-border bg-white/60"
-                          }`}
-                        >
-                          {preset >= 1000 ? `${preset / 1000}K` : preset}
-                        </button>
-                      ))}
-                    </div>
-                    {user && (
-                      <span className="text-[11px] font-bold text-primary whitespace-nowrap">
-                        {language === "ko" ? "보유" : "Balance"}: {Number(kPoints).toLocaleString()} 💎
-                      </span>
-                    )}
-                  </div>
-                  {/* Expected return display */}
-                  {betAmount && Number(betAmount) >= 10 && (
-                    <div className="text-center text-sm font-bold text-secondary-foreground">
-                      {language === "ko" ? "예상 수익" : "Expected return"}: {Math.round(Number(betAmount) * MULTIPLIERS[betOutcome]).toLocaleString()} 💎
-                      <span className="text-[10px] text-muted-foreground ml-1">(×{MULTIPLIERS[betOutcome]})</span>
-                    </div>
+              )}
+
+              {/* Submit button */}
+              {hasMarket && !hasPredicted && !isSettled && (
+                <Button
+                  className="w-full gap-2 py-5 rounded-full"
+                  onClick={handleSubmitPrediction}
+                  disabled={isSubmittingPrediction || !predictionChoice}
+                >
+                  {isSubmittingPrediction ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      {language === "ko" ? "처리 중..." : "Processing..."}
+                    </>
+                  ) : (
+                    <>{language === "ko" ? "예측하기" : "Predict"}</>
                   )}
-                  <Button
-                    className="w-full gap-2 py-5 rounded-full"
-                    onClick={handlePlaceBet}
-                    disabled={betMutation.isPending || !betAmount}
-                  >
-                    {betMutation.isPending ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        {language === "ko" ? "처리 중..." : "Processing..."}
-                      </>
-                    ) : (
-                      <>
-                        {language === "ko" ? "예측하기" : "Predict"}
-                      </>
-                    )}
-                  </Button>
-                </>
+                </Button>
               )}
             </div>
 
