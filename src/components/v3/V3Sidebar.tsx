@@ -57,7 +57,7 @@ const V3Sidebar = ({ activeTab, onTabChange }: V3SidebarProps) => {
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton asChild>
-                        <button onClick={() => item.id === "agent" ? navigate("/agent") : item.id === "myActivity" ? navigate("/dashboard") : onTabChange(item.id)}
+                        <button onClick={() => item.id === "artistView" ? navigate("/?view=artist") : item.id === "myActivity" ? navigate("/dashboard") : onTabChange(item.id as V3Tab)}
                           className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all w-full",
                             collapsed && "justify-center px-0",
                             active ? "bg-muted text-foreground font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
