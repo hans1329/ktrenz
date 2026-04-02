@@ -289,8 +289,41 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       const existsInVideo = videoText.includes(kwLower) || (kwKo && videoText.includes(kwKo));
       if (!existsInVideo) {
         console.warn(`[detect-youtube] Filtered: "${k.keyword}" not found in source video [${videoIdx + 1}] "${sourceVideo.title.slice(0, 50)}"`);
+        return false;
       }
-      return existsInVideo;
+
+      // ★ Context 품질 검증: 영상 제목 원문 복사 방지
+      if (k.context_ko) {
+        const ctx = k.context_ko;
+        // [YouTube] 접두사로 시작하면 제목 복사로 판단
+        if (ctx.startsWith("[YouTube]") || ctx.startsWith("[유튜브]")) {
+          // 제목 원문 제거 후 → 이후 요약만 남기기
+          const arrowIdx = ctx.indexOf("→");
+          if (arrowIdx > 0 && arrowIdx < ctx.length - 10) {
+            const cleaned = ctx.slice(arrowIdx + 1).trim();
+            k.context_ko = cleaned;
+            k.context = cleaned;
+            console.log(`[detect-youtube] Cleaned title-copy context for "${k.keyword}": "${cleaned.slice(0, 60)}..."`);
+          } else {
+            // → 도 없으면 제목 그대로 복사한 것 → fallback context 생성
+            const fallback = `${memberName}의 유튜브 영상에서 ${k.keyword}이(가) 언급되며 팬들의 관심을 받고 있다.`;
+            k.context_ko = fallback;
+            k.context = fallback;
+            console.warn(`[detect-youtube] Replaced raw-title context for "${k.keyword}"`);
+          }
+        }
+        // 영상 제목이 context의 50% 이상을 차지하면 품질 부족으로 판단
+        const titleLower = sourceVideo.title.toLowerCase();
+        const ctxLower = k.context_ko.toLowerCase();
+        if (titleLower.length > 20 && ctxLower.includes(titleLower.slice(0, Math.min(titleLower.length, 40)))) {
+          const fallback = `${memberName}의 유튜브 영상에서 ${k.keyword}이(가) 언급되며 팬들의 관심을 받고 있다.`;
+          k.context_ko = fallback;
+          k.context = fallback;
+          console.warn(`[detect-youtube] Replaced title-heavy context for "${k.keyword}"`);
+        }
+      }
+
+      return true;
     });
   } catch (e) {
     console.warn(`[detect-youtube] Extraction error: ${(e as Error).message}`);
