@@ -128,7 +128,7 @@ const V2ProfileOverlay = ({ open, onOpenChange }: V2ProfileOverlayProps) => {
                         ? (language === "ko" ? "분석가" : "Analyst")
                         : (profile?.current_level ?? 1) >= 6
                         ? (language === "ko" ? "탐색가" : "Explorer")
-                        : (language === "ko" ? "입문" : "Beginner")}
+                        : (language === "ko" ? "초보" : "Beginner")}
                     </span>
                   </p>
                 </div>
