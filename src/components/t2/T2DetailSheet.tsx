@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useTrackEvent } from "@/hooks/useTrackEvent";
+import { useFieldTranslation } from "@/hooks/useFieldTranslation";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,10 @@ import { sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "./T2
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
   switch (lang) {
     case "ko": return tile.keywordKo || tile.keyword;
-    case "ja": return tile.keywordJa || tile.keyword;
-    case "zh": return tile.keywordZh || tile.keyword;
-    default: return tile.keyword;
+    case "en": return tile.keywordEn || tile.keyword;
+    case "ja": return tile.keywordJa || tile.keywordKo || tile.keyword;
+    case "zh": return tile.keywordZh || tile.keywordKo || tile.keyword;
+    default: return tile.keywordEn || tile.keyword;
   }
 }
 
@@ -102,6 +104,26 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
   const { user, kPoints } = useAuth();
   const queryClient = useQueryClient();
   const track = useTrackEvent();
+  const { translateIfNeeded } = useFieldTranslation();
+
+  // Trigger context/keyword translation on open
+  useEffect(() => {
+    if (!tile) return;
+    const dbItem = {
+      id: tile.id,
+      keyword_ko: tile.keywordKo,
+      keyword_en: tile.keywordEn,
+      keyword_ja: tile.keywordJa,
+      keyword_zh: tile.keywordZh,
+      context_ko: tile.contextKo,
+      context: tile.context,
+      context_ja: tile.contextJa,
+      context_zh: tile.contextZh,
+    };
+    const refetch = () => queryClient.invalidateQueries({ queryKey: ["t2-trends"] });
+    translateIfNeeded("ktrenz_trend_triggers", "context", [dbItem], refetch);
+    translateIfNeeded("ktrenz_trend_triggers", "keyword", [dbItem], refetch);
+  }, [tile?.id, language]);
 
   const [predictionChoice, setPredictionChoice] = useState<"mild" | "strong" | "explosive" | null>(null);
   const [isSubmittingPrediction, setIsSubmittingPrediction] = useState(false);
