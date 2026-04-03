@@ -13,6 +13,18 @@ const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
 const MAX_RESOLVE_PER_RUN = 5; // 미검색 아티스트 프로필 검색 제한 (축소)
 const POST_AGE_DAYS = 7; // 7일 이내 포스트만 수집 (기존 3일에서 완화)
 
+// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
+function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return false;
+  if (blockedNames.has(kw)) return true;
+  const cleaned = kw.replace(/^by/i, "").trim();
+  if (cleaned && blockedNames.has(cleaned)) return true;
+  const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
+  if (tokens.length >= 2 && tokens.every(t => blockedNames.has(t))) return true;
+  return false;
+}
+
 interface InstaPost {
   caption_text: string;
   location_name: string | null;
