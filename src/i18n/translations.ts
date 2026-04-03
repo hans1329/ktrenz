@@ -708,7 +708,7 @@ const translations: Record<string, Record<Language, string>> = {
   "t2.hero.discoverDesc": { en: "Fashion, beauty, food & more — real-time analysis", ko: "패션, 뷰티, 음식까지 — 실시간 트렌드 분석", ja: "ファッション、ビューティー、グルメまで — リアルタイム分析", zh: "时尚、美妆、美食等 — 实时分析" },
   "t2.hero.getStarted": { en: "Get Started", ko: "시작하기", ja: "始める", zh: "开始" },
   "t2.hero.spotifyBannerTitle": { en: "Predict trends &\nearn Spotify Premium free", ko: "트렌드를 예측하고\nSpotify Premium 무료 이용권을 받으세요", ja: "トレンドを予測して\nSpotify Premium無料券をゲット", zh: "预测趋势\n赢取Spotify Premium免费券" },
-  "t2.hero.spotifyBannerDesc": { en: "Join predictions and collect reward points", ko: "예측에 참여하고 보상 포인트를 모으세요", ja: "予測に参加してポイントを集めよう", zh: "参与预测收集奖励积分" },
+  "t2.hero.spotifyBannerDesc": { en: "Join predictions and earn rewards!", ko: "예측에 참여하고 보상을 받으세요!", ja: "予測に参加して報酬をゲット!", zh: "参与预测赢取奖励!" },
   "t2.hero.followArtistsTitle": { en: "Follow your favorite artists\nfor personalized trends", ko: "관심 아티스트를 등록하고\n맞춤 트렌드를 받아보세요", ja: "お気に入りのアーティストをフォローして\nパーソナライズされたトレンドを", zh: "关注你喜爱的艺人\n获取个性化趋势" },
   "t2.hero.followArtists": { en: "Follow Artists", ko: "아티스트 등록하기", ja: "アーティストをフォロー", zh: "关注艺人" },
   "t2.hero.trends": { en: "trends", ko: "개", ja: "件", zh: "个" },
