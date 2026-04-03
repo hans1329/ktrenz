@@ -415,6 +415,27 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
     const seenUrls = new Set<string>();
     let imgIndex = 0;
 
+    // 기사 본문 컨테이너 시작/끝 위치 감지 (뉴스엔: #CLtag, articleBody, article class 등)
+    const articleBodyPatterns = [
+      /itemprop=["']articleBody["']/i,
+      /id=["'](?:CLtag|articleBody|article[_-]?body|news[_-]?body|content[_-]?body|article[_-]?content)["']/i,
+      /class=["'][^"']*(?:article[_-]?body|news[_-]?body|article[_-]?content|article[_-]?text|content[_-]?body|story[_-]?body|artclBody|newsct_article)["']/i,
+    ];
+    let articleBodyStart = -1;
+    let articleBodyEnd = html.length;
+    for (const pattern of articleBodyPatterns) {
+      const m = html.match(pattern);
+      if (m && m.index != null) {
+        articleBodyStart = m.index;
+        // 해당 컨테이너의 닫는 태그까지를 본문 범위로 잡음 (최대 50KB 제한)
+        const closeTagSearch = html.slice(articleBodyStart, Math.min(articleBodyStart + 50000, html.length));
+        // 중첩 div 대응: 같은 레벨의 닫는 태그를 찾기 위해 간략한 탐색
+        const closeIdx = closeTagSearch.lastIndexOf("</div>");
+        if (closeIdx > 0) articleBodyEnd = articleBodyStart + closeIdx;
+        break;
+      }
+    }
+
     // 1) og:image
     const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
