@@ -157,6 +157,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile,
   });
 
+  // Latest tracking score
+  const { data: latestTrackingScore } = useQuery({
+    queryKey: ["t2-latest-score", tile?.id],
+    queryFn: async () => {
+      if (!tile) return null;
+      const { data } = await supabase
+        .from("ktrenz_trend_tracking" as any)
+        .select("interest_score, tracked_at")
+        .eq("trigger_id", tile.id)
+        .order("tracked_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) return data[0] as { interest_score: number; tracked_at: string };
+      return null;
+    },
+    enabled: !!tile,
+  });
+
   // User's bets for this market
   const { data: myBets } = useQuery({
     queryKey: ["t2-my-bets", marketData?.id, user?.id],
