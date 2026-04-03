@@ -511,7 +511,14 @@ Deno.serve(async (req) => {
     let trackedCount = 0;
     const results: any[] = [];
 
+    const TIMEGUARD_MS = 240000; // 240초 경과 시 남은 키워드 건너뛰기
+    const trackStartTime = Date.now();
+
     for (const kw of keywords) {
+      if (Date.now() - trackStartTime > TIMEGUARD_MS) {
+        console.warn(`[trend-track] ⏱ Timeguard: ${Math.round((Date.now() - trackStartTime) / 1000)}s elapsed, skipping remaining ${keywords.length - trackedCount} keywords`);
+        break;
+      }
       try {
         const kwQuery = kw.keyword_ko || kw.keyword;
         const source = sourceByKeyword.get(kw.id);

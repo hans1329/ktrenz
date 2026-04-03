@@ -143,6 +143,11 @@ Deno.serve(async (req) => {
     }
 
     // ── 2. TikTok 수집 (단일 호출, 내부적으로 50명씩 처리) ──
+    // 타임가드: 인스타 수집 후 경과시간 확인
+    if (Date.now() - startTime > 240000) {
+      console.warn(`[collect-social] ⏱ Timeguard: ${Math.round((Date.now() - startTime) / 1000)}s elapsed, skipping TikTok collection`);
+      results.tiktok = { success: true, skipped: true, reason: "timeguard" };
+    } else {
     console.log("[collect-social] Starting TikTok collection...");
     try {
       const controller = new AbortController();

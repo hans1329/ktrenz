@@ -1728,7 +1728,14 @@ Deno.serve(async (req) => {
       filtered: number;
     }> = [];
 
+    const TIMEGUARD_MS = 240000; // 240초 경과 시 남은 아티스트 건너뛰기
+    const batchStartTime = Date.now();
+
     for (const star of batch) {
+      if (Date.now() - batchStartTime > TIMEGUARD_MS) {
+        console.warn(`[trend-detect] ⏱ Timeguard: ${Math.round((Date.now() - batchStartTime) / 1000)}s elapsed, skipping remaining ${batch.length - artistResults.length} stars`);
+        break;
+      }
       try {
         const isGroup = star.star_type === "group";
         const isSolo = star.star_type === "solo";
