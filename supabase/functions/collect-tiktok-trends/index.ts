@@ -14,6 +14,18 @@ const SEARCH_COUNT = 10;
 // ★ 하드 리밋: 월 500건 무료, 초과 시 개당 과금 → 일일 최대 450건으로 안전 마진 확보
 const DAILY_API_CALL_HARD_LIMIT = 450;
 
+// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
+function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return false;
+  if (blockedNames.has(kw)) return true;
+  const cleaned = kw.replace(/^by/i, "").trim();
+  if (cleaned && blockedNames.has(cleaned)) return true;
+  const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
+  if (tokens.length >= 2 && tokens.every(t => blockedNames.has(t))) return true;
+  return false;
+}
+
 interface TikTokVideo {
   id: string;
   desc: string;
