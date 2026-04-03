@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import { Clock, TrendingUp, MessageCircle, Trophy } from "lucide-react";
 import { CATEGORY_CONFIG, sanitizeImageUrl, isBlockedImageDomain, detectPlatformLogo } from "@/components/t2/T2TrendTreemap";
+import { getYouTubeThumbnailUrl } from "@/lib/sourceMedia";
 import type { TrendTile } from "@/components/t2/T2TrendTreemap";
 
 function getLocalizedKeyword(tile: TrendTile, lang: string): string {
@@ -63,8 +64,9 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
         : null
     );
     const safeSourceImg = rawSourceImg && !isBlockedImageDomain(rawSourceImg) ? rawSourceImg : null;
+    const youtubeThumb = !safeSourceImg ? getYouTubeThumbnailUrl(item.sourceUrl) : null;
     const platformLogo = detectPlatformLogo(item.sourceUrl, item.sourceImageUrl);
-    return safeSourceImg || item.artistImageUrl || platformLogo;
+    return safeSourceImg || youtubeThumb || item.artistImageUrl || platformLogo;
   };
 
   const buildSparkPath = (item: TrendTile) => {

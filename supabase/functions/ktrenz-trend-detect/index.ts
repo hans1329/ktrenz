@@ -284,7 +284,7 @@ async function searchNaver(
 
 // ─── YouTube 검색 (발견용: 최근 7일 영상 제목에서 키워드 후보 추출) ───
 interface YouTubeDetectResult {
-  items: { title: string; description: string; url: string; publishedAt: string }[];
+  items: { title: string; description: string; url: string; publishedAt: string; thumbnailUrl: string | null }[];
   totalResults: number;
 }
 
@@ -323,6 +323,7 @@ async function searchYouTubeForDetect(
       description: (item.snippet?.description || "").slice(0, 200),
       url: `https://www.youtube.com/watch?v=${item.id?.videoId}`,
       publishedAt: item.snippet?.publishedAt || "",
+      thumbnailUrl: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || null,
     }));
     return { items, totalResults: data.pageInfo?.totalResults || items.length };
   } catch (e) {
@@ -1902,7 +1903,7 @@ async function detectForMember(
     : `"${searchName}"`;
 
   // ─── 3소스 병렬 검색: News + Blog + YouTube (키 로테이션 포함) ───
-  const ytSearchQuery = member.name_ko || member.display_name; // YouTube는 따옴표 없이 자연어 검색
+  const ytSearchQuery = groupLabel ? `${searchName} ${groupLabel}` : (member.name_ko || member.display_name); // YouTube는 그룹 컨텍스트를 포함해 동명이인 오수집 방지
   const [newsResult, blogResult, ytResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
@@ -1925,9 +1926,22 @@ async function detectForMember(
   const filteredNews = filterByTime(newsItems);
   const filteredBlogs = filterByTime(blogItems);
 
-  // YouTube 영상: 7일 이내 + 일본어 필터링
+  const ytGroupVariants = groupLabel
+    ? [...new Set([groupLabel, member.group_name, member.group_name_ko].filter((name): name is string => !!name).map((name) => name.toLowerCase()))]
+    : [];
+
+  // YouTube 영상: 7일 이내 + 일본어 필터링 + 멤버 검색 시 그룹 컨텍스트 필수
   const filteredYT = ytResult.items.filter(item => {
     if (isJapanese(item.title) || isJapanese(item.description)) return false;
+    if (ytGroupVariants.length > 0) {
+      const textValue = `${item.title} ${item.description}`.toLowerCase();
+      const compactTextValue = textValue.replace(/[\s\-_]+/g, "");
+      const hasGroupContext = ytGroupVariants.some((variant) => {
+        const compactVariant = variant.replace(/[\s\-_]+/g, "");
+        return textValue.includes(variant) || (compactVariant.length >= 2 && compactTextValue.includes(compactVariant));
+      });
+      if (!hasGroupContext) return false;
+    }
     return true;
   });
 
@@ -1947,6 +1961,7 @@ async function detectForMember(
       title: `[YouTube] ${item.title}`,
       description: item.description,
       url: item.url,
+      imageUrl: item.thumbnailUrl || null,
     })),
   ];
 
@@ -2159,7 +2174,9 @@ async function detectForMember(
         source_title: sourceArticle?.title || null,
         source_image_url: (keywordData._tiktok_cover_url && sourceUrl?.includes("tiktok.com"))
           ? keywordData._tiktok_cover_url
-          : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
+          : (sourceUrl?.includes("youtube.com/watch") && sourceArticle?.imageUrl)
+            ? sourceArticle.imageUrl
+            : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         metadata: (keywordData._tiktok_source_url && sourceUrl?.includes("tiktok.com")) ? {
           source: "tiktok",
@@ -2186,7 +2203,9 @@ async function detectForMember(
         source_title: sourceArticle?.title || null,
         source_image_url: (keywordData._tiktok_cover_url && sourceUrl?.includes("tiktok.com"))
           ? keywordData._tiktok_cover_url
-          : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
+          : (sourceUrl?.includes("youtube.com/watch") && sourceArticle?.imageUrl)
+            ? sourceArticle.imageUrl
+            : selectBestImage(sourceUrl, keywordData.keyword_ko || keywordData.keyword, member.display_name),
         source_snippet: sourceArticle?.description?.slice(0, 500) || null,
         context: keywordData.context,
         context_ko: keywordData.context_ko || null,

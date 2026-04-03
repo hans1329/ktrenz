@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { getYouTubeThumbnailUrl } from "@/lib/sourceMedia";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Minus, Globe, Clock,
   ExternalLink, Newspaper, Trophy, Info, Timer, Zap, ChevronLeft,
@@ -373,7 +374,7 @@ const T2KeywordDetail = () => {
   const influenceIndex = Number(trigger.influence_index) || 0;
   const confidence = Number(trigger.confidence) || 0;
   const elapsedHours = (Date.now() - new Date(trigger.detected_at).getTime()) / 3600000;
-  const evidenceImageUrl = trigger.source_image_url || artistInfo?.imageUrl || null;
+  const evidenceImageUrl = trigger.source_image_url || getYouTubeThumbnailUrl(trigger.source_url) || artistInfo?.imageUrl || null;
 
   return (
     <div className="min-h-screen">
