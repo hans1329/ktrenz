@@ -770,8 +770,10 @@ Deno.serve(async (req) => {
         .eq("phase", "youtube_track_quota");
     }
 
+    console.log(`[trend-track] 📊 Instagram cache: ${instaFeedCache.size} feeds fetched, ${instaApiCallsSaved} API calls saved`);
+
     return new Response(
-      JSON.stringify({ success: true, batchOffset, totalCandidates: totalKeywords, tracked: trackedCount, ytQuotaUsed, ytQuotaRemaining, results }),
+      JSON.stringify({ success: true, batchOffset, totalCandidates: totalKeywords, tracked: trackedCount, ytQuotaUsed, ytQuotaRemaining, instaCacheSaved: instaApiCallsSaved, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
