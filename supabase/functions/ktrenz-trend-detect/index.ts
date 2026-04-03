@@ -551,7 +551,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
         const resolved = resolveUrl(videoPosterMatch[1].replace(/&amp;/g, "&"), articleUrl);
         if (resolved && !seenUrls.has(resolved) && !resolved.includes("data:image/")) {
           seenUrls.add(resolved);
-          images.push({ url: resolved, caption: "video thumbnail", isOg: false, index: imgIndex++ });
+          images.push({ url: resolved, caption: "video thumbnail", isOg: false, inArticleBody: false, index: imgIndex++ });
         }
       }
       // background-image in style (e.g. MBC/SBS video viewer div)
