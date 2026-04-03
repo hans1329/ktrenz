@@ -352,19 +352,30 @@ async function sameSourceUrlDedup(sb: any): Promise<{ expired: number; details: 
 }
 
 // ── 3b. 크로스 아티스트 동일 source_url 중복제거 ──
-// 서로 다른 아티스트가 같은 기사에서 키워드를 추출한 경우 baseline_score가 높은 것만 유지
+// 서로 다른 아티스트가 같은 기사에서 키워드를 추출한 경우 source_title 내 아티스트명 매칭으로 우선순위 결정
 // 같은 키워드 + 다른 기사는 유효하지만, 같은 기사는 키워드가 달라도 중복으로 처리
 async function crossArtistSourceUrlDedup(sb: any): Promise<{ expired: number; details: string[] }> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: active } = await sb
     .from("ktrenz_trend_triggers")
-    .select("id, keyword, keyword_ko, star_id, artist_name, source_url, baseline_score, detected_at")
+    .select("id, keyword, keyword_ko, star_id, artist_name, source_url, source_title, baseline_score, detected_at")
     .in("status", ["active", "pending"])
     .gte("detected_at", threeDaysAgo)
     .not("source_url", "is", null);
 
   if (!active?.length) return { expired: 0, details: [] };
+
+  // 스타 이름(한글) 조회 — source_title 매칭용
+  const starIds = [...new Set(active.map((e: any) => e.star_id).filter(Boolean))];
+  const { data: starNames } = await sb
+    .from("ktrenz_stars")
+    .select("id, display_name, name_ko")
+    .in("id", starIds);
+  const starNameMap = new Map<string, { display_name: string; name_ko: string | null }>();
+  for (const s of (starNames || [])) {
+    starNameMap.set(s.id, { display_name: s.display_name, name_ko: s.name_ko });
+  }
 
   // source_url 기준 그룹화 (star_id 무관)
   const byUrl = new Map<string, any[]>();
@@ -383,8 +394,27 @@ async function crossArtistSourceUrlDedup(sb: any): Promise<{ expired: number; de
     const uniqueStars = new Set(entries.map((e: any) => e.star_id));
     if (uniqueStars.size <= 1) continue;
 
-    // baseline_score가 가장 높은 것을 유지
+    // 정렬 우선순위: source_title에 아티스트명 포함 여부 > baseline_score > detected_at
     entries.sort((a: any, b: any) => {
+      const titleLower = (a.source_title || "").toLowerCase();
+      const titleLowerB = (b.source_title || "").toLowerCase();
+
+      // source_title에 아티스트명(한글 또는 영문) 포함 여부 스코어링
+      const aNames = starNameMap.get(a.star_id);
+      const bNames = starNameMap.get(b.star_id);
+      const aTitleMatch = aNames ? (
+        (aNames.name_ko && titleLower.includes(aNames.name_ko.toLowerCase()) ? 2 : 0) +
+        (titleLower.includes(aNames.display_name.toLowerCase()) ? 1 : 0)
+      ) : 0;
+      const bTitleMatch = bNames ? (
+        (bNames.name_ko && titleLowerB.includes(bNames.name_ko.toLowerCase()) ? 2 : 0) +
+        (titleLowerB.includes(bNames.display_name.toLowerCase()) ? 1 : 0)
+      ) : 0;
+
+      // 제목 매칭 우선 (높을수록 좋음)
+      if (bTitleMatch !== aTitleMatch) return bTitleMatch - aTitleMatch;
+
+      // 기존 로직: baseline_score > detected_at
       const scoreDiff = (b.baseline_score || 0) - (a.baseline_score || 0);
       if (scoreDiff !== 0) return scoreDiff;
       return new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime();
