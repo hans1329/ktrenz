@@ -378,6 +378,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    const globalStarNames = new Set<string>();
+    for (const s of stars) {
+      if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
+      if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
+    }
+    console.log(`[instagram] Built globalStarNames: ${globalStarNames.size} entries`);
+
     console.log(`[instagram] Processing ${stars.length} stars (offset=${offset}, batch=${batchSize})`);
 
     let totalKeywords = 0;
