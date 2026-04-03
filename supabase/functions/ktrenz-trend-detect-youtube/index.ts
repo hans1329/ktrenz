@@ -268,17 +268,20 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
       // Artist name as keyword filter (exact + compound)
       const artistNames = new Set<string>([memberName.toLowerCase()]);
       if (groupName) artistNames.add(groupName.toLowerCase());
-      // Add name_ko variants from the member info passed via closure
+      // Merge global star names for cross-artist compound detection
+      const allBlocked = globalStarNames ? new Set([...artistNames, ...globalStarNames]) : artistNames;
       // Exact match
-      if (artistNames.has(kwLower) || artistNames.has(kwKo) || artistNames.has(kwEn)) {
+      if (allBlocked.has(kwLower) || allBlocked.has(kwKo) || allBlocked.has(kwEn)) {
         console.warn(`[detect-youtube] ⛔ Artist name as keyword rejected: "${k.keyword}"`);
         return false;
       }
-      // Compound name match: "그룹명 멤버명" or "멤버명/그룹명" etc.
+      // Compound name match: "그룹명 멤버명", "by멤버명" etc.
       for (const val of [kwLower, kwKo, kwEn]) {
         if (!val) continue;
-        const tokens = val.split(/[\s\/]+/).filter(Boolean);
-        if (tokens.length >= 2 && tokens.every(t => artistNames.has(t))) {
+        // Split by whitespace, slash, or "by" prefix
+        const cleaned = val.replace(/^by/i, "").trim();
+        const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
+        if (tokens.length >= 1 && tokens.every(t => allBlocked.has(t))) {
           console.warn(`[detect-youtube] ⛔ Compound artist name keyword rejected: "${k.keyword}"`);
           return false;
         }
