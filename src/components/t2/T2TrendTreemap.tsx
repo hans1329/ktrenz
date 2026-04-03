@@ -804,6 +804,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       setSelectedTile(null);
       return;
     }
+
     // Try filtered first, then fall back to all triggers (for related keywords from other categories)
     const found = filteredItems.find((item) => item.id === modalId)
       ?? dedupedTriggers.find((item) => item.id === modalId)
@@ -817,6 +818,9 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
       });
       return;
     }
+
+    let isCancelled = false;
+
     // Fallback: fetch from DB for source-section triggers not in main lists
     (async () => {
       const { data } = await supabase
@@ -824,9 +828,15 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         .select("*")
         .eq("id", modalId)
         .maybeSingle();
-      if (!data) { setSelectedTile(null); return; }
+
+      if (isCancelled) return;
+      if (!data) {
+        setSelectedTile(null);
+        return;
+      }
+
       const t = data as any;
-      setSelectedTile({
+      const fetchedTile: TrendTile = {
         id: t.id, keyword: t.keyword, keywordKo: t.keyword_ko || null, keywordEn: t.keyword_en || null, keywordJa: t.keyword_ja || null, keywordZh: t.keyword_zh || null,
         category: t.keyword_category || "brand", artistName: t.artist_name || "Unknown",
         artistNameKo: null, artistImageUrl: null,
@@ -841,9 +851,24 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         sourceSnippet: t.source_snippet || null, starId: t.star_id || null, status: t.status,
         triggerSource: t.trigger_source || null, prevApiTotal: t.prev_api_total != null ? Number(t.prev_api_total) : null,
         brandId: t.brand_id || null, metadata: t.metadata || null,
-      });
+      };
+
+      const canonical = dedupedTriggers.find((item) => buildTrendIdentity(item) === buildTrendIdentity(fetchedTile)) ?? null;
+      if (canonical && canonical.id !== modalId) {
+        setSelectedTile(canonical);
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("modal", canonical.id);
+        setSearchParams(nextParams);
+        return;
+      }
+
+      setSelectedTile(fetchedTile);
     })();
-  }, [filteredItems, dedupedTriggers, searchParams]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [filteredItems, dedupedTriggers, searchParams, setSearchParams]);
 
   const track = useTrackEvent();
   const handleTileClick = useCallback((item: TrendTile) => {
