@@ -1,0 +1,1 @@
+TRUNCATE ktrenz_pipeline_state CASCADE;
