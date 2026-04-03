@@ -128,12 +128,12 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
           boxShadow: '0 -4px 24px 0 hsl(220 10% 50% / 0.12), 0 2px 12px 0 hsl(220 10% 50% / 0.08)',
         }}>
 
-        <div className="flex items-center justify-evenly h-16 max-w-md mx-auto">
+        <div className="flex items-center h-16 max-w-md mx-auto">
           {tabs.map((tab) => {
             if (tab.isCenter) {
               // Profile center button
               return (
-                <button key={tab.id} onClick={handleProfileClick} className="flex items-center justify-center -mt-3 relative">
+                <button key={tab.id} onClick={handleProfileClick} className="flex-1 flex items-center justify-center -mt-3 relative">
                    <div className={cn("w-[72px] h-[72px] rounded-full transition-all duration-200 overflow-hidden grid place-items-center", profile?.avatar_url ? "bg-black" : "bg-[hsl(220,10%,97%)]")}>
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
@@ -150,7 +150,7 @@ const V3TabBar = ({ activeTab, onTabChange }: V3TabBarProps) => {
 
             return (
               <button key={tab.id} onClick={() => (tab.id === "rankings" ? navigate("/") : tab.id === "activity" ? navigate("/dashboard") : tab.id === "notifications" ? navigate("/notifications") : tab.id === "artistView" ? navigate("/?view=artist") : onTabChange(tab.id as V3Tab))}
-                className={cn("relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
+                className={cn("flex-1 relative flex flex-col items-center justify-center gap-1 transition-all duration-200",
                   isActive ? "text-primary" : "text-muted-foreground/60 hover:text-foreground")}>
                 <Icon className={cn("w-[22px] h-[22px] transition-transform duration-200", isActive && "scale-110")} />
                 <span className={cn("text-[10px] font-medium transition-all", isActive && "font-semibold")}>{t(tab.labelKey)}</span>
