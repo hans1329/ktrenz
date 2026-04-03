@@ -565,7 +565,6 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         const activeStars = (stars ?? []).filter((s: any) => s.is_active !== false);
         activeStars.forEach((s: any) => activeStarIds.add(s.id));
 
-        const wikiIds = new Set<string>();
         const groupStarIds = new Set<string>();
         activeStars.forEach((s: any) => {
           if (s.group_star_id) groupStarIds.add(s.group_star_id);
