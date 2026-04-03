@@ -1290,6 +1290,20 @@ Deno.serve(async (req) => {
       console.log(`[postprocess] Noise details: ${noiseResult.details.join("; ")}`);
     }
 
+    // 4.95단계: 의미적 유사 키워드 클러스터링 (같은 사건 파생 키워드 병합)
+    let semanticResult = { expired: 0, merged: 0, details: [] as string[] };
+    if (mode === "full") {
+      try {
+        semanticResult = await semanticKeywordDedup(sb);
+        console.log(`[postprocess] Semantic dedup: expired ${semanticResult.expired} duplicates (${semanticResult.merged} merged)`);
+        if (semanticResult.details.length > 0) {
+          console.log(`[postprocess] Semantic details: ${semanticResult.details.join("; ")}`);
+        }
+      } catch (e) {
+        console.warn(`[postprocess] Semantic dedup failed: ${(e as Error).message}`);
+      }
+    }
+
     // 5단계: 후처리 완료 마킹
     const activated = await markPostprocessed(sb);
     console.log(`[postprocess] Marked ${activated} entries as postprocessed`);
@@ -1306,7 +1320,7 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, mega_trend=${megaTrendResult.tagged}/${megaTrendResult.clusters}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, semantic_dedup=${semanticResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, mega_trend=${megaTrendResult.tagged}/${megaTrendResult.clusters}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
     });
 
     return new Response(
@@ -1321,6 +1335,7 @@ Deno.serve(async (req) => {
         crossArtistDedup: crossArtistResult,
         sameImageDedup: sameImageResult,
         noImageDedup: noImageResult,
+        semanticDedup: semanticResult,
         brandMapped,
         globalStarNameFilter: globalNameResult,
         noisePatternFilter: noiseResult,
