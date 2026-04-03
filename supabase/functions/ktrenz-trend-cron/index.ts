@@ -29,7 +29,8 @@ const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 function resolveBatchSize(phase: string, requestedBatchSize: number): number {
   const safeRequested = Math.max(1, Math.floor(requestedBatchSize || 1));
-  if (phase === "detect") return Math.min(safeRequested, 3);
+  if (phase === "detect") return Math.min(safeRequested, 2);
+  if (phase === "track") return Math.min(safeRequested, 5);
   return safeRequested;
 }
 
