@@ -717,7 +717,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               : (language === "ko" ? `${ageDays}일 전 감지` : `${ageDays}d ago`);
 
 
-            const currentScore = tile.peakScore ?? tile.baselineScore ?? 0;
+            const currentScore = latestTrackingScore?.interest_score ?? tile.baselineScore ?? 0;
 
             return (
               <div className="rounded-xl border overflow-hidden border-[#dcdfe4]/[0.59]">
