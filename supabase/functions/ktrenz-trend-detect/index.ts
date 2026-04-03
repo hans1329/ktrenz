@@ -168,7 +168,10 @@ function sanitizeImageUrl(url: string | null): string | null {
   if (url.includes('data:image/') || url.includes('base64,')) return null;
   if (url.includes('facebook.com/tr') || url.includes('/tr?id=') || url.includes('&ev=PageView')) return null;
   if (url.includes('noscript=1')) return null;
-  return url.replace(/&amp;/g, "&");
+  let cleaned = url.replace(/&amp;/g, "&");
+  // http → https 강제 변환 (og:image 등에서 http:// 제공하는 사이트 대응)
+  if (cleaned.startsWith("http://")) cleaned = cleaned.replace("http://", "https://");
+  return cleaned;
 }
 
 function normalizeForCompare(value: string): string {
