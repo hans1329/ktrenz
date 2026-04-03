@@ -168,7 +168,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
         .eq("trigger_id", tile.id)
         .order("tracked_at", { ascending: false })
         .limit(1);
-      if (data && data.length > 0) return data[0] as { interest_score: number; tracked_at: string };
+      if (data && (data as any[]).length > 0) return (data as any[])[0] as { interest_score: number; tracked_at: string };
       return null;
     },
     enabled: !!tile,
