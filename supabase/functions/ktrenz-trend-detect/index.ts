@@ -2059,7 +2059,14 @@ async function detectForMember(
       }
     }
 
-    // 2순위: 본문 이미지 중 첫 번째 (og:image가 아닌 것 우선 — 보통 기사 본문 사진이 더 관련성 높음)
+    // 2순위: 기사 본문 컨테이너 내부 이미지 우선 (articleBody, #CLtag 등)
+    const articleBodyImages = validImages.filter(img => !img.isOg && img.inArticleBody);
+    if (articleBodyImages.length > 0) {
+      console.log(`[trend-detect] 📰 Article body image selected for "${keywordText || artistName}"`);
+      return sanitizeImageUrl(articleBodyImages[0].url);
+    }
+
+    // 3순위: 일반 본문 이미지 중 첫 번째 (og:image가 아닌 것)
     const bodyImages = validImages.filter(img => !img.isOg);
     if (bodyImages.length > 0) {
       return sanitizeImageUrl(bodyImages[0].url);
