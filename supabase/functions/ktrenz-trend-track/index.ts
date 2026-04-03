@@ -553,13 +553,15 @@ Deno.serve(async (req) => {
         const socialSkipped = !rapidApiKey;
         const ytKeyForThis = YT_KEYS.length > 0 ? YT_KEYS[trackedCount % YT_KEYS.length] : "";
 
+        const instaHandle = source?.star_id ? instaHandleByStarId.get(source.star_id) : undefined;
+
         const [newsResult, blogResult, datalabResult, ytResult, tiktokResult, instaResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
           ytSkipped ? Promise.resolve(null) : searchYouTube(ytKeyForThis, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
           socialSkipped ? Promise.resolve(null) : searchTikTok(rapidApiKey, kwQuery),
-          socialSkipped ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery),
+          (socialSkipped || !instaHandle) ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery, instaHandle),
         ]);
 
         const currentRaw: SourceRaw = {
