@@ -7251,6 +7251,106 @@ export type Database = {
         }
         Relationships: []
       }
+      trend_vs_battles: {
+        Row: {
+          battle_date: string
+          created_at: string
+          id: string
+          status: string
+          trigger_a_id: string
+          trigger_b_id: string
+          updated_at: string
+          votes_a: number
+          votes_b: number
+          winner_trigger_id: string | null
+        }
+        Insert: {
+          battle_date?: string
+          created_at?: string
+          id?: string
+          status?: string
+          trigger_a_id: string
+          trigger_b_id: string
+          updated_at?: string
+          votes_a?: number
+          votes_b?: number
+          winner_trigger_id?: string | null
+        }
+        Update: {
+          battle_date?: string
+          created_at?: string
+          id?: string
+          status?: string
+          trigger_a_id?: string
+          trigger_b_id?: string
+          updated_at?: string
+          votes_a?: number
+          votes_b?: number
+          winner_trigger_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trend_vs_battles_trigger_a_id_fkey"
+            columns: ["trigger_a_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trend_vs_battles_trigger_b_id_fkey"
+            columns: ["trigger_b_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trend_vs_battles_winner_trigger_id_fkey"
+            columns: ["winner_trigger_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trend_vs_votes: {
+        Row: {
+          battle_id: string
+          created_at: string
+          id: string
+          user_id: string
+          voted_trigger_id: string
+        }
+        Insert: {
+          battle_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          voted_trigger_id: string
+        }
+        Update: {
+          battle_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          voted_trigger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trend_vs_votes_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "trend_vs_battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trend_vs_votes_voted_trigger_id_fkey"
+            columns: ["voted_trigger_id"]
+            isOneToOne: false
+            referencedRelation: "ktrenz_trend_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usdc_balances: {
         Row: {
           balance: number
