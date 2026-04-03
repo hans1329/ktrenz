@@ -700,6 +700,8 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               : (language === "ko" ? `${ageDays}일 전 감지` : `${ageDays}d ago`);
 
 
+            const currentScore = tile.peakScore ?? tile.baselineScore ?? 0;
+
             return (
               <div className="rounded-xl border overflow-hidden border-[#dcdfe4]/[0.59]">
                 {/* Momentum header */}
@@ -716,6 +718,20 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                     </div>
                   </div>
                   <span className="text-xs text-muted-foreground">{ageLabel}</span>
+                </div>
+                {/* Current score bar */}
+                <div className="flex items-center justify-between px-4 pb-3 pt-0">
+                  <span className="text-xs text-muted-foreground">
+                    {language === "ko" ? "현재 트렌드 스코어" : "Current Trend Score"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-foreground">{currentScore}</span>
+                    {influence > 0 && (
+                      <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                        +{influence}%
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             );
