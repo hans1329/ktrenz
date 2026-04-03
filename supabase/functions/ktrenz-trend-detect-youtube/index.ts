@@ -718,7 +718,7 @@ Deno.serve(async (req) => {
               display_name: star.display_name,
               name_ko: star.name_ko,
               group_name: isGroupOrSolo ? null : (group?.display_name || null),
-            });
+            }, globalStarNames);
             console.log(`[detect-youtube] ✓ ${star.display_name} (key#${kInfo.index + 1}): ${result.keywordsFound} keywords (${result.videosFound} videos)`);
             return result;
           } catch (e) {
