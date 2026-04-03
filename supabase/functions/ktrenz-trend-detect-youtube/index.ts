@@ -125,6 +125,7 @@ async function extractKeywordsFromVideos(
   memberName: string,
   groupName: string | null,
   videos: YouTubeVideo[],
+  globalStarNames?: Set<string>,
 ): Promise<ExtractedKeyword[]> {
   if (!videos.length) return [];
 
@@ -264,12 +265,26 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
         return false;
       }
 
-      // Artist name as keyword filter
-      const artistNames = [memberName.toLowerCase()];
-      if (groupName) artistNames.push(groupName.toLowerCase());
-      if (artistNames.includes(kwLower) || artistNames.includes(kwKo) || artistNames.includes(kwEn)) {
+      // Artist name as keyword filter (exact + compound)
+      const artistNames = new Set<string>([memberName.toLowerCase()]);
+      if (groupName) artistNames.add(groupName.toLowerCase());
+      // Merge global star names for cross-artist compound detection
+      const allBlocked = globalStarNames ? new Set([...artistNames, ...globalStarNames]) : artistNames;
+      // Exact match
+      if (allBlocked.has(kwLower) || allBlocked.has(kwKo) || allBlocked.has(kwEn)) {
         console.warn(`[detect-youtube] ⛔ Artist name as keyword rejected: "${k.keyword}"`);
         return false;
+      }
+      // Compound name match: "그룹명 멤버명", "by멤버명" etc.
+      for (const val of [kwLower, kwKo, kwEn]) {
+        if (!val) continue;
+        // Split by whitespace, slash, or "by" prefix
+        const cleaned = val.replace(/^by/i, "").trim();
+        const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
+        if (tokens.length >= 1 && tokens.every(t => allBlocked.has(t))) {
+          console.warn(`[detect-youtube] ⛔ Compound artist name keyword rejected: "${k.keyword}"`);
+          return false;
+        }
       }
 
       // Corporate/Pharma keyword filter
@@ -362,6 +377,7 @@ async function detectForMember(
   openaiKey: string,
   ytApiKey: string,
   member: MemberInfo,
+  globalStarNames?: Set<string>,
 ): Promise<{ keywordsFound: number; videosFound: number; keywords: ExtractedKeyword[] }> {
   const query = buildSearchQuery(member);
 
@@ -398,7 +414,7 @@ async function detectForMember(
   }
 
   const keywords = await extractKeywordsFromVideos(
-    openaiKey, member.display_name, member.group_name, videos
+    openaiKey, member.display_name, member.group_name, videos, globalStarNames
   );
 
   if (!keywords.length) {
@@ -621,7 +637,7 @@ Deno.serve(async (req) => {
         display_name: memberName,
         name_ko: null,
         group_name: groupName || null,
-      });
+      }); // single mode — no globalStarNames available
       return new Response(
         JSON.stringify({ success: true, ...result }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -650,6 +666,18 @@ Deno.serve(async (req) => {
         groupMap[g.id] = { display_name: g.display_name };
       }
     }
+
+    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    const globalStarNames = new Set<string>();
+    for (const s of allCandidates) {
+      if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
+      if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
+    }
+    // 그룹명도 추가
+    for (const g of Object.values(groupMap)) {
+      if (g.display_name) globalStarNames.add(g.display_name.toLowerCase());
+    }
+    console.log(`[detect-youtube] Built globalStarNames: ${globalStarNames.size} entries`);
 
     const batch = allCandidates.slice(batchOffset, batchOffset + batchSize);
 
@@ -690,7 +718,7 @@ Deno.serve(async (req) => {
               display_name: star.display_name,
               name_ko: star.name_ko,
               group_name: isGroupOrSolo ? null : (group?.display_name || null),
-            });
+            }, globalStarNames);
             console.log(`[detect-youtube] ✓ ${star.display_name} (key#${kInfo.index + 1}): ${result.keywordsFound} keywords (${result.videosFound} videos)`);
             return result;
           } catch (e) {
@@ -712,7 +740,7 @@ Deno.serve(async (req) => {
                   display_name: star.display_name,
                   name_ko: star.name_ko,
                   group_name: isGroupOrSolo ? null : (group?.display_name || null),
-                });
+                }, globalStarNames);
                 return result;
               } catch (e2) {
                 if (e2 instanceof QuotaExhaustedError) {
