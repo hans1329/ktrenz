@@ -367,17 +367,6 @@ Deno.serve(async (req) => {
 
     console.log(`[tiktok] Processing ${starsToProcess.length}/${stars.length} artists (dryRun=${!!dryRun}, todayApiCalls=${todayApiCalls}, remaining=${remainingCalls})`);
 
-// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
-function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
-  const kw = keyword.trim().toLowerCase();
-  if (!kw) return false;
-  if (blockedNames.has(kw)) return true;
-  const cleaned = kw.replace(/^by/i, "").trim();
-  if (cleaned && blockedNames.has(cleaned)) return true;
-  const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
-  if (tokens.length >= 2 && tokens.every(t => blockedNames.has(t))) return true;
-  return false;
-}
 
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
