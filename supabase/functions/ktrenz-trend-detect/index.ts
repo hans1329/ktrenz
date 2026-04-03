@@ -413,7 +413,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
     if (!reader) return [];
     let html = "";
     const decoder = new TextDecoder();
-    while (html.length < 80000) {
+    while (html.length < 200_000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
@@ -2047,48 +2047,76 @@ async function detectForMember(
   const uniqueImageUrls = [...new Set(allImages)];
   const textHeavyImages = await classifyImagesWithVision(uniqueImageUrls, openaiKey);
 
-  // 키워드별 이미지 선택: 캡션/alt에서 아티스트명·키워드명 매칭하여 가장 연관된 이미지 선택
+  // 키워드별 이미지 선택: 캡션/alt에서 키워드 토큰 매칭 → 아티스트명 매칭 → 본문 이미지 순
   function selectBestImage(primaryUrl: string | null, keywordText?: string, artistName?: string): string | null {
     if (!primaryUrl) return null;
     const images = articleImagesMap.get(primaryUrl);
     if (!images || images.length === 0) return null;
 
-    // 매칭용 검색어 리스트
-    const searchTerms: string[] = [];
-    if (artistName) searchTerms.push(artistName.toLowerCase());
-    if (keywordText) searchTerms.push(keywordText.toLowerCase());
-    if (member.name_ko) searchTerms.push(member.name_ko.toLowerCase());
-    if (member.display_name) searchTerms.push(member.display_name.toLowerCase());
-
     // 유효 이미지 필터 (텍스트 헤비 제외)
     const validImages = images.filter(img => !textHeavyImages.has(img.url));
     if (validImages.length === 0) return null;
 
-    // 1순위: 캡션/alt에 아티스트명 또는 키워드명이 포함된 이미지
-    if (searchTerms.length > 0) {
-      for (const img of validImages) {
-        const captionLower = img.caption.toLowerCase();
-        if (searchTerms.some(term => captionLower.includes(term))) {
-          console.log(`[trend-detect] 🎯 Caption-matched image: "${img.caption.slice(0, 50)}" for "${keywordText || artistName}"`);
-          return sanitizeImageUrl(img.url);
-        }
+    // 키워드 토큰 분리 (by접두사 제거, 슬래시·공백 분리)
+    const keywordTokens: string[] = [];
+    if (keywordText) {
+      const cleaned = keywordText.replace(/^by/i, "").trim().toLowerCase();
+      cleaned.split(/[\s\/]+/).filter(t => t.length >= 2).forEach(t => keywordTokens.push(t));
+    }
+
+    // 아티스트명 토큰 (키워드 토큰과 구분)
+    const artistTokens: string[] = [];
+    if (artistName) artistTokens.push(artistName.toLowerCase());
+    if (member.name_ko) artistTokens.push(member.name_ko.toLowerCase());
+    if (member.display_name) artistTokens.push(member.display_name.toLowerCase());
+
+    // 스코어링: 키워드 토큰 매칭 > 아티스트명 매칭 > 본문 위치
+    let bestScore = -1;
+    let bestImg: ArticleImage | null = null;
+
+    for (const img of validImages) {
+      let score = 0;
+      const captionLower = img.caption.toLowerCase();
+
+      // 키워드 고유 토큰 매칭 (아티스트명 제외한 토큰) — 최고 우선순위
+      const uniqueKwTokens = keywordTokens.filter(t => !artistTokens.includes(t));
+      const kwMatches = uniqueKwTokens.filter(t => captionLower.includes(t)).length;
+      if (kwMatches > 0) score += 100 * kwMatches;
+
+      // 아티스트명 매칭
+      const artistMatches = artistTokens.filter(t => captionLower.includes(t)).length;
+      if (artistMatches > 0) score += 10 * artistMatches;
+
+      // 본문 컨테이너 내부 보너스
+      if (img.inArticleBody) score += 5;
+
+      // OG 이미지는 패널티 (복합기사에서 대표 이미지 ≠ 키워드 이미지)
+      if (img.isOg) score -= 2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestImg = img;
       }
     }
 
-    // 2순위: 기사 본문 컨테이너 내부 이미지 우선 (articleBody, #CLtag 등)
+    if (bestImg && bestScore > 0) {
+      console.log(`[trend-detect] 🎯 Scored image (${bestScore}pts): "${bestImg.caption.slice(0, 60)}" for "${keywordText || artistName}"`);
+      return sanitizeImageUrl(bestImg.url);
+    }
+
+    // 폴백: 기사 본문 컨테이너 내부 이미지
     const articleBodyImages = validImages.filter(img => !img.isOg && img.inArticleBody);
     if (articleBodyImages.length > 0) {
-      console.log(`[trend-detect] 📰 Article body image selected for "${keywordText || artistName}"`);
       return sanitizeImageUrl(articleBodyImages[0].url);
     }
 
-    // 3순위: 일반 본문 이미지 중 첫 번째 (og:image가 아닌 것)
+    // 폴백: 일반 본문 이미지
     const bodyImages = validImages.filter(img => !img.isOg);
     if (bodyImages.length > 0) {
       return sanitizeImageUrl(bodyImages[0].url);
     }
 
-    // 3순위: og:image 폴백
+    // 최종 폴백: og:image
     return sanitizeImageUrl(validImages[0].url);
   }
 
