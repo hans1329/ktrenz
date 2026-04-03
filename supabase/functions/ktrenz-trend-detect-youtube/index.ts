@@ -414,7 +414,7 @@ async function detectForMember(
   }
 
   const keywords = await extractKeywordsFromVideos(
-    openaiKey, member.display_name, member.group_name, videos
+    openaiKey, member.display_name, member.group_name, videos, globalStarNames
   );
 
   if (!keywords.length) {
