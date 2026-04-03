@@ -14,6 +14,18 @@ const SEARCH_COUNT = 10;
 // ★ 하드 리밋: 월 500건 무료, 초과 시 개당 과금 → 일일 최대 450건으로 안전 마진 확보
 const DAILY_API_CALL_HARD_LIMIT = 450;
 
+// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
+function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return false;
+  if (blockedNames.has(kw)) return true;
+  const cleaned = kw.replace(/^by/i, "").trim();
+  if (cleaned && blockedNames.has(cleaned)) return true;
+  const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
+  if (tokens.length >= 2 && tokens.every(t => blockedNames.has(t))) return true;
+  return false;
+}
+
 interface TikTokVideo {
   id: string;
   desc: string;
@@ -355,6 +367,16 @@ Deno.serve(async (req) => {
 
     console.log(`[tiktok] Processing ${starsToProcess.length}/${stars.length} artists (dryRun=${!!dryRun}, todayApiCalls=${todayApiCalls}, remaining=${remainingCalls})`);
 
+    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    const globalStarNames = new Set<string>();
+    for (const s of (stars || [])) {
+      if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
+      if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
+    }
+    for (const gName of Object.values(tiktokGroupMap)) {
+      if (gName) globalStarNames.add(gName.toLowerCase());
+    }
+    console.log(`[tiktok] Built globalStarNames: ${globalStarNames.size} entries`);
 
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
@@ -440,7 +462,14 @@ Deno.serve(async (req) => {
 
               // 키워드별 관련 영상의 커버 이미지 추출
               const newTriggers = keywords
-                .filter((kw) => !existingKws.has(kw.keyword.toLowerCase()))
+                .filter((kw) => {
+                  if (existingKws.has(kw.keyword.toLowerCase())) return false;
+                  if (isStarNameKeyword(kw.keyword, globalStarNames)) {
+                    console.warn(`[tiktok] ⛔ Star name keyword filtered: "${kw.keyword}" (${star.display_name})`);
+                    return false;
+                  }
+                  return true;
+                })
                 .map((kw) => {
                   const matchingVideo = videos.find(
                     (v) => v.desc.toLowerCase().includes(kw.keyword.toLowerCase())

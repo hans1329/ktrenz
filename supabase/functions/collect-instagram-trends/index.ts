@@ -13,6 +13,18 @@ const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
 const MAX_RESOLVE_PER_RUN = 5; // 미검색 아티스트 프로필 검색 제한 (축소)
 const POST_AGE_DAYS = 7; // 7일 이내 포스트만 수집 (기존 3일에서 완화)
 
+// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
+function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
+  const kw = keyword.trim().toLowerCase();
+  if (!kw) return false;
+  if (blockedNames.has(kw)) return true;
+  const cleaned = kw.replace(/^by/i, "").trim();
+  if (cleaned && blockedNames.has(cleaned)) return true;
+  const tokens = cleaned.split(/[\s\/]+/).filter(Boolean);
+  if (tokens.length >= 2 && tokens.every(t => blockedNames.has(t))) return true;
+  return false;
+}
+
 interface InstaPost {
   caption_text: string;
   location_name: string | null;
@@ -366,6 +378,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    const globalStarNames = new Set<string>();
+    for (const s of stars) {
+      if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
+      if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
+    }
+    console.log(`[instagram] Built globalStarNames: ${globalStarNames.size} entries`);
+
     console.log(`[instagram] Processing ${stars.length} stars (offset=${offset}, batch=${batchSize})`);
 
     let totalKeywords = 0;
@@ -579,7 +599,14 @@ Deno.serve(async (req) => {
           .gte("detected_at", lookbackDays);
 
         const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
-        const newTriggers = triggers.filter((t) => !existingKws.has(t.keyword.toLowerCase()));
+        const newTriggers = triggers.filter((t) => {
+          if (existingKws.has(t.keyword.toLowerCase())) return false;
+          if (isStarNameKeyword(t.keyword, globalStarNames)) {
+            console.warn(`[instagram] ⛔ Star name keyword filtered: "${t.keyword}" (${star.display_name})`);
+            return false;
+          }
+          return true;
+        });
 
         if (newTriggers.length > 0) {
           const { error: insertErr } = await sb.from("ktrenz_trend_triggers").insert(newTriggers);
