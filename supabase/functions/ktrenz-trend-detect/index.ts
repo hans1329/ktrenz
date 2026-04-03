@@ -37,7 +37,7 @@ const PLATFORM_BLACKLIST = new Set([
   "apple music", "melon", "genie", "bugs", "flo", "vibe", "soundcloud",
   "weverse", "vlive", "bubble", "universe", "phoning", "lysn",
   "naver", "google", "daum", "kakao", "naver news", "theqoo", "pann",
-  "billboard", "hanteo", "gaon", "circle chart", "oricon",
+  "billboard", "hanteo", "한터차트", "한터", "gaon", "circle chart", "써클차트", "oricon",
   "mnet", "kbs", "sbs", "mbc", "jtbc", "tvn", "tv chosun",
   "netflix", "넷플릭스", "disney+", "디즈니플러스", "disney plus",
   "amazon", "아마존", "hulu", "wavve", "웨이브", "tving", "티빙", "coupang play", "쿠팡플레이",
