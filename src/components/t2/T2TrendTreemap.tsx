@@ -1137,7 +1137,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
                             <div className={cn("relative w-full bg-muted/30 overflow-hidden min-h-0", idx === 0 ? "h-[300px]" : "h-[280px]")}>
                               {bgImg ? (
                                 <>
-                                  <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-center" loading="lazy" referrerPolicy="no-referrer" />
+                                  <img src={bgImg} alt={getLocalizedKeyword(item, language)} className="w-full h-full object-cover object-center" loading="lazy" referrerPolicy="no-referrer" onError={(e) => {
+                                    const target = e.currentTarget;
+                                    if (item.artistImageUrl && target.src !== item.artistImageUrl) {
+                                      target.src = item.artistImageUrl;
+                                    } else {
+                                      target.style.display = "none";
+                                    }
+                                  }} />
                                   <div className="absolute inset-0 bg-black/25" />
                                 </>
                               ) : (
