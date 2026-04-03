@@ -462,7 +462,14 @@ Deno.serve(async (req) => {
 
               // 키워드별 관련 영상의 커버 이미지 추출
               const newTriggers = keywords
-                .filter((kw) => !existingKws.has(kw.keyword.toLowerCase()))
+                .filter((kw) => {
+                  if (existingKws.has(kw.keyword.toLowerCase())) return false;
+                  if (isStarNameKeyword(kw.keyword, globalStarNames)) {
+                    console.warn(`[tiktok] ⛔ Star name keyword filtered: "${kw.keyword}" (${star.display_name})`);
+                    return false;
+                  }
+                  return true;
+                })
                 .map((kw) => {
                   const matchingVideo = videos.find(
                     (v) => v.desc.toLowerCase().includes(kw.keyword.toLowerCase())
