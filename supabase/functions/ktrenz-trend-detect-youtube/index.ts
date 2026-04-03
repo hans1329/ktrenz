@@ -740,7 +740,7 @@ Deno.serve(async (req) => {
                   display_name: star.display_name,
                   name_ko: star.name_ko,
                   group_name: isGroupOrSolo ? null : (group?.display_name || null),
-                });
+                }, globalStarNames);
                 return result;
               } catch (e2) {
                 if (e2 instanceof QuotaExhaustedError) {
