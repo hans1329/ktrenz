@@ -157,6 +157,23 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
     enabled: !!tile,
   });
 
+  // Latest tracking score
+  const { data: latestTrackingScore } = useQuery({
+    queryKey: ["t2-latest-score", tile?.id],
+    queryFn: async () => {
+      if (!tile) return null;
+      const { data } = await supabase
+        .from("ktrenz_trend_tracking" as any)
+        .select("interest_score, tracked_at")
+        .eq("trigger_id", tile.id)
+        .order("tracked_at", { ascending: false })
+        .limit(1);
+      if (data && (data as any[]).length > 0) return (data as any[])[0] as { interest_score: number; tracked_at: string };
+      return null;
+    },
+    enabled: !!tile,
+  });
+
   // User's bets for this market
   const { data: myBets } = useQuery({
     queryKey: ["t2-my-bets", marketData?.id, user?.id],
@@ -700,7 +717,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
               : (language === "ko" ? `${ageDays}일 전 감지` : `${ageDays}d ago`);
 
 
-            const currentScore = tile.peakScore ?? tile.baselineScore ?? 0;
+            const currentScore = latestTrackingScore?.interest_score ?? tile.baselineScore ?? 0;
 
             return (
               <div className="rounded-xl border overflow-hidden border-[#dcdfe4]/[0.59]">
