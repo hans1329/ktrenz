@@ -1057,6 +1057,140 @@ async function tagMegaTrends(sb: any): Promise<{ tagged: number; clusters: numbe
   return { tagged: totalTagged, clusters: clusterMap.size, details };
 }
 
+// ── 4.95. 의미적 유사 키워드 클러스터링 (같은 사건 파생 키워드 병합) ──
+// 같은 아티스트의 active 키워드 중 의미적으로 동일 사건에서 파생된 키워드를 AI로 판별하여 대표 1개만 유지
+async function semanticKeywordDedup(sb: any): Promise<{ expired: number; merged: number; details: string[] }> {
+  const openaiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiKey) {
+    console.warn("[postprocess] No OPENAI_API_KEY, skipping semantic dedup");
+    return { expired: 0, merged: 0, details: [] };
+  }
+
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: active } = await sb
+    .from("ktrenz_trend_triggers")
+    .select("id, keyword, keyword_ko, keyword_en, star_id, artist_name, source_url, source_title, context_ko, context, baseline_score, detected_at, keyword_category")
+    .eq("status", "active")
+    .gte("detected_at", threeDaysAgo);
+
+  if (!active?.length || active.length < 2) return { expired: 0, merged: 0, details: [] };
+
+  // 아티스트별 그룹화 (3개 이상 키워드가 있는 아티스트만 대상)
+  const byStar = new Map<string, any[]>();
+  for (const e of active) {
+    if (!e.star_id) continue;
+    const list = byStar.get(e.star_id) || [];
+    list.push(e);
+    byStar.set(e.star_id, list);
+  }
+
+  let totalExpired = 0;
+  let totalMerged = 0;
+  const allDetails: string[] = [];
+
+  for (const [_starId, entries] of byStar) {
+    if (entries.length < 2) continue;
+
+    const artistName = entries[0].artist_name;
+
+    // AI에 보낼 키워드 목록 구성
+    const keywordList = entries.map((e: any) => ({
+      id: e.id,
+      keyword_ko: e.keyword_ko || e.keyword,
+      keyword_en: e.keyword_en || "",
+      category: e.keyword_category || "",
+      context: (e.context_ko || e.context || "").slice(0, 150),
+      source_title: (e.source_title || "").slice(0, 100),
+      baseline_score: e.baseline_score || 0,
+    }));
+
+    const prompt = `You are analyzing trend keywords for K-pop artist "${artistName}".
+Some keywords may describe the SAME event or news story from different angles or different articles.
+
+For each cluster of keywords about the same event, keep the ONE with the highest baseline_score and mark the rest as duplicates.
+
+Keywords:
+${JSON.stringify(keywordList, null, 2)}
+
+Rules:
+- Only cluster keywords that clearly refer to the SAME specific event/news (e.g., "low-rise fashion" and "lace panties" from the same photoshoot)
+- Different events should NOT be clustered even if they share a category (e.g., two separate brand endorsements)
+- Use context and source_title to determine if they're about the same event
+- If unsure, do NOT cluster them
+
+Return ONLY a JSON array of cluster objects:
+[{"keep_id":"id_to_keep","remove_ids":["id1","id2"],"reason":"same photoshoot event"}]
+Return empty array [] if no duplicates found.`;
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a K-pop trend analyst. Return ONLY valid JSON arrays. Be conservative - only cluster keywords that clearly describe the same event." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn(`[postprocess] Semantic dedup AI failed for ${artistName}: ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || "";
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) continue;
+
+      const clusters = JSON.parse(jsonMatch[0]) as any[];
+      if (!clusters.length) continue;
+
+      for (const cluster of clusters) {
+        if (!cluster.keep_id || !cluster.remove_ids?.length) continue;
+
+        // Validate IDs exist in our entries
+        const validKeep = entries.find((e: any) => e.id === cluster.keep_id);
+        const validRemoves = cluster.remove_ids.filter((rid: string) =>
+          entries.find((e: any) => e.id === rid)
+        );
+
+        if (!validKeep || !validRemoves.length) continue;
+
+        // Expire duplicates
+        for (let i = 0; i < validRemoves.length; i += 500) {
+          const batch = validRemoves.slice(i, i + 500);
+          await sb.from("ktrenz_trend_triggers")
+            .update({ status: "merged", expired_at: new Date().toISOString() })
+            .in("id", batch);
+        }
+
+        totalExpired += validRemoves.length;
+        totalMerged += validRemoves.length;
+
+        const keptKw = validKeep.keyword_ko || validKeep.keyword;
+        const removedKws = validRemoves.map((rid: string) => {
+          const e = entries.find((en: any) => en.id === rid);
+          return e?.keyword_ko || e?.keyword || rid;
+        }).join(", ");
+        allDetails.push(`"${keptKw}" 유지, "${removedKws}" 병합 (${artistName}, ${cluster.reason || "같은 사건"})`);
+      }
+
+      // Rate limit
+      await new Promise((r) => setTimeout(r, 500));
+    } catch (e) {
+      console.warn(`[postprocess] Semantic dedup error for ${artistName}: ${(e as Error).message}`);
+    }
+  }
+
+  return { expired: totalExpired, merged: totalMerged, details: allDetails };
+}
+
 // ── 메인 핸들러 ──
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
