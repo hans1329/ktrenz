@@ -480,50 +480,52 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       // lazy-loading 대응: data-srcset > data-src > srcset > src 순으로 실제 이미지 URL 추출
       let src: string | null = null;
       
+      // 속성 파서: quoted/unquoted HTML 속성 모두 지원
+      function extractImgAttr(tag: string, attr: string): string | null {
+        const match = tag.match(new RegExp(`\\b${attr}=(?:["']([^"']+)["']|([^\\s>]+))`, "i"));
+        const value = match?.[1] || match?.[2] || null;
+        return value ? value.trim() : null;
+      }
+      
       // srcset 파서: URL 내부 콤마(Cloudflare CDN 등 f=auto,w=1200)를 안전하게 처리
       function parseSrcset(raw: string): string | null {
-        // srcset 엔트리는 "URL widthDescriptor" 형태, widthDescriptor는 숫자+w 또는 숫자+x
-        // 콤마 뒤에 공백+URL이 오는 패턴으로 분리 (URL 내부 콤마는 공백 없이 붙어있음)
         const entries: string[] = [];
-        // Split on commas that are followed by whitespace and then http or / (URL start)
         const parts = raw.split(/,\s+(?=https?:\/\/|\/)/);
         for (const part of parts) {
           const trimmed = part.trim();
           if (!trimmed) continue;
-          // Extract URL (everything before the last whitespace+descriptor)
           const spaceIdx = trimmed.search(/\s+\d+(\.\d+)?[wx]\s*$/);
           const url = spaceIdx > 0 ? trimmed.slice(0, spaceIdx).trim() : trimmed;
           if (url && !url.startsWith("data:")) entries.push(url);
         }
-        // Return last (largest) entry
         return entries.length > 0 ? entries[entries.length - 1] : null;
       }
       
       // data-srcset (SBS 등 lazy-load 사이트)
-      const dataSrcsetMatch = imgTag.match(/data-srcset=["']([^"']+)["']/i);
-      if (dataSrcsetMatch?.[1]) {
-        src = parseSrcset(dataSrcsetMatch[1]);
+      const dataSrcset = extractImgAttr(imgTag, "data-srcset");
+      if (dataSrcset) {
+        src = parseSrcset(dataSrcset);
       }
       
       // data-src
       if (!src) {
-        const dataSrcMatch = imgTag.match(/data-src=["']([^"']+)["']/i);
-        if (dataSrcMatch?.[1] && !dataSrcMatch[1].startsWith("data:")) src = dataSrcMatch[1];
+        const dataSrc = extractImgAttr(imgTag, "data-src");
+        if (dataSrc && !dataSrc.startsWith("data:")) src = dataSrc;
       }
       
       // srcset
       if (!src) {
-        const srcsetMatch = imgTag.match(/\bsrcset=["']([^"']+)["']/i);
-        if (srcsetMatch?.[1]) {
-          src = parseSrcset(srcsetMatch[1]);
+        const srcset = extractImgAttr(imgTag, "srcset");
+        if (srcset) {
+          src = parseSrcset(srcset);
         }
       }
-      
+
       // src (폴백, 단 base64/data URI는 스킵)
       if (!src) {
-        const srcMatch = imgTag.match(/\bsrc=["']([^"']+)["']/i);
-        if (srcMatch?.[1] && !srcMatch[1].startsWith("data:") && !srcMatch[1].includes("data:image/")) {
-          src = srcMatch[1];
+        const rawSrc = extractImgAttr(imgTag, "src");
+        if (rawSrc && !rawSrc.startsWith("data:") && !rawSrc.includes("data:image/")) {
+          src = rawSrc;
         }
       }
       
@@ -540,8 +542,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       seenUrls.add(resolved);
       
       // alt 텍스트 추출
-      const altMatch = imgTag.match(/alt=["']([^"']*)["']/i);
-      let caption = altMatch?.[1] || "";
+      let caption = extractImgAttr(imgTag, "alt") || "";
       
       // 이미지 주변 200자 범위에서 캡션 텍스트 추출
       const pos = imgMatch.index;
