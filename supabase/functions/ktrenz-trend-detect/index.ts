@@ -413,7 +413,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
     if (!reader) return [];
     let html = "";
     const decoder = new TextDecoder();
-    while (html.length < 80000) {
+    while (html.length < 200_000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
