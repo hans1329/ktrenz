@@ -1961,6 +1961,11 @@ async function detectForMember(
       const compactTextValue = textValue.replace(/[\s\-_]+/g, "");
       const hasGroupContext = ytGroupVariants.some((variant) => {
         const compactVariant = variant.replace(/[\s\-_]+/g, "");
+        // 짧은 그룹명(≤3자)은 단어 경계 매칭 필수 (XG, BTS 등의 부분 매칭 방지)
+        if (variant.length <= 3) {
+          const regex = new RegExp(`(?:^|[^a-z0-9가-힣])${variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[^a-z0-9가-힣]|$)`, 'i');
+          return regex.test(textValue);
+        }
         return textValue.includes(variant) || (compactVariant.length >= 2 && compactTextValue.includes(compactVariant));
       });
       if (!hasGroupContext) return false;
