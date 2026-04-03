@@ -367,6 +367,16 @@ Deno.serve(async (req) => {
 
     console.log(`[tiktok] Processing ${starsToProcess.length}/${stars.length} artists (dryRun=${!!dryRun}, todayApiCalls=${todayApiCalls}, remaining=${remainingCalls})`);
 
+    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    const globalStarNames = new Set<string>();
+    for (const s of (stars || [])) {
+      if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
+      if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
+    }
+    for (const gName of Object.values(tiktokGroupMap)) {
+      if (gName) globalStarNames.add(gName.toLowerCase());
+    }
+    console.log(`[tiktok] Built globalStarNames: ${globalStarNames.size} entries`);
 
     const results: any[] = [];
     const snapshotsToInsert: any[] = [];
