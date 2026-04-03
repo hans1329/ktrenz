@@ -281,12 +281,16 @@ async function searchTikTok(
 
 const INSTA120_HOST = "instagram120.p.rapidapi.com";
 
-async function searchInstagram(
-  apiKey: string, keyword: string, instagramHandle?: string | null,
-): Promise<{ postCount: number; totalLikes: number; totalComments: number } | null> {
-  if (!instagramHandle) return null;
+// ─── 인스타그램 피드 캐시 (아티스트 핸들 단위 → API 1회 호출) ───
+const instaFeedCache = new Map<string, any[] | null>();
+let instaApiCallsSaved = 0;
+
+async function fetchInstaFeed(apiKey: string, handle: string): Promise<any[] | null> {
+  if (instaFeedCache.has(handle)) {
+    instaApiCallsSaved++;
+    return instaFeedCache.get(handle)!;
+  }
   try {
-    // instagram120 POST /api/instagram/posts — 아티스트 피드에서 키워드 언급 게시물 집계
     const res = await fetch(`https://${INSTA120_HOST}/api/instagram/posts`, {
       method: "POST",
       headers: {
@@ -294,28 +298,44 @@ async function searchInstagram(
         "X-RapidAPI-Host": INSTA120_HOST,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username: instagramHandle }),
+      body: JSON.stringify({ username: handle }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) { instaFeedCache.set(handle, null); return null; }
     const data = await res.json();
     const edges = data?.result?.edges || [];
-    const kwLower = keyword.toLowerCase().replace(/\s+/g, "");
-    const cutoff = Math.floor(Date.now() / 1000) - 86400 * 7; // 7일 이내
-    let postCount = 0, totalLikes = 0, totalComments = 0;
-    for (const edge of edges) {
-      const node = edge.node;
-      if (!node) continue;
-      if (node.taken_at && node.taken_at < cutoff) continue;
-      const caption = typeof node.caption === "string" ? node.caption : (node.caption?.text || "");
-      const captionLower = caption.toLowerCase().replace(/\s+/g, "");
-      if (captionLower.includes(kwLower)) {
-        postCount++;
-        totalLikes += Number(node.like_count || 0);
-        totalComments += Number(node.comment_count || 0);
-      }
+    instaFeedCache.set(handle, edges);
+    return edges;
+  } catch { instaFeedCache.set(handle, null); return null; }
+}
+
+function filterInstaFeedByKeyword(
+  edges: any[], keyword: string,
+): { postCount: number; totalLikes: number; totalComments: number } {
+  const kwLower = keyword.toLowerCase().replace(/\s+/g, "");
+  const cutoff = Math.floor(Date.now() / 1000) - 86400 * 7;
+  let postCount = 0, totalLikes = 0, totalComments = 0;
+  for (const edge of edges) {
+    const node = edge.node;
+    if (!node) continue;
+    if (node.taken_at && node.taken_at < cutoff) continue;
+    const caption = typeof node.caption === "string" ? node.caption : (node.caption?.text || "");
+    const captionLower = caption.toLowerCase().replace(/\s+/g, "");
+    if (captionLower.includes(kwLower)) {
+      postCount++;
+      totalLikes += Number(node.like_count || 0);
+      totalComments += Number(node.comment_count || 0);
     }
-    return { postCount, totalLikes, totalComments };
-  } catch { return null; }
+  }
+  return { postCount, totalLikes, totalComments };
+}
+
+async function searchInstagram(
+  apiKey: string, keyword: string, instagramHandle?: string | null,
+): Promise<{ postCount: number; totalLikes: number; totalComments: number } | null> {
+  if (!instagramHandle) return null;
+  const edges = await fetchInstaFeed(apiKey, instagramHandle);
+  if (!edges) return null;
+  return filterInstaFeedByKeyword(edges, keyword);
 }
 
 async function searchNaverShop(
