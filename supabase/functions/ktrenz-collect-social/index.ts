@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
       console.error(`[collect-social] TikTok error: ${msg}`);
       results.tiktok = { success: false, error: msg };
     }
+    } // end timeguard else block
 
     const elapsed = Date.now() - startTime;
     console.log(`[collect-social] Done in ${elapsed}ms`, results);
