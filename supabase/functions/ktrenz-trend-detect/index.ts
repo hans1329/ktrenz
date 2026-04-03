@@ -1792,11 +1792,19 @@ Deno.serve(async (req) => {
           star_category: star.star_category || "kpop",
         };
 
+        // 같은 그룹 다른 멤버 이름 목록 (sibling filter용)
+        let siblingNames: string[] | undefined;
+        if (star.star_type === "member" && star.group_star_id) {
+          siblingNames = allCandidates
+            .filter((s: any) => s.group_star_id === star.group_star_id && s.id !== star.id)
+            .flatMap((s: any) => [s.display_name, s.name_ko].filter(Boolean));
+        }
+
         const ytSearchFn = YT_KEYS.length > 0
           ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
           : undefined;
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn, siblingNames
         );
         successCount++;
         totalKeywords += result.keywordsFound;
