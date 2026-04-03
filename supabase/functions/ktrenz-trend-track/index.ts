@@ -279,25 +279,42 @@ async function searchTikTok(
   } catch { return null; }
 }
 
-const INSTA_API_HOST = "instagram-scraper-api2.p.rapidapi.com";
+const INSTA120_HOST = "instagram120.p.rapidapi.com";
 
 async function searchInstagram(
-  apiKey: string, keyword: string,
+  apiKey: string, keyword: string, instagramHandle?: string | null,
 ): Promise<{ postCount: number; totalLikes: number; totalComments: number } | null> {
+  if (!instagramHandle) return null;
   try {
-    const url = `https://${INSTA_API_HOST}/v1/hashtag?hashtag=${encodeURIComponent(keyword.replace(/\s+/g, ""))}`;
-    const res = await fetch(url, {
-      headers: { "x-rapidapi-host": INSTA_API_HOST, "x-rapidapi-key": apiKey },
+    // instagram120 POST /api/instagram/posts — 아티스트 피드에서 키워드 언급 게시물 집계
+    const res = await fetch(`https://${INSTA120_HOST}/api/instagram/posts`, {
+      method: "POST",
+      headers: {
+        "X-RapidAPI-Key": apiKey,
+        "X-RapidAPI-Host": INSTA120_HOST,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: instagramHandle }),
     });
     if (!res.ok) return null;
     const data = await res.json();
-    const items = data.data?.items || [];
-    let totalLikes = 0, totalComments = 0;
-    for (const item of items) {
-      totalLikes += Number(item.like_count || 0);
-      totalComments += Number(item.comment_count || 0);
+    const edges = data?.result?.edges || [];
+    const kwLower = keyword.toLowerCase().replace(/\s+/g, "");
+    const cutoff = Math.floor(Date.now() / 1000) - 86400 * 7; // 7일 이내
+    let postCount = 0, totalLikes = 0, totalComments = 0;
+    for (const edge of edges) {
+      const node = edge.node;
+      if (!node) continue;
+      if (node.taken_at && node.taken_at < cutoff) continue;
+      const caption = typeof node.caption === "string" ? node.caption : (node.caption?.text || "");
+      const captionLower = caption.toLowerCase().replace(/\s+/g, "");
+      if (captionLower.includes(kwLower)) {
+        postCount++;
+        totalLikes += Number(node.like_count || 0);
+        totalComments += Number(node.comment_count || 0);
+      }
     }
-    return { postCount: items.length || data.data?.count || 0, totalLikes, totalComments };
+    return { postCount, totalLikes, totalComments };
   } catch { return null; }
 }
 
@@ -446,6 +463,20 @@ Deno.serve(async (req) => {
       if (!sourceByKeyword.has(s.keyword_id)) sourceByKeyword.set(s.keyword_id, { star_id: s.star_id, artist_name: s.artist_name });
     }
 
+    // ── 아티스트 인스타그램 핸들 조회 (instagram120용) ──
+    const uniqueStarIds = [...new Set([...(allSources || [])].map(s => s.star_id).filter(Boolean))];
+    const instaHandleByStarId = new Map<string, string>();
+    if (uniqueStarIds.length > 0) {
+      const { data: stars } = await sb.from("ktrenz_stars")
+        .select("id, social_handles")
+        .in("id", uniqueStarIds.slice(0, 500));
+      for (const star of (stars || [])) {
+        const handle = (star.social_handles as any)?.instagram;
+        if (handle) instaHandleByStarId.set(star.id, handle);
+      }
+      console.log(`[trend-track] Instagram handles loaded: ${instaHandleByStarId.size}/${uniqueStarIds.length} stars`);
+    }
+
     // ── 레거시 트리거 매핑 ──
     const { data: legacyTriggers } = await sb.from("ktrenz_trend_triggers").select("id, keyword, metadata").in("status", ["active", "pending"]);
     const triggerByKeywordId = new Map<string, string>();
@@ -522,13 +553,15 @@ Deno.serve(async (req) => {
         const socialSkipped = !rapidApiKey;
         const ytKeyForThis = YT_KEYS.length > 0 ? YT_KEYS[trackedCount % YT_KEYS.length] : "";
 
+        const instaHandle = source?.star_id ? instaHandleByStarId.get(source.star_id) : undefined;
+
         const [newsResult, blogResult, datalabResult, ytResult, tiktokResult, instaResult] = await Promise.all([
           searchNaverRecent(naverClientId, naverClientSecret, "news", searchQuery),
           searchNaverRecent(naverClientId, naverClientSecret, "blog", searchQuery),
           searchNaverDatalab(naverClientId, naverClientSecret, kwQuery),
           ytSkipped ? Promise.resolve(null) : searchYouTube(ytKeyForThis, kwQuery).then(r => { ytQuotaRemaining--; ytQuotaUsed++; return r; }),
           socialSkipped ? Promise.resolve(null) : searchTikTok(rapidApiKey, kwQuery),
-          socialSkipped ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery),
+          (socialSkipped || !instaHandle) ? Promise.resolve(null) : searchInstagram(rapidApiKey, kwQuery, instaHandle),
         ]);
 
         const currentRaw: SourceRaw = {
