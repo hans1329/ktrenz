@@ -1938,8 +1938,24 @@ async function detectForMember(
     : [];
 
   // YouTube 영상: 7일 이내 + 일본어 필터링 + 멤버 검색 시 그룹 컨텍스트 필수
+  // 아티스트명 변형도 준비 (짧은 이름의 경우 제목에 아티스트명 존재 필수)
+  const artistNameVariants = [...new Set([searchName, member.display_name, member.name_ko].filter((n): n is string => !!n).map(n => n.toLowerCase()))];
+  const isShortName = searchName.length <= 3; // BX, RM, V 등 짧은 이름
+
   const filteredYT = ytResult.items.filter(item => {
     if (isJapanese(item.title) || isJapanese(item.description)) return false;
+
+    // 짧은 아티스트명: 영상 제목에 아티스트명이 독립 토큰으로 존재해야 함
+    if (isShortName) {
+      const titleLower = item.title.toLowerCase();
+      const hasArtistInTitle = artistNameVariants.some(name => {
+        // 단어 경계 체크: 앞뒤에 알파벳/숫자가 아닌 문자 또는 문자열 시작/끝
+        const regex = new RegExp(`(?:^|[^a-z0-9가-힣])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[^a-z0-9가-힣]|$)`, 'i');
+        return regex.test(titleLower);
+      });
+      if (!hasArtistInTitle) return false;
+    }
+
     if (ytGroupVariants.length > 0) {
       const textValue = `${item.title} ${item.description}`.toLowerCase();
       const compactTextValue = textValue.replace(/[\s\-_]+/g, "");
