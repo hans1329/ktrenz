@@ -463,6 +463,20 @@ Deno.serve(async (req) => {
       if (!sourceByKeyword.has(s.keyword_id)) sourceByKeyword.set(s.keyword_id, { star_id: s.star_id, artist_name: s.artist_name });
     }
 
+    // ── 아티스트 인스타그램 핸들 조회 (instagram120용) ──
+    const uniqueStarIds = [...new Set([...(allSources || [])].map(s => s.star_id).filter(Boolean))];
+    const instaHandleByStarId = new Map<string, string>();
+    if (uniqueStarIds.length > 0) {
+      const { data: stars } = await sb.from("ktrenz_stars")
+        .select("id, social_handles")
+        .in("id", uniqueStarIds.slice(0, 500));
+      for (const star of (stars || [])) {
+        const handle = (star.social_handles as any)?.instagram;
+        if (handle) instaHandleByStarId.set(star.id, handle);
+      }
+      console.log(`[trend-track] Instagram handles loaded: ${instaHandleByStarId.size}/${uniqueStarIds.length} stars`);
+    }
+
     // ── 레거시 트리거 매핑 ──
     const { data: legacyTriggers } = await sb.from("ktrenz_trend_triggers").select("id, keyword, metadata").in("status", ["active", "pending"]);
     const triggerByKeywordId = new Map<string, string>();
