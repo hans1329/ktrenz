@@ -637,7 +637,7 @@ Deno.serve(async (req) => {
         display_name: memberName,
         name_ko: null,
         group_name: groupName || null,
-      });
+      }); // single mode — no globalStarNames available
       return new Response(
         JSON.stringify({ success: true, ...result }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
