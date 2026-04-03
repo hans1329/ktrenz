@@ -454,7 +454,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       const resolved = resolveUrl(twMatch[1].replace(/&amp;/g, "&"), articleUrl);
       if (resolved && !seenUrls.has(resolved)) {
         seenUrls.add(resolved);
-        images.push({ url: resolved, caption: "", isOg: true, index: imgIndex++ });
+        images.push({ url: resolved, caption: "", isOg: true, inArticleBody: false, index: imgIndex++ });
       }
     }
 
