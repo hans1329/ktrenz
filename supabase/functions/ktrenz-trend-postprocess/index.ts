@@ -1115,9 +1115,11 @@ ${JSON.stringify(keywordList, null, 2)}
 
 Rules:
 - Only cluster keywords that clearly refer to the SAME specific event/news (e.g., "low-rise fashion" and "lace panties" from the same photoshoot)
-- Different events should NOT be clustered even if they share a category (e.g., two separate brand endorsements)
+- Different music releases, songs, albums, or MVs are NEVER the same event — do NOT cluster them
+- Different brand endorsements or product launches are NEVER the same event
+- Different events should NOT be clustered even if they share a category
 - Use context and source_title to determine if they're about the same event
-- If unsure, do NOT cluster them
+- If unsure, do NOT cluster them — be very conservative
 
 Return ONLY a JSON array of cluster objects:
 [{"keep_id":"id_to_keep","remove_ids":["id1","id2"],"reason":"same photoshoot event"}]
