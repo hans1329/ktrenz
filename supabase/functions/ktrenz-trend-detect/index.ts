@@ -873,7 +873,7 @@ When in doubt, DO NOT extract. False negatives are far better than false positiv
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
 - Do NOT use your general knowledge about this artist to generate keywords.
-- The context_ko field must be a PUNCHY EDITORIAL NARRATIVE (1-2 sentences): describe the specific situation, then the resulting phenomenon. Include concrete details. NOT a dry factual summary.
+- The context_ko field must be a RICH EDITORIAL NARRATIVE (2-3 sentences): describe the specific situation with vivid details (who, what, where, when, wearing what), then the unique angle or significance. Write like a magazine editor, NOT a news wire. Include specific names, brands, venues, dates from the article.
 - If no article contains a valid extractable entity, call extract_keywords with an empty array.
 - source_article_index MUST point to the exact article [number] where the keyword appears.
 
