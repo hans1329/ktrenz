@@ -529,7 +529,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       
       if (!src) continue;
       if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
-      if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner/i.test(src)) continue;
+      if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|\/menu\/|\/sns\d|\/gong\.|\/common\/|\/layout\//i.test(src)) continue;
       // 트래킹 픽셀 필터링
       if (/facebook\.com\/tr|\/tr\?id=|noscript=1/i.test(src)) continue;
       
