@@ -365,10 +365,36 @@ async function detectForMember(
 ): Promise<{ keywordsFound: number; videosFound: number; keywords: ExtractedKeyword[] }> {
   const query = buildSearchQuery(member);
 
-  const videos = await searchYouTubeVideos(ytApiKey, query, 15);
+  const rawVideos = await searchYouTubeVideos(ytApiKey, query, 15);
 
-  if (!videos.length) {
+  if (!rawVideos.length) {
     return { keywordsFound: 0, videosFound: 0, keywords: [] };
+  }
+
+  // ─── 동명이인 사전 필터: 그룹 멤버인 경우 영상 텍스트에 그룹명 필수 ───
+  let videos = rawVideos;
+  if (member.group_name) {
+    const groupLower = member.group_name.toLowerCase();
+    // 그룹명 + 한글명 둘 다 체크 (예: "D1CE" 또는 그룹 한글명)
+    const groupVariants = [groupLower];
+    // 공백/특수문자 제거 버전도 추가 (예: "baby monster" → "babymonster")
+    const stripped = groupLower.replace(/[\s\-_]+/g, "");
+    if (stripped !== groupLower) groupVariants.push(stripped);
+
+    videos = rawVideos.filter((v) => {
+      const text = `${v.title} ${v.description} ${v.channelTitle}`.toLowerCase();
+      return groupVariants.some((g) => text.includes(g));
+    });
+
+    const filtered = rawVideos.length - videos.length;
+    if (filtered > 0) {
+      console.log(`[detect-youtube] Pre-filtered ${filtered}/${rawVideos.length} videos without group name "${member.group_name}" for member "${member.display_name}"`);
+    }
+
+    if (!videos.length) {
+      console.log(`[detect-youtube] All videos filtered out — no group name match for "${member.display_name}"`);
+      return { keywordsFound: 0, videosFound: rawVideos.length, keywords: [] };
+    }
   }
 
   const keywords = await extractKeywordsFromVideos(
