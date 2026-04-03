@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     }
 
     // ═══ PHASE 2: Open new markets for active keywords ═══
-    // Get active triggers with baseline_score > 0
+    // Only keywords with 2+ tracking records (= has comparison baseline)
     const { data: activeTriggers } = await sb
       .from("ktrenz_trend_triggers")
       .select("id, influence_index, baseline_score")
@@ -118,47 +118,67 @@ Deno.serve(async (req) => {
     if (activeTriggers && activeTriggers.length > 0) {
       const triggerIds = activeTriggers.map((t: any) => t.id);
 
-      // Check which ones already have an open market
-      const { data: existingMarkets } = await sb
-        .from("ktrenz_trend_markets")
+      // Count tracking records per trigger to ensure ≥2 tracks exist
+      const { data: trackCounts } = await sb
+        .from("ktrenz_trend_tracking")
         .select("trigger_id")
-        .in("trigger_id", triggerIds)
-        .eq("status", "open");
+        .in("trigger_id", triggerIds);
 
-      const existingSet = new Set((existingMarkets || []).map((m: any) => m.trigger_id));
-
-      // 22:00 KST cutoff = expires_at set to next day 00:00 KST (15:00 UTC)
-      // But betting closes 2h before (22:00 KST)
-      const expiresAt = new Date(now);
-      expiresAt.setUTCHours(15, 0, 0, 0); // Next 00:00 KST
-      if (expiresAt.getTime() <= now.getTime()) {
-        expiresAt.setUTCDate(expiresAt.getUTCDate() + 1);
+      const trackCountMap = new Map<string, number>();
+      for (const row of trackCounts || []) {
+        trackCountMap.set(row.trigger_id, (trackCountMap.get(row.trigger_id) || 0) + 1);
       }
 
-      const newMarkets = activeTriggers
-        .filter((t: any) => !existingSet.has(t.id))
-        .map((t: any) => ({
-          trigger_id: t.id,
-          pool_mild: 0,
-          pool_strong: 0,
-          pool_explosive: 0,
-          total_volume: 0,
-          status: "open",
-          initial_influence: t.influence_index ?? 0,
-          expires_at: expiresAt.toISOString(),
-        }));
+      // Filter: must have ≥2 tracking records (baseline + at least one delta)
+      const eligibleTriggers = activeTriggers.filter(
+        (t: any) => (trackCountMap.get(t.id) || 0) >= 2
+      );
 
-      if (newMarkets.length > 0) {
-        // Batch insert in chunks of 500
-        for (let i = 0; i < newMarkets.length; i += 500) {
-          const chunk = newMarkets.slice(i, i + 500);
-          const { error } = await sb
-            .from("ktrenz_trend_markets")
-            .insert(chunk);
-          if (error) {
-            console.error(`[market-lifecycle] Batch insert error:`, error);
-          } else {
-            openedCount += chunk.length;
+      console.log(`[market-lifecycle] Eligible: ${eligibleTriggers.length}/${activeTriggers.length} (need ≥2 tracks)`);
+
+      if (eligibleTriggers.length > 0) {
+        const eligibleIds = eligibleTriggers.map((t: any) => t.id);
+
+        // Check which ones already have an open market
+        const { data: existingMarkets } = await sb
+          .from("ktrenz_trend_markets")
+          .select("trigger_id")
+          .in("trigger_id", eligibleIds)
+          .eq("status", "open");
+
+        const existingSet = new Set((existingMarkets || []).map((m: any) => m.trigger_id));
+
+        // 22:00 KST cutoff = expires_at set to next day 00:00 KST (15:00 UTC)
+        const expiresAt = new Date(now);
+        expiresAt.setUTCHours(15, 0, 0, 0); // Next 00:00 KST
+        if (expiresAt.getTime() <= now.getTime()) {
+          expiresAt.setUTCDate(expiresAt.getUTCDate() + 1);
+        }
+
+        const newMarkets = eligibleTriggers
+          .filter((t: any) => !existingSet.has(t.id))
+          .map((t: any) => ({
+            trigger_id: t.id,
+            pool_mild: 0,
+            pool_strong: 0,
+            pool_explosive: 0,
+            total_volume: 0,
+            status: "open",
+            initial_influence: t.influence_index ?? 0,
+            expires_at: expiresAt.toISOString(),
+          }));
+
+        if (newMarkets.length > 0) {
+          for (let i = 0; i < newMarkets.length; i += 500) {
+            const chunk = newMarkets.slice(i, i + 500);
+            const { error } = await sb
+              .from("ktrenz_trend_markets")
+              .insert(chunk);
+            if (error) {
+              console.error(`[market-lifecycle] Batch insert error:`, error);
+            } else {
+              openedCount += chunk.length;
+            }
           }
         }
       }
