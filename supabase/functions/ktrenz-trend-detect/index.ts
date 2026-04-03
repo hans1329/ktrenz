@@ -762,29 +762,34 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
   
   Write 2-3 FULL SENTENCES following this structure:
   1️⃣ SCENE-SETTING: Name the specific source/venue/event AND describe what happened in vivid detail (what they wore, said, did, where, when, with whom)
-  2️⃣ STORY HOOK: What makes this noteworthy? Include a twist, contrast, surprise, significance, or unique angle from the article
-  3️⃣ IMPACT/RIPPLE: The reaction, consequence, or wider implication — but ONLY if the article explicitly mentions it. If not, deepen the scene detail instead.
+  2️⃣ STORY HOOK: What makes this noteworthy? Include a twist, contrast, surprise, significance, or unique angle FROM THE ARTICLE
+  3️⃣ ADDITIONAL DETAIL: Add more concrete facts from the article (co-stars, outfit details, venue specifics, dates, numbers MENTIONED IN THE ARTICLE). Do NOT fabricate reactions or impacts.
+  
+  ⚠️ ABSOLUTE PROHIBITION — NO INFERRED REACTIONS:
+  You must NEVER write reactions, impacts, or consequences that are NOT explicitly stated in the article text.
+  ❌ "검색 급등" / "화제" / "반응이 쏟아지고" / "매진 행렬" / "확산 중" — UNLESS the article literally says this with evidence
+  ❌ "팬들 사이에서 OO이라는 반응이 나왔다" — UNLESS the article quotes actual fan reactions
+  ❌ "역설적 현상이 발생" — UNLESS the article describes this phenomenon
+  If the article only reports a factual event (e.g., "A wore B at C"), describe the event richly but do NOT invent public reactions or trend impacts.
   
   ❌ TERRIBLE (will be rejected — one-line factual summary):
   "유리가 연극 '더 와스프'에서 강렬한 연기 변신을 선보이며 관객들의 이목을 집중시키고 있다."
   "윤산하가 위콘페 무대에 오르며 다양한 장르의 음악을 선보일 예정이다."
-  "제로베이스원이 월드 투어 앙코르를 준비하고 있다."
   "채영이 대만 타이페이에서 스트릿룩을 선보였다."
-  WHY BAD: Too short, no specific details, reads like a press release. Anyone could write this without reading the article.
+  WHY BAD: Too short, no specific details, reads like a press release.
   
-  ❌ BAD (generic praise with no substance):
+  ❌ BAD (fabricated reactions — REJECTED):
   "OO이 OO에서 뛰어난 활약을 보이며 팬들의 뜨거운 반응을 얻고 있다."
-  WHY BAD: Could apply to literally any artist in any situation. Zero unique information.
+  "관련 검색이 급등하고 있다." (기사에 검색 데이터 언급 없음)
+  "현지 팬들 사이에서 'OO'이라는 반응이 나왔다." (기사에 팬 반응 인용 없음)
+  WHY BAD: Reactions/impacts that don't exist in the article. This is FABRICATION.
   
-  ✅ EXCELLENT (this is what we want):
-  "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'에 가까운 미니멀 메이크업으로 등장했으나, 정작 함께 착용한 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상했다. 메이크업보다 의상이 더 검색되는 역설적 현상이 화보 공개 직후 발생."
-  "연극 '더 와스프'에서 유리가 20년 만에 재회한 동창의 미묘한 심리전을 연기하며, 기존 아이돌 이미지를 완전히 탈피했다는 관객 반응이 쏟아지고 있다. 잔여 회차가 전석 매진으로 이어지며 연극 팬덤 사이에서 '소름 연기'라는 평가가 확산 중."
-  "쯔위가 대만 타이페이 시먼딩에서 포착된 스트릿룩에서 데님 쇼츠 셋업을 착용, 실제 키 170cm 대비 다리가 훨씬 길어 보이는 비율로 현지 팬들 사이에서 '비율 맛집'이라는 반응이 나왔다. 트와이스 월드투어 '디스 이즈 포' 타이페이 공연을 앞둔 이동 중 포착된 컷."
-  WHY GOOD: Specific names, places, items, vivid descriptions, unique angles, reads like a real editorial.
+  ✅ EXCELLENT (rich factual detail without fabrication):
+  "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'에 가까운 미니멀 메이크업으로 등장, 폴로 랄프 로렌 레드 니트 드레스와 실버 액세서리를 매치한 레트로 무드의 화보를 공개했다. 같은 호에서 단독 8페이지 분량의 인터뷰도 함께 수록."
+  "쯔위가 트와이스 월드투어 '디스 이즈 포' 타이페이 공연을 앞두고 대만 시먼딩에서 포착됐다. 데님 쇼츠에 오버사이즈 재킷을 매치한 캐주얼 셋업으로, 170cm 장신의 비율이 돋보이는 스트릿룩."
+  WHY GOOD: Packed with specific details from the article, no fabricated reactions.
   
-  REMEMBER: Extract UNIQUE DETAILS from the article — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know.
-  
-  STRICTLY PROHIBITED: Do NOT infer, speculate, or fabricate data-based judgments ("interest declining", "search volume surging") unless the article EXPLICITLY states those facts with specific numbers.
+  REMEMBER: Extract UNIQUE DETAILS from the article — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know. But NEVER add reactions or impacts the article doesn't mention.
   
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
