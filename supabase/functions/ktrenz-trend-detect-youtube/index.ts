@@ -377,6 +377,7 @@ async function detectForMember(
   openaiKey: string,
   ytApiKey: string,
   member: MemberInfo,
+  globalStarNames?: Set<string>,
 ): Promise<{ keywordsFound: number; videosFound: number; keywords: ExtractedKeyword[] }> {
   const query = buildSearchQuery(member);
 
