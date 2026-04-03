@@ -1894,6 +1894,7 @@ async function detectForMember(
   globalStarNames?: Map<string, string>,
   runInsertedKeywords?: Set<string>,
   ytSearch?: (query: string, max: number) => Promise<YouTubeDetectResult>,
+  siblingNames?: string[],
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
