@@ -667,6 +667,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    const globalStarNames = new Set<string>();
+    for (const s of allCandidates) {
+      if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
+      if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
+    }
+    // 그룹명도 추가
+    for (const g of Object.values(groupMap)) {
+      if (g.display_name) globalStarNames.add(g.display_name.toLowerCase());
+    }
+    console.log(`[detect-youtube] Built globalStarNames: ${globalStarNames.size} entries`);
+
     const batch = allCandidates.slice(batchOffset, batchOffset + batchSize);
 
     if (!batch.length) {
