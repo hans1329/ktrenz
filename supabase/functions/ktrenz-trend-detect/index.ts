@@ -536,6 +536,13 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       if (!src) continue;
       if (/\.(gif|svg|ico)(\?|$)/i.test(src)) continue;
       if (/ads|tracker|pixel|spacer|blank|logo|icon|button|banner|\/menu\/|\/sns\d|\/gong\.|\/common\/|\/layout\//i.test(src)) continue;
+
+      // 사이드바/관련기사 컨테이너 내 이미지 제외
+      // 이미지 위치 앞 500자를 역방향 탐색하여 사이드바 컨테이너 감지
+      const lookbackStart = Math.max(0, imgMatch.index - 500);
+      const lookbackText = html.slice(lookbackStart, imgMatch.index);
+      const sidebarPatterns = /class=["'][^"']*(?:news_slide|best_click|best_list|rank|aside|related|recommend|popular|most_read|hot_issue|star_sns|sidebar)["']|id=["'](?:aside|sidebar|taboola)["']/i;
+      if (sidebarPatterns.test(lookbackText)) continue;
       // 트래킹 픽셀 필터링
       if (/facebook\.com\/tr|\/tr\?id=|noscript=1/i.test(src)) continue;
       
