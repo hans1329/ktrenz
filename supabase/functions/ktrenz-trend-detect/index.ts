@@ -372,6 +372,7 @@ interface ArticleImage {
   url: string;
   caption: string; // alt text + nearby caption text
   isOg: boolean;   // og:image or twitter:image
+  inArticleBody: boolean; // 기사 본문 컨테이너 내 이미지 여부
   index: number;   // position in article
 }
 
