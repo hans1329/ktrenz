@@ -480,13 +480,29 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       // lazy-loading 대응: data-srcset > data-src > srcset > src 순으로 실제 이미지 URL 추출
       let src: string | null = null;
       
+      // srcset 파서: URL 내부 콤마(Cloudflare CDN 등 f=auto,w=1200)를 안전하게 처리
+      function parseSrcset(raw: string): string | null {
+        // srcset 엔트리는 "URL widthDescriptor" 형태, widthDescriptor는 숫자+w 또는 숫자+x
+        // 콤마 뒤에 공백+URL이 오는 패턴으로 분리 (URL 내부 콤마는 공백 없이 붙어있음)
+        const entries: string[] = [];
+        // Split on commas that are followed by whitespace and then http or / (URL start)
+        const parts = raw.split(/,\s+(?=https?:\/\/|\/)/);
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (!trimmed) continue;
+          // Extract URL (everything before the last whitespace+descriptor)
+          const spaceIdx = trimmed.search(/\s+\d+(\.\d+)?[wx]\s*$/);
+          const url = spaceIdx > 0 ? trimmed.slice(0, spaceIdx).trim() : trimmed;
+          if (url && !url.startsWith("data:")) entries.push(url);
+        }
+        // Return last (largest) entry
+        return entries.length > 0 ? entries[entries.length - 1] : null;
+      }
+      
       // data-srcset (SBS 등 lazy-load 사이트)
       const dataSrcsetMatch = imgTag.match(/data-srcset=["']([^"']+)["']/i);
       if (dataSrcsetMatch?.[1]) {
-        // srcset에서 첫 번째 URL 추출 (가장 큰 해상도 or 첫 항목)
-        const srcsetParts = dataSrcsetMatch[1].split(",").map(s => s.trim());
-        const bestSrc = srcsetParts[srcsetParts.length - 1]?.split(/\s+/)[0];
-        if (bestSrc && !bestSrc.startsWith("data:")) src = bestSrc;
+        src = parseSrcset(dataSrcsetMatch[1]);
       }
       
       // data-src
@@ -499,9 +515,7 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
       if (!src) {
         const srcsetMatch = imgTag.match(/\bsrcset=["']([^"']+)["']/i);
         if (srcsetMatch?.[1]) {
-          const srcsetParts = srcsetMatch[1].split(",").map(s => s.trim());
-          const bestSrc = srcsetParts[srcsetParts.length - 1]?.split(/\s+/)[0];
-          if (bestSrc && !bestSrc.startsWith("data:")) src = bestSrc;
+          src = parseSrcset(srcsetMatch[1]);
         }
       }
       
