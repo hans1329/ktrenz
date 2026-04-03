@@ -125,6 +125,7 @@ async function extractKeywordsFromVideos(
   memberName: string,
   groupName: string | null,
   videos: YouTubeVideo[],
+  globalStarNames?: Set<string>,
 ): Promise<ExtractedKeyword[]> {
   if (!videos.length) return [];
 
