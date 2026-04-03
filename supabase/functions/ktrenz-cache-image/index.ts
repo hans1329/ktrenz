@@ -54,6 +54,21 @@ async function downloadImage(url: string): Promise<{ data: Uint8Array; contentTy
       return null;
     }
 
+    // 극단적 배너 비율 감지 (JPEG/PNG 헤더에서 크기 추출)
+    const dims = getImageDimensions(data, contentType);
+    if (dims) {
+      const aspectRatio = dims.width / dims.height;
+      if (aspectRatio > 4) {
+        console.warn(`[cache-image] Skipping banner-ratio image (${dims.width}x${dims.height}, ratio=${aspectRatio.toFixed(1)}): ${url}`);
+        return null;
+      }
+      // 너무 세로로 긴 이미지도 필터 (1:5 이상)
+      if (dims.height / dims.width > 5) {
+        console.warn(`[cache-image] Skipping extreme vertical image (${dims.width}x${dims.height}): ${url}`);
+        return null;
+      }
+    }
+
     return { data, contentType };
   } catch (e) {
     console.error(`[cache-image] Download error for ${url}:`, e.message);
