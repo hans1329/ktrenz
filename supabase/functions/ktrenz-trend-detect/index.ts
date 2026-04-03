@@ -215,7 +215,16 @@ function matchesBlockedNameKeyword(
     if (!value) continue;
     const trimmed = value.trim();
     if (!trimmed) continue;
+    // 1) 정확히 일치
     if (blockedNames.has(trimmed.toLowerCase()) || blockedNames.has(normalizeForCompare(trimmed))) {
+      return true;
+    }
+    // 2) 복합 이름 차단: "그룹명 멤버명", "멤버명 그룹명" 등
+    //    키워드를 공백/슬래시로 분리 후, 모든 토큰이 blockedNames에 포함되면 차단
+    const tokens = trimmed.split(/[\s\/]+/).filter(Boolean);
+    if (tokens.length >= 2 && tokens.every(t =>
+      blockedNames.has(t.toLowerCase()) || blockedNames.has(normalizeForCompare(t))
+    )) {
       return true;
     }
   }
