@@ -649,10 +649,10 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_zh: { type: "string", description: "Chinese translation" },
               category: { type: "string", enum: ["brand", "product", "place", "restaurant", "food", "fashion", "beauty", "media", "music", "event"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
-              context: { type: "string", description: "1-2 sentences in Korean (한국어): 기사의 구체적 상황을 서술하고, 그로 인한 트렌드 현상이나 대중 반응을 편집자 톤으로 작성. 매체명·제품 디테일·수치 등 구체적 정보를 포함. e.g. '에스콰이어 4월호 표지 화보에서 윈터가 거의 생얼로 등장하면서, 최소 메이크업보다 폴로 랄프 로렌 레드 니트 드레스가 더 주목받는 역설적 현상이 발생. 화보 공개 6시간 만에 관련 검색 급등.'" },
+              context: { type: "string", description: "2-3 sentences in Korean (한국어). 매거진 에디터가 쓰는 것처럼 구체적이고 생동감 있는 내러티브를 작성. 반드시 포함: (1) 구체적 출처·매체·행사명 (2) 아티스트가 무엇을 했는지/어떤 상황인지 디테일 (3) 왜 이것이 주목할 만한지 — 반전·의외성·파급력·팬덤 반응 중 하나. 기사 본문의 고유한 정보(날짜, 장소, 브랜드, 제품 모델명, 상대방 이름 등)를 최대한 포함하여 '이 키워드만의 스토리'를 전달. e.g. '에스콰이어 4월호 표지에서 윈터가 거의 생얼로 등장했으나, 정작 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상 — 미니멀 메이크업보다 의상이 더 검색되는 역설적 현상이 발생했다.'" },
               context_ko: { type: "string", description: "MUST be identical to the 'context' field (since context is already in Korean). Copy the same Korean text here." },
-              context_ja: { type: "string", description: "Japanese translation of context. 1-2文で、記事の具体的な状況とトレンド現象・大衆反応を編集者トーンで記述。" },
-              context_zh: { type: "string", description: "Chinese translation of context. 用1-2句话描述文章的具体情况和趋势现象/公众反应，编辑语气。" },
+              context_ja: { type: "string", description: "Japanese translation of context. 2-3文で、雑誌エディターのように具体的で生き生きとしたナラティブを記述。出典・詳細・注目ポイントを含む。" },
+              context_zh: { type: "string", description: "Chinese translation of context. 用2-3句话，像杂志编辑一样写出具体生动的叙事。包含来源、细节和亮点。" },
               source_article_index: { type: "integer", description: "1-based index of the source article" },
               commercial_intent: { type: "string", enum: ["ad", "sponsorship", "collaboration", "organic", "rumor"], description: "Nature of the association" },
               brand_intent: { type: "string", enum: ["awareness", "conversion", "association", "loyalty"], description: "Brand perspective intent" },
@@ -758,22 +758,33 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
 - If "팔레트" does not appear in any article text, you CANNOT extract "팔레트" — even if you know it's the artist's song.
 - If "나의 아저씨" does not appear in any article text, you CANNOT extract it.
 - ★★★ CONTEXT WRITING RULES (STRICTLY ENFORCED) ★★★
-  The context/context_ko fields MUST follow this exact pattern: "[Specific Event/Situation] → [Resulting Trend Phenomenon/Public Reaction/Metric Impact]"
+  You are a SENIOR MAGAZINE EDITOR writing trend briefings. The context MUST read like a compelling editorial note, NOT a news wire report.
   
-  MANDATORY ELEMENTS:
-  1. Name the SPECIFIC source (magazine name, show name, platform, event name)
-  2. Describe the CONCRETE situation (what happened, what was shown/worn/said)
-  3. End with the TREND IMPACT (search surge, viral reaction, unexpected attention, sales spike, contrarian phenomenon)
+  Write 2-3 FULL SENTENCES following this structure:
+  1️⃣ SCENE-SETTING: Name the specific source/venue/event AND describe what happened in vivid detail (what they wore, said, did, where, when, with whom)
+  2️⃣ STORY HOOK: What makes this noteworthy? Include a twist, contrast, surprise, significance, or unique angle from the article
+  3️⃣ IMPACT/RIPPLE: The reaction, consequence, or wider implication — but ONLY if the article explicitly mentions it. If not, deepen the scene detail instead.
   
-  ❌ BAD (dry factual summary — REJECTED): "유리가 연극 '더 와스프'에서 강렬한 연기 변신을 선보이며 관객들의 이목을 집중시키고 있다."
-  ❌ BAD (generic praise — REJECTED): "윤산하가 위콘페 무대에 오르며 다양한 장르의 음악을 선보일 예정이다."
-  ❌ BAD (plain report — REJECTED): "제로베이스원이 월드 투어 앙코르를 준비하고 있다."
+  ❌ TERRIBLE (will be rejected — one-line factual summary):
+  "유리가 연극 '더 와스프'에서 강렬한 연기 변신을 선보이며 관객들의 이목을 집중시키고 있다."
+  "윤산하가 위콘페 무대에 오르며 다양한 장르의 음악을 선보일 예정이다."
+  "제로베이스원이 월드 투어 앙코르를 준비하고 있다."
+  "채영이 대만 타이페이에서 스트릿룩을 선보였다."
+  WHY BAD: Too short, no specific details, reads like a press release. Anyone could write this without reading the article.
   
-  ✅ GOOD: "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'로 등장했으나, 정작 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상 — 화보 공개 6시간 만에 관련 검색 급등."
-  ✅ GOOD: "연극 '더 와스프'에서 유리가 20년 만의 동창 재회를 연기하며 '소름 연기'라는 관객 반응이 쏟아져, 공연 잔여 회차 전석 매진 행렬로 이어지고 있다."
-  ✅ GOOD: "제로베이스원이 9인조→5인조 체제 첫 앙코르 투어를 공식 발표하자, 팬덤 내 '완전체 그리움' vs '새 시작 응원' 양극화 반응이 실시간 트렌드에 동시 등극."
+  ❌ BAD (generic praise with no substance):
+  "OO이 OO에서 뛰어난 활약을 보이며 팬들의 뜨거운 반응을 얻고 있다."
+  WHY BAD: Could apply to literally any artist in any situation. Zero unique information.
   
-  The GOOD examples include: specific source details, a concrete situation, and a trend/reaction outcome. STRICTLY PROHIBITED: Do NOT infer, speculate, or fabricate any data-based judgments such as "interest is declining", "search volume surging", "attention is cooling", or any trend direction (increase/decrease) unless the article EXPLICITLY states those facts with specific numbers. If the article does not mention metrics or public reaction data, describe ONLY the factual situation from the article without adding assumed outcomes.
+  ✅ EXCELLENT (this is what we want):
+  "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'에 가까운 미니멀 메이크업으로 등장했으나, 정작 함께 착용한 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상했다. 메이크업보다 의상이 더 검색되는 역설적 현상이 화보 공개 직후 발생."
+  "연극 '더 와스프'에서 유리가 20년 만에 재회한 동창의 미묘한 심리전을 연기하며, 기존 아이돌 이미지를 완전히 탈피했다는 관객 반응이 쏟아지고 있다. 잔여 회차가 전석 매진으로 이어지며 연극 팬덤 사이에서 '소름 연기'라는 평가가 확산 중."
+  "쯔위가 대만 타이페이 시먼딩에서 포착된 스트릿룩에서 데님 쇼츠 셋업을 착용, 실제 키 170cm 대비 다리가 훨씬 길어 보이는 비율로 현지 팬들 사이에서 '비율 맛집'이라는 반응이 나왔다. 트와이스 월드투어 '디스 이즈 포' 타이페이 공연을 앞둔 이동 중 포착된 컷."
+  WHY GOOD: Specific names, places, items, vivid descriptions, unique angles, reads like a real editorial.
+  
+  REMEMBER: Extract UNIQUE DETAILS from the article — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know.
+  
+  STRICTLY PROHIBITED: Do NOT infer, speculate, or fabricate data-based judgments ("interest declining", "search volume surging") unless the article EXPLICITLY states those facts with specific numbers.
   
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
@@ -862,7 +873,7 @@ When in doubt, DO NOT extract. False negatives are far better than false positiv
 ★ CRITICAL REMINDER:
 - ONLY extract keywords that LITERALLY APPEAR in the article texts below.
 - Do NOT use your general knowledge about this artist to generate keywords.
-- The context_ko field must be a PUNCHY EDITORIAL NARRATIVE (1-2 sentences): describe the specific situation, then the resulting phenomenon. Include concrete details. NOT a dry factual summary.
+- The context_ko field must be a RICH EDITORIAL NARRATIVE (2-3 sentences): describe the specific situation with vivid details (who, what, where, when, wearing what), then the unique angle or significance. Write like a magazine editor, NOT a news wire. Include specific names, brands, venues, dates from the article.
 - If no article contains a valid extractable entity, call extract_keywords with an empty array.
 - source_article_index MUST point to the exact article [number] where the keyword appears.
 
