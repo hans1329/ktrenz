@@ -7256,36 +7256,45 @@ export type Database = {
           battle_date: string
           created_at: string
           id: string
+          reward_pool_ktnz: number
+          settled_at: string | null
           status: string
           trigger_a_id: string
           trigger_b_id: string
           updated_at: string
           votes_a: number
           votes_b: number
+          voting_deadline: string | null
           winner_trigger_id: string | null
         }
         Insert: {
           battle_date?: string
           created_at?: string
           id?: string
+          reward_pool_ktnz?: number
+          settled_at?: string | null
           status?: string
           trigger_a_id: string
           trigger_b_id: string
           updated_at?: string
           votes_a?: number
           votes_b?: number
+          voting_deadline?: string | null
           winner_trigger_id?: string | null
         }
         Update: {
           battle_date?: string
           created_at?: string
           id?: string
+          reward_pool_ktnz?: number
+          settled_at?: string | null
           status?: string
           trigger_a_id?: string
           trigger_b_id?: string
           updated_at?: string
           votes_a?: number
           votes_b?: number
+          voting_deadline?: string | null
           winner_trigger_id?: string | null
         }
         Relationships: [
@@ -7317,6 +7326,7 @@ export type Database = {
           battle_id: string
           created_at: string
           id: string
+          reward_ktnz: number
           user_id: string
           voted_trigger_id: string
         }
@@ -7324,6 +7334,7 @@ export type Database = {
           battle_id: string
           created_at?: string
           id?: string
+          reward_ktnz?: number
           user_id: string
           voted_trigger_id: string
         }
@@ -7331,6 +7342,7 @@ export type Database = {
           battle_id?: string
           created_at?: string
           id?: string
+          reward_ktnz?: number
           user_id?: string
           voted_trigger_id?: string
         }
