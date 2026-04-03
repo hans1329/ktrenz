@@ -599,10 +599,18 @@ Deno.serve(async (req) => {
           .gte("detected_at", lookbackDays);
 
         const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
+        const pureKoreanNameRegex = /^[가-힣]{2,4}$/;
         const newTriggers = triggers.filter((t) => {
           if (existingKws.has(t.keyword.toLowerCase())) return false;
           if (isStarNameKeyword(t.keyword, globalStarNames)) {
             console.warn(`[instagram] ⛔ Star name keyword filtered: "${t.keyword}" (${star.display_name})`);
+            return false;
+          }
+          // 순수 인물명 필터 (한글 2~4자만으로 구성된 키워드 제거)
+          const kwTrimmed = t.keyword.trim();
+          const kwKo = (t.keyword_ko || "").trim();
+          if (pureKoreanNameRegex.test(kwTrimmed) || pureKoreanNameRegex.test(kwKo)) {
+            console.warn(`[instagram] ⛔ Pure person-name filtered: "${t.keyword}" (${star.display_name})`);
             return false;
           }
           return true;

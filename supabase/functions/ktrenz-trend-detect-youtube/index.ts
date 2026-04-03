@@ -447,8 +447,17 @@ async function detectForMember(
   const backfillPromises: PromiseLike<unknown>[] = [];
   const batchInsertedKeys = new Set<string>(); // 같은 배치 내 중복 방지
 
+  const pureKoreanNameRegex = /^[가-힣]{2,4}$/;
+
   for (const kw of keywords) {
     const kwLower = kw.keyword.toLowerCase();
+    const kwKo = (kw.keyword_ko || "").trim();
+
+    // 순수 인물명 필터 (한글 2~4자만으로 구성된 키워드 제거)
+    if (pureKoreanNameRegex.test(kw.keyword.trim()) || pureKoreanNameRegex.test(kwKo)) {
+      console.warn(`[detect-youtube] ⛔ Pure person-name filtered: "${kw.keyword}"`);
+      continue;
+    }
 
     // 크로스 아티스트 중복 필터
     if (crossSet.has(kwLower)) {

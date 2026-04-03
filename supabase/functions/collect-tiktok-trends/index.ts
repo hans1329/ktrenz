@@ -460,12 +460,19 @@ Deno.serve(async (req) => {
               const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
               const now = new Date().toISOString();
 
-              // 키워드별 관련 영상의 커버 이미지 추출
+              const pureKoreanNameRegex = /^[가-힣]{2,4}$/;
               const newTriggers = keywords
                 .filter((kw) => {
                   if (existingKws.has(kw.keyword.toLowerCase())) return false;
                   if (isStarNameKeyword(kw.keyword, globalStarNames)) {
                     console.warn(`[tiktok] ⛔ Star name keyword filtered: "${kw.keyword}" (${star.display_name})`);
+                    return false;
+                  }
+                  // 순수 인물명 필터 (한글 2~4자만으로 구성된 키워드 제거)
+                  const kwTrimmed = kw.keyword.trim();
+                  const kwKo = (kw.keyword_ko || "").trim();
+                  if (pureKoreanNameRegex.test(kwTrimmed) || pureKoreanNameRegex.test(kwKo)) {
+                    console.warn(`[tiktok] ⛔ Pure person-name filtered: "${kw.keyword}" (${star.display_name})`);
                     return false;
                   }
                   return true;
