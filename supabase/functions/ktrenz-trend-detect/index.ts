@@ -2139,7 +2139,9 @@ async function detectForMember(
       }
     }
 
-    if (bestImg && bestScore > 0) {
+    // 키워드/아티스트 매칭이 있는 높은 점수만 확정 (10+점 = 아티스트명 이상 매칭)
+    // 5점 이하(inArticleBody만)는 사이드바 오염 가능성 → og:image 우선
+    if (bestImg && bestScore >= 10) {
       console.log(`[trend-detect] 🎯 Scored image (${bestScore}pts): "${bestImg.caption.slice(0, 60)}" for "${keywordText || artistName}"`);
       return sanitizeImageUrl(bestImg.url);
     }
