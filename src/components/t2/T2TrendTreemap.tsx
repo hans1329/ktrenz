@@ -568,42 +568,27 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         const wikiIds = new Set<string>();
         const groupStarIds = new Set<string>();
         activeStars.forEach((s: any) => {
-          if (s.wiki_entry_id) wikiIds.add(s.wiki_entry_id);
           if (s.group_star_id) groupStarIds.add(s.group_star_id);
         });
 
-        const groupWikiMap = new Map<string, string>();
+        const groupImgMap = new Map<string, string>();
         if (groupStarIds.size > 0) {
-          const { data: groupStars } = await supabase.from("ktrenz_stars").select("id, wiki_entry_id").in("id", Array.from(groupStarIds));
+          const { data: groupStars } = await supabase.from("ktrenz_stars").select("id, image_url").in("id", Array.from(groupStarIds));
           (groupStars ?? []).forEach((g: any) => {
-            if (g.wiki_entry_id) {
-              groupWikiMap.set(g.id, g.wiki_entry_id);
-              wikiIds.add(g.wiki_entry_id);
-            }
-          });
-        }
-
-        const imageMap = new Map<string, string>();
-        if (wikiIds.size > 0) {
-          const { data: wikiEntries } = await supabase.from("wiki_entries").select("id, image_url").in("id", Array.from(wikiIds));
-          (wikiEntries ?? []).forEach((w: any) => {
-            if (w.image_url) imageMap.set(w.id, w.image_url);
+            if (g.image_url) groupImgMap.set(g.id, g.image_url);
           });
         }
 
         activeStars.forEach((s: any) => {
-          const ownImage = s.wiki_entry_id ? imageMap.get(s.wiki_entry_id) : null;
-          const groupWikiId = s.group_star_id ? groupWikiMap.get(s.group_star_id) : null;
-          const groupImage = groupWikiId ? imageMap.get(groupWikiId) : null;
-          const starDirectImage = s.image_url && s.image_url !== "" ? s.image_url : null;
+          const directImg = s.image_url && s.image_url !== "" ? s.image_url : null;
+          const gImg = s.group_star_id ? groupImgMap.get(s.group_star_id) ?? null : null;
           starMap.set(s.id, {
             display_name: s.display_name,
             name_ko: s.name_ko,
-            image_url: (ownImage && !isBlockedImageDomain(ownImage) ? ownImage : null)
-              || (starDirectImage && !isBlockedImageDomain(starDirectImage) ? starDirectImage : null)
-              || (groupImage && !isBlockedImageDomain(groupImage) ? groupImage : null)
+            image_url: (directImg && !isBlockedImageDomain(directImg) ? directImg : null)
+              || (gImg && !isBlockedImageDomain(gImg) ? gImg : null)
               || null,
-            wiki_entry_id: s.wiki_entry_id || groupWikiId,
+            wiki_entry_id: s.wiki_entry_id,
           });
         });
       }
