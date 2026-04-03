@@ -264,12 +264,23 @@ Example: [{"keyword":"젠틀몬스터","keyword_en":"Gentle Monster","keyword_ko
         return false;
       }
 
-      // Artist name as keyword filter
-      const artistNames = [memberName.toLowerCase()];
-      if (groupName) artistNames.push(groupName.toLowerCase());
-      if (artistNames.includes(kwLower) || artistNames.includes(kwKo) || artistNames.includes(kwEn)) {
+      // Artist name as keyword filter (exact + compound)
+      const artistNames = new Set<string>([memberName.toLowerCase()]);
+      if (groupName) artistNames.add(groupName.toLowerCase());
+      // Add name_ko variants from the member info passed via closure
+      // Exact match
+      if (artistNames.has(kwLower) || artistNames.has(kwKo) || artistNames.has(kwEn)) {
         console.warn(`[detect-youtube] ⛔ Artist name as keyword rejected: "${k.keyword}"`);
         return false;
+      }
+      // Compound name match: "그룹명 멤버명" or "멤버명/그룹명" etc.
+      for (const val of [kwLower, kwKo, kwEn]) {
+        if (!val) continue;
+        const tokens = val.split(/[\s\/]+/).filter(Boolean);
+        if (tokens.length >= 2 && tokens.every(t => artistNames.has(t))) {
+          console.warn(`[detect-youtube] ⛔ Compound artist name keyword rejected: "${k.keyword}"`);
+          return false;
+        }
       }
 
       // Corporate/Pharma keyword filter
