@@ -279,25 +279,42 @@ async function searchTikTok(
   } catch { return null; }
 }
 
-const INSTA_API_HOST = "instagram-scraper-api2.p.rapidapi.com";
+const INSTA120_HOST = "instagram120.p.rapidapi.com";
 
 async function searchInstagram(
-  apiKey: string, keyword: string,
+  apiKey: string, keyword: string, instagramHandle?: string | null,
 ): Promise<{ postCount: number; totalLikes: number; totalComments: number } | null> {
+  if (!instagramHandle) return null;
   try {
-    const url = `https://${INSTA_API_HOST}/v1/hashtag?hashtag=${encodeURIComponent(keyword.replace(/\s+/g, ""))}`;
-    const res = await fetch(url, {
-      headers: { "x-rapidapi-host": INSTA_API_HOST, "x-rapidapi-key": apiKey },
+    // instagram120 POST /api/instagram/posts — 아티스트 피드에서 키워드 언급 게시물 집계
+    const res = await fetch(`https://${INSTA120_HOST}/api/instagram/posts`, {
+      method: "POST",
+      headers: {
+        "X-RapidAPI-Key": apiKey,
+        "X-RapidAPI-Host": INSTA120_HOST,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: instagramHandle }),
     });
     if (!res.ok) return null;
     const data = await res.json();
-    const items = data.data?.items || [];
-    let totalLikes = 0, totalComments = 0;
-    for (const item of items) {
-      totalLikes += Number(item.like_count || 0);
-      totalComments += Number(item.comment_count || 0);
+    const edges = data?.result?.edges || [];
+    const kwLower = keyword.toLowerCase().replace(/\s+/g, "");
+    const cutoff = Math.floor(Date.now() / 1000) - 86400 * 7; // 7일 이내
+    let postCount = 0, totalLikes = 0, totalComments = 0;
+    for (const edge of edges) {
+      const node = edge.node;
+      if (!node) continue;
+      if (node.taken_at && node.taken_at < cutoff) continue;
+      const caption = typeof node.caption === "string" ? node.caption : (node.caption?.text || "");
+      const captionLower = caption.toLowerCase().replace(/\s+/g, "");
+      if (captionLower.includes(kwLower)) {
+        postCount++;
+        totalLikes += Number(node.like_count || 0);
+        totalComments += Number(node.comment_count || 0);
+      }
     }
-    return { postCount: items.length || data.data?.count || 0, totalLikes, totalComments };
+    return { postCount, totalLikes, totalComments };
   } catch { return null; }
 }
 
