@@ -734,7 +734,14 @@ async function extractCommercialKeywords(
 
   const articleTexts = articles
     .slice(0, 25)
-    .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
+    .map((a, i) => {
+      let text = `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`;
+      // 본문 발췌가 있으면 AI에 추가 제공 (주체 판별 정확도 향상)
+      if ((a as any).bodyExcerpt) {
+        text += `\n    [본문 발췌] ${(a as any).bodyExcerpt}`;
+      }
+      return text;
+    })
     .join("\n");
 
   const categoryContext = getCategoryContext(starCategory);
@@ -1785,11 +1792,19 @@ Deno.serve(async (req) => {
           star_category: star.star_category || "kpop",
         };
 
+        // 같은 그룹 다른 멤버 이름 목록 (sibling filter용)
+        let siblingNames: string[] | undefined;
+        if (star.star_type === "member" && star.group_star_id) {
+          siblingNames = allCandidates
+            .filter((s: any) => s.group_star_id === star.group_star_id && s.id !== star.id)
+            .flatMap((s: any) => [s.display_name, s.name_ko].filter(Boolean));
+        }
+
         const ytSearchFn = YT_KEYS.length > 0
           ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
           : undefined;
         const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn
+          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn, siblingNames
         );
         successCount++;
         totalKeywords += result.keywordsFound;
@@ -1894,6 +1909,7 @@ async function detectForMember(
   globalStarNames?: Map<string, string>,
   runInsertedKeywords?: Set<string>,
   ytSearch?: (query: string, max: number) => Promise<YouTubeDetectResult>,
+  siblingNames?: string[],
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
@@ -1932,6 +1948,40 @@ async function detectForMember(
 
   const filteredNews = filterByTime(newsItems);
   const filteredBlogs = filterByTime(blogItems);
+
+  // ── 같은 그룹 다른 멤버 제목 필터 (Same-Group Sibling Filter) ──
+  // 기사 제목에 같은 그룹의 다른 멤버명이 있고 검색 대상 멤버명은 없는 기사 제거
+  const memberNameLower = searchName.toLowerCase();
+  const memberNameVariants = [memberNameLower];
+  if (member.display_name && member.display_name.toLowerCase() !== memberNameLower) {
+    memberNameVariants.push(member.display_name.toLowerCase());
+  }
+  const siblingNamesLower = (siblingNames || [])
+    .map(n => n.toLowerCase().trim())
+    .filter(n => n.length >= 2 && !memberNameVariants.includes(n));
+
+  function filterSiblingArticles<T extends { title: string }>(items: T[]): T[] {
+    if (!siblingNamesLower.length) return items;
+    return items.filter(item => {
+      const titleLower = stripHtml(item.title).toLowerCase();
+      // 제목에 검색 대상 멤버명이 있으면 통과
+      if (memberNameVariants.some(n => titleLower.includes(n))) return true;
+      // 제목에 같은 그룹 다른 멤버명이 있으면 차단
+      const hasSibling = siblingNamesLower.some(n => titleLower.includes(n));
+      if (hasSibling) {
+        console.warn(`[trend-detect] ⛔ Sibling filter: "${item.title.slice(0, 80)}" — contains sibling name but NOT "${searchName}"`);
+        return false;
+      }
+      return true;
+    });
+  }
+
+  const sibFilteredNews = filterSiblingArticles(filteredNews);
+  const sibFilteredBlogs = filterSiblingArticles(filteredBlogs);
+  const sibFilterCount = (filteredNews.length - sibFilteredNews.length) + (filteredBlogs.length - sibFilteredBlogs.length);
+  if (sibFilterCount > 0) {
+    console.log(`[trend-detect] ${member.display_name}: Sibling filter removed ${sibFilterCount} articles`);
+  }
 
   const ytGroupVariants = groupLabel
     ? [...new Set([groupLabel, member.group_name, member.group_name_ko].filter((name): name is string => !!name).map((name) => name.toLowerCase()))]
@@ -1973,26 +2023,70 @@ async function detectForMember(
     }
     return true;
   });
+  const sibFilteredYT = filterSiblingArticles(filteredYT);
 
   // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
-  const articles = [
-    ...filteredNews.map((item: any) => ({
+  const articles: Array<{ title: string; description: string; url: string; imageUrl?: string | null; bodyExcerpt?: string }> = [
+    ...sibFilteredNews.map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description),
       url: item.originallink || item.link,
     })),
-    ...filteredBlogs.map((item: any) => ({
+    ...sibFilteredBlogs.map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description || ""),
       url: item.link,
     })),
-    ...filteredYT.map((item) => ({
+    ...sibFilteredYT.map((item) => ({
       title: `[YouTube] ${item.title}`,
       description: item.description,
       url: item.url,
       imageUrl: item.thumbnailUrl || null,
     })),
   ];
+
+  // ── 기사 본문 일부 fetch (상위 5개, 주체 판별 정확도 향상) ──
+  const BODY_FETCH_COUNT = 5;
+  const bodyFetchTargets = articles.slice(0, BODY_FETCH_COUNT).filter(a => a.url && !a.title.startsWith("[YouTube]"));
+  if (bodyFetchTargets.length > 0) {
+    await Promise.allSettled(bodyFetchTargets.map(async (article) => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(article.url, {
+          signal: controller.signal,
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+          redirect: "follow",
+        });
+        clearTimeout(timeout);
+        if (!res.ok) return;
+        const reader = res.body?.getReader();
+        if (!reader) return;
+        let html = "";
+        const decoder = new TextDecoder();
+        while (html.length < 100_000) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          html += decoder.decode(value, { stream: true });
+        }
+        reader.cancel();
+        // 본문 추출: articleBody/CLtag 등 컨테이너 내부 텍스트
+        const bodyPatterns = [
+          /itemprop=["']articleBody["']/i,
+          /id=["'](?:CLtag|articleBody|article[_-]?body|news[_-]?body|content[_-]?body)["']/i,
+          /class=["'][^"']*(?:article[_-]?body|news[_-]?body|artclBody|newsct_article)["']/i,
+        ];
+        let bodyStart = -1;
+        for (const p of bodyPatterns) {
+          const m = html.match(p);
+          if (m?.index != null) { bodyStart = m.index; break; }
+        }
+        const bodyHtml = bodyStart >= 0 ? html.slice(bodyStart, bodyStart + 5000) : html.slice(0, 5000);
+        const bodyText = bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        article.bodyExcerpt = bodyText.slice(0, 400);
+      } catch { /* timeout or fetch error — skip */ }
+    }));
+  }
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
