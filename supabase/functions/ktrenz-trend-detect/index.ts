@@ -2327,6 +2327,21 @@ async function detectForMember(
       continue;
     }
 
+    // 순수 인물명 필터 (한글 2~3자 이름만으로 구성된 키워드 제거, 복합 키워드는 유지)
+    // 예: "전지현" → 제거, "전지현 광고" → 유지, "by필릭스" → 유지(위에서 이미 처리)
+    const pureKoreanNameRegex = /^[가-힣]{2,4}$/;
+    const kwTrimmed = candidate.keywordRow.keyword.trim();
+    const kwKoTrimmed = (candidate.keywordRow.keyword_ko || "").trim();
+    if (pureKoreanNameRegex.test(kwTrimmed) || pureKoreanNameRegex.test(kwKoTrimmed)) {
+      // 우리 스타 테이블에 있는 이름이면 위에서 이미 차단됨 → 여기서는 외부 인물명 차단
+      // 혹시 우리 스타와 관련된 제품/행사명이 2~3자일 수 있으므로, 한글 이름 패턴만 차단
+      const isLikelyName = (s: string) => pureKoreanNameRegex.test(s) && !/[0-9]/.test(s);
+      if (isLikelyName(kwTrimmed) || isLikelyName(kwKoTrimmed)) {
+        console.warn(`[trend-detect] Pure person-name keyword filtered: "${candidate.keywordRow.keyword}" (ko: ${kwKoTrimmed})`);
+        continue;
+      }
+    }
+
     // 같은 run 내 다른 아티스트가 이미 삽입한 키워드 차단
     if (runInsertedKeywords && (runInsertedKeywords.has(kwLower) || (kwKoLower && runInsertedKeywords.has(kwKoLower)) || (kwEnLower && runInsertedKeywords.has(kwEnLower)))) {
       console.warn(`[trend-detect] Run-level cross-artist duplicate filtered: "${candidate.keywordRow.keyword}"`);
