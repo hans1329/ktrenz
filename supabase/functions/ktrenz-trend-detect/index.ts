@@ -536,7 +536,8 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
         }
       }
       
-      images.push({ url: resolved, caption, isOg: false, index: imgIndex++ });
+      const isInBody = articleBodyStart >= 0 && imgMatch.index >= articleBodyStart && imgMatch.index <= articleBodyEnd;
+      images.push({ url: resolved, caption, isOg: false, inArticleBody: isInBody, index: imgIndex++ });
       
       // 최대 15개까지만
       if (images.length >= 15) break;
