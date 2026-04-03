@@ -599,7 +599,14 @@ Deno.serve(async (req) => {
           .gte("detected_at", lookbackDays);
 
         const existingKws = new Set((existing || []).map((e: any) => e.keyword.toLowerCase()));
-        const newTriggers = triggers.filter((t) => !existingKws.has(t.keyword.toLowerCase()));
+        const newTriggers = triggers.filter((t) => {
+          if (existingKws.has(t.keyword.toLowerCase())) return false;
+          if (isStarNameKeyword(t.keyword, globalStarNames)) {
+            console.warn(`[instagram] ⛔ Star name keyword filtered: "${t.keyword}" (${star.display_name})`);
+            return false;
+          }
+          return true;
+        });
 
         if (newTriggers.length > 0) {
           const { error: insertErr } = await sb.from("ktrenz_trend_triggers").insert(newTriggers);
