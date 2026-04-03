@@ -766,10 +766,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                 </p>
                 {/* Time remaining or opening soon */}
                 {!hasMarket && !isSettled ? (
-                  <div className="mt-2 space-y-1">
-                    <p className="text-sm font-semibold text-primary">{t("openingSoon", language)}</p>
-                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                      <Clock className="w-3 h-3" />
+                  <div className="mt-4 mb-2 py-5 px-4 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
+                    <p className="text-base font-bold text-primary">{t("openingSoon", language)}</p>
+                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
+                      <Clock className="w-4 h-4 text-primary/60" />
                       {(() => {
                         const now = new Date();
                         const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
