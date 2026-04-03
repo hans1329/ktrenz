@@ -2146,20 +2146,19 @@ async function detectForMember(
       return sanitizeImageUrl(bestImg.url);
     }
 
-    // 폴백: 기사 본문 컨테이너 내부 이미지
-    const articleBodyImages = validImages.filter(img => !img.isOg && img.inArticleBody);
-    if (articleBodyImages.length > 0) {
-      return sanitizeImageUrl(articleBodyImages[0].url);
-    }
-
-    // 본문이 감지되었지만 본문 내 이미지가 없는 경우 (iframe 기반 포토 갤러리 등)
-    // → og:image를 사이드바 이미지보다 우선
+    // 폴백 1: og:image 우선 (사이드바 이미지 오염 방지)
     const ogImages = validImages.filter(img => img.isOg);
     if (ogImages.length > 0) {
       return sanitizeImageUrl(ogImages[0].url);
     }
 
-    // 폴백: 일반 본문 이미지
+    // 폴백 2: 기사 본문 컨테이너 내부 이미지
+    const articleBodyImages = validImages.filter(img => !img.isOg && img.inArticleBody);
+    if (articleBodyImages.length > 0) {
+      return sanitizeImageUrl(articleBodyImages[0].url);
+    }
+
+    // 폴백 3: 일반 본문 이미지
     const bodyImages = validImages.filter(img => !img.isOg);
     if (bodyImages.length > 0) {
       return sanitizeImageUrl(bodyImages[0].url);
