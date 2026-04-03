@@ -27,6 +27,52 @@ function sanitizeImageUrl(url: string | null): string | null {
   return url.replace(/&amp;/g, "&");
 }
 
+// 이미지 바이너리에서 크기 추출 (JPEG/PNG/WebP 헤더 파싱)
+function getImageDimensions(data: Uint8Array, contentType: string): { width: number; height: number } | null {
+  try {
+    // PNG: bytes 16-23 contain width (4 bytes) and height (4 bytes) in IHDR
+    if (contentType.includes("png") && data.length > 24 && data[1] === 0x50 && data[2] === 0x4E && data[3] === 0x47) {
+      const width = (data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19];
+      const height = (data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23];
+      if (width > 0 && height > 0) return { width, height };
+    }
+    // JPEG: scan for SOF markers (0xFF 0xC0..0xC3)
+    if ((contentType.includes("jpeg") || contentType.includes("jpg")) && data.length > 2 && data[0] === 0xFF && data[1] === 0xD8) {
+      let offset = 2;
+      while (offset < data.length - 9) {
+        if (data[offset] !== 0xFF) { offset++; continue; }
+        const marker = data[offset + 1];
+        if (marker >= 0xC0 && marker <= 0xC3) {
+          const height = (data[offset + 5] << 8) | data[offset + 6];
+          const width = (data[offset + 7] << 8) | data[offset + 8];
+          if (width > 0 && height > 0) return { width, height };
+        }
+        const segLen = (data[offset + 2] << 8) | data[offset + 3];
+        offset += 2 + segLen;
+      }
+    }
+    // WebP: RIFF header, VP8 chunk
+    if (contentType.includes("webp") && data.length > 30 && data[0] === 0x52) {
+      // VP8 lossy
+      if (data[12] === 0x56 && data[13] === 0x50 && data[14] === 0x38 && data[15] === 0x20) {
+        const width = ((data[26] | (data[27] << 8)) & 0x3FFF);
+        const height = ((data[28] | (data[29] << 8)) & 0x3FFF);
+        if (width > 0 && height > 0) return { width, height };
+      }
+      // VP8L lossless
+      if (data[12] === 0x56 && data[13] === 0x50 && data[14] === 0x38 && data[15] === 0x4C) {
+        const bits = data[21] | (data[22] << 8) | (data[23] << 16) | (data[24] << 24);
+        const width = (bits & 0x3FFF) + 1;
+        const height = ((bits >> 14) & 0x3FFF) + 1;
+        if (width > 0 && height > 0) return { width, height };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function downloadImage(url: string): Promise<{ data: Uint8Array; contentType: string } | null> {
   try {
     const res = await fetch(url, {
