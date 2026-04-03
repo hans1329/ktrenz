@@ -734,7 +734,14 @@ async function extractCommercialKeywords(
 
   const articleTexts = articles
     .slice(0, 25)
-    .map((a, i) => `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`)
+    .map((a, i) => {
+      let text = `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`;
+      // 본문 발췌가 있으면 AI에 추가 제공 (주체 판별 정확도 향상)
+      if ((a as any).bodyExcerpt) {
+        text += `\n    [본문 발췌] ${(a as any).bodyExcerpt}`;
+      }
+      return text;
+    })
     .join("\n");
 
   const categoryContext = getCategoryContext(starCategory);
