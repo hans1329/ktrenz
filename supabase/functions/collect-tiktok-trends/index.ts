@@ -76,9 +76,11 @@ async function searchTikTok(
 
     if (!response.ok) {
       const err = await response.text();
-      console.warn(`[tiktok] Search failed for "${keyword}": ${response.status} ${err.slice(0, 300)}`);
+      console.warn(`[tiktok] Search failed for "${keyword}": HTTP ${response.status} ${err.slice(0, 300)}`);
       return [];
     }
+
+    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}, content-type=${response.headers.get("content-type")}, content-length=${response.headers.get("content-length")}`);
 
     const text = await response.text();
     if (!text || text.trim().length === 0) {
