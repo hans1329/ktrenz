@@ -1923,6 +1923,7 @@ Deno.serve(async (req) => {
         await sb.from("ktrenz_stars").update({
           last_detected_at: new Date().toISOString(),
           last_detect_result: detectResult,
+          media_exposure: result.totalArticleCount ?? 0,
         }).eq("id", star.id);
 
         await new Promise((r) => setTimeout(r, 300));

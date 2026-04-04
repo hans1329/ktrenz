@@ -4353,6 +4353,7 @@ export type Database = {
           is_active: boolean | null
           last_detect_result: Json | null
           last_detected_at: string | null
+          media_exposure: number
           musicbrainz_id: string | null
           name_ko: string | null
           namuwiki_url: string | null
@@ -4373,6 +4374,7 @@ export type Database = {
           is_active?: boolean | null
           last_detect_result?: Json | null
           last_detected_at?: string | null
+          media_exposure?: number
           musicbrainz_id?: string | null
           name_ko?: string | null
           namuwiki_url?: string | null
@@ -4393,6 +4395,7 @@ export type Database = {
           is_active?: boolean | null
           last_detect_result?: Json | null
           last_detected_at?: string | null
+          media_exposure?: number
           musicbrainz_id?: string | null
           name_ko?: string | null
           namuwiki_url?: string | null
