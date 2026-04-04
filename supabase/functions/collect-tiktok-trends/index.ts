@@ -66,7 +66,7 @@ async function searchTikTok(
 ): Promise<TikTokVideo[]> {
   try {
     // tiktok-api23 (Lundehund): /api/search/video 엔드포인트
-    const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(keyword)}&count=${count}&search_id=0`;
+    const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(keyword)}&cursor=0&search_id=0`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
