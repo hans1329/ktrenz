@@ -2408,6 +2408,8 @@ async function detectForMember(
           group_name: member.group_name,
         } : {
           article_count: articles.length,
+          total_article_count: totalArticleCount, // 네이버 검색 전체 결과 수 (점수 반영용)
+          total_youtube_count: totalYoutubeCount,
           search_name: searchName,
           group_name: member.group_name,
           ...(sourceArticle?.title?.startsWith("[YouTube]") ? { source: "youtube" } : {}),
