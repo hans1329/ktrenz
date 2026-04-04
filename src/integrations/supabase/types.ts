@@ -4307,7 +4307,7 @@ export type Database = {
           platform: string
           star_id: string
           top_posts: Json | null
-          wiki_entry_id: string
+          wiki_entry_id: string | null
         }
         Insert: {
           collected_at?: string
@@ -4318,7 +4318,7 @@ export type Database = {
           platform?: string
           star_id: string
           top_posts?: Json | null
-          wiki_entry_id: string
+          wiki_entry_id?: string | null
         }
         Update: {
           collected_at?: string
@@ -4329,7 +4329,7 @@ export type Database = {
           platform?: string
           star_id?: string
           top_posts?: Json | null
-          wiki_entry_id?: string
+          wiki_entry_id?: string | null
         }
         Relationships: [
           {
