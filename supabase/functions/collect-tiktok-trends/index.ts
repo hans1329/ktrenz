@@ -565,7 +565,7 @@ Deno.serve(async (req) => {
         platform: "tiktok",
         status: "success",
         records_collected: totalKeywords,
-        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}`,
+        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}, offset=${ttOffset}`,
       });
     } catch { /* ignore log errors */ }
 
