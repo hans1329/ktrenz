@@ -484,7 +484,6 @@ Deno.serve(async (req) => {
 
                   return {
                     star_id: star.id,
-                    wiki_entry_id: null,
                     trigger_type: "keyword",
                     trigger_source: "tiktok",
                     artist_name: star.display_name,
