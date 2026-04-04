@@ -1966,8 +1966,8 @@ async function detectForMember(
   // ─── 3소스 병렬 검색: News + Blog + YouTube (키 로테이션 포함) ───
   const ytSearchQuery = groupLabel ? `${searchName} ${groupLabel}` : (member.name_ko || member.display_name); // YouTube는 그룹 컨텍스트를 포함해 동명이인 오수집 방지
   const [newsResult, blogResult, ytResult] = await Promise.all([
-    searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 50),
-    searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 30),
+    searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 30),
+    searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 20),
     ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
   ]);
 
