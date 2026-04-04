@@ -1833,9 +1833,17 @@ Deno.serve(async (req) => {
         const ytSearchFn = YT_KEYS.length > 0
           ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
           : undefined;
-        const result = await detectForMember(
-          sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn, siblingNames
-        );
+        // 개별 아티스트 타임아웃: wall-time 초과 방지
+        const starStart = Date.now();
+        const result = await Promise.race([
+          detectForMember(
+            sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn, siblingNames
+          ),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`STAR_TIMEOUT: ${star.display_name} exceeded ${PER_STAR_TIMEOUT_MS / 1000}s`)), PER_STAR_TIMEOUT_MS)
+          ),
+        ]);
+        console.log(`[trend-detect] ✓ ${star.display_name}: ${result.keywordsFound} keywords (${Math.round((Date.now() - starStart) / 1000)}s)`);
         successCount++;
         totalKeywords += result.keywordsFound;
         totalNews += result.sourceStats.news;
