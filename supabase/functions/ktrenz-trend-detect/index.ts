@@ -2726,6 +2726,7 @@ async function detectForMember(
   return {
     keywordsFound: insertedCount,
     articlesFound: articles.length,
+    totalArticleCount,
     keywords: insertedKeywords,
     sourceStats: srcStats,
     insertStats: { inserted: insertedCount, backfilled: 0, filtered: Math.max(0, candidateRows.length - insertedCount) },
