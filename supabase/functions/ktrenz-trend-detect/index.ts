@@ -2104,14 +2104,23 @@ async function detectForMember(
   const sibFilteredYT = filterSiblingArticles(filteredYT);
 
   // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
+  // ── 메이저 매체 위주로 AI 분석 대상 구성 + 전체 기사 수는 점수용으로 별도 보존 ──
+  const totalArticleCount = newsResult.total + blogResult.total; // 네이버 API 반환 전체 검색 결과 수
+  const totalYoutubeCount = ytResult.totalResults;
+
+  // 뉴스: 메이저 매체 우선, 나머지는 메이저가 부족할 때만 보충
+  const majorNews = sibFilteredNews.filter((item: any) => isMajorOutlet(item.originallink || item.link));
+  const minorNews = sibFilteredNews.filter((item: any) => !isMajorOutlet(item.originallink || item.link));
+  const selectedNews = majorNews.length >= 10 ? majorNews.slice(0, 15) : [...majorNews, ...minorNews.slice(0, 10 - majorNews.length)];
+
   const rawArticles: Array<{ title: string; description: string; url: string; imageUrl?: string | null; bodyExcerpt?: string; isMajor?: boolean }> = [
-    ...sibFilteredNews.map((item: any) => ({
+    ...selectedNews.map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description),
       url: item.originallink || item.link,
-      isMajor: isMajorOutlet(item.originallink || item.link),
+      isMajor: true,
     })),
-    ...sibFilteredBlogs.map((item: any) => ({
+    ...sibFilteredBlogs.slice(0, 10).map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description || ""),
       url: item.link,
