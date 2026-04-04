@@ -65,7 +65,8 @@ async function searchTikTok(
   count: number = SEARCH_COUNT,
 ): Promise<TikTokVideo[]> {
   try {
-    const url = `https://${TIKTOK_API_HOST}/feed/search?keywords=${encodeURIComponent(keyword)}&count=${count}&region=kr`;
+    // tiktok-api23 (Lundehund): /api/search/video 엔드포인트
+    const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(keyword)}&count=${count}&search_id=0`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -96,37 +97,37 @@ async function searchTikTok(
       return [];
     }
 
-    // tiktok-scraper7: { code: 0, msg: "success", data: { videos: [...] } }
-    const videos = data?.data?.videos || data?.data || [];
-    if (!Array.isArray(videos)) {
+    // tiktok-api23 응답: { item_list: [...], hasMore: 1, cursor: 12 }
+    const items = data?.item_list || [];
+    if (!Array.isArray(items)) {
       console.warn(`[tiktok] Unexpected structure for "${keyword}": ${JSON.stringify(data).slice(0, 300)}`);
       return [];
     }
 
-    console.log(`[tiktok] "${keyword}": ${videos.length} videos returned`);
+    console.log(`[tiktok] "${keyword}": ${items.length} videos returned`);
 
-    return videos
-      .filter((v: any) => v && (v.video_id || v.id))
+    return items
+      .filter((v: any) => v && v.id)
       .map((v: any) => {
         const stats = v.stats || {};
         const author = v.author || {};
         return {
-          id: v.video_id || v.id || "",
-          desc: v.title || v.desc || "",
-          createTime: v.create_time || v.createTime || 0,
+          id: v.id || "",
+          desc: v.desc || "",
+          createTime: v.createTime || 0,
           stats: {
-            playCount: Number(stats.playCount || v.play_count || v.play || 0),
-            diggCount: Number(stats.diggCount || v.digg_count || v.likes || 0),
-            commentCount: Number(stats.commentCount || v.comment_count || v.comments || 0),
-            shareCount: Number(stats.shareCount || v.share_count || v.shares || 0),
+            playCount: Number(stats.playCount) || 0,
+            diggCount: Number(stats.diggCount) || 0,
+            commentCount: Number(stats.commentCount) || 0,
+            shareCount: Number(stats.shareCount) || 0,
           },
           author: {
-            uniqueId: author.unique_id || author.uniqueId || v.author_unique_id || "",
-            nickname: author.nickname || v.author_name || "",
-            followerCount: Number(author.follower_count || author.followerCount || 0),
+            uniqueId: author.uniqueId || "",
+            nickname: author.nickname || "",
+            followerCount: Number(author.followerCount) || 0,
             verified: author.verified || false,
           },
-          coverUrl: v.cover || v.origin_cover || v.video?.cover || "",
+          coverUrl: v.video?.cover || v.video?.originCover || "",
         };
       });
   } catch (e) {
