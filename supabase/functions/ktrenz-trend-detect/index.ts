@@ -2178,7 +2178,7 @@ async function detectForMember(
         }
         const bodyHtml = bodyStart >= 0 ? html.slice(bodyStart, bodyStart + 5000) : html.slice(0, 5000);
         const bodyText = bodyHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-        article.bodyExcerpt = bodyText.slice(0, 400);
+        article.bodyExcerpt = bodyText.slice(0, 800);
       } catch { /* timeout or fetch error — skip */ }
     }));
   }
