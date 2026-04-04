@@ -82,6 +82,46 @@ const SOURCE_IMAGE_BLACKLIST = [
   "scontent.",
 ];
 
+// ── 메이저 매체 판별: 동일 기사 중복 시 메이저 매체 기사를 우선 유지 ──
+const MAJOR_OUTLET_PATTERNS = [
+  "yna.co.kr", "yonhapnews", // 연합뉴스
+  "chosun.com", "donga.com", "joongang.co.kr", "hani.co.kr", // 4대 일간지
+  "hankyung.com", "mk.co.kr", "mt.co.kr", "sedaily.com", // 경제지
+  "sbs.co.kr", "kbs.co.kr", "mbc.co.kr", "jtbc.co.kr", // 방송사
+  "newsen.com", "starnews.co.kr", "xsportsnews", "spotvnews", "osen.mt.co.kr", // 연예매체
+  "entertain.naver.com", "news.naver.com",
+  "sports.chosun.com", "isplus.com", "heraldcorp.com",
+];
+function isMajorOutlet(url: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return MAJOR_OUTLET_PATTERNS.some(p => lower.includes(p));
+}
+
+// ── 제목 유사도 기반 중복 제거 ──
+function titleSimilarity(a: string, b: string): number {
+  const wordsA = new Set(a.replace(/[^\w\uAC00-\uD7AF]/g, " ").split(/\s+/).filter(w => w.length >= 2));
+  const wordsB = new Set(b.replace(/[^\w\uAC00-\uD7AF]/g, " ").split(/\s+/).filter(w => w.length >= 2));
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+  let overlap = 0;
+  for (const w of wordsA) if (wordsB.has(w)) overlap++;
+  return overlap / Math.min(wordsA.size, wordsB.size);
+}
+
+function deduplicateArticles<T extends { title: string; isMajor?: boolean }>(articles: T[]): T[] {
+  // 메이저 매체 우선 정렬
+  const sorted = [...articles].sort((a, b) => (b.isMajor ? 1 : 0) - (a.isMajor ? 1 : 0));
+  const kept: T[] = [];
+  for (const article of sorted) {
+    const isDup = kept.some(k => titleSimilarity(k.title, article.title) >= 0.75);
+    if (!isDup) kept.push(article);
+  }
+  if (articles.length > kept.length) {
+    console.log(`[trend-detect] Dedup: ${articles.length} → ${kept.length} articles (removed ${articles.length - kept.length} duplicates)`);
+  }
+  return kept;
+}
+
 // ── OpenAI Vision 기반 이미지 품질 분류 ──
 // OG 이미지들을 일괄로 분석하여 텍스트 오버레이/카드뉴스/배너 이미지를 식별
 async function classifyImagesWithVision(
