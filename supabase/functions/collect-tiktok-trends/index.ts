@@ -9,8 +9,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
-const SEARCH_COUNT = 10;
+const TIKTOK_API_HOST = "tiktok-scraper7.p.rapidapi.com";
+const SEARCH_COUNT = 12;
 // ★ 하드 리밋: 월 500건 무료, 초과 시 개당 과금 → 일일 최대 450건으로 안전 마진 확보
 const DAILY_API_CALL_HARD_LIMIT = 450;
 
@@ -65,7 +65,7 @@ async function searchTikTok(
   count: number = SEARCH_COUNT,
 ): Promise<TikTokVideo[]> {
   try {
-    const url = `https://${TIKTOK_API_HOST}/api/search/general?keyword=${encodeURIComponent(keyword)}&count=${count}`;
+    const url = `https://${TIKTOK_API_HOST}/feed/search?keywords=${encodeURIComponent(keyword)}&count=${count}&region=kr`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -74,9 +74,11 @@ async function searchTikTok(
       },
     });
 
+    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}`);
+
     if (!response.ok) {
       const err = await response.text();
-      console.warn(`[tiktok] Search failed for "${keyword}": ${response.status} ${err.slice(0, 200)}`);
+      console.warn(`[tiktok] Search failed for "${keyword}": HTTP ${response.status} ${err.slice(0, 300)}`);
       return [];
     }
 
@@ -90,34 +92,41 @@ async function searchTikTok(
     try {
       data = JSON.parse(text);
     } catch {
-      console.warn(`[tiktok] Invalid JSON for "${keyword}": ${text.slice(0, 100)}`);
+      console.warn(`[tiktok] Invalid JSON for "${keyword}": ${text.slice(0, 200)}`);
       return [];
     }
-    const items = data.data || [];
 
-    return items
-      .filter((item: any) => item.item)
-      .map((item: any) => {
-        const v = item.item;
+    // tiktok-scraper7: { code: 0, msg: "success", data: { videos: [...] } }
+    const videos = data?.data?.videos || data?.data || [];
+    if (!Array.isArray(videos)) {
+      console.warn(`[tiktok] Unexpected structure for "${keyword}": ${JSON.stringify(data).slice(0, 300)}`);
+      return [];
+    }
+
+    console.log(`[tiktok] "${keyword}": ${videos.length} videos returned`);
+
+    return videos
+      .filter((v: any) => v && (v.video_id || v.id))
+      .map((v: any) => {
         const stats = v.stats || {};
         const author = v.author || {};
         return {
-          id: v.id || "",
-          desc: v.desc || "",
-          createTime: v.createTime || 0,
+          id: v.video_id || v.id || "",
+          desc: v.title || v.desc || "",
+          createTime: v.create_time || v.createTime || 0,
           stats: {
-            playCount: Number(stats.playCount) || 0,
-            diggCount: Number(stats.diggCount) || 0,
-            commentCount: Number(stats.commentCount) || 0,
-            shareCount: Number(stats.shareCount) || 0,
+            playCount: Number(stats.playCount || v.play_count || v.play || 0),
+            diggCount: Number(stats.diggCount || v.digg_count || v.likes || 0),
+            commentCount: Number(stats.commentCount || v.comment_count || v.comments || 0),
+            shareCount: Number(stats.shareCount || v.share_count || v.shares || 0),
           },
           author: {
-            uniqueId: author.uniqueId || "",
-            nickname: author.nickname || "",
-            followerCount: Number(author.followerCount) || 0,
+            uniqueId: author.unique_id || author.uniqueId || v.author_unique_id || "",
+            nickname: author.nickname || v.author_name || "",
+            followerCount: Number(author.follower_count || author.followerCount || 0),
             verified: author.verified || false,
           },
-          coverUrl: v.video?.cover || v.video?.originCover || "",
+          coverUrl: v.cover || v.origin_cover || v.video?.cover || "",
         };
       });
   } catch (e) {
@@ -291,7 +300,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { limit: batchLimit, dryRun } = body;
+    const { limit: batchLimit, dryRun, offset: requestOffset } = body;
 
     const apiKey = Deno.env.get("RAPIDAPI_KEY");
     if (!apiKey) {
@@ -327,13 +336,15 @@ Deno.serve(async (req) => {
     }
 
     // ktrenz_stars에서 활성 아티스트 (star_id 기반) — member 포함
+    const ttOffset = requestOffset || 0;
+    const ttBatchSize = batchLimit || 50;
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, star_type, group_star_id")
       .eq("is_active", true)
       .in("star_type", ["group", "solo", "member"])
       .order("display_name")
-      .limit(batchLimit || 50);
+      .range(ttOffset, ttOffset + ttBatchSize - 1);
 
     // 그룹명 매핑 (멤버의 group_star_id → 그룹 display_name)
     const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
@@ -563,7 +574,7 @@ Deno.serve(async (req) => {
         platform: "tiktok",
         status: "success",
         records_collected: totalKeywords,
-        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}`,
+        error_message: `artists=${results.length}, snapshots=${snapshotsToInsert.length}, keywords=${totalKeywords}, totalViews=${totalViews}, apiCalls=${apiCallCount}, offset=${ttOffset}`,
       });
     } catch { /* ignore log errors */ }
 
