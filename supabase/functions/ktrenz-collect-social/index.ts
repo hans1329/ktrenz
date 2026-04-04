@@ -179,44 +179,77 @@ Deno.serve(async (req) => {
       console.log(`[collect-social] Instagram summary: batches=${batchCount}, processed=${totalProcessed}, keywords=${totalKeywords}, lastOffset=${igOffset}/${maxOffset}`);
     }
 
-    // ── 2. TikTok 수집 ──
+    // ── 2. TikTok 수집 (오프셋 순환) ──
     if (Date.now() - startTime > TOTAL_TIMEGUARD_MS) {
       console.warn(`[collect-social] ⏱ Timeguard: ${Math.round((Date.now() - startTime) / 1000)}s elapsed, skipping TikTok collection`);
       results.tiktok = { success: true, skipped: true, reason: "timeguard" };
     } else {
-      console.log("[collect-social] Starting TikTok collection...");
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), TT_TIMEOUT_MS);
+      // DB에서 오늘 처리된 최대 offset 조회
+      const { data: ttTodayLogs } = await sb
+        .from("ktrenz_collection_log")
+        .select("error_message")
+        .eq("platform", "tiktok")
+        .eq("status", "success")
+        .gte("collected_at", todayStart.toISOString())
+        .order("collected_at", { ascending: false })
+        .limit(1);
 
-        const ttResp = await fetch(`${supabaseUrl}/functions/v1/collect-tiktok-trends`, {
-          method: "POST",
-          headers: callHeaders,
-          body: JSON.stringify({ limit: 50 }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-
-        const ttText = await ttResp.text();
-        let ttResult: any;
-        try {
-          ttResult = JSON.parse(ttText);
-        } catch {
-          ttResult = { raw: ttText.slice(0, 200) };
+      let ttOffset = 0;
+      if (ttTodayLogs && ttTodayLogs.length > 0) {
+        const match = ttTodayLogs[0].error_message?.match(/offset=(\d+)/);
+        if (match) {
+          ttOffset = parseInt(match[1]) + 50;
         }
+      }
 
-        results.tiktok = {
-          success: ttResult.success || false,
-          processed: ttResult.processed || 0,
-          snapshots: ttResult.snapshotsInserted || 0,
-          keywords: ttResult.keywordsSaved || 0,
-          totalViews: ttResult.totalViews || 0,
-        };
-        console.log(`[collect-social] TikTok: processed=${ttResult.processed}, snapshots=${ttResult.snapshotsInserted}, keywords=${ttResult.keywordsSaved || 0}`);
-      } catch (e) {
-        const msg = (e as Error).message;
-        console.error(`[collect-social] TikTok error: ${msg}`);
-        results.tiktok = { success: false, error: msg };
+      // 전체 대상 수 조회
+      const { count: ttTotalStars } = await sb
+        .from("ktrenz_stars")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+        .in("star_type", ["group", "solo", "member"]);
+
+      const ttMaxOffset = ttTotalStars || 500;
+
+      if (ttOffset >= ttMaxOffset) {
+        console.log(`[collect-social] TikTok: today's full cycle complete (offset=${ttOffset} >= total=${ttMaxOffset})`);
+        results.tiktok = { success: true, skipped: true, reason: "cycle_complete", todayOffset: ttOffset, total: ttMaxOffset };
+      } else {
+        console.log(`[collect-social] Starting TikTok collection at offset=${ttOffset}...`);
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), TT_TIMEOUT_MS);
+
+          const ttResp = await fetch(`${supabaseUrl}/functions/v1/collect-tiktok-trends`, {
+            method: "POST",
+            headers: callHeaders,
+            body: JSON.stringify({ limit: 50, offset: ttOffset }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+
+          const ttText = await ttResp.text();
+          let ttResult: any;
+          try {
+            ttResult = JSON.parse(ttText);
+          } catch {
+            ttResult = { raw: ttText.slice(0, 200) };
+          }
+
+          results.tiktok = {
+            success: ttResult.success || false,
+            processed: ttResult.processed || 0,
+            snapshots: ttResult.snapshotsInserted || 0,
+            keywords: ttResult.keywordsSaved || 0,
+            totalViews: ttResult.totalViews || 0,
+            offset: ttOffset,
+          };
+          console.log(`[collect-social] TikTok: processed=${ttResult.processed}, snapshots=${ttResult.snapshotsInserted}, keywords=${ttResult.keywordsSaved || 0}, offset=${ttOffset}`);
+        } catch (e) {
+          const msg = (e as Error).message;
+          console.error(`[collect-social] TikTok error: ${msg}`);
+          results.tiktok = { success: false, error: msg };
+        }
       }
     }
 
