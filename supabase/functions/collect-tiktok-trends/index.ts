@@ -431,7 +431,6 @@ Deno.serve(async (req) => {
           // 1) 스냅샷 저장 (기존 통계 수집)
           snapshotsToInsert.push({
             star_id: star.id,
-            wiki_entry_id: null,
             platform: "tiktok",
             keyword: searchKeyword,
             keyword_type: "artist_search",
@@ -485,7 +484,6 @@ Deno.serve(async (req) => {
 
                   return {
                     star_id: star.id,
-                    wiki_entry_id: null,
                     trigger_type: "keyword",
                     trigger_source: "tiktok",
                     artist_name: star.display_name,

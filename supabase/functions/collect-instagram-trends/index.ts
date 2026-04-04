@@ -526,7 +526,6 @@ Deno.serve(async (req) => {
 
         await sb.from("ktrenz_social_snapshots").insert({
           star_id: star.id,
-          wiki_entry_id: null,
           platform: "instagram",
           keyword: star.display_name,
           keyword_type: "artist_feed",
@@ -557,7 +556,6 @@ Deno.serve(async (req) => {
 
           return {
             star_id: star.id,
-            wiki_entry_id: null,
             trigger_type: "keyword",
             trigger_source: "instagram",
             artist_name: star.display_name,
