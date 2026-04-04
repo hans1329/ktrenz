@@ -371,6 +371,27 @@ async function executeBatch(
   const isBatchError = result.fallback === true || result.success === false || result.skippedError;
   if (isBatchError) {
     const errorMsg = result.skippedError || result.error || "Unknown batch error";
+    const is504 = errorMsg.includes("504") || errorMsg.includes("Gateway Timeout");
+    const isAbort = errorMsg.includes("aborted") || errorMsg.includes("AbortError");
+
+    // 504/타임아웃은 실제로 처리가 완료됐을 수 있으므로 offset 유지하고 다음으로 진행
+    if (is504 || isAbort) {
+      console.warn(`[cron] Batch timeout at offset=${offset}, assuming completed and advancing (${errorMsg.slice(0, 100)})`);
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: RUNNING_STATUS,
+          // offset은 이미 optimistic lock으로 증가됨 → 롤백하지 않음
+          last_error: `timeout_skipped: ${errorMsg.slice(0, 300)}`,
+          last_error_at: new Date().toISOString(),
+          error_count: 0, // 타임아웃은 연속 에러로 카운트하지 않음
+          updated_at: new Date().toISOString(),
+        })
+        .eq("run_id", runId)
+        .eq("phase", phase);
+
+      return { ...result, skippedTimeout: true };
+    }
+
     const { data: currentState } = await sb
       .from("ktrenz_pipeline_state")
       .select("error_count")
