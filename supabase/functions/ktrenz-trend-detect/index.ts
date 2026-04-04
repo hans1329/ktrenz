@@ -1799,7 +1799,7 @@ Deno.serve(async (req) => {
       filtered: number;
     }> = [];
 
-    const TIMEGUARD_MS = 240000; // 240초 경과 시 남은 아티스트 건너뛰기
+    const TIMEGUARD_MS = 120000; // 120초 — Supabase wall time(~150s) 전에 안전하게 종료
     const batchStartTime = Date.now();
 
     for (const star of batch) {
