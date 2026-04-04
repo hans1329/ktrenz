@@ -139,7 +139,7 @@ ${JSON.stringify(textsToTranslate)}`;
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a professional Korean translator. Output only valid JSON arrays." },
+          { role: "system", content: "You are a professional Korean translator. Artist names, group names, and member names must be kept exactly as provided in the name list — never translate, romanize differently, or localize them. Output only valid JSON arrays." },
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
