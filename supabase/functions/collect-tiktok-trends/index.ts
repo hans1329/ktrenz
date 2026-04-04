@@ -9,8 +9,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TIKTOK_API_HOST = "tiktok-api23.p.rapidapi.com";
-const SEARCH_COUNT = 10;
+const TIKTOK_API_HOST = "tiktok-scraper7.p.rapidapi.com";
+const SEARCH_COUNT = 12;
 // ★ 하드 리밋: 월 500건 무료, 초과 시 개당 과금 → 일일 최대 450건으로 안전 마진 확보
 const DAILY_API_CALL_HARD_LIMIT = 450;
 
