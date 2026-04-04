@@ -1799,7 +1799,8 @@ Deno.serve(async (req) => {
       filtered: number;
     }> = [];
 
-    const TIMEGUARD_MS = 120000; // 120초 — Supabase wall time(~150s) 전에 안전하게 종료
+    const TIMEGUARD_MS = 80000; // 80초 — 마지막 아티스트(최대 45s) + 여유분으로 wall time(~150s) 이내 보장
+    const PER_STAR_TIMEOUT_MS = 45000; // 개별 아티스트 처리 최대 45초
     const batchStartTime = Date.now();
 
     for (const star of batch) {
