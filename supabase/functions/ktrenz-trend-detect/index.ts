@@ -2064,24 +2064,30 @@ async function detectForMember(
   const sibFilteredYT = filterSiblingArticles(filteredYT);
 
   // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
-  const articles: Array<{ title: string; description: string; url: string; imageUrl?: string | null; bodyExcerpt?: string }> = [
+  const rawArticles: Array<{ title: string; description: string; url: string; imageUrl?: string | null; bodyExcerpt?: string; isMajor?: boolean }> = [
     ...sibFilteredNews.map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description),
       url: item.originallink || item.link,
+      isMajor: isMajorOutlet(item.originallink || item.link),
     })),
     ...sibFilteredBlogs.map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description || ""),
       url: item.link,
+      isMajor: false,
     })),
     ...sibFilteredYT.map((item) => ({
       title: `[YouTube] ${item.title}`,
       description: item.description,
       url: item.url,
       imageUrl: item.thumbnailUrl || null,
+      isMajor: false,
     })),
   ];
+
+  // ── 제목 유사도 기반 중복 제거: 메이저 매체 우선 유지 ──
+  const articles = deduplicateArticles(rawArticles);
 
   // ── 기사 본문 일부 fetch (상위 5개, 주체 판별 정확도 향상) ──
   const BODY_FETCH_COUNT = 5;
