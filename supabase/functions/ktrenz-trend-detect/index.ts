@@ -702,7 +702,7 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_zh: { type: "string", description: "Chinese translation" },
               category: { type: "string", enum: ["brand", "product", "place", "restaurant", "food", "fashion", "beauty", "media", "music", "event"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
-              context: { type: "string", description: "2-3 sentences in Korean (한국어). 매거진 에디터가 쓰는 것처럼 구체적이고 생동감 있는 내러티브를 작성. 반드시 포함: (1) 구체적 출처·매체·행사명 (2) 아티스트가 무엇을 했는지/어떤 상황인지 디테일 (3) 왜 이것이 주목할 만한지 — 반전·의외성·파급력·팬덤 반응 중 하나. 기사 본문의 고유한 정보(날짜, 장소, 브랜드, 제품 모델명, 상대방 이름 등)를 최대한 포함하여 '이 키워드만의 스토리'를 전달. e.g. '에스콰이어 4월호 표지에서 윈터가 거의 생얼로 등장했으나, 정작 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상 — 미니멀 메이크업보다 의상이 더 검색되는 역설적 현상이 발생했다.'" },
+              context: { type: "string", description: "3-4 sentences in Korean (한국어). NEVER copy the article headline. Write an original editorial narrative from the article BODY content. 매거진 에디터가 쓰는 것처럼 구체적이고 생동감 있는 내러티브를 작성. 반드시 포함: (1) 구체적 출처·매체·행사명 (2) 아티스트가 무엇을 했는지/어떤 상황인지 디테일 (3) 왜 이것이 주목할 만한지 (4) 기사 본문의 고유한 정보(날짜, 장소, 브랜드, 제품 모델명, 상대방 이름 등). 전체 내러티브를 생략 없이 완성할 것." },
               context_ko: { type: "string", description: "MUST be identical to the 'context' field (since context is already in Korean). Copy the same Korean text here." },
               context_ja: { type: "string", description: "Japanese translation of context. 2-3文で、雑誌エディターのように具体的で生き生きとしたナラティブを記述。出典・詳細・注目ポイントを含む。" },
               context_zh: { type: "string", description: "Chinese translation of context. 用2-3句话，像杂志编辑一样写出具体生动的叙事。包含来源、细节和亮点。" },
@@ -813,10 +813,13 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
 - ★★★ CONTEXT WRITING RULES (STRICTLY ENFORCED) ★★★
   You are a SENIOR MAGAZINE EDITOR writing trend briefings. The context MUST read like a compelling editorial note, NOT a news wire report.
   
-  Write 2-3 FULL SENTENCES following this structure:
+  🚫 NEVER START WITH THE ARTICLE HEADLINE: Do NOT copy, paraphrase, or rumnble the article title/headline as the opening sentence. The context must be YOUR original editorial narrative based on the article's CONTENT, not its headline. Headlines often contain clickbait phrases like "OO 옆에서 웃었다", "[SD셀픽]", "돈 들어온다" — these must NOT appear in context.
+  
+  Write 3-4 FULL SENTENCES following this structure:
   1️⃣ SCENE-SETTING: Name the specific source/venue/event AND describe what happened in vivid detail (what they wore, said, did, where, when, with whom)
   2️⃣ STORY HOOK: What makes this noteworthy? Include a twist, contrast, surprise, significance, or unique angle FROM THE ARTICLE
   3️⃣ ADDITIONAL DETAIL: Add more concrete facts from the article (co-stars, outfit details, venue specifics, dates, numbers MENTIONED IN THE ARTICLE). Do NOT fabricate reactions or impacts.
+  4️⃣ SIGNIFICANCE: Why does this matter for the trend landscape? Connect to broader context if the article provides it.
   
   ⚠️ ABSOLUTE PROHIBITION — NO INFERRED REACTIONS:
   You must NEVER write reactions, impacts, or consequences that are NOT explicitly stated in the article text.
@@ -825,24 +828,21 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
   ❌ "역설적 현상이 발생" — UNLESS the article describes this phenomenon
   If the article only reports a factual event (e.g., "A wore B at C"), describe the event richly but do NOT invent public reactions or trend impacts.
   
-  ❌ TERRIBLE (will be rejected — one-line factual summary):
+  ❌ TERRIBLE (will be rejected — headline copy or one-line summary):
+  "필릭스, 이재용 옆에서 웃었다…'이재용복, 돈 들어온다' — 그룹 스트레이키즈 필릭스가 이재용을 만났다."
   "유리가 연극 '더 와스프'에서 강렬한 연기 변신을 선보이며 관객들의 이목을 집중시키고 있다."
-  "윤산하가 위콘페 무대에 오르며 다양한 장르의 음악을 선보일 예정이다."
-  "채영이 대만 타이페이에서 스트릿룩을 선보였다."
-  WHY BAD: Too short, no specific details, reads like a press release.
+  WHY BAD: Copies the headline, too short, no unique details from the article body.
   
   ❌ BAD (fabricated reactions — REJECTED):
   "OO이 OO에서 뛰어난 활약을 보이며 팬들의 뜨거운 반응을 얻고 있다."
-  "관련 검색이 급등하고 있다." (기사에 검색 데이터 언급 없음)
-  "현지 팬들 사이에서 'OO'이라는 반응이 나왔다." (기사에 팬 반응 인용 없음)
   WHY BAD: Reactions/impacts that don't exist in the article. This is FABRICATION.
   
-  ✅ EXCELLENT (rich factual detail without fabrication):
-  "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'에 가까운 미니멀 메이크업으로 등장, 폴로 랄프 로렌 레드 니트 드레스와 실버 액세서리를 매치한 레트로 무드의 화보를 공개했다. 같은 호에서 단독 8페이지 분량의 인터뷰도 함께 수록."
-  "쯔위가 트와이스 월드투어 '디스 이즈 포' 타이페이 공연을 앞두고 대만 시먼딩에서 포착됐다. 데님 쇼츠에 오버사이즈 재킷을 매치한 캐주얼 셋업으로, 170cm 장신의 비율이 돋보이는 스트릿룩."
-  WHY GOOD: Packed with specific details from the article, no fabricated reactions.
+  ✅ EXCELLENT (rich factual detail, no headline copy, no fabrication):
+  "스트레이 키즈 필릭스가 3일 자신의 SNS를 통해 삼성전자 이재용 회장과 나란히 선 사진을 공개했다. 블랙 정장 차림에 밝은 금발 헤어의 필릭스가 손으로 이 회장을 가리키는 포즈를 취했으며, 이 만남은 삼성과의 글로벌 브랜드 협업 관계를 시사하는 장면으로 읽힌다. 필릭스는 이미 루이비통의 글로벌 앰배서더로도 활동 중이다."
+  "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'에 가까운 미니멀 메이크업으로 등장, 폴로 랄프 로렌 레드 니트 드레스와 실버 액세서리를 매치한 레트로 무드의 화보를 공개했다. 같은 호에서 단독 8페이지 분량의 인터뷰도 함께 수록되어 있다."
+  WHY GOOD: Packed with specific details from the article body, no headline fragments, no fabricated reactions.
   
-  REMEMBER: Extract UNIQUE DETAILS from the article — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know. But NEVER add reactions or impacts the article doesn't mention.
+  REMEMBER: Extract UNIQUE DETAILS from the article BODY — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know. But NEVER add reactions or impacts the article doesn't mention. Write the FULL narrative — do not truncate or abbreviate.
   
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
