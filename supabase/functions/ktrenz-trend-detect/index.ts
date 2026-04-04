@@ -2104,14 +2104,23 @@ async function detectForMember(
   const sibFilteredYT = filterSiblingArticles(filteredYT);
 
   // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
+  // ── 메이저 매체 위주로 AI 분석 대상 구성 + 전체 기사 수는 점수용으로 별도 보존 ──
+  const totalArticleCount = newsResult.total + blogResult.total; // 네이버 API 반환 전체 검색 결과 수
+  const totalYoutubeCount = ytResult.totalResults;
+
+  // 뉴스: 메이저 매체 우선, 나머지는 메이저가 부족할 때만 보충
+  const majorNews = sibFilteredNews.filter((item: any) => isMajorOutlet(item.originallink || item.link));
+  const minorNews = sibFilteredNews.filter((item: any) => !isMajorOutlet(item.originallink || item.link));
+  const selectedNews = majorNews.length >= 10 ? majorNews.slice(0, 15) : [...majorNews, ...minorNews.slice(0, 10 - majorNews.length)];
+
   const rawArticles: Array<{ title: string; description: string; url: string; imageUrl?: string | null; bodyExcerpt?: string; isMajor?: boolean }> = [
-    ...sibFilteredNews.map((item: any) => ({
+    ...selectedNews.map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description),
       url: item.originallink || item.link,
-      isMajor: isMajorOutlet(item.originallink || item.link),
+      isMajor: true,
     })),
-    ...sibFilteredBlogs.map((item: any) => ({
+    ...sibFilteredBlogs.slice(0, 10).map((item: any) => ({
       title: stripHtml(item.title),
       description: stripHtml(item.description || ""),
       url: item.link,
@@ -2174,7 +2183,7 @@ async function detectForMember(
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
-  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) youtube=${filteredYT.length}(total=${ytResult.totalResults}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+  console.log(`[trend-detect] ${member.display_name}: news=${selectedNews.length}/${filteredNews.length}(total=${newsResult.total}) blog=${sibFilteredBlogs.length}(total=${blogResult.total}) youtube=${filteredYT.length}(total=${ytResult.totalResults}) articles(deduped)=${articles.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
   const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, youtube: filteredYT.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
 
@@ -2399,6 +2408,8 @@ async function detectForMember(
           group_name: member.group_name,
         } : {
           article_count: articles.length,
+          total_article_count: totalArticleCount, // 네이버 검색 전체 결과 수 (점수 반영용)
+          total_youtube_count: totalYoutubeCount,
           search_name: searchName,
           group_name: member.group_name,
           ...(sourceArticle?.title?.startsWith("[YouTube]") ? { source: "youtube" } : {}),
