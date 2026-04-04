@@ -702,7 +702,7 @@ const TOOL_EXTRACT_KEYWORDS = {
               keyword_zh: { type: "string", description: "Chinese translation" },
               category: { type: "string", enum: ["brand", "product", "place", "restaurant", "food", "fashion", "beauty", "media", "music", "event"] },
               confidence: { type: "number", description: "0.0-1.0 based on how clearly the text links the entity to the artist" },
-              context: { type: "string", description: "2-3 sentences in Korean (한국어). 매거진 에디터가 쓰는 것처럼 구체적이고 생동감 있는 내러티브를 작성. 반드시 포함: (1) 구체적 출처·매체·행사명 (2) 아티스트가 무엇을 했는지/어떤 상황인지 디테일 (3) 왜 이것이 주목할 만한지 — 반전·의외성·파급력·팬덤 반응 중 하나. 기사 본문의 고유한 정보(날짜, 장소, 브랜드, 제품 모델명, 상대방 이름 등)를 최대한 포함하여 '이 키워드만의 스토리'를 전달. e.g. '에스콰이어 4월호 표지에서 윈터가 거의 생얼로 등장했으나, 정작 폴로 랄프 로렌 레드 니트 드레스가 화제의 중심으로 부상 — 미니멀 메이크업보다 의상이 더 검색되는 역설적 현상이 발생했다.'" },
+              context: { type: "string", description: "3-4 sentences in Korean (한국어). NEVER copy the article headline. Write an original editorial narrative from the article BODY content. 매거진 에디터가 쓰는 것처럼 구체적이고 생동감 있는 내러티브를 작성. 반드시 포함: (1) 구체적 출처·매체·행사명 (2) 아티스트가 무엇을 했는지/어떤 상황인지 디테일 (3) 왜 이것이 주목할 만한지 (4) 기사 본문의 고유한 정보(날짜, 장소, 브랜드, 제품 모델명, 상대방 이름 등). 전체 내러티브를 생략 없이 완성할 것." },
               context_ko: { type: "string", description: "MUST be identical to the 'context' field (since context is already in Korean). Copy the same Korean text here." },
               context_ja: { type: "string", description: "Japanese translation of context. 2-3文で、雑誌エディターのように具体的で生き生きとしたナラティブを記述。出典・詳細・注目ポイントを含む。" },
               context_zh: { type: "string", description: "Chinese translation of context. 用2-3句话，像杂志编辑一样写出具体生动的叙事。包含来源、细节和亮点。" },
