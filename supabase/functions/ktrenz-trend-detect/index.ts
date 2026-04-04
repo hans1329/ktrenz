@@ -842,7 +842,7 @@ You may ONLY extract keywords that LITERALLY APPEAR in the article titles/descri
   "에스콰이어 4월호 표지에서 윈터가 '거의 생얼'에 가까운 미니멀 메이크업으로 등장, 폴로 랄프 로렌 레드 니트 드레스와 실버 액세서리를 매치한 레트로 무드의 화보를 공개했다. 같은 호에서 단독 8페이지 분량의 인터뷰도 함께 수록되어 있다."
   WHY GOOD: Packed with specific details from the article body, no headline fragments, no fabricated reactions.
   
-  REMEMBER: Extract UNIQUE DETAILS from the article BODY — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know. But NEVER add reactions or impacts the article doesn't mention. Write the FULL narrative — do not truncate or abbreviate.
+  REMEMBER: Extract UNIQUE DETAILS from the article BODY — brand names, product models, venue names, dates, outfit descriptions, co-stars, specific numbers. The context should contain information that ONLY someone who read THIS specific article would know. But NEVER add reactions or impacts the article doesn't mention. Write the FULL narrative — do not truncate or abbreviate. NEVER end a sentence with "..." or "…" — always complete the sentence fully. If the source text is truncated, write your own complete ending based on available facts.
   
 - If no valid keywords exist in the provided articles, return an EMPTY array. This is the correct behavior.
 
