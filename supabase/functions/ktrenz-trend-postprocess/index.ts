@@ -579,7 +579,7 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
   const { data: pending } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_en, artist_name, star_id, context, context_ko, source_title, keyword_category, trigger_source")
-    .eq("status", "active")
+    .in("status", ["active", "pending"])
     .is("postprocessed_at", null)
     .gte("detected_at", threeDaysAgo);
 
@@ -1098,7 +1098,15 @@ async function markPostprocessed(sb: any): Promise<number> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const now = new Date().toISOString();
 
-  // triggers 테이블: 후처리 완료 마킹
+  // triggers 테이블: 후처리 완료 마킹 (pending → active 전환 포함)
+  // pending 상태를 active로 전환
+  await sb
+    .from("ktrenz_trend_triggers")
+    .update({ status: "active", postprocessed_at: now })
+    .eq("status", "pending")
+    .is("postprocessed_at", null)
+    .gte("detected_at", threeDaysAgo);
+
   const { data } = await sb
     .from("ktrenz_trend_triggers")
     .update({ postprocessed_at: now })
@@ -1111,7 +1119,7 @@ async function markPostprocessed(sb: any): Promise<number> {
   const { data: kwData } = await sb
     .from("ktrenz_keywords")
     .update({ postprocessed_at: now })
-    .eq("status", "active")
+    .in("status", ["active", "pending"])
     .is("postprocessed_at", null)
     .gte("created_at", threeDaysAgo)
     .select("id");
