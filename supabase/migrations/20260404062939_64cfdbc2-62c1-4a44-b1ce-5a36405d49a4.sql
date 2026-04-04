@@ -1,0 +1,1 @@
+ALTER TABLE public.ktrenz_stars ADD COLUMN IF NOT EXISTS media_exposure integer NOT NULL DEFAULT 0;

@@ -1923,6 +1923,7 @@ Deno.serve(async (req) => {
         await sb.from("ktrenz_stars").update({
           last_detected_at: new Date().toISOString(),
           last_detect_result: detectResult,
+          media_exposure: result.totalArticleCount ?? 0,
         }).eq("id", star.id);
 
         await new Promise((r) => setTimeout(r, 300));
@@ -1991,6 +1992,7 @@ async function detectForMember(
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
+  totalArticleCount: number;
   keywords: ExtractedKeyword[];
   sourceStats: { news: number; blog: number; shop: number; youtube: number; aiExtracted: number; shopExtracted: number };
   insertStats: { inserted: number; backfilled: number; filtered: number };
@@ -2213,7 +2215,7 @@ async function detectForMember(
   }
 
   if (!articles.length && !shopKeywords.length && !socialKeywords.length) {
-    return { keywordsFound: 0, articlesFound: 0, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
+    return { keywordsFound: 0, articlesFound: 0, totalArticleCount, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
   // AI로 상업 키워드 추출 (News + Blog 통합) — nameKo, groupNameKo 전달
@@ -2230,7 +2232,7 @@ async function detectForMember(
   const mergedKeywords = mergeKeywords(mergeKeywords(aiKeywords, shopKeywords), socialKeywords);
 
   if (!mergedKeywords.length) {
-    return { keywordsFound: 0, articlesFound: articles.length, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
+    return { keywordsFound: 0, articlesFound: articles.length, totalArticleCount, keywords: [], sourceStats: srcStats, insertStats: { inserted: 0, backfilled: 0, filtered: 0 } };
   }
 
   // 아래부터 기존 로직 (keywords → mergedKeywords로 교체)
@@ -2724,6 +2726,7 @@ async function detectForMember(
   return {
     keywordsFound: insertedCount,
     articlesFound: articles.length,
+    totalArticleCount,
     keywords: insertedKeywords,
     sourceStats: srcStats,
     insertStats: { inserted: insertedCount, backfilled: 0, filtered: Math.max(0, candidateRows.length - insertedCount) },
