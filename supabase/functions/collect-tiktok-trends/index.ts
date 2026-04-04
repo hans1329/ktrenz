@@ -65,7 +65,7 @@ async function searchTikTok(
   count: number = SEARCH_COUNT,
 ): Promise<TikTokVideo[]> {
   try {
-    const url = `https://${TIKTOK_API_HOST}/api/search/general?keyword=${encodeURIComponent(keyword)}&count=${count}`;
+    const url = `https://${TIKTOK_API_HOST}/feed/search?keywords=${encodeURIComponent(keyword)}&count=${count}&region=kr`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -74,13 +74,13 @@ async function searchTikTok(
       },
     });
 
+    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}`);
+
     if (!response.ok) {
       const err = await response.text();
       console.warn(`[tiktok] Search failed for "${keyword}": HTTP ${response.status} ${err.slice(0, 300)}`);
       return [];
     }
-
-    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}, content-type=${response.headers.get("content-type")}, content-length=${response.headers.get("content-length")}`);
 
     const text = await response.text();
     if (!text || text.trim().length === 0) {
@@ -96,39 +96,37 @@ async function searchTikTok(
       return [];
     }
 
-    // 디버그: API 응답 구조 확인
-    const topKeys = Object.keys(data).join(",");
-    const itemCount = (data.data || []).length;
-    console.log(`[tiktok] API response for "${keyword}": keys=[${topKeys}], data.length=${itemCount}, status_code=${data.status_code || "N/A"}`);
-    if (itemCount === 0) {
-      console.warn(`[tiktok] Zero items for "${keyword}": ${JSON.stringify(data).slice(0, 300)}`);
+    // tiktok-scraper7: { code: 0, msg: "success", data: { videos: [...] } }
+    const videos = data?.data?.videos || data?.data || [];
+    if (!Array.isArray(videos)) {
+      console.warn(`[tiktok] Unexpected structure for "${keyword}": ${JSON.stringify(data).slice(0, 300)}`);
+      return [];
     }
 
-    const items = data.data || [];
+    console.log(`[tiktok] "${keyword}": ${videos.length} videos returned`);
 
-    return items
-      .filter((item: any) => item.item)
-      .map((item: any) => {
-        const v = item.item;
+    return videos
+      .filter((v: any) => v && (v.video_id || v.id))
+      .map((v: any) => {
         const stats = v.stats || {};
         const author = v.author || {};
         return {
-          id: v.id || "",
-          desc: v.desc || "",
-          createTime: v.createTime || 0,
+          id: v.video_id || v.id || "",
+          desc: v.title || v.desc || "",
+          createTime: v.create_time || v.createTime || 0,
           stats: {
-            playCount: Number(stats.playCount) || 0,
-            diggCount: Number(stats.diggCount) || 0,
-            commentCount: Number(stats.commentCount) || 0,
-            shareCount: Number(stats.shareCount) || 0,
+            playCount: Number(stats.playCount || v.play_count || v.play || 0),
+            diggCount: Number(stats.diggCount || v.digg_count || v.likes || 0),
+            commentCount: Number(stats.commentCount || v.comment_count || v.comments || 0),
+            shareCount: Number(stats.shareCount || v.share_count || v.shares || 0),
           },
           author: {
-            uniqueId: author.uniqueId || "",
-            nickname: author.nickname || "",
-            followerCount: Number(author.followerCount) || 0,
+            uniqueId: author.unique_id || author.uniqueId || v.author_unique_id || "",
+            nickname: author.nickname || v.author_name || "",
+            followerCount: Number(author.follower_count || author.followerCount || 0),
             verified: author.verified || false,
           },
-          coverUrl: v.video?.cover || v.video?.originCover || "",
+          coverUrl: v.cover || v.origin_cover || v.video?.cover || "",
         };
       });
   } catch (e) {
