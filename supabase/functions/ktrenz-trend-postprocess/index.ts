@@ -792,22 +792,24 @@ Example: [{"id":"abc","is_valid":true,"reason":null,"should_split":false,"split_
 
       for (const r of results) {
         if (!r.id) continue;
-        const entry = entries.find((e: any) => e.id === r.id);
+        const entry = remainingEntries.find((e: any) => e.id === r.id);
         if (!entry) continue;
 
-        if (matchesBlockedNameKeyword(entry.keyword, entry.keyword_ko, entry.keyword_en, blockedNameSet)) {
+        // ★ 멤버/솔로 주체 검증 결과 처리
+        if ("is_valid" in r && r.is_valid === false) {
           await sb.from("ktrenz_trend_triggers").update({
             status: "expired",
             expired_at: new Date().toISOString(),
+            postprocessed_at: new Date().toISOString(),
           }).eq("id", r.id);
           reclassified++;
-          details.push(`"${entry.keyword}" 제거: 그룹/멤버 이름 키워드`);
+          details.push(`"${entry.keyword}" 제거: 주체불일치 - ${r.reason || "wrong artist"} (${star.display_name})`);
           continue;
         }
 
-        // 멤버 귀속 처리
+        // 그룹: 멤버 귀속 처리
         if (r.attribution === "member" && r.attributed_member) {
-          // 해당 멤버의 star_id 찾기 (memberList에서 검색)
+          const memberList = groupMembers.get(starId) || [];
           const memberStar = memberList.find((m: any) =>
             m.display_name === r.attributed_member || m.name_ko === r.attributed_member
           );
@@ -815,9 +817,11 @@ Example: [{"id":"abc","is_valid":true,"reason":null,"should_split":false,"split_
             await sb.from("ktrenz_trend_triggers").update({
               star_id: memberStar.id,
               artist_name: memberStar.display_name,
+              postprocessed_at: new Date().toISOString(),
             }).eq("id", r.id);
             reclassified++;
             details.push(`"${entry.keyword}": ${star.display_name} → ${memberStar.display_name} (AI 귀속)`);
+            continue;
           }
         }
 
@@ -835,6 +839,7 @@ Example: [{"id":"abc","is_valid":true,"reason":null,"should_split":false,"split_
             await sb.from("ktrenz_trend_triggers").update({
               status: "expired",
               expired_at: new Date().toISOString(),
+              postprocessed_at: new Date().toISOString(),
             }).eq("id", r.id);
             reclassified++;
             details.push(`"${entry.keyword}" 제거: 분리 후 이름 키워드만 남음`);
@@ -845,6 +850,7 @@ Example: [{"id":"abc","is_valid":true,"reason":null,"should_split":false,"split_
             keyword: cleanedSplitKeywords[0],
             keyword_ko: cleanedSplitKeywords[0],
             keyword_en: cleanedSplitKeywords[0],
+            postprocessed_at: new Date().toISOString(),
           }).eq("id", r.id);
 
           for (let i = 1; i < cleanedSplitKeywords.length; i++) {
@@ -859,7 +865,11 @@ Example: [{"id":"abc","is_valid":true,"reason":null,"should_split":false,"split_
           }
           reclassified++;
           details.push(`"${entry.keyword}" → 분리: ${cleanedSplitKeywords.join(", ")}`);
+          continue;
         }
+
+        // 변경 없음: postprocessed_at만 마킹
+        await sb.from("ktrenz_trend_triggers").update({ postprocessed_at: new Date().toISOString() }).eq("id", r.id);
       }
 
       // Rate limit
