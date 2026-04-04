@@ -76,7 +76,7 @@ async function searchTikTok(
 
     if (!response.ok) {
       const err = await response.text();
-      console.warn(`[tiktok] Search failed for "${keyword}": ${response.status} ${err.slice(0, 200)}`);
+      console.warn(`[tiktok] Search failed for "${keyword}": ${response.status} ${err.slice(0, 300)}`);
       return [];
     }
 
@@ -90,9 +90,18 @@ async function searchTikTok(
     try {
       data = JSON.parse(text);
     } catch {
-      console.warn(`[tiktok] Invalid JSON for "${keyword}": ${text.slice(0, 100)}`);
+      console.warn(`[tiktok] Invalid JSON for "${keyword}": ${text.slice(0, 200)}`);
       return [];
     }
+
+    // 디버그: API 응답 구조 확인
+    const topKeys = Object.keys(data).join(",");
+    const itemCount = (data.data || []).length;
+    console.log(`[tiktok] API response for "${keyword}": keys=[${topKeys}], data.length=${itemCount}, status_code=${data.status_code || "N/A"}`);
+    if (itemCount === 0) {
+      console.warn(`[tiktok] Zero items for "${keyword}": ${JSON.stringify(data).slice(0, 300)}`);
+    }
+
     const items = data.data || [];
 
     return items
