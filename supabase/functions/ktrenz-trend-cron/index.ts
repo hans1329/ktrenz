@@ -381,8 +381,10 @@ async function executeBatch(
     const prevErrorCount = currentState?.[0]?.error_count || 0;
     const newErrorCount = prevErrorCount + 1;
 
+    // ★ 실패 시 offset 롤백: optimistic lock으로 미리 증가된 offset을 원래 값으로 복원
     await sb.from("ktrenz_pipeline_state")
       .update({
+        current_offset: offset, // 롤백: 실패한 배치를 다음 tick에서 재시도
         error_count: newErrorCount,
         last_error: errorMsg.slice(0, 500),
         last_error_at: new Date().toISOString(),
