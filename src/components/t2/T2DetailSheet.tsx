@@ -621,7 +621,7 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                         {getLocalizedSourceTitle(tile, language)}
                       </a>
                     ) : (
-                      <span className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
+                      <span className="text-xs font-semibold text-foreground leading-snug">
                         {getLocalizedSourceTitle(tile, language)}
                       </span>
                     )}
