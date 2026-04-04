@@ -2183,7 +2183,7 @@ async function detectForMember(
 
   // Shopping → 상품명에서 직접 브랜드/상품 키워드 추출
   const shopKeywords = extractShopKeywords(shopItems, member.display_name, member.group_name);
-  console.log(`[trend-detect] ${member.display_name}: news=${filteredNews.length}(total=${newsResult.total}) blog=${filteredBlogs.length}(total=${blogResult.total}) youtube=${filteredYT.length}(total=${ytResult.totalResults}) shop=${shopItems.length} shopKW=${shopKeywords.length}`);
+  console.log(`[trend-detect] ${member.display_name}: news=${selectedNews.length}/${filteredNews.length}(total=${newsResult.total}) blog=${sibFilteredBlogs.length}(total=${blogResult.total}) youtube=${filteredYT.length}(total=${ytResult.totalResults}) articles(deduped)=${articles.length} shop=${shopItems.length} shopKW=${shopKeywords.length}`);
 
   const srcStats = { news: filteredNews.length, blog: filteredBlogs.length, shop: shopItems.length, youtube: filteredYT.length, tiktok: 0, aiExtracted: 0, shopExtracted: shopKeywords.length, socialExtracted: 0 };
 
