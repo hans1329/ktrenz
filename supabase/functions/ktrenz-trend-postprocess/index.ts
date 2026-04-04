@@ -579,7 +579,7 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
   const { data: pending } = await sb
     .from("ktrenz_trend_triggers")
     .select("id, keyword, keyword_ko, keyword_en, artist_name, star_id, context, context_ko, source_title, keyword_category, trigger_source")
-    .eq("status", "active")
+    .in("status", ["active", "pending"])
     .is("postprocessed_at", null)
     .gte("detected_at", threeDaysAgo);
 
