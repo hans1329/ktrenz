@@ -111,7 +111,21 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const prompt = `Translate the following Korean texts to ${langLabel[lang]}. Return ONLY a JSON array of translated strings in the same order. Keep proper nouns, brand names, and artist names as-is (do not translate them). Keep translations concise and natural.
+    // Fetch artist/group names from DB to prevent translation of proper names
+    const { data: starNames } = await supabase
+      .from("ktrenz_stars")
+      .select("display_name, name_ko")
+      .eq("is_active", true);
+
+    const nameList = (starNames ?? [])
+      .flatMap((s: any) => [s.display_name, s.name_ko].filter(Boolean))
+      .filter((v: string, i: number, a: string[]) => a.indexOf(v) === i);
+
+    const nameInstruction = nameList.length > 0
+      ? `\n\nIMPORTANT: The following are artist/group names. Do NOT translate them. Use them exactly as listed here:\n${nameList.join(", ")}`
+      : "";
+
+    const prompt = `Translate the following Korean texts to ${langLabel[lang]}. Return ONLY a JSON array of translated strings in the same order. Keep translations concise and natural.${nameInstruction}
 
 Input:
 ${JSON.stringify(textsToTranslate)}`;
