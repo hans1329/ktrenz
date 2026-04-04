@@ -306,7 +306,15 @@ async function searchYouTubeForDetect(
     searchUrl.searchParams.set("relevanceLanguage", "ko");
     searchUrl.searchParams.set("key", apiKey);
 
-    const response = await fetch(searchUrl.toString());
+    // 10초 타임아웃으로 YouTube API 지연이 전체 배치를 블로킹하지 않도록 함
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    let response: Response;
+    try {
+      response = await fetch(searchUrl.toString(), { signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!response.ok) {
       const errText = await response.text();
       if (response.status === 403) {
@@ -327,7 +335,12 @@ async function searchYouTubeForDetect(
     }));
     return { items, totalResults: data.pageInfo?.totalResults || items.length };
   } catch (e) {
-    console.warn(`[trend-detect] YouTube search error: ${(e as Error).message}`);
+    const msg = (e as Error).message;
+    if (msg.includes("abort") || msg.includes("signal")) {
+      console.warn(`[trend-detect] YouTube search timeout (10s), skipping: ${query}`);
+    } else {
+      console.warn(`[trend-detect] YouTube search error: ${msg}`);
+    }
     return { items: [], totalResults: 0 };
   }
 }
