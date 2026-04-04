@@ -15,16 +15,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// detect(네이버/유튜브) → collect_social(인스타/틱톡) → track(통합 점수)
-const PHASE_ORDER = ["detect", "collect_social", "track"] as const;
+// detect(네이버/유튜브) → collect_social(인스타/틱톡) → postprocess(중복제거/주체검증) → track(통합 점수)
+const PHASE_ORDER = ["detect", "collect_social", "postprocess", "track"] as const;
 const PHASE_FUNCTION: Record<string, string> = {
   detect: "ktrenz-trend-detect",
   collect_social: "ktrenz-collect-social",
+  postprocess: "ktrenz-trend-postprocess",
   track: "ktrenz-trend-track",
 };
 const VALID_PHASES = new Set(PHASE_ORDER);
 const DETECT_PHASES = new Set(["detect"]);
-const SINGLE_CALL_PHASES = new Set<string>(["collect_social"]); // 내부 배치 관리
+const SINGLE_CALL_PHASES = new Set<string>(["collect_social", "postprocess"]); // 내부 배치 관리
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 function resolveBatchSize(phase: string, requestedBatchSize: number): number {
