@@ -1992,6 +1992,7 @@ async function detectForMember(
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
+  totalArticleCount: number;
   keywords: ExtractedKeyword[];
   sourceStats: { news: number; blog: number; shop: number; youtube: number; aiExtracted: number; shopExtracted: number };
   insertStats: { inserted: number; backfilled: number; filtered: number };
