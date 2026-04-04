@@ -602,21 +602,35 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
 
   // 그룹 star_id 목록을 모아서 멤버를 별도 조회
   const groupStarIds = (stars || []).filter((s: any) => s.star_type === "group").map((s: any) => s.id);
+  // 멤버/솔로의 소속 그룹도 조회 (주체 검증용)
+  const memberGroupIds = (stars || [])
+    .filter((s: any) => s.star_type === "member" && s.group_star_id)
+    .map((s: any) => s.group_star_id);
+  const allGroupIds = [...new Set([...groupStarIds, ...memberGroupIds])];
+  
   const groupMembers = new Map<string, any[]>();
+  const groupInfoMap = new Map<string, any>(); // group_star_id → group star info
 
-  if (groupStarIds.length > 0) {
+  if (allGroupIds.length > 0) {
+    // 그룹 정보 조회 (멤버/솔로의 소속 그룹 포함)
+    const { data: groupStars } = await sb
+      .from("ktrenz_stars")
+      .select("id, display_name, name_ko, star_type")
+      .in("id", allGroupIds);
+    for (const g of (groupStars || [])) groupInfoMap.set(g.id, g);
+
     const { data: members } = await sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, star_type, group_star_id")
       .eq("star_type", "member")
-      .in("group_star_id", groupStarIds);
+      .in("group_star_id", allGroupIds);
 
     for (const m of (members || [])) {
       const list = groupMembers.get(m.group_star_id) || [];
       list.push(m);
       groupMembers.set(m.group_star_id, list);
     }
-    console.log(`[postprocess] Found members for ${groupMembers.size} groups: ${[...groupMembers.entries()].map(([gid, ms]) => `${starMap.get(gid)?.display_name}(${ms.length})`).join(", ")}`);
+    console.log(`[postprocess] Found members for ${groupMembers.size} groups: ${[...groupMembers.entries()].map(([gid, ms]) => `${groupInfoMap.get(gid)?.display_name || starMap.get(gid)?.display_name}(${ms.length})`).join(", ")}`);
   }
 
   // 같은 아티스트의 pending 키워드들을 묶어서 AI에 보냄 (배치 효율)
@@ -634,32 +648,33 @@ async function aiClassification(sb: any): Promise<{ reclassified: number; detail
     const star = starMap.get(starId);
     if (!star) continue;
 
-    // 그룹 엔트리만 AI 분류 대상 (멤버/솔로는 이미 정확)
-    if (star.star_type !== "group") continue;
+    let prompt: string;
+    let blockedNameSet: Set<string>;
 
-    const memberList = groupMembers.get(starId) || [];
-    const memberNames = memberList.map((m: any) => m.display_name);
-    if (!memberNames.length) {
-      console.log(`[postprocess] No members found for group ${star.display_name}, skipping`);
-      continue;
-    }
-
-    const blockedNameSet = collectNameVariants(
-      star.display_name,
-      star.name_ko,
-      ...memberList.flatMap((m: any) => [m.display_name, m.name_ko]),
-    );
-
-    const keywordList = entries.map((e: any) => ({
-      id: e.id,
-      keyword: e.keyword,
-      keyword_ko: e.keyword_ko,
-      context: (e.context_ko || e.context || "").slice(0, 200),
-      source_title: (e.source_title || "").slice(0, 100),
-      category: e.keyword_category,
-    }));
-
-    const prompt = `Analyze the following trend keywords detected for K-pop group "${star.display_name}" (${star.name_ko}).
+    if (star.star_type === "group") {
+      // 그룹: 기존 로직 — 멤버 귀속 분석
+      const memberList = groupMembers.get(starId) || [];
+      const memberNames = memberList.map((m: any) => m.display_name);
+      if (!memberNames.length) {
+        console.log(`[postprocess] No members found for group ${star.display_name}, skipping`);
+        // 멤버 없어도 이름 필터링은 수행
+        blockedNameSet = collectNameVariants(star.display_name, star.name_ko);
+        prompt = "";
+      } else {
+        blockedNameSet = collectNameVariants(
+          star.display_name,
+          star.name_ko,
+          ...memberList.flatMap((m: any) => [m.display_name, m.name_ko]),
+        );
+        const keywordList = entries.map((e: any) => ({
+          id: e.id,
+          keyword: e.keyword,
+          keyword_ko: e.keyword_ko,
+          context: (e.context_ko || e.context || "").slice(0, 200),
+          source_title: (e.source_title || "").slice(0, 100),
+          category: e.keyword_category,
+        }));
+        prompt = `Analyze the following trend keywords detected for K-pop group "${star.display_name}" (${star.name_ko}).
 The group has these members: ${memberNames.join(", ")}.
 
 For each keyword, determine:
@@ -678,6 +693,75 @@ ${JSON.stringify(keywordList, null, 2)}
 
 Return ONLY a JSON array matching each keyword by "id".
 Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should_split":false,"split_keywords":null}]`;
+      }
+    } else {
+      // ★ 멤버/솔로: 주체 검증 — 기사가 실제로 이 아티스트에 대한 것인지 확인
+      const groupId = star.group_star_id;
+      const groupStar = groupId ? groupInfoMap.get(groupId) : null;
+      const siblings = groupId ? (groupMembers.get(groupId) || []).filter((m: any) => m.id !== starId) : [];
+      const siblingNames = siblings.map((m: any) => `${m.display_name}(${m.name_ko})`).join(", ");
+
+      blockedNameSet = collectNameVariants(
+        star.display_name,
+        star.name_ko,
+        ...(groupStar ? [groupStar.display_name, groupStar.name_ko] : []),
+        ...siblings.flatMap((m: any) => [m.display_name, m.name_ko]),
+      );
+
+      const keywordList = entries.map((e: any) => ({
+        id: e.id,
+        keyword: e.keyword,
+        keyword_ko: e.keyword_ko,
+        context: (e.context_ko || e.context || "").slice(0, 200),
+        source_title: (e.source_title || "").slice(0, 100),
+        category: e.keyword_category,
+      }));
+
+      prompt = `Verify the following trend keywords detected for K-pop artist "${star.display_name}" (${star.name_ko}).
+${groupStar ? `This artist is a member of the group "${groupStar.display_name}" (${groupStar.name_ko}).` : "This is a solo artist."}
+${siblingNames ? `Other group members: ${siblingNames}` : ""}
+
+For each keyword, determine:
+1. "is_valid": Is this keyword ACTUALLY about "${star.display_name}"? Check the source_title and context carefully.
+   - false if the article is about a different person with the same/similar name
+   - false if the article is about another group member, not "${star.display_name}"
+   - false if "${star.display_name}" is only briefly mentioned but not the primary subject
+   - true if the article is genuinely about "${star.display_name}"
+2. "reason": Brief explanation if is_valid is false (e.g., "article about SHINee Minho, not Stray Kids Lee Know")
+3. "should_split": Does this keyword contain multiple unrelated commercial entities?
+4. "split_keywords": If should_split is true, array of individual keywords. Otherwise null.
+
+Keywords to verify:
+${JSON.stringify(keywordList, null, 2)}
+
+Return ONLY a JSON array matching each keyword by "id".
+Example: [{"id":"abc","is_valid":true,"reason":null,"should_split":false,"split_keywords":null}]`;
+    }
+
+    // 이름 필터링 (AI 호출 전)
+    for (const entry of entries) {
+      if (matchesBlockedNameKeyword(entry.keyword, entry.keyword_ko, entry.keyword_en, blockedNameSet)) {
+        await sb.from("ktrenz_trend_triggers").update({
+          status: "expired",
+          expired_at: new Date().toISOString(),
+          postprocessed_at: new Date().toISOString(),
+        }).eq("id", entry.id);
+        reclassified++;
+        details.push(`"${entry.keyword}" 제거: 이름 키워드 (${star.display_name})`);
+      }
+    }
+
+    // 이름 필터링으로 제거되지 않은 것만 AI에 전달
+    const remainingEntries = entries.filter((e: any) =>
+      !matchesBlockedNameKeyword(e.keyword, e.keyword_ko, e.keyword_en, blockedNameSet)
+    );
+    if (!remainingEntries.length || !prompt) {
+      // AI 호출 없이 postprocessed_at만 마킹
+      for (const e of remainingEntries) {
+        await sb.from("ktrenz_trend_triggers").update({ postprocessed_at: new Date().toISOString() }).eq("id", e.id);
+      }
+      continue;
+    }
 
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -708,22 +792,24 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
 
       for (const r of results) {
         if (!r.id) continue;
-        const entry = entries.find((e: any) => e.id === r.id);
+        const entry = remainingEntries.find((e: any) => e.id === r.id);
         if (!entry) continue;
 
-        if (matchesBlockedNameKeyword(entry.keyword, entry.keyword_ko, entry.keyword_en, blockedNameSet)) {
+        // ★ 멤버/솔로 주체 검증 결과 처리
+        if ("is_valid" in r && r.is_valid === false) {
           await sb.from("ktrenz_trend_triggers").update({
             status: "expired",
             expired_at: new Date().toISOString(),
+            postprocessed_at: new Date().toISOString(),
           }).eq("id", r.id);
           reclassified++;
-          details.push(`"${entry.keyword}" 제거: 그룹/멤버 이름 키워드`);
+          details.push(`"${entry.keyword}" 제거: 주체불일치 - ${r.reason || "wrong artist"} (${star.display_name})`);
           continue;
         }
 
-        // 멤버 귀속 처리
+        // 그룹: 멤버 귀속 처리
         if (r.attribution === "member" && r.attributed_member) {
-          // 해당 멤버의 star_id 찾기 (memberList에서 검색)
+          const memberList = groupMembers.get(starId) || [];
           const memberStar = memberList.find((m: any) =>
             m.display_name === r.attributed_member || m.name_ko === r.attributed_member
           );
@@ -731,9 +817,11 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
             await sb.from("ktrenz_trend_triggers").update({
               star_id: memberStar.id,
               artist_name: memberStar.display_name,
+              postprocessed_at: new Date().toISOString(),
             }).eq("id", r.id);
             reclassified++;
             details.push(`"${entry.keyword}": ${star.display_name} → ${memberStar.display_name} (AI 귀속)`);
+            continue;
           }
         }
 
@@ -751,6 +839,7 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
             await sb.from("ktrenz_trend_triggers").update({
               status: "expired",
               expired_at: new Date().toISOString(),
+              postprocessed_at: new Date().toISOString(),
             }).eq("id", r.id);
             reclassified++;
             details.push(`"${entry.keyword}" 제거: 분리 후 이름 키워드만 남음`);
@@ -761,6 +850,7 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
             keyword: cleanedSplitKeywords[0],
             keyword_ko: cleanedSplitKeywords[0],
             keyword_en: cleanedSplitKeywords[0],
+            postprocessed_at: new Date().toISOString(),
           }).eq("id", r.id);
 
           for (let i = 1; i < cleanedSplitKeywords.length; i++) {
@@ -775,7 +865,11 @@ Example: [{"id":"abc","attribution":"member","attributed_member":"Rosé","should
           }
           reclassified++;
           details.push(`"${entry.keyword}" → 분리: ${cleanedSplitKeywords.join(", ")}`);
+          continue;
         }
+
+        // 변경 없음: postprocessed_at만 마킹
+        await sb.from("ktrenz_trend_triggers").update({ postprocessed_at: new Date().toISOString() }).eq("id", r.id);
       }
 
       // Rate limit
