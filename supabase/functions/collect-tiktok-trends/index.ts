@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { limit: batchLimit, dryRun } = body;
+    const { limit: batchLimit, dryRun, offset: requestOffset } = body;
 
     const apiKey = Deno.env.get("RAPIDAPI_KEY");
     if (!apiKey) {
