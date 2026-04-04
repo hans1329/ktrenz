@@ -327,13 +327,15 @@ Deno.serve(async (req) => {
     }
 
     // ktrenz_stars에서 활성 아티스트 (star_id 기반) — member 포함
+    const ttOffset = requestOffset || 0;
+    const ttBatchSize = batchLimit || 50;
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
       .select("id, display_name, name_ko, star_type, group_star_id")
       .eq("is_active", true)
       .in("star_type", ["group", "solo", "member"])
       .order("display_name")
-      .limit(batchLimit || 50);
+      .range(ttOffset, ttOffset + ttBatchSize - 1);
 
     // 그룹명 매핑 (멤버의 group_star_id → 그룹 display_name)
     const groupStarIds = [...new Set((stars || []).map((s: any) => s.group_star_id).filter(Boolean))];
