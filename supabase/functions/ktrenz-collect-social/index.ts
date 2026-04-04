@@ -1,7 +1,7 @@
 // ktrenz-collect-social: T2 파이프라인용 소셜 데이터 수집 오케스트레이터
 // Instagram + TikTok 수집을 순차 호출하여 ktrenz_trend_triggers / ktrenz_social_snapshots에 저장
 // 호출 방식: ktrenz-trend-cron의 collect_social phase에서 단일 호출
-// ★ 중복 호출 방지: DB 기반 offset 관리 + 실행 중 잠금
+// ★ Instagram은 시간 내 여러 배치를 루프로 처리 (배치당 20명)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -10,6 +10,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const IG_BATCH_SIZE = 20;
+const IG_TIMEOUT_MS = 90_000;       // 개별 배치 타임아웃
+const TOTAL_TIMEGUARD_MS = 240_000; // 전체 함수 타임가드 (4분)
+const TT_TIMEOUT_MS = 90_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -61,11 +66,18 @@ Deno.serve(async (req) => {
       .single();
     const lockId = lockRow?.id;
 
-    // ── 1. Instagram 수집 (단일 배치 호출 — 중복 방지) ──
-    console.log("[collect-social] Starting Instagram collection...");
-    const igBatchSize = 20;
+    // ── 전체 대상 수 조회 (핸들 있는 스타만) ──
+    const { count: totalStars } = await sb
+      .from("ktrenz_stars")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .not("social_handles->instagram", "is", null)
+      .neq("social_handles->>instagram" as any, "_not_found")
+      .neq("social_handles->>instagram" as any, "");
 
-    // DB에서 오늘 처리된 최대 offset 조회 → 이어서 진행
+    const maxOffset = totalStars || 500;
+
+    // ── DB에서 오늘 처리된 최대 offset 조회 → 이어서 진행 ──
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
     const { data: todayLogs } = await sb
@@ -78,111 +90,135 @@ Deno.serve(async (req) => {
 
     let igOffset = 0;
     if (todayLogs && todayLogs.length > 0) {
-      // error_message에서 offset 추출: "batch=20, offset=40, ..."
       const match = todayLogs[0].error_message?.match(/offset=(\d+)/);
       if (match) {
-        igOffset = parseInt(match[1]) + igBatchSize; // 다음 배치부터
+        igOffset = parseInt(match[1]) + IG_BATCH_SIZE;
       }
     }
 
-    // 전체 대상 수 조회 (핸들 있는 스타만)
-    const { count: totalStars } = await sb
-      .from("ktrenz_stars")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true)
-      .not("social_handles->instagram", "is", null)
-      .neq("social_handles->>instagram" as any, "_not_found")
-      .neq("social_handles->>instagram" as any, "");
-
-    const maxOffset = totalStars || 500;
-
-    // 오늘 전체 순환 완료 시 스킵
+    // ── 1. Instagram 수집: 시간 내 여러 배치 루프 ──
     if (igOffset >= maxOffset) {
       console.log(`[collect-social] Instagram: today's full cycle complete (offset=${igOffset} >= total=${maxOffset})`);
       results.instagram = { success: true, skipped: true, reason: "cycle_complete", todayOffset: igOffset, total: maxOffset };
     } else {
+      let totalProcessed = 0;
+      let totalKeywords = 0;
+      let totalApiCalls = 0;
+      let batchCount = 0;
+      let lastBudget = 0;
+      let lastError: string | null = null;
+
+      while (igOffset < maxOffset) {
+        // 타임가드: TikTok 수집 여유 시간 확보 (전체의 60%까지만 Instagram에 할당)
+        const elapsed = Date.now() - startTime;
+        if (elapsed > TOTAL_TIMEGUARD_MS * 0.6) {
+          console.log(`[collect-social] Instagram timeguard: ${Math.round(elapsed / 1000)}s elapsed, stopping loop at offset=${igOffset}`);
+          break;
+        }
+
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), IG_TIMEOUT_MS);
+
+          console.log(`[collect-social] Instagram batch #${batchCount + 1}: offset=${igOffset}, batchSize=${IG_BATCH_SIZE}`);
+
+          const igResp = await fetch(`${supabaseUrl}/functions/v1/collect-instagram-trends`, {
+            method: "POST",
+            headers: callHeaders,
+            body: JSON.stringify({ batchSize: IG_BATCH_SIZE, offset: igOffset }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+
+          const igText = await igResp.text();
+          let igResult: any;
+          try {
+            igResult = JSON.parse(igText);
+          } catch {
+            console.warn("[collect-social] Instagram non-JSON:", igText.slice(0, 200));
+            igResult = { error: "non-JSON response" };
+          }
+
+          const processed = igResult.processed || 0;
+          const keywords = igResult.keywords_saved || 0;
+
+          totalProcessed += processed;
+          totalKeywords += keywords;
+          totalApiCalls += igResult.api_calls || 0;
+          lastBudget = igResult.budget_remaining || 0;
+          batchCount++;
+
+          console.log(`[collect-social] Instagram batch #${batchCount}: processed=${processed}, keywords=${keywords}, offset=${igOffset}`);
+
+          // API 예산 소진 시 중단
+          if (igResult.budget_remaining !== undefined && igResult.budget_remaining <= 0) {
+            console.warn("[collect-social] Instagram API budget exhausted, stopping");
+            break;
+          }
+
+          igOffset += IG_BATCH_SIZE;
+        } catch (e) {
+          lastError = (e as Error).message;
+          console.error(`[collect-social] Instagram error at offset=${igOffset}: ${lastError}`);
+          break; // 에러 시 루프 중단
+        }
+      }
+
+      results.instagram = {
+        success: true,
+        batchesRun: batchCount,
+        totalProcessed,
+        totalKeywords,
+        totalApiCalls,
+        lastOffset: igOffset,
+        maxOffset,
+        budgetRemaining: lastBudget,
+        ...(lastError ? { lastError } : {}),
+      };
+
+      console.log(`[collect-social] Instagram summary: batches=${batchCount}, processed=${totalProcessed}, keywords=${totalKeywords}, lastOffset=${igOffset}/${maxOffset}`);
+    }
+
+    // ── 2. TikTok 수집 ──
+    if (Date.now() - startTime > TOTAL_TIMEGUARD_MS) {
+      console.warn(`[collect-social] ⏱ Timeguard: ${Math.round((Date.now() - startTime) / 1000)}s elapsed, skipping TikTok collection`);
+      results.tiktok = { success: true, skipped: true, reason: "timeguard" };
+    } else {
+      console.log("[collect-social] Starting TikTok collection...");
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90000);
+        const timeout = setTimeout(() => controller.abort(), TT_TIMEOUT_MS);
 
-        console.log(`[collect-social] Instagram: calling offset=${igOffset}, batchSize=${igBatchSize}`);
-
-        const igResp = await fetch(`${supabaseUrl}/functions/v1/collect-instagram-trends`, {
+        const ttResp = await fetch(`${supabaseUrl}/functions/v1/collect-tiktok-trends`, {
           method: "POST",
           headers: callHeaders,
-          body: JSON.stringify({ batchSize: igBatchSize, offset: igOffset }),
+          body: JSON.stringify({ limit: 50 }),
           signal: controller.signal,
         });
         clearTimeout(timeout);
 
-        const igText = await igResp.text();
-        let igResult: any;
+        const ttText = await ttResp.text();
+        let ttResult: any;
         try {
-          igResult = JSON.parse(igText);
+          ttResult = JSON.parse(ttText);
         } catch {
-          console.warn("[collect-social] Instagram non-JSON:", igText.slice(0, 200));
-          igResult = { error: "non-JSON response" };
+          ttResult = { raw: ttText.slice(0, 200) };
         }
 
-        results.instagram = {
-          success: true,
-          offset: igOffset,
-          nextOffset: igOffset + igBatchSize,
-          processed: igResult.processed || 0,
-          keywords: igResult.keywords_saved || 0,
-          apiCalls: igResult.api_calls || 0,
-          budgetRemaining: igResult.budget_remaining || 0,
+        results.tiktok = {
+          success: ttResult.success || false,
+          processed: ttResult.processed || 0,
+          snapshots: ttResult.snapshotsInserted || 0,
+          keywords: ttResult.keywordsSaved || 0,
+          totalViews: ttResult.totalViews || 0,
         };
-
-        console.log(`[collect-social] Instagram: processed=${igResult.processed}, keywords=${igResult.keywords_saved}, offset=${igOffset}`);
+        console.log(`[collect-social] TikTok: processed=${ttResult.processed}, snapshots=${ttResult.snapshotsInserted}, keywords=${ttResult.keywordsSaved || 0}`);
       } catch (e) {
         const msg = (e as Error).message;
-        console.error(`[collect-social] Instagram error: ${msg}`);
-        results.instagram = { success: false, error: msg, offset: igOffset };
+        console.error(`[collect-social] TikTok error: ${msg}`);
+        results.tiktok = { success: false, error: msg };
       }
     }
-
-    // ── 2. TikTok 수집 (단일 호출, 내부적으로 50명씩 처리) ──
-    // 타임가드: 인스타 수집 후 경과시간 확인
-    if (Date.now() - startTime > 240000) {
-      console.warn(`[collect-social] ⏱ Timeguard: ${Math.round((Date.now() - startTime) / 1000)}s elapsed, skipping TikTok collection`);
-      results.tiktok = { success: true, skipped: true, reason: "timeguard" };
-    } else {
-    console.log("[collect-social] Starting TikTok collection...");
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000);
-
-      const ttResp = await fetch(`${supabaseUrl}/functions/v1/collect-tiktok-trends`, {
-        method: "POST",
-        headers: callHeaders,
-        body: JSON.stringify({ limit: 50 }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      const ttText = await ttResp.text();
-      let ttResult: any;
-      try {
-        ttResult = JSON.parse(ttText);
-      } catch {
-        ttResult = { raw: ttText.slice(0, 200) };
-      }
-
-      results.tiktok = {
-        success: ttResult.success || false,
-        processed: ttResult.processed || 0,
-        snapshots: ttResult.snapshotsInserted || 0,
-        keywords: ttResult.keywordsSaved || 0,
-        totalViews: ttResult.totalViews || 0,
-      };
-      console.log(`[collect-social] TikTok: processed=${ttResult.processed}, snapshots=${ttResult.snapshotsInserted}, keywords=${ttResult.keywordsSaved || 0}`);
-    } catch (e) {
-      const msg = (e as Error).message;
-      console.error(`[collect-social] TikTok error: ${msg}`);
-      results.tiktok = { success: false, error: msg };
-    }
-    } // end timeguard else block
 
     const elapsed = Date.now() - startTime;
     console.log(`[collect-social] Done in ${elapsed}ms`, results);
@@ -193,7 +229,7 @@ Deno.serve(async (req) => {
         .from("ktrenz_collection_log")
         .update({
           status: "success",
-          records_collected: (results.instagram?.keywords || 0) + (results.tiktok?.keywords || 0),
+          records_collected: (results.instagram?.totalKeywords || 0) + (results.tiktok?.keywords || 0),
           error_message: JSON.stringify(results).slice(0, 500),
         })
         .eq("id", lockId);
