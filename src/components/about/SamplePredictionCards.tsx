@@ -21,6 +21,7 @@ const sampleCards = [
     reward: 300,
     stake: 50,
     timeAgo: "2h",
+    image: "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/wiki-images/09209991-f91c-4e6b-963c-4c8bd1813755-dahyun.webp",
   },
   {
     artist: "Jisoo",
@@ -33,6 +34,7 @@ const sampleCards = [
     reward: null,
     stake: 50,
     timeAgo: "12m",
+    image: "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/wiki-images/bb9b51d5-7550-4fec-b3d6-500b5e8c13c2/1762432257775.webp",
   },
   {
     artist: "Kep1er",
@@ -45,6 +47,7 @@ const sampleCards = [
     reward: 100,
     stake: 50,
     timeAgo: "5h",
+    image: "https://jguylowswwgjvotdcsfj.supabase.co/storage/v1/object/public/wiki-images/v3-artists/b6085cad-73c7-4407-ba1e-a02ca908817e.webp?t=1772357088783",
   },
 ];
 
@@ -87,70 +90,86 @@ const SamplePredictionCards = () => {
         {sampleCards.map((card, i) => (
           <div
             key={i}
-            className="relative rounded-xl border border-border bg-card p-4 overflow-hidden"
+            className="relative rounded-xl border border-border bg-card overflow-hidden"
           >
-            {/* Status indicator */}
-            {card.status === "settled" && card.result === "win" && (
-              <div className="absolute top-3 right-3">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              </div>
-            )}
-            {card.status === "active" && (
-              <div className="absolute top-3 right-3 flex items-center gap-1">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                </span>
-              </div>
-            )}
+            {/* Artist image */}
+            <div className="relative h-32 overflow-hidden">
+              <img
+                src={card.image}
+                alt={card.artist}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
 
-            {/* Artist & keyword */}
-            <p className="text-[10px] text-muted-foreground font-medium">
-              {card.artist}
-            </p>
-            <h4 className="text-sm font-bold text-foreground mt-0.5 truncate">
-              {card.keyword}
-            </h4>
-
-            {/* Grade badge */}
-            <div className="flex items-center gap-2 mt-2">
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${gradeColors[card.grade]}`}
-              >
-                <Flame className="w-3 h-3" />
-                {card.grade}
-              </span>
-              <span className="text-[10px] text-muted-foreground/60">{card.category}</span>
-            </div>
-
-            {/* Prediction */}
-            <div className="mt-3 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-semibold text-foreground">
-                  {predictionLabel(card.prediction)}
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {card.timeAgo}
-              </span>
-            </div>
-
-            {/* Result / reward */}
-            <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">
-                {t("bet")}: {card.stake} 캐쉬
-              </span>
-              {card.status === "settled" && card.result === "win" ? (
-                <span className="text-xs font-bold text-emerald-400">
-                  +{card.reward} 캐쉬 ✓
-                </span>
-              ) : (
-                <span className="text-[10px] font-medium text-primary">
-                  {t("active")}
-                </span>
+              {/* Status indicator on image */}
+              {card.status === "settled" && card.result === "win" && (
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-sm">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span className="text-[9px] font-bold text-emerald-400">{t("win")}</span>
+                </div>
               )}
+              {card.status === "active" && (
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 backdrop-blur-sm">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+                  </span>
+                  <span className="text-[9px] font-bold text-primary">{t("active")}</span>
+                </div>
+              )}
+
+              {/* Artist name overlay */}
+              <div className="absolute bottom-2 left-3">
+                <p className="text-[10px] text-muted-foreground/80 font-medium">{card.artist}</p>
+                <h4 className="text-sm font-bold text-foreground leading-tight truncate">
+                  {card.keyword}
+                </h4>
+              </div>
+            </div>
+
+            {/* Card body */}
+            <div className="px-3 pb-3 pt-1">
+              {/* Grade & category */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${gradeColors[card.grade]}`}
+                >
+                  <Flame className="w-3 h-3" />
+                  {card.grade}
+                </span>
+                <span className="text-[10px] text-muted-foreground/60">{card.category}</span>
+              </div>
+
+              {/* Prediction */}
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">
+                    {predictionLabel(card.prediction)}
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {card.timeAgo}
+                </span>
+              </div>
+
+              {/* Result / reward */}
+              <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">
+                  {t("bet")}: {card.stake} 캐쉬
+                </span>
+                {card.status === "settled" && card.result === "win" ? (
+                  <span className="text-xs font-bold text-emerald-400">
+                    +{card.reward} 캐쉬 ✓
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-primary">
+                    {t("active")}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ))}
