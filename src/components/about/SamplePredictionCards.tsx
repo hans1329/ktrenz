@@ -2,11 +2,11 @@ import { TrendingUp, Clock, CheckCircle2, Flame, Sparkles } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const gradeColors: Record<string, string> = {
-  Spark: "bg-zinc-500/20 text-zinc-300",
-  Rising: "bg-blue-500/20 text-blue-400",
-  Hot: "bg-orange-500/20 text-orange-400",
-  Viral: "bg-pink-500/20 text-pink-400",
-  Mega: "bg-red-500/20 text-red-400",
+  Spark: "bg-muted text-primary",
+  Rising: "bg-muted text-primary",
+  Hot: "bg-muted text-primary",
+  Viral: "bg-muted text-primary",
+  Mega: "bg-muted text-primary",
 };
 
 const sampleCards = [
