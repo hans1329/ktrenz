@@ -240,7 +240,7 @@ const Login = () => {
           {/* Back to home */}
           <div className="text-center">
             <button
-              onClick={() => navigate("/rankings")}
+              onClick={() => navigate("/")}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {t("login.backToRankings")}

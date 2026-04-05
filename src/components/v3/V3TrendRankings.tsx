@@ -722,7 +722,7 @@ const V3TrendRankings = () => {
             {top3.map((item, idx) => (
               <PodiumCard key={item.wiki_entry_id} item={item} rank={idx + 1} maxScore={maxScore} energyData={energySnapshots?.get(item.wiki_entry_id)} onTrack={() => track("list_click", { artist_name: (item.wiki_entries as any)?.title, artist_slug: (item.wiki_entries as any)?.slug })} onItemClick={handleItemClick} />
             ))}
-            <Link to="/rankings"
+            <Link to="/"
               className="flex items-center justify-center gap-2 py-3 rounded-xl bg-muted/50 hover:bg-muted text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
               {t("rankings.fullRankings")} <ChevronRight className="w-4 h-4" />
             </Link>
