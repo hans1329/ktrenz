@@ -292,7 +292,7 @@ interface NaverSearchResult {
 async function searchNaver(
   clientId: string,
   clientSecret: string,
-  endpoint: "news" | "blog" | "shop",
+  endpoint: "news" | "blog" | "shop" | "webkr",
   query: string,
   display: number = 50,
 ): Promise<NaverSearchResult> {
