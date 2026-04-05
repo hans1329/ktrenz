@@ -735,6 +735,21 @@ const translations: Record<string, Record<Language, string>> = {
     zh: "K-Points不仅是虚荣指标——可以兑换商品、数字收藏品和KTrenZ生态系统中的高级功能。",
   },
 
+  "about.diffBrandAgency": { en: "For Brands & Agencies", ko: "브랜드 & 에이전시", ja: "ブランド＆エージェンシー向け", zh: "品牌与代理商" },
+  "about.diffBrandAgencyDesc": {
+    en: "Identify which artists drive the highest brand impact, measure campaign ROI through real-time keyword correlation, and discover optimal collaboration timing with data-backed trend signals.",
+    ko: "어떤 아티스트가 가장 높은 브랜드 임팩트를 만드는지 파악하고, 키워드 상관관계를 통해 캠페인 ROI를 실시간 측정하며, 데이터 기반 트렌드 신호로 최적의 협업 타이밍을 발견하세요.",
+    ja: "どのアーティストが最大のブランドインパクトを生むかを特定し、キーワード相関でキャンペーンROIをリアルタイム測定、データに基づくトレンドシグナルで最適なコラボタイミングを発見します。",
+    zh: "识别哪些艺人带来最高品牌影响力，通过关键词关联实时衡量活动ROI，利用数据驱动的趋势信号发现最佳合作时机。",
+  },
+  "about.diffEntertainment": { en: "For Entertainment Companies", ko: "엔터테인먼트 기획사", ja: "エンタメ企画会社向け", zh: "娱乐公司" },
+  "about.diffEntertainmentDesc": {
+    en: "Monitor your artists' real-time buzz across all platforms, benchmark against competitors, and leverage predictive trend data to plan comebacks, fan events, and marketing strategies with precision.",
+    ko: "소속 아티스트의 실시간 버즈를 전 플랫폼에서 모니터링하고, 경쟁사 대비 벤치마크하며, 예측 트렌드 데이터를 활용해 컴백·팬 이벤트·마케팅 전략을 정밀하게 기획하세요.",
+    ja: "所属アーティストのリアルタイムバズを全プラットフォームでモニタリングし、競合とベンチマークし、予測トレンドデータを活用してカムバック・ファンイベント・マーケティング戦略を精密に立案します。",
+    zh: "在所有平台上监控旗下艺人的实时热度，与竞争对手进行基准对比，利用预测趋势数据精准规划回归、粉丝活动和营销策略。",
+  },
+
   "about.ctaTitle": { en: "Ready to Track the Next Big Trend?", ko: "다음 빅 트렌드를 추적할 준비가 되셨나요?", ja: "次のビッグトレンドを追跡する準備はできましたか？", zh: "准备好追踪下一个大趋势了吗？" },
   "about.ctaDesc": {
     en: "Join thousands of K-Pop fans already using KTrenZ to stay ahead of trends, earn rewards, and connect with the global fandom.",
