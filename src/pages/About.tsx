@@ -125,7 +125,7 @@ const About = () => {
             <Button
               size="lg"
               className="mt-2 rounded-full px-8"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/login")}
             >
               <Target className="w-4 h-4 mr-2" />
               {t("about.cta")}
