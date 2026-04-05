@@ -690,8 +690,8 @@ const translations: Record<string, Record<Language, string>> = {
   },
   "about.fanLoop3Title": { en: "Earn Bigger Rewards on Success", ko: "예측 성공 시 더 큰 보상", ja: "予測成功でより大きな報酬", zh: "预测成功获得更大奖励" },
   "about.fanLoop3Desc": {
-    en: "Correct predictions earn K-Points: Mild rise → 100T, Strong rise → 300T, Explosive rise → 1,000T. Even wrong predictions get a 10T consolation reward.",
-    ko: "예측이 맞으면 K-Points 획득: 소폭 상승 → 100T, 강한 상승 → 300T, 폭발적 상승 → 1,000T. 틀려도 위로 보상 10T를 받습니다.",
+    en: "Correct predictions earn K-Cashes: Mild rise → 100T, Strong rise → 300T, Explosive rise → 1,000T. Even wrong predictions get a 10T consolation reward.",
+    ko: "예측이 맞으면 K-Cashes 획득: 소폭 상승 → 100T, 강한 상승 → 300T, 폭발적 상승 → 1,000T. 틀려도 위로 보상 10T를 받습니다.",
     ja: "予測が当たればK-Pointsを獲得：小幅上昇→100T、強い上昇→300T、爆発的上昇→1,000T。外れても慰労報酬10Tがもらえます。",
     zh: "预测正确可获得K-Points：小幅上涨→100T，强势上涨→300T，爆发式上涨→1,000T。即使预测错误也有10T安慰奖励。",
   },
