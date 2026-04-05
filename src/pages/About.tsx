@@ -154,19 +154,57 @@ const About = () => {
             <h2 className="text-xl md:text-3xl font-bold text-foreground leading-snug mt-2 mb-3">
               {t("about.section2Title")}
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-8">
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-10">
               {t("about.section2Desc")}
             </p>
-            {/* Grade progression */}
-            <div className="flex flex-wrap gap-2">
-              {["Spark", "Rising", "Hot", "Viral", "Mega", "Explosive"].map((grade, i) => (
-                <div key={grade} className="flex items-center gap-1.5">
-                  <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-card border border-border text-foreground">
-                    {grade}
-                  </span>
-                  {i < 5 && <span className="text-muted-foreground text-xs">→</span>}
-                </div>
-              ))}
+
+            {/* Grade progression visual */}
+            <div className="relative">
+              {/* Connection line */}
+              <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500/30 via-amber-500/30 to-red-500/30 -translate-y-1/2 z-0" />
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                {[
+                  { grade: "Spark", emoji: "✨", color: "from-blue-500/20 to-blue-600/10", border: "border-blue-500/30", text: "text-blue-400", desc: "about.gradeSpark" },
+                  { grade: "Rising", emoji: "📈", color: "from-emerald-500/20 to-emerald-600/10", border: "border-emerald-500/30", text: "text-emerald-400", desc: "about.gradeRising" },
+                  { grade: "Hot", emoji: "🔥", color: "from-orange-500/20 to-orange-600/10", border: "border-orange-500/30", text: "text-orange-400", desc: "about.gradeHot" },
+                  { grade: "Viral", emoji: "🚀", color: "from-pink-500/20 to-pink-600/10", border: "border-pink-500/30", text: "text-pink-400", desc: "about.gradeViral" },
+                  { grade: "Mega", emoji: "⚡", color: "from-violet-500/20 to-violet-600/10", border: "border-violet-500/30", text: "text-violet-400", desc: "about.gradeMega" },
+                  { grade: "Explosive", emoji: "💥", color: "from-red-500/20 to-red-600/10", border: "border-red-500/30", text: "text-red-400", desc: "about.gradeExplosive" },
+                ].map((g, i) => (
+                  <div
+                    key={g.grade}
+                    className={`relative z-10 flex flex-col items-center gap-2 p-4 rounded-xl border ${g.border} bg-gradient-to-b ${g.color} backdrop-blur-sm transition-transform hover:scale-105`}
+                  >
+                    <span className="text-2xl">{g.emoji}</span>
+                    <span className={`text-sm font-bold ${g.text}`}>{g.grade}</span>
+                    <span className="text-[10px] text-muted-foreground text-center leading-tight">{t(g.desc)}</span>
+                    {/* Score bar indicator */}
+                    <div className="w-full h-1 rounded-full bg-background/50 mt-1">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${g.color.replace('/20', '/60').replace('/10', '/40')}`}
+                        style={{ width: `${((i + 1) / 6) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Score types legend */}
+            <div className="mt-8 flex flex-wrap gap-4 justify-center">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
+                <Activity className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] text-muted-foreground font-medium">{t("about.scoreTrend")}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[11px] text-muted-foreground font-medium">{t("about.scoreInfluence")}</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px] text-muted-foreground font-medium">{t("about.scoreMomentum")}</span>
+              </div>
             </div>
           </div>
         </section>
