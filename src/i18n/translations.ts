@@ -606,6 +606,16 @@ const translations: Record<string, Record<Language, string>> = {
     zh: "每个检测到的关键词根据搜索量、提及速度、影响力指数和跨平台相关性计算复合分数。趋势通过六个等级推进——Spark、Rising、Hot、Viral、Mega和Explosive——每个周期追踪动量。",
   },
 
+  "about.gradeSpark": { en: "Early signal detected", ko: "초기 신호 감지", ja: "初期シグナル検出", zh: "早期信号检测" },
+  "about.gradeRising": { en: "Gaining traction", ko: "관심 상승 중", ja: "注目度上昇中", zh: "关注度上升" },
+  "about.gradeHot": { en: "High engagement", ko: "높은 참여도", ja: "高エンゲージメント", zh: "高参与度" },
+  "about.gradeViral": { en: "Cross-platform spread", ko: "크로스 플랫폼 확산", ja: "クロスプラットフォーム拡散", zh: "跨平台扩散" },
+  "about.gradeMega": { en: "Mass media coverage", ko: "대중 미디어 보도", ja: "マスメディア報道", zh: "大众媒体报道" },
+  "about.gradeExplosive": { en: "Cultural phenomenon", ko: "문화적 현상", ja: "文化的現象", zh: "文化现象" },
+  "about.scoreTrend": { en: "Trend Score — keyword market index", ko: "트렌드 점수 — 키워드 시장 지표", ja: "トレンドスコア — キーワード市場指標", zh: "趋势分数 — 关键词市场指标" },
+  "about.scoreInfluence": { en: "Influence Score — artist impact", ko: "인플루언스 점수 — 아티스트 영향력", ja: "影響力スコア — アーティスト影響度", zh: "影响力分数 — 艺人影响力" },
+  "about.scoreMomentum": { en: "Momentum — growth velocity", ko: "모멘텀 — 성장 속도", ja: "モメンタム — 成長速度", zh: "动量 — 增长速度" },
+
   "about.howTitle": { en: "How It Works", ko: "이렇게 동작합니다", ja: "仕組み", zh: "工作原理" },
   "about.howSubtitle": {
     en: "From raw data to fan rewards — a six-step pipeline that turns keyword signals into actionable trend intelligence.",
