@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const COLLECTION_PAUSED = false;
 const MAX_CONSECUTIVE_ERRORS = 3; // N회 연속 실패 시 파이프라인 중단
 const STALE_LOCK_MINUTES = 30; // 30분 이상 running 상태이면 stale로 간주
+const STALE_INFLIGHT_MINUTES = 10; // running_inflight는 10분이면 stale
 const RUNNING_STATUS = "running";
 const RUNNING_INFLIGHT_STATUS = "running_inflight";
 
@@ -128,26 +129,41 @@ Deno.serve(async (req) => {
         .limit(1);
 
       if (!activeRuns?.length) {
-        // ── Stale lock recovery: 30분 이상 running/postprocess_running 상태면 error로 전환 ──
+        // ── Stale lock recovery: running_inflight는 10분, 나머지는 30분 ──
         const staleThreshold = new Date(Date.now() - STALE_LOCK_MINUTES * 60 * 1000).toISOString();
-        const { data: staleRuns } = await sb
+        const staleInflightThreshold = new Date(Date.now() - STALE_INFLIGHT_MINUTES * 60 * 1000).toISOString();
+
+        // 1) running_inflight: 10분 기준으로 빠르게 복구
+        const { data: staleInflight } = await sb
           .from("ktrenz_pipeline_state")
           .select("*")
-          .in("status", [RUNNING_STATUS, RUNNING_INFLIGHT_STATUS, "postprocess_running"])
+          .eq("status", RUNNING_INFLIGHT_STATUS)
+          .lt("updated_at", staleInflightThreshold)
+          .limit(5);
+
+        // 2) running, postprocess_running: 30분 기준
+        const { data: staleLong } = await sb
+          .from("ktrenz_pipeline_state")
+          .select("*")
+          .in("status", [RUNNING_STATUS, "postprocess_running"])
           .lt("updated_at", staleThreshold)
           .limit(5);
 
+        const staleRuns = [...(staleInflight || []), ...(staleLong || [])];
+
         if (staleRuns?.length) {
           for (const stale of staleRuns) {
-            console.warn(`[cron] Stale lock detected: run=${stale.run_id}, phase=${stale.phase}, updated_at=${stale.updated_at}`);
+            const mins = stale.status === RUNNING_INFLIGHT_STATUS ? STALE_INFLIGHT_MINUTES : STALE_LOCK_MINUTES;
+            console.warn(`[cron] Stale lock detected: run=${stale.run_id}, phase=${stale.phase}, status=${stale.status}, updated_at=${stale.updated_at}`);
             await sb.from("ktrenz_pipeline_state")
               .update({
                 status: "error",
-                last_error: `Stale lock: no progress for ${STALE_LOCK_MINUTES}+ minutes`,
+                last_error: `Stale lock: no progress for ${mins}+ minutes (was ${stale.status})`,
                 last_error_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               })
-              .eq("id", stale.id);
+              .eq("id", stale.id)
+              .eq("status", stale.status); // race-safe: 다른 tick이 이미 변경했으면 무시
           }
           return respond({ success: true, action: "tick", staleRecovered: staleRuns.length, message: `Recovered ${staleRuns.length} stale locks` });
         }
@@ -165,13 +181,43 @@ Deno.serve(async (req) => {
           console.log(`[cron] Found postprocess request for run=${ppState.run_id}, phase=${ppState.phase}`);
 
           // postprocess_running으로 업데이트 (lock)
-          await sb.from("ktrenz_pipeline_state")
+          const { data: ppLock } = await sb.from("ktrenz_pipeline_state")
             .update({ status: "postprocess_running", updated_at: new Date().toISOString() })
             .eq("id", ppState.id)
-            .eq("status", "postprocess_requested"); // optimistic lock
+            .eq("status", "postprocess_requested") // optimistic lock
+            .select("id");
+
+          if (!ppLock?.length) {
+            return respond({ success: true, action: "tick", skipped: true, message: "Postprocess already claimed" });
+          }
 
           // postprocess 실행
           const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
+
+          // postprocess 실패 시 postprocess_requested로 복원하여 재시도 허용
+          if (ppResult.error || ppResult.success === false) {
+            console.warn(`[cron] Postprocess failed, reverting to postprocess_requested: ${ppResult.error || "unknown"}`);
+            await sb.from("ktrenz_pipeline_state")
+              .update({
+                status: "postprocess_requested",
+                last_error: `postprocess failed: ${(ppResult.error || "unknown").slice(0, 300)}`,
+                last_error_at: new Date().toISOString(),
+                error_count: (ppState.error_count || 0) + 1,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", ppState.id)
+              .eq("status", "postprocess_running");
+
+            // 연속 실패 3회 시 error 상태로 전환
+            if ((ppState.error_count || 0) + 1 >= MAX_CONSECUTIVE_ERRORS) {
+              await sb.from("ktrenz_pipeline_state")
+                .update({ status: "error", updated_at: new Date().toISOString() })
+                .eq("id", ppState.id);
+              console.error(`[cron] Postprocess stopped: ${MAX_CONSECUTIVE_ERRORS} consecutive failures`);
+            }
+
+            return respond({ success: false, action: "postprocess", runId: ppState.run_id, error: ppResult.error });
+          }
 
           // postprocess 완료 → grade 인라인 실행 (별도 phase 제거)
           const gradeResult = await executeGradeInline(supabaseUrl, supabaseKey);
@@ -388,7 +434,8 @@ async function executeBatch(
           updated_at: new Date().toISOString(),
         })
         .eq("run_id", runId)
-        .eq("phase", phase);
+        .eq("phase", phase)
+        .eq("status", RUNNING_INFLIGHT_STATUS);
 
       return { ...result, skippedTimeout: true };
     }
@@ -404,6 +451,7 @@ async function executeBatch(
     const newErrorCount = prevErrorCount + 1;
 
     // ★ 실패 시 offset 롤백: optimistic lock으로 미리 증가된 offset을 원래 값으로 복원
+    // race-safe: running_inflight 상태인 경우에만 롤백 (다른 tick이 이미 변경했으면 무시)
     await sb.from("ktrenz_pipeline_state")
       .update({
         current_offset: offset, // 롤백: 실패한 배치를 다음 tick에서 재시도
@@ -413,7 +461,8 @@ async function executeBatch(
         updated_at: new Date().toISOString(),
       })
       .eq("run_id", runId)
-      .eq("phase", phase);
+      .eq("phase", phase)
+      .eq("status", RUNNING_INFLIGHT_STATUS);
 
     if (newErrorCount >= MAX_CONSECUTIVE_ERRORS) {
       console.error(`[cron] Phase ${phase} stopped: ${newErrorCount} consecutive errors. Last: ${errorMsg}`);
