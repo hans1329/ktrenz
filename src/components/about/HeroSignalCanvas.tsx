@@ -65,33 +65,41 @@ const HeroSignalCanvas = () => {
         ctx.stroke();
       }
 
-      // Scanning dot
-      const dotX = ((time * 55) % (w + 40)) - 20;
-      const dotPhase = dotX * 0.006 + time * 0.5;
-      const dotSine = Math.sin(dotPhase) * 50 * 0.5;
-      const dotSpikePos = ((dotX + time * 17.5) % 240) / 240;
-      let dotSpike = 0;
-      if (dotSpikePos > 0.44 && dotSpikePos < 0.47) {
-        dotSpike = -50 * 2.5 * ((dotSpikePos - 0.44) / 0.03);
-      } else if (dotSpikePos >= 0.47 && dotSpikePos < 0.52) {
-        dotSpike = 50 * 3.2 * ((dotSpikePos - 0.47) / 0.05) - 50 * 2.5;
-      } else if (dotSpikePos >= 0.52 && dotSpikePos < 0.57) {
-        dotSpike = 50 * 0.7 * (1 - (dotSpikePos - 0.52) / 0.05);
+      // Scanning dots on each line
+      const dots = [
+        { lineIdx: 0, speed: 55, color: "139,92,246", baseY: h * 0.3, amp: 50, freq: 0.006, lineSpeed: 0.5 },
+        { lineIdx: 1, speed: 42, color: "59,130,246", baseY: h * 0.5, amp: 70, freq: 0.005, lineSpeed: 0.62 },
+        { lineIdx: 2, speed: 35, color: "16,185,129", baseY: h * 0.7, amp: 90, freq: 0.004, lineSpeed: 0.74 },
+      ];
+
+      for (const dot of dots) {
+        const dx = ((time * dot.speed) % (w + 40)) - 20;
+        const dPhase = dx * dot.freq + time * dot.lineSpeed;
+        const dSine = Math.sin(dPhase) * dot.amp * 0.5;
+        const dSpikePos = ((dx + time * 35 * dot.lineSpeed) % 240) / 240;
+        let dSpike = 0;
+        if (dSpikePos > 0.44 && dSpikePos < 0.47) {
+          dSpike = -dot.amp * 2.5 * ((dSpikePos - 0.44) / 0.03);
+        } else if (dSpikePos >= 0.47 && dSpikePos < 0.52) {
+          dSpike = dot.amp * 3.2 * ((dSpikePos - 0.47) / 0.05) - dot.amp * 2.5;
+        } else if (dSpikePos >= 0.52 && dSpikePos < 0.57) {
+          dSpike = dot.amp * 0.7 * (1 - (dSpikePos - 0.52) / 0.05);
+        }
+        const dy = dot.baseY + dSine + dSpike;
+
+        ctx.beginPath();
+        ctx.arc(dx, dy, 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${dot.color},0.7)`;
+        ctx.fill();
+
+        const grd = ctx.createRadialGradient(dx, dy, 0, dx, dy, 28);
+        grd.addColorStop(0, `rgba(${dot.color},0.35)`);
+        grd.addColorStop(1, `rgba(${dot.color},0)`);
+        ctx.beginPath();
+        ctx.arc(dx, dy, 28, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
       }
-      const dotY = h * 0.3 + dotSine + dotSpike;
-
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(139,92,246,0.7)";
-      ctx.fill();
-
-      const gradient = ctx.createRadialGradient(dotX, dotY, 0, dotX, dotY, 28);
-      gradient.addColorStop(0, "rgba(139,92,246,0.35)");
-      gradient.addColorStop(1, "rgba(139,92,246,0)");
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, 28, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
 
       time += 0.016;
       animId = requestAnimationFrame(draw);
