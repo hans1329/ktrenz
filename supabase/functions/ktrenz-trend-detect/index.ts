@@ -2025,7 +2025,9 @@ async function detectForMember(
 
   const newsItems = newsResult.items;
   const blogItems = blogResult.items;
-  const shopItems: any[] = []; // Shopping 수집 비활성화
+  // 쇼핑 검색: 아티스트 관련 상품에서 브랜드/제품 키워드 보조 발굴
+  const shopResult = await searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20);
+  const shopItems = shopResult.items;
 
   // 72시간 이내 + 일본어 기사 필터링 (News + Blog)
    const cutoff72h = Date.now() - 72 * 60 * 60 * 1000;
