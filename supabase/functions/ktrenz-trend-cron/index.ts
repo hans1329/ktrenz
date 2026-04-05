@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const COLLECTION_PAUSED = false;
 const MAX_CONSECUTIVE_ERRORS = 3; // N회 연속 실패 시 파이프라인 중단
 const STALE_LOCK_MINUTES = 30; // 30분 이상 running 상태이면 stale로 간주
+const STALE_INFLIGHT_MINUTES = 10; // running_inflight는 10분이면 stale
 const RUNNING_STATUS = "running";
 const RUNNING_INFLIGHT_STATUS = "running_inflight";
 
