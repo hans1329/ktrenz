@@ -105,6 +105,8 @@ const About = () => {
 
         {/* Hero — clean dark */}
         <section className="relative overflow-hidden bg-zinc-950">
+          {/* Animated signal lines */}
+          <HeroSignalCanvas />
           {/* Subtle gradient orbs */}
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/8 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-violet-500/6 rounded-full blur-3xl" />
