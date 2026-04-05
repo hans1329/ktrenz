@@ -269,7 +269,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
   return (
     <div className="px-4 pt-2 pb-1">
       {/* Liquid Glass container with hero bg — tappable */}
-      <div className="rounded-2xl overflow-hidden mb-2 cursor-pointer active:scale-[0.98] transition-transform bg-zinc-900 border border-zinc-800" onClick={() => navigate("/dashboard")}>
+      <div className="rounded-2xl overflow-hidden mb-2 cursor-pointer active:scale-[0.98] transition-transform bg-card border border-border" onClick={() => navigate("/dashboard")}>
         <div className="p-3 space-y-2.5">
           {/* Stats row */}
           <div className="grid grid-cols-4 gap-1.5">
@@ -279,12 +279,12 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
               { label: lang === "ko" ? "진행중" : "Active", value: stats.pending, icon: Clock, isIcon: false },
               { label: "Tickets", value: `${tickets.max - tickets.used}`, icon: Ticket, isIcon: true },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-xl py-2 text-center bg-zinc-800 border border-zinc-700">
-                <p className="text-base font-black text-zinc-100 leading-none">{stat.value}</p>
+              <div key={stat.label} className="rounded-xl py-2 text-center bg-muted border border-border">
+                <p className="text-base font-black text-foreground leading-none">{stat.value}</p>
                 {stat.isIcon ? (
-                  <stat.icon className="w-3 h-3 text-zinc-500 mx-auto mt-0.5" />
+                  <stat.icon className="w-3 h-3 text-muted-foreground mx-auto mt-0.5" />
                 ) : (
-                  <p className="text-[9px] text-zinc-500 font-medium mt-0.5">{stat.label}</p>
+                  <p className="text-[9px] text-muted-foreground font-medium mt-0.5">{stat.label}</p>
                 )}
               </div>
             ))}
@@ -295,18 +295,18 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm">💎</span>
-                <span className="text-xs font-bold text-zinc-100">{points.toLocaleString()}</span>
+                <span className="text-xs font-bold text-foreground">{points.toLocaleString()}</span>
                 {stats.earned > 0 && (
                   <span className="text-[10px] text-primary font-semibold">(+{stats.earned.toLocaleString()})</span>
                 )}
               </div>
               <div className="flex items-center gap-1">
                 <Gift className="w-3 h-3 text-emerald-400" />
-                <span className="text-[10px] text-zinc-500">Spotify Premium</span>
-                <span className="text-[10px] font-bold text-zinc-100">{Math.round(pct)}%</span>
+                <span className="text-[10px] text-muted-foreground">Spotify Premium</span>
+                <span className="text-[10px] font-bold text-foreground">{Math.round(pct)}%</span>
               </div>
             </div>
-            <div className="w-full h-2.5 rounded-full overflow-hidden relative bg-zinc-800">
+            <div className="w-full h-2.5 rounded-full overflow-hidden relative bg-muted">
               <div
                  className="absolute inset-0 rounded-full"
                  style={{ background: "linear-gradient(90deg, hsl(280 45% 58%), hsl(220 50% 55%), hsl(180 40% 50%), hsl(150 45% 50%), hsl(45 55% 55%), hsl(20 50% 55%))", clipPath: `inset(0 ${100 - pct}% 0 0)`, transition: "clip-path 0.5s ease" }}
