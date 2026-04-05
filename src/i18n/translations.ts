@@ -668,10 +668,10 @@ const translations: Record<string, Record<Language, string>> = {
   "about.valueTitle": { en: "Why KTrenZ?", ko: "왜 KTrenZ인가?", ja: "なぜKTrenZ?", zh: "为什么选择KTrenZ？" },
   "about.diffMultiSource": { en: "Multi-Source Intelligence", ko: "멀티소스 인텔리전스", ja: "マルチソースインテリジェンス", zh: "多源情报" },
   "about.diffMultiSourceDesc": {
-    en: "We aggregate data from 10+ platforms including Naver, YouTube, X, Instagram, TikTok, Spotify, and Billboard — not just one source.",
-    ko: "Naver, YouTube, X, Instagram, TikTok, Spotify, Billboard 등 10개 이상 플랫폼의 데이터를 통합합니다.",
-    ja: "Naver、YouTube、X、Instagram、TikTok、Spotify、Billboardなど10以上のプラットフォームからデータを集約。",
-    zh: "我们聚合来自Naver、YouTube、X、Instagram、TikTok、Spotify、Billboard等10+平台的数据。",
+    en: "We aggregate data from Naver News, Naver Blogs, YouTube, Instagram, and TikTok — combining editorial coverage with social signals for complete trend visibility.",
+    ko: "Naver 뉴스, Naver 블로그, YouTube, Instagram, TikTok의 데이터를 통합하여 편집 기사와 소셜 신호를 결합한 완전한 트렌드 가시성을 제공합니다.",
+    ja: "Naverニュース、Naverブログ、YouTube、Instagram、TikTokのデータを統合し、記事とソーシャルシグナルを組み合わせた完全なトレンド可視性を提供。",
+    zh: "我们聚合来自Naver新闻、Naver博客、YouTube、Instagram和TikTok的数据，将编辑报道与社交信号结合，提供完整的趋势可见性。",
   },
   "about.diffSmartScoring": { en: "Keyword-Centric Scoring", ko: "키워드 중심 스코어링", ja: "キーワード中心スコアリング", zh: "以关键词为中心的评分" },
   "about.diffSmartScoringDesc": {
