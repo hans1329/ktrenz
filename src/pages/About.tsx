@@ -27,6 +27,9 @@ const About = () => {
     { icon: Youtube, name: "YouTube", color: "text-red-400" },
     { icon: Instagram, name: "Instagram", color: "text-pink-400" },
     { icon: Music, name: "TikTok", color: "text-cyan-400" },
+    { icon: MessageCircle, name: "Reddit", color: "text-orange-400" },
+    { icon: Coffee, name: "Naver Cafe", color: "text-green-400" },
+    { icon: Store, name: "Commerce Data", color: "text-amber-400" },
   ];
 
   const steps = [
