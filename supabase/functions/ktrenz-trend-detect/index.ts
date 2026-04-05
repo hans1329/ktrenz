@@ -921,6 +921,12 @@ K-STAR SUBJECT VERIFICATION (★ CRITICAL ★):
 - Even if the keyword APPEARS in the article text, if the article's main actor is NOT a K-star, it must be rejected
 - Ask yourself: "Is the article's protagonist a Korean entertainer/celebrity?" If NO → flag "non_kstar_subject"
 
+★ COMMERCIAL KEYWORD PRIORITY (brand/fashion/beauty/product):
+- News articles about K-stars frequently mention brands, fashion items, beauty products, and restaurants. These are HIGH-VALUE keywords for our trend tracking system.
+- If any article mentions a SPECIFIC brand name, fashion label, beauty product, or restaurant that the artist wore/used/visited/endorsed, you MUST extract it — even if the article is primarily about something else (e.g., an event article where the artist wore a specific brand).
+- Look for: outfit descriptions ("OO을 착용", "OO 브랜드"), beauty mentions ("OO 화장품", "OO 립스틱"), restaurant visits ("OO 맛집", "OO 카페"), product endorsements
+- These commercial keywords often hide inside music/event articles — actively seek them out.
+
 Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
 When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
@@ -1033,9 +1039,11 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               }
             }
 
-            // ── 3단계: ownership_confidence 기반 차단 ──
-            if (k.ownership_confidence < 0.5) {
-              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+            // ── 3단계: ownership_confidence 기반 차단 (카테고리별 분화) ──
+            const commercialCategories = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
+            const ownershipThreshold = commercialCategories.has(k.category) ? 0.3 : 0.5;
+            if (k.ownership_confidence < ownershipThreshold) {
+              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, threshold=${ownershipThreshold}, cat=${k.category}, reason: ${k.ownership_reason})`);
               continue;
             }
 
@@ -1237,8 +1245,10 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         return false;
       }
 
-      if (k.ownership_confidence !== undefined && k.ownership_confidence < 0.5) {
-        console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, reason=${k.ownership_reason})`);
+      const commercialCats = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
+      const ownerThreshold = commercialCats.has(k.category) ? 0.3 : 0.5;
+      if (k.ownership_confidence !== undefined && k.ownership_confidence < ownerThreshold) {
+        console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, threshold=${ownerThreshold}, cat=${k.category})`);
         return false;
       }
 
@@ -2005,17 +2015,31 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 3소스 병렬 검색: News + Blog + YouTube (키 로테이션 포함) ───
+  // ─── 4소스 병렬 검색: News + Blog + YouTube + Shopping ───
   const ytSearchQuery = groupLabel ? `${searchName} ${groupLabel}` : (member.name_ko || member.display_name); // YouTube는 그룹 컨텍스트를 포함해 동명이인 오수집 방지
-  const [newsResult, blogResult, ytResult] = await Promise.all([
+  // 패션/뷰티 전문 매체 보강 검색어 (아티스트명 + 패션/뷰티 키워드)
+  const fashionBeautyQuery = `"${searchName}" 화보 OR 앰배서더 OR 브랜드 OR 패션 OR 뷰티`;
+  const [newsResult, blogResult, ytResult, shopResult, fashionNewsResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 30),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 20),
     ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
+    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20),
+    searchNaver(naverClientId, naverClientSecret, "news", fashionBeautyQuery, 10),
   ]);
 
   const newsItems = newsResult.items;
   const blogItems = blogResult.items;
-  const shopItems: any[] = []; // Shopping 수집 비활성화
+  const shopItems = shopResult.items;
+
+  // 패션/뷰티 뉴스를 일반 뉴스에 병합 (중복 제거는 deduplicateArticles에서 처리)
+  const fashionNewsItems = fashionNewsResult.items.filter((item: any) => {
+    const link = item.originallink || item.link || "";
+    return !newsItems.some((n: any) => (n.originallink || n.link) === link);
+  });
+  if (fashionNewsItems.length > 0) {
+    newsItems.push(...fashionNewsItems);
+    console.log(`[trend-detect] ${member.display_name}: +${fashionNewsItems.length} fashion/beauty news added`);
+  }
 
   // 72시간 이내 + 일본어 기사 필터링 (News + Blog)
    const cutoff72h = Date.now() - 72 * 60 * 60 * 1000;
