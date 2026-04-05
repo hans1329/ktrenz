@@ -22,10 +22,11 @@ Deno.serve(async (req) => {
     // Full pipeline reset: truncate all trend tables + reset stars
     if (action === "reset_pipeline") {
       const truncateTables = [
-        "ktrenz_keyword_sources",
-        "ktrenz_keywords",
-        "ktrenz_trend_triggers",
+        "trend_vs_votes",
         "ktrenz_trend_tracking",
+        "ktrenz_keyword_sources",
+        "ktrenz_trend_triggers",
+        "ktrenz_keywords",
         "ktrenz_data_snapshots",
         "ktrenz_pipeline_state",
       ];
