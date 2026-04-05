@@ -591,10 +591,10 @@ const translations: Record<string, Record<Language, string>> = {
   "about.sectionLabel1": { en: "Data Collection", ko: "데이터 수집", ja: "データ収集", zh: "数据收集" },
   "about.section1Title": { en: "Multi-Source Keyword Detection at Scale", ko: "대규모 멀티소스 키워드 감지", ja: "大規模マルチソースキーワード検出", zh: "大规模多源关键词检测" },
   "about.section1Desc": {
-    en: "Our daily pipeline scans Naver News, blogs, YouTube, Instagram, and TikTok to detect keywords organically linked to K-Pop artists — AI-powered filtering removes noise like unrelated brands, restaurants, and spam.",
-    ko: "매일 Naver 뉴스, 블로그, 유튜브, 인스타그램, 틱톡을 스캔하여 K-Pop 아티스트와 유기적으로 연결된 키워드를 감지하며, AI 필터링으로 무관 브랜드·레스토랑·스팸 등의 노이즈를 자동 제거합니다.",
-    ja: "毎日Naverニュース、ブログ、YouTube、Instagram、TikTokをスキャンし、K-Popアーティスト関連のキーワードを検出。AIフィルタリングで無関係なブランドやスパムを除去。",
-    zh: "每日扫描Naver新闻、博客、YouTube、Instagram和TikTok，检测与K-Pop艺人有机关联的关键词，AI过滤自动去除无关品牌、餐厅和垃圾信息。",
+    en: "Our daily pipeline scans Naver News, blogs, Naver Cafe, YouTube, Instagram, TikTok, Reddit, and commerce platforms to detect keywords organically linked to K-Pop artists — AI-powered filtering removes noise like unrelated brands, restaurants, and spam.",
+    ko: "매일 Naver 뉴스, 블로그, 네이버 카페, 유튜브, 인스타그램, 틱톡, Reddit, 커머스 플랫폼을 스캔하여 K-Pop 아티스트와 유기적으로 연결된 키워드를 감지하며, AI 필터링으로 무관 브랜드·레스토랑·스팸 등의 노이즈를 자동 제거합니다.",
+    ja: "毎日Naverニュース、ブログ、Naverカフェ、YouTube、Instagram、TikTok、Reddit、コマースプラットフォームをスキャンし、K-Popアーティスト関連のキーワードを検出。AIフィルタリングで無関係なブランドやスパムを除去。",
+    zh: "每日扫描Naver新闻、博客、Naver Cafe、YouTube、Instagram、TikTok、Reddit和电商平台，检测与K-Pop艺人有机关联的关键词，AI过滤自动去除无关品牌、餐厅和垃圾信息。",
   },
 
   "about.sectionLabel2": { en: "Analysis Engine", ko: "분석 엔진", ja: "分析エンジン", zh: "分析引擎" },
