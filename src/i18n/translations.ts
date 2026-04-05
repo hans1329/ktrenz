@@ -626,7 +626,7 @@ const translations: Record<string, Record<Language, string>> = {
   "about.step1Title": { en: "Keyword Detection", ko: "키워드 감지", ja: "キーワード検出", zh: "关键词检测" },
   "about.step1Desc": {
     en: "Scan news, blogs, and social platforms to detect trending keywords linked to K-Pop artists in real time.",
-    ko: "뉴스, 블로그, 소셜 플랫폼을 스캔하여 K-Pop 아티스트 관련 트렌딩 키워드를 실시간 감지합니다.",
+    ko: "전 세계의 뉴스, 블로그, 소셜 플랫폼을 스캔하여 K-Pop 아티스트 관련 트렌딩 키워드를 실시간 감지합니다.",
     ja: "ニュース、ブログ、SNSをスキャンし、K-Popアーティスト関連のトレンドキーワードをリアルタイムで検出。",
     zh: "扫描新闻、博客和社交平台，实时检测与K-Pop艺人相关的热门关键词。",
   },
