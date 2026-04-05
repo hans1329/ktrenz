@@ -4,6 +4,7 @@ import V3Header from "@/components/v3/V3Header";
 import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store, Ticket, Crosshair, Trophy, Headphones, Megaphone, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import SamplePredictionCards from "@/components/about/SamplePredictionCards";
 
 const About = () => {
   const { t } = useLanguage();
@@ -273,6 +274,9 @@ const About = () => {
                 </article>
               ))}
             </div>
+
+            {/* Sample prediction cards */}
+            <SamplePredictionCards />
           </div>
         </section>
 
