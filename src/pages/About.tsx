@@ -62,7 +62,7 @@ const About = () => {
       bg: "bg-amber-500/10",
     },
     {
-      icon: Activity,
+      icon: ShoppingBag,
       titleKey: "about.step5Title",
       descKey: "about.step5Desc",
       color: "text-pink-400",
