@@ -61,10 +61,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // sb already created above for reset_pipeline path; reuse it here
 
     // Delete all FK-referencing rows before deleting from ktrenz_stars
     if (table === "ktrenz_stars" && match.id) {
