@@ -306,7 +306,7 @@ const About = () => {
         {/* CTA */}
         <section className="bg-zinc-900 py-14 px-4">
           <div className="max-w-3xl mx-auto text-center space-y-4">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">
+            <h2 className="text-xl md:text-2xl font-bold text-primary-foreground">
               {t("about.ctaTitle")}
             </h2>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
