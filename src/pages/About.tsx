@@ -1,7 +1,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
-import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music } from "lucide-react";
+import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -27,6 +27,9 @@ const About = () => {
     { icon: Youtube, name: "YouTube", color: "text-red-400" },
     { icon: Instagram, name: "Instagram", color: "text-pink-400" },
     { icon: Music, name: "TikTok", color: "text-cyan-400" },
+    { icon: MessageCircle, name: "Reddit", color: "text-orange-400" },
+    { icon: Coffee, name: "Naver Cafe", color: "text-green-400" },
+    { icon: Store, name: "Commerce Data", color: "text-amber-400" },
   ];
 
   const steps = [
@@ -134,7 +137,7 @@ const About = () => {
           <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-8">
             {t("about.section1Desc")}
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {sources.map((s, i) => (
               <div key={i} className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
                 <s.icon className={`w-5 h-5 ${s.color}`} />
