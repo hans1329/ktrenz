@@ -13,7 +13,6 @@ const sampleCards = [
   {
     artist: "Dahyun",
     keyword: "CHESS",
-    category: "Music",
     grade: "Rising",
     prediction: "strong",
     status: "settled" as const,
@@ -26,7 +25,6 @@ const sampleCards = [
   {
     artist: "Jisoo",
     keyword: "우리 사랑 이대로",
-    category: "Music",
     grade: "Hot",
     prediction: "explosive",
     status: "active" as const,
@@ -39,7 +37,6 @@ const sampleCards = [
   {
     artist: "Kep1er",
     keyword: "KILLA",
-    category: "Music",
     grade: "Spark",
     prediction: "mild",
     status: "settled" as const,
@@ -66,7 +63,6 @@ const SamplePredictionCards = () => {
     explosive: { en: "Explosive Rise", ko: "폭발적 상승", ja: "爆発的上昇", zh: "爆发式上涨" },
     win: { en: "Won!", ko: "적중!", ja: "的中!", zh: "赢了!" },
     active: { en: "In Progress", ko: "진행 중", ja: "進行中", zh: "进行中" },
-    reward: { en: "Reward", ko: "보상", ja: "報酬", zh: "奖励" },
     bet: { en: "Bet", ko: "예측", ja: "予測", zh: "预测" },
   };
 
@@ -92,17 +88,16 @@ const SamplePredictionCards = () => {
             key={i}
             className="relative rounded-xl border border-border bg-card overflow-hidden"
           >
-            {/* Artist image */}
-            <div className="relative h-32 overflow-hidden">
+            {/* Artist image — tall, no dimming */}
+            <div className="relative h-44 overflow-hidden">
               <img
                 src={card.image}
                 alt={card.artist}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
 
-              {/* Status indicator on image */}
+              {/* Status badge on image */}
               {card.status === "settled" && card.result === "win" && (
                 <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-sm">
                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -118,27 +113,24 @@ const SamplePredictionCards = () => {
                   <span className="text-[9px] font-bold text-primary">{t("active")}</span>
                 </div>
               )}
-
-              {/* Artist name overlay */}
-              <div className="absolute bottom-2 left-3">
-                <p className="text-[10px] text-muted-foreground/80 font-medium">{card.artist}</p>
-                <h4 className="text-sm font-bold text-foreground leading-tight truncate">
-                  {card.keyword}
-                </h4>
-              </div>
             </div>
 
             {/* Card body */}
-            <div className="px-3 pb-3 pt-1">
-              {/* Grade & category */}
-              <div className="flex items-center gap-2">
+            <div className="px-3 pb-3 pt-2.5">
+              {/* Artist & keyword */}
+              <p className="text-[10px] text-muted-foreground font-medium">{card.artist}</p>
+              <h4 className="text-sm font-bold text-foreground mt-0.5 truncate">
+                {card.keyword}
+              </h4>
+
+              {/* Grade badge */}
+              <div className="flex items-center gap-2 mt-2">
                 <span
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${gradeColors[card.grade]}`}
                 >
                   <Flame className="w-3 h-3" />
                   {card.grade}
                 </span>
-                <span className="text-[10px] text-muted-foreground/60">{card.category}</span>
               </div>
 
               {/* Prediction */}
