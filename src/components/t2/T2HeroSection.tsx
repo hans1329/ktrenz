@@ -279,7 +279,7 @@ const T2HeroSection = ({ myKeywords, onOpenOnboarding }: T2HeroSectionProps) => 
               { label: lang === "ko" ? "진행중" : "Active", value: stats.pending, icon: Clock, isIcon: false },
               { label: "Tickets", value: `${tickets.max - tickets.used}`, icon: Ticket, isIcon: true },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-xl py-2 text-center bg-muted border border-border">
+              <div key={stat.label} className="rounded-xl py-2 text-center border border-border bg-primary-foreground">
                 <p className="text-base font-black text-foreground leading-none">{stat.value}</p>
                 {stat.isIcon ? (
                   <stat.icon className="w-3 h-3 text-muted-foreground mx-auto mt-0.5" />
