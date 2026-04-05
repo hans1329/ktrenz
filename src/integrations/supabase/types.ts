@@ -1244,6 +1244,39 @@ export type Database = {
           },
         ]
       }
+      energy_burn_log: {
+        Row: {
+          created_at: string
+          energy_gained: number
+          id: string
+          ktnz_amount: number
+          onchain_batch_id: string | null
+          onchain_burned_at: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy_gained: number
+          id?: string
+          ktnz_amount: number
+          onchain_batch_id?: string | null
+          onchain_burned_at?: string | null
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy_gained?: number
+          id?: string
+          ktnz_amount?: number
+          onchain_batch_id?: string | null
+          onchain_burned_at?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       entry_community_funds: {
         Row: {
           created_at: string
@@ -2041,6 +2074,78 @@ export type Database = {
           name?: string
           name_ko?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      ktnz_whitelisted_addresses: {
+        Row: {
+          activated_at: string
+          created_at: string
+          id: string
+          label: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      ktnz_withdrawal_requests: {
+        Row: {
+          amount: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          id: string
+          processed_at: string | null
+          scheduled_at: string
+          status: string
+          to_address: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          scheduled_at?: string
+          status?: string
+          to_address: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          scheduled_at?: string
+          status?: string
+          to_address?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -5611,8 +5716,10 @@ export type Database = {
           created_at: string
           creator_id: string
           description: string | null
+          description_translations: Json | null
           id: string
           question: string
+          question_translations: Json | null
           status: string
           updated_at: string
         }
@@ -5622,8 +5729,10 @@ export type Database = {
           created_at?: string
           creator_id: string
           description?: string | null
+          description_translations?: Json | null
           id?: string
           question: string
+          question_translations?: Json | null
           status?: string
           updated_at?: string
         }
@@ -5633,8 +5742,10 @@ export type Database = {
           created_at?: string
           creator_id?: string
           description?: string | null
+          description_translations?: Json | null
           id?: string
           question?: string
+          question_translations?: Json | null
           status?: string
           updated_at?: string
         }
@@ -5648,6 +5759,7 @@ export type Database = {
           created_at: string | null
           creator_id: string
           description: string | null
+          description_translations: Json | null
           fee_rate: number
           group_id: string | null
           id: string
@@ -5655,6 +5767,7 @@ export type Database = {
           no_shares: number
           option_label: string | null
           question: string
+          question_translations: Json | null
           seed_usdc: number
           settled_at: string | null
           settled_by: string | null
@@ -5673,6 +5786,7 @@ export type Database = {
           created_at?: string | null
           creator_id: string
           description?: string | null
+          description_translations?: Json | null
           fee_rate?: number
           group_id?: string | null
           id?: string
@@ -5680,6 +5794,7 @@ export type Database = {
           no_shares?: number
           option_label?: string | null
           question: string
+          question_translations?: Json | null
           seed_usdc?: number
           settled_at?: string | null
           settled_by?: string | null
@@ -5698,6 +5813,7 @@ export type Database = {
           created_at?: string | null
           creator_id?: string
           description?: string | null
+          description_translations?: Json | null
           fee_rate?: number
           group_id?: string | null
           id?: string
@@ -5705,6 +5821,7 @@ export type Database = {
           no_shares?: number
           option_label?: string | null
           question?: string
+          question_translations?: Json | null
           seed_usdc?: number
           settled_at?: string | null
           settled_by?: string | null
@@ -7115,10 +7232,12 @@ export type Database = {
           created_at: string | null
           fee_usdc: number
           id: string
+          ktnz_burned: number | null
           market_id: string
           no_pool_after: number | null
           no_pool_before: number | null
           outcome: string
+          payment_token: string
           price_after_yes: number | null
           price_before_yes: number | null
           shares_amount: number
@@ -7133,10 +7252,12 @@ export type Database = {
           created_at?: string | null
           fee_usdc: number
           id?: string
+          ktnz_burned?: number | null
           market_id: string
           no_pool_after?: number | null
           no_pool_before?: number | null
           outcome: string
+          payment_token?: string
           price_after_yes?: number | null
           price_before_yes?: number | null
           shares_amount: number
@@ -7151,10 +7272,12 @@ export type Database = {
           created_at?: string | null
           fee_usdc?: number
           id?: string
+          ktnz_burned?: number | null
           market_id?: string
           no_pool_after?: number | null
           no_pool_before?: number | null
           outcome?: string
+          payment_token?: string
           price_after_yes?: number | null
           price_before_yes?: number | null
           shares_amount?: number
@@ -10054,6 +10177,10 @@ export type Database = {
         Args: { _edit_type: string; _user_id: string; _wiki_entry_id: string }
         Returns: boolean
       }
+      cancel_ktnz_withdrawal: {
+        Args: { p_request_id: string; p_user_id: string }
+        Returns: Json
+      }
       cancel_market: {
         Args: { p_admin_id: string; p_market_id: string }
         Returns: Json
@@ -10114,6 +10241,10 @@ export type Database = {
         }
         Returns: string
       }
+      deduct_ktnz_points: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: Json
+      }
       deduct_points: {
         Args: {
           action_type_param: string
@@ -10141,6 +10272,15 @@ export type Database = {
         Args: {
           p_action: string
           p_amount: number
+          p_market_id: string
+          p_outcome: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      execute_swap_ktnz: {
+        Args: {
+          p_ktnz_amount: number
           p_market_id: string
           p_outcome: string
           p_user_id: string

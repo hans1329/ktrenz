@@ -12,7 +12,49 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { table, match } = await req.json();
+    const { table, match, action } = await req.json();
+
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Full pipeline reset: truncate all trend tables + reset stars
+    if (action === "reset_pipeline") {
+      const truncateTables = [
+        "trend_vs_votes",
+        "ktrenz_trend_tracking",
+        "ktrenz_keyword_sources",
+        "ktrenz_trend_triggers",
+        "ktrenz_keywords",
+        "ktrenz_data_snapshots",
+        "ktrenz_pipeline_state",
+      ];
+      const results: Record<string, string> = {};
+      for (const t of truncateTables) {
+        const { error } = await sb.rpc("exec_sql" as any, {
+          query: `TRUNCATE ${t} CASCADE`,
+        });
+        if (error) {
+          // Fallback: delete all rows
+          const { error: delErr } = await sb.from(t).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          results[t] = delErr ? `error: ${delErr.message}` : "deleted_all";
+        } else {
+          results[t] = "truncated";
+        }
+      }
+      // Reset stars detection state
+      const { error: resetErr } = await sb
+        .from("ktrenz_stars")
+        .update({ last_detected_at: null, last_detect_result: null })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      results["ktrenz_stars_reset"] = resetErr ? `error: ${resetErr.message}` : "reset";
+
+      return new Response(JSON.stringify({ success: true, results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!table || !match) {
       return new Response(JSON.stringify({ error: "table, match required" }), {
         status: 400,
@@ -20,10 +62,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // sb already created above for reset_pipeline path; reuse it here
 
     // Delete all FK-referencing rows before deleting from ktrenz_stars
     if (table === "ktrenz_stars" && match.id) {
