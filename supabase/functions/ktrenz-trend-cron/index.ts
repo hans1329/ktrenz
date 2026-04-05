@@ -434,7 +434,8 @@ async function executeBatch(
           updated_at: new Date().toISOString(),
         })
         .eq("run_id", runId)
-        .eq("phase", phase);
+        .eq("phase", phase)
+        .eq("status", RUNNING_INFLIGHT_STATUS);
 
       return { ...result, skippedTimeout: true };
     }
