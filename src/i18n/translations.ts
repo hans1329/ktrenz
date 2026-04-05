@@ -658,7 +658,7 @@ const translations: Record<string, Record<Language, string>> = {
     ja: "アーティスト基準でブランド・プロダクトの影響力を測定。広告、コラボ、商業的インパクトをリアルタイム追跡。",
     zh: "基于艺人关联度衡量品牌与产品影响力——实时追踪代言、合作及商业影响。",
   },
-  "about.step6Title": { en: "Premium Perks", ko: "프리미엄 혜택", ja: "プレミアム特典", zh: "高级福利" },
+  "about.step6Title": { en: "Premium Perks", ko: "무료로 즐기는 혜택", ja: "プレミアム特典", zh: "高级福利" },
   "about.step6Desc": {
     en: "Enjoy K-Pop for free with a Spotify Premium subscription and get exclusive merchandise — all as part of your fan rewards.",
     ko: "스포티파이 프리미엄 구독권으로 K-Pop을 무료로 즐기고, 독점 굿즈도 받아보세요. 팬 리워드의 일환으로 제공됩니다.",
