@@ -1,7 +1,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import V3Header from "@/components/v3/V3Header";
-import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store } from "lucide-react";
+import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, Activity, Globe, Users, Award, Newspaper, Instagram, Youtube, Music, MessageCircle, Coffee, Store, Ticket, Crosshair, Trophy, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -243,9 +243,34 @@ const About = () => {
             <h2 className="text-xl md:text-3xl font-bold text-foreground leading-snug mt-2 mb-3">
               {t("about.section3Title")}
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-10">
               {t("about.section3Desc")}
             </p>
+
+            {/* Free reward loop */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                { icon: Ticket, titleKey: "about.fanLoop1Title", descKey: "about.fanLoop1Desc", color: "text-emerald-400", bg: "bg-emerald-500/10", step: 1 },
+                { icon: Crosshair, titleKey: "about.fanLoop2Title", descKey: "about.fanLoop2Desc", color: "text-blue-400", bg: "bg-blue-500/10", step: 2 },
+                { icon: Trophy, titleKey: "about.fanLoop3Title", descKey: "about.fanLoop3Desc", color: "text-amber-400", bg: "bg-amber-500/10", step: 3 },
+                { icon: Headphones, titleKey: "about.fanLoop4Title", descKey: "about.fanLoop4Desc", color: "text-pink-400", bg: "bg-pink-500/10", step: 4 },
+              ].map((item) => (
+                <article key={item.step} className="rounded-xl border border-border bg-card p-5">
+                  <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center mb-3`}>
+                    <item.icon className={`w-5 h-5 ${item.color}`} />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                    Step {item.step}
+                  </span>
+                  <h3 className="text-sm font-bold text-foreground leading-snug mt-1 mb-1.5">
+                    {t(item.titleKey)}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {t(item.descKey)}
+                  </p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
