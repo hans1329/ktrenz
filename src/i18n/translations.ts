@@ -673,6 +673,7 @@ const translations: Record<string, Record<Language, string>> = {
     ko: "KTrenZ는 트렌드를 예측하는 것만으로 보상을 얻을 수 있습니다 — 결제 없이 완전 무료. 팬의 직감을 실질적 가치로 바꾸는 무료 루틴을 소개합니다.",
     ja: "KTrenZはトレンドを予測するだけで報酬が得られます — 課金は不要。ファンの直感を価値に変える無料ルーティンをご紹介します。",
     zh: "KTrenZ仅通过预测趋势即可获得奖励——完全免费。以下是将您的粉丝直觉转化为实际价值的免费循环。",
+  },
   "about.fanLoop1Title": { en: "Get Free K-Cashes Daily", ko: "매일 무료 K-Cashes 지급", ja: "毎日無料のK-Cashesを獲得", zh: "每日免费获取K-Cashes" },
   "about.fanLoop1Desc": {
     en: "Every day you receive free prediction tickets (K-Cashes) based on your tier — from 3 to 10 tickets daily. No purchase needed, just log in.",
