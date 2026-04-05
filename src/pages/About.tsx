@@ -312,7 +312,7 @@ const About = () => {
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
               {t("about.ctaDesc")}
             </p>
-            <Button size="lg" className="rounded-full px-10" onClick={() => navigate("/")}>
+            <Button size="lg" className="rounded-full px-10" onClick={() => navigate("/login")}>
               <Target className="w-4 h-4 mr-2" />
               {t("about.cta")}
             </Button>
