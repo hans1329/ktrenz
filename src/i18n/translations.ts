@@ -64,7 +64,7 @@ const translations: Record<string, Record<Language, string>> = {
   "login.noAccount": { en: "Don't have an account?", ko: "계정이 없으신가요?", ja: "アカウントをお持ちでない方", zh: "没有账号？" },
   "login.hasAccount": { en: "Already have an account?", ko: "이미 계정이 있으신가요?", ja: "すでにアカウントをお持ちの方", zh: "已有账号？" },
   "login.signUp": { en: "Sign up", ko: "회원가입", ja: "登録", zh: "注册" },
-  "login.backToRankings": { en: "← Back to Rankings", ko: "← 랭킹으로 돌아가기", ja: "← ランキングに戻る", zh: "← 返回排名" },
+  "login.backToRankings": { en: "← Explore", ko: "← 둘러보기", ja: "← 探索する", zh: "← 探索" },
 
   // ── Fan Agent ──
   "agent.signInRequired": { en: "Sign In Required", ko: "로그인 필요", ja: "ログインが必要です", zh: "需要登录" },
