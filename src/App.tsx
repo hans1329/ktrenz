@@ -75,6 +75,13 @@ import WelcomeBonusManager from "./components/WelcomeBonusManager";
 
 const queryClient = new QueryClient({});
 
+const AuthGatedHome = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/about" replace />;
+  return <T2TrendMap />;
+};
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
