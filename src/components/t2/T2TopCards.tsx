@@ -90,7 +90,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
   };
 
   return (
-    <div className="mb-6">
+    <div className="mt-4 mb-6">
       <div className="px-4 md:px-0 flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-foreground pl-1 flex items-center gap-1.5">
           <Trophy className="w-5 h-5 text-primary" />Top K·Trenz
