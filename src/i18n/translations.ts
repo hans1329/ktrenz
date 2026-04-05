@@ -702,7 +702,6 @@ const translations: Record<string, Record<Language, string>> = {
     ja: "貯めたK-PointsでSpotifyプレミアムクーポン、限定K-Popグッズなどに交換できます — すべて予測だけで無料で獲得した報酬です。",
     zh: "积累的K-Points可以兑换Spotify Premium优惠券、独家K-Pop周边商品等——全部通过预测免费获得。",
   },
-  },
 
   "about.valueTitle": { en: "Why KTrenZ?", ko: "왜 KTrenZ인가?", ja: "なぜKTrenZ?", zh: "为什么选择KTrenZ？" },
   "about.diffMultiSource": { en: "Multi-Source Intelligence", ko: "멀티소스 인텔리전스", ja: "マルチソースインテリジェンス", zh: "多源情报" },
