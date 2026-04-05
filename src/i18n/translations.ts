@@ -651,7 +651,7 @@ const translations: Record<string, Record<Language, string>> = {
     ja: "データ駆動モデルが次にピークを迎えるトレンドを予測。ファンはトレンドベットでポイントを獲得。",
     zh: "数据驱动模型预测哪些趋势将达到下一个高峰——粉丝进行趋势投注并通过正确预测获得积分。",
   },
-  "about.step5Title": { en: "Brand & Product Influence", ko: "브랜드 & 프로덕트 영향력", ja: "ブランド＆プロダクト影響力", zh: "品牌与产品影响力" },
+  "about.step5Title": { en: "K-Star Influence Measurement", ko: "K-Star 의 영향력 측정", ja: "K-Starの影響力測定", zh: "K-Star影响力衡量" },
   "about.step5Desc": {
     en: "Measure the influence of brands and products based on artist associations — track endorsements, collaborations, and commercial impact in real time.",
     ko: "아티스트 기준으로 브랜드와 프로덕트의 영향력을 측정합니다. 광고, 협업, 상업적 임팩트를 실시간으로 추적합니다.",
