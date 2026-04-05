@@ -107,7 +107,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
 
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pl-4 pr-4 md:pl-0 md:pr-0"
+        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pl-4 pr-4 md:pl-0 md:pr-0 scroll-pl-4 md:scroll-pl-0"
       >
         {top5.map((item, idx) => {
           const rank = idx + 1;
