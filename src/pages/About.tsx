@@ -137,7 +137,7 @@ const About = () => {
           <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-8">
             {t("about.section1Desc")}
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {sources.map((s, i) => (
               <div key={i} className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
                 <s.icon className={`w-5 h-5 ${s.color}`} />
