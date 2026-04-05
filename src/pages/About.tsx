@@ -277,6 +277,7 @@ const About = () => {
 
             {/* Sample prediction cards */}
             <SamplePredictionCards />
+          </div>
         </section>
 
         {/* Differentiators */}
