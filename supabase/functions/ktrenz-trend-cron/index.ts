@@ -450,6 +450,7 @@ async function executeBatch(
     const newErrorCount = prevErrorCount + 1;
 
     // ★ 실패 시 offset 롤백: optimistic lock으로 미리 증가된 offset을 원래 값으로 복원
+    // race-safe: running_inflight 상태인 경우에만 롤백 (다른 tick이 이미 변경했으면 무시)
     await sb.from("ktrenz_pipeline_state")
       .update({
         current_offset: offset, // 롤백: 실패한 배치를 다음 tick에서 재시도
@@ -459,7 +460,8 @@ async function executeBatch(
         updated_at: new Date().toISOString(),
       })
       .eq("run_id", runId)
-      .eq("phase", phase);
+      .eq("phase", phase)
+      .eq("status", RUNNING_INFLIGHT_STATUS);
 
     if (newErrorCount >= MAX_CONSECUTIVE_ERRORS) {
       console.error(`[cron] Phase ${phase} stopped: ${newErrorCount} consecutive errors. Last: ${errorMsg}`);
