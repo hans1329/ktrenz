@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { HelmetProvider } from "react-helmet-async";
 
 import V3ArtistDetail from "./pages/V3ArtistDetail";
@@ -74,6 +75,13 @@ import WelcomeBonusManager from "./components/WelcomeBonusManager";
 
 const queryClient = new QueryClient({});
 
+const AuthGatedHome = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/about" replace />;
+  return <T2TrendMap />;
+};
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -85,7 +93,7 @@ const App = () => (
             <WelcomeBonusManager />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<T2TrendMap />} />
+                <Route path="/" element={<AuthGatedHome />} />
                 <Route path="/artist/:slug" element={<V3ArtistDetail />} />
                 <Route path="/rankings" element={<V3Rankings />} />
                 <Route path="/fes-engine" element={<FesEngine />} />
