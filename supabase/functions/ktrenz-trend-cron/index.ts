@@ -129,26 +129,41 @@ Deno.serve(async (req) => {
         .limit(1);
 
       if (!activeRuns?.length) {
-        // ── Stale lock recovery: 30분 이상 running/postprocess_running 상태면 error로 전환 ──
+        // ── Stale lock recovery: running_inflight는 10분, 나머지는 30분 ──
         const staleThreshold = new Date(Date.now() - STALE_LOCK_MINUTES * 60 * 1000).toISOString();
-        const { data: staleRuns } = await sb
+        const staleInflightThreshold = new Date(Date.now() - STALE_INFLIGHT_MINUTES * 60 * 1000).toISOString();
+
+        // 1) running_inflight: 10분 기준으로 빠르게 복구
+        const { data: staleInflight } = await sb
           .from("ktrenz_pipeline_state")
           .select("*")
-          .in("status", [RUNNING_STATUS, RUNNING_INFLIGHT_STATUS, "postprocess_running"])
+          .eq("status", RUNNING_INFLIGHT_STATUS)
+          .lt("updated_at", staleInflightThreshold)
+          .limit(5);
+
+        // 2) running, postprocess_running: 30분 기준
+        const { data: staleLong } = await sb
+          .from("ktrenz_pipeline_state")
+          .select("*")
+          .in("status", [RUNNING_STATUS, "postprocess_running"])
           .lt("updated_at", staleThreshold)
           .limit(5);
 
+        const staleRuns = [...(staleInflight || []), ...(staleLong || [])];
+
         if (staleRuns?.length) {
           for (const stale of staleRuns) {
-            console.warn(`[cron] Stale lock detected: run=${stale.run_id}, phase=${stale.phase}, updated_at=${stale.updated_at}`);
+            const mins = stale.status === RUNNING_INFLIGHT_STATUS ? STALE_INFLIGHT_MINUTES : STALE_LOCK_MINUTES;
+            console.warn(`[cron] Stale lock detected: run=${stale.run_id}, phase=${stale.phase}, status=${stale.status}, updated_at=${stale.updated_at}`);
             await sb.from("ktrenz_pipeline_state")
               .update({
                 status: "error",
-                last_error: `Stale lock: no progress for ${STALE_LOCK_MINUTES}+ minutes`,
+                last_error: `Stale lock: no progress for ${mins}+ minutes (was ${stale.status})`,
                 last_error_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               })
-              .eq("id", stale.id);
+              .eq("id", stale.id)
+              .eq("status", stale.status); // race-safe: 다른 tick이 이미 변경했으면 무시
           }
           return respond({ success: true, action: "tick", staleRecovered: staleRuns.length, message: `Recovered ${staleRuns.length} stale locks` });
         }
