@@ -5,6 +5,7 @@ import { TrendingUp, Search, Brain, Gift, ShoppingBag, BarChart3, Zap, Target, A
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import SamplePredictionCards from "@/components/about/SamplePredictionCards";
+import HeroSignalCanvas from "@/components/about/HeroSignalCanvas";
 
 const About = () => {
   const { t } = useLanguage();
