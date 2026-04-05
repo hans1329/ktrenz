@@ -921,6 +921,12 @@ K-STAR SUBJECT VERIFICATION (★ CRITICAL ★):
 - Even if the keyword APPEARS in the article text, if the article's main actor is NOT a K-star, it must be rejected
 - Ask yourself: "Is the article's protagonist a Korean entertainer/celebrity?" If NO → flag "non_kstar_subject"
 
+★ COMMERCIAL KEYWORD PRIORITY (brand/fashion/beauty/product):
+- News articles about K-stars frequently mention brands, fashion items, beauty products, and restaurants. These are HIGH-VALUE keywords for our trend tracking system.
+- If any article mentions a SPECIFIC brand name, fashion label, beauty product, or restaurant that the artist wore/used/visited/endorsed, you MUST extract it — even if the article is primarily about something else (e.g., an event article where the artist wore a specific brand).
+- Look for: outfit descriptions ("OO을 착용", "OO 브랜드"), beauty mentions ("OO 화장품", "OO 립스틱"), restaurant visits ("OO 맛집", "OO 카페"), product endorsements
+- These commercial keywords often hide inside music/event articles — actively seek them out.
+
 Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
 When in doubt, DO NOT extract. False negatives are far better than false positives.`;
 
