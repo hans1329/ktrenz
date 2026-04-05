@@ -158,53 +158,49 @@ const About = () => {
               {t("about.section2Desc")}
             </p>
 
-            {/* Grade progression visual */}
-            <div className="relative">
-              {/* Connection line */}
-              <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500/30 via-amber-500/30 to-red-500/30 -translate-y-1/2 z-0" />
+            {/* Grade progression — clean horizontal bar */}
+            <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Grade Progression</span>
+              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {/* Grade steps */}
+              <div className="space-y-2.5">
                 {[
-                  { grade: "Spark", emoji: "✨", color: "from-blue-500/20 to-blue-600/10", border: "border-blue-500/30", text: "text-blue-400", desc: "about.gradeSpark" },
-                  { grade: "Rising", emoji: "📈", color: "from-emerald-500/20 to-emerald-600/10", border: "border-emerald-500/30", text: "text-emerald-400", desc: "about.gradeRising" },
-                  { grade: "Hot", emoji: "🔥", color: "from-orange-500/20 to-orange-600/10", border: "border-orange-500/30", text: "text-orange-400", desc: "about.gradeHot" },
-                  { grade: "Viral", emoji: "🚀", color: "from-pink-500/20 to-pink-600/10", border: "border-pink-500/30", text: "text-pink-400", desc: "about.gradeViral" },
-                  { grade: "Mega", emoji: "⚡", color: "from-violet-500/20 to-violet-600/10", border: "border-violet-500/30", text: "text-violet-400", desc: "about.gradeMega" },
-                  { grade: "Explosive", emoji: "💥", color: "from-red-500/20 to-red-600/10", border: "border-red-500/30", text: "text-red-400", desc: "about.gradeExplosive" },
-                ].map((g, i) => (
-                  <div
-                    key={g.grade}
-                    className={`relative z-10 flex flex-col items-center gap-2 p-4 rounded-xl border ${g.border} bg-gradient-to-b ${g.color} backdrop-blur-sm transition-transform hover:scale-105`}
-                  >
-                    <span className="text-2xl">{g.emoji}</span>
-                    <span className={`text-sm font-bold ${g.text}`}>{g.grade}</span>
-                    <span className="text-[10px] text-muted-foreground text-center leading-tight">{t(g.desc)}</span>
-                    {/* Score bar indicator */}
-                    <div className="w-full h-1 rounded-full bg-background/50 mt-1">
+                  { grade: "Spark", desc: "about.gradeSpark", pct: 12 },
+                  { grade: "Rising", desc: "about.gradeRising", pct: 28 },
+                  { grade: "Hot", desc: "about.gradeHot", pct: 48 },
+                  { grade: "Viral", desc: "about.gradeViral", pct: 68 },
+                  { grade: "Mega", desc: "about.gradeMega", pct: 85 },
+                  { grade: "Explosive", desc: "about.gradeExplosive", pct: 100 },
+                ].map((g) => (
+                  <div key={g.grade} className="flex items-center gap-3">
+                    <span className="w-20 shrink-0 text-xs font-semibold text-foreground">{g.grade}</span>
+                    <div className="flex-1 h-2 rounded-full bg-muted">
                       <div
-                        className={`h-full rounded-full bg-gradient-to-r ${g.color.replace('/20', '/60').replace('/10', '/40')}`}
-                        style={{ width: `${((i + 1) / 6) * 100}%` }}
+                        className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary"
+                        style={{ width: `${g.pct}%` }}
                       />
                     </div>
+                    <span className="w-32 shrink-0 text-[10px] text-muted-foreground hidden sm:block">{t(g.desc)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Score types legend */}
-            <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
-                <Activity className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[11px] text-muted-foreground font-medium">{t("about.scoreTrend")}</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[11px] text-muted-foreground font-medium">{t("about.scoreInfluence")}</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[11px] text-muted-foreground font-medium">{t("about.scoreMomentum")}</span>
-              </div>
+            {/* Score types */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { icon: Activity, label: "about.scoreTrend", color: "text-primary" },
+                { icon: TrendingUp, label: "about.scoreInfluence", color: "text-emerald-400" },
+                { icon: Zap, label: "about.scoreMomentum", color: "text-amber-400" },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-card">
+                  <s.icon className={`w-4 h-4 ${s.color} shrink-0`} />
+                  <span className="text-[11px] text-muted-foreground font-medium">{t(s.label)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
