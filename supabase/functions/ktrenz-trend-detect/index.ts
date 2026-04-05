@@ -2033,6 +2033,20 @@ async function detectForMember(
   const blogItems = blogResult.items;
   const shopItems = shopResult.items;
 
+  // 패션/뷰티 전문매체(보그/엘르) 웹문서를 뉴스 형식으로 변환하여 병합
+  const fashionMediaItems = (fashionMediaResult.items || []).filter((item: any) => {
+    const link = item.link || "";
+    return !newsItems.some((n: any) => (n.originallink || n.link) === link);
+  }).map((item: any) => ({
+    ...item,
+    originallink: item.link,
+    pubDate: item.pubDate || item.moddate || new Date().toISOString(),
+  }));
+  if (fashionMediaItems.length > 0) {
+    newsItems.push(...fashionMediaItems);
+    console.log(`[trend-detect] ${member.display_name}: +${fashionMediaItems.length} fashion media (vogue/elle) added`);
+  }
+
   // 패션/뷰티 뉴스를 일반 뉴스에 병합 (중복 제거는 deduplicateArticles에서 처리)
   const fashionNewsItems = fashionNewsResult.items.filter((item: any) => {
     const link = item.originallink || item.link || "";
