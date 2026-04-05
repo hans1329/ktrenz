@@ -21,12 +21,6 @@ const About = () => {
     knowsAbout: ["K-Pop", "Trend Analysis", "Fan Intelligence", "Music Industry Analytics"],
   };
 
-  const stats = [
-    { value: "600+", labelKey: "about.statArtists" },
-    { value: "5+", labelKey: "about.statSources" },
-    { value: "6", labelKey: "about.statGrades" },
-    { value: "24h", labelKey: "about.statCycle" },
-  ];
 
   const sources = [
     { icon: Newspaper, name: "Naver News & Blogs", color: "text-emerald-400" },
