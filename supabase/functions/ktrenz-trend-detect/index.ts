@@ -2015,19 +2015,31 @@ async function detectForMember(
     ? `"${searchName}" "${groupLabel}"`
     : `"${searchName}"`;
 
-  // ─── 3소스 병렬 검색: News + Blog + YouTube (키 로테이션 포함) ───
+  // ─── 4소스 병렬 검색: News + Blog + YouTube + Shopping ───
   const ytSearchQuery = groupLabel ? `${searchName} ${groupLabel}` : (member.name_ko || member.display_name); // YouTube는 그룹 컨텍스트를 포함해 동명이인 오수집 방지
-  const [newsResult, blogResult, ytResult] = await Promise.all([
+  // 패션/뷰티 전문 매체 보강 검색어 (아티스트명 + 패션/뷰티 키워드)
+  const fashionBeautyQuery = `"${searchName}" 화보 OR 앰배서더 OR 브랜드 OR 패션 OR 뷰티`;
+  const [newsResult, blogResult, ytResult, shopResult, fashionNewsResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 30),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 20),
     ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
+    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20),
+    searchNaver(naverClientId, naverClientSecret, "news", fashionBeautyQuery, 10),
   ]);
 
   const newsItems = newsResult.items;
   const blogItems = blogResult.items;
-  // 쇼핑 검색: 아티스트 관련 상품에서 브랜드/제품 키워드 보조 발굴
-  const shopResult = await searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20);
   const shopItems = shopResult.items;
+
+  // 패션/뷰티 뉴스를 일반 뉴스에 병합 (중복 제거는 deduplicateArticles에서 처리)
+  const fashionNewsItems = fashionNewsResult.items.filter((item: any) => {
+    const link = item.originallink || item.link || "";
+    return !newsItems.some((n: any) => (n.originallink || n.link) === link);
+  });
+  if (fashionNewsItems.length > 0) {
+    newsItems.push(...fashionNewsItems);
+    console.log(`[trend-detect] ${member.display_name}: +${fashionNewsItems.length} fashion/beauty news added`);
+  }
 
   // 72시간 이내 + 일본어 기사 필터링 (News + Blog)
    const cutoff72h = Date.now() - 72 * 60 * 60 * 1000;
