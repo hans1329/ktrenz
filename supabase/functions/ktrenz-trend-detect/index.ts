@@ -2017,13 +2017,15 @@ async function detectForMember(
 
   // ─── 4소스 병렬 검색: News + Blog + YouTube + Shopping ───
   const ytSearchQuery = groupLabel ? `${searchName} ${groupLabel}` : (member.name_ko || member.display_name); // YouTube는 그룹 컨텍스트를 포함해 동명이인 오수집 방지
-  // 패션/뷰티 전문 매체 보강 검색어 (아티스트명 + 패션/뷰티 키워드)
+  // 패션/뷰티 전문 매체 보강: 네이버 웹문서(webkr) 검색으로 보그/엘르 기사 직접 타겟
+  const fashionMediaQuery = `"${searchName}" site:vogue.co.kr OR site:elle.co.kr`;
   const fashionBeautyQuery = `"${searchName}" 화보 OR 앰배서더 OR 브랜드 OR 패션 OR 뷰티`;
-  const [newsResult, blogResult, ytResult, shopResult, fashionNewsResult] = await Promise.all([
+  const [newsResult, blogResult, ytResult, shopResult, fashionMediaResult, fashionNewsResult] = await Promise.all([
     searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 30),
     searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 20),
     ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
     searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20),
+    searchNaver(naverClientId, naverClientSecret, "webkr", fashionMediaQuery, 10),
     searchNaver(naverClientId, naverClientSecret, "news", fashionBeautyQuery, 10),
   ]);
 
