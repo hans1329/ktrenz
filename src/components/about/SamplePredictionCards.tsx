@@ -75,12 +75,6 @@ const SamplePredictionCards = () => {
 
   return (
     <div className="mt-8">
-      <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="w-4 h-4 text-primary" />
-        <span className="text-xs font-bold text-primary uppercase tracking-widest">
-          {t("title")}
-        </span>
-      </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {sampleCards.map((card, i) => (
