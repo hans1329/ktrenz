@@ -181,13 +181,43 @@ Deno.serve(async (req) => {
           console.log(`[cron] Found postprocess request for run=${ppState.run_id}, phase=${ppState.phase}`);
 
           // postprocess_running으로 업데이트 (lock)
-          await sb.from("ktrenz_pipeline_state")
+          const { data: ppLock } = await sb.from("ktrenz_pipeline_state")
             .update({ status: "postprocess_running", updated_at: new Date().toISOString() })
             .eq("id", ppState.id)
-            .eq("status", "postprocess_requested"); // optimistic lock
+            .eq("status", "postprocess_requested") // optimistic lock
+            .select("id");
+
+          if (!ppLock?.length) {
+            return respond({ success: true, action: "tick", skipped: true, message: "Postprocess already claimed" });
+          }
 
           // postprocess 실행
           const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
+
+          // postprocess 실패 시 postprocess_requested로 복원하여 재시도 허용
+          if (ppResult.error || ppResult.success === false) {
+            console.warn(`[cron] Postprocess failed, reverting to postprocess_requested: ${ppResult.error || "unknown"}`);
+            await sb.from("ktrenz_pipeline_state")
+              .update({
+                status: "postprocess_requested",
+                last_error: `postprocess failed: ${(ppResult.error || "unknown").slice(0, 300)}`,
+                last_error_at: new Date().toISOString(),
+                error_count: (ppState.error_count || 0) + 1,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", ppState.id)
+              .eq("status", "postprocess_running");
+
+            // 연속 실패 3회 시 error 상태로 전환
+            if ((ppState.error_count || 0) + 1 >= MAX_CONSECUTIVE_ERRORS) {
+              await sb.from("ktrenz_pipeline_state")
+                .update({ status: "error", updated_at: new Date().toISOString() })
+                .eq("id", ppState.id);
+              console.error(`[cron] Postprocess stopped: ${MAX_CONSECUTIVE_ERRORS} consecutive failures`);
+            }
+
+            return respond({ success: false, action: "postprocess", runId: ppState.run_id, error: ppResult.error });
+          }
 
           // postprocess 완료 → grade 인라인 실행 (별도 phase 제거)
           const gradeResult = await executeGradeInline(supabaseUrl, supabaseKey);
