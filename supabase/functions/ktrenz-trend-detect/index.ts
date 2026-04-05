@@ -1039,9 +1039,11 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               }
             }
 
-            // ── 3단계: ownership_confidence 기반 차단 ──
-            if (k.ownership_confidence < 0.5) {
-              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, reason: ${k.ownership_reason})`);
+            // ── 3단계: ownership_confidence 기반 차단 (카테고리별 분화) ──
+            const commercialCategories = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
+            const ownershipThreshold = commercialCategories.has(k.category) ? 0.3 : 0.5;
+            if (k.ownership_confidence < ownershipThreshold) {
+              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, threshold=${ownershipThreshold}, cat=${k.category}, reason: ${k.ownership_reason})`);
               continue;
             }
 
