@@ -130,17 +130,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* Stats bar */}
-        <section className="border-y border-border bg-zinc-900/50">
-          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-zinc-800">
-            {stats.map((stat, i) => (
-              <div key={i} className="py-5 text-center">
-                <div className="text-2xl md:text-3xl font-extrabold text-primary">{stat.value}</div>
-                <div className="text-[10px] text-zinc-500 mt-1">{t(stat.labelKey)}</div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Data Sources */}
         <section className="max-w-5xl mx-auto px-4 py-14 md:py-20">
