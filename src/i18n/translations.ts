@@ -654,7 +654,7 @@ const translations: Record<string, Record<Language, string>> = {
   "about.step5Title": { en: "K-Star Influence Measurement", ko: "K-Star 의 영향력 측정", ja: "K-Starの影響力測定", zh: "K-Star影响力衡量" },
   "about.step5Desc": {
     en: "Measure the influence of brands and products based on artist associations — track endorsements, collaborations, and commercial impact in real time.",
-    ko: "아티스트 기준으로 브랜드와 프로덕트의 영향력을 측정합니다. 광고, 협업, 상업적 임팩트를 실시간으로 추적합니다.",
+    ko: "아티스트가 브랜드와 프로덕트에 끼친 영향력을 측정합니다. 광고, 협업, 상업적 임팩트를 실시간으로 추적합니다.",
     ja: "アーティスト基準でブランド・プロダクトの影響力を測定。広告、コラボ、商業的インパクトをリアルタイム追跡。",
     zh: "基于艺人关联度衡量品牌与产品影响力——实时追踪代言、合作及商业影响。",
   },
