@@ -82,6 +82,8 @@ const About = () => {
     { icon: Brain, titleKey: "about.diffSmartScoring", descKey: "about.diffSmartScoringDesc" },
     { icon: Users, titleKey: "about.diffFanFirst", descKey: "about.diffFanFirstDesc" },
     { icon: Award, titleKey: "about.diffRewards", descKey: "about.diffRewardsDesc" },
+    { icon: Megaphone, titleKey: "about.diffBrandAgency", descKey: "about.diffBrandAgencyDesc" },
+    { icon: Building2, titleKey: "about.diffEntertainment", descKey: "about.diffEntertainmentDesc" },
   ];
 
   return (
