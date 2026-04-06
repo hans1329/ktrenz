@@ -1038,12 +1038,9 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               }
             }
 
-            // ── 3단계: ownership_confidence 기반 차단 (카테고리별 분화) ──
-            const commercialCategories = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-            const ownershipThreshold = commercialCategories.has(k.category) ? 0.2 : 0.3;
-            if (k.ownership_confidence < ownershipThreshold) {
-              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, threshold=${ownershipThreshold}, cat=${k.category}, reason: ${k.ownership_reason})`);
-              continue;
+            // ── 3단계: ownership_confidence → 필터링 없이 로깅만 (후처리/grade에서 활용) ──
+            if (k.ownership_confidence < 0.3) {
+              console.log(`[trend-detect] ⚠️ Low ownership (passed through): "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, cat=${k.category}, reason: ${k.ownership_reason})`);
             }
 
             // ── 4단계: ownership_artist 불일치 차단 ──
