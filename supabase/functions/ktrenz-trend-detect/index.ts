@@ -927,8 +927,7 @@ K-STAR SUBJECT VERIFICATION (★ CRITICAL ★):
 - Look for: outfit descriptions ("OO을 착용", "OO 브랜드"), beauty mentions ("OO 화장품", "OO 립스틱"), restaurant visits ("OO 맛집", "OO 카페"), product endorsements
 - These commercial keywords often hide inside music/event articles — actively seek them out.
 
-Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
-When in doubt, DO NOT extract. False negatives are far better than false positives.`;
+Maximum 15 keywords. Extract ALL valid trend keywords you can find — our post-processing pipeline handles deduplication and noise filtering. Return ZERO keywords only if genuinely nothing relevant found.`;
 
   const userPrompt = `Below are Korean news article titles and descriptions found by searching for "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
@@ -1041,7 +1040,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
 
             // ── 3단계: ownership_confidence 기반 차단 (카테고리별 분화) ──
             const commercialCategories = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-            const ownershipThreshold = commercialCategories.has(k.category) ? 0.3 : 0.5;
+            const ownershipThreshold = commercialCategories.has(k.category) ? 0.2 : 0.3;
             if (k.ownership_confidence < ownershipThreshold) {
               console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, threshold=${ownershipThreshold}, cat=${k.category}, reason: ${k.ownership_reason})`);
               continue;
@@ -1246,7 +1245,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
       }
 
       const commercialCats = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-      const ownerThreshold = commercialCats.has(k.category) ? 0.3 : 0.5;
+      const ownerThreshold = commercialCats.has(k.category) ? 0.2 : 0.3;
       if (k.ownership_confidence !== undefined && k.ownership_confidence < ownerThreshold) {
         console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, threshold=${ownerThreshold}, cat=${k.category})`);
         return false;
