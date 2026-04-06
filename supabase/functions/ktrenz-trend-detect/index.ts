@@ -147,6 +147,7 @@ function deduplicateArticles<T extends { title: string; isMajor?: boolean }>(art
 async function classifyImagesWithVision(
   imageUrls: string[],
   openaiKey: string,
+  signal?: AbortSignal,
 ): Promise<Set<string>> {
   const textOverlaySet = new Set<string>();
   if (imageUrls.length === 0) return textOverlaySet;
@@ -172,16 +173,13 @@ No explanation needed.`,
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
-
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
+      signal,
       headers: {
         Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
       },
-      signal: controller.signal,
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
@@ -193,8 +191,7 @@ No explanation needed.`,
         max_tokens: 300,
         temperature: 0,
       }),
-    });
-    clearTimeout(timeout);
+    }, 20000);
 
     if (!res.ok) {
       console.warn(`[trend-detect] Vision API error ${res.status}, skipping image classification`);
@@ -315,6 +312,7 @@ async function searchNaver(
   endpoint: "news" | "blog" | "shop" | "webkr",
   query: string,
   display: number = 50,
+  signal?: AbortSignal,
 ): Promise<NaverSearchResult> {
   try {
     const url = new URL(`https://openapi.naver.com/v1/search/${endpoint}.json`);
@@ -323,6 +321,7 @@ async function searchNaver(
     url.searchParams.set("sort", endpoint === "shop" ? "date" : "date");
 
     const response = await fetchWithTimeout(url.toString(), {
+      signal,
       headers: {
         "X-Naver-Client-Id": clientId,
         "X-Naver-Client-Secret": clientSecret,
@@ -353,6 +352,7 @@ async function searchYouTubeForDetect(
   query: string,
   maxResults: number = 15,
   onQuotaExhausted?: (key: string) => void,
+  signal?: AbortSignal,
 ): Promise<YouTubeDetectResult> {
   try {
     const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -367,14 +367,7 @@ async function searchYouTubeForDetect(
     searchUrl.searchParams.set("key", apiKey);
 
     // 10초 타임아웃으로 YouTube API 지연이 전체 배치를 블로킹하지 않도록 함
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    let response: Response;
-    try {
-      response = await fetch(searchUrl.toString(), { signal: controller.signal });
-    } finally {
-      clearTimeout(timeout);
-    }
+    const response = await fetchWithTimeout(searchUrl.toString(), { signal }, 10000);
     if (!response.ok) {
       const errText = await response.text();
       if (response.status === 403) {
@@ -411,11 +404,12 @@ async function searchYouTubeWithRotation(
   markExhausted: (key: string) => void,
   query: string,
   maxResults: number = 15,
+  signal?: AbortSignal,
 ): Promise<YouTubeDetectResult> {
   for (let attempt = 0; attempt < 7; attempt++) {
     const key = getKey();
     if (!key) return { items: [], totalResults: 0 }; // 모든 키 소진
-    const result = await searchYouTubeForDetect(key, query, maxResults, markExhausted);
+    const result = await searchYouTubeForDetect(key, query, maxResults, markExhausted, signal);
     if (result.totalResults === -1) continue; // 403 → 다음 키로 재시도
     return result;
   }
@@ -462,7 +456,7 @@ interface ArticleImage {
   index: number;   // position in article
 }
 
-async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
+async function fetchArticleImages(articleUrl: string, signal?: AbortSignal): Promise<ArticleImage[]> {
   function resolveUrl(src: string, baseUrl: string): string | null {
     if (!src || src.length < 3) return null;
     if (src.startsWith("//")) return `https:${src}`;
@@ -477,20 +471,18 @@ async function fetchArticleImages(articleUrl: string): Promise<ArticleImage[]> {
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(articleUrl, {
-      signal: controller.signal,
+    const res = await fetchWithTimeout(articleUrl, {
+      signal,
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" },
       redirect: "follow",
-    });
-    clearTimeout(timeout);
+    }, 5000);
     if (!res.ok) return [];
     const reader = res.body?.getReader();
     if (!reader) return [];
     let html = "";
     const decoder = new TextDecoder();
     while (html.length < 200_000) {
+      if (signal?.aborted) return [];
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
@@ -802,6 +794,7 @@ async function extractCommercialKeywords(
   nameKo: string | null = null,
   groupNameKo: string | null = null,
   globalStarNames?: Map<string, string>,
+  signal?: AbortSignal,
 ): Promise<ExtractedKeyword[]> {
   if (!articles.length) return [];
 
@@ -968,6 +961,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
   try {
     const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
+      signal,
       headers: {
         Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
@@ -1411,6 +1405,7 @@ async function extractSocialKeywordsFromTikTok(
   memberName: string,
   groupName: string | null,
   allMemberNames?: string[], // 그룹의 모든 멤버명 (필터 강화용)
+  signal?: AbortSignal,
 ): Promise<ExtractedKeyword[]> {
   if (!starId) return [];
 
@@ -1535,6 +1530,7 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
   try {
     const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
+      signal,
       headers: {
         Authorization: `Bearer ${openaiKey}`,
         "Content-Type": "application/json",
@@ -1788,7 +1784,7 @@ Deno.serve(async (req) => {
 
       if (singleMemberName) {
         const ytSearchFn = YT_KEYS.length > 0
-          ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
+          ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max, starAbort.signal)
           : undefined;
         const result = await detectForMember(
           sb, openaiKey, naverClientId, naverClientSecret,
@@ -1994,11 +1990,54 @@ Deno.serve(async (req) => {
             processedCount++;
           } catch (_) { /* ignore */ }
         } else {
-          // 타임아웃 시 이 아티스트를 다시 시도하도록 processedCount 증가하지 않고 루프 중단
-          stoppedEarly = true;
-          stopReason = "star_timeout";
-          console.warn(`[trend-detect] ⏱ ${star.display_name} timed out — will retry in next batch`);
-          break;
+          console.warn(`[trend-detect] ⏱ ${star.display_name} timed out — trying lightweight fallback`);
+          try {
+            const remainingBudget = Math.max(8000, TIMEGUARD_MS - (Date.now() - batchStartTime) - 3000);
+            const fallbackTimeout = Math.min(15000, remainingBudget);
+            const fallbackAbort = new AbortController();
+            const fallbackTimer = setTimeout(() => fallbackAbort.abort(), fallbackTimeout);
+            const fallbackYtSearchFn = YT_KEYS.length > 0
+              ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max, fallbackAbort.signal)
+              : undefined;
+            const fallbackResult = await detectForMember(
+              sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, fallbackYtSearchFn, siblingNames, fallbackAbort.signal, true
+            );
+            clearTimeout(fallbackTimer);
+            successCount++;
+            processedCount++;
+            totalKeywords += fallbackResult.keywordsFound;
+            totalNews += fallbackResult.sourceStats.news;
+            totalBlogs += fallbackResult.sourceStats.blog;
+            totalShop += fallbackResult.sourceStats.shop;
+            totalYouTube += fallbackResult.sourceStats.youtube || 0;
+            totalInserted += fallbackResult.insertStats.inserted;
+            totalBackfilled += fallbackResult.insertStats.backfilled;
+            totalFiltered += fallbackResult.insertStats.filtered;
+            await sb.from("ktrenz_stars").update({
+              last_detected_at: new Date().toISOString(),
+              last_detect_result: {
+                news: fallbackResult.sourceStats.news,
+                blog: fallbackResult.sourceStats.blog,
+                shop: fallbackResult.sourceStats.shop,
+                youtube: fallbackResult.sourceStats.youtube || 0,
+                keywords: fallbackResult.keywordsFound,
+                inserted: fallbackResult.insertStats.inserted,
+                status: "lightweight_fallback",
+              },
+              media_exposure: fallbackResult.totalArticleCount ?? 0,
+            }).eq("id", star.id);
+            console.log(`[trend-detect] ↩ ${star.display_name}: lightweight fallback completed (${fallbackResult.keywordsFound} keywords)`);
+            continue;
+          } catch (fallbackErr) {
+            clearTimeout(fallbackTimer);
+            await sb.from("ktrenz_stars").update({
+              last_detected_at: new Date().toISOString(),
+              last_detect_result: { status: "timeout_skipped", error: (fallbackErr as Error).message || errMsg },
+            }).eq("id", star.id);
+            processedCount++;
+            console.warn(`[trend-detect] ⏭ ${star.display_name}: fallback failed, marking skipped and continuing`);
+            continue;
+          }
         }
       }
     }
@@ -2049,6 +2088,7 @@ async function detectForMember(
   ytSearch?: (query: string, max: number) => Promise<YouTubeDetectResult>,
   siblingNames?: string[],
   parentSignal?: AbortSignal,
+  forceLightMode: boolean = false,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
@@ -2071,13 +2111,20 @@ async function detectForMember(
   const fashionMediaQuery = `"${searchName}" site:vogue.co.kr OR site:elle.co.kr`;
   const fashionBeautyQuery = `"${searchName}" 화보 OR 앰배서더 OR 브랜드 OR 패션 OR 뷰티`;
   const [newsResult, blogResult, ytResult, shopResult, fashionMediaResult, fashionNewsResult] = await Promise.all([
-    searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 30),
-    searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 20),
+    searchNaver(naverClientId, naverClientSecret, "news", searchQuery, 30, parentSignal),
+    searchNaver(naverClientId, naverClientSecret, "blog", searchQuery, 20, parentSignal),
     ytSearch ? ytSearch(ytSearchQuery, 15) : Promise.resolve({ items: [], totalResults: 0 } as YouTubeDetectResult),
-    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20),
-    searchNaver(naverClientId, naverClientSecret, "webkr", fashionMediaQuery, 10),
-    searchNaver(naverClientId, naverClientSecret, "news", fashionBeautyQuery, 10),
+    searchNaver(naverClientId, naverClientSecret, "shop", searchName, 20, parentSignal),
+    searchNaver(naverClientId, naverClientSecret, "webkr", fashionMediaQuery, 10, parentSignal),
+    searchNaver(naverClientId, naverClientSecret, "news", fashionBeautyQuery, 10, parentSignal),
   ]);
+
+  const totalArticleCount = newsResult.total + blogResult.total; // 네이버 API 반환 전체 검색 결과 수
+  const totalYoutubeCount = ytResult.totalResults;
+  const lightMode = forceLightMode || totalArticleCount >= 100000;
+  if (lightMode) {
+    console.log(`[trend-detect] ${member.display_name}: lightweight mode enabled (force=${forceLightMode}, exposure=${totalArticleCount})`);
+  }
 
   const newsItems = newsResult.items;
   const blogItems = blogResult.items;
@@ -2197,8 +2244,6 @@ async function detectForMember(
 
   // News + Blog + YouTube → AI 분석용 기사 목록으로 통합
   // ── 메이저 매체 위주로 AI 분석 대상 구성 + 전체 기사 수는 점수용으로 별도 보존 ──
-  const totalArticleCount = newsResult.total + blogResult.total; // 네이버 API 반환 전체 검색 결과 수
-  const totalYoutubeCount = ytResult.totalResults;
 
   // 뉴스: 메이저 매체 우선, 나머지는 메이저가 부족할 때만 보충
   const majorNews = sibFilteredNews.filter((item: any) => isMajorOutlet(item.originallink || item.link));
@@ -2229,27 +2274,26 @@ async function detectForMember(
 
   // ── 제목 유사도 기반 중복 제거: 메이저 매체 우선 유지 ──
   const articles = deduplicateArticles(rawArticles);
+  const aiArticles = lightMode ? articles.slice(0, 6) : articles;
 
   // ── 기사 본문 일부 fetch (상위 5개, 주체 판별 정확도 향상) ──
-  const BODY_FETCH_COUNT = 5;
-  const bodyFetchTargets = articles.slice(0, BODY_FETCH_COUNT).filter(a => a.url && !a.title.startsWith("[YouTube]"));
-  if (bodyFetchTargets.length > 0) {
+  const BODY_FETCH_COUNT = lightMode ? 2 : 5;
+  const bodyFetchTargets = aiArticles.slice(0, BODY_FETCH_COUNT).filter(a => a.url && !a.title.startsWith("[YouTube]"));
+  if (!lightMode && bodyFetchTargets.length > 0) {
     await Promise.allSettled(bodyFetchTargets.map(async (article) => {
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(article.url, {
-          signal: controller.signal,
+        const res = await fetchWithTimeout(article.url, {
+          signal: parentSignal,
           headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
           redirect: "follow",
-        });
-        clearTimeout(timeout);
+        }, 4000);
         if (!res.ok) return;
         const reader = res.body?.getReader();
         if (!reader) return;
         let html = "";
         const decoder = new TextDecoder();
         while (html.length < 100_000) {
+          if (parentSignal?.aborted) return;
           const { done, value } = await reader.read();
           if (done) break;
           html += decoder.decode(value, { stream: true });
@@ -2281,27 +2325,29 @@ async function detectForMember(
 
   // ─── TikTok 소셜 키워드 추출 (AI 분류) ───
   let socialKeywords: ExtractedKeyword[] = [];
-  try {
-    // 그룹인 경우 멤버명 목록을 가져와서 필터 강화
-    let memberNames: string[] | undefined;
-    if (member.id && !member.group_name) {
-      // group 또는 solo → 멤버 목록 조회
-      const { data: members } = await sb
-        .from("ktrenz_stars")
-        .select("display_name, name_ko")
-        .eq("group_star_id", member.id)
-        .eq("is_active", true);
-      if (members?.length) {
-        memberNames = members.flatMap((m: any) => [m.display_name, m.name_ko].filter(Boolean));
+  if (!lightMode) {
+    try {
+      // 그룹인 경우 멤버명 목록을 가져와서 필터 강화
+      let memberNames: string[] | undefined;
+      if (member.id && !member.group_name) {
+        // group 또는 solo → 멤버 목록 조회
+        const { data: members } = await sb
+          .from("ktrenz_stars")
+          .select("display_name, name_ko")
+          .eq("group_star_id", member.id)
+          .eq("is_active", true);
+        if (members?.length) {
+          memberNames = members.flatMap((m: any) => [m.display_name, m.name_ko].filter(Boolean));
+        }
       }
+      socialKeywords = await extractSocialKeywordsFromTikTok(
+        openaiKey, sb, member.id, member.display_name, member.group_name, memberNames, parentSignal
+      );
+      srcStats.socialExtracted = socialKeywords.length;
+      srcStats.tiktok = socialKeywords.length > 0 ? 1 : 0;
+    } catch (e) {
+      console.warn(`[trend-detect] TikTok social error for ${member.display_name}: ${(e as Error).message}`);
     }
-    socialKeywords = await extractSocialKeywordsFromTikTok(
-      openaiKey, sb, member.id, member.display_name, member.group_name, memberNames
-    );
-    srcStats.socialExtracted = socialKeywords.length;
-    srcStats.tiktok = socialKeywords.length > 0 ? 1 : 0;
-  } catch (e) {
-    console.warn(`[trend-detect] TikTok social error for ${member.display_name}: ${(e as Error).message}`);
   }
 
   if (!articles.length && !shopKeywords.length && !socialKeywords.length) {
@@ -2309,10 +2355,10 @@ async function detectForMember(
   }
 
   // AI로 상업 키워드 추출 (News + Blog 통합) — nameKo, groupNameKo 전달
-  const aiKeywords = articles.length > 0
+  const aiKeywords = aiArticles.length > 0
     ? await extractCommercialKeywords(
-        openaiKey, member.display_name, member.group_name, articles, member.star_category,
-        member.name_ko, member.group_name_ko, globalStarNames
+        openaiKey, member.display_name, member.group_name, aiArticles, member.star_category,
+        member.name_ko, member.group_name_ko, globalStarNames, parentSignal
       )
     : [];
 
@@ -2365,28 +2411,30 @@ async function detectForMember(
   });
 
   // 모든 기사 URL에서 이미지 전량 수집 (캡션 포함)
-  const allArticleUrls = articles
+  const allArticleUrls = lightMode ? [] : articles
     .slice(0, 10)
     .map(a => a.url)
     .filter(Boolean)
     .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)));
-  const uniqueUrls = [...new Set([
+  const uniqueUrls = lightMode ? [] : [...new Set([
     ...keywordSources.map((item) => item.sourceUrl).filter(Boolean) as string[],
     ...allArticleUrls,
   ])];
   const articleImagesMap = new Map<string, ArticleImage[]>();
-  await Promise.allSettled(
-    uniqueUrls
-      .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
-      .map(async (url) => {
-        articleImagesMap.set(url, await fetchArticleImages(url));
-      })
-  );
+  if (!lightMode) {
+    await Promise.allSettled(
+      uniqueUrls
+        .filter(url => !SOURCE_IMAGE_BLACKLIST.some(d => url.includes(d)))
+        .map(async (url) => {
+          articleImagesMap.set(url, await fetchArticleImages(url, parentSignal));
+        })
+    );
+  }
 
   // ── Vision API로 이미지 품질 일괄 분류 ──
   const allImages = Array.from(articleImagesMap.values()).flat().map(i => i.url);
   const uniqueImageUrls = [...new Set(allImages)];
-  const textHeavyImages = await classifyImagesWithVision(uniqueImageUrls, openaiKey);
+  const textHeavyImages = lightMode ? new Set<string>() : await classifyImagesWithVision(uniqueImageUrls, openaiKey, parentSignal);
 
   // 키워드별 이미지 선택: 캡션/alt에서 키워드 토큰 매칭 → 아티스트명 매칭 → 본문 이미지 순
   function selectBestImage(primaryUrl: string | null, keywordText?: string, artistName?: string): string | null {
