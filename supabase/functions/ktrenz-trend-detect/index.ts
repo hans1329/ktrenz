@@ -1991,18 +1991,19 @@ Deno.serve(async (req) => {
           } catch (_) { /* ignore */ }
         } else {
           console.warn(`[trend-detect] ⏱ ${star.display_name} timed out — trying lightweight fallback`);
+          let fallbackTimerHandle: ReturnType<typeof setTimeout> | undefined;
           try {
             const remainingBudget = Math.max(8000, TIMEGUARD_MS - (Date.now() - batchStartTime) - 3000);
             const fallbackTimeout = Math.min(15000, remainingBudget);
             const fallbackAbort = new AbortController();
-            const fallbackTimer = setTimeout(() => fallbackAbort.abort(), fallbackTimeout);
+            fallbackTimerHandle = setTimeout(() => fallbackAbort.abort(), fallbackTimeout);
             const fallbackYtSearchFn = YT_KEYS.length > 0
               ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max, fallbackAbort.signal)
               : undefined;
             const fallbackResult = await detectForMember(
               sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, fallbackYtSearchFn, siblingNames, fallbackAbort.signal, true
             );
-            clearTimeout(fallbackTimer);
+            clearTimeout(fallbackTimerHandle);
             successCount++;
             processedCount++;
             totalKeywords += fallbackResult.keywordsFound;
@@ -2029,7 +2030,7 @@ Deno.serve(async (req) => {
             console.log(`[trend-detect] ↩ ${star.display_name}: lightweight fallback completed (${fallbackResult.keywordsFound} keywords)`);
             continue;
           } catch (fallbackErr) {
-            clearTimeout(fallbackTimer);
+            if (fallbackTimerHandle) clearTimeout(fallbackTimerHandle);
             await sb.from("ktrenz_stars").update({
               last_detected_at: new Date().toISOString(),
               last_detect_result: { status: "timeout_skipped", error: (fallbackErr as Error).message || errMsg },
