@@ -130,7 +130,7 @@ const T2AdminControls = () => {
       if (error) throw error;
       return typeof data === "string" ? JSON.parse(data) : data;
     },
-    onMutate: () => startRun("collect_social"),
+    onMutate: () => startRun("detect"),
     onSuccess: (data) => {
       toast({ title: `트렌드 수집 시작${data?.runId ? ` (run: ${data.runId})` : ""}` });
       queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
