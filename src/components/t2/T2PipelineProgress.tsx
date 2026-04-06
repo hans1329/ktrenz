@@ -283,14 +283,16 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
   const elapsedMin = Math.floor(elapsed / 60);
   const elapsedSec = elapsed % 60;
 
-  const phaseLabel = {
+  const phaseLabelMap: Record<string, string> = {
     collect_social: "소셜 수집",
     detect: "국내 감지",
     detect_youtube: "YouTube 감지",
     detect_global: "글로벌 감지",
     track: "트렌드 추적",
     postprocess: "후처리 분석",
-  }[run.phase];
+    youtube_track_quota: "YouTube 할당량 추적",
+  };
+  const phaseLabel = phaseLabelMap[run.phase] || run.phase;
 
   const statusText = isDone
     ? "완료"
