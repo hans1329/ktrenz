@@ -1245,7 +1245,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
       }
 
       const commercialCats = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-      const ownerThreshold = commercialCats.has(k.category) ? 0.3 : 0.5;
+      const ownerThreshold = commercialCats.has(k.category) ? 0.2 : 0.3;
       if (k.ownership_confidence !== undefined && k.ownership_confidence < ownerThreshold) {
         console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, threshold=${ownerThreshold}, cat=${k.category})`);
         return false;
