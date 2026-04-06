@@ -54,7 +54,7 @@ const T2PipelineProgress = ({ run, onClose }: Props) => {
         .from("ktrenz_pipeline_state" as any)
         .select("current_offset, total_candidates, status, run_id, batch_size, phase")
         .eq("phase", run?.phase ?? "detect")
-        .in("status", ["running", "postprocess_requested", "postprocess_running"])
+        .in("status", ["running", "running_inflight", "postprocess_requested", "postprocess_running"])
         .order("updated_at", { ascending: false })
         .limit(1);
       if ((running as any[])?.length) return (running as any[])[0];
