@@ -1932,7 +1932,9 @@ Deno.serve(async (req) => {
 
         await new Promise((r) => setTimeout(r, 300));
       } catch (e) {
-        console.error(`[trend-detect] ✗ ${star.display_name}: ${(e as Error).message}`);
+        const errMsg = (e as Error).message;
+        const isTimeout = errMsg.includes("STAR_TIMEOUT");
+        console.error(`[trend-detect] ✗ ${star.display_name}: ${errMsg}`);
         artistResults.push({
           name: star.display_name,
           type: star.star_type,
@@ -1940,13 +1942,17 @@ Deno.serve(async (req) => {
           aiExtracted: 0, shopExtracted: 0,
           inserted: 0, backfilled: 0, filtered: 0,
         });
-        // 에러도 기록
-        try {
-          await sb.from("ktrenz_stars").update({
-            last_detected_at: new Date().toISOString(),
-            last_detect_result: { status: "error", error: (e as Error).message },
-          }).eq("id", star.id);
-        } catch (_) { /* ignore */ }
+        // 타임아웃은 last_detected_at을 갱신하지 않음 → 다음 배치에서 재시도
+        if (!isTimeout) {
+          try {
+            await sb.from("ktrenz_stars").update({
+              last_detected_at: new Date().toISOString(),
+              last_detect_result: { status: "error", error: errMsg },
+            }).eq("id", star.id);
+          } catch (_) { /* ignore */ }
+        } else {
+          console.warn(`[trend-detect] ⏱ ${star.display_name} timed out — will retry in next batch`);
+        }
       }
     }
 
