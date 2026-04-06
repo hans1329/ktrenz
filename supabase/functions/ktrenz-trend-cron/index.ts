@@ -116,6 +116,51 @@ Deno.serve(async (req) => {
         elapsed_ms: Date.now() - startTime,
       });
     }
+    // ── action: resume — 에러/정지 상태의 파이프라인을 현재 offset에서 재개 ──
+    if (action === "resume") {
+      const { data: errorRuns } = await sb
+        .from("ktrenz_pipeline_state")
+        .select("*")
+        .in("status", ["error", "stopped"])
+        .order("updated_at", { ascending: false })
+        .limit(1);
+
+      if (!errorRuns?.length) {
+        return respond({ success: false, error: "No error/stopped runs to resume" });
+      }
+
+      const run = errorRuns[0];
+      await sb.from("ktrenz_pipeline_state")
+        .update({
+          status: RUNNING_STATUS,
+          error_count: 0,
+          last_error: null,
+          last_error_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", run.id);
+
+      console.log(`[cron] Resumed run=${run.run_id}, phase=${run.phase}, offset=${run.current_offset}`);
+
+      // 즉시 tick 트리거
+      fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "tick" }),
+      }).catch(() => {});
+
+      return respond({
+        success: true,
+        action: "resume",
+        runId: run.run_id,
+        phase: run.phase,
+        offset: run.current_offset,
+        message: `Resumed from offset ${run.current_offset}`,
+      });
+    }
 
     // ── action: tick — 진행 중인 작업 폴링 (핵심) ──
     // DB에서 status='running' 인 레코드를 찾아 다음 배치를 실행한다.
