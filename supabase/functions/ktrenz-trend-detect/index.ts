@@ -2029,6 +2029,7 @@ Deno.serve(async (req) => {
             console.log(`[trend-detect] ↩ ${star.display_name}: lightweight fallback completed (${fallbackResult.keywordsFound} keywords)`);
             continue;
           } catch (fallbackErr) {
+            clearTimeout(fallbackTimer);
             await sb.from("ktrenz_stars").update({
               last_detected_at: new Date().toISOString(),
               last_detect_result: { status: "timeout_skipped", error: (fallbackErr as Error).message || errMsg },
