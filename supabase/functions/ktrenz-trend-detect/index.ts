@@ -9,6 +9,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ── 공유 타임아웃 상수 & 유틸리티 ──
+const NAVER_TIMEOUT_MS = 12000;
+const OPENAI_KEYWORD_TIMEOUT_MS = 30000;
+const OPENAI_TIKTOK_TIMEOUT_MS = 20000;
+
+async function fetchWithTimeout(
+  input: string | URL, init: RequestInit = {}, timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const parentSignal = init.signal;
+  if (parentSignal?.aborted) controller.abort();
+  else parentSignal?.addEventListener("abort", () => controller.abort(), { once: true });
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 interface ExtractedKeyword {
   keyword: string;
   keyword_en?: string;
@@ -302,12 +322,12 @@ async function searchNaver(
     url.searchParams.set("display", String(Math.min(display, 100)));
     url.searchParams.set("sort", endpoint === "shop" ? "date" : "date");
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchWithTimeout(url.toString(), {
       headers: {
         "X-Naver-Client-Id": clientId,
         "X-Naver-Client-Secret": clientSecret,
       },
-    });
+    }, NAVER_TIMEOUT_MS);
 
     if (!response.ok) {
       console.warn(`[trend-detect] Naver ${endpoint} API failed: ${response.status}`);
@@ -946,7 +966,7 @@ ${articleTexts}
 Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, then call analyze_trend_intent.`;
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${openaiKey}`,
@@ -963,7 +983,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         temperature: 0.05,
         max_tokens: 2500,
       }),
-    });
+    }, OPENAI_KEYWORD_TIMEOUT_MS);
 
     if (!response.ok) {
       const err = await response.text();
@@ -1513,7 +1533,7 @@ ${articleTexts}
 Extract ONLY specific viral/trending social keywords. Reject artist names, fandom names, and generic tags. Call extract_keywords.`;
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${openaiKey}`,
@@ -1530,7 +1550,7 @@ Extract ONLY specific viral/trending social keywords. Reject artist names, fando
         temperature: 0.05,
         max_tokens: 3000,
       }),
-    });
+    }, OPENAI_TIKTOK_TIMEOUT_MS);
 
     if (!response.ok) {
       console.warn(`[trend-detect] TikTok AI error: ${response.status}`);
@@ -1846,12 +1866,27 @@ Deno.serve(async (req) => {
     const TIMEGUARD_MS = 140000; // 140초 — 마지막 아티스트(최대 90s) + 여유분
     const PER_STAR_TIMEOUT_MS = 90000; // 개별 아티스트 처리 최대 90초 (인기 아티스트 본문fetch+AI분석 대응)
     const batchStartTime = Date.now();
+    let processedCount = 0;
+    let stoppedEarly = false;
+    let stopReason: string | null = null;
 
     for (const star of batch) {
-      if (Date.now() - batchStartTime > TIMEGUARD_MS) {
-        console.warn(`[trend-detect] ⏱ Timeguard: ${Math.round((Date.now() - batchStartTime) / 1000)}s elapsed, skipping remaining ${batch.length - artistResults.length} stars`);
+      const elapsedMs = Date.now() - batchStartTime;
+      if (elapsedMs > TIMEGUARD_MS) {
+        stoppedEarly = true;
+        stopReason = "batch_timeguard";
+        console.warn(`[trend-detect] ⏱ Timeguard: ${Math.round(elapsedMs / 1000)}s elapsed, deferring remaining ${batch.length - processedCount} stars`);
         break;
       }
+      // 남은 시간이 충분하지 않으면 중단
+      const effectiveTimeout = Math.min(PER_STAR_TIMEOUT_MS, TIMEGUARD_MS - elapsedMs - 5000);
+      if (effectiveTimeout < 5000) {
+        stoppedEarly = true;
+        stopReason = "insufficient_budget";
+        console.warn(`[trend-detect] ⏱ Remaining budget too small, deferring ${star.display_name}`);
+        break;
+      }
+
       try {
         const isGroup = star.star_type === "group";
         const isSolo = star.star_type === "solo";
@@ -1877,18 +1912,25 @@ Deno.serve(async (req) => {
         const ytSearchFn = YT_KEYS.length > 0
           ? (q: string, max: number) => searchYouTubeWithRotation(getNextYtKey, markYtKeyExhausted, q, max)
           : undefined;
-        // 개별 아티스트 타임아웃: wall-time 초과 방지
+        // 개별 아티스트 타임아웃: AbortController + Promise.race
         const starStart = Date.now();
+        const starAbort = new AbortController();
+        const starTimer = setTimeout(() => starAbort.abort(), effectiveTimeout);
         const result = await Promise.race([
           detectForMember(
-            sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn, siblingNames
+            sb, openaiKey, naverClientId, naverClientSecret, memberInfo, globalStarNames, runInsertedKeywords, ytSearchFn, siblingNames, starAbort.signal
           ),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`STAR_TIMEOUT: ${star.display_name} exceeded ${PER_STAR_TIMEOUT_MS / 1000}s`)), PER_STAR_TIMEOUT_MS)
+            setTimeout(() => {
+              starAbort.abort();
+              reject(new Error(`STAR_TIMEOUT: ${star.display_name} exceeded ${Math.round(effectiveTimeout / 1000)}s`));
+            }, effectiveTimeout)
           ),
         ]);
+        clearTimeout(starTimer);
         console.log(`[trend-detect] ✓ ${star.display_name}: ${result.keywordsFound} keywords (${Math.round((Date.now() - starStart) / 1000)}s)`);
         successCount++;
+        processedCount++;
         totalKeywords += result.keywordsFound;
         totalNews += result.sourceStats.news;
         totalBlogs += result.sourceStats.blog;
@@ -1933,7 +1975,7 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 300));
       } catch (e) {
         const errMsg = (e as Error).message;
-        const isTimeout = errMsg.includes("STAR_TIMEOUT");
+        const isTimeout = errMsg.includes("STAR_TIMEOUT") || errMsg.includes("STAR_ABORTED");
         console.error(`[trend-detect] ✗ ${star.display_name}: ${errMsg}`);
         artistResults.push({
           name: star.display_name,
@@ -1949,9 +1991,14 @@ Deno.serve(async (req) => {
               last_detected_at: new Date().toISOString(),
               last_detect_result: { status: "error", error: errMsg },
             }).eq("id", star.id);
+            processedCount++;
           } catch (_) { /* ignore */ }
         } else {
+          // 타임아웃 시 이 아티스트를 다시 시도하도록 processedCount 증가하지 않고 루프 중단
+          stoppedEarly = true;
+          stopReason = "star_timeout";
           console.warn(`[trend-detect] ⏱ ${star.display_name} timed out — will retry in next batch`);
+          break;
         }
       }
     }
@@ -1961,7 +2008,9 @@ Deno.serve(async (req) => {
         success: true,
         batchOffset,
         batchSize,
-        processed: batch.length,
+        processed: processedCount,
+        stoppedEarly,
+        stopReason,
         totalCandidates: allCandidates.length,
         successCount,
         totalKeywords,
@@ -1999,6 +2048,7 @@ async function detectForMember(
   runInsertedKeywords?: Set<string>,
   ytSearch?: (query: string, max: number) => Promise<YouTubeDetectResult>,
   siblingNames?: string[],
+  parentSignal?: AbortSignal,
 ): Promise<{
   keywordsFound: number;
   articlesFound: number;
