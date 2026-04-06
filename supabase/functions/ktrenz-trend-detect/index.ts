@@ -927,8 +927,7 @@ K-STAR SUBJECT VERIFICATION (★ CRITICAL ★):
 - Look for: outfit descriptions ("OO을 착용", "OO 브랜드"), beauty mentions ("OO 화장품", "OO 립스틱"), restaurant visits ("OO 맛집", "OO 카페"), product endorsements
 - These commercial keywords often hide inside music/event articles — actively seek them out.
 
-Maximum 7 keywords. Quality over quantity. Return ZERO keywords if nothing valid found.
-When in doubt, DO NOT extract. False negatives are far better than false positives.`;
+Maximum 15 keywords. Extract ALL valid trend keywords you can find — our post-processing pipeline handles deduplication and noise filtering. Return ZERO keywords only if genuinely nothing relevant found.`;
 
   const userPrompt = `Below are Korean news article titles and descriptions found by searching for "${memberName}"${groupName ? ` (member of ${groupName})` : ""}${nameKo ? ` (Korean: ${nameKo})` : ""} (${categoryContext}).
 
