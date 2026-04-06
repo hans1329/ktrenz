@@ -1843,8 +1843,8 @@ Deno.serve(async (req) => {
       filtered: number;
     }> = [];
 
-    const TIMEGUARD_MS = 80000; // 80초 — 마지막 아티스트(최대 45s) + 여유분으로 wall time(~150s) 이내 보장
-    const PER_STAR_TIMEOUT_MS = 45000; // 개별 아티스트 처리 최대 45초
+    const TIMEGUARD_MS = 140000; // 140초 — 마지막 아티스트(최대 90s) + 여유분
+    const PER_STAR_TIMEOUT_MS = 90000; // 개별 아티스트 처리 최대 90초 (인기 아티스트 본문fetch+AI분석 대응)
     const batchStartTime = Date.now();
 
     for (const star of batch) {
