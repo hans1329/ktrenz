@@ -1863,8 +1863,8 @@ Deno.serve(async (req) => {
       filtered: number;
     }> = [];
 
-    const TIMEGUARD_MS = 140000; // 140초 — 마지막 아티스트(최대 90s) + 여유분
-    const PER_STAR_TIMEOUT_MS = 90000; // 개별 아티스트 처리 최대 90초 (인기 아티스트 본문fetch+AI분석 대응)
+    const TIMEGUARD_MS = 115000; // 115초 — Edge Function 런타임 제한(150초) 내에 안전하게 응답
+    const PER_STAR_TIMEOUT_MS = 50000; // 개별 아티스트 처리 최대 50초 (타임가드 내에서 2~3명 처리 가능)
     const batchStartTime = Date.now();
     let processedCount = 0;
     let stoppedEarly = false;
