@@ -1114,6 +1114,9 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               fan_sentiment: k.fan_sentiment,
               trend_potential: k.trend_potential,
               purchase_stage: k.purchase_stage || undefined,
+              ownership_confidence: k.ownership_confidence,
+              ownership_artist: k.ownership_artist,
+              ownership_reason: k.ownership_reason,
             });
           }
         } else if (tc.function.name === "analyze_trend_intent") {
