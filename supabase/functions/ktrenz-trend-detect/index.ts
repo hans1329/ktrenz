@@ -1038,12 +1038,9 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               }
             }
 
-            // ── 3단계: ownership_confidence 기반 차단 (카테고리별 분화) ──
-            const commercialCategories = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-            const ownershipThreshold = commercialCategories.has(k.category) ? 0.2 : 0.3;
-            if (k.ownership_confidence < ownershipThreshold) {
-              console.warn(`[trend-detect] ⛔ Ownership rejected: "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, threshold=${ownershipThreshold}, cat=${k.category}, reason: ${k.ownership_reason})`);
-              continue;
+            // ── 3단계: ownership_confidence → 필터링 없이 로깅만 (후처리/grade에서 활용) ──
+            if (k.ownership_confidence < 0.3) {
+              console.log(`[trend-detect] ⚠️ Low ownership (passed through): "${k.keyword}" → owner="${k.ownership_artist}" (conf=${k.ownership_confidence}, cat=${k.category}, reason: ${k.ownership_reason})`);
             }
 
             // ── 4단계: ownership_artist 불일치 차단 ──
@@ -1117,6 +1114,9 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
               fan_sentiment: k.fan_sentiment,
               trend_potential: k.trend_potential,
               purchase_stage: k.purchase_stage || undefined,
+              ownership_confidence: k.ownership_confidence,
+              ownership_artist: k.ownership_artist,
+              ownership_reason: k.ownership_reason,
             });
           }
         } else if (tc.function.name === "analyze_trend_intent") {
@@ -1244,12 +1244,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         return false;
       }
 
-      const commercialCats = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-      const ownerThreshold = commercialCats.has(k.category) ? 0.2 : 0.3;
-      if (k.ownership_confidence !== undefined && k.ownership_confidence < ownerThreshold) {
-        console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, threshold=${ownerThreshold}, cat=${k.category})`);
-        return false;
-      }
+      // ownership_confidence: 필터링 제거 → DB에 저장하여 후처리/grade에서 활용
 
       // ★ confidence와 무관하게 항상 텍스트 존재 검증 수행 (AI 환각 방지)
 
@@ -2447,12 +2442,18 @@ async function detectForMember(
           source: "tiktok",
           search_name: searchName,
           group_name: member.group_name,
+          ownership_confidence: keywordData.ownership_confidence,
+          ownership_artist: keywordData.ownership_artist,
+          ownership_reason: keywordData.ownership_reason,
         } : {
           article_count: articles.length,
-          total_article_count: totalArticleCount, // 네이버 검색 전체 결과 수 (점수 반영용)
+          total_article_count: totalArticleCount,
           total_youtube_count: totalYoutubeCount,
           search_name: searchName,
           group_name: member.group_name,
+          ownership_confidence: keywordData.ownership_confidence,
+          ownership_artist: keywordData.ownership_artist,
+          ownership_reason: keywordData.ownership_reason,
           ...(sourceArticle?.title?.startsWith("[YouTube]") ? { source: "youtube" } : {}),
         },
       },
