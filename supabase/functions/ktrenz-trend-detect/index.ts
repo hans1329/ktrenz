@@ -1241,12 +1241,7 @@ Call extract_keywords with the specific named entities found IN THE ABOVE TEXT, 
         return false;
       }
 
-      const commercialCats = new Set(["brand", "fashion", "beauty", "product", "restaurant", "food"]);
-      const ownerThreshold = commercialCats.has(k.category) ? 0.2 : 0.3;
-      if (k.ownership_confidence !== undefined && k.ownership_confidence < ownerThreshold) {
-        console.warn(`[trend-detect] Blocked low-ownership keyword: "${k.keyword}" (ownership=${k.ownership_confidence}, threshold=${ownerThreshold}, cat=${k.category})`);
-        return false;
-      }
+      // ownership_confidence: 필터링 제거 → DB에 저장하여 후처리/grade에서 활용
 
       // ★ confidence와 무관하게 항상 텍스트 존재 검증 수행 (AI 환각 방지)
 
