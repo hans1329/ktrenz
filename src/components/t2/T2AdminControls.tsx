@@ -81,6 +81,7 @@ const T2AdminControls = () => {
         .from("ktrenz_pipeline_state" as any)
         .select("id, run_id, phase, status, current_offset, total_candidates, created_at")
         .in("status", ["running", "running_inflight", "postprocess_requested", "postprocess_running"])
+        .neq("phase", "youtube_track_quota")
         .order("created_at", { ascending: false })
         .limit(1);
       return (data as any[])?.[0] ?? null;
