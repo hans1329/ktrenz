@@ -498,11 +498,17 @@ async function executeBatch(
   const totalCandidates = Number.isFinite(result.totalCandidates) && result.totalCandidates > 0
     ? result.totalCandidates
     : null;
-  const nextOffset = offset + batchSize;
+  // 실제 처리된 수만큼만 offset 전진 (타임아웃으로 일부만 처리된 경우 대응)
+  const actualProcessed = Number.isFinite(result.processed) ? Math.max(1, Math.floor(result.processed)) : batchSize;
+  const nextOffset = offset + actualProcessed;
   const isThrottled = result.throttled === true;
   const isQuotaExhausted = result.quotaExhausted === true;
   const isSingleCall = SINGLE_CALL_PHASES.has(phase);
   const isLastBatch = isSingleCall || (result.success && totalCandidates !== null && nextOffset >= totalCandidates) || isThrottled || isQuotaExhausted;
+
+  if (!isSingleCall && actualProcessed !== batchSize) {
+    console.log(`[cron] Partial batch: phase=${phase}, offset=${offset}, claimed=${batchSize}, processed=${actualProcessed}, nextOffset=${nextOffset}`);
+  }
 
   if (isQuotaExhausted) {
     console.warn(`[cron] Phase ${phase} stopped early: API quota exhausted at offset=${offset}`);
@@ -592,11 +598,11 @@ async function executeBatch(
       }
     }
   } else {
-    // Offset already advanced by optimistic lock in tick handler
-    // Just update total_candidates for monitoring
+    // Offset 보정: optimistic lock이 batchSize만큼 전진시켰지만, 실제 처리된 양이 다를 수 있음
     await sb.from("ktrenz_pipeline_state")
       .update({
         status: RUNNING_STATUS,
+        current_offset: nextOffset,
         ...(totalCandidates !== null ? { total_candidates: totalCandidates } : {}),
         updated_at: new Date().toISOString(),
       })
