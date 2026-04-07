@@ -275,6 +275,63 @@ Deno.serve(async (req) => {
         .eq("id", lockId);
     }
 
+    // ── selfManage: 자체 DB 상태 관리 (fire-and-forget 호출 시) ──
+    if (selfManage && runId) {
+      try {
+        // 1) pipeline_state를 done으로 업데이트
+        await sb.from("ktrenz_pipeline_state")
+          .update({
+            status: "done",
+            current_offset: 1,
+            total_candidates: 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("run_id", runId)
+          .eq("phase", "collect_social")
+          .eq("status", "running_inflight");
+
+        // 2) 다음 phase 생성 (postprocess)
+        const nextPhase = getNextPhase("collect_social");
+        if (nextPhase) {
+          const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+            .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
+          if (!existingNext?.length) {
+            await sb.from("ktrenz_pipeline_state").insert({
+              run_id: runId,
+              phase: nextPhase,
+              status: "running",
+              current_offset: 0,
+              batch_size: 15,
+            });
+          }
+        }
+
+        console.log(`[collect-social] Self-managed: marked done, created next phase=${nextPhase} for run=${runId}`);
+
+        // 3) 다음 tick 트리거
+        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "tick" }),
+        }).catch(() => {});
+      } catch (selfManageErr) {
+        console.error(`[collect-social] Self-manage error: ${(selfManageErr as Error).message}`);
+        // selfManage 실패 시 에러 상태로 전환
+        await sb.from("ktrenz_pipeline_state")
+          .update({
+            status: "error",
+            last_error: `self-manage failed: ${(selfManageErr as Error).message}`,
+            last_error_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("run_id", runId)
+          .eq("phase", "collect_social");
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -286,9 +343,34 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("[collect-social] Fatal error:", error);
+
+    // selfManage 시 에러도 DB에 기록
+    if (selfManage && runId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const sb = createClient(supabaseUrl, supabaseKey);
+        await sb.from("ktrenz_pipeline_state")
+          .update({
+            status: "error",
+            last_error: `fatal: ${(error as Error).message}`.slice(0, 500),
+            last_error_at: new Date().toISOString(),
+            error_count: 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("run_id", runId)
+          .eq("phase", "collect_social");
+      } catch (_) { /* best effort */ }
+    }
+
     return new Response(
       JSON.stringify({ success: false, error: (error as Error).message, totalCandidates: 1 }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
+
+function getNextPhase(current: string): string | null {
+  const idx = PHASE_ORDER.indexOf(current as any);
+  return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
+}
