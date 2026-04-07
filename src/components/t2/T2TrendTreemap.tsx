@@ -875,11 +875,12 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     const nextParams = new URLSearchParams(searchParams);
     if (selectedTile?.id === item.id) {
       nextParams.delete("modal");
+      setSearchParams(nextParams, { replace: true });
     } else {
       nextParams.set("modal", item.id);
       track("t2_treemap_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, category: item.category, section: item.keyword });
+      setSearchParams(nextParams);
     }
-    setSearchParams(nextParams);
   }, [searchParams, selectedTile?.id, setSearchParams, track]);
 
   const categoryStats = useMemo(() => {
