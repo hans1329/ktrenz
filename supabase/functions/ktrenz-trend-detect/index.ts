@@ -801,7 +801,17 @@ async function extractCommercialKeywords(
   const articleTexts = articles
     .slice(0, 25)
     .map((a, i) => {
-      let text = `[${i + 1}] ${a.title}${a.description ? ` - ${a.description}` : ""}`;
+      // Tag fashion/beauty magazine sources so AI prioritizes fashion/beauty classification
+      const url = (a as any).url || "";
+      const mediaTag = /vogue\.co\.kr/i.test(url) ? "[VOGUE] "
+        : /elle\.co\.kr/i.test(url) ? "[ELLE] "
+        : /harpersbazaar\.co\.kr/i.test(url) ? "[BAZAAR] "
+        : /wkorea\.com/i.test(url) ? "[W KOREA] "
+        : /allure\.co\.kr/i.test(url) ? "[ALLURE] "
+        : /dazedkorea\.com/i.test(url) ? "[DAZED] "
+        : /gq\.co\.kr/i.test(url) ? "[GQ] "
+        : "";
+      let text = `[${i + 1}] ${mediaTag}${a.title}${a.description ? ` - ${a.description}` : ""}`;
       // 본문 발췌가 있으면 AI에 추가 제공 (주체 판별 정확도 향상)
       if ((a as any).bodyExcerpt) {
         text += `\n    [본문 발췌] ${(a as any).bodyExcerpt}`;
@@ -905,6 +915,12 @@ CATEGORY CLASSIFICATION GUIDE:
 - "product": Specific product names/models
 - "place": Specific venue names, location-based trends
 - ⚠️ IMPORTANT: Album releases, song titles, music projects, music collaborations → ALWAYS "music", NEVER "event"
+
+★ FASHION/BEAUTY MEDIA SOURCE RULE:
+- Articles tagged with [VOGUE], [ELLE], [BAZAAR], [W KOREA], [ALLURE], [DAZED], [GQ] are from fashion/beauty magazines.
+- When extracting keywords from these articles, PRIORITIZE fashion/beauty/brand categories over music/media/event.
+- These magazines feature artists primarily in fashion/beauty contexts (photoshoots, brand ambassadorships, styling). Even if an article mentions a song or album title, focus on extracting fashion brands, beauty products, or styling trends mentioned instead.
+- Only classify as "music" from fashion magazine articles if the SOLE content is about a music release with zero fashion/beauty context.
 
 MEMBER ATTRIBUTION (CRITICAL):
 - When searching for a GROUP MEMBER, verify the article is SPECIFICALLY about THIS member, not the group as a whole
