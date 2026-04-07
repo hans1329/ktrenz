@@ -17,12 +17,18 @@ const IG_TIMEOUT_MS = 90_000;       // 개별 배치 타임아웃
 const TOTAL_TIMEGUARD_MS = 240_000; // 전체 함수 타임가드 (4분)
 const TT_TIMEOUT_MS = 90_000;
 
+const PHASE_ORDER = ["detect", "collect_social", "postprocess", "track"] as const;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const startTime = Date.now();
+
+  // selfManage 파라미터: fire-and-forget 호출 시 자체 DB 상태 관리
+  const body = await req.json().catch(() => ({}));
+  const { runId, stateId, selfManage } = body;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
