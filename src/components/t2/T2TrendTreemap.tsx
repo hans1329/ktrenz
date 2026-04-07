@@ -594,7 +594,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         });
       }
 
-      const filteredTriggers = rawTriggers.filter((t: any) => !t.star_id || activeStarIds.has(t.star_id));
+      const filteredTriggers = rawTriggers.filter((t: any) => {
+        // Exclude inactive stars
+        if (t.star_id && !activeStarIds.has(t.star_id)) return false;
+        // Exclude shop-detection-only triggers (no real context)
+        const ctx = (t.context || t.context_ko || "");
+        if (/^\[Shop\]/i.test(ctx) || /쇼핑에서.*\d+건\s*발견/.test(ctx)) return false;
+        return true;
+      });
 
       return filteredTriggers.map((t: any): TrendTile => {
         const star = t.star_id ? starMap.get(t.star_id) : null;
