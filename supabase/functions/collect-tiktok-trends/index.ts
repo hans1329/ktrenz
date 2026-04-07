@@ -454,11 +454,9 @@ Deno.serve(async (req) => {
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
         apiCallCount++;
 
-        // 빈 응답 연속 감지
+        // 빈 응답 누적 카운트 (연속 리셋 없음)
         if (videos.length === 0) {
           emptyResponseStreak++;
-        } else {
-          emptyResponseStreak = 0;
         }
 
         const metrics = aggregateMetrics(videos);
