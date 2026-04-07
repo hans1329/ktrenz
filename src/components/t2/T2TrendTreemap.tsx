@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -307,6 +307,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
+  const modalPushedRef = useRef(false);
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
   const setViewMode = onViewModeChange ?? setInternalViewMode;
@@ -875,11 +876,18 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
     const nextParams = new URLSearchParams(searchParams);
     if (selectedTile?.id === item.id) {
       nextParams.delete("modal");
+      if (modalPushedRef.current) {
+        modalPushedRef.current = false;
+        window.history.back();
+      } else {
+        setSearchParams(nextParams, { replace: true });
+      }
     } else {
       nextParams.set("modal", item.id);
       track("t2_treemap_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, category: item.category, section: item.keyword });
+      modalPushedRef.current = true;
+      setSearchParams(nextParams);
     }
-    setSearchParams(nextParams);
   }, [searchParams, selectedTile?.id, setSearchParams, track]);
 
   const categoryStats = useMemo(() => {
@@ -1295,9 +1303,14 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         rank={selectedTile ? filteredItems.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
         totalCount={filteredItems.length}
         onClose={() => {
-          const nextParams = new URLSearchParams(searchParams);
-          nextParams.delete("modal");
-          setSearchParams(nextParams);
+          if (modalPushedRef.current) {
+            modalPushedRef.current = false;
+            window.history.back();
+          } else {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete("modal");
+            setSearchParams(nextParams, { replace: true });
+          }
         }}
       />
     </div>
