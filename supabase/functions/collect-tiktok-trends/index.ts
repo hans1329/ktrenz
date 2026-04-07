@@ -307,25 +307,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { limit: batchLimit, dryRun, offset: requestOffset, debugKeyword } = body;
-
-    // 디버그 모드: 특정 키워드로 API 직접 테스트
-    if (debugKeyword) {
-      const dk = debugKeyword as string;
-      const testKey = Deno.env.get("RAPIDAPI_KEY");
-      if (!testKey) return new Response(JSON.stringify({ error: "no key" }), { status: 500, headers: corsHeaders });
-      const testUrl = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(dk)}&search_id=0`;
-      const testResp = await fetch(testUrl, {
-        method: "GET",
-        headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": testKey },
-      });
-      const testBody = await testResp.text();
-      return new Response(JSON.stringify({
-        status: testResp.status,
-        headers: Object.fromEntries(testResp.headers.entries()),
-        body: testBody.slice(0, 2000),
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    const { limit: batchLimit, dryRun, offset: requestOffset } = body;
 
     const apiKey = Deno.env.get("RAPIDAPI_KEY");
     if (!apiKey) {
@@ -418,7 +400,7 @@ Deno.serve(async (req) => {
     const snapshotsToInsert: any[] = [];
     let totalKeywords = 0;
     let apiCallCount = 0;
-    let emptyResponseStreak = 0;
+    let emptyResponseStreak = 0; // 이제 누적 빈 응답 수 (연속 아님)
 
     for (const star of starsToProcess as any[]) {
       // 실행 중 하드 리밋 재확인
@@ -427,28 +409,36 @@ Deno.serve(async (req) => {
         break;
       }
       // 빈 응답 연속 5회 시 중단 (과금만 되는 상황 방지)
-      if (emptyResponseStreak >= 5) {
-        console.warn(`[tiktok] 5 consecutive empty responses, stopping to prevent wasted calls`);
+      // 빈 응답 누적 비율 체크: 15건 이상 처리 후 80% 이상이 빈 응답이면 중단
+      if (apiCallCount >= 15 && emptyResponseStreak / apiCallCount > 0.8) {
+        console.warn(`[tiktok] ${emptyResponseStreak}/${apiCallCount} empty responses (>80%), stopping to prevent wasted calls`);
         break;
       }
       try {
-        // ─── 동명이인 방지 검색 쿼리 ───
-        const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
-        const nameLen = (star.name_ko || star.display_name).replace(/\s/g, "").length;
+        // ─── 검색 키워드 최적화 ───
+        // 멤버: display_name만 사용 (예: "Jimin" — 그룹명 prefix 제거로 204 비율 감소)
+        // 짧은 이름(≤2글자): 한글 이름 우선 시도, 없으면 그룹명 prefix
+        // 그룹/솔로: display_name 그대로
         let searchKeyword = star.display_name;
-        if (groupName) {
-          searchKeyword = `${groupName} ${star.display_name}`;
-        } else if (nameLen <= 3) {
+        const nameLen = (star.display_name || "").replace(/\s/g, "").length;
+        
+        if (star.star_type === "member") {
+          if (nameLen <= 2 && star.name_ko) {
+            // 짧은 영문명은 한글로 검색 (예: "RM" → "알엠" 대신 그룹명 prefix)
+            const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
+            searchKeyword = groupName ? `${groupName} ${star.display_name}` : star.display_name;
+          }
+          // 3글자 이상 멤버는 그대로 display_name 사용
+        } else if (nameLen <= 2) {
           searchKeyword = `${star.display_name} K-pop`;
         }
+        
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
         apiCallCount++;
 
-        // 빈 응답 연속 감지
+        // 빈 응답 누적 카운트 (연속 리셋 없음)
         if (videos.length === 0) {
           emptyResponseStreak++;
-        } else {
-          emptyResponseStreak = 0;
         }
 
         const metrics = aggregateMetrics(videos);
