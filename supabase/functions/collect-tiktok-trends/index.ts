@@ -307,25 +307,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { limit: batchLimit, dryRun, offset: requestOffset, debugKeyword } = body;
-
-    // 디버그 모드: 특정 키워드로 API 직접 테스트
-    if (debugKeyword) {
-      const dk = debugKeyword as string;
-      const testKey = Deno.env.get("RAPIDAPI_KEY");
-      if (!testKey) return new Response(JSON.stringify({ error: "no key" }), { status: 500, headers: corsHeaders });
-      const testUrl = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(dk)}&search_id=0`;
-      const testResp = await fetch(testUrl, {
-        method: "GET",
-        headers: { "x-rapidapi-host": TIKTOK_API_HOST, "x-rapidapi-key": testKey },
-      });
-      const testBody = await testResp.text();
-      return new Response(JSON.stringify({
-        status: testResp.status,
-        headers: Object.fromEntries(testResp.headers.entries()),
-        body: testBody.slice(0, 2000),
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    const { limit: batchLimit, dryRun, offset: requestOffset } = body;
 
     const apiKey = Deno.env.get("RAPIDAPI_KEY");
     if (!apiKey) {
