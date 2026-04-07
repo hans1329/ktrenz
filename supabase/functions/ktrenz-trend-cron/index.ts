@@ -27,6 +27,7 @@ const PHASE_FUNCTION: Record<string, string> = {
 const VALID_PHASES = new Set(PHASE_ORDER);
 const DETECT_PHASES = new Set(["detect"]);
 const SINGLE_CALL_PHASES = new Set<string>(["collect_social", "postprocess"]); // 내부 배치 관리
+const FIRE_AND_FORGET_PHASES = new Set<string>(["collect_social"]); // 150s 플랫폼 타임아웃 초과 → fire-and-forget
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 function resolveBatchSize(phase: string, requestedBatchSize: number): number {
@@ -286,6 +287,19 @@ Deno.serve(async (req) => {
       if (!lockResult?.length) {
         // Another tick already claimed this batch, skip
         return respond({ success: true, action: "tick", skipped: true, message: "Batch already claimed by another tick" });
+      }
+
+      // ── Fire-and-forget: 150s 플랫폼 타임아웃 초과 가능한 phase는 호출만 하고 즉시 반환 ──
+      if (FIRE_AND_FORGET_PHASES.has(state.phase)) {
+        fireAndForgetPhase(supabaseUrl, supabaseKey, state.phase, state.run_id, lockResult[0].id);
+        return respond({
+          success: true,
+          action: `${state.phase}_fired`,
+          runId: state.run_id,
+          phase: state.phase,
+          message: `${state.phase} triggered (fire-and-forget). It will self-manage DB state.`,
+          elapsed_ms: Date.now() - startTime,
+        });
       }
 
       const result = await executeBatch(
@@ -593,7 +607,6 @@ async function executeBatch(
 }
 
 // ── postprocess fire-and-forget 실행 ──
-// cron은 호출만 하고 즉시 반환. postprocess가 자체적으로 DB 상태를 관리함.
 function fireAndForgetPostprocess(supabaseUrl: string, supabaseKey: string, triggeredBy: string, runId: string, stateId: string) {
   console.log(`[cron] Fire-and-forget postprocess, run=${runId}, triggeredBy=${triggeredBy}`);
 
@@ -608,6 +621,26 @@ function fireAndForgetPostprocess(supabaseUrl: string, supabaseKey: string, trig
     console.log(`[cron] Postprocess response received (status=${resp.status}) for run=${runId}`);
   }).catch((e) => {
     console.error(`[cron] Postprocess fire-and-forget error: ${(e as Error).message}`);
+  });
+}
+
+// ── 범용 fire-and-forget phase 실행 (collect_social 등) ──
+// cron은 호출만 하고 즉시 반환. 해당 함수가 자체적으로 DB 상태를 done으로 업데이트하고 다음 phase를 생성함.
+function fireAndForgetPhase(supabaseUrl: string, supabaseKey: string, phase: string, runId: string, stateId: string) {
+  const functionName = PHASE_FUNCTION[phase];
+  console.log(`[cron] Fire-and-forget ${phase}, run=${runId}, function=${functionName}`);
+
+  fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ runId, stateId, selfManage: true }),
+  }).then(async (resp) => {
+    console.log(`[cron] ${phase} response received (status=${resp.status}) for run=${runId}`);
+  }).catch((e) => {
+    console.error(`[cron] ${phase} fire-and-forget error: ${(e as Error).message}`);
   });
 }
 
