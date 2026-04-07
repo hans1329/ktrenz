@@ -12,9 +12,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const IG_BATCH_SIZE = 20;
-const IG_TIMEOUT_MS = 90_000;       // 개별 배치 타임아웃
-const TOTAL_TIMEGUARD_MS = 240_000; // 전체 함수 타임가드 (4분)
+const IG_BATCH_SIZE = 10;            // 20→10 축소 (스타당 ~7초, 10명 = ~70초)
+const IG_TIMEOUT_MS = 140_000;       // 개별 배치 타임아웃 (함수 내부 130초 타임가드 + 마진)
+const TOTAL_TIMEGUARD_MS = 240_000;  // 전체 함수 타임가드 (4분)
 const TT_TIMEOUT_MS = 90_000;
 
 const PHASE_ORDER = ["detect", "collect_social", "postprocess", "track"] as const;
