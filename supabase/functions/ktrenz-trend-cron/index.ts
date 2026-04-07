@@ -592,88 +592,23 @@ async function executeBatch(
   return { ...result, isLastBatch, nextOffset };
 }
 
-// ── postprocess 실행 ──
-async function executePostprocess(supabaseUrl: string, supabaseKey: string, triggeredBy: string): Promise<any> {
-  console.log(`[cron] Running postprocess, triggeredBy=${triggeredBy}`);
+// ── postprocess fire-and-forget 실행 ──
+// cron은 호출만 하고 즉시 반환. postprocess가 자체적으로 DB 상태를 관리함.
+function fireAndForgetPostprocess(supabaseUrl: string, supabaseKey: string, triggeredBy: string, runId: string, stateId: string) {
+  console.log(`[cron] Fire-and-forget postprocess, run=${runId}, triggeredBy=${triggeredBy}`);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 300000); // 5분: AI 분류가 2분+ 소요
-
-  try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ triggeredBy }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const text = await response.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { raw: text.slice(0, 500) };
-    }
-  } catch (e) {
-    clearTimeout(timeout);
-    console.error(`[cron] Postprocess error: ${(e as Error).message}`);
-    return { error: (e as Error).message };
-  }
-}
-
-// ── grade 인라인 실행 (별도 phase 대신 postprocess 직후 호출) ──
-async function executeGradeInline(supabaseUrl: string, supabaseKey: string): Promise<any> {
-  console.log(`[cron] Running inline grade`);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
-  try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const text = await response.text();
-    try { return JSON.parse(text); } catch { return { raw: text.slice(0, 500) }; }
-  } catch (e) {
-    clearTimeout(timeout);
-    console.error(`[cron] Grade inline error: ${(e as Error).message}`);
-    return { error: (e as Error).message };
-  }
-}
-
-// ── 파이프라인 완료 후 실행할 작업들 ──
-async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
-  const headers = {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${supabaseKey}`,
-  };
-
-  const jobs = [
-    { name: "market-lifecycle", fn: "ktrenz-market-lifecycle" },
-    { name: "schedule-predict", fn: "ktrenz-schedule-predict" },
-    { name: "data-auditor", fn: "ktrenz-data-auditor" },
-  ];
-
-  for (const job of jobs) {
-    try {
-      const resp = await fetch(`${supabaseUrl}/functions/v1/${job.fn}`, {
-        method: "POST", headers, body: JSON.stringify({}),
-      });
-      const text = await resp.text();
-      let result: any;
-      try { result = JSON.parse(text); } catch { result = { raw: text.slice(0, 200) }; }
-      console.log(`[cron] End-of-pipeline ${job.name}:`, result);
-    } catch (e) {
-      console.error(`[cron] End-of-pipeline ${job.name} failed:`, e);
-    }
-  }
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-postprocess`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ triggeredBy, runId, stateId, selfManage: true }),
+  }).then(async (resp) => {
+    console.log(`[cron] Postprocess response received (status=${resp.status}) for run=${runId}`);
+  }).catch((e) => {
+    console.error(`[cron] Postprocess fire-and-forget error: ${(e as Error).message}`);
+  });
 }
 
 function getNextPhase(currentPhase: string): string | null {
