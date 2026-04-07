@@ -236,83 +236,16 @@ Deno.serve(async (req) => {
             return respond({ success: true, action: "tick", skipped: true, message: "Postprocess already claimed" });
           }
 
-          // postprocess 실행
-          const ppResult = await executePostprocess(supabaseUrl, supabaseKey, ppState.phase);
-
-          // postprocess 실패 시 postprocess_requested로 복원하여 재시도 허용
-          if (ppResult.error || ppResult.success === false) {
-            console.warn(`[cron] Postprocess failed, reverting to postprocess_requested: ${ppResult.error || "unknown"}`);
-            await sb.from("ktrenz_pipeline_state")
-              .update({
-                status: "postprocess_requested",
-                last_error: `postprocess failed: ${(ppResult.error || "unknown").slice(0, 300)}`,
-                last_error_at: new Date().toISOString(),
-                error_count: (ppState.error_count || 0) + 1,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", ppState.id)
-              .eq("status", "postprocess_running");
-
-            // 연속 실패 3회 시 error 상태로 전환
-            if ((ppState.error_count || 0) + 1 >= MAX_CONSECUTIVE_ERRORS) {
-              await sb.from("ktrenz_pipeline_state")
-                .update({ status: "error", updated_at: new Date().toISOString() })
-                .eq("id", ppState.id);
-              console.error(`[cron] Postprocess stopped: ${MAX_CONSECUTIVE_ERRORS} consecutive failures`);
-            }
-
-            return respond({ success: false, action: "postprocess", runId: ppState.run_id, error: ppResult.error });
-          }
-
-          // postprocess 완료 → grade 인라인 실행 (별도 phase 제거)
-          const gradeResult = await executeGradeInline(supabaseUrl, supabaseKey);
-          console.log(`[cron] Inline grade result:`, gradeResult);
-
-          // postprocess 완료 → 다음 phase 시작 or done
-          const isSinglePhaseRun = ppState.run_id.startsWith("single_");
-          const nextPhase = isSinglePhaseRun ? null : getNextPhase(ppState.phase);
-
-          if (nextPhase) {
-            // 현재 phase는 done, 다음 phase를 running으로 생성
-            await sb.from("ktrenz_pipeline_state")
-              .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
-              .eq("id", ppState.id);
-
-            // Check for existing row before inserting (unique constraint safety)
-            const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
-              .select("id").eq("run_id", ppState.run_id).eq("phase", nextPhase).limit(1);
-            if (!existingNext?.length) {
-              const resumeOffset = await getResumeOffset(sb, nextPhase, 0);
-              await sb.from("ktrenz_pipeline_state").insert({
-                run_id: ppState.run_id,
-                phase: nextPhase,
-                status: "running",
-                current_offset: resumeOffset,
-                batch_size: ppState.batch_size,
-              });
-              console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase} at offset=${resumeOffset}`);
-            }
-            console.log(`[cron] Phase ${ppState.phase} done, starting ${nextPhase}`);
-          } else {
-            // 마지막 phase or single-phase → 전부 done
-            await sb.from("ktrenz_pipeline_state")
-              .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
-              .eq("id", ppState.id);
-            console.log(`[cron] ${isSinglePhaseRun ? "Single-phase" : "Pipeline"} run=${ppState.run_id} completed`);
-
-            // Pipeline complete → run end-of-pipeline jobs
-            if (!isSinglePhaseRun) {
-              await runEndOfPipelineJobs(supabaseUrl, supabaseKey);
-            }
-          }
+          // Fire-and-forget: postprocess를 호출만 하고 응답을 기다리지 않음
+          // postprocess 함수가 자체적으로 DB 상태를 관리함
+          fireAndForgetPostprocess(supabaseUrl, supabaseKey, ppState.phase, ppState.run_id, ppState.id);
 
           return respond({
             success: true,
-            action: "postprocess",
+            action: "postprocess_fired",
             runId: ppState.run_id,
             phase: ppState.phase,
-            ppResult,
-            nextPhase,
+            message: "Postprocess triggered (fire-and-forget). It will self-manage DB state.",
             elapsed_ms: Date.now() - startTime,
           });
         }
