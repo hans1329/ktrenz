@@ -289,6 +289,19 @@ Deno.serve(async (req) => {
         return respond({ success: true, action: "tick", skipped: true, message: "Batch already claimed by another tick" });
       }
 
+      // ── Fire-and-forget: 150s 플랫폼 타임아웃 초과 가능한 phase는 호출만 하고 즉시 반환 ──
+      if (FIRE_AND_FORGET_PHASES.has(state.phase)) {
+        fireAndForgetPhase(supabaseUrl, supabaseKey, state.phase, state.run_id, lockResult[0].id);
+        return respond({
+          success: true,
+          action: `${state.phase}_fired`,
+          runId: state.run_id,
+          phase: state.phase,
+          message: `${state.phase} triggered (fire-and-forget). It will self-manage DB state.`,
+          elapsed_ms: Date.now() - startTime,
+        });
+      }
+
       const result = await executeBatch(
         sb, supabaseUrl, supabaseKey,
         state.run_id, state.phase, currentOffset, phaseBatchSize
