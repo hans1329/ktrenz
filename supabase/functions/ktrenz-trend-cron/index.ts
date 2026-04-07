@@ -607,7 +607,6 @@ async function executeBatch(
 }
 
 // ── postprocess fire-and-forget 실행 ──
-// cron은 호출만 하고 즉시 반환. postprocess가 자체적으로 DB 상태를 관리함.
 function fireAndForgetPostprocess(supabaseUrl: string, supabaseKey: string, triggeredBy: string, runId: string, stateId: string) {
   console.log(`[cron] Fire-and-forget postprocess, run=${runId}, triggeredBy=${triggeredBy}`);
 
@@ -622,6 +621,26 @@ function fireAndForgetPostprocess(supabaseUrl: string, supabaseKey: string, trig
     console.log(`[cron] Postprocess response received (status=${resp.status}) for run=${runId}`);
   }).catch((e) => {
     console.error(`[cron] Postprocess fire-and-forget error: ${(e as Error).message}`);
+  });
+}
+
+// ── 범용 fire-and-forget phase 실행 (collect_social 등) ──
+// cron은 호출만 하고 즉시 반환. 해당 함수가 자체적으로 DB 상태를 done으로 업데이트하고 다음 phase를 생성함.
+function fireAndForgetPhase(supabaseUrl: string, supabaseKey: string, phase: string, runId: string, stateId: string) {
+  const functionName = PHASE_FUNCTION[phase];
+  console.log(`[cron] Fire-and-forget ${phase}, run=${runId}, function=${functionName}`);
+
+  fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ runId, stateId, selfManage: true }),
+  }).then(async (resp) => {
+    console.log(`[cron] ${phase} response received (status=${resp.status}) for run=${runId}`);
+  }).catch((e) => {
+    console.error(`[cron] ${phase} fire-and-forget error: ${(e as Error).message}`);
   });
 }
 
