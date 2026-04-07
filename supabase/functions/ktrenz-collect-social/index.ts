@@ -1,6 +1,7 @@
 // ktrenz-collect-social: T2 파이프라인용 소셜 데이터 수집 오케스트레이터
 // Instagram + TikTok 수집을 순차 호출하여 ktrenz_trend_triggers / ktrenz_social_snapshots에 저장
-// 호출 방식: ktrenz-trend-cron의 collect_social phase에서 단일 호출
+// 호출 방식: ktrenz-trend-cron의 collect_social phase에서 fire-and-forget 호출
+// ★ selfManage=true 시 자체적으로 pipeline_state를 done으로 업데이트하고 다음 phase를 생성
 // ★ Instagram은 시간 내 여러 배치를 루프로 처리 (배치당 20명)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
