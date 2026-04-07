@@ -1466,22 +1466,10 @@ Deno.serve(async (req) => {
     });
 
     // ── Self-manage: postprocess가 직접 파이프라인 상태를 업데이트 ──
+    // 중요: DB 업데이트를 먼저 수행하고, grade는 fire-and-forget으로 나중에 호출
     if (selfManage && stateId) {
       try {
         console.log(`[postprocess] Self-managing pipeline state, stateId=${stateId}, runId=${runId}`);
-
-        // Grade 인라인 실행
-        try {
-          const gradeResp = await fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          });
-          const gradeText = await gradeResp.text();
-          console.log(`[postprocess] Inline grade result: ${gradeText.slice(0, 200)}`);
-        } catch (e) {
-          console.warn(`[postprocess] Grade failed (non-fatal): ${(e as Error).message}`);
-        }
 
         // 다음 phase 결정
         const PHASE_ORDER = ["detect", "collect_social", "postprocess", "track"] as const;
@@ -1500,8 +1488,8 @@ Deno.serve(async (req) => {
         const isSinglePhaseRun = (currentState?.run_id || runId || "").startsWith("single_");
         const nextPhase = isSinglePhaseRun ? null : getNextPhase(currentPhase);
 
+        // DB 상태 업데이트를 먼저! (가장 중요)
         if (nextPhase) {
-          // 현재 phase → done, 다음 phase 시작
           await sb.from("ktrenz_pipeline_state")
             .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
             .eq("id", stateId);
@@ -1519,12 +1507,22 @@ Deno.serve(async (req) => {
           }
           console.log(`[postprocess] Self-manage: phase ${currentPhase} done → starting ${nextPhase}`);
         } else {
-          // 마지막 phase → done
           await sb.from("ktrenz_pipeline_state")
             .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
             .eq("id", stateId);
           console.log(`[postprocess] Self-manage: pipeline complete (run=${runId})`);
         }
+
+        // Grade는 fire-and-forget (DB 업데이트 이후이므로 실패해도 안전)
+        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }).then(r => r.text()).then(t => {
+          console.log(`[postprocess] Grade result: ${t.slice(0, 200)}`);
+        }).catch(e => {
+          console.warn(`[postprocess] Grade failed (non-fatal): ${(e as Error).message}`);
+        });
       } catch (e) {
         console.error(`[postprocess] Self-manage DB update failed: ${(e as Error).message}`);
         // 실패 시 postprocess_requested로 복원
