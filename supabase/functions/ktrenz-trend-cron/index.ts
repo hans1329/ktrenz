@@ -27,7 +27,7 @@ const PHASE_FUNCTION: Record<string, string> = {
 const VALID_PHASES = new Set(PHASE_ORDER);
 const DETECT_PHASES = new Set(["detect"]);
 const SINGLE_CALL_PHASES = new Set<string>(["collect_social", "postprocess"]); // 내부 배치 관리
-const FIRE_AND_FORGET_PHASES = new Set<string>(["collect_social"]); // 150s 플랫폼 타임아웃 초과 → fire-and-forget
+const FIRE_AND_FORGET_PHASES = new Set<string>(["collect_social", "postprocess"]); // 150s 플랫폼 타임아웃 초과 → fire-and-forget
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 function resolveBatchSize(phase: string, requestedBatchSize: number): number {
