@@ -1,0 +1,1 @@
+UPDATE ktrenz_pipeline_state SET status = 'stopped', last_error = 'Manual stop - smart skip test', updated_at = now() WHERE run_id = 'run_1775582332948';
