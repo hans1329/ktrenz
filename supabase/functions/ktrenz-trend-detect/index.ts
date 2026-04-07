@@ -2086,6 +2086,8 @@ Deno.serve(async (req) => {
         stoppedEarly,
         stopReason,
         totalCandidates: allCandidates.length,
+        smartSkipped: skippedCount,
+        totalRaw: rawCandidates.length,
         successCount,
         totalKeywords,
         sourceStats: { news: totalNews, blog: totalBlogs, shop: totalShop },
