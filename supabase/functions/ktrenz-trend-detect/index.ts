@@ -1861,7 +1861,7 @@ Deno.serve(async (req) => {
 
     if (!batch.length) {
       return new Response(
-        JSON.stringify({ success: true, message: "No stars in batch", batchOffset, totalCandidates: allCandidates.length }),
+        JSON.stringify({ success: true, message: "No stars in batch", batchOffset, totalCandidates: allCandidates.length, smartSkipped: skippedCount, totalRaw: rawCandidates.length }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
