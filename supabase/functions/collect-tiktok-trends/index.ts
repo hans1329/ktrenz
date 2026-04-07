@@ -65,8 +65,9 @@ async function searchTikTok(
   count: number = SEARCH_COUNT,
 ): Promise<TikTokVideo[]> {
   try {
-    // tiktok-api23 (Lundehund): /api/search/video 엔드포인트
-    const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(keyword)}&cursor=0&search_id=0`;
+    // tiktok-api23 (tikfly): /api/search/video 엔드포인트
+    // cursor 제거 — 문서 기준 첫 호출 시 불필요, 204 응답 원인으로 추정
+    const url = `https://${TIKTOK_API_HOST}/api/search/video?keyword=${encodeURIComponent(keyword)}&search_id=0`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -75,7 +76,12 @@ async function searchTikTok(
       },
     });
 
-    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}`);
+    console.log(`[tiktok] Search "${keyword}": HTTP ${response.status}, headers: ${JSON.stringify(Object.fromEntries(response.headers.entries())).slice(0, 300)}`);
+
+    if (response.status === 204) {
+      console.warn(`[tiktok] 204 No Content for "${keyword}" — API may have changed`);
+      return [];
+    }
 
     if (!response.ok) {
       const err = await response.text();
