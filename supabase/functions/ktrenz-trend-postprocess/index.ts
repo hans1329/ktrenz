@@ -1338,8 +1338,16 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const triggeredBy = body.triggeredBy || "manual";
     const mode = body.mode || "full"; // "full" = AI 분류 포함, "fast" = rule-based만
+    const selfManage = body.selfManage === true; // fire-and-forget 모드
+    const runId = body.runId || null;
+    const stateId = body.stateId || null;
 
-    console.log(`[postprocess] Starting post-processing... mode=${mode}, triggeredBy=${triggeredBy}`);
+    console.log(`[postprocess] Starting post-processing... mode=${mode}, triggeredBy=${triggeredBy}, selfManage=${selfManage}, runId=${runId}`);
+
+    // 타임가드: 120초 (Edge Function 150초 한도 내 안전 마진)
+    const TIMEGUARD_MS = 120_000;
+    const startTime = Date.now();
+    const isTimeOk = () => Date.now() - startTime < TIMEGUARD_MS;
 
     // 시작 로그 기록 (UI에서 감지 가능)
     await sb.from("ktrenz_collection_log").insert({
@@ -1362,7 +1370,7 @@ Deno.serve(async (req) => {
     let aiResult = { reclassified: 0, details: [] as string[] };
 
     // 1단계: AI 분류 (full 모드에서만, 시간 제한 40초)
-    if (mode === "full") {
+    if (mode === "full" && isTimeOk()) {
       const aiStart = Date.now();
       try {
         aiResult = await aiClassification(sb);
@@ -1373,52 +1381,52 @@ Deno.serve(async (req) => {
     }
 
     // 2단계: 멤버 우선 중복제거 (rule-based)
-    const dedupResult = await memberPriorityDedup(sb);
+    const dedupResult = isTimeOk() ? await memberPriorityDedup(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Member priority dedup: expired ${dedupResult.expired} group entries`);
 
     // 3단계: 동일 아티스트 내 키워드 중복제거
-    const sameArtistResult = await sameArtistKeywordDedup(sb);
+    const sameArtistResult = isTimeOk() ? await sameArtistKeywordDedup(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Same-artist keyword dedup: expired ${sameArtistResult.expired} duplicates`);
 
     // 4단계: 국내 우선 소스 중복제거
-    const srcDedupResult = await domesticPriorityDedup(sb);
+    const srcDedupResult = isTimeOk() ? await domesticPriorityDedup(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Domestic priority dedup: expired ${srcDedupResult.expired} global entries`);
 
     // 4.5단계: 동일 아티스트 + 동일 source_url 중복제거
-    const sameUrlResult = await sameSourceUrlDedup(sb);
+    const sameUrlResult = isTimeOk() ? await sameSourceUrlDedup(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Same source_url dedup: expired ${sameUrlResult.expired} duplicates`);
 
     // 4.6단계: 크로스 아티스트 동일 source_url 중복제거
-    const crossArtistResult = await crossArtistSourceUrlDedup(sb);
+    const crossArtistResult = isTimeOk() ? await crossArtistSourceUrlDedup(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Cross-artist source_url dedup: expired ${crossArtistResult.expired} duplicates`);
 
     // 4.65단계: 동일 아티스트 + 동일 이미지 중복제거
-    const sameImageResult = await sameImageDedup(sb);
+    const sameImageResult = isTimeOk() ? await sameImageDedup(sb) : { expired: 0, merged: 0, details: [] };
     console.log(`[postprocess] Same image dedup: expired ${sameImageResult.expired} duplicates (${sameImageResult.merged} merged)`);
     if (sameImageResult.details.length > 0) {
       console.log(`[postprocess] Same image details: ${sameImageResult.details.join("; ")}`);
     }
 
     // 4.66단계: 동일 아티스트 + 이미지 없음(프로필 폴백) 중복제거
-    const noImageResult = await noImageDedup(sb);
+    const noImageResult = isTimeOk() ? await noImageDedup(sb) : { expired: 0, merged: 0, details: [] };
     console.log(`[postprocess] No-image dedup: expired ${noImageResult.expired} duplicates (${noImageResult.merged} merged)`);
     if (noImageResult.details.length > 0) {
       console.log(`[postprocess] No-image details: ${noImageResult.details.join("; ")}`);
     }
 
     // 4.7단계: brand_id 자동 매핑
-    const brandMapped = await mapBrandIds(sb);
+    const brandMapped = isTimeOk() ? await mapBrandIds(sb) : { mapped: 0, registered: 0 };
     console.log(`[postprocess] Brand ID mapping: mapped ${brandMapped.mapped}, auto-registered ${brandMapped.registered} new brands`);
 
     // 4.8단계: 글로벌 스타명 필터 (다른 아티스트/그룹 이름이 키워드인 경우 제거)
-    const globalNameResult = await globalStarNameFilter(sb);
+    const globalNameResult = isTimeOk() ? await globalStarNameFilter(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Global star name filter: expired ${globalNameResult.expired} entries`);
     if (globalNameResult.details.length > 0) {
       console.log(`[postprocess] Global name details: ${globalNameResult.details.join("; ")}`);
     }
 
     // 4.9단계: 패턴 기반 노이즈 필터 (숫자+단위, 알려진 노이즈 등)
-    const noiseResult = await noisePatternFilter(sb);
+    const noiseResult = isTimeOk() ? await noisePatternFilter(sb) : { expired: 0, details: [] };
     console.log(`[postprocess] Noise pattern filter: expired ${noiseResult.expired} entries`);
     if (noiseResult.details.length > 0) {
       console.log(`[postprocess] Noise details: ${noiseResult.details.join("; ")}`);
@@ -1426,7 +1434,7 @@ Deno.serve(async (req) => {
 
     // 4.95단계: 의미적 유사 키워드 클러스터링 (같은 사건 파생 키워드 병합)
     let semanticResult = { expired: 0, merged: 0, details: [] as string[] };
-    if (mode === "full") {
+    if (mode === "full" && isTimeOk()) {
       try {
         semanticResult = await semanticKeywordDedup(sb);
         console.log(`[postprocess] Semantic dedup: expired ${semanticResult.expired} duplicates (${semanticResult.merged} merged)`);
@@ -1443,7 +1451,7 @@ Deno.serve(async (req) => {
     console.log(`[postprocess] Marked ${activated} entries as postprocessed`);
 
     // 5.5단계: 메가트렌드 태깅
-    const megaTrendResult = await tagMegaTrends(sb);
+    const megaTrendResult = isTimeOk() ? await tagMegaTrends(sb) : { tagged: 0, clusters: 0, details: [] };
     console.log(`[postprocess] Mega trend tagging: ${megaTrendResult.tagged} entries in ${megaTrendResult.clusters} clusters`);
     if (megaTrendResult.details.length > 0) {
       console.log(`[postprocess] Mega trend details: ${megaTrendResult.details.join("; ")}`);
@@ -1454,13 +1462,87 @@ Deno.serve(async (req) => {
       platform: "trend_postprocess",
       status: "success",
       records_collected: activated,
-      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, semantic_dedup=${semanticResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, mega_trend=${megaTrendResult.tagged}/${megaTrendResult.clusters}, activated=${activated}, pending_before=${pendingBefore ?? 0}`,
+      error_message: `mode=${mode}, ai=${aiResult.reclassified}, member_dedup=${dedupResult.expired}, same_artist_dedup=${sameArtistResult.expired}, domestic_dedup=${srcDedupResult.expired}, same_url_dedup=${sameUrlResult.expired}, cross_artist_dedup=${crossArtistResult.expired}, same_image_dedup=${sameImageResult.expired}, no_image_dedup=${noImageResult.expired}, semantic_dedup=${semanticResult.expired}, brand_mapped=${brandMapped.mapped}, brand_registered=${brandMapped.registered}, global_name=${globalNameResult.expired}, noise=${noiseResult.expired}, mega_trend=${megaTrendResult.tagged}/${megaTrendResult.clusters}, activated=${activated}, pending_before=${pendingBefore ?? 0}, elapsed=${Date.now() - startTime}ms`,
     });
+
+    // ── Self-manage: postprocess가 직접 파이프라인 상태를 업데이트 ──
+    // 중요: DB 업데이트를 먼저 수행하고, grade는 fire-and-forget으로 나중에 호출
+    if (selfManage && stateId) {
+      try {
+        console.log(`[postprocess] Self-managing pipeline state, stateId=${stateId}, runId=${runId}`);
+
+        // 다음 phase 결정
+        const PHASE_ORDER = ["detect", "collect_social", "postprocess", "track"] as const;
+        const getNextPhase = (current: string): string | null => {
+          const idx = PHASE_ORDER.indexOf(current as any);
+          return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
+        };
+
+        // pipeline_state에서 현재 row의 phase를 읽어옴
+        const { data: currentState } = await sb.from("ktrenz_pipeline_state")
+          .select("phase, run_id, batch_size")
+          .eq("id", stateId)
+          .single();
+
+        const currentPhase = currentState?.phase || "detect";
+        const isSinglePhaseRun = (currentState?.run_id || runId || "").startsWith("single_");
+        const nextPhase = isSinglePhaseRun ? null : getNextPhase(currentPhase);
+
+        // DB 상태 업데이트를 먼저! (가장 중요)
+        if (nextPhase) {
+          await sb.from("ktrenz_pipeline_state")
+            .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
+            .eq("id", stateId);
+
+          const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+            .select("id").eq("run_id", currentState.run_id).eq("phase", nextPhase).limit(1);
+          if (!existingNext?.length) {
+            await sb.from("ktrenz_pipeline_state").insert({
+              run_id: currentState.run_id,
+              phase: nextPhase,
+              status: "running",
+              current_offset: 0,
+              batch_size: currentState.batch_size || 10,
+            });
+          }
+          console.log(`[postprocess] Self-manage: phase ${currentPhase} done → starting ${nextPhase}`);
+        } else {
+          await sb.from("ktrenz_pipeline_state")
+            .update({ status: "done", postprocess_done: true, updated_at: new Date().toISOString() })
+            .eq("id", stateId);
+          console.log(`[postprocess] Self-manage: pipeline complete (run=${runId})`);
+        }
+
+        // Grade는 fire-and-forget (DB 업데이트 이후이므로 실패해도 안전)
+        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }).then(r => r.text()).then(t => {
+          console.log(`[postprocess] Grade result: ${t.slice(0, 200)}`);
+        }).catch(e => {
+          console.warn(`[postprocess] Grade failed (non-fatal): ${(e as Error).message}`);
+        });
+      } catch (e) {
+        console.error(`[postprocess] Self-manage DB update failed: ${(e as Error).message}`);
+        // 실패 시 postprocess_requested로 복원
+        await sb.from("ktrenz_pipeline_state")
+          .update({
+            status: "postprocess_requested",
+            last_error: `postprocess self-manage failed: ${(e as Error).message.slice(0, 300)}`,
+            last_error_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", stateId)
+          .eq("status", "postprocess_running");
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         mode,
+        elapsed_ms: Date.now() - startTime,
         aiClassification: aiResult,
         memberPriority: dedupResult,
         sameArtistDedup: sameArtistResult,
@@ -1481,6 +1563,27 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("[postprocess] Error:", error);
+
+    // Self-manage 실패 복구
+    try {
+      const body2 = await req.clone().json().catch(() => ({}));
+      if (body2.selfManage && body2.stateId) {
+        const sb2 = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        await sb2.from("ktrenz_pipeline_state")
+          .update({
+            status: "postprocess_requested",
+            last_error: `postprocess crashed: ${(error as Error).message.slice(0, 300)}`,
+            last_error_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", body2.stateId)
+          .eq("status", "postprocess_running");
+        console.log(`[postprocess] Reverted to postprocess_requested after crash`);
+      }
+    } catch (e2) {
+      console.error(`[postprocess] Failed to revert state: ${(e2 as Error).message}`);
+    }
+
     return new Response(
       JSON.stringify({ success: false, error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
