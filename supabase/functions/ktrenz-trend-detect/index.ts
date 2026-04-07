@@ -1817,14 +1817,32 @@ Deno.serve(async (req) => {
     // 레거시 호환 (wikiEntryId) 경로 제거 — star_id만 지원
 
     // 배치 모드: ktrenz_stars의 group/solo/member 타입 순회
+    // Smart Skip: last_detected_at + last_detect_result 포함 조회
     const { data: allStars } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, group_star_id, star_category, star_type")
+      .select("id, display_name, name_ko, group_star_id, star_category, star_type, last_detected_at, last_detect_result")
       .eq("is_active", true)
       .in("star_type", ["group", "solo", "member"])
       .order("display_name", { ascending: true });
 
-    const allCandidates = allStars || [];
+    const rawCandidates = allStars || [];
+
+    // ── Smart Skip: 최근 18시간 내 키워드 발견 성공(found)한 스타는 스킵 ──
+    const SMART_SKIP_HOURS = 18;
+    const skipThreshold = new Date(Date.now() - SMART_SKIP_HOURS * 60 * 60 * 1000).toISOString();
+    const allCandidates = rawCandidates.filter((s: any) => {
+      // last_detected_at이 없거나 오래된 경우 → 수집 대상
+      if (!s.last_detected_at || s.last_detected_at < skipThreshold) return true;
+      // 최근 감지했지만 결과가 'found'가 아닌 경우 (에러, 타임아웃, no_keywords 등) → 재시도
+      const status = s.last_detect_result?.status;
+      if (status !== "found") return true;
+      // 최근 18시간 내 found → 스킵
+      return false;
+    });
+    const skippedCount = rawCandidates.length - allCandidates.length;
+    if (skippedCount > 0) {
+      console.log(`[trend-detect] Smart Skip: ${skippedCount}/${rawCandidates.length} stars skipped (found within ${SMART_SKIP_HOURS}h), processing ${allCandidates.length}`);
+    }
 
     // group_star_id로 그룹 정보 일괄 조회 (member 타입용)
     const groupIds = [...new Set(allCandidates.map((m: any) => m.group_star_id).filter(Boolean))];
