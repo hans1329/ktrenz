@@ -649,6 +649,25 @@ function getNextPhase(currentPhase: string): string | null {
   return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
 }
 
+// ── 파이프라인 완료 후 정리 작업 ──
+async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
+  console.log("[cron] Pipeline complete — running end-of-pipeline jobs");
+
+  // Grade 최종 산출 (fire-and-forget)
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }).then(r => r.text()).then(t => {
+    console.log(`[cron] End-of-pipeline grade result: ${t.slice(0, 200)}`);
+  }).catch(e => {
+    console.warn(`[cron] End-of-pipeline grade failed (non-fatal): ${(e as Error).message}`);
+  });
+}
+
 function respond(body: any, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
