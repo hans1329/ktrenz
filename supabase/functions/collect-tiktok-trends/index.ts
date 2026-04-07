@@ -418,7 +418,7 @@ Deno.serve(async (req) => {
     const snapshotsToInsert: any[] = [];
     let totalKeywords = 0;
     let apiCallCount = 0;
-    let emptyResponseStreak = 0;
+    let emptyResponseStreak = 0; // 이제 누적 빈 응답 수 (연속 아님)
 
     for (const star of starsToProcess as any[]) {
       // 실행 중 하드 리밋 재확인
