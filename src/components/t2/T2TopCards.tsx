@@ -120,6 +120,7 @@ const T2TopCards = ({ items, onTileClick, trackingMap }: T2TopCardsProps) => {
               key={item.id}
               onClick={() => onTileClick(item)}
               className="relative flex-none w-[72vw] md:w-[280px] aspect-[3/4] rounded-2xl overflow-hidden text-left snap-start active:scale-[0.97] transition-transform"
+              className="relative flex-none w-[72vw] md:w-[280px] aspect-[3/4] rounded-t-2xl rounded-b-none overflow-hidden text-left snap-start active:scale-[0.97] transition-transform"
             >
               {bgImg ? (
                 <img
