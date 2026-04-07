@@ -27,7 +27,7 @@ const PHASE_FUNCTION: Record<string, string> = {
 const VALID_PHASES = new Set(PHASE_ORDER);
 const DETECT_PHASES = new Set(["detect"]);
 const SINGLE_CALL_PHASES = new Set<string>(["collect_social", "postprocess"]); // 내부 배치 관리
-const FIRE_AND_FORGET_PHASES = new Set<string>(["collect_social"]); // 150s 플랫폼 타임아웃 초과 → fire-and-forget
+const FIRE_AND_FORGET_PHASES = new Set<string>(["collect_social", "postprocess"]); // 150s 플랫폼 타임아웃 초과 → fire-and-forget
 const ROTATING_PHASES = new Set<string>(); // 현재 없음
 
 function resolveBatchSize(phase: string, requestedBatchSize: number): number {
@@ -647,6 +647,25 @@ function fireAndForgetPhase(supabaseUrl: string, supabaseKey: string, phase: str
 function getNextPhase(currentPhase: string): string | null {
   const idx = PHASE_ORDER.indexOf(currentPhase as any);
   return idx >= 0 && idx < PHASE_ORDER.length - 1 ? PHASE_ORDER[idx + 1] : null;
+}
+
+// ── 파이프라인 완료 후 정리 작업 ──
+async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
+  console.log("[cron] Pipeline complete — running end-of-pipeline jobs");
+
+  // Grade 최종 산출 (fire-and-forget)
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }).then(r => r.text()).then(t => {
+    console.log(`[cron] End-of-pipeline grade result: ${t.slice(0, 200)}`);
+  }).catch(e => {
+    console.warn(`[cron] End-of-pipeline grade failed (non-fatal): ${(e as Error).message}`);
+  });
 }
 
 function respond(body: any, status = 200) {
