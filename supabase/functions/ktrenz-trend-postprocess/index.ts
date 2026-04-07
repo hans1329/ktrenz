@@ -1098,13 +1098,11 @@ async function markPostprocessed(sb: any): Promise<number> {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const now = new Date().toISOString();
 
-  // triggers 테이블: 후처리 완료 마킹 (pending → active 전환 포함)
-  // pending 상태를 active로 전환
+  // pending 상태를 active로 전환 (postprocessed_at 유무와 무관하게)
   await sb
     .from("ktrenz_trend_triggers")
     .update({ status: "active", postprocessed_at: now })
     .eq("status", "pending")
-    .is("postprocessed_at", null)
     .gte("detected_at", threeDaysAgo);
 
   const { data } = await sb
