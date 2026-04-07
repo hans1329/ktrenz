@@ -668,18 +668,31 @@ function getNextPhase(currentPhase: string): string | null {
 async function runEndOfPipelineJobs(supabaseUrl: string, supabaseKey: string) {
   console.log("[cron] Pipeline complete — running end-of-pipeline jobs");
 
-  // Grade 최종 산출 (fire-and-forget)
+  const headers = {
+    Authorization: `Bearer ${supabaseKey}`,
+    "Content-Type": "application/json",
+  };
+
+  // 1) Grade 최종 산출
   fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-grade`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify({}),
   }).then(r => r.text()).then(t => {
     console.log(`[cron] End-of-pipeline grade result: ${t.slice(0, 200)}`);
   }).catch(e => {
     console.warn(`[cron] End-of-pipeline grade failed (non-fatal): ${(e as Error).message}`);
+  });
+
+  // 2) Market Lifecycle: 만료 마켓 정산 → 새 마켓 오픈
+  fetch(`${supabaseUrl}/functions/v1/ktrenz-market-lifecycle`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({}),
+  }).then(r => r.text()).then(t => {
+    console.log(`[cron] End-of-pipeline market-lifecycle result: ${t.slice(0, 200)}`);
+  }).catch(e => {
+    console.warn(`[cron] End-of-pipeline market-lifecycle failed (non-fatal): ${(e as Error).message}`);
   });
 }
 
