@@ -427,20 +427,30 @@ Deno.serve(async (req) => {
         break;
       }
       // 빈 응답 연속 5회 시 중단 (과금만 되는 상황 방지)
-      if (emptyResponseStreak >= 5) {
-        console.warn(`[tiktok] 5 consecutive empty responses, stopping to prevent wasted calls`);
+      // 빈 응답 누적 비율 체크: 15건 이상 처리 후 80% 이상이 빈 응답이면 중단
+      if (apiCallCount >= 15 && emptyResponseStreak / apiCallCount > 0.8) {
+        console.warn(`[tiktok] ${emptyResponseStreak}/${apiCallCount} empty responses (>80%), stopping to prevent wasted calls`);
         break;
       }
       try {
-        // ─── 동명이인 방지 검색 쿼리 ───
-        const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
-        const nameLen = (star.name_ko || star.display_name).replace(/\s/g, "").length;
+        // ─── 검색 키워드 최적화 ───
+        // 멤버: display_name만 사용 (예: "Jimin" — 그룹명 prefix 제거로 204 비율 감소)
+        // 짧은 이름(≤2글자): 한글 이름 우선 시도, 없으면 그룹명 prefix
+        // 그룹/솔로: display_name 그대로
         let searchKeyword = star.display_name;
-        if (groupName) {
-          searchKeyword = `${groupName} ${star.display_name}`;
-        } else if (nameLen <= 3) {
+        const nameLen = (star.display_name || "").replace(/\s/g, "").length;
+        
+        if (star.star_type === "member") {
+          if (nameLen <= 2 && star.name_ko) {
+            // 짧은 영문명은 한글로 검색 (예: "RM" → "알엠" 대신 그룹명 prefix)
+            const groupName = star.group_star_id ? tiktokGroupMap[star.group_star_id] : null;
+            searchKeyword = groupName ? `${groupName} ${star.display_name}` : star.display_name;
+          }
+          // 3글자 이상 멤버는 그대로 display_name 사용
+        } else if (nameLen <= 2) {
           searchKeyword = `${star.display_name} K-pop`;
         }
+        
         const videos = await searchTikTok(apiKey, searchKeyword, SEARCH_COUNT);
         apiCallCount++;
 
