@@ -651,7 +651,10 @@ const T2DetailSheet = ({ tile, rank, totalCount, onClose }: { tile: TrendTile | 
                   : language === "ja" ? (tile.contextJa || tile.context)
                   : language === "zh" ? (tile.contextZh || tile.context)
                   : tile.context;
-                const ctx = rawCtx ? rawCtx.replace(/\[\d+\]/g, "").replace(/^\[YouTube\]\s*/i, "").trim() : null;
+                const cleaned = rawCtx ? rawCtx.replace(/\[\d+\]/g, "").replace(/^\[YouTube\]\s*/i, "").trim() : null;
+                // Hide shop-detection context (e.g. "[Shop] 네이버 쇼핑에서 ... 4건 발견")
+                const isShopCtx = cleaned && (/^\[Shop\]/i.test(rawCtx || "") || /쇼핑에서.*\d+건\s*발견/.test(cleaned));
+                const ctx = isShopCtx ? null : cleaned;
                 return ctx ? (
                   <p className="text-sm text-foreground/80 leading-relaxed">{ctx}</p>
                 ) : (
