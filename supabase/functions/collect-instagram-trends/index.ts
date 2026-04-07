@@ -1,5 +1,6 @@
-// Instagram Trend Collector: RapidAPI Instagram API를 통해 아티스트 피드/스토리에서 트렌드 데이터 수집
-// 프로필 조회 → feed/stories 수집 → AI 키워드 추출 → ktrenz_trend_triggers 저장
+// Instagram Trend Collector: RapidAPI Instagram API를 통해 아티스트 피드에서 트렌드 데이터 수집
+// 프로필 조회 → feed 수집 → AI 키워드 추출 → ktrenz_trend_triggers 저장
+// ★ 최적화: fetchWithTimeout, 타임가드, 축소된 rate-limit sleep, 정확한 processed 카운트
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,10 +11,35 @@ const corsHeaders = {
 
 const RAPIDAPI_HOST = "instagram120.p.rapidapi.com";
 const RAPIDAPI_BASE = `https://${RAPIDAPI_HOST}`;
-const MAX_RESOLVE_PER_RUN = 5; // 미검색 아티스트 프로필 검색 제한 (축소)
-const POST_AGE_DAYS = 7; // 7일 이내 포스트만 수집 (기존 3일에서 완화)
+const MAX_RESOLVE_PER_RUN = 5;
+const POST_AGE_DAYS = 7;
+const TIMEGUARD_MS = 130_000;       // 전체 타임가드 (130초 — 150초 플랫폼 한도 내 안전 마진)
+const IG_FETCH_TIMEOUT_MS = 12_000; // Instagram API 개별 호출 타임아웃
+const AI_FETCH_TIMEOUT_MS = 20_000; // OpenAI 호출 타임아웃
+const RATE_LIMIT_SLEEP_MS = 500;    // 호출 간 대기 (1.5s → 0.5s로 축소)
 
-// ─── 아티스트/멤버 이름 키워드 필터 (동명 복합 키워드 차단) ───
+// ── 타임아웃 fetch 헬퍼 ──
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const existingSignal = init.signal;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  // 외부 signal과 내부 타임아웃 signal 모두 대응
+  if (existingSignal) {
+    existingSignal.addEventListener("abort", () => controller.abort());
+  }
+
+  try {
+    const resp = await fetch(url, { ...init, signal: controller.signal });
+    clearTimeout(timeout);
+    return resp;
+  } catch (e) {
+    clearTimeout(timeout);
+    throw e;
+  }
+}
+
+// ─── 아티스트/멤버 이름 키워드 필터 ───
 function isStarNameKeyword(keyword: string, blockedNames: Set<string>): boolean {
   const kw = keyword.trim().toLowerCase();
   if (!kw) return false;
@@ -39,10 +65,10 @@ interface InstaPost {
   shortcode: string | null;
 }
 
-// ── RapidAPI 호출 헬퍼 (instagram120: POST 방식) ──
+// ── RapidAPI 호출 헬퍼 ──
 async function instaFetch(endpoint: string, body: Record<string, any>, rapidApiKey: string, retries = 1): Promise<any> {
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(`${RAPIDAPI_BASE}/${endpoint}`, {
+    const res = await fetchWithTimeout(`${RAPIDAPI_BASE}/${endpoint}`, {
       method: "POST",
       headers: {
         "X-RapidAPI-Key": rapidApiKey,
@@ -50,10 +76,10 @@ async function instaFetch(endpoint: string, body: Record<string, any>, rapidApiK
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    });
+    }, IG_FETCH_TIMEOUT_MS);
 
     if (res.status === 429 && attempt < retries) {
-      await res.text(); // consume body
+      await res.text();
       console.warn(`[instagram] 429 rate limit, waiting 3s before retry...`);
       await new Promise((r) => setTimeout(r, 3000));
       continue;
@@ -68,72 +94,25 @@ async function instaFetch(endpoint: string, body: Record<string, any>, rapidApiK
   }
 }
 
-// ── 프로필 조회 → pk(user_id) + username 캐싱 (instagram120: POST /api/instagram/profile) ──
-async function resolveInstagramProfile(
-  artistName: string,
-  rapidApiKey: string,
-): Promise<{ pk: string; username: string; follower_count: number } | null> {
-  try {
-    const variants = [
-      artistName.toLowerCase().replace(/[^a-z0-9]/g, ""),
-      artistName.toLowerCase().replace(/[^a-z0-9]/g, "") + "official",
-    ];
-
-    for (const username of variants) {
-      try {
-        const data = await instaFetch("api/instagram/profile", { username }, rapidApiKey);
-        const profile = data?.result;
-        if (!profile?.id) continue;
-        const followerCount = profile.edge_followed_by?.count || 0;
-        // 팔로워 1만 이상이면 공식 계정으로 간주 (instagram120은 is_verified 미제공)
-        if (followerCount >= 10000) {
-          return {
-            pk: String(profile.id),
-            username: profile.username || username,
-            follower_count: followerCount,
-          };
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    return null;
-  } catch (e) {
-    console.warn(`[instagram] Profile resolution failed for ${artistName}: ${(e as Error).message}`);
-    return null;
-  }
-}
-
-// ── 피드 포스트 파싱 (instagram120: edges[].node 구조) ──
+// ── 피드 포스트 파싱 ──
 function parseFeedItems(data: any): InstaPost[] {
   const edges = data?.result?.edges || [];
   const posts: InstaPost[] = [];
 
-  for (const edge of edges.slice(0, 12)) { // 최근 12개 포스트만
+  for (const edge of edges.slice(0, 12)) {
     const item = edge.node;
     if (!item) continue;
 
-    // caption 추출 (instagram120: item.caption.text)
     const caption = item.caption;
     const captionText = typeof caption === "string" ? caption : (caption?.text || "");
-
-    // 해시태그 추출
     const hashtags = (captionText.match(/#[\w가-힣]+/g) || []).map((h: string) => h.slice(1));
-
-    // 위치 정보
     const location = item.location;
     const locationName = location?.name || location?.short_name || null;
-
-    // 유저 태그
     const usertagItems = item.usertags?.in || [];
     const usertags = usertagItems.map((t: any) => t.user?.username).filter(Boolean);
-
-    // 이미지 URL
     const imageVersions = item.image_versions2?.candidates || [];
     const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : (item.display_uri || null);
 
-    // POST_AGE_DAYS 이내 포스트만
     const takenAt = item.taken_at || 0;
     const cutoff = Math.floor(Date.now() / 1000) - 86400 * POST_AGE_DAYS;
     if (takenAt < cutoff) continue;
@@ -156,60 +135,6 @@ function parseFeedItems(data: any): InstaPost[] {
   return posts;
 }
 
-// ── 스토리 파싱 ──
-function parseStoryItems(data: any): InstaPost[] {
-  const items = Array.isArray(data) ? data : (data?.items || []);
-  const stories: InstaPost[] = [];
-
-  for (const item of items) {
-    const storyHashtags: string[] = [];
-    const storyLocations: string[] = [];
-    const storyMentions: string[] = [];
-
-    // 스토리 스티커에서 해시태그, 위치, 멘션 추출
-    const stickers = item.story_bloks_stickers || item.reel_mentions || [];
-    for (const sticker of stickers) {
-      if (sticker.bloks_sticker?.sticker_data?.ig_mention) {
-        storyMentions.push(sticker.bloks_sticker.sticker_data.ig_mention.username);
-      }
-    }
-
-    // story_hashtags
-    const hashtagStickers = item.story_hashtags || [];
-    for (const hs of hashtagStickers) {
-      if (hs.hashtag?.name) storyHashtags.push(hs.hashtag.name);
-    }
-
-    // story_locations
-    const locationStickers = item.story_locations || [];
-    for (const ls of locationStickers) {
-      if (ls.location?.name) storyLocations.push(ls.location.name);
-    }
-
-    // 캡션 텍스트 (스토리에선 보통 없지만)
-    const caption = item.caption?.text || "";
-
-    const imageVersions = item.image_versions2?.candidates || [];
-    const mediaUrl = imageVersions.length > 0 ? imageVersions[0].url : null;
-
-    stories.push({
-      caption_text: caption,
-      location_name: storyLocations.length > 0 ? storyLocations[0] : null,
-      location_id: null,
-      hashtags: storyHashtags,
-      usertags: storyMentions,
-      taken_at: item.taken_at || 0,
-      media_url: mediaUrl,
-      like_count: 0,
-      comment_count: 0,
-      media_type: "story",
-      shortcode: item.code || item.shortcode || null,
-    });
-  }
-
-  return stories;
-}
-
 // ── AI 키워드 추출 ──
 async function extractKeywordsFromPosts(
   posts: InstaPost[],
@@ -228,7 +153,6 @@ async function extractKeywordsFromPosts(
 }>> {
   if (posts.length === 0) return [];
 
-  // 포스트 요약 생성
   const postSummaries = posts.map((p, i) => {
     const parts = [`[${i + 1}] (${p.media_type})`];
     if (p.caption_text) parts.push(`Caption: "${p.caption_text.slice(0, 200)}"`);
@@ -269,7 +193,7 @@ Return JSON array:
 If no meaningful commercial keywords found, return [].`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${openaiKey}`,
@@ -281,7 +205,7 @@ If no meaningful commercial keywords found, return [].`;
         temperature: 0.3,
         response_format: { type: "json_object" },
       }),
-    });
+    }, AI_FETCH_TIMEOUT_MS);
 
     if (!res.ok) {
       console.warn(`[instagram] OpenAI API error: ${res.status}`);
@@ -304,6 +228,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const fnStartTime = Date.now();
+
   try {
     const rapidApiKey = Deno.env.get("RAPIDAPI_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
@@ -317,7 +243,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
 
-    // ── 리셋 모드: _not_found 캐싱 일괄 초기화 ──
+    // ── 리셋 모드 ──
     if (body.action === "reset_not_found") {
       const resetLimit = body.limit || 50;
       const { data: allStars } = await sb
@@ -345,11 +271,8 @@ Deno.serve(async (req) => {
 
     const batchSize = body.batchSize || body.batch_size || 20;
     const offset = body.offset || 0;
-    const targetStarId = body.star_id || null; // 특정 스타만 처리
-
-    // ── 대상 아티스트 조회 ──
-    // skipResolve: 핸들이 있는 아티스트만 처리 (프로필 검색 비활성화)
-    const skipResolve = body.skipResolve !== false; // 기본값 true
+    const targetStarId = body.star_id || null;
+    const skipResolve = body.skipResolve !== false;
 
     let query = sb
       .from("ktrenz_stars")
@@ -360,7 +283,6 @@ Deno.serve(async (req) => {
     if (targetStarId) {
       query = query.eq("id", targetStarId);
     } else {
-      // 핸들이 있는 아티스트만 필터링 (skipResolve 모드)
       if (skipResolve) {
         query = query.not("social_handles->instagram", "is", null)
           .neq("social_handles->>instagram" as any, "_not_found")
@@ -378,24 +300,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── 글로벌 스타 이름 셋 구축 (키워드 필터용) ───
+    // ─── 글로벌 스타 이름 셋 구축 ───
     const globalStarNames = new Set<string>();
     for (const s of stars) {
       if (s.display_name) globalStarNames.add(s.display_name.toLowerCase());
       if (s.name_ko) globalStarNames.add(s.name_ko.toLowerCase());
     }
-    console.log(`[instagram] Built globalStarNames: ${globalStarNames.size} entries`);
 
     console.log(`[instagram] Processing ${stars.length} stars (offset=${offset}, batch=${batchSize})`);
 
     let totalKeywords = 0;
     let profilesResolved = 0;
     let apiCalls = 0;
-    let resolveAttempts = 0; // 프로필 검색 시도 카운터
+    let processedCount = 0; // ★ 실제 처리 완료된 스타 수
     const results: string[] = [];
     const errors: string[] = [];
 
-    // 일일 API 사용량 조회 (ktrenz_collection_log에서 오늘 인스타 api_calls 합산)
+    // 일일 API 사용량 조회
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
     const { data: todayLogs } = await sb
@@ -410,8 +331,7 @@ Deno.serve(async (req) => {
       if (match) estimatedUsedCalls += parseInt(match[1]);
     }
 
-    // 하드 리밋: 하루 최대 API 호출 수 (BASIC 플랜 과금 방지)
-    const DAILY_HARD_LIMIT = 100; // 안전하게 100건으로 제한
+    const DAILY_HARD_LIMIT = 100;
     let remainingBudget = DAILY_HARD_LIMIT - estimatedUsedCalls;
     if (remainingBudget <= 0) {
       console.warn(`[instagram] Daily hard limit reached (${estimatedUsedCalls}/${DAILY_HARD_LIMIT}). Aborting batch.`);
@@ -429,6 +349,13 @@ Deno.serve(async (req) => {
     console.log(`[instagram] Daily budget: ${remainingBudget}/${DAILY_HARD_LIMIT} remaining (${estimatedUsedCalls} used today)`);
 
     for (const star of stars) {
+      // ★ 타임가드: 전체 실행 시간 초과 시 즉시 중단 (남은 스타는 다음 배치에서)
+      if (Date.now() - fnStartTime > TIMEGUARD_MS) {
+        console.log(`[instagram] ⏱ Timeguard hit at ${Math.round((Date.now() - fnStartTime) / 1000)}s, processed=${processedCount}/${stars.length}`);
+        results.push(`TIMEGUARD after ${processedCount} stars`);
+        break;
+      }
+
       // 예산 소진 시 즉시 중단
       if (apiCalls >= remainingBudget) {
         console.log(`[instagram] Daily API budget exhausted (${apiCalls} calls). Stopping.`);
@@ -441,12 +368,11 @@ Deno.serve(async (req) => {
         let igUsername = socialHandles.instagram || null;
         let igUserId = socialHandles.instagram_pk || null;
 
-        // ── 1. 인스타 핸들이 없으면 스킵 (자동매칭 비활성화 — 부정확 매칭 방지) ──
         if (!igUsername) {
+          processedCount++;
           continue;
         }
 
-        // _not_found 캐싱: 7일 경과 시 재시도
         if (igUsername === "_not_found") {
           const checkedAt = socialHandles.instagram_checked_at;
           const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
@@ -455,12 +381,12 @@ Deno.serve(async (req) => {
             delete updatedHandles.instagram;
             delete updatedHandles.instagram_checked_at;
             await sb.from("ktrenz_stars").update({ social_handles: updatedHandles }).eq("id", star.id);
-            console.log(`[instagram] Reset _not_found for ${star.display_name} (7d expired)`);
           }
+          processedCount++;
           continue;
         }
 
-        // pk가 없으면 프로필 조회 (instagram120: POST /api/instagram/profile)
+        // pk가 없으면 프로필 조회
         if (!igUserId) {
           apiCalls++;
           try {
@@ -472,17 +398,13 @@ Deno.serve(async (req) => {
               instagram_pk: igUserId,
               instagram_followers: profile?.edge_followed_by?.count || 0,
             };
-            await sb
-              .from("ktrenz_stars")
-              .update({ social_handles: updatedHandles })
-              .eq("id", star.id);
+            await sb.from("ktrenz_stars").update({ social_handles: updatedHandles }).eq("id", star.id);
           } catch {
             console.warn(`[instagram] Failed to get pk for @${igUsername}`);
-            // pk 없어도 username으로 posts 조회 가능하므로 계속 진행
           }
         }
 
-        // ── 2. 피드 수집 (instagram120: POST /api/instagram/posts, username 기반) ──
+        // ── 피드 수집 ──
         let allPosts: InstaPost[] = [];
 
         try {
@@ -496,23 +418,23 @@ Deno.serve(async (req) => {
 
         if (allPosts.length === 0) {
           results.push(`${star.display_name}: no recent posts`);
+          processedCount++;
           continue;
         }
 
-        console.log(`[instagram] ${star.display_name} (@${igUsername}): ${allPosts.length} posts/stories`);
+        console.log(`[instagram] ${star.display_name} (@${igUsername}): ${allPosts.length} posts`);
 
-        // ── 3. AI 키워드 추출 ──
+        // ── AI 키워드 추출 ──
         const keywords = await extractKeywordsFromPosts(allPosts, star.display_name, openaiKey);
 
         if (keywords.length === 0) {
           results.push(`${star.display_name}: no keywords extracted`);
+          processedCount++;
           continue;
         }
 
-        // ── 4. ktrenz_trend_triggers에 저장 ──
+        // ── 스냅샷 & 트리거 저장 ──
         const now = new Date().toISOString();
-
-        // 소셜 스냅샷 저장 (트래킹 시 소셜 점수 참조용)
         const totalLikes = allPosts.reduce((s, p) => s + p.like_count, 0);
         const totalComments = allPosts.reduce((s, p) => s + p.comment_count, 0);
         const avgEngagement = allPosts.length > 0
@@ -548,7 +470,6 @@ Deno.serve(async (req) => {
         });
 
         const triggers = keywords.map((kw) => {
-          // 해당 키워드와 관련된 포스트에서 이미지 URL 추출
           const matchingPost = allPosts.find(
             (p) => p.caption_text.toLowerCase().includes(kw.keyword.toLowerCase()) || p.location_name === kw.keyword
           );
@@ -587,7 +508,7 @@ Deno.serve(async (req) => {
           };
         });
 
-        // 중복 체크: 같은 star_id + keyword + trigger_source(instagram) + 7일 이내
+        // 중복 체크
         const lookbackDays = new Date(Date.now() - POST_AGE_DAYS * 24 * 60 * 60 * 1000).toISOString();
         const { data: existing } = await sb
           .from("ktrenz_trend_triggers")
@@ -600,17 +521,10 @@ Deno.serve(async (req) => {
         const pureKoreanNameRegex = /^[가-힣]{2,4}$/;
         const newTriggers = triggers.filter((t) => {
           if (existingKws.has(t.keyword.toLowerCase())) return false;
-          if (isStarNameKeyword(t.keyword, globalStarNames)) {
-            console.warn(`[instagram] ⛔ Star name keyword filtered: "${t.keyword}" (${star.display_name})`);
-            return false;
-          }
-          // 순수 인물명 필터 (한글 2~4자만으로 구성된 키워드 제거)
+          if (isStarNameKeyword(t.keyword, globalStarNames)) return false;
           const kwTrimmed = t.keyword.trim();
           const kwKo = (t.keyword_ko || "").trim();
-          if (pureKoreanNameRegex.test(kwTrimmed) || pureKoreanNameRegex.test(kwKo)) {
-            console.warn(`[instagram] ⛔ Pure person-name filtered: "${t.keyword}" (${star.display_name})`);
-            return false;
-          }
+          if (pureKoreanNameRegex.test(kwTrimmed) || pureKoreanNameRegex.test(kwKo)) return false;
           return true;
         });
 
@@ -627,14 +541,16 @@ Deno.serve(async (req) => {
           results.push(`${star.display_name}: all keywords already exist`);
         }
 
-        // Rate limiting: 1.5s 대기 (Pro plan 초당 제한 대응)
-        await new Promise((r) => setTimeout(r, 1500));
+        processedCount++;
+
+        // Rate limiting: 축소된 대기 (API 예산으로 속도 제어)
+        await new Promise((r) => setTimeout(r, RATE_LIMIT_SLEEP_MS));
       } catch (e) {
         const msg = (e as Error).message;
         console.error(`[instagram] Error processing ${star.display_name}: ${msg}`);
         errors.push(`${star.display_name}: ${msg}`);
+        processedCount++; // 에러 스타도 처리 완료로 카운트 (무한 재시도 방지)
 
-        // Rate limit 감지 시 중단
         if (msg.includes("reached requests limit") || msg.includes("429")) {
           console.warn("[instagram] Rate limit reached, stopping batch");
           break;
@@ -642,26 +558,29 @@ Deno.serve(async (req) => {
       }
     }
 
+    const elapsed = Date.now() - fnStartTime;
+    console.log(`[instagram] Done in ${elapsed}ms: processed=${processedCount}/${stars.length}, keywords=${totalKeywords}, apiCalls=${apiCalls}`);
+
     // 로그 기록
     await sb.from("ktrenz_collection_log").insert({
       platform: "instagram",
       status: errors.length > 0 ? "partial" : "success",
       records_collected: totalKeywords,
-      error_message: `batch=${batchSize}, offset=${offset}, resolved=${profilesResolved}, api_calls=${apiCalls}, keywords=${totalKeywords}, errors=${errors.length}. ${results.slice(0, 10).join("; ")}`,
+      error_message: `batch=${batchSize}, offset=${offset}, processed=${processedCount}, api_calls=${apiCalls}, keywords=${totalKeywords}, errors=${errors.length}, elapsed=${elapsed}ms. ${results.slice(0, 10).join("; ")}`,
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        processed: stars.length,
+        processed: processedCount,
         profiles_resolved: profilesResolved,
-        resolve_attempts: resolveAttempts,
         api_calls: apiCalls,
         budget_remaining: Math.max(0, remainingBudget - apiCalls),
         keywords_saved: totalKeywords,
         results: results.slice(0, 30),
         errors: errors.slice(0, 10),
         next_offset: offset + batchSize,
+        elapsed_ms: elapsed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
