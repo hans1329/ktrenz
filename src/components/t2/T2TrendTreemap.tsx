@@ -1298,7 +1298,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         onClose={() => {
           const nextParams = new URLSearchParams(searchParams);
           nextParams.delete("modal");
-          setSearchParams(nextParams);
+          setSearchParams(nextParams, { replace: true });
         }}
       />
     </div>
