@@ -541,10 +541,11 @@ async function executeBatch(
         await runEndOfPipelineJobs(supabaseUrl, supabaseKey);
       }
     } else if (DETECT_PHASES.has(phase)) {
-      // detect 계열 → postprocess 요청
+      // detect 계열 → 다음 phase(collect_social)로 전환
+      const nextPhase = getNextPhase(phase);
       await sb.from("ktrenz_pipeline_state")
         .update({
-          status: "postprocess_requested",
+          status: "done",
           current_offset: nextOffset,
           ...(totalCandidates !== null ? { total_candidates: totalCandidates } : {}),
           updated_at: new Date().toISOString(),
@@ -553,7 +554,21 @@ async function executeBatch(
         .eq("phase", phase)
         .eq("status", RUNNING_INFLIGHT_STATUS);
 
-      console.log(`[cron] Phase ${phase} batches complete → postprocess_requested`);
+      if (nextPhase) {
+        const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+          .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
+        if (!existingNext?.length) {
+          const resumeOff = await getResumeOffset(sb, nextPhase, 0);
+          await sb.from("ktrenz_pipeline_state").insert({
+            run_id: runId,
+            phase: nextPhase,
+            status: "running",
+            current_offset: resumeOff,
+            batch_size: batchSize,
+          });
+        }
+      }
+      console.log(`[cron] Phase ${phase} done${nextPhase ? `, starting ${nextPhase}` : ", pipeline complete"}`);
     } else {
       // track phase → 바로 done
       const nextPhase = getNextPhase(phase);
