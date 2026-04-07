@@ -314,6 +314,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const [internalSortMode, setInternalSortMode] = useState<SortMode>("volume");
   const sortMode = externalSortMode ?? internalSortMode;
   const setSortMode = onSortModeChange ?? setInternalSortMode;
+  const shouldPushModalHistory = !gridMode && !(mergedCategories?.length);
   
   const isMobile = useIsMobile();
   const { language, t } = useLanguage();
@@ -802,6 +803,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   useEffect(() => {
     const modalId = searchParams.get("modal");
     if (!modalId) {
+      modalPushedRef.current = false;
       setSelectedTile(null);
       return;
     }
@@ -859,7 +861,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         setSelectedTile(canonical);
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set("modal", canonical.id);
-        setSearchParams(nextParams);
+        setSearchParams(nextParams, { replace: true });
         return;
       }
 
@@ -872,23 +874,36 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   }, [filteredItems, dedupedTriggers, searchParams, setSearchParams]);
 
   const track = useTrackEvent();
-  const handleTileClick = useCallback((item: TrendTile) => {
+  const updateModalParam = useCallback((modalId: string | null, replace = false) => {
     const nextParams = new URLSearchParams(searchParams);
-    if (selectedTile?.id === item.id) {
-      nextParams.delete("modal");
-      if (modalPushedRef.current) {
-        modalPushedRef.current = false;
-        window.history.back();
-      } else {
-        setSearchParams(nextParams, { replace: true });
-      }
+    if (modalId) {
+      nextParams.set("modal", modalId);
     } else {
-      nextParams.set("modal", item.id);
-      track("t2_treemap_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, category: item.category, section: item.keyword });
-      modalPushedRef.current = true;
-      setSearchParams(nextParams);
+      nextParams.delete("modal");
     }
-  }, [searchParams, selectedTile?.id, setSearchParams, track]);
+    setSearchParams(nextParams, replace ? { replace: true } : undefined);
+  }, [searchParams, setSearchParams]);
+
+  const closeDetailSheet = useCallback(() => {
+    if (shouldPushModalHistory && modalPushedRef.current) {
+      modalPushedRef.current = false;
+      window.history.back();
+      return;
+    }
+
+    modalPushedRef.current = false;
+    updateModalParam(null, true);
+  }, [shouldPushModalHistory, updateModalParam]);
+
+  const handleTileClick = useCallback((item: TrendTile) => {
+    if (selectedTile?.id === item.id) {
+      closeDetailSheet();
+    } else {
+      track("t2_treemap_click", { artist_name: item.artistName, artist_slug: item.wikiEntryId, category: item.category, section: item.keyword });
+      modalPushedRef.current = shouldPushModalHistory;
+      updateModalParam(item.id, !shouldPushModalHistory);
+    }
+  }, [closeDetailSheet, selectedTile?.id, shouldPushModalHistory, track, updateModalParam]);
 
   const categoryStats = useMemo(() => {
     const stats: Record<string, number> = {};
@@ -1302,16 +1317,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
         tile={selectedTile}
         rank={selectedTile ? filteredItems.findIndex(t => t.id === selectedTile.id) + 1 : undefined}
         totalCount={filteredItems.length}
-        onClose={() => {
-          if (modalPushedRef.current) {
-            modalPushedRef.current = false;
-            window.history.back();
-          } else {
-            const nextParams = new URLSearchParams(searchParams);
-            nextParams.delete("modal");
-            setSearchParams(nextParams, { replace: true });
-          }
-        }}
+        onClose={closeDetailSheet}
       />
     </div>
   );
