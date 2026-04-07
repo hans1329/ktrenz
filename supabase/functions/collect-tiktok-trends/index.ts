@@ -365,10 +365,10 @@ Deno.serve(async (req) => {
     const ttBatchSize = batchLimit || 50;
     const { data: stars, error: starsErr } = await sb
       .from("ktrenz_stars")
-      .select("id, display_name, name_ko, star_type, group_star_id")
+      .select("id, display_name, name_ko, star_type, group_star_id, follower_count")
       .eq("is_active", true)
       .in("star_type", ["group", "solo", "member"])
-      .order("display_name")
+      .order("follower_count", { ascending: false, nullsFirst: false })
       .range(ttOffset, ttOffset + ttBatchSize - 1);
 
     // 그룹명 매핑 (멤버의 group_star_id → 그룹 display_name)
