@@ -307,6 +307,7 @@ const T2TrendTreemap = ({ viewMode, onViewModeChange, selectedCategory: external
   const setSelectedCategory = onCategoryChange ?? setInternalCategory;
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTile, setSelectedTile] = useState<TrendTile | null>(null);
+  const modalPushedRef = useRef(false);
   const [internalViewMode, setInternalViewMode] = useState<"treemap" | "list" | "artist">("treemap");
   const currentViewMode = viewMode ?? internalViewMode;
   const setViewMode = onViewModeChange ?? setInternalViewMode;
