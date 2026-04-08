@@ -2,7 +2,7 @@
 // Instagram + TikTok 수집을 순차 호출하여 ktrenz_trend_triggers / ktrenz_social_snapshots에 저장
 // 호출 방식: ktrenz-trend-cron의 collect_social phase에서 fire-and-forget 호출
 // ★ selfManage=true 시 자체적으로 pipeline_state를 done으로 업데이트하고 다음 phase를 생성
-// ★ Instagram은 시간 내 여러 배치를 루프로 처리 (배치당 20명)
+// ★ Instagram은 시간 내 여러 배치를 루프로 처리 (배치당 10명)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -16,6 +16,7 @@ const IG_BATCH_SIZE = 10;            // 20→10 축소 (스타당 ~7초, 10명 =
 const IG_TIMEOUT_MS = 140_000;       // 개별 배치 타임아웃 (함수 내부 130초 타임가드 + 마진)
 const TOTAL_TIMEGUARD_MS = 240_000;  // 전체 함수 타임가드 (4분)
 const TT_TIMEOUT_MS = 90_000;
+const STALE_LOCK_MS = TOTAL_TIMEGUARD_MS + 60_000; // 5분: 잠금이 이보다 오래되면 stale로 간주
 
 const PHASE_ORDER = ["detect", "collect_social", "postprocess", "track"] as const;
 
@@ -30,11 +31,14 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const { runId, stateId, selfManage } = body;
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, supabaseKey);
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, supabaseKey);
 
+  let lockId: string | null = null;
+  let didComplete = false;
+
+  try {
     const callHeaders = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${supabaseKey}`,
@@ -42,18 +46,42 @@ Deno.serve(async (req) => {
 
     const results: Record<string, any> = {};
 
-    // ── 중복 실행 방지: 최근 3분 이내 실행 확인 ──
-    const threeMinAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    // ── 중복 실행 방지 & 스테일 잠금 정리 ──
+    const staleCutoff = new Date(Date.now() - STALE_LOCK_MS).toISOString();
+    const recentCutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+
+    // 1) 오래된(5분+) running 잠금은 stale → 자동 정리
+    const { data: staleLocks } = await sb
+      .from("ktrenz_collection_log")
+      .select("id")
+      .eq("platform", "instagram_orchestrator")
+      .eq("status", "running")
+      .lt("collected_at", staleCutoff);
+
+    if (staleLocks && staleLocks.length > 0) {
+      for (const lock of staleLocks) {
+        await sb.from("ktrenz_collection_log")
+          .update({ status: "stale_cleared", error_message: "auto-cleared stale lock" })
+          .eq("id", lock.id);
+      }
+      console.warn(`[collect-social] Cleared ${staleLocks.length} stale lock(s)`);
+    }
+
+    // 2) 최근 3분 이내 running 잠금 확인 (stale이 아닌 진짜 동시 실행)
     const { data: recentRuns } = await sb
       .from("ktrenz_collection_log")
       .select("id, collected_at")
       .eq("platform", "instagram_orchestrator")
       .eq("status", "running")
-      .gte("collected_at", threeMinAgo)
+      .gte("collected_at", recentCutoff)
       .limit(1);
 
     if (recentRuns && recentRuns.length > 0) {
       console.warn("[collect-social] Another instance is running, skipping");
+      // ★ selfManage: 스킵해도 pipeline을 done으로 전환하여 stale lock 방지
+      if (selfManage && runId) {
+        await markDoneAndAdvance(sb, supabaseUrl, supabaseKey, runId);
+      }
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "another_instance_running", totalCandidates: 1 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -71,7 +99,7 @@ Deno.serve(async (req) => {
       })
       .select("id")
       .single();
-    const lockId = lockRow?.id;
+    lockId = lockRow?.id;
 
     // ── 전체 대상 수 조회 (핸들 있는 스타만) ──
     const { count: totalStars } = await sb
@@ -275,61 +303,11 @@ Deno.serve(async (req) => {
         .eq("id", lockId);
     }
 
+    didComplete = true;
+
     // ── selfManage: 자체 DB 상태 관리 (fire-and-forget 호출 시) ──
     if (selfManage && runId) {
-      try {
-        // 1) pipeline_state를 done으로 업데이트
-        await sb.from("ktrenz_pipeline_state")
-          .update({
-            status: "done",
-            current_offset: 1,
-            total_candidates: 1,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("run_id", runId)
-          .eq("phase", "collect_social")
-          .eq("status", "running_inflight");
-
-        // 2) 다음 phase 생성 (postprocess)
-        const nextPhase = getNextPhase("collect_social");
-        if (nextPhase) {
-          const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
-            .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
-          if (!existingNext?.length) {
-            await sb.from("ktrenz_pipeline_state").insert({
-              run_id: runId,
-              phase: nextPhase,
-              status: "running",
-              current_offset: 0,
-              batch_size: 15,
-            });
-          }
-        }
-
-        console.log(`[collect-social] Self-managed: marked done, created next phase=${nextPhase} for run=${runId}`);
-
-        // 3) 다음 tick 트리거
-        fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: "tick" }),
-        }).catch(() => {});
-      } catch (selfManageErr) {
-        console.error(`[collect-social] Self-manage error: ${(selfManageErr as Error).message}`);
-        // selfManage 실패 시 에러 상태로 전환
-        await sb.from("ktrenz_pipeline_state")
-          .update({
-            status: "error",
-            last_error: `self-manage failed: ${(selfManageErr as Error).message}`,
-            last_error_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("run_id", runId)
-          .eq("phase", "collect_social");
-      }
+      await markDoneAndAdvance(sb, supabaseUrl, supabaseKey, runId);
     }
 
     return new Response(
@@ -344,31 +322,111 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("[collect-social] Fatal error:", error);
 
-    // selfManage 시 에러도 DB에 기록
-    if (selfManage && runId) {
-      try {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const sb = createClient(supabaseUrl, supabaseKey);
-        await sb.from("ktrenz_pipeline_state")
-          .update({
-            status: "error",
-            last_error: `fatal: ${(error as Error).message}`.slice(0, 500),
-            last_error_at: new Date().toISOString(),
-            error_count: 1,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("run_id", runId)
-          .eq("phase", "collect_social");
-      } catch (_) { /* best effort */ }
-    }
-
     return new Response(
       JSON.stringify({ success: false, error: (error as Error).message, totalCandidates: 1 }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  } finally {
+    // ★ finally 블록: 크래시/에러 시에도 반드시 정리 수행
+    // 1) collection_log 잠금 해제 (아직 running이면)
+    if (lockId && !didComplete) {
+      try {
+        await sb.from("ktrenz_collection_log")
+          .update({
+            status: "error",
+            error_message: "function crashed or timed out",
+          })
+          .eq("id", lockId)
+          .eq("status", "running");
+        console.warn("[collect-social] finally: cleared collection_log lock");
+      } catch (_) { /* best effort */ }
+    }
+
+    // 2) selfManage: pipeline_state를 error로 전환 (아직 running_inflight이면)
+    if (selfManage && runId && !didComplete) {
+      try {
+        // 먼저 아직 running_inflight인지 확인
+        const { data: check } = await sb.from("ktrenz_pipeline_state")
+          .select("status")
+          .eq("run_id", runId)
+          .eq("phase", "collect_social")
+          .limit(1);
+
+        if (check?.[0]?.status === "running_inflight") {
+          await sb.from("ktrenz_pipeline_state")
+            .update({
+              status: "error",
+              last_error: "collect-social crashed/timed out (recovered in finally block)",
+              last_error_at: new Date().toISOString(),
+              error_count: 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("run_id", runId)
+            .eq("phase", "collect_social")
+            .eq("status", "running_inflight");
+          console.warn("[collect-social] finally: marked pipeline_state as error");
+        }
+      } catch (_) { /* best effort */ }
+    }
   }
 });
+
+// ── selfManage 헬퍼: pipeline done 처리 & 다음 phase 생성 ──
+async function markDoneAndAdvance(sb: any, supabaseUrl: string, supabaseKey: string, runId: string) {
+  try {
+    // 1) pipeline_state를 done으로 업데이트
+    await sb.from("ktrenz_pipeline_state")
+      .update({
+        status: "done",
+        current_offset: 1,
+        total_candidates: 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("run_id", runId)
+      .eq("phase", "collect_social")
+      .eq("status", "running_inflight");
+
+    // 2) 다음 phase 생성 (postprocess)
+    const nextPhase = getNextPhase("collect_social");
+    if (nextPhase) {
+      const { data: existingNext } = await sb.from("ktrenz_pipeline_state")
+        .select("id").eq("run_id", runId).eq("phase", nextPhase).limit(1);
+      if (!existingNext?.length) {
+        await sb.from("ktrenz_pipeline_state").insert({
+          run_id: runId,
+          phase: nextPhase,
+          status: "running",
+          current_offset: 0,
+          batch_size: 15,
+        });
+      }
+    }
+
+    console.log(`[collect-social] Self-managed: marked done, created next phase=${nextPhase} for run=${runId}`);
+
+    // 3) 다음 tick 트리거
+    fetch(`${supabaseUrl}/functions/v1/ktrenz-trend-cron`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "tick" }),
+    }).catch(() => {});
+  } catch (selfManageErr) {
+    console.error(`[collect-social] Self-manage error: ${(selfManageErr as Error).message}`);
+    // selfManage 실패 시 에러 상태로 전환
+    await sb.from("ktrenz_pipeline_state")
+      .update({
+        status: "error",
+        last_error: `self-manage failed: ${(selfManageErr as Error).message}`,
+        last_error_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("run_id", runId)
+      .eq("phase", "collect_social");
+  }
+}
 
 function getNextPhase(current: string): string | null {
   const idx = PHASE_ORDER.indexOf(current as any);
