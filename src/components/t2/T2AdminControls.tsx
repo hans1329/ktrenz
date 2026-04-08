@@ -89,22 +89,8 @@ const T2AdminControls = () => {
     refetchInterval: 3000,
   });
 
-  // 자동 tick
-  useEffect(() => {
-    if (!pipelineActive || !isAdmin) return;
-    const interval = setInterval(async () => {
-      try {
-        await supabase.functions.invoke("ktrenz-trend-cron", {
-          body: { action: "tick" },
-        });
-        queryClient.invalidateQueries({ queryKey: ["pipeline-active-check"] });
-        queryClient.invalidateQueries({ queryKey: ["t2-trend-triggers"] });
-      } catch (e) {
-        console.warn("Tick failed:", e);
-      }
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [pipelineActive, isAdmin, queryClient]);
+  // 서버 사이드 pg_cron이 2분마다 tick을 자동 호출하므로,
+  // 프론트엔드에서는 DB 폴링(pipeline-active-check)만 수행하여 UI를 갱신한다.
 
   // 파이프라인 active → UI run 자동 감지
   useEffect(() => {
