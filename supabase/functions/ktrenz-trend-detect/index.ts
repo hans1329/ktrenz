@@ -2704,6 +2704,22 @@ async function detectForMember(
     "airport", "인천공항", "공항", "출국", "입국",
     // 알려진 오탐 키워드
     "바비스모", "vabysmo", "엑소시스템즈", "exo systems", "exosystems",
+    // ── 일반명사 / 카테고리 설명어 (트렌드 가치 없음) ──
+    "뮤직비디오", "music video", "mv", "m/v",
+    "럭셔리 뷰티 브랜드", "럭셔리 뷰티브랜드", "luxury beauty brand",
+    "럭셔리 브랜드", "luxury brand", "뷰티 브랜드", "beauty brand",
+    "패션 브랜드", "fashion brand", "스포츠 브랜드", "sports brand",
+    "사복패션", "casual fashion", "공항패션", "airport fashion",
+    "화보", "pictorial", "광고", "cf", "commercial",
+    "음악", "노래", "춤", "댄스", "dance", "song",
+    "게임", "영상", "콘텐츠", "content", "video",
+    "운동", "요리", "여행", "사진", "영화", "드라마",
+    "방송", "예능", "리얼리티", "reality", "variety show",
+    "인터뷰", "interview", "기자회견", "press conference",
+    "셀카", "selfie", "라이브", "live", "브이로그", "vlog",
+    "굿즈", "goods", "merchandise", "포토카드", "photocard",
+    "팬사인회", "fansign", "생일", "birthday",
+    "100%", "abc", "mother",
   ]);
 
   // 기업/법인 접미사 → 아티스트 키워드가 아닌 기업명 차단
