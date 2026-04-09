@@ -229,7 +229,7 @@ export default function Battle() {
     for (const run of enrichedRuns) {
       const { data: runItems } = await supabase
         .from("ktrenz_b2_items")
-        .select("id, source, title, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+        .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
         .eq("run_id", run.id)
         .eq("has_thumbnail", true)
         .not("source", "eq", "naver_blog")
