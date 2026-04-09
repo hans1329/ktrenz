@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart, Shield } from "lucide-react";
+import { Loader2, Zap, Database, Activity, BarChart3, ShoppingCart, Shield, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import T2PipelineProgress from "./T2PipelineProgress";
 import {
