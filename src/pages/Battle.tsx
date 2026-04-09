@@ -58,6 +58,52 @@ function sourceIcon(source: string): ReactNode {
   }
 }
 
+/* ── Flip Timer ── */
+function FlipTimer() {
+  const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
+
+  useEffect(() => {
+    function calc() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
+      setTime({ h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 });
+    }
+    calc();
+    const iv = setInterval(calc, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  function FlipDigit({ value, label }: { value: string; label: string }) {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex gap-0.5">
+          {value.split("").map((d, i) => (
+            <div key={i} className="w-8 h-10 rounded-lg bg-foreground/10 flex items-center justify-center">
+              <span className="text-lg font-bold font-mono text-foreground">{d}</span>
+            </div>
+          ))}
+        </div>
+        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <FlipDigit value={pad(time.h)} label="hrs" />
+      <span className="text-lg font-bold text-muted-foreground pb-4">:</span>
+      <FlipDigit value={pad(time.m)} label="min" />
+      <span className="text-lg font-bold text-muted-foreground pb-4">:</span>
+      <FlipDigit value={pad(time.s)} label="sec" />
+    </div>
+  );
+}
+
 /* ── Artist Section: name bar + horizontal card carousel ── */
 function ArtistSection({
   runItems,
