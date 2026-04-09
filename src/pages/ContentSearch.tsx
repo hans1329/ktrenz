@@ -146,16 +146,24 @@ const ContentSearchPage = () => {
         {/* Results */}
         {contentData && !contentLoading && (
           <>
-            {/* Raw count banner */}
-            {contentData.counts?.naver_news_raw > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 mb-3 rounded-lg bg-muted/50 border border-border/40 text-xs text-muted-foreground">
-                <Newspaper className="w-3.5 h-3.5 text-green-500" />
-                <span>
-                  24h 뉴스 총 <strong className="text-foreground">{contentData.counts.naver_news_raw}</strong>건
-                  {contentData.counts.naver_news_raw !== contentData.counts.naver_news && (
-                    <> → 중복 제거 <strong className="text-foreground">{contentData.counts.naver_news}</strong>건</>
-                  )}
-                </span>
+            {/* Content Score */}
+            {contentData.counts?.content_score > 0 && (
+              <div className="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/15">
+                  <Search className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Content Score</p>
+                  <p className="text-2xl font-bold text-foreground">{contentData.counts.content_score.toLocaleString()}</p>
+                </div>
+                <div className="ml-auto text-[10px] text-muted-foreground text-right leading-relaxed">
+                  {contentData.counts.naver_news_raw > 0 && <div>News {contentData.counts.naver_news_raw}</div>}
+                  {contentData.counts.naver_blog_raw > 0 && <div>Blog {contentData.counts.naver_blog_raw}</div>}
+                  {contentData.counts.youtube_raw > 0 && <div>YT {contentData.counts.youtube_raw}</div>}
+                  {contentData.counts.tiktok_raw > 0 && <div>TT {contentData.counts.tiktok_raw}</div>}
+                  {contentData.counts.instagram_raw > 0 && <div>IG {contentData.counts.instagram_raw}</div>}
+                  {contentData.counts.reddit_raw > 0 && <div>RD {contentData.counts.reddit_raw}</div>}
+                </div>
               </div>
             )}
 

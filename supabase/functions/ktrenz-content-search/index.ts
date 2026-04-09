@@ -327,11 +327,17 @@ Deno.serve(async (req) => {
         naver_news: naverNews.length,
         naver_news_raw: naverNewsRaw.length,
         naver_blog: naverBlogEnriched.length,
+        naver_blog_raw: naverBlogRaw.length,
         youtube: youtube.length,
+        youtube_raw: youtubeRaw.length,
         tiktok: tiktok.length,
+        tiktok_raw: tiktokRaw.length,
         instagram: instagram.length,
+        instagram_raw: instagramRaw.length,
         reddit: redditEnriched.length,
+        reddit_raw: redditRaw.length,
         total: naverNews.length + naverBlogEnriched.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
+        content_score: naverNewsRaw.length + naverBlogRaw.length + youtubeRaw.length + tiktokRaw.length + instagramRaw.length + redditRaw.length,
       },
     };
 
