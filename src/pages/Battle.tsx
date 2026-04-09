@@ -477,7 +477,7 @@ export default function Battle() {
               {t("submitPrediction")}
             </Button>
           ) : (
-            <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-3">
+            <div className="rounded-2xl bg-muted/40 border border-border p-4 space-y-3">
               <p className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-primary" />
                 {t("predictionSubmitted")}
@@ -497,7 +497,12 @@ export default function Battle() {
                   <span className="text-xs text-muted-foreground">🎧 {t("rewardProgress")}</span>
                   <span className="text-xs font-semibold text-foreground">1,250 / 9,000 K-Cashes</span>
                 </div>
-                <Progress value={(1250 / 9000) * 100} className="h-2" />
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-primary to-purple-500 transition-all"
+                    style={{ width: `${(1250 / 9000) * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
           )}
