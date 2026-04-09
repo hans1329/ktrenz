@@ -686,13 +686,73 @@ export default function Battle() {
                   )}
                 </p>
 
-                {/* Large thumbnail */}
+                {/* Media embed or thumbnail */}
                 <div className="rounded-2xl overflow-hidden bg-muted mb-4">
-                  {drawerItem.thumbnail ? (
-                    <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
-                  ) : (
-                    <div className="w-full aspect-video bg-muted" />
-                  )}
+                  {(() => {
+                    const source = drawerItem.source;
+                    const url = drawerItem.url || meta.url || "";
+
+                    // YouTube embed
+                    const ytMatch = url.match(/(?:v=|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                    const ytId = ytMatch?.[1] || meta.videoId;
+                    if ((source === "youtube" || ytId) && ytId) {
+                      return (
+                        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                          <iframe
+                            src={`https://www.youtube.com/embed/${ytId}?rel=0&autoplay=0`}
+                            className="absolute inset-0 w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      );
+                    }
+
+                    // TikTok embed
+                    if (source === "tiktok" && url) {
+                      const tiktokIdMatch = url.match(/\/video\/(\d+)/);
+                      const tiktokId = tiktokIdMatch?.[1] || meta.embed_video_id;
+                      if (tiktokId) {
+                        return (
+                          <iframe
+                            src={`https://www.tiktok.com/embed/v2/${tiktokId}`}
+                            className="w-full border-0"
+                            style={{ height: "580px" }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                        );
+                      }
+                    }
+
+                    // Instagram embed
+                    if (source === "instagram" && url) {
+                      const instaMatch = url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+                      const shortcode = instaMatch?.[2] || meta.embed_shortcode;
+                      if (shortcode) {
+                        return (
+                          <iframe
+                            src={`https://www.instagram.com/p/${shortcode}/embed/`}
+                            className="w-full border-0"
+                            style={{ height: "480px" }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                        );
+                      }
+                    }
+
+                    // Fallback: thumbnail image
+                    return drawerItem.thumbnail ? (
+                      <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-auto" />
+                    ) : (
+                      <div className="w-full aspect-video bg-muted" />
+                    );
+                  })()}
                 </div>
 
                 {/* Title */}
