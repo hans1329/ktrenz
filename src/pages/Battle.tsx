@@ -477,7 +477,7 @@ export default function Battle() {
               {t("submitPrediction")}
             </Button>
           ) : (
-            <div className="rounded-2xl bg-muted/10 border border-border p-4 space-y-3">
+            <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
               <p className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-primary" />
                 {t("predictionSubmitted")}
