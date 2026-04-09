@@ -812,7 +812,7 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.bandSteady": { en: "Steady", ko: "안정", ja: "安定", zh: "稳定" },
   "battle.bandRising": { en: "Rising", ko: "상승", ja: "上昇", zh: "上升" },
   "battle.bandSurge": { en: "Surge", ko: "급등", ja: "急騰", zh: "暴涨" },
-  "battle.bandRange030": { en: "0–30%", ko: "0–30%", ja: "0–30%", zh: "0–30%" },
+  "battle.bandRange030": { en: "15–30%", ko: "15–30%", ja: "15–30%", zh: "15–30%" },
   "battle.bandRange3080": { en: "30–80%", ko: "30–80%", ja: "30–80%", zh: "30–80%" },
   "battle.bandRange80": { en: "80%+", ko: "80%+", ja: "80%+", zh: "80%+" },
   "battle.submitPrediction": { en: "Submit Prediction", ko: "예측 제출", ja: "予測を送信", zh: "提交预测" },
