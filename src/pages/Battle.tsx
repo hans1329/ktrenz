@@ -622,15 +622,15 @@ export default function Battle() {
 
           {/* Submit / Result */}
           {!submitted ? (
-            <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand} className="w-full h-12 rounded-2xl text-base font-bold">
-              <Zap className="w-5 h-5 mr-2" />
-              {t("submitPrediction")}
-              {selectedBand && (
+            pickedRunId && selectedBand ? (
+              <Button onClick={handleSubmit} className="w-full h-12 rounded-2xl text-base font-bold animate-in fade-in slide-in-from-bottom-2">
+                <Zap className="w-5 h-5 mr-2" />
+                {t("submitPrediction")}
                 <span className="ml-2 text-xs font-normal opacity-70">
                   +{BANDS.find((b) => b.key === selectedBand)?.reward.toLocaleString()} K-Cashes
                 </span>
-              )}
-            </Button>
+              </Button>
+            ) : null
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
               <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
