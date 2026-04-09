@@ -11,6 +11,7 @@ import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SmartImage from "@/components/SmartImage";
+import { toast } from "@/hooks/use-toast";
 
 interface B2Item {
   id: string;
