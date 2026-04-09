@@ -622,7 +622,7 @@ export default function Battle() {
 
           {/* Submit / Result */}
           {!submitted ? (
-            <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand} className="w-full h-12 rounded-2xl text-base font-bold">
+            <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand || remainingTickets <= 0} className="w-full h-12 rounded-2xl text-base font-bold">
               <Zap className="w-5 h-5 mr-2" />
               {t("submitPrediction")}
               {selectedBand && (
