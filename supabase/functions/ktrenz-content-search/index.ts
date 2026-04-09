@@ -271,10 +271,6 @@ Deno.serve(async (req) => {
       enrichWithOgImage(naverNewsDeduped, 10),
       enrichWithOgImage(reddit, 7),
     ]);
-    // Append remaining items without enrichment
-    if (naverNewsDeduped.length > 10) {
-      naverNews.push(...naverNewsDeduped.slice(10));
-    }
 
     const results = {
       star: {
@@ -289,7 +285,7 @@ Deno.serve(async (req) => {
         youtube,
         tiktok,
         instagram,
-        reddit,
+        reddit: redditEnriched,
       },
       counts: {
         naver_news: naverNews.length,
