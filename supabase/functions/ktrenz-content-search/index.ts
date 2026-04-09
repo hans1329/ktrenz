@@ -331,7 +331,7 @@ Deno.serve(async (req) => {
         tiktok: tiktok.length,
         instagram: instagram.length,
         reddit: redditEnriched.length,
-        total: naverNews.length + naverBlog.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
+        total: naverNews.length + naverBlogEnriched.length + youtube.length + tiktok.length + instagram.length + redditEnriched.length,
       },
     };
 
