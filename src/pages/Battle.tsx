@@ -338,13 +338,13 @@ export default function Battle() {
   const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const maxDaily = 3;
+  const [ticketInfo, setTicketInfo] = useState<{ remaining: number; total: number; used: number } | null>(null);
 
   const currentPair = battlePairs[currentPairIndex];
   const runs = currentPair?.runs || [];
   const items = currentPair?.items || {};
-  const completedCount = predictions.length;
-  const remainingCount = maxDaily - completedCount;
+  const remainingTickets = ticketInfo?.remaining ?? 3;
+  const totalTickets = ticketInfo?.total ?? 3;
 
   function getHotBonus(runId: string): number {
     const runItems = items[runId] || [];
