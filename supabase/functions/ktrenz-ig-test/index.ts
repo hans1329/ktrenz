@@ -10,24 +10,28 @@ Deno.serve(async (req) => {
   const HOST = "instagram120.p.rapidapi.com";
 
   const tests = [
-    { name: "search", url: `https://${HOST}/api/search/hashtag?query=bts` },
-    { name: "hashtag_posts", url: `https://${HOST}/api/hashtag/posts?hashtag=bts&count=5` },
-    { name: "user_info", url: `https://${HOST}/api/user/info?username=bts.bighitofficial` },
-    { name: "user_posts_v2", url: `https://${HOST}/api/user/posts?username=bts.bighitofficial&count=3` },
-    { name: "user_feed_v2", url: `https://${HOST}/api/user/feed?username=bts.bighitofficial&count=3` },
-    { name: "explore", url: `https://${HOST}/api/explore/posts?count=5` },
-    { name: "trending", url: `https://${HOST}/api/trending` },
-    { name: "search_users", url: `https://${HOST}/api/search/users?query=bts` },
+    { name: "POST profile", url: `https://${HOST}/api/instagram/profile`, body: { username: "bts.bighitofficial" } },
+    { name: "POST posts", url: `https://${HOST}/api/instagram/posts`, body: { username: "bts.bighitofficial", maxId: "" } },
+    { name: "GET posts", url: `https://${HOST}/api/instagram/posts/bts.bighitofficial?count=3`, body: null },
   ];
 
   const results: any[] = [];
   for (const t of tests) {
     try {
-      const res = await fetch(t.url, {
-        headers: { "x-rapidapi-host": HOST, "x-rapidapi-key": RAPIDAPI_KEY },
-      });
+      const init: RequestInit = {
+        headers: { "x-rapidapi-host": HOST, "x-rapidapi-key": RAPIDAPI_KEY, "Content-Type": "application/json" },
+      };
+      if (t.body) {
+        init.method = "POST";
+        init.body = JSON.stringify(t.body);
+      }
+      const res = await fetch(t.url, init);
+      const quota: Record<string,string> = {};
+      for (const [k, v] of res.headers.entries()) {
+        if (k.includes("ratelimit") || k.includes("remaining")) quota[k] = v;
+      }
       const body = await res.text();
-      results.push({ name: t.name, status: res.status, body: body.substring(0, 400) });
+      results.push({ name: t.name, status: res.status, quota, body: body.substring(0, 600) });
     } catch (e) {
       results.push({ name: t.name, error: String(e) });
     }
