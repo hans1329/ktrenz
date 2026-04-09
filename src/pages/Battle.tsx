@@ -159,7 +159,7 @@ function ArtistSection({
           <span className="text-sm font-bold text-foreground">{starName}</span>
         </div>
         <div
-          className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+          className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
             isPicked ? "bg-primary" : "bg-muted"
           }`}
         >
