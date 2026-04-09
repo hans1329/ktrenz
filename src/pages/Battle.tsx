@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -303,22 +303,47 @@ function ArtistSection({
   );
 }
 
+/* ── Types for battle pairs ── */
+interface BattlePair {
+  runs: B2Run[];
+  items: Record<string, B2Item[]>;
+}
+
+interface Prediction {
+  id?: string;
+  pickedRunId: string;
+  opponentRunId: string;
+  band: Band;
+  pickedStarName: string;
+  opponentStarName: string;
+  status: string;
+  created_at: string;
+}
+
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
   const { t: globalT } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
 
-  const [runs, setRuns] = useState<B2Run[]>([]);
-  const [items, setItems] = useState<Record<string, B2Item[]>>({});
+  const [battlePairs, setBattlePairs] = useState<BattlePair[]>([]);
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [pickedRunId, setPickedRunId] = useState<string | null>(null);
   const [selectedBand, setSelectedBand] = useState<Band | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
-  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set()); // item IDs that got 🔥
+  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set());
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const maxDaily = 3;
 
-  // Count hot votes per run's star_id
+  const currentPair = battlePairs[currentPairIndex];
+  const runs = currentPair?.runs || [];
+  const items = currentPair?.items || {};
+  const completedCount = predictions.length;
+  const remainingCount = maxDaily - completedCount;
+
   function getHotBonus(runId: string): number {
     const runItems = items[runId] || [];
     const count = runItems.filter((i) => hotVotes.has(i.id)).length;
@@ -337,43 +362,55 @@ export default function Battle() {
   useEffect(() => { loadBattleData(); }, []);
 
   async function loadBattleData() {
+    // Load runs — get enough stars for multiple pairs
     const { data: runsData } = await supabase
       .from("ktrenz_b2_runs")
       .select("id, star_id, content_score, counts, created_at")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(40);
 
     if (!runsData?.length) { setLoading(false); return; }
 
+    // Get latest run per star
     const latestByStarMap = new Map<string, any>();
     for (const r of runsData) {
       if (!latestByStarMap.has(r.star_id)) latestByStarMap.set(r.star_id, r);
     }
-    const latestRuns = Array.from(latestByStarMap.values()).slice(0, 2);
+    const allRuns = Array.from(latestByStarMap.values());
 
-    const starIds = latestRuns.map((r: any) => r.star_id);
+    // Get star info
+    const starIds = allRuns.map((r: any) => r.star_id);
     const { data: stars } = await supabase
       .from("ktrenz_stars")
       .select("id, display_name, name_ko")
       .in("id", starIds);
 
     const starMap = new Map((stars || []).map((s: any) => [s.id, s]));
-    const enrichedRuns = latestRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
-    setRuns(enrichedRuns);
+    const enrichedRuns = allRuns.map((r: any) => ({ ...r, star: starMap.get(r.star_id) }));
 
-    const itemsByRun: Record<string, B2Item[]> = {};
-    for (const run of enrichedRuns) {
-      const { data: runItems } = await supabase
-        .from("ktrenz_b2_items")
-        .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
-        .eq("run_id", run.id)
-        .eq("has_thumbnail", true)
-        .not("source", "eq", "naver_blog")
-        .order("engagement_score", { ascending: false })
-        .limit(8);
-      itemsByRun[run.id] = (runItems || []) as B2Item[];
+    // Create pairs of 2
+    const pairs: BattlePair[] = [];
+    for (let i = 0; i + 1 < enrichedRuns.length && pairs.length < maxDaily; i += 2) {
+      const pairRuns = [enrichedRuns[i], enrichedRuns[i + 1]];
+      pairs.push({ runs: pairRuns, items: {} });
     }
-    setItems(itemsByRun);
+
+    // Load items for all pairs
+    for (const pair of pairs) {
+      for (const run of pair.runs) {
+        const { data: runItems } = await supabase
+          .from("ktrenz_b2_items")
+          .select("id, source, title, description, url, thumbnail, has_thumbnail, engagement_score, star_id, published_at, metadata")
+          .eq("run_id", run.id)
+          .eq("has_thumbnail", true)
+          .not("source", "eq", "naver_blog")
+          .order("engagement_score", { ascending: false })
+          .limit(8);
+        pair.items[run.id] = (runItems || []) as B2Item[];
+      }
+    }
+
+    setBattlePairs(pairs);
     setLoading(false);
   }
 
@@ -389,11 +426,47 @@ export default function Battle() {
   }
 
   function handleSubmit() {
-    if (!pickedRunId || !selectedBand) return;
+    if (!pickedRunId || !selectedBand || !currentPair) return;
+    const opponentRun = runs.find((r) => r.id !== pickedRunId);
+    if (!opponentRun) return;
+
+    const prediction: Prediction = {
+      pickedRunId,
+      opponentRunId: opponentRun.id,
+      band: selectedBand,
+      pickedStarName: runs.find((r) => r.id === pickedRunId)?.star?.display_name || "Unknown",
+      opponentStarName: opponentRun.star?.display_name || "Unknown",
+      status: "pending",
+      created_at: new Date().toISOString(),
+    };
+
+    setPredictions((prev) => [...prev, prediction]);
     setSubmitted(true);
+
+    // Also save to DB (fire-and-forget for logged-in users)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("b2_predictions").insert({
+          user_id: user.id,
+          picked_run_id: pickedRunId,
+          opponent_run_id: opponentRun.id,
+          band: selectedBand,
+        }).then(() => {});
+      }
+    });
+  }
+
+  function handleNextBattle() {
+    if (currentPairIndex + 1 >= battlePairs.length || completedCount >= maxDaily) return;
+    setCurrentPairIndex((prev) => prev + 1);
+    setPickedRunId(null);
+    setSelectedBand(null);
+    setSubmitted(false);
+    setHotVotes(new Set());
   }
 
   const pickedRun = runs.find((r) => r.id === pickedRunId);
+  const allBattlesDone = completedCount >= maxDaily || (submitted && currentPairIndex + 1 >= battlePairs.length);
 
   if (loading) {
     return (
@@ -416,29 +489,31 @@ export default function Battle() {
         {/* Title + Flip Timer */}
         <div className="text-center sm:text-left space-y-4 pt-6 pb-4 max-w-lg sm:max-w-4xl mx-auto px-4">
           <h2 className="text-xl text-foreground tracking-tight font-sans font-bold sm:text-3xl text-center">
-            어떤 트렌드가 내일 더 유행할까요?
+            {t("pickWinner")}
           </h2>
           <FlipTimer />
         </div>
 
         {/* Card carousels — full width */}
-        <div className="w-full px-2 sm:px-4 space-y-10">
-          {runs.map((run, idx) => (
-            <div key={run.id} className="space-y-2">
-              <ArtistSection
-                runItems={items[run.id] || []}
-                starName={run.star?.display_name || "Unknown"}
-                contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
-                scoreLabel={t("contentScore")}
-                isPicked={pickedRunId === run.id}
-                onPick={() => handlePick(run.id)}
-                onCardTap={(item) => setDrawerItem(item)}
-                disabled={submitted}
-                index={idx}
-              />
-            </div>
-          ))}
-        </div>
+        {currentPair && (
+          <div className="w-full px-2 sm:px-4 space-y-10">
+            {runs.map((run, idx) => (
+              <div key={run.id} className="space-y-2">
+                <ArtistSection
+                  runItems={items[run.id] || []}
+                  starName={run.star?.display_name || "Unknown"}
+                  contentScore={parseFloat((run.content_score + getHotBonus(run.id)).toFixed(1))}
+                  scoreLabel={t("contentScore")}
+                  isPicked={pickedRunId === run.id}
+                  onPick={() => handlePick(run.id)}
+                  onCardTap={(item) => setDrawerItem(item)}
+                  disabled={submitted}
+                  index={idx}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Band Selection + Submit — constrained width */}
         <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
@@ -462,7 +537,7 @@ export default function Battle() {
                       <BandIcon className={`w-8 h-8 mx-auto mb-1.5 ${band.iconColor}`} />
                       <span className="text-xs font-medium block">{bandLabel}</span>
                       <span className="text-lg font-extrabold block mt-1">{band.range}</span>
-                      <span className="text-xs font-bold block mt-1 text-muted-foreground">{t(band.key === "steady" ? "bandRange030" : band.key === "rising" ? "bandRange3080" : "bandRange80")} {band.multiplier}</span>
+                      <span className="text-xs font-bold block mt-1 text-muted-foreground">{band.multiplier}</span>
                     </button>
                   );
                 })}
@@ -477,41 +552,91 @@ export default function Battle() {
               {t("submitPrediction")}
             </Button>
           ) : (
-            <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
-              <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-primary" />
-                {t("predictionSubmitted")}
-              </p>
-              <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
-              <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                  <p className="text-xs text-muted-foreground">{t("scoreLabel")}: {pickedRun?.content_score}</p>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+              <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+                <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  {t("predictionSubmitted")}
+                </p>
+                <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
+                <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                    <p className="text-xs text-muted-foreground">{t("scoreLabel")}: {pickedRun?.content_score}</p>
+                  </div>
+                  <Badge variant="outline">
+                    {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
+                  </Badge>
                 </div>
-                <Badge variant="outline">
-                  {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
-                </Badge>
+                <div className="pt-2 border-t border-border mt-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-muted-foreground">🎧 {t("rewardProgress")}</span>
+                    <span className="text-[10px] text-muted-foreground"><span className="font-bold text-foreground">1,250</span> / 9,000 K-Cashes</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-primary to-purple-500 transition-all"
+                      style={{ width: `${(1250 / 9000) * 100}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="pt-2 border-t border-border mt-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">🎧 {t("rewardProgress")}</span>
-                  <span className="text-[10px] text-muted-foreground"><span className="font-bold text-foreground">1,250</span> / 9,000 K-Cashes</span>
+
+              {/* Next Battle button */}
+              {!allBattlesDone ? (
+                <Button onClick={handleNextBattle} variant="outline" className="w-full h-12 rounded-2xl text-base font-bold">
+                  <ChevronRight className="w-5 h-5 mr-2" />
+                  {t("nextBattle")} ({remainingCount - 1} {t("dailyRemaining").replace(":", "").trim()})
+                </Button>
+              ) : (
+                <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 text-center">
+                  <p className="text-sm font-bold text-foreground">🎉 {t("allDone")}</p>
                 </div>
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-primary to-purple-500 transition-all"
-                    style={{ width: `${(1250 / 9000) * 100}%` }}
-                  />
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-          <div className="text-center pb-4">
+          <div className="text-center pb-2">
             <p className="text-xs text-muted-foreground">
-              {t("dailyRemaining")} <span className="font-bold text-foreground">2 / 3</span>
+              {t("dailyRemaining")} <span className="font-bold text-foreground">{remainingCount} / {maxDaily}</span>
             </p>
           </div>
+
+          {/* History Section */}
+          {predictions.length > 0 && (
+            <div className="pb-4">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card border border-border text-sm font-semibold text-foreground"
+              >
+                <span className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  {t("historyTab")} ({predictions.length})
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? "rotate-180" : ""}`} />
+              </button>
+
+              {showHistory && (
+                <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
+                  {predictions.map((pred, i) => (
+                    <div key={i} className="rounded-xl bg-card border border-border p-3 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {pred.pickedStarName} <span className="text-muted-foreground font-normal">vs</span> {pred.opponentStarName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {BANDS.find((b) => b.key === pred.band)?.label} · {BANDS.find((b) => b.key === pred.band)?.range}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="ml-2 shrink-0">
+                        {t(pred.status === "pending" ? "pending" : pred.status === "won" ? "won" : "lost")}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -558,7 +683,7 @@ export default function Battle() {
                   </p>
                 )}
 
-                {/* External link - separate row, right-aligned */}
+                {/* External link */}
                 {(drawerItem.url || meta.url || meta.videoId) && (
                   <div className="flex justify-end gap-1 mb-4">
                     <a
@@ -635,7 +760,7 @@ export default function Battle() {
                   }`}
                 >
                   <Flame className={`w-4 h-4 ${hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
-                  {hotVotes.has(drawerItem.id) ? "Hot!" : "Mark as Hot"}
+                  {hotVotes.has(drawerItem.id) ? "Hot!" : t("markHot")}
                 </button>
               </>
             );

@@ -448,6 +448,45 @@ export type Database = {
         }
         Relationships: []
       }
+      b2_predictions: {
+        Row: {
+          band: string
+          battle_date: string
+          created_at: string
+          id: string
+          opponent_run_id: string
+          picked_run_id: string
+          reward_amount: number | null
+          settled_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          band: string
+          battle_date?: string
+          created_at?: string
+          id?: string
+          opponent_run_id: string
+          picked_run_id: string
+          reward_amount?: number | null
+          settled_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          band?: string
+          battle_date?: string
+          created_at?: string
+          id?: string
+          opponent_run_id?: string
+          picked_run_id?: string
+          reward_amount?: number | null
+          settled_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           color: string | null

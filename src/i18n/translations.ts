@@ -824,6 +824,14 @@ const translations: Record<string, Record<Language, string>> = {
   "battle.published": { en: "Published", ko: "게시일", ja: "公開日", zh: "发布日期" },
   "battle.scoreLabel": { en: "Score", ko: "점수", ja: "スコア", zh: "分数" },
   "battle.rewardProgress": { en: "Reward Progress", ko: "리워드 진행", ja: "リワード進捗", zh: "奖励进度" },
+  "battle.nextBattle": { en: "Next Battle", ko: "다음 배틀", ja: "次のバトル", zh: "下一场对战" },
+  "battle.historyTab": { en: "My Battles", ko: "나의 배틀", ja: "マイバトル", zh: "我的对战" },
+  "battle.pending": { en: "Pending", ko: "진행중", ja: "進行中", zh: "进行中" },
+  "battle.won": { en: "Won", ko: "적중", ja: "的中", zh: "猜中" },
+  "battle.lost": { en: "Lost", ko: "미적중", ja: "不的中", zh: "未中" },
+  "battle.noBattlesYet": { en: "No battles yet", ko: "아직 배틀이 없습니다", ja: "まだバトルがありません", zh: "暂无对战" },
+  "battle.allDone": { en: "All battles done for today!", ko: "오늘의 배틀을 모두 완료했습니다!", ja: "今日のバトルは全て完了！", zh: "今天的对战已全部完成！" },
+  "battle.markHot": { en: "Mark as Hot", ko: "Hot 표시", ja: "Hot マーク", zh: "标记为Hot" },
 };
 
 export default translations;
