@@ -515,8 +515,8 @@ export default function Battle() {
                   onClick={() => toggleHot(drawerItem.id)}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 transition-all text-sm font-semibold focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
                     hotVotes.has(drawerItem.id)
-                      ? "border-orange-400 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400"
-                      : "border-border bg-card text-muted-foreground hover:border-orange-300 hover:text-orange-500"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary"
                   }`}
                 >
                   <Flame className={`w-4 h-4 ${hotVotes.has(drawerItem.id) ? "fill-current" : ""}`} />
