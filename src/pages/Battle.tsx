@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Zap, Trophy, TrendingUp, Clock } from "lucide-react";
+import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usePageTranslation } from "@/hooks/usePageTranslation";
 import SmartImage from "@/components/SmartImage";
 
@@ -61,6 +62,108 @@ function sourceLabel(source: string) {
   }
 }
 
+/* ── Carousel of content cards for one run ── */
+function ContentCarousel({
+  runItems,
+  starName,
+  contentScore,
+  scoreLabel,
+  isPicked,
+  onPick,
+  onCardTap,
+  disabled,
+}: {
+  runItems: B2Item[];
+  starName: string;
+  contentScore: number;
+  scoreLabel: string;
+  isPicked: boolean;
+  onPick: () => void;
+  onCardTap: (item: B2Item) => void;
+  disabled: boolean;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+
+  function scroll(dir: 1 | -1) {
+    if (!scrollRef.current) return;
+    const next = Math.max(0, Math.min(idx + dir, runItems.length - 1));
+    setIdx(next);
+    const card = scrollRef.current.children[next] as HTMLElement;
+    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }
+
+  return (
+    <div className={`rounded-2xl border-2 transition-all overflow-hidden ${isPicked ? "border-primary ring-2 ring-primary/20" : "border-border"} ${disabled ? "opacity-60" : ""}`}>
+      {/* artist bar + pick button */}
+      <button
+        onClick={onPick}
+        disabled={disabled}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-card"
+      >
+        <span className="text-xs font-medium text-muted-foreground">by <span className="text-foreground font-semibold">{starName}</span></span>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold text-foreground">{contentScore}</span>
+          <span className="text-[10px] text-muted-foreground">{scoreLabel}</span>
+        </div>
+      </button>
+
+      {/* carousel */}
+      <div className="relative">
+        <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+          {runItems.map((item) => (
+            <div
+              key={item.id}
+              className="snap-center flex-shrink-0 w-full cursor-pointer"
+              onClick={() => onCardTap(item)}
+            >
+              <div className="relative aspect-[3/4] bg-muted">
+                {item.thumbnail ? (
+                  <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>
+                )}
+                {/* source badge */}
+                <div className="absolute top-3 right-3">
+                  <span className="text-[11px] font-medium text-white bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1">
+                    {sourceIcon(item.source)} {sourceLabel(item.source)}
+                  </span>
+                </div>
+                {/* title overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
+                  <p className="text-white text-sm font-medium leading-snug line-clamp-3">
+                    {item.title}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* nav arrows */}
+        {runItems.length > 1 && (
+          <>
+            <button onClick={() => scroll(-1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={() => scroll(1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
+        {/* dots */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          {runItems.map((_, i) => (
+            <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === idx ? "bg-white" : "bg-white/40"}`} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
   const { t } = usePageTranslation({
@@ -72,25 +175,28 @@ export default function Battle() {
       howItWorks: "How it works",
       instruction: "Pick the artist you think will grow more, then predict their growth band. The tighter the band, the bigger the reward!",
       nextSettlement: "Next settlement in",
-      contentScore: "Content Score",
+      contentScore: "Score",
       pickWinner: "Who will grow more?",
       predictGrowth: "How much will they grow?",
       submitPrediction: "Submit Prediction",
       predictionSubmitted: "Prediction Submitted!",
       waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
       dailyRemaining: "Daily free battles remaining:",
+      contentDetail: "Content Detail",
+      source: "Source",
+      published: "Published",
     },
   });
+
   const [runs, setRuns] = useState<B2Run[]>([]);
   const [items, setItems] = useState<Record<string, B2Item[]>>({});
   const [pickedRunId, setPickedRunId] = useState<string | null>(null);
   const [selectedBand, setSelectedBand] = useState<Band | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
 
-  useEffect(() => {
-    loadBattleData();
-  }, []);
+  useEffect(() => { loadBattleData(); }, []);
 
   async function loadBattleData() {
     const { data: runsData } = await supabase
@@ -125,7 +231,7 @@ export default function Battle() {
         .eq("run_id", run.id)
         .eq("has_thumbnail", true)
         .order("engagement_score", { ascending: false })
-        .limit(6);
+        .limit(8);
       itemsByRun[run.id] = (runItems || []) as B2Item[];
     }
     setItems(itemsByRun);
@@ -190,105 +296,36 @@ export default function Battle() {
             <TrendingUp className="w-4 h-4 text-primary" />
             {t("howItWorks")}
           </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {t("instruction")}
-          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{t("instruction")}</p>
           <div className="flex items-center gap-2 pt-1">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{t("nextSettlement")} <span className="font-mono font-semibold text-foreground">23:41:08</span></span>
           </div>
         </div>
 
-        {/* Pick Winner Label */}
+        {/* Pick label */}
         <p className="text-sm font-semibold text-foreground">{t("pickWinner")}</p>
 
-        {/* Battle Cards - side by side */}
-        <div className="grid grid-cols-2 gap-3">
-          {runs.map((run) => {
-            const runItems = items[run.id] || [];
-            const isPicked = pickedRunId === run.id;
-            const topItem = runItems[0];
-
-            return (
-              <button
-                key={run.id}
-                onClick={() => handlePick(run.id)}
-                disabled={submitted}
-                className={`
-                  rounded-2xl bg-card border-2 overflow-hidden transition-all text-left
-                  ${isPicked
-                    ? "border-primary ring-2 ring-primary/20 scale-[1.02]"
-                    : "border-border hover:border-muted-foreground/30"
-                  }
-                  ${submitted ? "opacity-60" : ""}
-                `}
-              >
-                {/* Main content thumbnail */}
-                <div className="relative aspect-[4/3] bg-muted">
-                  {topItem?.thumbnail ? (
-                    <SmartImage
-                      src={topItem.thumbnail}
-                      alt={topItem.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted" />
-                  )}
-                  {/* Artist name overlay - top left */}
-                  <div className="absolute top-2 left-2">
-                    <span className="text-[10px] font-medium text-white bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
-                      by {run.star?.display_name}
-                    </span>
-                  </div>
-                  {/* Source badge - top right */}
-                  {topItem && (
-                    <div className="absolute top-2 right-2">
-                      <span className="text-[10px] font-medium text-white bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
-                        {sourceIcon(topItem.source)} {sourceLabel(topItem.source)}
-                      </span>
-                    </div>
-                  )}
-                  {/* Score overlay - bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
-                    <div className="flex items-end justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium line-clamp-2 leading-tight">
-                          {topItem?.title || "No content"}
-                        </p>
-                      </div>
-                      <div className="ml-2 text-right flex-shrink-0">
-                        <span className="text-xl font-bold text-white">{run.content_score}</span>
-                        <p className="text-[9px] text-white/70">{t("contentScore")}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom thumbnails strip */}
-                <div className="p-2">
-                  <div className="flex gap-1">
-                    {runItems.slice(1, 5).map((item) => (
-                      <div key={item.id} className="flex-1 aspect-square rounded-lg overflow-hidden bg-muted">
-                        {item.thumbnail ? (
-                          <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-muted" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* VS divider */}
-        {runs.length === 2 && (
-          <div className="flex justify-center -mt-3 -mb-2">
-            <span className="text-xs font-black text-muted-foreground tracking-widest">VS</span>
+        {/* Card carousels */}
+        {runs.map((run, idx) => (
+          <div key={run.id} className="space-y-2">
+            <ContentCarousel
+              runItems={items[run.id] || []}
+              starName={run.star?.display_name || "Unknown"}
+              contentScore={run.content_score}
+              scoreLabel={t("contentScore")}
+              isPicked={pickedRunId === run.id}
+              onPick={() => handlePick(run.id)}
+              onCardTap={(item) => setDrawerItem(item)}
+              disabled={submitted}
+            />
+            {idx === 0 && runs.length > 1 && (
+              <div className="flex justify-center py-1">
+                <span className="text-sm font-black text-muted-foreground tracking-[0.3em]">VS</span>
+              </div>
+            )}
           </div>
-        )}
+        ))}
 
         {/* Band Selection */}
         {pickedRunId && !submitted && (
@@ -303,14 +340,7 @@ export default function Battle() {
                   <button
                     key={band.key}
                     onClick={() => handleBandSelect(band.key)}
-                    className={`
-                      rounded-xl px-3 py-3 text-center transition-all border-2
-                      ${isSelected
-                        ? "border-primary ring-2 ring-primary/20 scale-[1.03]"
-                        : "border-transparent hover:border-border"
-                      }
-                      ${band.color}
-                    `}
+                    className={`rounded-xl px-3 py-3 text-center transition-all border-2 ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-transparent hover:border-border"} ${band.color}`}
                   >
                     <span className="text-sm font-semibold block">{band.label}</span>
                     <span className="text-[10px] opacity-70 block mt-0.5">{band.range}</span>
@@ -324,11 +354,7 @@ export default function Battle() {
 
         {/* Submit / Result */}
         {!submitted ? (
-          <Button
-            onClick={handleSubmit}
-            disabled={!pickedRunId || !selectedBand}
-            className="w-full h-12 rounded-2xl text-base font-bold"
-          >
+          <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand} className="w-full h-12 rounded-2xl text-base font-bold">
             <Zap className="w-5 h-5 mr-2" />
             {t("submitPrediction")}
           </Button>
@@ -358,13 +384,56 @@ export default function Battle() {
           </div>
         )}
 
-        {/* Daily Remaining */}
         <div className="text-center pb-4">
           <p className="text-xs text-muted-foreground">
             {t("dailyRemaining")} <span className="font-bold text-foreground">2 / 3</span>
           </p>
         </div>
       </div>
+
+      {/* Detail Drawer */}
+      <Sheet open={!!drawerItem} onOpenChange={(open) => !open && setDrawerItem(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+          {drawerItem && (
+            <>
+              <SheetHeader className="pb-3">
+                <SheetTitle className="text-base">{t("contentDetail")}</SheetTitle>
+              </SheetHeader>
+              {/* Thumbnail */}
+              <div className="rounded-2xl overflow-hidden bg-muted aspect-video mb-4">
+                {drawerItem.thumbnail ? (
+                  <SmartImage src={drawerItem.thumbnail} alt={drawerItem.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted" />
+                )}
+              </div>
+              {/* Meta */}
+              <div className="space-y-3">
+                <Badge variant="secondary" className="text-xs">
+                  {sourceIcon(drawerItem.source)} {sourceLabel(drawerItem.source)}
+                </Badge>
+                <h3 className="text-sm font-semibold text-foreground leading-snug">{drawerItem.title}</h3>
+                {drawerItem.published_at && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("published")}: {new Date(drawerItem.published_at).toLocaleDateString()}
+                  </p>
+                )}
+                {drawerItem.metadata?.url && (
+                  <a
+                    href={drawerItem.metadata.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Open original
+                  </a>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
