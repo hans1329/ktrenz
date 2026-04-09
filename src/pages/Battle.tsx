@@ -36,10 +36,10 @@ interface B2Run {
 
 type Band = "steady" | "rising" | "surge";
 
-const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; multiplier: string }[] = [
-  { key: "steady", label: "Steady", range: "0–30%", icon: Sprout, multiplier: "×1.5" },
-  { key: "rising", label: "Rising", range: "30–80%", icon: Flame, multiplier: "×3.0" },
-  { key: "surge", label: "Surge", range: "80%+", icon: Rocket, multiplier: "×6.0" },
+const BANDS: { key: Band; label: string; range: string; icon: typeof Sprout; iconColor: string; multiplier: string }[] = [
+  { key: "steady", label: "Steady", range: "0–30%", icon: Sprout, iconColor: "text-emerald-500", multiplier: "×1.5" },
+  { key: "rising", label: "Rising", range: "30–80%", icon: Flame, iconColor: "text-orange-500", multiplier: "×3.0" },
+  { key: "surge", label: "Surge", range: "80%+", icon: Rocket, iconColor: "text-red-500", multiplier: "×6.0" },
 ];
 
 function decodeHtml(str: string) {
@@ -321,6 +321,9 @@ export default function Battle() {
       bandSteady: "Steady",
       bandRising: "Rising",
       bandSurge: "Surge",
+      bandRange030: "0–30%",
+      bandRange3080: "30–80%",
+      bandRange80: "80%+",
       submitPrediction: "Submit Prediction",
       predictionSubmitted: "Prediction Submitted!",
       waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
@@ -481,10 +484,10 @@ export default function Battle() {
                       onClick={() => handleBandSelect(band.key)}
                       className={`rounded-xl px-3 py-4 text-center transition-all border-2 bg-white text-foreground ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-border hover:border-primary/30"}`}
                     >
-                      <BandIcon className="w-8 h-8 mx-auto mb-1.5 text-foreground" />
+                      <BandIcon className={`w-8 h-8 mx-auto mb-1.5 ${band.iconColor}`} />
                       <span className="text-xs font-medium block">{bandLabel}</span>
                       <span className="text-lg font-extrabold block mt-1">{band.range}</span>
-                      <span className="text-xs font-bold block mt-1 text-muted-foreground">{band.multiplier}</span>
+                      <span className="text-xs font-bold block mt-1 text-muted-foreground">{t(band.key === "steady" ? "bandRange030" : band.key === "rising" ? "bandRange3080" : "bandRange80")} {band.multiplier}</span>
                     </button>
                   );
                 })}
