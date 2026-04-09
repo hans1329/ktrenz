@@ -287,12 +287,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const naverNewsDeduped = dedup(naverNewsRaw, true);
-    const naverBlog = dedup(naverBlogRaw);
-    const youtube = dedup(youtubeRaw);
+    const naverNewsDeduped = dedup(naverNewsRaw, true).filter((i: any) => isTitleRelevant(i.title));
+    const naverBlog = dedup(naverBlogRaw).filter((i: any) => isTitleRelevant(i.title));
+    const youtube = dedup(youtubeRaw).filter((i: any) => isTitleRelevant(i.title));
     const tiktok = dedup(tiktokRaw);
     const instagram = dedup(instagramRaw);
-    const reddit = dedup(redditRaw);
+    const reddit = dedup(redditRaw).filter((i: any) => isTitleRelevant(i.title));
 
     // Enrich with og:image where thumbnails are missing
     const enrichWithOgImage = async (items: any[], limit = 10) => {
