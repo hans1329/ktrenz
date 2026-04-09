@@ -186,6 +186,23 @@ export default function Battle() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [drawerItem, setDrawerItem] = useState<B2Item | null>(null);
+  const [hotVotes, setHotVotes] = useState<Set<string>>(new Set()); // item IDs that got 🔥
+
+  // Count hot votes per run's star_id
+  function getHotBonus(runId: string): number {
+    const runItems = items[runId] || [];
+    const count = runItems.filter((i) => hotVotes.has(i.id)).length;
+    return count * 0.2;
+  }
+
+  function toggleHot(itemId: string) {
+    setHotVotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
 
   useEffect(() => { loadBattleData(); }, []);
 
