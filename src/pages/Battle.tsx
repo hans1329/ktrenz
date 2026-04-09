@@ -56,8 +56,8 @@ function sourceIcon(source: string): ReactNode {
   }
 }
 
-/* ── Carousel of content cards for one run ── */
-function ContentCarousel({
+/* ── Artist Section: name bar + horizontal card carousel ── */
+function ArtistSection({
   runItems,
   starName,
   contentScore,
@@ -77,86 +77,57 @@ function ContentCarousel({
   disabled: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [idx, setIdx] = useState(0);
-
-  function scroll(dir: 1 | -1) {
-    if (!scrollRef.current) return;
-    const next = Math.max(0, Math.min(idx + dir, runItems.length - 1));
-    setIdx(next);
-    const card = scrollRef.current.children[next] as HTMLElement;
-    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }
 
   return (
-    <div className={`rounded-2xl border-2 transition-all overflow-hidden ${isPicked ? "border-primary ring-2 ring-primary/20" : "border-border"} ${disabled ? "opacity-60" : ""}`}>
-      {/* artist bar + pick button */}
+    <div className="space-y-2">
+      {/* Pick bar — name + score */}
       <button
         onClick={onPick}
         disabled={disabled}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-card"
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all ${
+          isPicked ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-card hover:border-primary/30"
+        } ${disabled ? "opacity-60" : ""}`}
       >
-        <span className="text-xs font-medium text-muted-foreground">by <span className="text-foreground font-semibold">{starName}</span></span>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-foreground">{contentScore}</span>
+          {isPicked && <Zap className="w-4 h-4 text-primary" />}
+          <span className="text-sm font-bold text-foreground">{starName}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold text-foreground">{contentScore}</span>
           <span className="text-[10px] text-muted-foreground">{scoreLabel}</span>
         </div>
       </button>
 
-      {/* carousel */}
-      <div className="relative">
-        <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
-          {runItems.map((item) => (
-            <div
-              key={item.id}
-              className="snap-center flex-shrink-0 w-full cursor-pointer"
-              onClick={onPick}
-            >
-              <div className="relative aspect-square bg-muted">
-                {item.thumbnail ? (
-                  <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>
-                )}
-                {/* source icon */}
-                <div className="absolute top-2.5 right-2.5">
-                  {sourceIcon(item.source)}
-                </div>
-                {/* detail button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); onCardTap(item); }}
-                  className="absolute bottom-3 left-3 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors focus:outline-none"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </button>
-                {/* title overlay */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16 pointer-events-none">
-                  <p className="text-white text-sm font-medium leading-snug line-clamp-3">
-                    {decodeHtml(item.title)}
-                  </p>
-                </div>
+      {/* Horizontal card carousel */}
+      <div
+        ref={scrollRef}
+        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 -mx-1 px-1"
+      >
+        {runItems.map((item) => (
+          <div
+            key={item.id}
+            className="snap-start flex-shrink-0 w-36 cursor-pointer"
+            onClick={() => onCardTap(item)}
+          >
+            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+              {item.thumbnail ? (
+                <SmartImage src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
+              )}
+              {/* source icon */}
+              <div className="absolute top-1.5 right-1.5">
+                {sourceIcon(item.source)}
+              </div>
+              {/* title overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-8">
+                <p className="text-white text-[10px] font-medium leading-tight line-clamp-2">
+                  {decodeHtml(item.title)}
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* nav arrows */}
-        {runItems.length > 1 && (
-          <>
-            <button onClick={() => scroll(-1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button onClick={() => scroll(1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </>
-        )}
-
-        {/* dots */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-          {runItems.map((_, i) => (
-            <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === idx ? "bg-white" : "bg-white/40"}`} />
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );
