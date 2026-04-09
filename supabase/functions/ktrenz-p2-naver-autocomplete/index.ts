@@ -34,14 +34,15 @@ Deno.serve(async (req) => {
           headers: { "User-Agent": "Mozilla/5.0" },
         });
 
-        if (!res.ok) {
-          const errText = await res.text();
-          console.warn(`[p2-naver-ac] "${prefix}" failed ${res.status}`);
-          continue;
+        const rawText = await res.text();
+        
+        // Log first few responses for debugging
+        if (allSuggestions.size === 0) {
+          console.log(`[p2-naver-ac] "${prefix}" status=${res.status} body=${rawText.substring(0, 500)}`);
         }
 
-        const data = await res.json();
-        // Naver autocomplete response: { items: [["keyword1", ...], ["keyword2", ...]] }
+        let data: any;
+        try { data = JSON.parse(rawText); } catch { console.warn(`[p2-naver-ac] Non-JSON for "${prefix}"`); continue; }
         const items = data?.items || [];
 
         for (const group of items) {
