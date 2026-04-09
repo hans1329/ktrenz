@@ -460,67 +460,70 @@ export default function Battle() {
           ))}
         </div>
 
-        {/* Band Selection */}
-        {pickedRunId && !submitted && (
-          <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
-            <p className="text-sm font-semibold text-foreground">
-              {t("predictGrowth")} — <span className="text-primary">{pickedRun?.star?.display_name}</span>
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {BANDS.map((band) => {
-                const isSelected = selectedBand === band.key;
-                return (
-                  <button
-                    key={band.key}
-                    onClick={() => handleBandSelect(band.key)}
-                    className={`rounded-xl px-3 py-3 text-center transition-all border-2 ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-transparent hover:border-border"} ${band.color}`}
-                  >
-                    <span className="text-sm font-semibold block">{band.label}</span>
-                    <span className="text-[10px] opacity-70 block mt-0.5">{band.range}</span>
-                    <span className="text-xs font-bold block mt-1">{band.multiplier}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Submit / Result */}
-        {!submitted ? (
-          <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand} className="w-full h-12 rounded-2xl text-base font-bold">
-            <Zap className="w-5 h-5 mr-2" />
-            {t("submitPrediction")}
-          </Button>
-        ) : (
-          <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-3">
-            <p className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-primary" />
-              {t("predictionSubmitted")}
-            </p>
-            <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
-            <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
-                <p className="text-xs text-muted-foreground">Score: {pickedRun?.content_score}</p>
+        {/* Band Selection + Submit — constrained width */}
+        <div className="max-w-lg sm:max-w-4xl mx-auto px-4 space-y-5">
+          {/* Band Selection */}
+          {pickedRunId && !submitted && (
+            <div className="rounded-2xl bg-card border border-border p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+              <p className="text-sm font-semibold text-foreground">
+                {t("predictGrowth")} — <span className="text-primary">{pickedRun?.star?.display_name}</span>
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {BANDS.map((band) => {
+                  const isSelected = selectedBand === band.key;
+                  return (
+                    <button
+                      key={band.key}
+                      onClick={() => handleBandSelect(band.key)}
+                      className={`rounded-xl px-3 py-3 text-center transition-all border-2 ${isSelected ? "border-primary ring-2 ring-primary/20 scale-[1.03]" : "border-transparent hover:border-border"} ${band.color}`}
+                    >
+                      <span className="text-sm font-semibold block">{band.label}</span>
+                      <span className="text-[10px] opacity-70 block mt-0.5">{band.range}</span>
+                      <span className="text-xs font-bold block mt-1">{band.multiplier}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <Badge className={BANDS.find((b) => b.key === selectedBand)?.color || ""}>
-                {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
-              </Badge>
             </div>
-            <div className="pt-2 border-t border-border mt-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground">🎧 Spotify Premium</span>
-                <span className="text-xs font-semibold text-foreground">1,250 / 9,000 K-Cashes</span>
-              </div>
-              <Progress value={(1250 / 9000) * 100} className="h-2" />
-            </div>
-          </div>
-        )}
+          )}
 
-        <div className="text-center pb-4">
-          <p className="text-xs text-muted-foreground">
-            {t("dailyRemaining")} <span className="font-bold text-foreground">2 / 3</span>
-          </p>
+          {/* Submit / Result */}
+          {!submitted ? (
+            <Button onClick={handleSubmit} disabled={!pickedRunId || !selectedBand} className="w-full h-12 rounded-2xl text-base font-bold">
+              <Zap className="w-5 h-5 mr-2" />
+              {t("submitPrediction")}
+            </Button>
+          ) : (
+            <div className="rounded-2xl bg-primary/5 border border-primary/20 p-4 space-y-3">
+              <p className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-primary" />
+                {t("predictionSubmitted")}
+              </p>
+              <p className="text-xs text-muted-foreground">{t("waitResult")}</p>
+              <div className="flex items-center justify-between bg-card rounded-xl p-3 border border-border">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{pickedRun?.star?.display_name}</p>
+                  <p className="text-xs text-muted-foreground">Score: {pickedRun?.content_score}</p>
+                </div>
+                <Badge className={BANDS.find((b) => b.key === selectedBand)?.color || ""}>
+                  {BANDS.find((b) => b.key === selectedBand)?.label} {BANDS.find((b) => b.key === selectedBand)?.multiplier}
+                </Badge>
+              </div>
+              <div className="pt-2 border-t border-border mt-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">🎧 Spotify Premium</span>
+                  <span className="text-xs font-semibold text-foreground">1,250 / 9,000 K-Cashes</span>
+                </div>
+                <Progress value={(1250 / 9000) * 100} className="h-2" />
+              </div>
+            </div>
+          )}
+
+          <div className="text-center pb-4">
+            <p className="text-xs text-muted-foreground">
+              {t("dailyRemaining")} <span className="font-bold text-foreground">2 / 3</span>
+            </p>
+          </div>
         </div>
       </div>
 
