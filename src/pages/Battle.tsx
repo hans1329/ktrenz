@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Zap, Trophy, TrendingUp, Clock, ChevronLeft, ChevronRight, ExternalLink, Flame, Share2, Play, Music, Camera, Newspaper, MessageCircle, FileText, Sprout, Rocket, ChevronDown, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SmartImage from "@/components/SmartImage";
+import { toast } from "@/hooks/use-toast";
 
 interface B2Item {
   id: string;
@@ -366,6 +368,7 @@ interface Prediction {
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { t: globalT } = useLanguage();
   const t = (key: string) => globalT(`battle.${key}`);
 
@@ -469,6 +472,11 @@ export default function Battle() {
 
   function handlePick(runId: string) {
     if (submitted) return;
+    if (!user) {
+      toast({ title: "Please log in to participate.", variant: "destructive" });
+      navigate("/login");
+      return;
+    }
     setPickedRunId(runId);
     setSelectedBand(null);
   }
