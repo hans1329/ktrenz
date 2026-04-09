@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import V3Header from "@/components/v3/V3Header";
 import V3TabBar from "@/components/v3/V3TabBar";
-import { usePageTranslation } from "@/hooks/usePageTranslation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import SmartImage from "@/components/SmartImage";
 
 interface B2Item {
@@ -306,35 +306,8 @@ function ArtistSection({
 /* ── Main Battle Page ── */
 export default function Battle() {
   const navigate = useNavigate();
-  const { t } = usePageTranslation({
-    cacheKey: "battle",
-    segments: {
-      loading: "Loading battles...",
-      title: "Trend Battle",
-      subtitle: "Predict the next content surge",
-      howItWorks: "How it works",
-      instruction: "Pick the artist you think will grow more, then predict their growth band. The tighter the band, the bigger the reward!",
-      nextSettlement: "Next settlement in",
-      contentScore: "Score",
-      pickWinner: "Who will grow more?",
-      predictGrowth: "Your pick:",
-      bandSteady: "Steady",
-      bandRising: "Rising",
-      bandSurge: "Surge",
-      bandRange030: "0–30%",
-      bandRange3080: "30–80%",
-      bandRange80: "80%+",
-      submitPrediction: "Submit Prediction",
-      predictionSubmitted: "Prediction Submitted!",
-      waitResult: "Results will be settled after the next content scan. Check back in ~24 hours.",
-      dailyRemaining: "Daily free battles remaining:",
-      contentDetail: "Content Detail",
-      source: "Source",
-      published: "Published",
-      scoreLabel: "Score",
-      rewardProgress: "Reward Progress",
-    },
-  });
+  const { t: globalT } = useLanguage();
+  const t = (key: string) => globalT(`battle.${key}`);
 
   const [runs, setRuns] = useState<B2Run[]>([]);
   const [items, setItems] = useState<Record<string, B2Item[]>>({});
