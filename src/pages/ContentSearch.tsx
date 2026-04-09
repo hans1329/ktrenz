@@ -191,6 +191,13 @@ const ContentSearchPage = () => {
                   </TabButton>
                 );
               })}
+              {noImageCount > 0 && (
+                <TabButton active={activeSource === "no_image"} onClick={() => setActiveSource("no_image")}>
+                  <span className="text-muted-foreground">🚫</span>
+                  <span className="hidden sm:inline">No Image</span>
+                  <span className="text-[10px] opacity-60">({noImageCount})</span>
+                </TabButton>
+              )}
             </div>
 
             {/* Content list */}
