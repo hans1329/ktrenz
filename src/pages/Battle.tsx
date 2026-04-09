@@ -59,8 +59,60 @@ function sourceIcon(source: string): ReactNode {
 }
 
 /* ── Flip Timer ── */
+function FlipCard({ digit, prevDigit }: { digit: string; prevDigit: string }) {
+  const [flipping, setFlipping] = useState(false);
+  const [displayDigit, setDisplayDigit] = useState(digit);
+  const [oldDigit, setOldDigit] = useState(digit);
+
+  useEffect(() => {
+    if (digit !== displayDigit) {
+      setOldDigit(displayDigit);
+      setFlipping(true);
+      const t = setTimeout(() => {
+        setDisplayDigit(digit);
+        setFlipping(false);
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [digit]);
+
+  return (
+    <div className="relative w-10 h-14 sm:w-12 sm:h-16 rounded-lg overflow-hidden shadow-md" style={{ perspective: "200px" }}>
+      {/* Static top half — shows NEW digit */}
+      <div className="absolute inset-x-0 top-0 h-1/2 bg-white flex items-end justify-center overflow-hidden">
+        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground translate-y-[55%]">{digit}</span>
+      </div>
+      {/* Static bottom half — shows OLD digit until flip ends */}
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white/90 flex items-start justify-center overflow-hidden">
+        <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground -translate-y-[55%]">{displayDigit}</span>
+      </div>
+
+      {/* Flipping top panel — folds down from old to reveal new */}
+      {flipping && (
+        <div
+          className="absolute inset-x-0 top-0 h-1/2 bg-white flex items-end justify-center overflow-hidden rounded-t-lg z-20"
+          style={{
+            transformOrigin: "bottom",
+            animation: "flipDown 0.3s ease-in forwards",
+            backfaceVisibility: "hidden",
+          }}
+        >
+          <span className="text-2xl sm:text-3xl font-extrabold font-mono text-foreground translate-y-[55%]">{oldDigit}</span>
+        </div>
+      )}
+
+      {/* Center line */}
+      <div className="absolute inset-x-0 top-1/2 h-px bg-border/50 z-30" />
+      {/* Side notches */}
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-r-full z-30" />
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-l-full z-30" />
+    </div>
+  );
+}
+
 function FlipTimer() {
   const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
+  const prevRef = useRef({ h: 0, m: 0, s: 0 });
 
   useEffect(() => {
     function calc() {
@@ -69,7 +121,10 @@ function FlipTimer() {
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(0, 0, 0, 0);
       const diff = Math.max(0, Math.floor((tomorrow.getTime() - now.getTime()) / 1000));
-      setTime({ h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 });
+      setTime(prev => {
+        prevRef.current = prev;
+        return { h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 };
+      });
     }
     calc();
     const iv = setInterval(calc, 1000);
@@ -77,33 +132,14 @@ function FlipTimer() {
   }, []);
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  const prev = prevRef.current;
 
-  function FlipCard({ digit }: { digit: string }) {
-    return (
-      <div className="relative w-9 h-12 sm:w-11 sm:h-14 rounded-lg overflow-hidden shadow-md">
-        {/* Top half */}
-        <div className="absolute inset-x-0 top-0 h-1/2 bg-white flex items-end justify-center overflow-hidden border-b border-border/30">
-          <span className="text-xl sm:text-2xl font-extrabold font-mono text-foreground translate-y-[55%]">{digit}</span>
-        </div>
-        {/* Bottom half */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white/90 flex items-start justify-center overflow-hidden">
-          <span className="text-xl sm:text-2xl font-extrabold font-mono text-foreground -translate-y-[55%]">{digit}</span>
-        </div>
-        {/* Center line */}
-        <div className="absolute inset-x-0 top-1/2 h-px bg-border/50 z-10" />
-        {/* Side shadow notches */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-r-full" />
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1.5 bg-border/30 rounded-l-full" />
-      </div>
-    );
-  }
-
-  function FlipGroup({ value, label }: { value: string; label: string }) {
+  function FlipGroup({ value, prevValue, label }: { value: string; prevValue: string; label: string }) {
     return (
       <div className="flex flex-col items-center gap-1.5">
         <div className="flex gap-1">
           {value.split("").map((d, i) => (
-            <FlipCard key={i} digit={d} />
+            <FlipCard key={i} digit={d} prevDigit={prevValue[i] || d} />
           ))}
         </div>
         <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">{label}</span>
@@ -113,11 +149,11 @@ function FlipTimer() {
 
   return (
     <div className="flex items-center justify-center gap-2.5 sm:gap-4">
-      <FlipGroup value={pad(time.h)} label="hrs" />
+      <FlipGroup value={pad(time.h)} prevValue={pad(prev.h)} label="hrs" />
       <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
-      <FlipGroup value={pad(time.m)} label="min" />
+      <FlipGroup value={pad(time.m)} prevValue={pad(prev.m)} label="min" />
       <span className="text-2xl font-bold text-muted-foreground/60 pb-5">:</span>
-      <FlipGroup value={pad(time.s)} label="sec" />
+      <FlipGroup value={pad(time.s)} prevValue={pad(prev.s)} label="sec" />
     </div>
   );
 }
